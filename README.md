@@ -1,2 +1,2 @@
 # polygonid-js-sdk
-SDK to work with PolygonI D
+SDK to work with Polygon ID
