@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationDir": "./dist/types",
+    "sourceMap": true,
+    "target": "es6",
+    "moduleResolution": "Node"
+  },
+  "files": ["src/index.ts"]
+}
