@@ -1,0 +1,79 @@
+{
+  "name": "@iden3/polygonid-js-sdk",
+  "version": "0.0.1",
+  "description": "Polygon ID JavaScript SDK",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/types/index.d.ts",
+        "module": "./dist/esm/index.js",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/types/index.d.ts",
+        "module": "./dist/cjs/index.js",
+        "default": "./dist/cjs/index.js"
+      }
+    }
+  },
+  "types": "./dist/cjs/types/index.d.ts",
+  "main": "index.js",
+  "module": "./dist/esm/index.mjs",
+  "source": "./src/index.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "build": "npm run clean && tsc -p configs/tsconfig.cjs.json && webpack --config webpack.esm.config.js --mode=production && webpack --mode production",
+    "test:coverage": "jest --coverage",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "semantic-release": "semantic-release",
+    "lint": "eslint --fix --ext .js,.ts src/**",
+    "format": "prettier --config .prettierrc './**/*.ts' --write"
+  },
+  "release": {
+    "branches": [
+      "main"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iden3/js-iden3-core.git"
+  },
+  "keywords": [
+    "iden3"
+  ],
+  "author": "Iden3 Core team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/iden3/js-iden3-core/issues"
+  },
+  "homepage": "https://github.com/iden3/js-iden3-core#readme",
+  "devDependencies": {
+    "@types/jest": "^29.2.0",
+    "@typescript-eslint/eslint-plugin": "^5.41.0",
+    "clean-webpack-plugin": "^4.0.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "jest": "^29.2.2",
+    "prettier": "^2.7.1",
+    "rimraf": "^3.0.2",
+    "rollup": "^3.2.3",
+    "semantic-release": "^19.0.3",
+    "terser": "^5.15.1",
+    "ts-jest": "^29.0.3",
+    "ts-loader": "^9.4.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.7.4",
+    "webpack": "^5.74.0",
+    "webpack-cli": "^4.10.0"
+  },
+  "dependencies": {
+
+  }
+}

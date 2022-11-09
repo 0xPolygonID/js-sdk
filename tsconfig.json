@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+      "allowSyntheticDefaultImports": true,
+      "sourceMap": true,
+      "noImplicitAny": true,
+      "module": "es6",
+      "target": "es2015",
+      "outDir": "./dist",
+      "allowJs": true,
+      "moduleResolution": "node",
+      "baseUrl": ".",
+      "paths": {
+        "*": ["src/*"]
+      }
+    },
+    "include": [
+      "src/**/*"
+    ]
+  }
