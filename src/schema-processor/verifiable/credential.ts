@@ -6,14 +6,14 @@ export const ErrStateNotFound = 'issuer state not found';
 export interface Iden3Credential {
   id: string;
   '@context': string[];
-  '@type': string[];
+  type: string[];
   expirationDate?: Date;
   updatable: boolean;
   version: number;
-  rev_nonce: number;
+  revNonce: number;
   credentialSubject: Map<string, unknown>;
   credentialStatus?: CredentialStatus;
-  subject_position?: string;
+  subjectPosition?: string;
   merklized?: string;
   credentialSchema: CredentialSchema;
   proof?: unknown;
@@ -26,7 +26,7 @@ export interface CredentialSchema {
 
 // CredentialStatusType type for understanding revocation type
 export enum CredentialStatusType {
-  Iden3SparseMerkleTreeProof = 'Iden3SparseMerkleTreeProof',
+  SparseMerkleTreeProof = 'SparseMerkleTreeProof',
   Iden3ReverseSparseMerkleTreeProof = 'Iden3ReverseSparseMerkleTreeProof'
 }
 
@@ -50,15 +50,14 @@ export interface CredentialStatus {
 
 export interface Issuer {
   state?: string;
-  root_of_roots?: string;
-  claims_tree_root?: string;
-  revocation_tree_root?: string;
+  rootOfRoots?: string;
+  claimsTreeRoot?: string;
+  revocationTreeRoot?: string;
 }
 
 // RevocationStatus status of revocation nonce. Info required to check revocation state of claim in circuits
 export interface RevocationStatus {
   // RevocationNonce is the nonce of the claim
-  // TODO: import from merkletree
   mtp: Proof;
   issuer: Issuer;
 }

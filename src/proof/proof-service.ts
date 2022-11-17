@@ -5,7 +5,6 @@ import { getUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { ICredentialWallet, IProofService, IIdentityWallet, IKmsService } from '../abstractions';
 import { Proof } from '@iden3/js-merkletree';
 import {
-  AtomicQueryMTPWithRelayInputs,
   buildTreeState,
   CircuitClaim,
   CircuitId,
@@ -15,8 +14,9 @@ import {
   StateInRelayCredentialHash,
   AtomicQuerySigInputs,
   Query,
+  AuthInputs
   factoryComparer
-} from '../circuit';
+} from '../circuits';
 import { Claim } from '../claim';
 import { getIdentityMerkleTrees } from '../merkle-tree';
 import {
@@ -25,7 +25,6 @@ import {
   RevocationStatus
 } from '../schema-processor/verifiable/credential';
 import { toClaimNonRevStatus } from './common';
-import { AuthInputs } from '../circuit/auth-inputs';
 import { ProverService } from './prover';
 import { SchemaLoader } from '../schema-processor/loader';
 
@@ -61,7 +60,7 @@ export class ProofService implements IProofService {
       proofReq
     );
 
-    const proof = await this._prover.generate(inputs, proofReq.circuit_id);
+    const proof = await this._prover.generate(inputs, proofReq.circuitId);
     return { proof, claims };
   }
 
@@ -91,7 +90,7 @@ export class ProofService implements IProofService {
     const claimsTree = identityTrees.claimsTree();
 
     // get index hash of authClaim
-    const coreClaim = authClaim.core_claim;
+    const coreClaim = authClaim.coreClaim;
     const hIndex = await coreClaim.hIndex();
     const authClaimMTP = await claimsTree.generateProof(hIndex, treeState.claimsRoot);
 
@@ -101,7 +100,7 @@ export class ProofService implements IProofService {
 
     // revocation / non revocation MTP for the latest identity state
     const nonRevocationProof = await identityTrees.generateRevocationProof(
-      BigInt(authClaim.rev_nonce),
+      BigInt(authClaim.revNonce),
       treeState.revocationRoot
     );
 
@@ -189,14 +188,14 @@ export class ProofService implements IProofService {
     identifier: Id,
     proofReq: ProofRequest
   ): { authClaim: Claim; signature: Signature; treeState: TreeState } {
-    const authClaim = this._credentialWallet.getAuthClaim(identifier);
+    const authClaim = this._credentialWallet.getAuthCredential(identifier);
     const signingKeyId = this._identityWallet.getKeyIdFromAuthClaim(authClaim);
     const idState = this._identityWallet.getLatestStateById(identifier);
     const treeState = buildTreeState(
       idState.state,
-      idState.claims_tree_root,
-      idState.revocation_tree_root,
-      idState.root_of_roots
+      idState.claimsTreeRoot,
+      idState.revocationTreeRoot,
+      idState.rootOfRoots
     );
     const challengeDigest = this._kms.getBJJDigest(proofReq.challenge);
     const sigBytes = this._kms.sign(signingKeyId, challengeDigest);
@@ -214,7 +213,7 @@ export class ProofService implements IProofService {
     const claims: Claim[] = [];
     let circuitInputs;
 
-    if (proofReq.circuit_id === CircuitId.AtomicQueryMTP) {
+    if (proofReq.circuitId === CircuitId.AtomicQueryMTP) {
       const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
         identifier,
         proofReq.rules
@@ -244,7 +243,7 @@ export class ProofService implements IProofService {
 
       console.log('Claim.Proof: ', claimData.proof);
       console.log('Claim.NonRevProof: ', claimData.nonRevProof);
-    } else if (proofReq.circuit_id === CircuitId.AtomicQueryMTPWithRelay) {
+    } else if (proofReq.circuitId === CircuitId.AtomicQueryMTPWithRelay) {
       const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
         identifier,
         proofReq.rules
@@ -276,7 +275,7 @@ export class ProofService implements IProofService {
       circuitInputs.query = circuitQuery;
       circuitInputs.claim = claimData;
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-    } else if (proofReq.circuit_id === CircuitId.AtomicQuerySig) {
+    } else if (proofReq.circuitId === CircuitId.AtomicQuerySig) {
       const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
         identifier,
         proofReq.rules
@@ -312,14 +311,14 @@ export class ProofService implements IProofService {
       circuitInputs.claim = claimData;
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
       claims.push(claim);
-    } else if (proofReq.circuit_id === CircuitId.Auth) {
+    } else if (proofReq.circuitId === CircuitId.Auth) {
       circuitInputs = new AuthInputs();
       circuitInputs.id = identifier;
       circuitInputs.authClaim = authClaimData;
       circuitInputs.signature = signature;
       circuitInputs.challenge = proofReq.challenge;
     } else {
-      throw new Error(`circuit with id ${proofReq.circuit_id} is not supported by issuer`);
+      throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
     const inputs: Uint8Array = await circuitInputs.inputsMarshal();
     return { inputs, claims };

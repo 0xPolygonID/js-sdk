@@ -1,5 +1,5 @@
 import { StateInfo } from '../blockchain';
 
-export interface IStateStore {
+export interface IStateStorage {
   getLatestStateById(address: string, issuerId: bigint): StateInfo;
 }

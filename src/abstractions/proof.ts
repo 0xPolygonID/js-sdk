@@ -1,5 +1,5 @@
 import { Id } from '@iden3/js-iden3-core';
-import { CircuitId } from '../circuit';
+import { CircuitId } from '../circuits';
 import { Claim } from '../claim';
 import { FullProof, ProofRequest } from '../proof/models';
 

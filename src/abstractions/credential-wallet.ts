@@ -1,16 +1,15 @@
+import { Iden3Credential } from './../schema-processor/verifiable/credential';
 import { Id } from '@iden3/js-iden3-core';
-import { Claim } from '../claim';
-import { CredentialStatus, RevocationStatus } from '../schema-processor';
+import { RevocationStatus } from '../schema-processor';
 export interface ICredentialWallet {
-  getAuthClaim(id: Id): Claim;
-  getStatus(credStatus: CredentialStatus): RevocationStatus;
-  findCredentialWithLatestVersion(id: Id, hash: string): Claim;
-  checkRevocationStatus(claim: Claim): RevocationStatus;
-  list(): Promise<Claim[]>;
-  save(credential: Claim): Promise<void>;
-  findByQuery(query): Promise<Claim[]>;
-  findById(id: Id): Promise<Claim>;
-  findAllBySchemaHash(hash: string): Promise<Claim[]>;
-  getSchemaLoader(url: string): Promise<any>;
-  findClaimsForCircuitQuery(claims, circuitQuery, requestFiled): Promise<Claim[]>;
+  getAuthCredential(id: Id): Iden3Credential;
+  findCredentialWithLatestVersion(id: Id, hash: string): Iden3Credential;
+  getRevocationStatus(cred: Iden3Credential): RevocationStatus;
+  list(): Promise<Iden3Credential[]>;
+  save(credential: Iden3Credential): Promise<void>;
+  findByQuery(query): Promise<Iden3Credential[]>;
+  findById(id: Id): Promise<Iden3Credential>;
+  findAllBySchemaHash(hash: string): Promise<Iden3Credential[]>;
+  getSchemaLoader(url: string, type: string): Promise<any>;
+  findClaimsForCircuitQuery(claims, circuitQuery, requestFiled): Promise<Iden3Credential[]>;
 }

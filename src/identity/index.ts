@@ -21,14 +21,14 @@ export interface IdentityState {
   stateId: number;
   identifier: string;
   state?: string;
-  root_of_roots?: string;
-  claims_tree_root?: string;
-  revocation_tree_root?: string;
-  block_timestamp?: number;
-  block_number?: number;
-  tx_id?: string;
-  previous_state?: string;
+  rootOfRoots?: string;
+  claimsTreeRoot?: string;
+  revocationTreeRoot?: string;
+  blockTimestamp?: number;
+  blockNumber?: number;
+  txId?: string;
+  previousState?: string;
   status?: IdentityStatus;
-  modified_at?: string;
-  created_at?: string;
+  modifiedAt?: string;
+  createdAt?: string;
 }

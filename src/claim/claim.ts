@@ -1,4 +1,4 @@
-import { CircuitClaim, strMTHex } from '../circuit';
+import { CircuitClaim, strMTHex } from '../circuits';
 import { IdentityStatus } from './../identity/index';
 import { Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import {
@@ -11,53 +11,53 @@ export class Claim {
   id: string;
   identifier?: string;
   issuer: string;
-  schema_hash: string;
-  schema_url: string;
-  schema_type: string;
-  other_identifier: string;
+  schemaHash: string;
+  schemaUrl: string;
+  schemaType: string;
+  otherIdentifier: string;
   expiration: number;
   updatable: boolean;
   version: number;
-  rev_nonce: number;
+  revNonce: number;
   revoked: boolean;
   data;
-  core_claim: CoreClaim;
-  mtp_proof: Iden3SparseMerkleProof;
-  signature_proof: BJJSignatureProof2021;
+  coreClaim: CoreClaim;
+  mtpProof: Iden3SparseMerkleProof;
+  signatureProof: BJJSignatureProof2021;
   status?: IdentityStatus;
-  credential_status: unknown;
+  credentialStatus: unknown;
   hIndex: string;
 
   // NewCircuitClaimData generates circuits claim structure
   async newCircuitClaimData(): Promise<CircuitClaim> {
     const circuitClaim = new CircuitClaim();
-    circuitClaim.claim = this.core_claim;
-    circuitClaim.proof = this.mtp_proof.mtp;
+    circuitClaim.claim = this.coreClaim;
+    circuitClaim.proof = this.mtpProof.mtp;
 
     circuitClaim.issuerId = Id.fromString(this.issuer);
 
     circuitClaim.treeState = {
-      state: strMTHex(this.mtp_proof.issuer_data.state?.value),
-      claimsRoot: strMTHex(this.mtp_proof.issuer_data.state?.claims_tree_root),
-      revocationRoot: strMTHex(this.mtp_proof.issuer_data.state?.revocation_tree_root),
-      rootOfRoots: strMTHex(this.mtp_proof.issuer_data.state?.root_of_roots)
+      state: strMTHex(this.mtpProof.issuerData.state?.value),
+      claimsRoot: strMTHex(this.mtpProof.issuerData.state?.claimsTreeRoot),
+      revocationRoot: strMTHex(this.mtpProof.issuerData.state?.revocationTreeRoot),
+      rootOfRoots: strMTHex(this.mtpProof.issuerData.state?.rootOfRoots)
     };
 
-    const sigProof = this.signature_proof;
+    const sigProof = this.signatureProof;
 
     const signature = await bJJSignatureFromHexString(sigProof.signature);
 
     circuitClaim.signatureProof = {
-      issuerId: sigProof.issuer_data.id,
+      issuerId: sigProof.issuerData.id,
       issuerTreeState: {
-        state: strMTHex(sigProof.issuer_data.state?.value),
-        claimsRoot: strMTHex(sigProof.issuer_data.state?.claims_tree_root),
-        revocationRoot: strMTHex(sigProof.issuer_data.state?.revocation_tree_root),
-        rootOfRoots: strMTHex(sigProof.issuer_data.state?.root_of_roots)
+        state: strMTHex(sigProof.issuerData.state?.value),
+        claimsRoot: strMTHex(sigProof.issuerData.state?.claimsTreeRoot),
+        revocationRoot: strMTHex(sigProof.issuerData.state?.revocationTreeRoot),
+        rootOfRoots: strMTHex(sigProof.issuerData.state?.rootOfRoots)
       },
-      issuerAuthClaimMTP: sigProof.issuer_data.mtp,
+      issuerAuthClaimMTP: sigProof.issuerData.mtp,
       signature: signature,
-      issuerAuthClaim: sigProof.issuer_data.auth_claim
+      issuerAuthClaim: sigProof.issuerData.authClaim
     };
 
     return circuitClaim;

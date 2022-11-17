@@ -1,4 +1,4 @@
-import { buildTreeState, ClaimNonRevStatus } from '../circuit';
+import { buildTreeState, ClaimNonRevStatus } from '../circuits';
 import { RevocationStatus } from '../schema-processor';
 
 export const toClaimNonRevStatus = (s: RevocationStatus): ClaimNonRevStatus => {
@@ -6,9 +6,9 @@ export const toClaimNonRevStatus = (s: RevocationStatus): ClaimNonRevStatus => {
     proof: s.mtp,
     treeState: buildTreeState(
       s.issuer.state,
-      s.issuer.claims_tree_root,
-      s.issuer.revocation_tree_root,
-      s.issuer.root_of_roots
+      s.issuer.claimsTreeRoot,
+      s.issuer.revocationTreeRoot,
+      s.issuer.rootOfRoots
     )
   };
 };

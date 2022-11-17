@@ -1,9 +1,9 @@
-import { CircuitId } from './../circuit/';
+import { CircuitId } from './../circuits/models';
 export interface ProofRequest {
   id: number;
   //toDO: verify with Vlad is challenge could belong to this interface
   challenge: number;
-  circuit_id: CircuitId;
+  circuitId: CircuitId;
   optional?: boolean;
   rules: { [key: string]: unknown };
 }
@@ -19,5 +19,5 @@ export interface ZKProof {
 // FullProof is ZKP proof with public signals
 export interface FullProof {
   proof: ZKProof;
-  pub_signals: string[];
+  pubSignals: string[];
 }

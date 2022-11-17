@@ -20,7 +20,7 @@ export class ProverService {
 
       await snarkjs.groth16.verify(
         JSON.parse(new TextDecoder().decode(verKey)),
-        zkp.pub_signals,
+        zkp.pubSignals,
         zkp.proof
       );
       return true;
@@ -47,7 +47,7 @@ export class ProverService {
 
       return {
         proof: proof,
-        pub_signals: publicSignals
+        pubSignals: publicSignals
       };
     } catch (e) {
       console.log(e);
