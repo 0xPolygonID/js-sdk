@@ -20,7 +20,7 @@ export class Claim {
   version: number;
   rev_nonce: number;
   revoked: boolean;
-  data: unknown;
+  data;
   core_claim: CoreClaim;
   mtp_proof: Iden3SparseMerkleProof;
   signature_proof: BJJSignatureProof2021;

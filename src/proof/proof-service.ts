@@ -13,7 +13,9 @@ import {
   AtomicQueryMTPInputs,
   strMTHex,
   StateInRelayCredentialHash,
-  AtomicQuerySigInputs
+  AtomicQuerySigInputs,
+  Query,
+  factoryComparer
 } from '../circuit';
 import { Claim } from '../claim';
 import { getIdentityMerkleTrees } from '../merkle-tree';
@@ -24,29 +26,43 @@ import {
 } from '../schema-processor/verifiable/credential';
 import { toClaimNonRevStatus } from './common';
 import { AuthInputs } from '../circuit/auth-inputs';
+import { ProverService } from './prover';
+import { SchemaLoader } from '../schema-processor/loader';
+
+// ErrAllClaimsRevoked all claims are revoked.
+const ErrAllClaimsRevoked = 'all claims are revoked';
+
+// Query represents structure for query to atomic circuit
+export interface ProofQuery {
+  allowedIssuers: string;
+  req: { [key: string]: unknown };
+  schema: Schema;
+  claimId: string;
+}
 
 export class ProofService implements IProofService {
   constructor(
     private readonly _identityWallet: IIdentityWallet,
     private readonly _credentialWallet: ICredentialWallet,
-    private readonly _kms: IKmsService
+    private readonly _kms: IKmsService,
+    private readonly _prover: ProverService
   ) {}
 
-  verifyProof(proofReq: ProofRequest): Promise<boolean> {
-    return Promise.resolve(true);
+  verifyProof(zkp: FullProof, circuitId: CircuitId): Promise<boolean> {
+    return this._prover.verify(zkp, circuitId);
   }
 
-  async generateProof(proofReq: ProofRequest, identifier: Id): Promise<FullProof> {
+  async generateProof(
+    proofReq: ProofRequest,
+    identifier: Id
+  ): Promise<{ proof: FullProof; claims: Claim[] }> {
     const { inputs, claims }: { inputs: Uint8Array; claims: Claim[] } = await this.prepareInputs(
       identifier,
       proofReq
     );
-    this.generateZkProof(inputs, proofReq.circuit_id);
-    return Promise.resolve({ proof: null, pub_signals: null } as unknown as FullProof);
-  }
 
-  generateZkProof(inputs: Uint8Array, circuit_id: string) {
-    throw new Error('Method not implemented.');
+    const proof = await this._prover.generate(inputs, proofReq.circuit_id);
+    return { proof, claims };
   }
 
   private async prepareInputs(
@@ -59,8 +75,6 @@ export class ProofService implements IProofService {
       authClaim,
       treeState
     );
-
-    this.prepareRequestedCredentialInputs();
     this.convertQueryToCircuitQuery(authClaimData, identifier, signature, proofReq);
 
     return { inputs: null, claims: null } as unknown as { inputs: Uint8Array; claims: Claim[] };
@@ -99,15 +113,76 @@ export class ProofService implements IProofService {
     return { authClaimData, nonRevocationProof };
   }
 
-  getClaimDataForAtomicQueryCircuit(
+  async getClaimDataForAtomicQueryCircuit(
     identifier: Id,
     rules: { [key: string]: unknown }
-  ): { claim: any; claimData: any; circuitQuery: any } {
-    throw new Error('Method not implemented.');
+  ): Promise<{ claim: Claim; claimData: CircuitClaim; circuitQuery: Query }> {
+    let claims: Claim[] = [];
+    const query = rules['query'] as ProofQuery;
+
+    if (!query.claimId) {
+      // if claimID exist. Search by claimID.
+      const c = await this._credentialWallet.findById(identifier); //, query.claimId)
+      // we need to be sure that the hallmark selected by ID matches circuitQuery.
+      claims.push(c);
+    } else {
+      // if claimID NOT exist in request select all claims and filter it.
+      claims = await this._credentialWallet.findAllBySchemaHash(identifier.string());
+    }
+
+    const loader = await this._credentialWallet.getSchemaLoader(query.schema.url);
+
+    const { circuitQuery, requestFiled } = this.toCircuitsQuery(query, loader);
+
+    claims = await this.findClaimsForCircuitQuery(claims, circuitQuery, requestFiled);
+
+    if (claims.length === 0) {
+      throw new Error('could not find claims for query');
+    }
+    const { claim, revStatus } = this.findNonRevokedClaim(claims);
+
+    const claimData = await claim.newCircuitClaimData();
+    const nonRevProof = toClaimNonRevStatus(revStatus);
+    claimData.nonRevProof = nonRevProof;
+
+    return { claim, claimData, circuitQuery };
   }
 
-  private prepareRequestedCredentialInputs() {
-    throw new Error('Method not implemented.');
+  findNonRevokedClaim(claims: Claim[]): { claim: Claim; revStatus: RevocationStatus } {
+    for (const claim of claims) {
+      const revStatus = this._credentialWallet.checkRevocationStatus(claim);
+      // current claim revoked. To try next claim.
+      if (!revStatus) {
+        continue;
+      }
+      return { claim, revStatus };
+    }
+    throw new Error(ErrAllClaimsRevoked);
+  }
+
+  private findClaimsForCircuitQuery(claims: Claim[], cq: Query, filter: string): Claim[] {
+    const validClaims: Claim[] = [];
+    if (!filter) {
+      return claims;
+    }
+
+    for (const claim of claims) {
+      const parsedClaimData = claim.data;
+      const filterData = parsedClaimData[filter];
+      // try next claim if this claim doesn't contain target key.
+      if (!filterData) {
+        continue;
+      }
+      const cmp = factoryComparer(BigInt(filterData), cq.values, cq.operator);
+
+      const ok = cmp.compare(cq.operator);
+      // try next claim if this claim doesn't contain target value.
+      if (!ok) {
+        continue;
+      }
+      validClaims.push(claim);
+    }
+    return validClaims;
   }
 
   private prepareAuthBJJCredential(
@@ -140,20 +215,20 @@ export class ProofService implements IProofService {
     let circuitInputs;
 
     if (proofReq.circuit_id === CircuitId.AtomicQueryMTP) {
-      const { claim, claimData, circuitQuery } = this.getClaimDataForAtomicQueryCircuit(
+      const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
         identifier,
         proofReq.rules
       );
       const cs: CredentialStatus = JSON.parse(claimData.credentialStatus);
       const revStatus = this._credentialWallet.getStatus(cs);
       claimData.nonRevProof = {
-        TreeState: {
+        treeState: {
           state: strMTHex(revStatus.issuer.state),
           claimsRoot: strMTHex(revStatus.issuer.claims_tree_root),
           revocationRoot: strMTHex(revStatus.issuer.revocation_tree_root),
           rootOfRoots: strMTHex(revStatus.issuer.root_of_roots)
         },
-        Proof: revStatus.mtp
+        proof: revStatus.mtp
       };
 
       claims.push(claim);
@@ -167,10 +242,10 @@ export class ProofService implements IProofService {
       circuitInputs.claim = claimData;
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
-      console.log('Claim.Proof: ', claimData.Proof);
-      console.log('Claim.NonRevProof: ', claimData.NonRevProof);
+      console.log('Claim.Proof: ', claimData.proof);
+      console.log('Claim.NonRevProof: ', claimData.nonRevProof);
     } else if (proofReq.circuit_id === CircuitId.AtomicQueryMTPWithRelay) {
-      const { claim, claimData, circuitQuery } = this.getClaimDataForAtomicQueryCircuit(
+      const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
         identifier,
         proofReq.rules
       );
@@ -202,7 +277,7 @@ export class ProofService implements IProofService {
       circuitInputs.claim = claimData;
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
     } else if (proofReq.circuit_id === CircuitId.AtomicQuerySig) {
-      const { claim, claimData, circuitQuery } = this.getClaimDataForAtomicQueryCircuit(
+      const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
         identifier,
         proofReq.rules
       );
@@ -249,4 +324,6 @@ export class ProofService implements IProofService {
     const inputs: Uint8Array = await circuitInputs.inputsMarshal();
     return { inputs, claims };
   }
+
+  toCircuitsQuery(query: Query, loader: SchemaLoader): Query {}
 }

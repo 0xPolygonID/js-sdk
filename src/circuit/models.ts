@@ -1,6 +1,7 @@
 import { Signature } from './../identity/bjj/eddsa-babyjub';
 import { Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import { Hash, Proof } from '@iden3/js-merkletree';
+import { Operators } from './comparer';
 
 export interface TreeState {
   state: Hash;
@@ -27,7 +28,7 @@ export interface BJJSignatureProof {
 export interface Query {
   slotIndex: number;
   values: bigint[];
-  operator: number;
+  operator: Operators;
 }
 
 // CircuitID is alias for circuit identifier
