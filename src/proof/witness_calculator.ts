@@ -26,8 +26,8 @@ export async function witnessBuilder(code, options?) {
       },
       showSharedRWMemory: function () {
         printSharedRWMemory();
-      },
-    },
+      }
+    }
   });
 
   const sanityCheck = options;
@@ -48,9 +48,7 @@ export async function witnessBuilder(code, options?) {
     const shared_rw_memory_size = (instance.exports as any).getFieldNumLen32();
     const arr = new Uint32Array(shared_rw_memory_size);
     for (let j = 0; j < shared_rw_memory_size; j++) {
-      arr[shared_rw_memory_size - 1 - j] = (
-        instance.exports as any
-      ).readSharedRWMemory(j);
+      arr[shared_rw_memory_size - 1 - j] = (instance.exports as any).readSharedRWMemory(j);
     }
   }
 }
@@ -72,9 +70,7 @@ class WitnessCalculator {
     (this.instance.exports as any).getRawPrime();
     const arr = new Array(this.n32);
     for (let i = 0; i < this.n32; i++) {
-      arr[this.n32 - 1 - i] = (this.instance.exports as any).readSharedRWMemory(
-        i,
-      );
+      arr[this.n32 - 1 - i] = (this.instance.exports as any).readSharedRWMemory(i);
     }
     this.prime = fromArray32(arr);
 
@@ -89,9 +85,7 @@ class WitnessCalculator {
 
   async _doCalculateWitness(input, sanityCheck) {
     //input is assumed to be a map from signals to arrays of bigints
-    (this.instance.exports as any).init(
-      this.sanityCheck || sanityCheck ? 1 : 0,
-    );
+    (this.instance.exports as any).init(this.sanityCheck || sanityCheck ? 1 : 0);
     const keys = Object.keys(input);
     keys.forEach((k) => {
       const h = fnvHash(k);
@@ -101,10 +95,7 @@ class WitnessCalculator {
       for (let i = 0; i < fArr.length; i++) {
         const arrFr = toArray32(fArr[i], this.n32);
         for (let j = 0; j < this.n32; j++) {
-          (this.instance.exports as any).writeSharedRWMemory(
-            j,
-            arrFr[this.n32 - 1 - j],
-          );
+          (this.instance.exports as any).writeSharedRWMemory(j, arrFr[this.n32 - 1 - j]);
         }
         try {
           (this.instance.exports as any).setInputSignal(hMSB, hLSB, i);
@@ -124,9 +115,7 @@ class WitnessCalculator {
       (this.instance.exports as any).getWitness(i);
       const arr = new Uint32Array(this.n32);
       for (let j = 0; j < this.n32; j++) {
-        arr[this.n32 - 1 - j] = (
-          this.instance.exports as any
-        ).readSharedRWMemory(j);
+        arr[this.n32 - 1 - j] = (this.instance.exports as any).readSharedRWMemory(j);
       }
       w.push(fromArray32(arr));
     }
