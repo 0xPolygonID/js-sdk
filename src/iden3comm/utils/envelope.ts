@@ -1,29 +1,18 @@
-import {BasicMessage, Bytes, EnvelopeStub, HeaderStub} from '../../types';
-import {
-  basicMessageFactory,
-  envelopeStubFactory,
-  headerStubFactory,
-} from './messg';
-import {bytes2String, string2Bytes} from './bytes';
-import {
-  ErrNotEnvelopeStub,
-  ErrNotHeaderStub,
-  ErrNotProtocolMesg,
-} from '../errors';
-import {Token} from '@iden3/js-jwz';
+import { BasicMessage, Bytes, EnvelopeStub, HeaderStub } from '../types';
+import { basicMessageFactory, envelopeStubFactory, headerStubFactory } from './messg';
+import { bytes2String, string2Bytes } from './bytes';
+import { ErrNotEnvelopeStub, ErrNotHeaderStub, ErrNotProtocolMesg } from '../errors';
+import { Token } from '@iden3/js-jwz';
 
 const objectIs = (
-    obj: { [key in string]: any }, //eslint-disable-line @typescript-eslint/no-explicit-any
-    targetObj: { [key in string]: any }, //eslint-disable-line @typescript-eslint/no-explicit-any
+  obj: { [key in string]: any }, //eslint-disable-line @typescript-eslint/no-explicit-any
+  targetObj: { [key in string]: any } //eslint-disable-line @typescript-eslint/no-explicit-any
 ) => {
   Object.keys(targetObj).forEach((prop) => {
     if (!obj[prop]) {
       return false;
     }
-    if (
-        typeof targetObj[prop as keyof typeof targetObj] !==
-        typeof obj[prop as keyof typeof obj]
-    ) {
+    if (typeof targetObj[prop as keyof typeof targetObj] !== typeof obj[prop as keyof typeof obj]) {
       return false;
     }
   });
@@ -39,8 +28,8 @@ const isProtocolMessage = (messg: { [key in string]: any }) => {
     }
     if (prop !== 'body') {
       const res =
-          typeof basicMessg[prop as keyof typeof basicMessg] ===
-          typeof (messg[prop as keyof typeof messg] as any); //eslint-disable-line @typescript-eslint/no-explicit-any
+        typeof basicMessg[prop as keyof typeof basicMessg] ===
+        typeof (messg[prop as keyof typeof messg] as any); //eslint-disable-line @typescript-eslint/no-explicit-any
       if (!res) {
         return false;
       }
@@ -50,9 +39,7 @@ const isProtocolMessage = (messg: { [key in string]: any }) => {
   return true;
 };
 
-export const envelope2ProtocolMessage = async (
-    e: Bytes,
-): Promise<BasicMessage> => {
+export const envelope2ProtocolMessage = async (e: Bytes): Promise<BasicMessage> => {
   const t = await Token.parse(bytes2String(e));
   const pBytes = string2Bytes(t.getPayload());
   return bytes2ProtocolMessage(pBytes);

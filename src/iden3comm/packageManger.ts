@@ -1,11 +1,4 @@
-import {
-  BasicMessage,
-  Bytes,
-  IPackageManger,
-  IPacker,
-  MediaType,
-  PackerParams,
-} from '../types';
+import { BasicMessage, Bytes, IPackageManger, IPacker, MediaType, PackerParams } from './types';
 import { bytes2EnvelopeStub, bytes2HeaderStub } from './utils/envelope';
 import { bytes2String, string2Bytes } from './utils';
 import { base64 } from 'rfc4648';
@@ -23,47 +16,29 @@ export class PackageManger implements IPackageManger {
     });
   }
 
-  async pack(
-    mediaType: MediaType,
-    payload: Bytes,
-    params: PackerParams,
-  ): Promise<Bytes> {
+  async pack(mediaType: MediaType, payload: Bytes, params: PackerParams): Promise<Bytes> {
     const p = this.packers.get(mediaType);
     return await p.pack(payload, params);
   }
 
-  async unpack(
-    envelope: Bytes,
-  ): Promise<BasicMessage & { mediaType: MediaType }> {
+  async unpack(envelope: Bytes): Promise<BasicMessage & { mediaType: MediaType }> {
     const decodedStr = bytes2String(envelope);
     const safeEnvelope = decodedStr.trim();
     const mediaType = this.getMediaType(string2Bytes(safeEnvelope));
     return {
-      ...(await this.unpackWithSafeEnvelope(
-        mediaType,
-        string2Bytes(safeEnvelope),
-      )),
-      mediaType,
+      ...(await this.unpackWithSafeEnvelope(mediaType, string2Bytes(safeEnvelope))),
+      mediaType
     };
   }
 
-  async unpackWithType(
-    mediaType: MediaType,
-    envelope: Bytes,
-  ): Promise<BasicMessage> {
+  async unpackWithType(mediaType: MediaType, envelope: Bytes): Promise<BasicMessage> {
     const decoder = new TextDecoder('utf-8');
     const decodedStr = decoder.decode(envelope);
     const safeEnvelope = decodedStr.trim();
-    return await this.unpackWithSafeEnvelope(
-      mediaType,
-      string2Bytes(safeEnvelope),
-    );
+    return await this.unpackWithSafeEnvelope(mediaType, string2Bytes(safeEnvelope));
   }
 
-  async unpackWithSafeEnvelope(
-    mediaType: MediaType,
-    envelope: Bytes,
-  ): Promise<BasicMessage> {
+  async unpackWithSafeEnvelope(mediaType: MediaType, envelope: Bytes): Promise<BasicMessage> {
     const p = this.packers.get(mediaType);
     const msg = p.unpack(envelope);
     return msg;

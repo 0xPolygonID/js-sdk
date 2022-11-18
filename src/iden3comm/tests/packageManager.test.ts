@@ -1,16 +1,8 @@
-import {
-  AuthDataPrepareHandlerFunc,
-  PackageManger,
-  StateVerificationHandlerFunc,
-} from '../lib';
-import ZKPPacker from '../lib/packers/zkp';
-import {
-  mockPrepareAuthInputs,
-  mockVerifyState,
-  ProvingMethodGroth16Auth,
-} from '../mock/proving';
+import { AuthDataPrepareHandlerFunc, PackageManger, StateVerificationHandlerFunc } from '../index';
+import ZKPPacker from '../packers/zkp';
+import { mockPrepareAuthInputs, mockVerifyState, ProvingMethodGroth16Auth } from '../mock/proving';
 import { proving, Token } from '@iden3/js-jwz';
-import { bytes2String, string2Bytes } from '../lib/utils';
+import { bytes2String, string2Bytes } from '../utils';
 import { circuits } from '../mock/jsCircuits';
 import { Id } from '@iden3/js-iden3-core';
 
@@ -24,13 +16,8 @@ describe('tests packageManager', () => {
     const provingKey = new Uint8Array(emptyBuff);
     const wasm = new Uint8Array(emptyBuff);
 
-    const mockProvingMethod = new ProvingMethodGroth16Auth(
-      'groth16-mock',
-      'auth',
-    );
-    const mockAuthInputsHandler = new AuthDataPrepareHandlerFunc(
-      mockPrepareAuthInputs,
-    );
+    const mockProvingMethod = new ProvingMethodGroth16Auth('groth16-mock', 'auth');
+    const mockAuthInputsHandler = new AuthDataPrepareHandlerFunc(mockPrepareAuthInputs);
 
     proving.registerProvingMethod('groth16-mock', () => {
       return mockProvingMethod;
@@ -42,7 +29,7 @@ describe('tests packageManager', () => {
       new StateVerificationHandlerFunc(mockVerifyState),
       provingKey,
       wasm,
-      keys,
+      keys
     );
     pm.registerPackers([p]);
 
@@ -55,9 +42,7 @@ describe('tests packageManager', () => {
     const basicMessg = await pm.unpack(b);
 
     const token = await Token.parse(bytes2String(b));
-    const authPubSigs = circuits.unmarshallToAuthPubSignals(
-      token.zkProof.pub_signals,
-    );
+    const authPubSigs = circuits.unmarshallToAuthPubSignals(token.zkProof.pub_signals);
 
     expect(authPubSigs.userId.string()).toEqual(id.string());
     expect(authPubSigs.userId.string()).toEqual(basicMessg.from);

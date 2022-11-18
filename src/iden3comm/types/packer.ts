@@ -12,15 +12,8 @@ export type ZKPPackerParams = {
   senderID: Id;
 };
 
-export type AuthDataPrepareFunc = (
-  hash: Bytes,
-  id: Id,
-  circuitID: CircuitID,
-) => Bytes;
-export type StateVerificationFunc = (
-  id: CircuitID,
-  pubSignals: Array<string>,
-) => Promise<boolean>;
+export type AuthDataPrepareFunc = (hash: Bytes, id: Id, circuitID: CircuitID) => Bytes;
+export type StateVerificationFunc = (id: CircuitID, pubSignals: Array<string>) => Promise<boolean>;
 
 export interface IPacker {
   pack(payload: Bytes, param: PackerParams): Promise<Bytes>;

@@ -28,7 +28,8 @@
     "build": "npm run clean && webpack --progress --config webpack.config.prod.js --mode=production",
     "test:coverage": "jest --coverage",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "lint": "eslint --fix --ext .js,.ts src/**"
   },
   "repository": {
     "type": "git",

@@ -5,11 +5,11 @@ import {
   IPacker,
   MediaType,
   StateVerificationFunc,
-  ZKPPackerParams,
-} from '../../types';
+  ZKPPackerParams
+} from '../types';
 import { jwz, Token, ProvingMethod } from '@iden3/js-jwz';
-import { CircuitID, circuits } from '../../mock/jsCircuits';
-import { Id } from "@iden3/js-iden3-core"
+import { CircuitID, circuits } from '../mock/jsCircuits';
+import { Id } from '@iden3/js-iden3-core';
 import { bytes2String, string2Bytes } from '../utils';
 import { bytes2ProtocolMessage } from '../utils/envelope';
 import {
@@ -17,7 +17,7 @@ import {
   ErrProofIsInvalid,
   ErrSenderNotUsedTokenCreation,
   ErrStateVerificationFailed,
-  ErrUnkownCircuitID,
+  ErrUnkownCircuitID
 } from '../errors';
 
 export const MEDIA_TYPE_ZKP_MESSAGE: MediaType = 'application/iden3-zkp-json';
@@ -60,7 +60,7 @@ class ZKPPacker implements IPacker {
     _stateVerifier: StateVerificationHandlerFunc,
     _provingKey: Bytes,
     _wasm: Bytes,
-    _verficiationKeys: Map<CircuitID, Bytes>,
+    _verficiationKeys: Map<CircuitID, Bytes>
   ) {
     this.provingMethod = _provingMethod;
     this.authDataPreparer = _authDataPreparer;
@@ -76,7 +76,7 @@ class ZKPPacker implements IPacker {
       bytes2String(payload),
       (hash: Bytes, circuitID: CircuitID) => {
         return this.authDataPreparer.prepare(hash, params.senderID, circuitID);
-      },
+      }
     );
     token.setHeader(jwz.headerType, MEDIA_TYPE_ZKP_MESSAGE);
     const tokenStr = await token.prove(this.provingKey, this.wasm);
@@ -96,7 +96,7 @@ class ZKPPacker implements IPacker {
 
     const sVerficationRes = await this.stateVerifier.verify(
       token.circuitId,
-      token.zkProof.pub_signals,
+      token.zkProof.pub_signals
     );
     if (!sVerficationRes) {
       throw ErrStateVerificationFailed;
@@ -119,9 +119,7 @@ const verifySender = (token: Token, msg: BasicMessage): void => {
   switch (token.circuitId) {
     case circuits.authCircuitID:
       // eslint-disable-next-line no-case-declarations
-      const authPubSigs = circuits.unmarshallToAuthPubSignals(
-        token.zkProof.pub_signals,
-      );
+      const authPubSigs = circuits.unmarshallToAuthPubSignals(token.zkProof.pub_signals);
       // eslint-disable-next-line no-case-declarations
       const { userId } = authPubSigs;
       if (userId.string() !== msg.from) {

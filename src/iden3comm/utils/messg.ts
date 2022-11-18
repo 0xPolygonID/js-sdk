@@ -1,4 +1,4 @@
-import { BasicMessage, EnvelopeStub, HeaderStub } from '../../types';
+import { BasicMessage, EnvelopeStub, HeaderStub } from '../types';
 
 export const basicMessageFactory = (): BasicMessage => {
   return {
@@ -8,18 +8,18 @@ export const basicMessageFactory = (): BasicMessage => {
     type: '',
     body: {},
     from: '',
-    to: '',
+    to: ''
   };
 };
 
 export const envelopeStubFactory = (): EnvelopeStub => {
   return {
-    protected: '',
+    protected: ''
   };
 };
 
 export const headerStubFactory = (): HeaderStub => {
   return {
-    typ: '',
+    typ: ''
   };
 };

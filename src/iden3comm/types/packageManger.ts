@@ -12,11 +12,7 @@ export interface IPackageManger {
 
   registerPackers(packers: Array<IPacker>): void;
 
-  pack(
-    mediaType: MediaType,
-    payload: Bytes,
-    params: PackerParams,
-  ): Promise<Bytes>;
+  pack(mediaType: MediaType, payload: Bytes, params: PackerParams): Promise<Bytes>;
 
   unpack(envelope: Bytes): Promise<BasicMessage & { mediaType: MediaType }>;
 

@@ -1,4 +1,4 @@
-import { Bytes } from '../../types';
+import { Bytes } from '../types';
 
 export const bytes2String = (b: Bytes) => {
   const textDecoder = new TextDecoder('utf-8');

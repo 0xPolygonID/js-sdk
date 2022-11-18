@@ -12,9 +12,7 @@ export interface AuthPubSignals {
 const unmarshallToAuthPubSignals = (pubsignals: string[]): AuthPubSignals => {
   const outputs: AuthPubSignals = {} as AuthPubSignals;
   if (pubsignals.length != 3) {
-    throw new Error(
-      `invalid number of Output values expected ${3} got ${pubsignals.length}`,
-    );
+    throw new Error(`invalid number of Output values expected ${3} got ${pubsignals.length}`);
   }
   outputs.challenge = BigInt(pubsignals[0]);
   outputs.userState = BigInt(pubsignals[1]);
@@ -25,5 +23,5 @@ const unmarshallToAuthPubSignals = (pubsignals: string[]): AuthPubSignals => {
 
 export const circuits = {
   unmarshallToAuthPubSignals,
-  authCircuitID: 'auth',
+  authCircuitID: 'auth'
 };
