@@ -1,5 +1,16 @@
 import * as babyjub from '../bjj/eddsa-babyjub';
 
+export enum KmsKeyType {
+	BabyJubJub = 'BJJ',
+	Ethereum = 'ETH'
+  }
+  
+  export interface KmsKeyId {
+	type: KmsKeyType;
+	id: string;
+  }
+  
+
 export type KEYType = string;
 
 export interface KeyID {
