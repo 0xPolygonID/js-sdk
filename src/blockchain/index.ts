@@ -4,3 +4,6 @@ export interface StateInfo {
   blockNumber: number;
   blockTime: number;
 }
+export interface IStateStorage {
+  getLatestStateById(address: string, issuerId: bigint): StateInfo;
+}

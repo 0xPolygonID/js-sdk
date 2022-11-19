@@ -2,7 +2,6 @@
 import { FullProof, ProofRequest } from './models';
 import { Signature } from './../identity/bjj/eddsa-babyjub';
 import { getUnixTimestamp, Id } from '@iden3/js-iden3-core';
-import { ICredentialWallet, IProofService, IIdentityWallet, IKmsService } from '../abstractions';
 import { Proof } from '@iden3/js-merkletree';
 import {
   buildTreeState,
@@ -15,10 +14,8 @@ import {
   AtomicQuerySigInputs,
   Query,
   AuthInputs
-  factoryComparer
 } from '../circuits';
 import { Claim } from '../claim';
-import { getIdentityMerkleTrees } from '../merkle-tree';
 import {
   CredentialStatus,
   ErrStateNotFound,
@@ -27,6 +24,10 @@ import {
 import { toClaimNonRevStatus } from './common';
 import { ProverService } from './prover';
 import { SchemaLoader } from '../schema-processor/loader';
+import { IIdentityWallet } from '../identity';
+import { IKmsService } from '../identity/kms';
+import { ICredentialWallet } from '../credentials';
+import { IdentityMerkleTrees } from '../merkle-tree';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -37,6 +38,13 @@ export interface ProofQuery {
   req: { [key: string]: unknown };
   schema: Schema;
   claimId: string;
+}
+export interface IProofService {
+  verifyProof(zkp: FullProof, circuitName: CircuitId): Promise<boolean>;
+  generateProof(
+    proofReq: ProofRequest,
+    identifier: Id
+  ): Promise<{ proof: FullProof; claims: Claim[] }>;
 }
 
 export class ProofService implements IProofService {
@@ -85,9 +93,9 @@ export class ProofService implements IProofService {
     treeState: TreeState
   ): Promise<{ authClaimData: CircuitClaim; nonRevocationProof: Proof }> {
     //todo: introduce interface here
-    const identityTrees = getIdentityMerkleTrees({}, identifier);
+    const identityTrees = await IdentityMerkleTrees.getIdentityMerkleTrees(identifier);
 
-    const claimsTree = identityTrees.claimsTree();
+    const claimsTree =  identityTrees.claimsTree();
 
     // get index hash of authClaim
     const coreClaim = authClaim.coreClaim;
