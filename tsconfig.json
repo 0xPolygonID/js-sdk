@@ -4,7 +4,8 @@
     "declarationDir": "./dist/types",
     "sourceMap": true,
     "target": "es6",
-    "moduleResolution": "Node"
+    "moduleResolution": "Node",
+    "esModuleInterop": true
   },
   "files": ["src/index.ts"]
 }
