@@ -1,5 +1,5 @@
-import { BytesHelper, checkBigIntInField } from '@iden3/js-iden3-core';
-import { ParsedSlots } from '../processor';
+import { BytesHelper, checkBigIntInField, SchemaHash } from '@iden3/js-iden3-core';
+import { ParsedSlots } from './processor';
 
 const errSlotsOverflowMsg = 'slots overflow';
 // SwapEndianness swaps the endianness of the value encoded in buf. If buf is
@@ -89,3 +89,32 @@ export function dataFillsSlot(slot: Uint8Array, newData: Uint8Array): boolean {
 export function checkDataInField(data: Uint8Array): boolean {
   return checkBigIntInField(BytesHelper.bytesToInt(data));
 }
+
+// Keccak256 calculates the Keccak256 hash of the input data.
+//todo: implement this function
+export const keccak256 = (data: Uint8Array): Uint8Array => Uint8Array.from([]);
+
+// CreateSchemaHash computes schema hash from schemaID
+export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
+  const sHash = keccak256(schemaId);
+  return new SchemaHash(sHash.slice(0, 16));
+};
+
+export const fillSlot = (data, fieldName: string): Uint8Array => {
+  let slot = Uint8Array.from([]);
+
+  if (!fieldName) {
+    return slot;
+  }
+  const field = data[fieldName];
+  if (!field) {
+    throw new Error(`${fieldName} field is not in data`);
+  }
+  const byteValue = fieldToByteArray(field);
+  if (dataFillsSlot(slot, byteValue)) {
+    slot = Uint8Array.from([...slot, ...byteValue]);
+  } else {
+    throw new Error(errSlotsOverflowMsg);
+  }
+  return slot;
+};

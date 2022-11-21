@@ -1,5 +1,6 @@
 import { Id } from '@iden3/js-iden3-core';
 import { Merkletree, Proof, Hash } from '@iden3/js-merkletree';
+import { IDataStorage } from '../storage';
 
 const errorMsgNotCreated = 'identity merkle trees were not created';
 
@@ -18,34 +19,6 @@ const mtTypesCount = 3;
 
 const mtDepth = 40;
 
-// GetIdentityMerkleTrees loads merkle trees of the identity into
-// IdentityMerkleTrees structure
-// todo: storage interface
-export const getIdentityMerkleTrees = (conn, identifier: Id): IdentityMerkleTrees => {
-  const trees: Merkletree[] = new Array(mtTypesCount);
-
-  const imtModels: IdentityMerkleTree[] = new Array(mtTypesCount);
-
-  const imts: IdentityMerkleTree[] = conn.getMerkleTreeByIdentifierAndTypes(
-    conn,
-    identifier,
-    mtTypes
-  );
-
-  for (const mtType of mtTypes) {
-    const imt = imts.find((i) => mtType === i.type) ?? ({} as IdentityMerkleTree);
-    imtModels[mtType] = imt;
-    //todo: sql
-    const sql = {} as any;
-    const treeStorage: Storage = sql.newSqlStorage(conn, imt.id);
-    //todo: storage
-    const tree = new Merkletree({} as unknown, true, mtDepth);
-    trees[mtType] = tree;
-  }
-
-  return new IdentityMerkleTrees(identifier, trees, imtModels);
-};
-
 // IdentityMerkleTree model
 export interface IdentityMerkleTree {
   id: number;
@@ -53,21 +26,48 @@ export interface IdentityMerkleTree {
   type: MerkleTreeType;
 }
 
+//todo: reorganize this class and dependencies
 export class IdentityMerkleTrees {
   constructor(
-    private readonly identifier: Id,
-    private readonly trees: Merkletree[],
-    private readonly imtModels: IdentityMerkleTree[]
+    private readonly _identifier: Id,
+    private readonly _trees: Merkletree[],
+    private readonly _imtModels: IdentityMerkleTree[],
+    private readonly _storage: IDataStorage
   ) {}
 
   claimsTree(): Merkletree {
-    if (this.trees.length < mtTypesCount) {
+    if (this._trees.length < mtTypesCount) {
       throw new Error(errorMsgNotCreated);
     }
-    return this.trees[MerkleTreeType.Claims];
+    return this._trees[MerkleTreeType.Claims];
   }
   // GenerateRevocationProof generates the proof of existence (or non-existence) of an nonce in RevocationTree
   async generateRevocationProof(nonce: bigint, root: Hash): Promise<Proof> {
-    return (await this.trees[MerkleTreeType.Revocations].generateProof(nonce, root))?.proof;
+    return (await this._trees[MerkleTreeType.Revocations].generateProof(nonce, root))?.proof;
+  }
+
+  // GetIdentityMerkleTrees loads merkle trees of the identity into
+  // IdentityMerkleTrees structure
+  // todo: storage interface
+  static async getIdentityMerkleTrees(identifier: Id): Promise<IdentityMerkleTrees> {
+    const trees: Merkletree[] = new Array(mtTypesCount);
+
+    const imtModels: IdentityMerkleTree[] = new Array(mtTypesCount);
+
+    const imts: IdentityMerkleTree[] = this.getMerkleTreeByIdentifierAndTypes(identifier);
+
+    for (const mtType of mtTypes) {
+      const imt = imts.find((i) => mtType === i.type) ?? ({} as IdentityMerkleTree);
+      imtModels[mtType] = imt;
+      //todo: sql
+      //todo: storage
+      // const tree = new Merkletree({} as unknown, true, mtDepth);
+      trees[mtType] = {} as Merkletree;
+    }
+    return new IdentityMerkleTrees(identifier, trees, imtModels, {} as IDataStorage);
+  }
+
+  static getMerkleTreeByIdentifierAndTypes(identifier: Id): IdentityMerkleTree[] {
+    throw new Error('Method not implemented.');
   }
 }
