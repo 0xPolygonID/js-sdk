@@ -1,5 +1,35 @@
-import { BjjProvider, KeyTypeBabyJubJub, KMS } from './kms';
-import { Id } from '@iden3/js-iden3-core';
+import { KmsKeyType } from './kms/kms';
+import { BjjProvider, KeyTypeBabyJubJub, KMS, KmsKeyId } from './kms';
+import { Claim, Id } from '@iden3/js-iden3-core';
+import { Signature } from './bjj/eddsa-babyjub';
+
+// IdentityStatus represents type for state Status
+export enum IdentityStatus {
+  Created = 'created',
+  // StatusTransacted is a status for state that was published but result is not known
+  Transacted = 'transacted',
+  // StatusConfirmed is a status for confirmed transaction
+  Confirmed = 'confirmed',
+  // StatusFailed is a status for failed transaction
+  Failed = 'failed'
+}
+
+// IdentityState identity state model
+export interface IdentityState {
+  stateId: number;
+  identifier: string;
+  state?: string;
+  rootOfRoots?: string;
+  claimsTreeRoot?: string;
+  revocationTreeRoot?: string;
+  blockTimestamp?: number;
+  blockNumber?: number;
+  txId?: string;
+  previousState?: string;
+  status?: IdentityStatus;
+  modifiedAt?: string;
+  createdAt?: string;
+}
 
 export interface IIdentityWallet {
   createIdentity(seed: Uint8Array): Promise<Id>;
@@ -17,9 +47,9 @@ export interface IIdentityWallet {
 export class IdentityWallet {
   private kms: KMS;
   constructor() {
-    const bjjProvider = new BjjProvider(KeyTypeBabyJubJub);
+    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub);
     const kms = new KMS();
-    kms.registerKeyProvider(KeyTypeBabyJubJub, bjjProvider);
+    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
     this.kms = kms;
   }
 
@@ -28,7 +58,7 @@ export class IdentityWallet {
     console.log('await poseidonHash([1])');
     // console.log(await poseidonHash([1]));
 
-    const keyID = await this.kms.createKeyFromSeed(KeyTypeBabyJubJub, seedPhrase);
+    const keyID = await this.kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seedPhrase);
 
     const pubKey = await this.kms.publicKey(keyID);
 
