@@ -1,5 +1,5 @@
 import { BasicMessage, Bytes, IPackageManger, IPacker, MediaType, PackerParams } from './types';
-import { bytes2EnvelopeStub, bytes2HeaderStub } from './utils/envelope';
+import { bytesToEnvelopeStub, bytesToHeaderStub } from './utils/envelope';
 import { bytesToString, stringToBytes } from './utils';
 import { base64 } from 'rfc4648';
 
@@ -50,14 +50,14 @@ export class PackageManger implements IPackageManger {
 
     // full seriliazed
     if (envelopeStr.split('')[0] === '{') {
-      const envelopeStub = bytes2EnvelopeStub(envelope);
+      const envelopeStub = bytesToEnvelopeStub(envelope);
       base64HeaderBytes = base64.parse(envelopeStub.protected, { loose: true });
     } else {
       const header = envelopeStr.split('.')[0];
       base64HeaderBytes = base64.parse(header, { loose: true });
     }
 
-    const header = bytes2HeaderStub(base64HeaderBytes);
+    const header = bytesToHeaderStub(base64HeaderBytes);
     return header.typ;
   }
 }

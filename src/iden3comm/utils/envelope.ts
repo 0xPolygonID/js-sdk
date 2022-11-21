@@ -39,13 +39,13 @@ const isProtocolMessage = (messg: { [key in string]: any }) => {
   return true;
 };
 
-export const envelope2ProtocolMessage = async (e: Bytes): Promise<BasicMessage> => {
+export const envelopeToProtocolMessage = async (e: Bytes): Promise<BasicMessage> => {
   const t = await Token.parse(bytesToString(e));
   const pBytes = stringToBytes(t.getPayload());
-  return bytes2ProtocolMessage(pBytes);
+  return bytesToProtocolMessage(pBytes);
 };
 
-export const bytes2ProtocolMessage = (bytes: Bytes) => {
+export const bytesToProtocolMessage = (bytes: Bytes) => {
   const str = bytesToString(bytes);
   const messg = JSON.parse(str);
   if (!isProtocolMessage(messg)) {
@@ -54,7 +54,7 @@ export const bytes2ProtocolMessage = (bytes: Bytes) => {
   return messg as BasicMessage;
 };
 
-export const bytes2EnvelopeStub = (envelope: Bytes): EnvelopeStub => {
+export const bytesToEnvelopeStub = (envelope: Bytes): EnvelopeStub => {
   const tmpObj = envelopeStubFactory();
   const str = bytesToString(envelope);
   const messg = JSON.parse(str);
@@ -64,7 +64,7 @@ export const bytes2EnvelopeStub = (envelope: Bytes): EnvelopeStub => {
   return messg as EnvelopeStub;
 };
 
-export const bytes2HeaderStub = (envelope: Bytes): HeaderStub => {
+export const bytesToHeaderStub = (envelope: Bytes): HeaderStub => {
   const tmpObj = headerStubFactory();
   const str = bytesToString(envelope);
   const messg = JSON.parse(str);

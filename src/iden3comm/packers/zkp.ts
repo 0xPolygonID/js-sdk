@@ -11,7 +11,7 @@ import { jwz, Token, ProvingMethod } from '@iden3/js-jwz';
 import { CircuitID, circuits } from '../mock/jsCircuits';
 import { Id } from '@iden3/js-iden3-core';
 import { bytesToString, stringToBytes } from '../utils';
-import { bytes2ProtocolMessage } from '../utils/envelope';
+import { bytesToProtocolMessage } from '../utils/envelope';
 import {
   ErrPackedWithUnsupportedCircuit,
   ErrProofIsInvalid,
@@ -85,7 +85,7 @@ class ZKPPacker implements IPacker {
       throw ErrStateVerificationFailed;
     }
 
-    const messg = bytes2ProtocolMessage(stringToBytes(token.getPayload()));
+    const messg = bytesToProtocolMessage(stringToBytes(token.getPayload()));
 
     // should throw if errror
     verifySender(token, messg);
