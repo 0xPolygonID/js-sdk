@@ -5,12 +5,7 @@ import { Id } from '@iden3/js-iden3-core';
 import { CircuitID } from './jsCircuits';
 
 export class ProvingMethodGroth16Auth implements ProvingMethod {
-  readonly alg: string;
-  readonly circuitId: string;
-
-  constructor(_alg: string, _circuitId: string) {
-    this.alg = _alg;
-    this.circuitId = _circuitId;
+  constructor(public readonly alg: string, public  readonly  circuitId: string) {
   }
 
   // Verify return no error for any proof

@@ -10,7 +10,7 @@ import {
 import { jwz, Token, ProvingMethod } from '@iden3/js-jwz';
 import { CircuitID, circuits } from '../mock/jsCircuits';
 import { Id } from '@iden3/js-iden3-core';
-import { bytes2String, string2Bytes } from '../utils';
+import { bytesToString, stringToBytes } from '../utils';
 import { bytes2ProtocolMessage } from '../utils/envelope';
 import {
   ErrPackedWithUnsupportedCircuit,
@@ -23,10 +23,7 @@ import {
 export const MEDIA_TYPE_ZKP_MESSAGE: MediaType = 'application/iden3-zkp-json';
 
 export class AuthDataPrepareHandlerFunc {
-  readonly authDataPrepareFunc: AuthDataPrepareFunc;
-
-  constructor(f: AuthDataPrepareFunc) {
-    this.authDataPrepareFunc = f;
+  constructor(public readonly authDataPrepareFunc: AuthDataPrepareFunc) {
   }
 
   prepare(hash: Bytes, id: Id, circuitID: CircuitID) {
@@ -35,10 +32,8 @@ export class AuthDataPrepareHandlerFunc {
 }
 
 export class StateVerificationHandlerFunc {
-  readonly stateVerificationFunc: StateVerificationFunc;
 
-  constructor(f: StateVerificationFunc) {
-    this.stateVerificationFunc = f;
+  constructor(public readonly stateVerificationFunc: StateVerificationFunc) {
   }
 
   verify(id: CircuitID, pubSignals: Array<string>): Promise<boolean> {
@@ -47,44 +42,32 @@ export class StateVerificationHandlerFunc {
 }
 
 class ZKPPacker implements IPacker {
-  provingMethod: ProvingMethod;
-  authDataPreparer: AuthDataPrepareHandlerFunc;
-  stateVerifier: StateVerificationHandlerFunc;
-  provingKey: Bytes;
-  wasm: Bytes;
-  verificationKeys: Map<CircuitID, Bytes>;
 
   constructor(
-    _provingMethod: ProvingMethod,
-    _authDataPreparer: AuthDataPrepareHandlerFunc,
-    _stateVerifier: StateVerificationHandlerFunc,
-    _provingKey: Bytes,
-    _wasm: Bytes,
-    _verficiationKeys: Map<CircuitID, Bytes>
+   public provingMethod: ProvingMethod,
+   public authDataPreparer: AuthDataPrepareHandlerFunc,
+   public stateVerifier: StateVerificationHandlerFunc,
+   public provingKey: Bytes,
+   public wasm: Bytes,
+   public verificationKeys: Map<CircuitID, Bytes>
   ) {
-    this.provingMethod = _provingMethod;
-    this.authDataPreparer = _authDataPreparer;
-    this.stateVerifier = _stateVerifier;
-    this.provingKey = _provingKey;
-    this.wasm = _wasm;
-    this.verificationKeys = _verficiationKeys;
-  }
+ }
 
   async pack(payload: Bytes, params: ZKPPackerParams): Promise<Bytes> {
     const token = new Token(
       this.provingMethod,
-      bytes2String(payload),
+      bytesToString(payload),
       (hash: Bytes, circuitID: CircuitID) => {
         return this.authDataPreparer.prepare(hash, params.senderID, circuitID);
       }
     );
     token.setHeader(jwz.headerType, MEDIA_TYPE_ZKP_MESSAGE);
     const tokenStr = await token.prove(this.provingKey, this.wasm);
-    return string2Bytes(tokenStr);
+    return stringToBytes(tokenStr);
   }
 
   async unpack(envelope: Bytes): Promise<BasicMessage> {
-    const token = await Token.parse(bytes2String(envelope));
+    const token = await Token.parse(bytesToString(envelope));
     const verificationKey = this.verificationKeys.get(token.circuitId);
     if (!verificationKey) {
       throw ErrPackedWithUnsupportedCircuit;
@@ -102,7 +85,7 @@ class ZKPPacker implements IPacker {
       throw ErrStateVerificationFailed;
     }
 
-    const messg = bytes2ProtocolMessage(string2Bytes(token.getPayload()));
+    const messg = bytes2ProtocolMessage(stringToBytes(token.getPayload()));
 
     // should throw if errror
     verifySender(token, messg);

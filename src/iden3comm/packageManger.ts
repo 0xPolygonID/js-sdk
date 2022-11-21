@@ -1,6 +1,6 @@
 import { BasicMessage, Bytes, IPackageManger, IPacker, MediaType, PackerParams } from './types';
 import { bytes2EnvelopeStub, bytes2HeaderStub } from './utils/envelope';
-import { bytes2String, string2Bytes } from './utils';
+import { bytesToString, stringToBytes } from './utils';
 import { base64 } from 'rfc4648';
 
 export class PackageManger implements IPackageManger {
@@ -22,11 +22,11 @@ export class PackageManger implements IPackageManger {
   }
 
   async unpack(envelope: Bytes): Promise<BasicMessage & { mediaType: MediaType }> {
-    const decodedStr = bytes2String(envelope);
+    const decodedStr = bytesToString(envelope);
     const safeEnvelope = decodedStr.trim();
-    const mediaType = this.getMediaType(string2Bytes(safeEnvelope));
+    const mediaType = this.getMediaType(stringToBytes(safeEnvelope));
     return {
-      ...(await this.unpackWithSafeEnvelope(mediaType, string2Bytes(safeEnvelope))),
+      ...(await this.unpackWithSafeEnvelope(mediaType, stringToBytes(safeEnvelope))),
       mediaType
     };
   }
@@ -35,7 +35,7 @@ export class PackageManger implements IPackageManger {
     const decoder = new TextDecoder('utf-8');
     const decodedStr = decoder.decode(envelope);
     const safeEnvelope = decodedStr.trim();
-    return await this.unpackWithSafeEnvelope(mediaType, string2Bytes(safeEnvelope));
+    return await this.unpackWithSafeEnvelope(mediaType, stringToBytes(safeEnvelope));
   }
 
   async unpackWithSafeEnvelope(mediaType: MediaType, envelope: Bytes): Promise<BasicMessage> {
@@ -45,7 +45,7 @@ export class PackageManger implements IPackageManger {
   }
 
   getMediaType(envelope: Bytes): MediaType {
-    const envelopeStr = bytes2String(envelope);
+    const envelopeStr = bytesToString(envelope);
     let base64HeaderBytes: Bytes;
 
     // full seriliazed

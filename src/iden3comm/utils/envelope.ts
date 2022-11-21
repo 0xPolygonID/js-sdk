@@ -1,6 +1,6 @@
 import { BasicMessage, Bytes, EnvelopeStub, HeaderStub } from '../types';
 import { basicMessageFactory, envelopeStubFactory, headerStubFactory } from './messg';
-import { bytes2String, string2Bytes } from './bytes';
+import { bytesToString, stringToBytes } from './bytes';
 import { ErrNotEnvelopeStub, ErrNotHeaderStub, ErrNotProtocolMesg } from '../errors';
 import { Token } from '@iden3/js-jwz';
 
@@ -40,13 +40,13 @@ const isProtocolMessage = (messg: { [key in string]: any }) => {
 };
 
 export const envelope2ProtocolMessage = async (e: Bytes): Promise<BasicMessage> => {
-  const t = await Token.parse(bytes2String(e));
-  const pBytes = string2Bytes(t.getPayload());
+  const t = await Token.parse(bytesToString(e));
+  const pBytes = stringToBytes(t.getPayload());
   return bytes2ProtocolMessage(pBytes);
 };
 
 export const bytes2ProtocolMessage = (bytes: Bytes) => {
-  const str = bytes2String(bytes);
+  const str = bytesToString(bytes);
   const messg = JSON.parse(str);
   if (!isProtocolMessage(messg)) {
     throw ErrNotProtocolMesg;
@@ -56,7 +56,7 @@ export const bytes2ProtocolMessage = (bytes: Bytes) => {
 
 export const bytes2EnvelopeStub = (envelope: Bytes): EnvelopeStub => {
   const tmpObj = envelopeStubFactory();
-  const str = bytes2String(envelope);
+  const str = bytesToString(envelope);
   const messg = JSON.parse(str);
   if (!objectIs(messg, tmpObj)) {
     throw ErrNotEnvelopeStub;
@@ -66,7 +66,7 @@ export const bytes2EnvelopeStub = (envelope: Bytes): EnvelopeStub => {
 
 export const bytes2HeaderStub = (envelope: Bytes): HeaderStub => {
   const tmpObj = headerStubFactory();
-  const str = bytes2String(envelope);
+  const str = bytesToString(envelope);
   const messg = JSON.parse(str);
   if (!objectIs(messg, tmpObj)) {
     throw ErrNotHeaderStub;
