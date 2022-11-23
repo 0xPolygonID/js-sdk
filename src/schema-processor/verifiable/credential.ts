@@ -39,13 +39,12 @@ export class Iden3Credential {
   proof?: any;
 
   // Merklize merklizes verifiable credential
-merklize(): Merklizer {
-	const credential = {...this}
-  delete credential.proof;
-	const credentialWithoutProofBytes = new TextEncoder().encode(JSON.stringify(credential));
-	return merklizeJSONLD(credentialWithoutProofBytes)
-}
-
+  merklize(): Merklizer {
+    const credential = { ...this };
+    delete credential.proof;
+    const credentialWithoutProofBytes = new TextEncoder().encode(JSON.stringify(credential));
+    return merklizeJSONLD(credentialWithoutProofBytes);
+  }
 }
 
 export interface CredentialSchema {

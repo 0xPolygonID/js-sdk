@@ -86,7 +86,7 @@ export class Parser {
     };
   }
   // assignSlots assigns index and value fields to specific slot according array order
-  assignSlots(data:  { [key: string]: unknown }, schema: SerializationSchema): ParsedSlots {
+  assignSlots(data: { [key: string]: unknown }, schema: SerializationSchema): ParsedSlots {
     const result: ParsedSlots = {
       indexA: new Uint8Array(32),
       indexB: new Uint8Array(32),

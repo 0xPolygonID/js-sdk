@@ -23,8 +23,7 @@ import {
 export const MEDIA_TYPE_ZKP_MESSAGE: MediaType = 'application/iden3-zkp-json';
 
 export class AuthDataPrepareHandlerFunc {
-  constructor(public readonly authDataPrepareFunc: AuthDataPrepareFunc) {
-  }
+  constructor(public readonly authDataPrepareFunc: AuthDataPrepareFunc) {}
 
   prepare(hash: Bytes, id: Id, circuitID: CircuitID) {
     return this.authDataPrepareFunc(hash, id, circuitID);
@@ -32,9 +31,7 @@ export class AuthDataPrepareHandlerFunc {
 }
 
 export class StateVerificationHandlerFunc {
-
-  constructor(public readonly stateVerificationFunc: StateVerificationFunc) {
-  }
+  constructor(public readonly stateVerificationFunc: StateVerificationFunc) {}
 
   verify(id: CircuitID, pubSignals: Array<string>): Promise<boolean> {
     return this.stateVerificationFunc(id, pubSignals);
@@ -42,16 +39,14 @@ export class StateVerificationHandlerFunc {
 }
 
 class ZKPPacker implements IPacker {
-
   constructor(
-   public provingMethod: ProvingMethod,
-   public authDataPreparer: AuthDataPrepareHandlerFunc,
-   public stateVerifier: StateVerificationHandlerFunc,
-   public provingKey: Bytes,
-   public wasm: Bytes,
-   public verificationKeys: Map<CircuitID, Bytes>
-  ) {
- }
+    public provingMethod: ProvingMethod,
+    public authDataPreparer: AuthDataPrepareHandlerFunc,
+    public stateVerifier: StateVerificationHandlerFunc,
+    public provingKey: Bytes,
+    public wasm: Bytes,
+    public verificationKeys: Map<CircuitID, Bytes>
+  ) {}
 
   async pack(payload: Bytes, params: ZKPPackerParams): Promise<Bytes> {
     const token = new Token(
