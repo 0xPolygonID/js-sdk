@@ -49,8 +49,10 @@ export class Parser {
         case '':
         case SubjectPosition.Index:
           claim.setIndexId(did.id);
+          break;
         case SubjectPosition.Value:
           claim.setValueId(did.id);
+          break;
         default:
           throw new Error('unknown subject position');
       }
@@ -59,8 +61,10 @@ export class Parser {
     switch (credential.merklizedRootPosition) {
       case MerklizedRootPosition.Index:
         claim.setIndexMerklizedRoot(credential.merklize().root().BigInt());
+        break;
       case MerklizedRootPosition.Value:
         claim.setValueMerklizedRoot(credential.merklize().root().BigInt());
+        break;
       case MerklizedRootPosition.None:
         break;
       default:
