@@ -1,5 +1,6 @@
 import { Hex } from '@iden3/js-iden3-core';
 import { Signature } from '../identity/bjj/eddsa-babyjub';
+export * from './credential-wallet';
 
 // BJJSignatureFromHexString converts hex to  babyjub.Signature
 export const bJJSignatureFromHexString = async (sigHex: string): Promise<Signature> => {

@@ -1,2 +1,2 @@
-export * from './KMS';
+export * from './kms';
 export * from './bjj-provider';
