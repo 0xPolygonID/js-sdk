@@ -1,69 +1,59 @@
 import { Id, Claim as CoreClaim, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, newHashFromString } from '@iden3/js-merkletree';
 import { Signature } from '../identity/bjj/eddsa-babyjub';
-import { getNodeAuxValue } from './atomic-query-mtp-inputs';
+
 import {
   BaseConfig,
   bigIntArrayToStringArray,
-  ErrorEmptyAuthClaimNonRevProof,
-  ErrorEmptyAuthClaimProof,
-  ErrorEmptyChallengeSignature,
-  ErrorEmptyClaimNonRevProof,
-  ErrorEmptyClaimSignature,
-  ErrorEmptyIssuerAuthClaimNonRevProof,
-  ErrorEmptyIssuerAuthClaimProof,
+  getNodeAuxValue,
   prepareCircuitArrayValues,
   prepareSiblings,
   prepareSiblingsStr
 } from './common';
-import { CircuitClaim, Query } from './models';
+import { CircuitError, ClaimWithMTPProof, ClaimWithSigProof, Query } from './models';
 
 // AtomicQuerySigInputs ZK private inputs for credentialAtomicQuerySig.circom
 export class AtomicQuerySigInputs extends BaseConfig {
   // auth
   id: Id;
-  authClaim: CircuitClaim;
+  authClaim: ClaimWithMTPProof;
   challenge: bigint;
   signature: Signature;
   // issuerClaim
-  claim: CircuitClaim;
+  claim: ClaimWithSigProof;
   query: Query;
   currentTimeStamp: number;
 
   // InputsMarshal returns Circom private inputs for credentialAtomicQuerySig.circom
   async inputsMarshal(): Promise<Uint8Array> {
-    if (!this.authClaim.proof) {
-      throw new Error(ErrorEmptyAuthClaimProof);
+    if (!this.authClaim.incProof.proof) {
+      throw new Error(CircuitError.EmptyAuthClaimProof);
     }
 
     if (!this.authClaim.nonRevProof || !this.authClaim.nonRevProof.proof) {
-      throw new Error(ErrorEmptyAuthClaimNonRevProof);
+      throw new Error(CircuitError.EmptyAuthClaimNonRevProof);
     }
 
     if (!this.claim.nonRevProof || !this.claim.nonRevProof.proof) {
-      throw new Error(ErrorEmptyClaimNonRevProof);
-    }
-
-    if (!this.claim.signatureProof.issuerAuthClaimMTP) {
-      throw new Error(ErrorEmptyIssuerAuthClaimProof);
+      throw new Error(CircuitError.EmptyClaimNonRevProof);
     }
 
     if (!this.claim.signatureProof?.issuerAuthNonRevProof?.proof) {
-      throw new Error(ErrorEmptyIssuerAuthClaimNonRevProof);
+      throw new Error(CircuitError.EmptyIssuerAuthClaimNonRevProof);
     }
 
     if (!this.signature) {
-      throw new Error(ErrorEmptyChallengeSignature);
+      throw new Error(CircuitError.EmptyChallengeSignature);
     }
 
     if (!this.claim.signatureProof.signature) {
-      throw new Error(ErrorEmptyClaimSignature);
+      throw new Error(CircuitError.EmptyClaimSignature);
     }
 
     const s: Partial<AtomicQuerySigCircuitInputs> = {
       userAuthClaim: this.authClaim.claim,
       userAuthClaimMtp: prepareSiblingsStr(
-        await this.authClaim.proof.allSiblings(),
+        await this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       userAuthClaimNonRevMtp: prepareSiblingsStr(
@@ -84,10 +74,10 @@ export class AtomicQuerySigInputs extends BaseConfig {
         this.getMTLevel()
       ),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
-      userClaimsTreeRoot: this.authClaim.treeState.claimsRoot,
-      userState: this.authClaim.treeState.state,
-      userRevTreeRoot: this.authClaim.treeState.revocationRoot,
-      userRootsTreeRoot: this.authClaim.treeState.rootOfRoots,
+      userClaimsTreeRoot: this.authClaim.incProof.treeState.claimsRoot,
+      userState: this.authClaim.incProof.treeState.state,
+      userRevTreeRoot: this.authClaim.incProof.treeState.revocationRoot,
+      userRootsTreeRoot: this.authClaim.incProof.treeState.rootOfRoots,
       userID: this.id.bigInt().toString(),
       issuerID: this.claim.issuerId.bigInt().toString(),
       operator: this.query.operator,
@@ -99,14 +89,14 @@ export class AtomicQuerySigInputs extends BaseConfig {
 
       issuerAuthClaimMtp: bigIntArrayToStringArray(
         prepareSiblings(
-          await this.claim.signatureProof.issuerAuthClaimMTP.allSiblings(),
+          await this.claim.signatureProof.issuerAuthIncProof.proof.allSiblings(),
           this.getMTLevel()
         )
       ),
 
-      issuerAuthClaimsTreeRoot: this.claim.signatureProof.issuerTreeState.claimsRoot,
-      issuerAuthRevTreeRoot: this.claim.signatureProof.issuerTreeState.revocationRoot,
-      issuerAuthRootsTreeRoot: this.claim.signatureProof.issuerTreeState.rootOfRoots,
+      issuerAuthClaimsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.claimsRoot,
+      issuerAuthRevTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.revocationRoot,
+      issuerAuthRootsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.rootOfRoots,
 
       issuerAuthClaim: this.claim.signatureProof.issuerAuthClaim,
 
@@ -121,18 +111,18 @@ export class AtomicQuerySigInputs extends BaseConfig {
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
     s.value = bigIntArrayToStringArray(values);
 
-    const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof.nodeAux);
+    const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof);
     s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key;
     s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value;
     s.userAuthClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
 
-    const nodeAux = getNodeAuxValue(this.claim.nonRevProof.proof.nodeAux);
+    const nodeAux = getNodeAuxValue(this.claim.nonRevProof.proof);
     s.issuerClaimNonRevMtpAuxHi = nodeAux.key;
     s.issuerClaimNonRevMtpAuxHv = nodeAux.value;
     s.issuerClaimNonRevMtpNoAux = nodeAux.noAux;
 
     const issuerAuthNodeAux = getNodeAuxValue(
-      this.claim.signatureProof.issuerAuthNonRevProof.proof.nodeAux
+      this.claim.signatureProof.issuerAuthNonRevProof.proof
     );
     s.issuerAuthClaimNonRevMtpAuxHi = issuerAuthNodeAux.key;
     s.issuerAuthClaimNonRevMtpAuxHv = issuerAuthNodeAux.value;
@@ -189,17 +179,18 @@ export interface AtomicQuerySigCircuitInputs {
 
 // AtomicQuerySigPubSignals public inputs
 export class AtomicQuerySigPubSignals extends BaseConfig {
-  userID: Id;
+  userId: Id;
   userState: Hash;
-  challenge: bigint;
-  claimSchema: SchemaHash;
-  issuerID: Id;
+  issuerId: Id;
   issuerAuthState: Hash;
   issuerClaimNonRevState: Hash;
+  claimSchema: SchemaHash;
   slotIndex: number;
-  values: bigint[] = [];
   operator: number;
+  values: bigint[] = [];
   timestamp: number;
+  merklized: Hash;
+  challenge: bigint;
 
   // PubSignalsUnmarshal unmarshal credentialAtomicQuerySig.circom public signals
   pubSignalsUnmarshal(data: Uint8Array): AtomicQuerySigPubSignals {
@@ -219,13 +210,13 @@ export class AtomicQuerySigPubSignals extends BaseConfig {
 
     this.issuerAuthState = newHashFromString(sVals[0]);
 
-    this.userID = Id.fromBigInt(BigInt(sVals[1]));
+    this.userId = Id.fromBigInt(BigInt(sVals[1]));
 
     this.userState = newHashFromString(sVals[2]);
 
     this.challenge = BigInt(sVals[3]);
 
-    this.issuerID = Id.fromBigInt(BigInt(sVals[4]));
+    this.issuerId = Id.fromBigInt(BigInt(sVals[4]));
 
     this.issuerClaimNonRevState = newHashFromString(sVals[5]);
 

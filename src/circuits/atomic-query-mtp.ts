@@ -1,17 +1,12 @@
-import { newHashFromString, ZERO_HASH } from '@iden3/js-merkletree';
+import { newHashFromString } from '@iden3/js-merkletree';
 import { Claim as CoreClaim, Id, SchemaHash } from '@iden3/js-iden3-core';
-import { Query, CircuitClaim } from './models';
+import { Query, ClaimWithMTPProof, CircuitError } from './models';
 import { Signature } from '../identity/bjj/eddsa-babyjub';
 import { Hash } from '@iden3/js-merkletree';
-import { NodeAux } from '@iden3/js-merkletree/dist/cjs/types/types/merkletree';
 import {
   BaseConfig,
   bigIntArrayToStringArray,
-  ErrorEmptyAuthClaimNonRevProof,
-  ErrorEmptyAuthClaimProof,
-  ErrorEmptyChallengeSignature,
-  ErrorEmptyClaimNonRevProof,
-  ErrorEmptyClaimProof,
+  getNodeAuxValue,
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
@@ -20,12 +15,12 @@ import {
 export class AtomicQueryMTPInputs extends BaseConfig {
   // auth
   id: Id;
-  authClaim: CircuitClaim;
+  authClaim: ClaimWithMTPProof;
   challenge: bigint;
   signature: Signature;
 
   // claim issued for user
-  claim: CircuitClaim;
+  claim: ClaimWithMTPProof;
 
   currentTimeStamp: number;
 
@@ -33,30 +28,30 @@ export class AtomicQueryMTPInputs extends BaseConfig {
   query: Query;
 
   async inputsMarshal(): Promise<Uint8Array> {
-    if (!this.authClaim.proof) {
-      throw new Error(ErrorEmptyAuthClaimProof);
+    if (!this.authClaim.incProof.proof) {
+      throw new Error(CircuitError.EmptyAuthClaimProof);
     }
 
     if (!this.authClaim.nonRevProof || !this.authClaim.nonRevProof.proof) {
-      throw new Error(ErrorEmptyAuthClaimNonRevProof);
+      throw new Error(CircuitError.EmptyAuthClaimNonRevProof);
     }
 
-    if (!this.claim.proof) {
-      throw new Error(ErrorEmptyClaimProof);
+    if (!this.claim.incProof.proof) {
+      throw new Error(CircuitError.EmptyClaimProof);
     }
 
     if (!this.claim.nonRevProof?.proof) {
-      throw new Error(ErrorEmptyClaimNonRevProof);
+      throw new Error(CircuitError.EmptyClaimNonRevProof);
     }
 
     if (!this.signature) {
-      throw new Error(ErrorEmptyChallengeSignature);
+      throw new Error(CircuitError.EmptyChallengeSignature);
     }
 
     const s: AtomicQueryMTPCircuitInputs = {
       userAuthClaim: this.authClaim.claim,
       userAuthClaimMtp: prepareSiblingsStr(
-        await this.authClaim.proof.allSiblings(),
+        await this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       userAuthClaimNonRevMtp: prepareSiblingsStr(
@@ -68,11 +63,14 @@ export class AtomicQueryMTPInputs extends BaseConfig {
       challengeSignatureR8Y: this.signature.r8[1].toString(),
       challengeSignatureS: this.signature.s.toString(),
       issuerClaim: this.claim.claim,
-      issuerClaimClaimsTreeRoot: this.claim.treeState.claimsRoot,
-      issuerClaimIdenState: this.claim.treeState.state,
-      issuerClaimMtp: prepareSiblingsStr(await this.claim.proof.allSiblings(), this.getMTLevel()),
-      issuerClaimRevTreeRoot: this.claim.treeState.revocationRoot,
-      issuerClaimRootsTreeRoot: this.claim.treeState.rootOfRoots,
+      issuerClaimClaimsTreeRoot: this.claim.incProof.treeState.claimsRoot,
+      issuerClaimIdenState: this.claim.incProof.treeState.state,
+      issuerClaimMtp: prepareSiblingsStr(
+        await this.claim.incProof.proof.allSiblings(),
+        this.getMTLevel()
+      ),
+      issuerClaimRevTreeRoot: this.claim.incProof.treeState.revocationRoot,
+      issuerClaimRootsTreeRoot: this.claim.incProof.treeState.rootOfRoots,
       issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState.claimsRoot,
       issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState.revocationRoot,
       issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots,
@@ -82,10 +80,10 @@ export class AtomicQueryMTPInputs extends BaseConfig {
         this.getMTLevel()
       ),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
-      userClaimsTreeRoot: this.authClaim.treeState.claimsRoot,
-      userState: this.authClaim.treeState.state,
-      userRevTreeRoot: this.authClaim.treeState.revocationRoot,
-      userRootsTreeRoot: this.authClaim.treeState.rootOfRoots,
+      userClaimsTreeRoot: this.authClaim.incProof.treeState.claimsRoot,
+      userState: this.authClaim.incProof.treeState.state,
+      userRevTreeRoot: this.authClaim.incProof.treeState.revocationRoot,
+      userRootsTreeRoot: this.authClaim.incProof.treeState.rootOfRoots,
       userID: this.id.bigInt().toString(),
       issuerID: this.claim.issuerId.bigInt().toString(),
       operator: this.query.operator,
@@ -97,12 +95,12 @@ export class AtomicQueryMTPInputs extends BaseConfig {
 
     s.value = bigIntArrayToStringArray(values);
 
-    const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof?.nodeAux);
+    const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof);
     s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key;
     s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value;
     s.userAuthClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
 
-    const nodeAux = getNodeAuxValue(this.claim.nonRevProof.proof.nodeAux);
+    const nodeAux = getNodeAuxValue(this.claim.nonRevProof.proof);
     s.issuerClaimNonRevMtpAuxHi = nodeAux.key;
     s.issuerClaimNonRevMtpAuxHv = nodeAux.value;
     s.issuerClaimNonRevMtpNoAux = nodeAux.noAux;
@@ -155,23 +153,6 @@ interface NodeAuxValue {
   value: Hash;
   noAux: string;
 }
-
-export function getNodeAuxValue(a: NodeAux | undefined): NodeAuxValue {
-  const aux: NodeAuxValue = {
-    key: ZERO_HASH,
-    value: ZERO_HASH,
-    noAux: '1'
-  };
-
-  if (a?.value && a?.key) {
-    aux.key = a.key;
-    aux.value = a.value;
-    aux.noAux = '0';
-  }
-
-  return aux;
-}
-
 // AtomicQueryMTPPubSignals public signals
 export class AtomicQueryMTPPubSignals extends BaseConfig {
   userID?: Id;

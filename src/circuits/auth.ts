@@ -1,15 +1,15 @@
 import { Hash, newHashFromString } from '@iden3/js-merkletree';
-import { Signature } from './../identity/bjj/eddsa-babyjub';
-import { CircuitClaim } from './models';
+import { Signature } from '../identity/bjj/eddsa-babyjub';
+import { ClaimWithMTPProof } from './models';
 import { Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import {
   BaseConfig,
   ErrorEmptyAuthClaimNonRevProof,
   ErrorEmptyAuthClaimProof,
   ErrorEmptyChallengeSignature,
+  getNodeAuxValue,
   prepareSiblingsStr
 } from './common';
-import { getNodeAuxValue } from './atomic-query-mtp-inputs';
 
 interface AuthCircuitInputs {
   userAuthClaim?: CoreClaim;
@@ -33,18 +33,18 @@ interface AuthCircuitInputs {
 export class AuthInputs extends BaseConfig {
   id: Id;
 
-  authClaim: CircuitClaim;
+  authClaim: ClaimWithMTPProof;
 
   signature: Signature;
   challenge: bigint;
 
   // InputsMarshal returns Circom private inputs for auth.circom
   async inputsMarshal(): Promise<Uint8Array> {
-    if (!this.authClaim.proof) {
+    if (!this.authClaim.incProof?.proof) {
       throw new Error(ErrorEmptyAuthClaimProof);
     }
 
-    if (!this.authClaim.nonRevProof || !this.authClaim.nonRevProof?.proof) {
+    if (!this.authClaim.nonRevProof?.proof) {
       throw new Error(ErrorEmptyAuthClaimNonRevProof);
     }
 
@@ -55,7 +55,7 @@ export class AuthInputs extends BaseConfig {
     const s: Partial<AuthCircuitInputs> = {
       userAuthClaim: this.authClaim.claim,
       userAuthClaimMtp: prepareSiblingsStr(
-        await this.authClaim.proof.allSiblings(),
+        await this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       userAuthClaimNonRevMtp: prepareSiblingsStr(
@@ -66,14 +66,14 @@ export class AuthInputs extends BaseConfig {
       challengeSignatureR8x: this.signature.r8[0].toString(),
       challengeSignatureR8y: this.signature.r8[0].toString(),
       challengeSignatureS: this.signature.s.toString(),
-      userClaimsTreeRoot: this.authClaim.treeState.claimsRoot,
+      userClaimsTreeRoot: this.authClaim.incProof?.treeState.claimsRoot,
       userID: this.id.bigInt().toString(),
-      userRevTreeRoot: this.authClaim.treeState.revocationRoot,
-      userRootsTreeRoot: this.authClaim.treeState.rootOfRoots,
-      userState: this.authClaim.treeState.state
+      userRevTreeRoot: this.authClaim.incProof?.treeState.revocationRoot,
+      userRootsTreeRoot: this.authClaim.incProof?.treeState.rootOfRoots,
+      userState: this.authClaim.incProof?.treeState.state
     };
 
-    const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof.nodeAux);
+    const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof);
     s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key;
     s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value;
     s.userAuthClaimNonRevMtpNoAux = nodeAuxAuth.noAux;

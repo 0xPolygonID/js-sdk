@@ -95,7 +95,7 @@ export class ProofService implements IProofService {
     //todo: introduce interface here
     const identityTrees = await IdentityMerkleTrees.getIdentityMerkleTrees(identifier);
 
-    const claimsTree =  identityTrees.claimsTree();
+    const claimsTree = identityTrees.claimsTree();
 
     // get index hash of authClaim
     const coreClaim = authClaim.coreClaim;
