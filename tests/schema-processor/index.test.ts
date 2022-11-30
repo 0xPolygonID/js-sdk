@@ -1,6 +1,6 @@
 import { DIDDocumentJSONSchema, JsonSchemaValidator } from '../../src/schema-processor';
 
-describe('json validator', () => {
+describe.only('json validator', () => {
   it('test validator validate', async () => {
     const jsonDIDDocument = `{"service":[{"id":"did:example:123#linked-domain","type":"LinkedDomains","serviceEndpoint":"https://bar.example.com"},{"id":"did:example:123#linked-domain","type":"push-notification","metadata":{"devices":[{"ciphertext":"base64encoded","alg":"rsa"}]},"serviceEndpoint":"https://bar.example.com"}],"id":"did:example:123#linked-domain"}`;
     const v = new JsonSchemaValidator();
