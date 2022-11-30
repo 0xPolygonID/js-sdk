@@ -49,8 +49,10 @@ export class Parser {
         case '':
         case SubjectPosition.Index:
           claim.setIndexId(did.id);
+          break;
         case SubjectPosition.Value:
           claim.setValueId(did.id);
+          break;
         default:
           throw new Error('unknown subject position');
       }
@@ -58,9 +60,11 @@ export class Parser {
 
     switch (credential.merklizedRootPosition) {
       case MerklizedRootPosition.Index:
-        claim.setIndexMerklizedRoot(credential.merklize().root().BigInt());
+        claim.setIndexMerklizedRoot(credential.merklize().root().bigInt());
+        break;
       case MerklizedRootPosition.Value:
-        claim.setValueMerklizedRoot(credential.merklize().root().BigInt());
+        claim.setValueMerklizedRoot(credential.merklize().root().bigInt());
+        break;
       case MerklizedRootPosition.None:
         break;
       default:
@@ -86,7 +90,7 @@ export class Parser {
     };
   }
   // assignSlots assigns index and value fields to specific slot according array order
-  assignSlots(data:  { [key: string]: unknown }, schema: SerializationSchema): ParsedSlots {
+  assignSlots(data: { [key: string]: unknown }, schema: SerializationSchema): ParsedSlots {
     const result: ParsedSlots = {
       indexA: new Uint8Array(32),
       indexB: new Uint8Array(32),

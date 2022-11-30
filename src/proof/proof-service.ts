@@ -1,6 +1,9 @@
+import { Iden3Credential } from './../schema-processor/verifiable/credential';
+import { BJJSignatureProof } from './../circuits/models';
+import { VerifiableConstants } from './../schema-processor/verifiable/constants';
+import { KmsKeyId } from './../identity/kms/KMS';
 /* eslint-disable no-console */
 import { FullProof, ProofRequest } from './models';
-import { Signature } from './../identity/bjj/eddsa-babyjub';
 import { getUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { Proof } from '@iden3/js-merkletree';
 import {
@@ -8,19 +11,16 @@ import {
   CircuitClaim,
   CircuitId,
   TreeState,
-  AtomicQueryMTPInputs,
   strMTHex,
   StateInRelayCredentialHash,
-  AtomicQuerySigInputs,
   Query,
-  AuthInputs
+  factoryComparer,
+  AtomicQuerySigInputs,
+  AuthInputs,
+  AtomicQueryMTPInputs
 } from '../circuits';
 import { Claim } from '../claim';
-import {
-  CredentialStatus,
-  ErrStateNotFound,
-  RevocationStatus
-} from '../schema-processor/verifiable/credential';
+import { CredentialStatus, RevocationStatus } from '../schema-processor/verifiable/credential';
 import { toClaimNonRevStatus } from './common';
 import { ProverService } from './prover';
 import { SchemaLoader } from '../schema-processor/loader';
@@ -28,6 +28,8 @@ import { IIdentityWallet } from '../identity';
 import { IKmsService } from '../identity/kms';
 import { ICredentialWallet } from '../credentials';
 import { IdentityMerkleTrees } from '../merkle-tree';
+import { Schema } from '../schema-processor';
+import { Signature } from '@iden3/js-crypto';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -95,7 +97,7 @@ export class ProofService implements IProofService {
     //todo: introduce interface here
     const identityTrees = await IdentityMerkleTrees.getIdentityMerkleTrees(identifier);
 
-    const claimsTree =  identityTrees.claimsTree();
+    const claimsTree = identityTrees.claimsTree();
 
     // get index hash of authClaim
     const coreClaim = authClaim.coreClaim;
@@ -137,7 +139,7 @@ export class ProofService implements IProofService {
       claims = await this._credentialWallet.findAllBySchemaHash(identifier.string());
     }
 
-    const loader = await this._credentialWallet.getSchemaLoader(query.schema.url);
+    const loader = await this._credentialWallet.getSchemaLoader('', '');
 
     const { circuitQuery, requestFiled } = this.toCircuitsQuery(query, loader);
 
@@ -157,7 +159,7 @@ export class ProofService implements IProofService {
 
   findNonRevokedClaim(claims: Claim[]): { claim: Claim; revStatus: RevocationStatus } {
     for (const claim of claims) {
-      const revStatus = this._credentialWallet.checkRevocationStatus(claim);
+      const revStatus = this._credentialWallet.getRevocationStatus(claim);
       // current claim revoked. To try next claim.
       if (!revStatus) {
         continue;
@@ -197,7 +199,6 @@ export class ProofService implements IProofService {
     proofReq: ProofRequest
   ): { authClaim: Claim; signature: Signature; treeState: TreeState } {
     const authClaim = this._credentialWallet.getAuthCredential(identifier);
-    const signingKeyId = this._identityWallet.getKeyIdFromAuthClaim(authClaim);
     const idState = this._identityWallet.getLatestStateById(identifier);
     const treeState = buildTreeState(
       idState.state,
@@ -206,7 +207,7 @@ export class ProofService implements IProofService {
       idState.rootOfRoots
     );
     const challengeDigest = this._kms.getBJJDigest(proofReq.challenge);
-    const sigBytes = this._kms.sign(signingKeyId, challengeDigest);
+    const sigBytes = this._kms.sign({} as KmsKeyId, challengeDigest);
     const signature = this._kms.decodeBJJSignature(sigBytes);
 
     return { authClaim, signature, treeState };
@@ -251,53 +252,55 @@ export class ProofService implements IProofService {
 
       console.log('Claim.Proof: ', claimData.proof);
       console.log('Claim.NonRevProof: ', claimData.nonRevProof);
-    } else if (proofReq.circuitId === CircuitId.AtomicQueryMTPWithRelay) {
+    }
+    // else if (proofReq.circuitId === CircuitId.AtomicQueryMTPWithRelay) {
+    //   const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
+    //     identifier,
+    //     proofReq.rules
+    //   );
+
+    //   claims.push(claim);
+
+    //   const latestRelayClaim = this._credentialWallet.findCredentialWithLatestVersion(
+    //     identifier,
+    //     StateInRelayCredentialHash
+    //   );
+
+    //   const rsClaim: RevocationStatus =
+    //     this._credentialWallet.getRevocationStatus(latestRelayClaim);
+    //   if (!rsClaim) {
+    //     throw new Error('relay claim with latest user state is revoked');
+    //   }
+
+    //   const stateInRelayClaimData = await latestRelayClaim.newCircuitClaimData();
+
+    //   claims.push(latestRelayClaim);
+
+    //   circuitInputs = new AtomicQueryMTPWithRelayInputs();
+    //   circuitInputs.id = identifier;
+    //   circuitInputs.authClaim = authClaimData;
+    //   circuitInputs.challenge = BigInt(proofReq.challenge);
+    //   circuitInputs.signature = signature;
+    //   circuitInputs.userStateInRelayClaim = stateInRelayClaimData;
+    //   circuitInputs.query = circuitQuery;
+    //   circuitInputs.claim = claimData;
+    //   circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
+    // }
+    else if (proofReq.circuitId === CircuitId.AtomicQuerySig) {
       const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
         identifier,
         proofReq.rules
       );
 
-      claims.push(claim);
-
-      const latestRelayClaim = this._credentialWallet.findCredentialWithLatestVersion(
-        identifier,
-        StateInRelayCredentialHash
-      );
-
-      const rsClaim: RevocationStatus =
-        this._credentialWallet.checkRevocationStatus(latestRelayClaim);
-      if (!rsClaim) {
-        throw new Error('relay claim with latest user state is revoked');
-      }
-
-      const stateInRelayClaimData = await latestRelayClaim.newCircuitClaimData();
-
-      claims.push(latestRelayClaim);
-
-      circuitInputs = new AtomicQueryMTPWithRelayInputs();
-      circuitInputs.id = identifier;
-      circuitInputs.authClaim = authClaimData;
-      circuitInputs.challenge = BigInt(proofReq.challenge);
-      circuitInputs.signature = signature;
-      circuitInputs.userStateInRelayClaim = stateInRelayClaimData;
-      circuitInputs.query = circuitQuery;
-      circuitInputs.claim = claimData;
-      circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-    } else if (proofReq.circuitId === CircuitId.AtomicQuerySig) {
-      const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
-        identifier,
-        proofReq.rules
-      );
-
-      const { signatureProof, bjjProof } = this._identityWallet.sigProofFromClaim(claim);
-      claimData.signatureProof = signatureProof;
+      // const { signatureProof, bjjProof } = this._identityWallet.sigProofFromClaim(claim);
+      claimData.signatureProof = {} as BJJSignatureProof;
       let issuerAuthClaimNonRevStatus: RevocationStatus;
       try {
-        issuerAuthClaimNonRevStatus = this._credentialWallet.getStatus(
-          bjjProof.issuer_data.revocation_status
+        issuerAuthClaimNonRevStatus = this._credentialWallet.getRevocationStatus(
+          {} as Iden3Credential
         );
       } catch (e) {
-        if (e.message === ErrStateNotFound) {
+        if (e.message === VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND) {
           issuerAuthClaimNonRevStatus = {
             mtp: new Proof()
           } as RevocationStatus;

@@ -1,5 +1,5 @@
 import { Id } from '@iden3/js-iden3-core';
-import { Merkletree, Proof, Hash, Entry, inMemmoryDB, str2Bytes } from '@iden3/js-merkletree';
+import { Merkletree, Proof, Hash, Entry, InMemoryDB, str2Bytes } from '@iden3/js-merkletree';
 import { IDataStorage } from '../storage';
 
 const errorMsgNotCreated = 'identity merkle trees were not created';
@@ -48,7 +48,7 @@ export class IdentityMerkleTrees {
   
   // todo: implement initialization
   static createIdentityMerkleTrees(): IdentityMerkleTrees {
-    const trees = mtTypes.map(() => new Merkletree(new inMemmoryDB(str2Bytes('')), true, mtDepth));
+    const trees = mtTypes.map(() => new Merkletree(new InMemoryDB(str2Bytes('')), true, mtDepth));
     const mtrees = mtTypes.map(() => ({} as IdentityMerkleTree));
     return new IdentityMerkleTrees(null, trees, mtrees, {} as IDataStorage);
   }
@@ -80,7 +80,7 @@ export class IdentityMerkleTrees {
   
   async addEntry(entry: Entry) {
     const { hi, hv } = await entry.hiHv();
-    await this._trees[MerkleTreeType.Claims].add(hi.BigInt(), hv.BigInt());
+    await this._trees[MerkleTreeType.Claims].add(hi.bigInt(), hv.bigInt());
   }
   
   bindToIdentifier(identifier: Id): void {

@@ -31,7 +31,7 @@ export class HttpSchemaLoader implements ISchemaLoader {
     const resp = await axios.get(schema.url, { responseType: 'arraybuffer' });
     return {
       schema: resp.data as Uint8Array,
-      extension: 'json-ld',
+      extension: 'json-ld'
     };
   }
 }
@@ -52,7 +52,7 @@ export class IpfsSchemaLoader implements ISchemaLoader {
 
     return {
       schema: schemaBytes,
-      extension: 'json-ld',
+      extension: 'json-ld'
     };
   }
 }

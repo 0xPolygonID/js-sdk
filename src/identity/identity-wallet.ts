@@ -91,11 +91,11 @@ export class IdentityWallet implements IIdentityWallet{
 
     const claimsTree = identityMerkleTreesService.claimsTree();
 
-    const currentState = await hashElems([claimsTree.root.BigInt(), ZERO_HASH.BigInt(), ZERO_HASH.BigInt()]);
+    const currentState = await hashElems([claimsTree.root.bigInt(), ZERO_HASH.bigInt(), ZERO_HASH.bigInt()]);
   
   
     const didType = buildDIDType(DidMethod.Iden3, Blockchain.Polygon, NetworkId.Mumbai);
-    const identifier = Id.idGenesisFromIdenState(didType, currentState.BigInt());
+    const identifier = Id.idGenesisFromIdenState(didType, currentState.bigInt());
     
     identityMerkleTreesService.bindToIdentifier(identifier);
     

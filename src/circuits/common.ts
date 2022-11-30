@@ -1,8 +1,9 @@
-import { newHashFromHex, Hash, ZERO_HASH } from '@iden3/js-merkletree';
+import { newHashFromHex, Hash, ZERO_HASH, Proof } from '@iden3/js-merkletree';
 import { TreeState } from './models';
 
 export const defaultMTLevels = 32; // max MT levels, default value for identity circuits
 export const defaultValueArraySize = 64; // max value array size, default value for identity circuits
+export const defaultMTLevelsOnChain = 32; // max MT levels on chain, default value for identity circuits
 
 export const ErrorEmptyAuthClaimProof = 'empty auth claim mtp proof';
 export const ErrorEmptyAuthClaimNonRevProof = 'empty auth claim non-revocation mtp proof';
@@ -20,6 +21,7 @@ export const ErrorEmptyIssuerAuthClaimNonRevProof =
 export class BaseConfig {
   mtLevel: number; // Max levels of MT
   valueArraySize: number; // Size if( value array in identity circuit)s
+  mtLevelOnChain: number;
 
   // getMTLevel max circuit MT levels
   getMTLevel(): number {
@@ -29,6 +31,10 @@ export class BaseConfig {
   // GetValueArrSize return size of circuits value array size
   getValueArrSize(): number {
     return this.valueArraySize ? this.valueArraySize : defaultValueArraySize;
+  }
+
+  getMTLevelOnChain(): number {
+    return this.mtLevelOnChain ? this.mtLevelOnChain : defaultMTLevelsOnChain;
   }
 }
 
@@ -55,7 +61,17 @@ export const prepareSiblingsStr = (siblings: Hash[], levels: number): string[] =
   for (let i = siblings.length; i < levels; i++) {
     siblings.push(ZERO_HASH);
   }
-  return siblings.map((s) => s.BigInt().toString());
+  return siblings.map((s) => s.bigInt().toString());
+};
+
+// CircomSiblingsFromSiblings returns the full siblings compatible with circom
+export const circomSiblings = (proof: Proof, levels: number): Hash[] => {
+  const siblings = proof.allSiblings();
+  // Add the rest of empty levels to the siblings
+  for (let i = siblings.length; i < levels; i++) {
+    siblings.push(ZERO_HASH);
+  }
+  return siblings;
 };
 
 // PrepareCircuitArrayValues padding values to size. Validate array size and throw an exception if array is bigger
@@ -86,5 +102,39 @@ export const prepareSiblings = (siblings: Hash[], levels: number): bigint[] => {
     siblings.push(ZERO_HASH);
   }
 
-  return siblings.map((s) => s.BigInt());
+  return siblings.map((s) => s.bigInt());
 };
+
+export interface NodeAuxValue {
+  key: Hash;
+  value: Hash;
+  noAux: string;
+}
+
+export const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
+  // proof of inclusion
+  if (p?.existence) {
+    return {
+      key: ZERO_HASH,
+      value: ZERO_HASH,
+      noAux: '0'
+    };
+  }
+
+  // proof of non-inclusion (NodeAux exists)
+  if (p?.nodeAux && p.nodeAux.value && p.nodeAux.key) {
+    return {
+      key: p.nodeAux.key,
+      value: p.nodeAux.value,
+      noAux: '0'
+    };
+  }
+  // proof of non-inclusion (NodeAux does not exist)
+  return {
+    key: ZERO_HASH,
+    value: ZERO_HASH,
+    noAux: '1'
+  };
+};
+
+export const existenceToInt = (b: boolean): number => (b ? 0 : 1);

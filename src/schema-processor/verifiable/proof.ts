@@ -1,15 +1,7 @@
 import { Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import { Proof } from '@iden3/js-merkletree';
+import { ProofType } from './constants';
 import { CredentialStatus } from './credential';
-
-export enum ProofType {
-  // BJJSignatureProofType schema type
-  BJJSignature = 'BJJSignature2021',
-  // Iden3SparseMerkleProofType schema
-  Iden3SparseMerkle = 'Iden3SparseMerkleProof',
-  // SparseMerkleTreeProofType schema
-  SparseMerkleTree = 'SparseMerkleTreeProof'
-}
 
 // State represents the state of the issuer
 export interface State {

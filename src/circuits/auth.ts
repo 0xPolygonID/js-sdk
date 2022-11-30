@@ -1,50 +1,51 @@
 import { Hash, newHashFromString } from '@iden3/js-merkletree';
-import { Signature } from './../identity/bjj/eddsa-babyjub';
-import { CircuitClaim } from './models';
-import { Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
+
+import { ClaimWithMTPProof } from './models';
+import { Id } from '@iden3/js-iden3-core';
 import {
   BaseConfig,
   ErrorEmptyAuthClaimNonRevProof,
   ErrorEmptyAuthClaimProof,
   ErrorEmptyChallengeSignature,
+  getNodeAuxValue,
   prepareSiblingsStr
 } from './common';
-import { getNodeAuxValue } from './atomic-query-mtp-inputs';
+import { Signature } from '@iden3/js-crypto';
 
 interface AuthCircuitInputs {
-  userAuthClaim?: CoreClaim;
+  userAuthClaim?: string[];
   userAuthClaimMtp: string[];
   userAuthClaimNonRevMtp: string[];
-  userAuthClaimNonRevMtpAuxHi?: Hash;
-  userAuthClaimNonRevMtpAuxHv?: Hash;
+  userAuthClaimNonRevMtpAuxHi?: string;
+  userAuthClaimNonRevMtpAuxHv?: string;
   userAuthClaimNonRevMtpNoAux: string;
   challenge: string;
   challengeSignatureR8x: string;
   challengeSignatureR8y: string;
   challengeSignatureS: string;
-  userClaimsTreeRoot?: Hash;
+  userClaimsTreeRoot?: string;
   userID: string;
-  userRevTreeRoot?: Hash;
-  userRootsTreeRoot?: Hash;
-  userState?: Hash;
+  userRevTreeRoot?: string;
+  userRootsTreeRoot?: string;
+  userState?: string;
 }
 
 // AuthInputs type represent auth.circom private inputs
 export class AuthInputs extends BaseConfig {
   id: Id;
 
-  authClaim: CircuitClaim;
+  authClaim: ClaimWithMTPProof;
 
   signature: Signature;
   challenge: bigint;
 
   // InputsMarshal returns Circom private inputs for auth.circom
-  async inputsMarshal(): Promise<Uint8Array> {
-    if (!this.authClaim.proof) {
+  inputsMarshal(): Uint8Array {
+    if (!this.authClaim.incProof?.proof) {
       throw new Error(ErrorEmptyAuthClaimProof);
     }
 
-    if (!this.authClaim.nonRevProof || !this.authClaim.nonRevProof?.proof) {
+    if (!this.authClaim.nonRevProof?.proof) {
       throw new Error(ErrorEmptyAuthClaimNonRevProof);
     }
 
@@ -53,29 +54,29 @@ export class AuthInputs extends BaseConfig {
     }
 
     const s: Partial<AuthCircuitInputs> = {
-      userAuthClaim: this.authClaim.claim,
+      userAuthClaim: this.authClaim.claim.marshalJson(),
       userAuthClaimMtp: prepareSiblingsStr(
-        await this.authClaim.proof.allSiblings(),
+        this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       userAuthClaimNonRevMtp: prepareSiblingsStr(
-        await this.authClaim.nonRevProof.proof.allSiblings(),
+        this.authClaim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       challenge: this.challenge.toString(),
-      challengeSignatureR8x: this.signature.r8[0].toString(),
-      challengeSignatureR8y: this.signature.r8[0].toString(),
-      challengeSignatureS: this.signature.s.toString(),
-      userClaimsTreeRoot: this.authClaim.treeState.claimsRoot,
+      challengeSignatureR8x: this.signature.R8[0].toString(),
+      challengeSignatureR8y: this.signature.R8[1].toString(),
+      challengeSignatureS: this.signature.S.toString(),
+      userClaimsTreeRoot: this.authClaim.incProof?.treeState.claimsRoot.bigInt().toString(),
       userID: this.id.bigInt().toString(),
-      userRevTreeRoot: this.authClaim.treeState.revocationRoot,
-      userRootsTreeRoot: this.authClaim.treeState.rootOfRoots,
-      userState: this.authClaim.treeState.state
+      userRevTreeRoot: this.authClaim.incProof?.treeState.revocationRoot.bigInt().toString(),
+      userRootsTreeRoot: this.authClaim.incProof?.treeState.rootOfRoots.bigInt().toString(),
+      userState: this.authClaim.incProof?.treeState.state.bigInt().toString()
     };
 
-    const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof.nodeAux);
-    s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key;
-    s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value;
+    const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof);
+    s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
+    s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value.bigInt().toString();
     s.userAuthClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
 
     return new TextEncoder().encode(JSON.stringify(s));
