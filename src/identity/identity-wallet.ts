@@ -1,7 +1,7 @@
 import { KmsKeyType } from './kms/kms';
-import { BjjProvider, KeyTypeBabyJubJub, KMS, KmsKeyId } from './kms';
+import { BjjProvider, KMS, KmsKeyId } from './kms';
 import { Claim, Id } from '@iden3/js-iden3-core';
-import { Signature } from './bjj/eddsa-babyjub';
+import { Signature } from '@iden3/js-crypto';
 
 // IdentityStatus represents type for state Status
 export enum IdentityStatus {
@@ -55,8 +55,8 @@ export class IdentityWallet {
 
   async createIdentity(): Promise<string> {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
-    console.log('await poseidonHash([1])');
-    // console.log(await poseidonHash([1]));
+    console.log('poseidon.hash([1])');
+    // console.log(poseidon.hash([1]));
 
     const keyID = await this.kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seedPhrase);
 

@@ -48,7 +48,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
     }
   }
 
-  async inputsMarshal(): Promise<Uint8Array> {
+  inputsMarshal(): Uint8Array {
     this.validate();
     let queryPathKey = BigInt(0);
     if (this.query.valueProof) {
@@ -70,45 +70,45 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
       issuerId: this.claim.issuerId.bigInt().toString(),
       issuerClaim: this.claim.claim,
       issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState.claimsRoot
-        .BigInt()
+        .bigInt()
         .toString(),
       issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState.revocationRoot
-        .BigInt()
+        .bigInt()
         .toString(),
       issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots
-        .BigInt()
+        .bigInt()
         .toString(),
-      issuerClaimNonRevState: this.claim.nonRevProof.treeState.state.BigInt().toString(),
+      issuerClaimNonRevState: this.claim.nonRevProof.treeState.state.bigInt().toString(),
       issuerClaimNonRevMtp: prepareSiblingsStr(
-        await this.claim.nonRevProof.proof.allSiblings(),
+        this.claim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
-      issuerClaimSignatureR8x: this.claim.signatureProof.signature.r8[0].toString(),
-      issuerClaimSignatureR8y: this.claim.signatureProof.signature.r8[1].toString(),
-      issuerClaimSignatureS: this.claim.signatureProof.signature.s.toString(),
+      issuerClaimSignatureR8x: this.claim.signatureProof.signature.R8[0].toString(),
+      issuerClaimSignatureR8y: this.claim.signatureProof.signature.R8[1].toString(),
+      issuerClaimSignatureS: this.claim.signatureProof.signature.S.toString(),
       issuerAuthClaim: this.claim.signatureProof.issuerAuthClaim,
       issuerAuthClaimMtp: prepareSiblingsStr(
-        await this.claim.signatureProof.issuerAuthIncProof.proof.allSiblings(),
+        this.claim.signatureProof.issuerAuthIncProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       issuerAuthClaimsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.claimsRoot
-        .BigInt()
+        .bigInt()
         .toString(),
       issuerAuthRevTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.revocationRoot
-        .BigInt()
+        .bigInt()
         .toString(),
       issuerAuthRootsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.rootOfRoots
-        .BigInt()
+        .bigInt()
         .toString(),
 
       issuerAuthClaimNonRevMtp: prepareSiblingsStr(
-        await this.claim.signatureProof.issuerAuthNonRevProof.proof.allSiblings(),
+        this.claim.signatureProof.issuerAuthNonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
 
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
 
-      claimPathMtp: prepareSiblingsStr(await valueProof.mtp.allSiblings(), this.getMTLevel()),
+      claimPathMtp: prepareSiblingsStr(valueProof.mtp.allSiblings(), this.getMTLevel()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query.operator,
       timestamp: this.currentTimeStamp,

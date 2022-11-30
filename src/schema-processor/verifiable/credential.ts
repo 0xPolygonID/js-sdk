@@ -1,26 +1,8 @@
 import { Proof } from '@iden3/js-merkletree';
 import { merklizeJSONLD, Merklizer } from '../processor';
+import { SubjectPosition, MerklizedRootPosition, CredentialStatusType } from './constants';
 
-// ErrStateNotFound issuer state is genesis state.
-export const ErrStateNotFound = 'issuer state not found';
 // Iden3Credential is that represents claim json-ld document
-
-export enum SubjectPosition {
-  None = '',
-  // Index save subject in index part of claim. By default.
-  Index = 'index',
-  // Value save subject in value part of claim.
-  Value = 'value'
-}
-
-export enum MerklizedRootPosition {
-  // PositionIndex merklized root is stored in index.
-  Index = 'index',
-  // Value merklized root is stored in value.
-  Value = 'value',
-  // None merklized root is not stored in the claim. By Default.
-  None = ''
-}
 export class Iden3Credential {
   id: string;
   '@context': string[];
@@ -33,7 +15,7 @@ export class Iden3Credential {
   credentialSubject: { [key: string]: any };
   credentialStatus?: CredentialStatus;
   subjectPosition?: SubjectPosition;
-  merklizedRootPosition?: string;
+  merklizedRootPosition?: MerklizedRootPosition;
   issuer: string;
   credentialSchema: CredentialSchema;
   proof?: any;
@@ -51,15 +33,6 @@ export interface CredentialSchema {
   id: string;
   type: string;
 }
-
-// CredentialStatusType type for understanding revocation type
-export enum CredentialStatusType {
-  SparseMerkleTreeProof = 'SparseMerkleTreeProof',
-  Iden3ReverseSparseMerkleTreeProof = 'Iden3ReverseSparseMerkleTreeProof'
-}
-
-// Iden3ReverseSparseMerkleTreeProof is CredentialStatusType
-export const JSONSchemaValidator2018 = 'JsonSchemaValidator2018';
 
 // StatusIssuer represents the URL to fetch claim revocation info directly from the issuer.
 export interface StatusIssuer {

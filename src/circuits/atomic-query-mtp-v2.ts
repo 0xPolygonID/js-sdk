@@ -1,7 +1,6 @@
 import { newHashFromString, Proof } from '@iden3/js-merkletree';
 import { Claim as CoreClaim, Id, SchemaHash } from '@iden3/js-iden3-core';
 import { Query, ClaimWithMTPProof, ValueProof } from './models';
-import { Signature } from '../identity/bjj/eddsa-babyjub';
 import { Hash } from '@iden3/js-merkletree';
 import {
   BaseConfig,
@@ -11,6 +10,7 @@ import {
   getNodeAuxValue,
   prepareCircuitArrayValues
 } from './common';
+import { Signature } from '@iden3/js-crypto';
 
 // AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
 export class AtomicQueryMTPV2Inputs extends BaseConfig {
@@ -28,7 +28,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
   // query
   query: Query;
 
-  async inputsMarshal(): Promise<Uint8Array> {
+  inputsMarshal(): Uint8Array {
     let queryPathKey = BigInt(0);
     if (this.query.valueProof) {
       this.query.valueProof.validate();
@@ -46,20 +46,20 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
       userGenesisId: this.id.bigInt().toString(),
       nonce: this.nonce.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
-      issuerId: this.claim.issuerId.bigInt().toString(),
+      issuerId: this.claim.issuerId?.bigInt().toString(),
       issuerClaim: this.claim.claim,
-      issuerClaimMtp: await circomSiblings(this.claim.incProof.proof, this.getMTLevel()),
+      issuerClaimMtp: circomSiblings(this.claim.incProof.proof, this.getMTLevel()),
       issuerClaimClaimsTreeRoot: this.claim.incProof.treeState.claimsRoot,
       issuerClaimRevTreeRoot: this.claim.incProof.treeState.revocationRoot,
       issuerClaimRootsTreeRoot: this.claim.incProof.treeState.rootOfRoots,
       issuerClaimIdenState: this.claim.incProof.treeState.state,
-      issuerClaimNonRevMtp: await circomSiblings(this.claim.nonRevProof.proof, this.getMTLevel()),
+      issuerClaimNonRevMtp: circomSiblings(this.claim.nonRevProof.proof, this.getMTLevel()),
       issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState.claimsRoot,
       issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState.revocationRoot,
       issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots,
       issuerClaimNonRevState: this.claim.nonRevProof.treeState.state,
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
-      claimPathMtp: await circomSiblings(valueProof.mtp, this.getMTLevel()),
+      claimPathMtp: circomSiblings(valueProof.mtp, this.getMTLevel()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query.operator,
       slotIndex: this.query.slotIndex,

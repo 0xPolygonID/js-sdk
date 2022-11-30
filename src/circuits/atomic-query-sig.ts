@@ -1,6 +1,6 @@
+import { Signature } from '@iden3/js-crypto';
 import { Id, Claim as CoreClaim, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, newHashFromString } from '@iden3/js-merkletree';
-import { Signature } from '../identity/bjj/eddsa-babyjub';
 
 import {
   BaseConfig,
@@ -25,7 +25,7 @@ export class AtomicQuerySigInputs extends BaseConfig {
   currentTimeStamp: number;
 
   // InputsMarshal returns Circom private inputs for credentialAtomicQuerySig.circom
-  async inputsMarshal(): Promise<Uint8Array> {
+  inputsMarshal(): Uint8Array {
     if (!this.authClaim.incProof.proof) {
       throw new Error(CircuitError.EmptyAuthClaimProof);
     }
@@ -53,24 +53,24 @@ export class AtomicQuerySigInputs extends BaseConfig {
     const s: Partial<AtomicQuerySigCircuitInputs> = {
       userAuthClaim: this.authClaim.claim,
       userAuthClaimMtp: prepareSiblingsStr(
-        await this.authClaim.incProof.proof.allSiblings(),
+        this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       userAuthClaimNonRevMtp: prepareSiblingsStr(
-        await this.authClaim.nonRevProof.proof.allSiblings(),
+        this.authClaim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       challenge: this.challenge.toString(),
-      challengeSignatureR8x: this.signature.r8[0].toString(),
-      challengeSignatureR8y: this.signature.r8[1].toString(),
-      challengeSignatureS: this.signature.s.toString(),
+      challengeSignatureR8x: this.signature.R8[0].toString(),
+      challengeSignatureR8y: this.signature.R8[1].toString(),
+      challengeSignatureS: this.signature.S.toString(),
       issuerClaim: this.claim.claim,
       issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState.claimsRoot,
       issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState.revocationRoot,
       issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots,
       issuerClaimNonRevState: this.claim.nonRevProof.treeState.state,
       issuerClaimNonRevMtp: prepareSiblingsStr(
-        await this.claim.nonRevProof.proof.allSiblings(),
+        this.claim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
@@ -83,13 +83,13 @@ export class AtomicQuerySigInputs extends BaseConfig {
       operator: this.query.operator,
       slotIndex: this.query.slotIndex,
       timestamp: this.currentTimeStamp,
-      issuerClaimSignatureR8x: this.claim.signatureProof.signature.r8[0].toString(),
-      issuerClaimSignatureR8y: this.claim.signatureProof.signature.r8[1].toString(),
+      issuerClaimSignatureR8x: this.claim.signatureProof.signature.R8[0].toString(),
+      issuerClaimSignatureR8y: this.claim.signatureProof.signature.R8[1].toString(),
       issuerClaimSignatureS: this.claim.signatureProof.signature.s.toString(),
 
       issuerAuthClaimMtp: bigIntArrayToStringArray(
         prepareSiblings(
-          await this.claim.signatureProof.issuerAuthIncProof.proof.allSiblings(),
+          this.claim.signatureProof.issuerAuthIncProof.proof.allSiblings(),
           this.getMTLevel()
         )
       ),
@@ -102,7 +102,7 @@ export class AtomicQuerySigInputs extends BaseConfig {
 
       issuerAuthClaimNonRevMtp: bigIntArrayToStringArray(
         prepareSiblings(
-          await this.claim.signatureProof.issuerAuthNonRevProof.proof.allSiblings(),
+          this.claim.signatureProof.issuerAuthNonRevProof.proof.allSiblings(),
           this.getMTLevel()
         )
       )

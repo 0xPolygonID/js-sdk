@@ -1,6 +1,6 @@
+import { Signature } from '@iden3/js-crypto';
 import { Claim, Id, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, ZERO_HASH, newHashFromString } from '@iden3/js-merkletree';
-import { Signature } from '../identity/bjj/eddsa-babyjub';
 import {
   BaseConfig,
   bigIntArrayToStringArray,
@@ -21,7 +21,7 @@ export class JsonLDAtomicQueryMTPInputs extends BaseConfig {
   query: Query;
 
   //   InputsMarshal returns Circom private inputs for credentialJsonLDAtomicQueryMTP.circom
-  async inputsMarshal(): Promise<Uint8Array> {
+  inputsMarshal(): Uint8Array {
     if (!this.authClaim.incProof.proof) {
       throw new Error(CircuitError.EmptyAuthClaimProof);
     }
@@ -62,20 +62,20 @@ export class JsonLDAtomicQueryMTPInputs extends BaseConfig {
     const s: Partial<JsonLDatomicQueryMTPCircuitInputs> = {
       userAuthClaim: this.authClaim.claim,
       userAuthClaimMtp: prepareSiblingsStr(
-        await this.authClaim.incProof.proof.allSiblings(),
+        this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       userAuthClaimNonRevMtp: prepareSiblingsStr(
-        await this.authClaim.nonRevProof.proof.allSiblings(),
+        this.authClaim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       challenge: this.challenge.toString(),
-      challengeSignatureR8x: this.signature.r8[0].toString(),
-      challengeSignatureR8y: this.signature.r8[1].toString(),
-      challengeSignatureS: this.signature.s.toString(),
+      challengeSignatureR8x: this.signature.R8[0].toString(),
+      challengeSignatureR8y: this.signature.R8[1].toString(),
+      challengeSignatureS: this.signature.S.toString(),
       issuerClaim: this.claim.claim,
       issuerClaimMtp: prepareSiblingsStr(
-        await this.claim.incProof.proof.allSiblings(),
+        this.claim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       issuerClaimIdenState: this.claim.incProof.treeState.state,
@@ -87,7 +87,7 @@ export class JsonLDAtomicQueryMTPInputs extends BaseConfig {
       issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots,
       issuerClaimNonRevState: this.claim.nonRevProof.treeState.state,
       issuerClaimNonRevMtp: prepareSiblingsStr(
-        await this.claim.nonRevProof.proof.allSiblings(),
+        this.claim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
@@ -96,10 +96,10 @@ export class JsonLDAtomicQueryMTPInputs extends BaseConfig {
       userRevTreeRoot: this.authClaim.incProof.treeState.revocationRoot,
       userRootsTreeRoot: this.authClaim.incProof.treeState.rootOfRoots,
       userId: this.id.bigInt().toString(),
-      issuerId: this.claim.issuerId.bigInt().toString(),
+      issuerId: this.claim.issuerId?.bigInt().toString(),
       claimPathNotExists: claimPathNotExists,
       claimPathMtp: prepareSiblingsStr(
-        await (this.query.valueProof ?? new ValueProof()).mtp.allSiblings(),
+        (this.query.valueProof ?? new ValueProof()).mtp.allSiblings(),
         this.getMTLevel()
       ),
       claimPathMtpNoAux: claimPathNodeAuxValue.noAux,

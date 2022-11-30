@@ -1,4 +1,4 @@
-import { Signature } from './../identity/bjj/eddsa-babyjub';
+import { Signature } from '@iden3/js-crypto';
 import { Claim, Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import { Hash, Proof } from '@iden3/js-merkletree';
 import { Operators } from './comparer';
@@ -60,7 +60,7 @@ export interface ClaimWithSigProof {
 }
 
 export interface ClaimWithMTPProof {
-  issuerId: Id;
+  issuerId?: Id;
   claim: Claim;
   incProof: MTProof;
   nonRevProof: MTProof;

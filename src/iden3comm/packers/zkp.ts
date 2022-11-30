@@ -7,7 +7,7 @@ import {
   StateVerificationFunc,
   ZKPPackerParams
 } from '../types';
-import { jwz, Token, ProvingMethod } from '@iden3/js-jwz';
+import { Token, ProvingMethod, Header } from '@iden3/js-jwz';
 import { CircuitID, circuits } from '../mock/jsCircuits';
 import { Id } from '@iden3/js-iden3-core';
 import { bytesToString, stringToBytes } from '../utils';
@@ -56,7 +56,7 @@ class ZKPPacker implements IPacker {
         return this.authDataPreparer.prepare(hash, params.senderID, circuitID);
       }
     );
-    token.setHeader(jwz.headerType, MEDIA_TYPE_ZKP_MESSAGE);
+    token.setHeader(Header.Type, MEDIA_TYPE_ZKP_MESSAGE);
     const tokenStr = await token.prove(this.provingKey, this.wasm);
     return stringToBytes(tokenStr);
   }

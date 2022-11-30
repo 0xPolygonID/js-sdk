@@ -60,10 +60,10 @@ export class Parser {
 
     switch (credential.merklizedRootPosition) {
       case MerklizedRootPosition.Index:
-        claim.setIndexMerklizedRoot(credential.merklize().root().BigInt());
+        claim.setIndexMerklizedRoot(credential.merklize().root().bigInt());
         break;
       case MerklizedRootPosition.Value:
-        claim.setValueMerklizedRoot(credential.merklize().root().BigInt());
+        claim.setValueMerklizedRoot(credential.merklize().root().bigInt());
         break;
       case MerklizedRootPosition.None:
         break;

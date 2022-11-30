@@ -1,11 +1,17 @@
 import { Bytes } from '../types';
-import { ZKProof } from '@iden3/js-jwz/src/proving';
+import { ZKProof, ProvingMethodAlg } from '@iden3/js-jwz/src/proving';
 import { ProvingMethod } from '@iden3/js-jwz';
 import { Id } from '@iden3/js-iden3-core';
 import { CircuitID } from './jsCircuits';
 
 export class ProvingMethodGroth16Auth implements ProvingMethod {
-  constructor(public readonly alg: string, public readonly circuitId: string) {}
+  constructor(public readonly methodAlg: ProvingMethodAlg) {}
+  get alg(): string {
+    return this.methodAlg.alg;
+  }
+  get circuitId(): string {
+    return this.methodAlg.circuitId;
+  }
 
   // Verify return no error for any proof
   //eslint-disable-next-line @typescript-eslint/no-unused-vars

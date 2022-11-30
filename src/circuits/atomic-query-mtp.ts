@@ -1,7 +1,6 @@
 import { newHashFromString } from '@iden3/js-merkletree';
 import { Claim as CoreClaim, Id, SchemaHash } from '@iden3/js-iden3-core';
 import { Query, ClaimWithMTPProof, CircuitError } from './models';
-import { Signature } from '../identity/bjj/eddsa-babyjub';
 import { Hash } from '@iden3/js-merkletree';
 import {
   BaseConfig,
@@ -10,6 +9,7 @@ import {
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
+import { Signature } from '@iden3/js-crypto';
 
 // AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
 export class AtomicQueryMTPInputs extends BaseConfig {
@@ -27,7 +27,7 @@ export class AtomicQueryMTPInputs extends BaseConfig {
   // query
   query: Query;
 
-  async inputsMarshal(): Promise<Uint8Array> {
+  inputsMarshal(): Uint8Array {
     if (!this.authClaim.incProof.proof) {
       throw new Error(CircuitError.EmptyAuthClaimProof);
     }
@@ -48,25 +48,25 @@ export class AtomicQueryMTPInputs extends BaseConfig {
       throw new Error(CircuitError.EmptyChallengeSignature);
     }
 
-    const s: AtomicQueryMTPCircuitInputs = {
+    const s: Partial<AtomicQueryMTPCircuitInputs> = {
       userAuthClaim: this.authClaim.claim,
       userAuthClaimMtp: prepareSiblingsStr(
-        await this.authClaim.incProof.proof.allSiblings(),
+        this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       userAuthClaimNonRevMtp: prepareSiblingsStr(
-        await this.authClaim.nonRevProof.proof.allSiblings(),
+        this.authClaim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       challenge: this.challenge.toString(),
-      challengeSignatureR8X: this.signature.r8[0].toString(),
-      challengeSignatureR8Y: this.signature.r8[1].toString(),
-      challengeSignatureS: this.signature.s.toString(),
+      challengeSignatureR8X: this.signature.R8[0].toString(),
+      challengeSignatureR8Y: this.signature.R8[1].toString(),
+      challengeSignatureS: this.signature.S.toString(),
       issuerClaim: this.claim.claim,
       issuerClaimClaimsTreeRoot: this.claim.incProof.treeState.claimsRoot,
       issuerClaimIdenState: this.claim.incProof.treeState.state,
       issuerClaimMtp: prepareSiblingsStr(
-        await this.claim.incProof.proof.allSiblings(),
+        this.claim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       issuerClaimRevTreeRoot: this.claim.incProof.treeState.revocationRoot,
@@ -76,7 +76,7 @@ export class AtomicQueryMTPInputs extends BaseConfig {
       issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots,
       issuerClaimNonRevState: this.claim.nonRevProof.treeState.state,
       issuerClaimNonRevMtp: prepareSiblingsStr(
-        await this.claim.nonRevProof.proof.allSiblings(),
+        this.claim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
@@ -84,8 +84,8 @@ export class AtomicQueryMTPInputs extends BaseConfig {
       userState: this.authClaim.incProof.treeState.state,
       userRevTreeRoot: this.authClaim.incProof.treeState.revocationRoot,
       userRootsTreeRoot: this.authClaim.incProof.treeState.rootOfRoots,
-      userID: this.id.bigInt().toString(),
-      issuerID: this.claim.issuerId.bigInt().toString(),
+      userId: this.id.bigInt().toString(),
+      issuerId: this.claim.issuerId?.bigInt().toString(),
       operator: this.query.operator,
       slotIndex: this.query.slotIndex,
       timestamp: this.currentTimeStamp
@@ -141,18 +141,13 @@ interface AtomicQueryMTPCircuitInputs {
   issuerClaimNonRevMtpAuxHv?: Hash;
   issuerClaimNonRevMtpNoAux?: string;
   claimSchema: string;
-  issuerID: string;
+  issuerId?: string;
   operator: number;
   slotIndex: number;
   timestamp: number;
   value?: string[];
 }
 
-interface NodeAuxValue {
-  key: Hash;
-  value: Hash;
-  noAux: string;
-}
 // AtomicQueryMTPPubSignals public signals
 export class AtomicQueryMTPPubSignals extends BaseConfig {
   userID?: Id;
