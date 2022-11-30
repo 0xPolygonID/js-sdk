@@ -1,5 +1,4 @@
-import * as babyjub from '../bjj/eddsa-babyjub';
-import { Signature } from '../bjj/eddsa-babyjub';
+import { Signature, PublicKey } from '@iden3/js-crypto';
 
 export interface IKmsService {
   getBJJDigest(challenge: number): Uint8Array;
@@ -19,7 +18,7 @@ export interface KmsKeyId {
 
 export interface IKeyProvider {
   keyType: KmsKeyType;
-  publicKey(keyID: KmsKeyId): Promise<babyjub.PublicKey>;
+  publicKey(keyID: KmsKeyId): Promise<PublicKey>;
   newPrivateKeyFromSeed(key: Uint8Array): Promise<KmsKeyId>;
 }
 
@@ -48,7 +47,7 @@ export class KMS {
     return keyProvider.newPrivateKeyFromSeed(bites);
   }
 
-  async publicKey(keyId: KmsKeyId): Promise<babyjub.PublicKey> {
+  async publicKey(keyId: KmsKeyId): Promise<PublicKey> {
     const keyProvider = this.registry[keyId.type];
     if (!keyProvider) {
       throw new Error(`keyProvider not found for: ${keyId.type}`);

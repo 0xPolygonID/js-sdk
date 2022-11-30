@@ -25,8 +25,8 @@ export class Iden3Credential {
   id: string;
   '@context': string[];
   type: string[];
-  expirationDate?: string;
-  issuanceDate?: string;
+  expirationDate?: number;
+  issuanceDate?: number;
   updatable: boolean;
   version: number;
   revNonce: number;

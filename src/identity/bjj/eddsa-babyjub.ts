@@ -3,9 +3,9 @@
 // const { buildEddsa, buildBabyjub } = require('circomlibjs');
 
 import { buildEddsa, buildBabyjub } from './circomlib';
-// import {Hex} from '@iden3/js-iden3-core';
+import {Hex} from '@iden3/js-iden3-core';
 // import {newHashFromHex} from '@iden3/js-merkletree';
-const { Hex } = require('@iden3/js-iden3-core');
+// const { Hex } = require('@iden3/js-iden3-core');
 const { newHashFromHex } = require('@iden3/js-merkletree');
 
 const getEddsa = async () => {

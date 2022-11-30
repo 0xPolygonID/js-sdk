@@ -1,7 +1,22 @@
-import { KmsKeyType } from './kms/kms';
-import { BjjProvider, KeyTypeBabyJubJub, KMS, KmsKeyId } from './kms';
-import { Claim, Id } from '@iden3/js-iden3-core';
-import { Signature } from './bjj/eddsa-babyjub';
+import { BjjProvider, KMS, KmsKeyId, KmsKeyType } from './kms';
+import {
+  Blockchain,
+  buildDIDType,
+  Claim,
+  ClaimOptions,
+  DidMethod,
+  Id,
+  NetworkId,
+  SchemaHash,
+  getUnixTimestamp
+} from '@iden3/js-iden3-core';
+import { Signature } from '@iden3/js-crypto';
+import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
+import { models } from '../constants';
+import { IdentityMerkleTrees } from '../merkle-tree';
+import { subjectPositionIndex, treeEntryFromCoreClaim } from './common';
+import { Iden3Credential } from '../schema-processor';
+import { ClaimRequest, createIden3Credential } from './helper';
 
 // IdentityStatus represents type for state Status
 export enum IdentityStatus {
@@ -32,7 +47,7 @@ export interface IdentityState {
 }
 
 export interface IIdentityWallet {
-  createIdentity(seed: Uint8Array): Promise<Id>;
+  createIdentity(seed: Uint8Array): Promise<{ identifier: Id, credential: Iden3Credential }>;
   createProfile(nonce: number): Promise<void>;
   generateKey(): Promise<KmsKeyId>;
   getLatestStateById(id: Id): IdentityState;
@@ -44,7 +59,7 @@ export interface IIdentityWallet {
   sign(payload, credential): Promise<Signature>;
 }
 
-export class IdentityWallet {
+export class IdentityWallet implements IIdentityWallet{
   private kms: KMS;
   constructor() {
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub);
@@ -53,35 +68,100 @@ export class IdentityWallet {
     this.kms = kms;
   }
 
-  async createIdentity(): Promise<string> {
+  async createIdentity(seed: Uint8Array) {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
-    console.log('await poseidonHash([1])');
-    // console.log(await poseidonHash([1]));
 
+    const identityMerkleTreesService = IdentityMerkleTrees.createIdentityMerkleTrees();
     const keyID = await this.kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seedPhrase);
 
     const pubKey = await this.kms.publicKey(keyID);
 
-    console.log('pubKey2');
-    console.log('pubKey');
-    console.log(pubKey);
+    const schemaHash = SchemaHash.newSchemaHashFromHex(models.AuthBJJCredentialHash);
+  
+    const authClaim = Claim.newClaim(schemaHash,
+      ClaimOptions.withIndexDataInts(pubKey.p[0], pubKey.p[1]),
+      ClaimOptions.withRevocationNonce(0)
+    );
+    const revNonce = 0;
+    authClaim.setRevocationNonce(revNonce);
+    
+    const entry = treeEntryFromCoreClaim(authClaim);
+    
+    await identityMerkleTreesService.addEntry(entry);
 
-    return '1111';
+    const claimsTree = identityMerkleTreesService.claimsTree();
+
+    const currentState = await hashElems([claimsTree.root.BigInt(), ZERO_HASH.BigInt(), ZERO_HASH.BigInt()]);
+  
+  
+    const didType = buildDIDType(DidMethod.Iden3, Blockchain.Polygon, NetworkId.Mumbai);
+    const identifier = Id.idGenesisFromIdenState(didType, currentState.BigInt());
+    
+    identityMerkleTreesService.bindToIdentifier(identifier);
+    
+    const schema = JSON.parse(models.AuthBJJCredentialSchemaJSON);
+    
+    const expiration = authClaim.getExpirationDate() ? getUnixTimestamp(authClaim.getExpirationDate()): 0;
+    
+    const request: ClaimRequest = {
+      credentialSchema: models.AuthBJJCredentialURL,
+      type: models.AuthBJJCredential,
+      credentialSubject: {
+        x: pubKey.p[0].toString(),
+        y: pubKey.p[1].toString(),
+      },
+      subjectPosition: subjectPositionIndex(authClaim.getIdPosition()),
+      version: 0,
+      expiration,
+      revNonce: revNonce
+    };
+    let credential: Iden3Credential = null;
+    try {
+      credential = createIden3Credential(identifier, request, schema);
+  
+    } catch (e) {
+      throw new Error('Error create Iden3Credential');
+    }
+  
+    return {
+      identifier,
+      credential
+    };
   }
-
-  createProfile(): string {
-    return '';
+  
+  createProfile(nonce: number): Promise<void> {
+    return Promise.resolve(undefined);
   }
-
-  generateMTP(credential: string): string {
-    return '';
+  
+  generateKey(): Promise<KmsKeyId> {
+    return Promise.resolve(undefined);
   }
-
-  generateNonRevocationProof(credential: string): string {
-    return '';
+  
+  generateMtp(credential): Promise<Claim> {
+    return Promise.resolve(undefined);
   }
-
-  getGenesisIdentifier(): string {
-    return '';
+  
+  generateNonRevocationProof(credential): Promise<Claim> {
+    return Promise.resolve(undefined);
+  }
+  
+  getGenesisIdentifier(): Id {
+    return undefined;
+  }
+  
+  getIdentityInfo(id: Id): Promise<IdentityState> {
+    return Promise.resolve(undefined);
+  }
+  
+  getLatestStateById(id: Id): IdentityState {
+    return undefined;
+  }
+  
+  revokeKey(keyId: KmsKeyId): Promise<void> {
+    return Promise.resolve(undefined);
+  }
+  
+  sign(payload, credential): Promise<Signature> {
+    return Promise.resolve(undefined);
   }
 }
