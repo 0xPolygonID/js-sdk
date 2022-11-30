@@ -13,7 +13,7 @@ export class BjjProvider implements IKeyProvider {
     const publicKey = this.privateKey.public();
     return <KmsKeyId>{
       type: this.keyType,
-      id: providerHelpers.keyPath(this.keyType, publicKey.toString())
+      id: providerHelpers.keyPath(this.keyType, publicKey.hex())
     };
   }
 

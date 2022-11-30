@@ -1,7 +1,12 @@
-import { Iden3Credential, MerklizedRootPosition, Schema, SubjectPosition } from '../schema-processor';
+import {
+	Iden3Credential,
+	MerklizedRootPosition,
+	Schema,
+	SubjectPosition,
+	VerifiableConstants
+} from '../schema-processor';
 import { DID, Id } from '@iden3/js-iden3-core';
 import { defineMerklizedRootPosition } from './common';
-import { models } from '../constants';
 
 export interface ClaimRequest {
 	credentialSchema: string;
@@ -16,13 +21,13 @@ export interface ClaimRequest {
 
 export const createIden3Credential = (issuer: Id, request: ClaimRequest, schema: Schema): Iden3Credential => {
 	const context = [
-		models.W3CCredentialSchemaURL2018,
-		models.Iden3CredentialSchemaURL,
+		VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
+		VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
 		schema.$metadata.uris['jsonLdContext']
 	];
 	const credentialType = [
-		models.W3CVerifiableCredential,
-		models.Iden3Credential,
+		VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE,
+		VerifiableConstants.CREDENTIAL_TYPE.IDEN3,
 		request.type
 	];
 	
@@ -48,8 +53,8 @@ export const createIden3Credential = (issuer: Id, request: ClaimRequest, schema:
 	cr.merklizedRootPosition = merklizedRootPosition;
 	cr.issuer = issuerDID.toString();
 	cr.credentialSchema = {
-		type: request.credentialSchema,
-		id: models.AuthBJJCredentialURL // confirm
+		id: request.credentialSchema,
+		type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
 	};
 	
 	return cr;

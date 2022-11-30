@@ -5,17 +5,17 @@ import {
   Claim,
   ClaimOptions,
   DidMethod,
+  getUnixTimestamp,
   Id,
   NetworkId,
-  SchemaHash,
-  getUnixTimestamp
+  SchemaHash
 } from '@iden3/js-iden3-core';
 import { Signature } from '@iden3/js-crypto';
 import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import { models } from '../constants';
 import { IdentityMerkleTrees } from '../merkle-tree';
 import { subjectPositionIndex, treeEntryFromCoreClaim } from './common';
-import { Iden3Credential } from '../schema-processor';
+import { Iden3Credential, Iden3SparseMerkleProof, ProofType } from '../schema-processor';
 import { ClaimRequest, createIden3Credential } from './helper';
 
 // IdentityStatus represents type for state Status
@@ -115,6 +115,7 @@ export class IdentityWallet implements IIdentityWallet{
       expiration,
       revNonce: revNonce
     };
+    
     let credential: Iden3Credential = null;
     try {
       credential = createIden3Credential(identifier, request, schema);
@@ -122,7 +123,28 @@ export class IdentityWallet implements IIdentityWallet{
     } catch (e) {
       throw new Error('Error create Iden3Credential');
     }
-  
+    
+    const index = authClaim.hIndex();
+    
+    const { proof } = await claimsTree.generateProof(index, ZERO_HASH); // correct?
+    
+    const claimsTreeHex = claimsTree.root.hex();
+    const stateHex = currentState.hex();
+    
+    const mtpProof: Iden3SparseMerkleProof = {
+      type: ProofType.Iden3SparseMerkle,
+      mtp: proof,
+      issuerData: {
+        id: identifier,
+        state: {
+          claimsTreeRoot: claimsTreeHex,
+          value: stateHex
+        }
+      }
+    };
+    
+    credential.proof = [mtpProof];
+    
     return {
       identifier,
       credential

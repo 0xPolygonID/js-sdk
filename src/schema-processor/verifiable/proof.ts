@@ -21,7 +21,7 @@ export interface IssuerData {
   state?: State;
   authClaim?: CoreClaim;
   mtp?: Proof;
-  revocationStatus: CredentialStatus;
+  revocationStatus?: CredentialStatus;
 }
 
 // Iden3SparseMerkleProof JSON-LD structure
