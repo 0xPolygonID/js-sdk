@@ -46,7 +46,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
       userGenesisId: this.id.bigInt().toString(),
       nonce: this.nonce.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
-      issuerId: this.claim.issuerId?.bigInt().toString(),
+      issuerId: this.claim.issuerID?.bigInt().toString(),
       issuerClaim: this.claim.claim,
       issuerClaimMtp: circomSiblings(this.claim.incProof.proof, this.getMTLevel()),
       issuerClaimClaimsTreeRoot: this.claim.incProof.treeState.claimsRoot,

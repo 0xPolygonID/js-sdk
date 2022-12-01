@@ -20,7 +20,7 @@ export function authClaimFromPubKey(x: bigint, y: bigint): Claim {
   return Claim.newClaim(
     schemaHash,
     ClaimOptions.withIndexDataInts(x, y),
-    ClaimOptions.withRevocationNonce(Number(revNonce))
+    ClaimOptions.withRevocationNonce(BigInt.asUintN(64, revNonce))
   );
 }
 
@@ -80,7 +80,7 @@ export async function authClaimFullInfo(
   };
 }
 
-async function generate(privKeyHex: string): Promise<{
+export async function generate(privKeyHex: string): Promise<{
   identity: Id;
   claimsTree: Merkletree;
   revTree: Merkletree;
@@ -101,8 +101,7 @@ async function generate(privKeyHex: string): Promise<{
 
   // add auth claim to claimsMT
   const { indexHash, valueHash } = claimsIndexValueHashes(authClaim);
-
-  claimsTree.add(indexHash, valueHash);
+  await claimsTree.add(indexHash, valueHash);
 
   const state = poseidon.hash([claimsTree.root.bigInt(), BigInt(0), BigInt(0)]);
   // create new identity

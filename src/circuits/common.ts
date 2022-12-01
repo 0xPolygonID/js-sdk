@@ -138,3 +138,14 @@ export const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
 };
 
 export const existenceToInt = (b: boolean): number => (b ? 0 : 1);
+
+export function getProperties(obj: object): object {
+  const result: object = {};
+  for (const property in obj) {
+    // eslint-disable-next-line no-prototype-builtins
+    if (obj.hasOwnProperty(property) && !property.startsWith('_')) {
+      result[property] = obj[property];
+    }
+  }
+  return result;
+}

@@ -49,7 +49,7 @@ export class AtomicQueryMTPInputs extends BaseConfig {
     }
 
     const s: Partial<AtomicQueryMTPCircuitInputs> = {
-      userAuthClaim: this.authClaim.claim,
+      userAuthClaim: this.authClaim.claim.marshalJson(),
       userAuthClaimMtp: prepareSiblingsStr(
         this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
@@ -59,36 +59,42 @@ export class AtomicQueryMTPInputs extends BaseConfig {
         this.getMTLevel()
       ),
       challenge: this.challenge.toString(),
-      challengeSignatureR8X: this.signature.R8[0].toString(),
-      challengeSignatureR8Y: this.signature.R8[1].toString(),
+      challengeSignatureR8x: this.signature.R8[0].toString(),
+      challengeSignatureR8y: this.signature.R8[1].toString(),
       challengeSignatureS: this.signature.S.toString(),
-      issuerClaim: this.claim.claim,
-      issuerClaimClaimsTreeRoot: this.claim.incProof.treeState.claimsRoot,
-      issuerClaimIdenState: this.claim.incProof.treeState.state,
+      issuerClaim: this.claim.claim.marshalJson(),
+      issuerClaimClaimsTreeRoot: this.claim.incProof?.treeState?.claimsRoot.bigInt().toString(),
+      issuerClaimIdenState: this.claim.incProof.treeState?.state.bigInt().toString(),
       issuerClaimMtp: prepareSiblingsStr(
         this.claim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
-      issuerClaimRevTreeRoot: this.claim.incProof.treeState.revocationRoot,
-      issuerClaimRootsTreeRoot: this.claim.incProof.treeState.rootOfRoots,
-      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState.claimsRoot,
-      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState.revocationRoot,
-      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots,
-      issuerClaimNonRevState: this.claim.nonRevProof.treeState.state,
+      issuerClaimRevTreeRoot: this.claim.incProof.treeState?.revocationRoot.bigInt().toString(),
+      issuerClaimRootsTreeRoot: this.claim.incProof.treeState?.rootOfRoots.bigInt().toString(),
+      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState?.claimsRoot
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState?.revocationRoot
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState?.rootOfRoots
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevState: this.claim.nonRevProof.treeState?.state.bigInt().toString(),
       issuerClaimNonRevMtp: prepareSiblingsStr(
         this.claim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
-      userClaimsTreeRoot: this.authClaim.incProof.treeState.claimsRoot,
-      userState: this.authClaim.incProof.treeState.state,
-      userRevTreeRoot: this.authClaim.incProof.treeState.revocationRoot,
-      userRootsTreeRoot: this.authClaim.incProof.treeState.rootOfRoots,
-      userId: this.id.bigInt().toString(),
-      issuerId: this.claim.issuerId?.bigInt().toString(),
+      userClaimsTreeRoot: this.authClaim.incProof.treeState?.claimsRoot.bigInt().toString(),
+      userState: this.authClaim.incProof.treeState?.state.bigInt().toString(),
+      userRevTreeRoot: this.authClaim.incProof.treeState?.revocationRoot.bigInt().toString(),
+      userRootsTreeRoot: this.authClaim.incProof.treeState?.rootOfRoots.bigInt().toString(),
+      userID: this.id.bigInt().toString(),
+      issuerID: this.claim.issuerID?.bigInt().toString(),
       operator: this.query.operator,
       slotIndex: this.query.slotIndex,
-      timestamp: this.currentTimeStamp
+      timestamp: this.currentTimeStamp.toString()
     };
 
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
@@ -96,13 +102,15 @@ export class AtomicQueryMTPInputs extends BaseConfig {
     s.value = bigIntArrayToStringArray(values);
 
     const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof);
-    s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key;
-    s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value;
+    s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
+    s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value.bigInt().toString();
+
     s.userAuthClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
 
     const nodeAux = getNodeAuxValue(this.claim.nonRevProof.proof);
-    s.issuerClaimNonRevMtpAuxHi = nodeAux.key;
-    s.issuerClaimNonRevMtpAuxHv = nodeAux.value;
+    s.issuerClaimNonRevMtpAuxHi = nodeAux.key.bigInt().toString();
+    s.issuerClaimNonRevMtpAuxHv = nodeAux.value.bigInt().toString();
+
     s.issuerClaimNonRevMtpNoAux = nodeAux.noAux;
 
     return new TextEncoder().encode(JSON.stringify(s));
@@ -111,40 +119,40 @@ export class AtomicQueryMTPInputs extends BaseConfig {
 
 // stateTransitionInputsInternal type represents credentialAtomicQueryMTP.circom private inputs required by prover
 interface AtomicQueryMTPCircuitInputs {
-  userAuthClaim?: CoreClaim;
+  userAuthClaim?: string[];
   userAuthClaimMtp: string[];
   userAuthClaimNonRevMtp: string[];
-  userAuthClaimNonRevMtpAuxHi?: Hash;
-  userAuthClaimNonRevMtpAuxHv?: Hash;
+  userAuthClaimNonRevMtpAuxHi?: string;
+  userAuthClaimNonRevMtpAuxHv?: string;
   userAuthClaimNonRevMtpNoAux?: string;
-  userClaimsTreeRoot?: Hash;
-  userState?: Hash;
-  userRevTreeRoot?: Hash;
-  userRootsTreeRoot?: Hash;
+  userClaimsTreeRoot?: string;
+  userState?: string;
+  userRevTreeRoot?: string;
+  userRootsTreeRoot?: string;
   userID: string;
   challenge: string;
-  challengeSignatureR8X: string;
-  challengeSignatureR8Y: string;
+  challengeSignatureR8x: string;
+  challengeSignatureR8y: string;
   challengeSignatureS: string;
-  issuerClaim?: CoreClaim;
-  issuerClaimClaimsTreeRoot?: Hash;
-  issuerClaimIdenState?: Hash;
+  issuerClaim?: string[];
+  issuerClaimClaimsTreeRoot?: string;
+  issuerClaimIdenState?: string;
   issuerClaimMtp: string[];
-  issuerClaimRevTreeRoot?: Hash;
-  issuerClaimRootsTreeRoot?: Hash;
-  issuerClaimNonRevClaimsTreeRoot?: Hash;
-  issuerClaimNonRevRevTreeRoot?: Hash;
-  issuerClaimNonRevRootsTreeRoot?: Hash;
-  issuerClaimNonRevState?: Hash;
+  issuerClaimRevTreeRoot?: string;
+  issuerClaimRootsTreeRoot?: string;
+  issuerClaimNonRevClaimsTreeRoot?: string;
+  issuerClaimNonRevRevTreeRoot?: string;
+  issuerClaimNonRevRootsTreeRoot?: string;
+  issuerClaimNonRevState?: string;
   issuerClaimNonRevMtp: string[];
-  issuerClaimNonRevMtpAuxHi?: Hash;
-  issuerClaimNonRevMtpAuxHv?: Hash;
+  issuerClaimNonRevMtpAuxHi?: string;
+  issuerClaimNonRevMtpAuxHv?: string;
   issuerClaimNonRevMtpNoAux?: string;
   claimSchema: string;
-  issuerId?: string;
+  issuerID?: string;
   operator: number;
   slotIndex: number;
-  timestamp: number;
+  timestamp: string;
   value?: string[];
 }
 
@@ -170,7 +178,7 @@ export class AtomicQueryMTPPubSignals extends BaseConfig {
     const fieldLength = 10;
 
     const sVals: string[] = JSON.parse(new TextDecoder().decode(data));
-
+    // console.log('sVals', sVals, sVals.length, typeof sVals);
     if (sVals.length !== fieldLength + this.getValueArrSize()) {
       throw new Error(
         `invalid number of Output values expected ${fieldLength + this.getValueArrSize()} got ${

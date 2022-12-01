@@ -60,7 +60,7 @@ export interface ClaimWithSigProof {
 }
 
 export interface ClaimWithMTPProof {
-  issuerId?: Id;
+  issuerID?: Id;
   claim: Claim;
   incProof: MTProof;
   nonRevProof: MTProof;
@@ -75,7 +75,7 @@ export interface BJJSignatureProof {
 
 export interface MTProof {
   proof: Proof;
-  treeState: TreeState;
+  treeState?: TreeState;
 }
 export interface GISTProof {
   root: Hash;

@@ -85,7 +85,7 @@ export class AtomicQuerySigInputs extends BaseConfig {
       timestamp: this.currentTimeStamp,
       issuerClaimSignatureR8x: this.claim.signatureProof.signature.R8[0].toString(),
       issuerClaimSignatureR8y: this.claim.signatureProof.signature.R8[1].toString(),
-      issuerClaimSignatureS: this.claim.signatureProof.signature.s.toString(),
+      issuerClaimSignatureS: this.claim.signatureProof.signature.S.toString(),
 
       issuerAuthClaimMtp: bigIntArrayToStringArray(
         prepareSiblings(

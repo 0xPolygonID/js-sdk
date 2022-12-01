@@ -14,16 +14,16 @@ export class StateTransitionInputs extends BaseConfig {
 
   // CircuitInputMarshal returns Circom private inputs for stateTransition.circom
   inputsMarshal(): Uint8Array {
-    if (this.authClaim.incProof.proof) {
+    if (!this.authClaim.incProof.proof) {
       throw new Error(CircuitError.EmptyAuthClaimProof);
     }
 
-    if (this.authClaim.nonRevProof.proof) {
+    if (!this.authClaim.nonRevProof.proof) {
       throw new Error(CircuitError.EmptyAuthClaimNonRevProof);
     }
 
     const s: Partial<StateTransitionInputsInternal> = {
-      authClaim: this.authClaim.claim,
+      authClaim: this.authClaim.claim.marshalJson(),
       authClaimMtp: prepareSiblingsStr(
         this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
@@ -32,12 +32,12 @@ export class StateTransitionInputs extends BaseConfig {
         this.authClaim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
-      userId: this.id.bigInt().toString(),
-      newUserState: this.newState,
-      claimsTreeRoot: this.oldTreeState.claimsRoot,
-      oldUserState: this.oldTreeState.state,
-      revTreeRoot: this.oldTreeState.revocationRoot,
-      rootsTreeRoot: this.oldTreeState.rootOfRoots,
+      userID: this.id.bigInt().toString(),
+      newUserState: this.newState.bigInt().toString(),
+      claimsTreeRoot: this.oldTreeState.claimsRoot.bigInt().toString(),
+      oldUserState: this.oldTreeState.state.bigInt().toString(),
+      revTreeRoot: this.oldTreeState.revocationRoot.bigInt().toString(),
+      rootsTreeRoot: this.oldTreeState.rootOfRoots.bigInt().toString(),
       signatureR8x: this.signature.R8[0].toString(),
       signatureR8y: this.signature.R8[1].toString(),
       signatureS: this.signature.S.toString()
@@ -50,8 +50,8 @@ export class StateTransitionInputs extends BaseConfig {
     }
 
     const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof);
-    s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key;
-    s.authClaimNonRevMtpAuxHv = nodeAuxAuth.value;
+    s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
+    s.authClaimNonRevMtpAuxHv = nodeAuxAuth.value.bigInt().toString();
     s.authClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
 
     return new TextEncoder().encode(JSON.stringify(s));
@@ -59,19 +59,19 @@ export class StateTransitionInputs extends BaseConfig {
 }
 
 interface StateTransitionInputsInternal {
-  authClaim: Claim;
+  authClaim: string[];
   authClaimMtp: string[];
   authClaimNonRevMtp: string[];
-  authClaimNonRevMtpAuxHi?: Hash;
-  authClaimNonRevMtpAuxHv?: Hash;
+  authClaimNonRevMtpAuxHi?: string;
+  authClaimNonRevMtpAuxHv?: string;
   authClaimNonRevMtpNoAux: string;
-  userId: string;
-  newUserState?: Hash;
-  oldUserState?: Hash;
+  userID: string;
+  newUserState?: string;
+  oldUserState?: string;
   isOldStateGenesis: string;
-  claimsTreeRoot?: Hash;
-  revTreeRoot?: Hash;
-  rootsTreeRoot?: Hash;
+  claimsTreeRoot?: string;
+  revTreeRoot?: string;
+  rootsTreeRoot?: string;
   signatureR8x: string;
   signatureR8y: string;
   signatureS: string;

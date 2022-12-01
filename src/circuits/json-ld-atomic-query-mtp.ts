@@ -96,7 +96,7 @@ export class JsonLDAtomicQueryMTPInputs extends BaseConfig {
       userRevTreeRoot: this.authClaim.incProof.treeState.revocationRoot,
       userRootsTreeRoot: this.authClaim.incProof.treeState.rootOfRoots,
       userId: this.id.bigInt().toString(),
-      issuerId: this.claim.issuerId?.bigInt().toString(),
+      issuerId: this.claim.issuerID?.bigInt().toString(),
       claimPathNotExists: claimPathNotExists,
       claimPathMtp: prepareSiblingsStr(
         (this.query.valueProof ?? new ValueProof()).mtp.allSiblings(),
