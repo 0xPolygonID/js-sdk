@@ -1,4 +1,17 @@
-import { Claim, Id, SchemaHash, ClaimOptions, ElemBytes, Constants } from '@iden3/js-iden3-core';
+import {
+  Claim,
+  Id,
+  SchemaHash,
+  ClaimOptions,
+  ElemBytes,
+  Constants,
+  NetworkId,
+  DidMethod,
+  Blockchain,
+  buildDIDType,
+  idenState,
+  getDateFromUnixTimestamp
+} from '@iden3/js-iden3-core';
 import {
   Hash,
   hashElems,
@@ -6,9 +19,41 @@ import {
   ZERO_HASH,
   Merkletree,
   InMemoryDB,
-  Proof
+  Proof,
+  newHashFromBigInt
 } from '@iden3/js-merkletree';
 import { Hex, poseidon, PrivateKey, Signature } from '@iden3/js-crypto';
+import { merklizeJSONLD, Merklizer } from '../../src/schema-processor/processor/merklize';
+
+const TestClaimDocument = `{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://w3id.org/citizenship/v1",
+    "https://w3id.org/security/bbs/v1"
+  ],
+  "id": "https://issuer.oidp.uscis.gov/credentials/83627465",
+  "type": ["VerifiableCredential", "PermanentResidentCard"],
+  "issuer": "did:example:489398593",
+  "identifier": 83627465,
+  "name": "Permanent Resident Card",
+  "description": "Government of Example Permanent Resident Card.",
+  "issuanceDate": "2019-12-03T12:19:52Z",
+  "expirationDate": "2029-12-03T12:19:52Z",
+  "credentialSubject": {
+    "id": "did:example:b34ca6cd37bbf23",
+    "type": ["PermanentResident", "Person"],
+    "givenName": "JOHN",
+    "familyName": "SMITH",
+    "gender": "Male",
+    "image": "data:image/png;base64,iVBORw0KGgokJggg==",
+    "residentSince": "2015-01-01",
+    "lprCategory": "C09",
+    "lprNumber": "999-999-999",
+    "commuterClassification": "C1",
+    "birthCountry": "Bahamas",
+    "birthDate": "1958-07-17"
+  }
+}`;
 
 export function authClaimFromPubKey(x: bigint, y: bigint): Claim {
   const schemaHash = new SchemaHash(Hex.decodeString('ca938857241db9451ea329256b9c06e5'));
@@ -124,4 +169,75 @@ async function calcStateFromRoots(claimsTree: Merkletree, ...args: Merkletree[])
   }
   const state = await hashElems([claimsTree.root.bigInt(), revTreeRoot, rootsTreeRoot]);
   return state;
+}
+
+export class IdentityTest {
+  id: Id;
+  clt: Merkletree;
+  ret: Merkletree;
+  rot: Merkletree;
+  authClaim: Claim;
+  pk: PrivateKey | null = null;
+
+  static async newIdentity(privKHex: string): Promise<IdentityTest> {
+    const it = new IdentityTest();
+    // init claims tree
+    it.clt = new Merkletree(new InMemoryDB(str2Bytes('')), true, 4);
+    it.ret = new Merkletree(new InMemoryDB(str2Bytes('')), true, 4);
+    it.rot = new Merkletree(new InMemoryDB(str2Bytes('')), true, 4);
+
+    // extract pubKey
+    const { key, x, y } = ExtractPubXY(privKHex);
+    it.pk = key;
+
+    // create auth claim
+    const authClaim = authClaimFromPubKey(x, y);
+    it.authClaim = authClaim;
+
+    // add auth claim to claimsMT
+    const { hi, hv } = authClaim.hiHv();
+
+    await it.clt.add(hi, hv);
+
+    const state = it.state();
+
+    it.id = idFromState(state.bigInt());
+
+    return it;
+  }
+
+  state(): Hash {
+    const state = idenState(this.clt.root.bigInt(), this.ret.root.bigInt(), this.rot.root.bigInt());
+    const hash = newHashFromBigInt(state);
+    return hash;
+  }
+}
+
+export function ExtractPubXY(privKHex: string): { key: PrivateKey; x: bigint; y: bigint } {
+  const k = new PrivateKey(Hex.decodeString(privKHex));
+  const pk = k.public();
+  return { key: k, x: pk.p[0], y: pk.p[1] };
+}
+
+export function idFromState(state: bigint): Id {
+  const typ = buildDIDType(DidMethod.Iden3, Blockchain.NoChain, NetworkId.NoNetwork);
+  // create new identity
+  return Id.idGenesisFromIdenState(typ, state);
+}
+
+export function defaultJSONUserClaim(subject: Id): { mz: Merklizer; claim: Claim } {
+  const mz = merklizeJSONLD(new TextEncoder().encode(TestClaimDocument));
+
+  const schemaHash = new SchemaHash(Hex.decodeString('ce6bb12c96bfd1544c02c289c6b4b987'));
+  const nonce = BigInt(10);
+
+  const claim = Claim.newClaim(
+    schemaHash,
+    ClaimOptions.withIndexId(subject),
+    ClaimOptions.withExpirationDate(getDateFromUnixTimestamp(1669884010)), //Thu Dec 01 2022 08:40:10 GMT+0000
+    ClaimOptions.withRevocationNonce(nonce),
+    ClaimOptions.withIndexMerklizedRoot(mz.root().bigInt())
+  );
+
+  return { mz, claim };
 }

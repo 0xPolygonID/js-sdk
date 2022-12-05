@@ -1,5 +1,5 @@
 import { newHashFromString, Proof } from '@iden3/js-merkletree';
-import { Claim as CoreClaim, Id, SchemaHash } from '@iden3/js-iden3-core';
+import { Id, SchemaHash } from '@iden3/js-iden3-core';
 import { Query, ClaimWithMTPProof, ValueProof } from './models';
 import { Hash } from '@iden3/js-merkletree';
 import {
@@ -47,19 +47,31 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
       nonce: this.nonce.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
       issuerId: this.claim.issuerID?.bigInt().toString(),
-      issuerClaim: this.claim.claim,
-      issuerClaimMtp: circomSiblings(this.claim.incProof.proof, this.getMTLevel()),
-      issuerClaimClaimsTreeRoot: this.claim.incProof.treeState.claimsRoot,
-      issuerClaimRevTreeRoot: this.claim.incProof.treeState.revocationRoot,
-      issuerClaimRootsTreeRoot: this.claim.incProof.treeState.rootOfRoots,
-      issuerClaimIdenState: this.claim.incProof.treeState.state,
-      issuerClaimNonRevMtp: circomSiblings(this.claim.nonRevProof.proof, this.getMTLevel()),
-      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState.claimsRoot,
-      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState.revocationRoot,
-      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots,
-      issuerClaimNonRevState: this.claim.nonRevProof.treeState.state,
+      issuerClaim: this.claim.claim.marshalJson(),
+      issuerClaimMtp: circomSiblings(this.claim.incProof.proof, this.getMTLevel()).map((s) =>
+        s.bigInt().toString()
+      ),
+      issuerClaimClaimsTreeRoot: this.claim.incProof.treeState?.claimsRoot.bigInt().toString(),
+      issuerClaimRevTreeRoot: this.claim.incProof.treeState?.revocationRoot.bigInt().toString(),
+      issuerClaimRootsTreeRoot: this.claim.incProof.treeState?.rootOfRoots.bigInt().toString(),
+      issuerClaimIdenState: this.claim.incProof.treeState?.state.bigInt().toString(),
+      issuerClaimNonRevMtp: circomSiblings(this.claim.nonRevProof.proof, this.getMTLevel()).map(
+        (s) => s.bigInt().toString()
+      ),
+      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState?.claimsRoot
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState?.revocationRoot
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState?.rootOfRoots
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevState: this.claim.nonRevProof.treeState?.state.bigInt().toString(),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
-      claimPathMtp: circomSiblings(valueProof.mtp, this.getMTLevel()),
+      claimPathMtp: circomSiblings(valueProof.mtp, this.getMTLevel()).map((s) =>
+        s.bigInt().toString()
+      ),
       claimPathValue: valueProof.value.toString(),
       operator: this.query.operator,
       slotIndex: this.query.slotIndex,
@@ -67,15 +79,15 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
     };
 
     const nodeAux = getNodeAuxValue(this.claim.nonRevProof.proof);
-    s.issuerClaimNonRevMtpAuxHi = nodeAux.key;
-    s.issuerClaimNonRevMtpAuxHv = nodeAux.value;
+    s.issuerClaimNonRevMtpAuxHi = nodeAux.key.bigInt().toString();
+    s.issuerClaimNonRevMtpAuxHv = nodeAux.value.bigInt().toString();
     s.issuerClaimNonRevMtpNoAux = nodeAux.noAux;
 
     s.claimPathNotExists = existenceToInt(valueProof.mtp.existence);
     const nodAuxJSONLD = getNodeAuxValue(valueProof.mtp);
     s.claimPathMtpNoAux = nodAuxJSONLD.noAux;
-    s.claimPathMtpAuxHi = nodAuxJSONLD.key;
-    s.claimPathMtpAuxHv = nodAuxJSONLD.value;
+    s.claimPathMtpAuxHi = nodAuxJSONLD.key.bigInt().toString();
+    s.claimPathMtpAuxHv = nodAuxJSONLD.value.bigInt().toString();
 
     s.claimPathKey = queryPathKey.toString();
 
@@ -93,26 +105,26 @@ interface AtomicQueryMTPV2CircuitInputs {
   nonce: string;
   claimSubjectProfileNonce: string;
   issuerId: string;
-  issuerClaim?: CoreClaim;
-  issuerClaimMtp: Hash[];
-  issuerClaimClaimsTreeRoot: Hash;
-  issuerClaimRevTreeRoot: Hash;
-  issuerClaimRootsTreeRoot: Hash;
-  issuerClaimIdenState: Hash;
-  issuerClaimNonRevClaimsTreeRoot: Hash;
-  issuerClaimNonRevRevTreeRoot: Hash;
-  issuerClaimNonRevRootsTreeRoot: Hash;
-  issuerClaimNonRevState: Hash;
-  issuerClaimNonRevMtp: Hash[];
-  issuerClaimNonRevMtpAuxHi: Hash;
-  issuerClaimNonRevMtpAuxHv: Hash;
+  issuerClaim?: string[];
+  issuerClaimMtp: string[];
+  issuerClaimClaimsTreeRoot: string;
+  issuerClaimRevTreeRoot: string;
+  issuerClaimRootsTreeRoot: string;
+  issuerClaimIdenState: string;
+  issuerClaimNonRevClaimsTreeRoot: string;
+  issuerClaimNonRevRevTreeRoot: string;
+  issuerClaimNonRevRootsTreeRoot: string;
+  issuerClaimNonRevState: string;
+  issuerClaimNonRevMtp: string[];
+  issuerClaimNonRevMtpAuxHi: string;
+  issuerClaimNonRevMtpAuxHv: string;
   issuerClaimNonRevMtpNoAux: string;
   claimSchema: string;
   claimPathNotExists: number;
-  claimPathMtp: Hash[];
+  claimPathMtp: string[];
   claimPathMtpNoAux: string;
-  claimPathMtpAuxHi: Hash;
-  claimPathMtpAuxHv: Hash;
+  claimPathMtpAuxHi: string;
+  claimPathMtpAuxHv: string;
   claimPathKey: string;
   claimPathValue: string;
   operator: number;

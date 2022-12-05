@@ -1,5 +1,5 @@
 import { Signature } from '@iden3/js-crypto';
-import { Claim, Id } from '@iden3/js-iden3-core';
+import { Id } from '@iden3/js-iden3-core';
 import { Hash, newHashFromString } from '@iden3/js-merkletree';
 import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
 import { ClaimWithMTPProof, TreeState, CircuitError } from './models';

@@ -1,5 +1,5 @@
 import { Signature } from '@iden3/js-crypto';
-import { Claim, Id, SchemaHash } from '@iden3/js-iden3-core';
+import { Id, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, ZERO_HASH, newHashFromString } from '@iden3/js-merkletree';
 import {
   BaseConfig,
@@ -60,7 +60,7 @@ export class JsonLDAtomicQueryMTPInputs extends BaseConfig {
     const queryPathKey = this.query.valueProof?.path.mtEntry();
 
     const s: Partial<JsonLDatomicQueryMTPCircuitInputs> = {
-      userAuthClaim: this.authClaim.claim,
+      userAuthClaim: this.authClaim.claim.marshalJson(),
       userAuthClaimMtp: prepareSiblingsStr(
         this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
@@ -73,28 +73,34 @@ export class JsonLDAtomicQueryMTPInputs extends BaseConfig {
       challengeSignatureR8x: this.signature.R8[0].toString(),
       challengeSignatureR8y: this.signature.R8[1].toString(),
       challengeSignatureS: this.signature.S.toString(),
-      issuerClaim: this.claim.claim,
+      issuerClaim: this.claim.claim.marshalJson(),
       issuerClaimMtp: prepareSiblingsStr(
         this.claim.incProof.proof.allSiblings(),
         this.getMTLevel()
       ),
-      issuerClaimIdenState: this.claim.incProof.treeState.state,
-      issuerClaimClaimsTreeRoot: this.claim.incProof.treeState.claimsRoot,
-      issuerClaimRevTreeRoot: this.claim.incProof.treeState.revocationRoot,
-      issuerClaimRootsTreeRoot: this.claim.incProof.treeState.rootOfRoots,
-      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState.claimsRoot,
-      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState.revocationRoot,
-      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots,
-      issuerClaimNonRevState: this.claim.nonRevProof.treeState.state,
+      issuerClaimIdenState: this.claim.incProof.treeState?.state.bigInt().toString(),
+      issuerClaimClaimsTreeRoot: this.claim.incProof.treeState?.claimsRoot.bigInt().toString(),
+      issuerClaimRevTreeRoot: this.claim.incProof.treeState?.revocationRoot.bigInt().toString(),
+      issuerClaimRootsTreeRoot: this.claim.incProof.treeState?.rootOfRoots.bigInt().toString(),
+      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState?.claimsRoot
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState?.revocationRoot
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState?.rootOfRoots
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevState: this.claim.nonRevProof.treeState?.state.bigInt().toString(),
       issuerClaimNonRevMtp: prepareSiblingsStr(
         this.claim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
-      userClaimsTreeRoot: this.authClaim.incProof.treeState.claimsRoot,
-      userState: this.authClaim.incProof.treeState.state,
-      userRevTreeRoot: this.authClaim.incProof.treeState.revocationRoot,
-      userRootsTreeRoot: this.authClaim.incProof.treeState.rootOfRoots,
+      userClaimsTreeRoot: this.authClaim.incProof.treeState?.claimsRoot.bigInt().toString(),
+      userState: this.authClaim.incProof.treeState?.state.bigInt().toString(),
+      userRevTreeRoot: this.authClaim.incProof.treeState?.revocationRoot.bigInt().toString(),
+      userRootsTreeRoot: this.authClaim.incProof.treeState?.rootOfRoots.bigInt().toString(),
       userId: this.id.bigInt().toString(),
       issuerId: this.claim.issuerID?.bigInt().toString(),
       claimPathNotExists: claimPathNotExists,
@@ -115,47 +121,47 @@ export class JsonLDAtomicQueryMTPInputs extends BaseConfig {
     s.value = bigIntArrayToStringArray(values);
 
     const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof);
-    s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key;
-    s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value;
+    s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
+    s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value.bigInt().toString();
     s.userAuthClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
 
     const nodeAux = getNodeAuxValue(this.claim.nonRevProof.proof);
-    s.issuerClaimNonRevMtpAuxHi = nodeAux.key;
-    s.issuerClaimNonRevMtpAuxHv = nodeAux.value;
+    s.issuerClaimNonRevMtpAuxHi = nodeAux.key.bigInt().toString();
+    s.issuerClaimNonRevMtpAuxHv = nodeAux.value.bigInt().toString();
     s.issuerClaimNonRevMtpNoAux = nodeAux.noAux;
     return new TextEncoder().encode(JSON.stringify(s));
   }
 }
 
 interface JsonLDatomicQueryMTPCircuitInputs extends BaseConfig {
-  userAuthClaim: Claim;
+  userAuthClaim: string[];
   userAuthClaimMtp: string[];
   userAuthClaimNonRevMtp: string[];
-  userAuthClaimNonRevMtpAuxHi: Hash;
-  userAuthClaimNonRevMtpAuxHv: Hash;
+  userAuthClaimNonRevMtpAuxHi: string;
+  userAuthClaimNonRevMtpAuxHv: string;
   userAuthClaimNonRevMtpNoAux: string;
-  userClaimsTreeRoot: Hash;
-  userState: Hash;
-  userRevTreeRoot: Hash;
-  userRootsTreeRoot: Hash;
+  userClaimsTreeRoot: string;
+  userState: string;
+  userRevTreeRoot: string;
+  userRootsTreeRoot: string;
   userId: string;
   challenge: string;
   challengeSignatureR8x: string;
   challengeSignatureR8y: string;
   challengeSignatureS: string;
-  issuerClaim: Claim;
-  issuerClaimClaimsTreeRoot: Hash;
-  issuerClaimIdenState: Hash;
+  issuerClaim: string[];
+  issuerClaimClaimsTreeRoot: string;
+  issuerClaimIdenState: string;
   issuerClaimMtp: string[];
-  issuerClaimRevTreeRoot: Hash;
-  issuerClaimRootsTreeRoot: Hash;
-  issuerClaimNonRevClaimsTreeRoot: Hash;
-  issuerClaimNonRevRevTreeRoot: Hash;
-  issuerClaimNonRevRootsTreeRoot: Hash;
-  issuerClaimNonRevState: Hash;
+  issuerClaimRevTreeRoot: string;
+  issuerClaimRootsTreeRoot: string;
+  issuerClaimNonRevClaimsTreeRoot: string;
+  issuerClaimNonRevRevTreeRoot: string;
+  issuerClaimNonRevRootsTreeRoot: string;
+  issuerClaimNonRevState: string;
   issuerClaimNonRevMtp: string[];
-  issuerClaimNonRevMtpAuxHi: Hash;
-  issuerClaimNonRevMtpAuxHv: Hash;
+  issuerClaimNonRevMtpAuxHi: string;
+  issuerClaimNonRevMtpAuxHv: string;
   issuerClaimNonRevMtpNoAux: string;
   claimSchema: string;
   issuerId: string;
@@ -172,13 +178,13 @@ interface JsonLDatomicQueryMTPCircuitInputs extends BaseConfig {
 }
 
 export class JsonLDAtomicQueryMTPPubSignals extends BaseConfig {
-  userId: Id;
+  userID: Id;
   userState: Hash;
   challenge: bigint;
   claimSchema: SchemaHash;
   issuerClaimIdenState: Hash;
   issuerClaimNonRevState: Hash;
-  issuerId: Id;
+  issuerID: Id;
   claimPathKey: Hash;
   values: bigint[];
   operator: number;
@@ -223,7 +229,7 @@ export class JsonLDAtomicQueryMTPPubSignals extends BaseConfig {
 
     let fieldIdx = 0;
     //  - userID
-    this.userId = Id.fromBigInt(BigInt(sVals[fieldIdx]));
+    this.userID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
 
     //  - userState
@@ -239,7 +245,7 @@ export class JsonLDAtomicQueryMTPPubSignals extends BaseConfig {
     fieldIdx++;
 
     //  - issuerID
-    this.issuerId = Id.fromBigInt(BigInt(sVals[fieldIdx]));
+    this.issuerID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
 
     //  - issuerClaimNonRevState

@@ -53,7 +53,7 @@ export class CircuitClaim {
 }
 
 export interface ClaimWithSigProof {
-  issuerId: Id;
+  issuerID: Id;
   claim: Claim;
   nonRevProof: MTProof;
   signatureProof: BJJSignatureProof;

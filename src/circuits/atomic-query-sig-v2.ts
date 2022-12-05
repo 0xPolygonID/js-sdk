@@ -67,18 +67,18 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
       userGenesisId: this.id.bigInt().toString(),
       nonce: this.nonce.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
-      issuerId: this.claim.issuerId.bigInt().toString(),
+      issuerId: this.claim.issuerID.bigInt().toString(),
       issuerClaim: this.claim.claim,
-      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState.claimsRoot
+      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState?.claimsRoot
         .bigInt()
         .toString(),
-      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState.revocationRoot
+      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState?.revocationRoot
         .bigInt()
         .toString(),
-      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots
+      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState?.rootOfRoots
         .bigInt()
         .toString(),
-      issuerClaimNonRevState: this.claim.nonRevProof.treeState.state.bigInt().toString(),
+      issuerClaimNonRevState: this.claim.nonRevProof.treeState?.state.bigInt().toString(),
       issuerClaimNonRevMtp: prepareSiblingsStr(
         this.claim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
@@ -91,13 +91,13 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
         this.claim.signatureProof.issuerAuthIncProof.proof.allSiblings(),
         this.getMTLevel()
       ),
-      issuerAuthClaimsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.claimsRoot
+      issuerAuthClaimsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState?.claimsRoot
         .bigInt()
         .toString(),
-      issuerAuthRevTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.revocationRoot
+      issuerAuthRevTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState?.revocationRoot
         .bigInt()
         .toString(),
-      issuerAuthRootsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.rootOfRoots
+      issuerAuthRootsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState?.rootOfRoots
         .bigInt()
         .toString(),
 

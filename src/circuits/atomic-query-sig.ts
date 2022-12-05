@@ -51,7 +51,7 @@ export class AtomicQuerySigInputs extends BaseConfig {
     }
 
     const s: Partial<AtomicQuerySigCircuitInputs> = {
-      userAuthClaim: this.authClaim.claim,
+      userAuthClaim: this.authClaim.claim.marshalJson(),
       userAuthClaimMtp: prepareSiblingsStr(
         this.authClaim.incProof.proof.allSiblings(),
         this.getMTLevel()
@@ -64,25 +64,31 @@ export class AtomicQuerySigInputs extends BaseConfig {
       challengeSignatureR8x: this.signature.R8[0].toString(),
       challengeSignatureR8y: this.signature.R8[1].toString(),
       challengeSignatureS: this.signature.S.toString(),
-      issuerClaim: this.claim.claim,
-      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState.claimsRoot,
-      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState.revocationRoot,
-      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState.rootOfRoots,
-      issuerClaimNonRevState: this.claim.nonRevProof.treeState.state,
+      issuerClaim: this.claim.claim.marshalJson(),
+      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState?.claimsRoot
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState?.revocationRoot
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState?.rootOfRoots
+        .bigInt()
+        .toString(),
+      issuerClaimNonRevState: this.claim.nonRevProof.treeState?.state.bigInt().toString(),
       issuerClaimNonRevMtp: prepareSiblingsStr(
         this.claim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
-      userClaimsTreeRoot: this.authClaim.incProof.treeState.claimsRoot,
-      userState: this.authClaim.incProof.treeState.state,
-      userRevTreeRoot: this.authClaim.incProof.treeState.revocationRoot,
-      userRootsTreeRoot: this.authClaim.incProof.treeState.rootOfRoots,
+      userClaimsTreeRoot: this.authClaim.incProof.treeState?.claimsRoot.bigInt().toString(),
+      userState: this.authClaim.incProof.treeState?.state.bigInt().toString(),
+      userRevTreeRoot: this.authClaim.incProof.treeState?.revocationRoot.bigInt().toString(),
+      userRootsTreeRoot: this.authClaim.incProof.treeState?.rootOfRoots.bigInt().toString(),
       userID: this.id.bigInt().toString(),
-      issuerID: this.claim.issuerId.bigInt().toString(),
+      issuerID: this.claim.issuerID.bigInt().toString(),
       operator: this.query.operator,
       slotIndex: this.query.slotIndex,
-      timestamp: this.currentTimeStamp,
+      timestamp: this.currentTimeStamp.toString(),
       issuerClaimSignatureR8x: this.claim.signatureProof.signature.R8[0].toString(),
       issuerClaimSignatureR8y: this.claim.signatureProof.signature.R8[1].toString(),
       issuerClaimSignatureS: this.claim.signatureProof.signature.S.toString(),
@@ -94,11 +100,17 @@ export class AtomicQuerySigInputs extends BaseConfig {
         )
       ),
 
-      issuerAuthClaimsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.claimsRoot,
-      issuerAuthRevTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.revocationRoot,
-      issuerAuthRootsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState.rootOfRoots,
+      issuerAuthClaimsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState?.claimsRoot
+        .bigInt()
+        .toString(),
+      issuerAuthRevTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState?.revocationRoot
+        .bigInt()
+        .toString(),
+      issuerAuthRootsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState?.rootOfRoots
+        .bigInt()
+        .toString(),
 
-      issuerAuthClaim: this.claim.signatureProof.issuerAuthClaim,
+      issuerAuthClaim: this.claim.signatureProof.issuerAuthClaim?.marshalJson(),
 
       issuerAuthClaimNonRevMtp: bigIntArrayToStringArray(
         prepareSiblings(
@@ -112,20 +124,20 @@ export class AtomicQuerySigInputs extends BaseConfig {
     s.value = bigIntArrayToStringArray(values);
 
     const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof);
-    s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key;
-    s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value;
+    s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
+    s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value.bigInt().toString();
     s.userAuthClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
 
     const nodeAux = getNodeAuxValue(this.claim.nonRevProof.proof);
-    s.issuerClaimNonRevMtpAuxHi = nodeAux.key;
-    s.issuerClaimNonRevMtpAuxHv = nodeAux.value;
+    s.issuerClaimNonRevMtpAuxHi = nodeAux.key.bigInt().toString();
+    s.issuerClaimNonRevMtpAuxHv = nodeAux.value.bigInt().toString();
     s.issuerClaimNonRevMtpNoAux = nodeAux.noAux;
 
     const issuerAuthNodeAux = getNodeAuxValue(
       this.claim.signatureProof.issuerAuthNonRevProof.proof
     );
-    s.issuerAuthClaimNonRevMtpAuxHi = issuerAuthNodeAux.key;
-    s.issuerAuthClaimNonRevMtpAuxHv = issuerAuthNodeAux.value;
+    s.issuerAuthClaimNonRevMtpAuxHi = issuerAuthNodeAux.key.bigInt().toString();
+    s.issuerAuthClaimNonRevMtpAuxHv = issuerAuthNodeAux.value.bigInt().toString();
     s.issuerAuthClaimNonRevMtpNoAux = issuerAuthNodeAux.noAux;
 
     return new TextEncoder().encode(JSON.stringify(s));
@@ -133,55 +145,55 @@ export class AtomicQuerySigInputs extends BaseConfig {
 }
 
 export interface AtomicQuerySigCircuitInputs {
-  userAuthClaim?: CoreClaim;
+  userAuthClaim?: string[];
   userAuthClaimMtp: string[];
   userAuthClaimNonRevMtp: string[];
-  userAuthClaimNonRevMtpAuxHi?: Hash;
-  userAuthClaimNonRevMtpAuxHv?: Hash;
+  userAuthClaimNonRevMtpAuxHi?: string;
+  userAuthClaimNonRevMtpAuxHv?: string;
   userAuthClaimNonRevMtpNoAux: string;
-  userClaimsTreeRoot?: Hash;
-  userState?: Hash;
-  userRevTreeRoot?: Hash;
-  userRootsTreeRoot?: Hash;
+  userClaimsTreeRoot?: string;
+  userState?: string;
+  userRevTreeRoot?: string;
+  userRootsTreeRoot?: string;
   userID: string;
   challenge: string;
   challengeSignatureR8x: string;
   challengeSignatureR8y: string;
   challengeSignatureS: string;
-  issuerClaim?: CoreClaim;
-  issuerClaimNonRevClaimsTreeRoot?: Hash;
-  issuerClaimNonRevRevTreeRoot?: Hash;
-  issuerClaimNonRevRootsTreeRoot?: Hash;
-  issuerClaimNonRevState?: Hash;
+  issuerClaim?: string[];
+  issuerClaimNonRevClaimsTreeRoot?: string;
+  issuerClaimNonRevRevTreeRoot?: string;
+  issuerClaimNonRevRootsTreeRoot?: string;
+  issuerClaimNonRevState?: string;
   issuerClaimNonRevMtp: string[];
-  issuerClaimNonRevMtpAuxHi?: Hash;
-  issuerClaimNonRevMtpAuxHv?: Hash;
+  issuerClaimNonRevMtpAuxHi?: string;
+  issuerClaimNonRevMtpAuxHv?: string;
   issuerClaimNonRevMtpNoAux: string;
   claimSchema: string;
   issuerID: string;
   operator: number;
   slotIndex: number;
-  timestamp: number;
+  timestamp: string;
   value: string[];
   issuerClaimSignatureR8x: string;
   issuerClaimSignatureR8y: string;
   issuerClaimSignatureS: string;
-  issuerAuthClaim?: CoreClaim;
+  issuerAuthClaim?: string[];
   issuerAuthClaimMtp: string[];
   issuerAuthClaimNonRevMtp: string[];
-  issuerAuthClaimNonRevMtpAuxHi?: Hash;
-  issuerAuthClaimNonRevMtpAuxHv?: Hash;
+  issuerAuthClaimNonRevMtpAuxHi?: string;
+  issuerAuthClaimNonRevMtpAuxHv?: string;
   issuerAuthClaimNonRevMtpNoAux: string;
-  issuerAuthClaimsTreeRoot?: Hash;
-  issuerAuthRevTreeRoot?: Hash;
-  issuerAuthRootsTreeRoot?: Hash;
+  issuerAuthClaimsTreeRoot?: string;
+  issuerAuthRevTreeRoot?: string;
+  issuerAuthRootsTreeRoot?: string;
 }
 
 // AtomicQuerySigPubSignals public inputs
 export class AtomicQuerySigPubSignals extends BaseConfig {
-  userId: Id;
+  userID: Id;
   userState: Hash;
-  issuerId: Id;
+  issuerID: Id;
   issuerAuthState: Hash;
   issuerClaimNonRevState: Hash;
   claimSchema: SchemaHash;
@@ -210,13 +222,13 @@ export class AtomicQuerySigPubSignals extends BaseConfig {
 
     this.issuerAuthState = newHashFromString(sVals[0]);
 
-    this.userId = Id.fromBigInt(BigInt(sVals[1]));
+    this.userID = Id.fromBigInt(BigInt(sVals[1]));
 
     this.userState = newHashFromString(sVals[2]);
 
     this.challenge = BigInt(sVals[3]);
 
-    this.issuerId = Id.fromBigInt(BigInt(sVals[4]));
+    this.issuerID = Id.fromBigInt(BigInt(sVals[4]));
 
     this.issuerClaimNonRevState = newHashFromString(sVals[5]);
 

@@ -57,7 +57,8 @@ export class Claim {
       },
       issuerAuthClaimMTP: sigProof.issuerData.mtp,
       signature: signature,
-      issuerAuthClaim: sigProof.issuerData.authClaim
+sigProof.issuerData.authCoreClaim;
+
     };
 
     return circuitClaim;

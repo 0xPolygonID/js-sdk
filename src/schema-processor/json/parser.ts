@@ -1,4 +1,5 @@
-import { Iden3Credential, MerklizedRootPosition, SubjectPosition } from '../verifiable';
+import { W3CCredential, MerklizedRootPosition, SubjectPosition } from '../verifiable';
+
 import { Claim as CoreClaim, ClaimOptions, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { ParsedSlots } from '../processor';
 import { fillSlot } from '../utils';
@@ -24,7 +25,7 @@ export interface Schema {
 // Parser can parse claim data according to specification
 export class Parser {
   parseClaim(
-    credential: Iden3Credential,
+    credential: W3CCredential,
     credentialType: string,
     jsonSchemaBytes: Uint8Array
   ): CoreClaim {
@@ -75,7 +76,7 @@ export class Parser {
   }
 
   // ParseSlots converts payload to claim slots using provided schema
-  parseSlots(credential: Iden3Credential, schemaBytes: Uint8Array): ParsedSlots {
+  parseSlots(credential: W3CCredential, schemaBytes: Uint8Array): ParsedSlots {
     const schema: Schema = JSON.parse(new TextDecoder().decode(schemaBytes));
 
     if (schema?.$metadata?.serialization) {

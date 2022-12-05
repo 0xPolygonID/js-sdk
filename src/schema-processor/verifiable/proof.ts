@@ -19,9 +19,9 @@ export interface State {
 export interface IssuerData {
   id?: Id;
   state?: State;
-  authClaim?: CoreClaim;
+  authCoreClaim?: CoreClaim;
   mtp?: Proof;
-  revocationStatus: CredentialStatus;
+  credentialStatus: CredentialStatus;
 }
 
 // Iden3SparseMerkleProof JSON-LD structure
@@ -29,11 +29,13 @@ export class Iden3SparseMerkleProof {
   type: ProofType;
   issuerData: IssuerData;
   mtp: Proof;
+  coreClaim: string;
 }
 
 // BJJSignatureProof2021 JSON-LD BBJJSignatureProof
-export interface BJJSignatureProof2021 {
+export class BJJSignatureProof2021 {
   type: ProofType;
   issuerData: IssuerData;
   signature: string;
+  coreClaim: string;
 }
