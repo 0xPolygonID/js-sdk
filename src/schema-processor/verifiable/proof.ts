@@ -1,13 +1,12 @@
 import { Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import { Proof } from '@iden3/js-merkletree';
 import { ProofType } from './constants';
-import { CredentialStatus } from './credential';
 
 // State represents the state of the issuer
 export interface State {
-  tx_id?: string;
-  block_timestamp?: number;
-  block_number?: number;
+  txId?: string;
+  blockTimestamp?: number;
+  blockNumber?: number;
   rootOfRoots?: string;
   claimsTreeRoot?: string;
   revocationTreeRoot?: string;
@@ -21,7 +20,7 @@ export interface IssuerData {
   state?: State;
   authCoreClaim?: CoreClaim;
   mtp?: Proof;
-  credentialStatus: CredentialStatus;
+  credentialStatus: object;
 }
 
 // Iden3SparseMerkleProof JSON-LD structure

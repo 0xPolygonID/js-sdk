@@ -50,7 +50,7 @@ const testClaimDocument = `{
   }
 }`;
 
-describe.skip('json-ld-atomic-query-mtp', () => {
+describe('json-ld-atomic-query-mtp', () => {
   it('TestJsonLDAtomicQuery_PrepareInputs', async () => {
     const userPrivKHex = '28156abe7fe2fd433dc9df969286b96666489bac508612d0e16593e944c4f69f';
     const issuerPrivKHex = '21a5e7321d0e2f3ca1cc6504396e6594a2211544b08c206847cdee96f832421a';
