@@ -1,6 +1,6 @@
 import { newHashFromString, Proof } from '@iden3/js-merkletree';
 import { Id, SchemaHash } from '@iden3/js-iden3-core';
-import { Query, ClaimWithMTPProof, ValueProof } from './models';
+import { Query, ClaimWithMTPProof, ValueProof, CircuitError } from './models';
 import { Hash } from '@iden3/js-merkletree';
 import {
   BaseConfig,
@@ -16,37 +16,38 @@ import { Signature } from '@iden3/js-crypto';
 export class AtomicQueryMTPV2Inputs extends BaseConfig {
   // auth
   id: Id;
-  claimSubjectProfileNonce: bigint;
   nonce: bigint;
-  signature: Signature;
-
+  claimSubjectProfileNonce: bigint;
   // claim issued for user
   claim: ClaimWithMTPProof;
+  requestID: bigint;
 
   currentTimeStamp: number;
 
   // query
   query: Query;
 
+  validate(): void {
+    if (!this.requestID) {
+      throw new Error(CircuitError.EmptyRequestID);
+    }
+  }
+
   inputsMarshal(): Uint8Array {
-    let queryPathKey = BigInt(0);
+    this.validate();
     if (this.query.valueProof) {
+      this.query.validate();
       this.query.valueProof.validate();
-      queryPathKey = this.query.valueProof.path.mtEntry();
     }
 
-    let valueProof = this.query.valueProof;
-    if (!valueProof) {
-      valueProof = new ValueProof();
-      valueProof.value = BigInt(0);
-      valueProof.mtp = new Proof();
-    }
+    const valueProof = this.query.valueProof ?? new ValueProof();
 
     const s: Partial<AtomicQueryMTPV2CircuitInputs> = {
-      userGenesisId: this.id.bigInt().toString(),
+      requestID: this.requestID.toString(),
+      userGenesisID: this.id.bigInt().toString(),
       nonce: this.nonce.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
-      issuerId: this.claim.issuerID?.bigInt().toString(),
+      issuerID: this.claim.issuerID?.bigInt().toString(),
       issuerClaim: this.claim.claim.marshalJson(),
       issuerClaimMtp: circomSiblings(this.claim.incProof.proof, this.getMTLevel()).map((s) =>
         s.bigInt().toString()
@@ -89,7 +90,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
     s.claimPathMtpAuxHi = nodAuxJSONLD.key.bigInt().toString();
     s.claimPathMtpAuxHv = nodAuxJSONLD.value.bigInt().toString();
 
-    s.claimPathKey = queryPathKey.toString();
+    s.claimPathKey = valueProof.path.toString();
 
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
 
@@ -101,30 +102,31 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
 
 // stateTransitionInputsInternal type represents credentialAtomicQueryMTP.circom private inputs required by prover
 interface AtomicQueryMTPV2CircuitInputs {
-  userGenesisId: string;
+  requestID: string;
+  userGenesisID: string;
   nonce: string;
   claimSubjectProfileNonce: string;
-  issuerId: string;
+  issuerID: string;
   issuerClaim?: string[];
   issuerClaimMtp: string[];
-  issuerClaimClaimsTreeRoot: string;
-  issuerClaimRevTreeRoot: string;
-  issuerClaimRootsTreeRoot: string;
-  issuerClaimIdenState: string;
-  issuerClaimNonRevClaimsTreeRoot: string;
-  issuerClaimNonRevRevTreeRoot: string;
-  issuerClaimNonRevRootsTreeRoot: string;
-  issuerClaimNonRevState: string;
+  issuerClaimClaimsTreeRoot?: string;
+  issuerClaimRevTreeRoot?: string;
+  issuerClaimRootsTreeRoot?: string;
+  issuerClaimIdenState?: string;
+  issuerClaimNonRevClaimsTreeRoot?: string;
+  issuerClaimNonRevRevTreeRoot?: string;
+  issuerClaimNonRevRootsTreeRoot?: string;
+  issuerClaimNonRevState?: string;
   issuerClaimNonRevMtp: string[];
-  issuerClaimNonRevMtpAuxHi: string;
-  issuerClaimNonRevMtpAuxHv: string;
+  issuerClaimNonRevMtpAuxHi?: string;
+  issuerClaimNonRevMtpAuxHv?: string;
   issuerClaimNonRevMtpNoAux: string;
   claimSchema: string;
   claimPathNotExists: number;
   claimPathMtp: string[];
   claimPathMtpNoAux: string;
-  claimPathMtpAuxHi: string;
-  claimPathMtpAuxHv: string;
+  claimPathMtpAuxHi?: string;
+  claimPathMtpAuxHv?: string;
   claimPathKey: string;
   claimPathValue: string;
   operator: number;
@@ -135,8 +137,9 @@ interface AtomicQueryMTPV2CircuitInputs {
 
 // AtomicQueryMTPPubSignals public signals
 export class AtomicQueryMTPV2PubSignals extends BaseConfig {
-  userId?: Id;
-  issuerId?: Id;
+  requestID?: bigint;
+  userID?: Id;
+  issuerID?: Id;
   issuerClaimIdenState?: Hash;
   issuerClaimNonRevState?: Hash;
   claimSchema: SchemaHash;
@@ -153,6 +156,7 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
     // expected order:
     // merklized
     // userID
+    // requestID
     // issuerID
     // issuerClaimIdenState
     // issuerClaimNonRevState
@@ -164,10 +168,10 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
     // operator
     // value
 
-    // 11 is a number of fields in AtomicQueryMTPV2PubSignals before values, values is last element in the proof and
+    // 12 is a number of fields in AtomicQueryMTPV2PubSignals before values, values is last element in the proof and
     // it is length could be different base on the circuit configuration. The length could be modified by set value
     // in ValueArraySize
-    const fieldLength = 11;
+    const fieldLength = 12;
 
     const sVals: string[] = JSON.parse(new TextDecoder().decode(data));
 
@@ -186,11 +190,15 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
     fieldIdx++;
 
     //  - userID
-    this.userId = Id.fromString(sVals[fieldIdx]);
+    this.userID = Id.fromString(sVals[fieldIdx]);
+    fieldIdx++;
+
+    // - requestID
+    this.requestID = BigInt(sVals[fieldIdx]);
     fieldIdx++;
 
     // - issuerID
-    this.issuerId = Id.fromString(sVals[fieldIdx]);
+    this.issuerID = Id.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     // - issuerClaimIdenState

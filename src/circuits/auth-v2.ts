@@ -1,31 +1,34 @@
-import { circomSiblingsFromSiblings, Hash, newHashFromString } from '@iden3/js-merkletree';
-import { Id } from '@iden3/js-iden3-core';
-import { CircuitError, ClaimWithMTPProof, GISTProof } from './models';
+import { circomSiblingsFromSiblings, Hash, newHashFromString, Proof } from '@iden3/js-merkletree';
+import { Claim, Id } from '@iden3/js-iden3-core';
+import { CircuitError, GISTProof, TreeState } from './models';
 import { BaseConfig, getNodeAuxValue } from './common';
 import { Signature } from '@iden3/js-crypto';
 
 export class AuthV2Inputs extends BaseConfig {
-  id: Id;
-  n: bigint;
-  authClaim: ClaimWithMTPProof;
+  genesisID?: Id;
+  profileNonce?: bigint;
+  authClaim?: Claim;
+  authClaimIncMtp: Proof;
+  authClaimNonRevMtp: Proof;
+  treeState: TreeState;
   gistProof: GISTProof;
-  signature: Signature;
-  challenge: bigint;
+  signature?: Signature;
+  challenge?: bigint;
 
   validate(): void {
-    if (!this.id) {
+    if (!this.genesisID) {
       throw new Error(CircuitError.EmptyId);
     }
 
-    if (!this.authClaim.incProof.proof) {
+    if (!this.authClaimIncMtp) {
       throw new Error(CircuitError.EmptyAuthClaimProof);
     }
 
-    if (!this.authClaim.nonRevProof.proof) {
+    if (!this.authClaimNonRevMtp) {
       throw new Error(CircuitError.EmptyAuthClaimNonRevProof);
     }
 
-    if (!this.gistProof.proof) {
+    if (!this.gistProof?.proof) {
       throw new Error(CircuitError.EmptyGlobalProof);
     }
 
@@ -43,25 +46,25 @@ export class AuthV2Inputs extends BaseConfig {
     this.validate();
 
     const s: Partial<AuthV2CircuitInputs> = {
-      userGenesisId: this.id?.bigInt().toString(),
-      n: this.n?.toString(),
-      userAuthClaim: this.authClaim.claim.marshalJson(),
-      userAuthClaimMtp: circomSiblingsFromSiblings(
-        this.authClaim?.incProof?.proof.allSiblings(),
+      genesisID: this.genesisID?.bigInt().toString(),
+      profileNonce: this.profileNonce?.toString(),
+      authClaim: this.authClaim?.marshalJson(),
+      authClaimIncMtp: circomSiblingsFromSiblings(
+        this.authClaimIncMtp.allSiblings(),
         this.getMTLevel() - 1
       ).map((s) => s.bigInt().toString()),
-      userAuthClaimNonRevMtp: circomSiblingsFromSiblings(
-        this.authClaim?.nonRevProof?.proof?.allSiblings(),
+      authClaimNonRevMtp: circomSiblingsFromSiblings(
+        this.authClaimNonRevMtp?.allSiblings(),
         this.getMTLevel() - 1
       ).map((s) => s.bigInt().toString()),
-      challenge: this.challenge.toString(),
+      challenge: this.challenge?.toString(),
       challengeSignatureR8x: this.signature?.R8[0].toString(),
       challengeSignatureR8y: this.signature?.R8[1].toString(),
-      challengeSignatureS: this.signature.S.toString(),
-      userClaimsTreeRoot: this.authClaim.incProof.treeState?.claimsRoot.bigInt().toString(),
-      userRevTreeRoot: this.authClaim.incProof.treeState?.revocationRoot.bigInt().toString(),
-      userRootsTreeRoot: this.authClaim.incProof.treeState?.rootOfRoots.bigInt().toString(),
-      userState: this.authClaim.incProof.treeState?.state.bigInt().toString(),
+      challengeSignatureS: this.signature?.S.toString(),
+      claimsTreeRoot: this.treeState?.claimsRoot.bigInt().toString(),
+      revTreeRoot: this.treeState?.revocationRoot.bigInt().toString(),
+      rootsTreeRoot: this.treeState?.rootOfRoots.bigInt().toString(),
+      state: this.treeState?.state.bigInt().toString(),
       gistRoot: this.gistProof.root.bigInt().toString(),
       gistMtp: circomSiblingsFromSiblings(
         this.gistProof.proof.allSiblings(),
@@ -69,10 +72,10 @@ export class AuthV2Inputs extends BaseConfig {
       ).map((s) => s.bigInt().toString())
     };
 
-    const nodeAuxAuth = getNodeAuxValue(this.authClaim.nonRevProof.proof);
-    s.userAuthClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
-    s.userAuthClaimNonRevMtpAuxHv = nodeAuxAuth.value.bigInt().toString();
-    s.userAuthClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
+    const nodeAuxAuth = getNodeAuxValue(this.authClaimNonRevMtp);
+    s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
+    s.authClaimNonRevMtpAuxHv = nodeAuxAuth.value.bigInt().toString();
+    s.authClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
 
     const globalNodeAux = getNodeAuxValue(this.gistProof.proof);
     s.gistMtpAuxHi = globalNodeAux.key.bigInt().toString();
@@ -83,23 +86,23 @@ export class AuthV2Inputs extends BaseConfig {
   }
 }
 
-export class AuthV2CircuitInputs {
-  userGenesisId: string;
-  n: string;
-  userAuthClaim?: string[];
-  userAuthClaimMtp: string[];
-  userAuthClaimNonRevMtp: string[];
-  userAuthClaimNonRevMtpAuxHi?: string;
-  userAuthClaimNonRevMtpAuxHv?: string;
-  userAuthClaimNonRevMtpNoAux: string;
+interface AuthV2CircuitInputs {
+  genesisID: string;
+  profileNonce: string;
+  authClaim?: string[];
+  authClaimIncMtp?: string[];
+  authClaimNonRevMtp: string[];
+  authClaimNonRevMtpAuxHi?: string;
+  authClaimNonRevMtpAuxHv?: string;
+  authClaimNonRevMtpNoAux: string;
   challenge: string;
   challengeSignatureR8x: string;
   challengeSignatureR8y: string;
   challengeSignatureS: string;
-  userClaimsTreeRoot?: string;
-  userRevTreeRoot?: string;
-  userRootsTreeRoot?: string;
-  userState?: string;
+  claimsTreeRoot?: string;
+  revTreeRoot?: string;
+  rootsTreeRoot?: string;
+  state?: string;
   gistRoot?: string;
   gistMtp: string[];
   gistMtpAuxHi?: string;
@@ -111,7 +114,7 @@ export class AuthV2CircuitInputs {
 export class AuthV2PubSignals {
   userId: Id;
   challenge: bigint;
-  globalSmtRoot: Hash;
+  GISTRoot: Hash;
   // PubSignalsUnmarshal unmarshal auth.circom public inputs to AuthPubSignals
 
   PubSignalsUnmarshal(data: Uint8Array): AuthV2PubSignals {
@@ -126,7 +129,7 @@ export class AuthV2PubSignals {
 
     this.challenge = BigInt(sVals[1]);
 
-    this.globalSmtRoot = newHashFromString(sVals[2]);
+    this.GISTRoot = newHashFromString(sVals[2]);
     return this;
   }
 }

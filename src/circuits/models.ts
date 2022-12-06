@@ -30,16 +30,20 @@ export class Query {
 export enum CircuitId {
   // AuthCircuitID is a type that must be used for auth.circom
   Auth = 'auth',
+  // Auth is a type that must be used for authV2.circom
+  AuthV2 = 'authV2',
   // StateTransition is a type that must be used for stateTransition.circom
   StateTransition = 'stateTransition',
   // AtomicQueryMTP is a type for credentialAtomicQueryMTP.circom
   AtomicQueryMTP = 'credentialAtomicQueryMTP',
+  // AtomicQueryMTPV2 is a type for credentialAtomicQueryMTPV2.circom
+  AtomicQueryMTPV2 = 'credentialAtomicQueryMTPV2',
   // AtomicQuerySig is a type for credentialAttrQuerySig.circom
   AtomicQuerySig = 'credentialAtomicQuerySig',
-  // AtomicQueryMTPWithRelay is a type for credentialAtomicQueryMTPWithRelay.circom
-  AtomicQueryMTPWithRelay = 'credentialAtomicQueryMTPWithRelay',
-  // AtomicQuerySigWithRelay is a type for credentialAttrQuerySigWithRelay.circom
-  AtomicQuerySigWithRelay = 'credentialAtomicQuerySigWithRelay'
+  // AtomicQuerySigV2 is a type for credentialAttrQuerySigV2.circom
+  AtomicQuerySigV2 = 'credentialAtomicQuerySigV2',
+  // JsonLDAtomicQueryMTP is a type for credentialJsonLDAtomicQueryMTP.circom
+  JsonLDAtomicQueryMTP = 'credentialJsonLDAtomicQueryMTP'
 }
 
 export class CircuitClaim {
@@ -48,7 +52,6 @@ export class CircuitClaim {
   treeState: TreeState;
   proof: Proof;
   nonRevProof: ClaimNonRevStatus; // Claim non revocation proof
-  //todo; js-circuits BJJSignatureProof
   signatureProof: BJJSignatureProof;
 }
 
@@ -93,27 +96,31 @@ export enum CircuitError {
   EmptyIssuerAuthClaimNonRevProof = 'empty issuer auth claim non-revocation mtp proof',
   EmptyJsonLDQueryProof = 'empty JSON-LD query mtp proof',
   EmptyJsonLDQueryValue = 'empty JSON-LD query value',
+  EmptyJsonLDQueryPath = 'empty JSON-LD query path',
   EmptyQueryValue = 'empty query value',
   EmptyJsonLDQueryValues = 'empty JSON-LD query values',
   EmptyId = 'empty Id',
   EmptyChallenge = 'empty challenge',
-  EmptyGlobalProof = 'empty global identity mtp proof'
+  EmptyGlobalProof = 'empty global identity mtp proof',
+  EmptyRequestID = 'empty request ID'
 }
 
 // ValueProof represents a Merkle Proof for a value stored as MT
 export class ValueProof {
-  //todo: replace by  merklize.Path
-  path: any;
+  path: bigint;
   value: bigint;
   mtp: Proof;
 
   constructor() {
-    this.path = null;
+    this.path = BigInt(0);
     this.value = BigInt(0);
     this.mtp = new Proof();
   }
 
   validate(): void {
+    if (!this.path) {
+      throw new Error(CircuitError.EmptyJsonLDQueryPath);
+    }
     if (!this.value) {
       throw new Error(CircuitError.EmptyJsonLDQueryValue);
     }

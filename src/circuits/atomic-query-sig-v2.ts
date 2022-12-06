@@ -1,5 +1,5 @@
-import { newHashFromString, Proof } from '@iden3/js-merkletree';
-import { Claim, Id, SchemaHash } from '@iden3/js-iden3-core';
+import { newHashFromString } from '@iden3/js-merkletree';
+import { Id, SchemaHash } from '@iden3/js-iden3-core';
 import { Query, ValueProof, CircuitError, ClaimWithSigProof } from './models';
 import { Hash } from '@iden3/js-merkletree';
 import {
@@ -13,6 +13,7 @@ import {
 
 // AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
 export class AtomicQuerySigV2Inputs extends BaseConfig {
+  requestID: bigint;
   // auth
   id: Id;
   nonce: bigint;
@@ -27,6 +28,9 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
   query: Query;
 
   validate(): void {
+    if (!this.requestID) {
+      throw new Error(CircuitError.EmptyRequestID);
+    }
     if (!this.claim.nonRevProof.proof) {
       throw new Error(CircuitError.EmptyClaimNonRevProof);
     }
@@ -50,25 +54,20 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
 
   inputsMarshal(): Uint8Array {
     this.validate();
-    let queryPathKey = BigInt(0);
     if (this.query.valueProof) {
+      this.query.validate();
       this.query.valueProof.validate();
-      queryPathKey = this.query.valueProof.path.mtEntry();
     }
 
-    let valueProof = this.query.valueProof;
-    if (!valueProof) {
-      valueProof = new ValueProof();
-      valueProof.value = BigInt(0);
-      valueProof.mtp = new Proof();
-    }
+    const valueProof = this.query.valueProof ?? new ValueProof();
 
     const s: Partial<AtomicQuerySigV2CircuitInputs> = {
-      userGenesisId: this.id.bigInt().toString(),
+      requestID: this.requestID.toString(),
+      userGenesisID: this.id.bigInt().toString(),
       nonce: this.nonce.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
-      issuerId: this.claim.issuerID.bigInt().toString(),
-      issuerClaim: this.claim.claim,
+      issuerID: this.claim.issuerID.bigInt().toString(),
+      issuerClaim: this.claim.claim.marshalJson(),
       issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState?.claimsRoot
         .bigInt()
         .toString(),
@@ -86,7 +85,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
       issuerClaimSignatureR8x: this.claim.signatureProof.signature.R8[0].toString(),
       issuerClaimSignatureR8y: this.claim.signatureProof.signature.R8[1].toString(),
       issuerClaimSignatureS: this.claim.signatureProof.signature.S.toString(),
-      issuerAuthClaim: this.claim.signatureProof.issuerAuthClaim,
+      issuerAuthClaim: this.claim.signatureProof.issuerAuthClaim?.marshalJson(),
       issuerAuthClaimMtp: prepareSiblingsStr(
         this.claim.signatureProof.issuerAuthIncProof.proof.allSiblings(),
         this.getMTLevel()
@@ -118,24 +117,24 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
     };
 
     const nodeAuxNonRev = getNodeAuxValue(this.claim.nonRevProof.proof);
-    s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev.key;
-    s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev.value;
+    s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev.key.bigInt().toString();
+    s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev.value.bigInt().toString();
     s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev.noAux;
 
     const nodeAuxIssuerAuthNonRev = getNodeAuxValue(
       this.claim.signatureProof.issuerAuthNonRevProof.proof
     );
-    s.issuerAuthClaimNonRevMtpAuxHi = nodeAuxIssuerAuthNonRev.key;
-    s.issuerAuthClaimNonRevMtpAuxHv = nodeAuxIssuerAuthNonRev.value;
+    s.issuerAuthClaimNonRevMtpAuxHi = nodeAuxIssuerAuthNonRev.key.bigInt().toString();
+    s.issuerAuthClaimNonRevMtpAuxHv = nodeAuxIssuerAuthNonRev.value.bigInt().toString();
     s.issuerAuthClaimNonRevMtpNoAux = nodeAuxIssuerAuthNonRev.noAux;
 
     s.claimPathNotExists = existenceToInt(valueProof.mtp.existence);
     const nodAuxJSONLD = getNodeAuxValue(valueProof.mtp);
     s.claimPathMtpNoAux = nodAuxJSONLD.noAux;
-    s.claimPathMtpAuxHi = nodAuxJSONLD.key;
-    s.claimPathMtpAuxHv = nodAuxJSONLD.value;
+    s.claimPathMtpAuxHi = nodAuxJSONLD.key.bigInt().toString();
+    s.claimPathMtpAuxHv = nodAuxJSONLD.value.bigInt().toString();
 
-    s.claimPathKey = queryPathKey.toString();
+    s.claimPathKey = valueProof.path.toString();
 
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
     s.value = bigIntArrayToStringArray(values);
@@ -146,28 +145,29 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
 
 // stateTransitionInputsInternal type represents credentialAtomicQueryMTP.circom private inputs required by prover
 interface AtomicQuerySigV2CircuitInputs {
-  userGenesisId: string;
+  requestID: string;
+  userGenesisID: string;
   nonce: string;
   claimSubjectProfileNonce: string;
-  issuerId: string;
-  issuerClaim?: Claim;
+  issuerID: string;
+  issuerClaim?: string[];
   issuerClaimNonRevClaimsTreeRoot: string;
   issuerClaimNonRevRevTreeRoot: string;
   issuerClaimNonRevRootsTreeRoot: string;
   issuerClaimNonRevState: string;
   issuerClaimNonRevMtp: string[];
-  issuerClaimNonRevMtpAuxHi?: Hash;
-  issuerClaimNonRevMtpAuxHv?: Hash;
+  issuerClaimNonRevMtpAuxHi?: string;
+  issuerClaimNonRevMtpAuxHv?: string;
   issuerClaimNonRevMtpNoAux: string;
   claimSchema: string;
   issuerClaimSignatureR8x: string;
   issuerClaimSignatureR8y: string;
   issuerClaimSignatureS: string;
-  issuerAuthClaim?: Claim;
+  issuerAuthClaim?: string[];
   issuerAuthClaimMtp: string[];
   issuerAuthClaimNonRevMtp: string[];
-  issuerAuthClaimNonRevMtpAuxHi?: Hash;
-  issuerAuthClaimNonRevMtpAuxHv?: Hash;
+  issuerAuthClaimNonRevMtpAuxHi?: string;
+  issuerAuthClaimNonRevMtpAuxHv?: string;
   issuerAuthClaimNonRevMtpNoAux: string;
   issuerAuthClaimsTreeRoot: string;
   issuerAuthRevTreeRoot: string;
@@ -175,8 +175,8 @@ interface AtomicQuerySigV2CircuitInputs {
   claimPathNotExists: number;
   claimPathMtp: string[];
   claimPathMtpNoAux: string;
-  claimPathMtpAuxHi?: Hash;
-  claimPathMtpAuxHv?: Hash;
+  claimPathMtpAuxHi?: string;
+  claimPathMtpAuxHv?: string;
   claimPathKey: string;
   claimPathValue: string;
   operator: number;
@@ -187,8 +187,9 @@ interface AtomicQuerySigV2CircuitInputs {
 
 // AtomicQueryMTPPubSignals public signals
 export class AtomicQuerySigV2PubSignals extends BaseConfig {
-  userId?: Id;
-  issuerId?: Id;
+  requestID?: bigint;
+  userID?: Id;
+  issuerID?: Id;
   issuerAuthState?: Hash;
   issuerClaimNonRevState?: Hash;
   claimSchema: SchemaHash;
@@ -206,6 +207,7 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
     // merklized
     // userID
     // issuerAuthState
+    // requestID
     // issuerID
     // issuerClaimNonRevState
     // timestamp
@@ -216,10 +218,10 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
     // operator
     // value
 
-    // 10 is a number of fields in AtomicQuerySigV2PubSignals before values, values is last element in the proof and
+    // 12 is a number of fields in AtomicQuerySigV2PubSignals before values, values is last element in the proof and
     // it is length could be different base on the circuit configuration. The length could be modified by set value
     // in ValueArraySize
-    const fieldLength = 11;
+    const fieldLength = 12;
 
     const sVals: string[] = JSON.parse(new TextDecoder().decode(data));
 
@@ -238,15 +240,19 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
     fieldIdx++;
 
     //  - userID
-    this.userId = Id.fromString(sVals[fieldIdx]);
+    this.userID = Id.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     // - issuerAuthState
     this.issuerAuthState = newHashFromString(sVals[fieldIdx]);
     fieldIdx++;
 
+    // - requestID
+    this.requestID = BigInt(sVals[fieldIdx]);
+    fieldIdx++;
+
     // - issuerID
-    this.issuerId = Id.fromBigInt(BigInt(sVals[fieldIdx]));
+    this.issuerID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
 
     // - issuerClaimNonRevState

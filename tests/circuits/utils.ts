@@ -24,6 +24,7 @@ import {
 } from '@iden3/js-merkletree';
 import { Hex, poseidon, PrivateKey, Signature } from '@iden3/js-crypto';
 import { merklizeJSONLD, Merklizer } from '../../src/schema-processor/processor/merklize';
+import { TreeState } from '../../src/circuits';
 
 const TestClaimDocument = `{
   "@context": [
@@ -187,7 +188,7 @@ export class IdentityTest {
     it.rot = new Merkletree(new InMemoryDB(str2Bytes('')), true, 4);
 
     // extract pubKey
-    const { key, x, y } = ExtractPubXY(privKHex);
+    const { key, x, y } = extractPubXY(privKHex);
     it.pk = key;
 
     // create auth claim
@@ -213,7 +214,7 @@ export class IdentityTest {
   }
 }
 
-export function ExtractPubXY(privKHex: string): { key: PrivateKey; x: bigint; y: bigint } {
+export function extractPubXY(privKHex: string): { key: PrivateKey; x: bigint; y: bigint } {
   const k = new PrivateKey(Hex.decodeString(privKHex));
   const pk = k.public();
   return { key: k, x: pk.p[0], y: pk.p[1] };
@@ -241,3 +242,10 @@ export function defaultJSONUserClaim(subject: Id): { mz: Merklizer; claim: Claim
 
   return { mz, claim };
 }
+
+export const getTreeState = (it: IdentityTest): TreeState => ({
+  state: it.state(),
+  claimsRoot: it.clt.root,
+  revocationRoot: it.ret.root,
+  rootOfRoots: it.rot.root
+});
