@@ -71,7 +71,6 @@ export class AuthV2Inputs extends BaseConfig {
         this.getMTLevelOnChain() - 1
       ).map((s) => s.bigInt().toString())
     };
-    console.log(this.authClaimNonRevMtp);
 
     const nodeAuxAuth = getNodeAuxValue(this.authClaimNonRevMtp);
     s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
