@@ -71,6 +71,7 @@ export class AuthV2Inputs extends BaseConfig {
         this.getMTLevelOnChain() - 1
       ).map((s) => s.bigInt().toString())
     };
+    console.log(this.authClaimNonRevMtp);
 
     const nodeAuxAuth = getNodeAuxValue(this.authClaimNonRevMtp);
     s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
@@ -112,12 +113,12 @@ interface AuthV2CircuitInputs {
 
 // AuthV2PubSignals auth.circom public signals
 export class AuthV2PubSignals {
-  userId: Id;
+  userID: Id;
   challenge: bigint;
   GISTRoot: Hash;
   // PubSignalsUnmarshal unmarshal auth.circom public inputs to AuthPubSignals
 
-  PubSignalsUnmarshal(data: Uint8Array): AuthV2PubSignals {
+  pubSignalsUnmarshal(data: Uint8Array): AuthV2PubSignals {
     const len = 3;
     const sVals: string[] = JSON.parse(new TextDecoder().decode(data));
 
@@ -125,7 +126,7 @@ export class AuthV2PubSignals {
       throw new Error(`invalid number of Output values expected ${len} got ${sVals.length}`);
     }
 
-    this.userId = Id.fromString(sVals[0]);
+    this.userID = Id.fromBigInt(BigInt(sVals[0]));
 
     this.challenge = BigInt(sVals[1]);
 

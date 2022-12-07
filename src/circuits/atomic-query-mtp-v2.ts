@@ -1,4 +1,4 @@
-import { newHashFromString, Proof } from '@iden3/js-merkletree';
+import { newHashFromString } from '@iden3/js-merkletree';
 import { Id, SchemaHash } from '@iden3/js-iden3-core';
 import { Query, ClaimWithMTPProof, ValueProof, CircuitError } from './models';
 import { Hash } from '@iden3/js-merkletree';
@@ -10,13 +10,12 @@ import {
   getNodeAuxValue,
   prepareCircuitArrayValues
 } from './common';
-import { Signature } from '@iden3/js-crypto';
 
 // AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
 export class AtomicQueryMTPV2Inputs extends BaseConfig {
   // auth
   id: Id;
-  nonce: bigint;
+  profileNonce: bigint;
   claimSubjectProfileNonce: bigint;
   // claim issued for user
   claim: ClaimWithMTPProof;
@@ -45,7 +44,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
     const s: Partial<AtomicQueryMTPV2CircuitInputs> = {
       requestID: this.requestID.toString(),
       userGenesisID: this.id.bigInt().toString(),
-      nonce: this.nonce.toString(),
+      profileNonce: this.profileNonce.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
       issuerID: this.claim.issuerID?.bigInt().toString(),
       issuerClaim: this.claim.claim.marshalJson(),
@@ -104,7 +103,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
 interface AtomicQueryMTPV2CircuitInputs {
   requestID: string;
   userGenesisID: string;
-  nonce: string;
+  profileNonce: string;
   claimSubjectProfileNonce: string;
   issuerID: string;
   issuerClaim?: string[];
@@ -145,7 +144,7 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
   claimSchema: SchemaHash;
   slotIndex: number;
   operator: number;
-  value: bigint[];
+  value: bigint[] = [];
   timestamp: number;
   merklized: number;
   claimPathKey?: bigint;
@@ -190,7 +189,7 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
     fieldIdx++;
 
     //  - userID
-    this.userID = Id.fromString(sVals[fieldIdx]);
+    this.userID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
 
     // - requestID
@@ -198,7 +197,7 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
     fieldIdx++;
 
     // - issuerID
-    this.issuerID = Id.fromString(sVals[fieldIdx]);
+    this.issuerID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
 
     // - issuerClaimIdenState

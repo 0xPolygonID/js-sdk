@@ -5,7 +5,6 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 
 
 module.exports = (env) => {
-  console.log(env);
   return merge(commonConfig, {
     mode: "development",
     devtool: 'source-map',

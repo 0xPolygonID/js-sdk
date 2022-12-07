@@ -122,7 +122,7 @@ export const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
   }
 
   // proof of non-inclusion (NodeAux exists)
-  if (p?.nodeAux && p.nodeAux.value && p.nodeAux.key) {
+  if (p?.nodeAux?.value && p?.nodeAux?.key) {
     return {
       key: p.nodeAux.key,
       value: p.nodeAux.value,

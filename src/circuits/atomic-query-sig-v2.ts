@@ -16,7 +16,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
   requestID: bigint;
   // auth
   id: Id;
-  nonce: bigint;
+  profileNonce: bigint;
   claimSubjectProfileNonce: bigint;
 
   // claim issued for user
@@ -64,7 +64,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
     const s: Partial<AtomicQuerySigV2CircuitInputs> = {
       requestID: this.requestID.toString(),
       userGenesisID: this.id.bigInt().toString(),
-      nonce: this.nonce.toString(),
+      profileNonce: this.profileNonce.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
       issuerID: this.claim.issuerID.bigInt().toString(),
       issuerClaim: this.claim.claim.marshalJson(),
@@ -147,7 +147,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
 interface AtomicQuerySigV2CircuitInputs {
   requestID: string;
   userGenesisID: string;
-  nonce: string;
+  profileNonce: string;
   claimSubjectProfileNonce: string;
   issuerID: string;
   issuerClaim?: string[];
@@ -195,7 +195,7 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
   claimSchema: SchemaHash;
   slotIndex: number;
   operator: number;
-  value: bigint[];
+  value: bigint[] = [];
   timestamp: number;
   merklized: number;
   claimPathKey?: bigint;
@@ -240,7 +240,7 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
     fieldIdx++;
 
     //  - userID
-    this.userID = Id.fromString(sVals[fieldIdx]);
+    this.userID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
 
     // - issuerAuthState

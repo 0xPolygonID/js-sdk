@@ -5,6 +5,7 @@
     "sourceMap": true,
     "target": "es6",
     "moduleResolution": "Node",
+    "resolveJsonModule": true,
     "esModuleInterop": true
   },
   "files": ["src/index.ts"]

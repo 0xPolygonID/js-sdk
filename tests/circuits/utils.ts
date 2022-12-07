@@ -20,7 +20,8 @@ import {
   Merkletree,
   InMemoryDB,
   Proof,
-  newHashFromBigInt
+  newHashFromBigInt,
+  newHashFromString
 } from '@iden3/js-merkletree';
 import { Hex, poseidon, PrivateKey, Signature } from '@iden3/js-crypto';
 import { merklizeJSONLD, Merklizer } from '../../src/schema-processor/processor/merklize';
@@ -66,7 +67,21 @@ export function authClaimFromPubKey(x: bigint, y: bigint): Claim {
   return Claim.newClaim(
     schemaHash,
     ClaimOptions.withIndexDataInts(x, y),
-    ClaimOptions.withRevocationNonce(BigInt.asUintN(64, revNonce))
+    ClaimOptions.withRevocationNonce(revNonce)
+  );
+}
+
+export function authV2ClaimFromPubKey(x: bigint, y: bigint): Claim {
+  const schemaHash = new SchemaHash(Hex.decodeString('013fd3f623559d850fb5b02ff012d0e2'));
+
+  // NOTE: We take nonce as hash of public key to make it random
+  // We don't use random number here because this test vectors will be used for tests
+  // and have randomization inside tests is usually a bad idea
+  const revNonce = poseidon.hash([x]);
+  return Claim.newClaim(
+    schemaHash,
+    ClaimOptions.withIndexDataInts(x, y),
+    ClaimOptions.withRevocationNonce(revNonce)
   );
 }
 
@@ -178,21 +193,55 @@ export class IdentityTest {
   ret: Merkletree;
   rot: Merkletree;
   authClaim: Claim;
-  pk: PrivateKey | null = null;
+  pk: PrivateKey;
+
+  /**
+   *
+   */
+  constructor(privKHex: string) {
+    this.pk = new PrivateKey(Hex.decodeString(privKHex));
+  }
+
+  async addClaim(claim: Claim) {
+    // add claim to claimsMT
+    const { hi, hv } = claim.hiHv();
+    await this.clt.add(hi, hv);
+  }
+
+  async claimMTPRaw(claim: Claim): Promise<{ proof: Proof; value: bigint }> {
+    const { hi } = claim.hiHv();
+    return await this.clt.generateProof(hi, ZERO_HASH);
+  }
+
+  async claimRevMTPRaw(claim: Claim): Promise<{ proof: Proof; value: bigint }> {
+    const revNonce = claim.getRevocationNonce();
+    return await this.ret.generateProof(revNonce, ZERO_HASH);
+  }
+
+  signClaim(claim: Claim): Signature {
+    const { hi, hv } = claim.hiHv();
+
+    const commonHash = poseidon.hash([hi, hv]);
+
+    return this.pk.signPoseidon(commonHash);
+  }
+
+  signBJJ(int: bigint): Signature {
+    return this.pk.signPoseidon(int);
+  }
 
   static async newIdentity(privKHex: string): Promise<IdentityTest> {
-    const it = new IdentityTest();
+    const it = new IdentityTest(privKHex);
     // init claims tree
-    it.clt = new Merkletree(new InMemoryDB(str2Bytes('')), true, 4);
-    it.ret = new Merkletree(new InMemoryDB(str2Bytes('')), true, 4);
-    it.rot = new Merkletree(new InMemoryDB(str2Bytes('')), true, 4);
+    it.clt = new Merkletree(new InMemoryDB(str2Bytes('')), true, 32);
+    it.ret = new Merkletree(new InMemoryDB(str2Bytes('')), true, 32);
+    it.rot = new Merkletree(new InMemoryDB(str2Bytes('')), true, 32);
 
     // extract pubKey
     const { key, x, y } = extractPubXY(privKHex);
-    it.pk = key;
 
     // create auth claim
-    const authClaim = authClaimFromPubKey(x, y);
+    const authClaim = authV2ClaimFromPubKey(x, y);
     it.authClaim = authClaim;
 
     // add auth claim to claimsMT
@@ -249,3 +298,49 @@ export const getTreeState = (it: IdentityTest): TreeState => ({
   revocationRoot: it.ret.root,
   rootOfRoots: it.rot.root
 });
+
+export const userPK = '28156abe7fe2fd433dc9df969286b96666489bac508612d0e16593e944c4f69f';
+export const issuerPK = '21a5e7321d0e2f3ca1cc6504396e6594a2211544b08c206847cdee96f832421a';
+export const timestamp = 1642074362;
+
+export function defaultUserClaim(subject: Id): Claim {
+  const dataSlotA = ElemBytes.fromInt(BigInt(10));
+  const nonce = BigInt(1);
+  const schemaHash = new SchemaHash(Hex.decodeString('ce6bb12c96bfd1544c02c289c6b4b987'));
+  const claim = Claim.newClaim(
+    schemaHash,
+    ClaimOptions.withIndexId(subject),
+    ClaimOptions.withIndexData(dataSlotA, new ElemBytes()),
+    ClaimOptions.withExpirationDate(getDateFromUnixTimestamp(1669884010)), //Thu Dec 01 2022 08:40:10 GMT+0000
+    ClaimOptions.withRevocationNonce(nonce)
+  );
+
+  return claim;
+}
+
+export function prepareIntArray(arr: bigint[], length: number): bigint[] {
+  // Add the rest of empty levels to the array
+  for (let i = arr.length; i < length; i++) {
+    arr.push(BigInt(0));
+  }
+  return arr;
+}
+
+export function mtHashFromStr(hashStr: string): Hash {
+  return newHashFromString(hashStr);
+}
+
+export const JSONSerializer = (key, value) => {
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+  if (value instanceof Id) {
+    return value.bigInt().toString();
+  }
+  if (value instanceof SchemaHash) {
+    return value.bigInt().toString();
+  }
+  return value;
+};
+
+export const globalTree = () => new Merkletree(new InMemoryDB(str2Bytes('')), true, 32);
