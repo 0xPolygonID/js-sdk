@@ -6,9 +6,7 @@ export const VerifiableConstants = Object.freeze({
     ISSUER_STATE_NOT_FOUND: 'issuer state not found'
   },
   CREDENTIAL_TYPE: {
-    // TypeIden3Credential is extension of the w3c verifiable credential standard
-    IDEN3: 'Iden3Credential',
-    // JSONLDSchemaIden3Credential is a schema for context with Iden3Credential type
+    // VerifiableCredential is a W3C verifiable credential type
     W3C_VERIFIABLE: 'VerifiableCredential'
   },
   JSONLD_SCHEMA: {
@@ -32,9 +30,7 @@ export enum ProofType {
   // BJJSignatureProofType schema type
   BJJSignature = 'BJJSignature2021',
   // Iden3SparseMerkleProofType schema
-  Iden3SparseMerkle = 'Iden3SparseMerkleProof',
-  // SparseMerkleTreeProofType schema
-  SparseMerkleTree = 'SparseMerkleTreeProof'
+  Iden3SparseMerkle = 'Iden3SparseMerkleProof'
 }
 
 // CredentialStatusType type for understanding revocation type

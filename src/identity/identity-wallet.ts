@@ -16,7 +16,7 @@ import { models } from '../constants';
 import { IdentityMerkleTrees } from '../merkle-tree';
 import { subjectPositionIndex, treeEntryFromCoreClaim } from './common';
 import { W3CCredential, Iden3SparseMerkleProof, ProofType } from '../schema-processor';
-import { ClaimRequest, createIden3Credential } from './helper';
+import { ClaimRequest, createCredential } from './helper';
 
 // IdentityStatus represents type for state Status
 export enum IdentityStatus {
@@ -124,7 +124,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     let credential: W3CCredential = null;
     try {
-      credential = createIden3Credential(identifier, request, schema);
+      credential = createCredential(identifier, request, schema);
     } catch (e) {
       throw new Error('Error create Iden3Credential');
     }
@@ -145,7 +145,8 @@ export class IdentityWallet implements IIdentityWallet {
           claimsTreeRoot: claimsTreeHex,
           value: stateHex
         }
-      }
+      },
+      coreClaim: authClaim.hex(),
     };
 
     credential.proof = [mtpProof];

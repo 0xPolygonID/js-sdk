@@ -1,5 +1,5 @@
 import {
-	Iden3Credential,
+	W3CCredential,
 	MerklizedRootPosition,
 	Schema,
 	SubjectPosition,
@@ -19,7 +19,7 @@ export interface ClaimRequest {
 	merklizedRootPosition?: MerklizedRootPosition;
 }
 
-export const createIden3Credential = (issuer: Id, request: ClaimRequest, schema: Schema): Iden3Credential => {
+export const createCredential = (issuer: Id, request: ClaimRequest, schema: Schema): W3CCredential => {
 	const context = [
 		VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
 		VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
@@ -27,11 +27,8 @@ export const createIden3Credential = (issuer: Id, request: ClaimRequest, schema:
 	];
 	const credentialType = [
 		VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE,
-		VerifiableConstants.CREDENTIAL_TYPE.IDEN3,
 		request.type
 	];
-	
-	const merklizedRootPosition = defineMerklizedRootPosition(schema.$metadata, request.merklizedRootPosition);
 	
 	const expirationDate = request.expiration;
 	const issuanceDate = Date.now();
@@ -39,18 +36,13 @@ export const createIden3Credential = (issuer: Id, request: ClaimRequest, schema:
 	const credentialSubject = request.credentialSubject;
 	credentialSubject['type'] = request.type;
 	
-	const cr = new Iden3Credential();
+	const cr = new W3CCredential();
 	cr.id = 'some id'; // url?
 	cr['@context'] = context;
 	cr.type = credentialType;
 	cr.expirationDate = expirationDate;
 	cr.issuanceDate = issuanceDate;
-	cr.updatable = true;
-	cr.version = request.version;
-	cr.revNonce = request.revNonce;
 	cr.credentialSubject = credentialSubject;
-	cr.subjectPosition = request.subjectPosition;
-	cr.merklizedRootPosition = merklizedRootPosition;
 	cr.issuer = issuerDID.toString();
 	cr.credentialSchema = {
 		id: request.credentialSchema,
