@@ -61,12 +61,12 @@ export const prepareSiblingsStr = (siblings: Hash[], levels: number): string[] =
   for (let i = siblings.length; i < levels; i++) {
     siblings.push(ZERO_HASH);
   }
-  return siblings.map((s) => s.BigInt().toString());
+  return siblings.map((s) => s.bigInt().toString());
 };
 
 // CircomSiblingsFromSiblings returns the full siblings compatible with circom
-export const circomSiblings = async (proof: Proof, levels: number): Promise<Hash[]> => {
-  const siblings = await proof.allSiblings();
+export const circomSiblings = (proof: Proof, levels: number): Hash[] => {
+  const siblings = proof.allSiblings();
   // Add the rest of empty levels to the siblings
   for (let i = siblings.length; i < levels; i++) {
     siblings.push(ZERO_HASH);
@@ -102,7 +102,7 @@ export const prepareSiblings = (siblings: Hash[], levels: number): bigint[] => {
     siblings.push(ZERO_HASH);
   }
 
-  return siblings.map((s) => s.BigInt());
+  return siblings.map((s) => s.bigInt());
 };
 
 export interface NodeAuxValue {
@@ -122,7 +122,7 @@ export const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
   }
 
   // proof of non-inclusion (NodeAux exists)
-  if (p?.nodeAux && p.nodeAux.value && p.nodeAux.key) {
+  if (p?.nodeAux?.value && p?.nodeAux?.key) {
     return {
       key: p.nodeAux.key,
       value: p.nodeAux.value,
@@ -138,3 +138,14 @@ export const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
 };
 
 export const existenceToInt = (b: boolean): number => (b ? 0 : 1);
+
+export function getProperties(obj: object): object {
+  const result: object = {};
+  for (const property in obj) {
+    // eslint-disable-next-line no-prototype-builtins
+    if (obj.hasOwnProperty(property) && !property.startsWith('_')) {
+      result[property] = obj[property];
+    }
+  }
+  return result;
+}

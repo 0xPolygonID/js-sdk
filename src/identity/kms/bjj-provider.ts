@@ -1,11 +1,11 @@
 import { KmsKeyType, KmsKeyId } from './kms';
 import { IKeyProvider } from './index';
 import * as providerHelpers from './provider-helpers';
-import * as babyjub from '../bjj/eddsa-babyjub';
+import { PrivateKey, PublicKey } from '@iden3/js-crypto';
 
 export class BjjProvider implements IKeyProvider {
   keyType: KmsKeyType;
-  private privateKey: babyjub.PrivateKey;
+  private privateKey: PrivateKey;
   constructor(keyType: KmsKeyType) {
     this.keyType = keyType;
   }
@@ -17,7 +17,7 @@ export class BjjProvider implements IKeyProvider {
     newKey.set(Uint8Array.from(key), 0);
     newKey.fill(key.length, 32, 0);
     console.log(newKey);
-    const privateKey: babyjub.PrivateKey = babyjub.createNewPrivateKeySeed(key);
+    const privateKey: PrivateKey = new PrivateKey(key);
     this.privateKey = privateKey;
     const publicKey = await privateKey.public();
     return <KmsKeyId>{
@@ -26,7 +26,7 @@ export class BjjProvider implements IKeyProvider {
     };
   }
 
-  async publicKey(keyId: KmsKeyId): Promise<babyjub.PublicKey> {
+  async publicKey(keyId: KmsKeyId): Promise<PublicKey> {
     return await this.privateKey.public();
   }
 
