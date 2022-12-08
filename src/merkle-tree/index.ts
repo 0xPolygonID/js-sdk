@@ -1,5 +1,5 @@
 import { Id } from '@iden3/js-iden3-core';
-import { Merkletree, Proof, Hash } from '@iden3/js-merkletree';
+import { Merkletree, Proof, Hash, Entry, InMemoryDB, str2Bytes } from '@iden3/js-merkletree';
 import { IDataStorage } from '../storage';
 
 const errorMsgNotCreated = 'identity merkle trees were not created';
@@ -29,9 +29,9 @@ export interface IdentityMerkleTree {
 //todo: reorganize this class and dependencies
 export class IdentityMerkleTrees {
   constructor(
-    private readonly _identifier: Id,
-    private readonly _trees: Merkletree[],
-    private readonly _imtModels: IdentityMerkleTree[],
+    private _identifier: Id | null,
+    private _trees: Merkletree[],
+    private _imtModels: IdentityMerkleTree[],
     private readonly _storage: IDataStorage
   ) {}
 
@@ -44,6 +44,13 @@ export class IdentityMerkleTrees {
   // GenerateRevocationProof generates the proof of existence (or non-existence) of an nonce in RevocationTree
   async generateRevocationProof(nonce: bigint, root: Hash): Promise<Proof> {
     return (await this._trees[MerkleTreeType.Revocations].generateProof(nonce, root))?.proof;
+  }
+  
+  // todo: implement initialization
+  static createIdentityMerkleTrees(): IdentityMerkleTrees {
+    const trees = mtTypes.map(() => new Merkletree(new InMemoryDB(str2Bytes('')), true, mtDepth));
+    const mtrees = mtTypes.map(() => ({} as IdentityMerkleTree));
+    return new IdentityMerkleTrees(null, trees, mtrees, {} as IDataStorage);
   }
 
   // GetIdentityMerkleTrees loads merkle trees of the identity into
@@ -69,5 +76,28 @@ export class IdentityMerkleTrees {
 
   static getMerkleTreeByIdentifierAndTypes(identifier: Id): IdentityMerkleTree[] {
     throw new Error('Method not implemented.');
+  }
+  
+  async addEntry(entry: Entry) {
+    const { hi, hv } = await entry.hiHv();
+    await this._trees[MerkleTreeType.Claims].add(hi.bigInt(), hv.bigInt());
+  }
+  
+  bindToIdentifier(identifier: Id): void {
+  
+    if (this._identifier != null) {
+      throw new Error("can't change not empty identifier");
+    }
+    
+    if(this._imtModels.length < mtTypesCount) {
+      throw new Error("can't change not empty identifier");
+    }
+    
+    this._identifier = identifier;
+  
+    for (const mtType of mtTypes) {
+      this._imtModels[mtType].identifier = identifier.string();
+      // save to db
+    }
   }
 }

@@ -10,6 +10,7 @@ import {
   getNodeAuxValue,
   prepareCircuitArrayValues
 } from './common';
+import { Signature } from '@iden3/js-crypto';
 
 // AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
 export class AtomicQueryMTPV2Inputs extends BaseConfig {
