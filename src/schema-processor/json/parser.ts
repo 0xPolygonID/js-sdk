@@ -12,7 +12,7 @@ export interface SerializationSchema {
 }
 
 export interface SchemaMetadata {
-  uris: { [key: string]: object };
+  uris: { [key: string]: string };
   serialization?: SerializationSchema;
 }
 
