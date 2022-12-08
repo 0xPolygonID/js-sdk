@@ -150,7 +150,7 @@ export class IdentityWallet implements IIdentityWallet {
         },
         authCoreClaim: authClaim.hex(),
         credentialStatus: {
-          id :  `${hostUrl}/revocation/${revNonce}`,
+          id :  `${hostUrl}revocation/${revNonce}`,
           revNonce,
           type: CredentialStatusType.SparseMerkleTreeProof
         }
