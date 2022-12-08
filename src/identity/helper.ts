@@ -6,7 +6,7 @@ import {
 	VerifiableConstants
 } from '../schema-processor';
 import { DID, Id } from '@iden3/js-iden3-core';
-import { defineMerklizedRootPosition } from './common';
+import  * as uuid from "uuid";
 
 export interface ClaimRequest {
 	credentialSchema: string;
@@ -19,7 +19,7 @@ export interface ClaimRequest {
 	merklizedRootPosition?: MerklizedRootPosition;
 }
 
-export const createCredential = (issuer: Id, request: ClaimRequest, schema: Schema): W3CCredential => {
+export const createCredential = (hostUrl :string, issuer: Id, request: ClaimRequest, schema: Schema): W3CCredential => {
 	const context = [
 		VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
 		VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
@@ -37,7 +37,7 @@ export const createCredential = (issuer: Id, request: ClaimRequest, schema: Sche
 	credentialSubject['type'] = request.type;
 	
 	const cr = new W3CCredential();
-	cr.id = 'some id'; // url?
+	cr.id = hostUrl.concat(uuid.v4())
 	cr['@context'] = context;
 	cr.type = credentialType;
 	cr.expirationDate = expirationDate;
