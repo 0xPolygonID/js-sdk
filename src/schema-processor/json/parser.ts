@@ -1,4 +1,5 @@
-import { Iden3Credential, MerklizedRootPosition, SubjectPosition } from '../verifiable';
+import { W3CCredential, MerklizedRootPosition, SubjectPosition } from '../verifiable';
+
 import { Claim as CoreClaim, ClaimOptions, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { ParsedSlots } from '../processor';
 import { fillSlot } from '../utils';
@@ -11,7 +12,7 @@ export interface SerializationSchema {
 }
 
 export interface SchemaMetadata {
-  uris: { [key: string]: any };
+  uris: { [key: string]: object };
   serialization?: SerializationSchema;
 }
 
@@ -20,14 +21,34 @@ export interface Schema {
   $schema: string;
   type: string;
 }
+// CoreClaimOptions is params for core claim parsing
+export interface CoreClaimOptions {
+  revNonce: number;
+  version: number;
+  subjectPosition: string;
+  merklizedRootPosition: string;
+  updatable: boolean;
+}
 
 // Parser can parse claim data according to specification
 export class Parser {
+  // ParseClaim creates Claim object from W3CCredential
   parseClaim(
-    credential: Iden3Credential,
+    credential: W3CCredential,
     credentialType: string,
-    jsonSchemaBytes: Uint8Array
+    jsonSchemaBytes: Uint8Array,
+    opts?: CoreClaimOptions
   ): CoreClaim {
+    if (!opts) {
+      opts = {
+        revNonce: 0,
+        version: 0,
+        subjectPosition: SubjectPosition.Index,
+        merklizedRootPosition: MerklizedRootPosition.None,
+        updatable: false
+      };
+    }
+
     const subjectId = credential.credentialSubject['id'];
 
     const slots = this.parseSlots(credential, jsonSchemaBytes);
@@ -36,16 +57,20 @@ export class Parser {
       new SchemaHash(new TextEncoder().encode(credentialType)),
       ClaimOptions.withIndexDataBytes(slots.indexA, slots.indexB),
       ClaimOptions.withValueDataBytes(slots.valueA, slots.valueB),
-      ClaimOptions.withRevocationNonce(credential.revNonce),
-      ClaimOptions.withVersion(credential.version)
+      ClaimOptions.withRevocationNonce(BigInt(opts.revNonce)),
+      ClaimOptions.withVersion(opts.version)
     );
+
+    if (opts.updatable) {
+      claim.setFlagUpdatable(opts.updatable);
+    }
     if (credential.expirationDate) {
       claim.setExpirationDate(new Date(credential.expirationDate));
     }
     if (subjectId) {
-      const did = DID.parse(subjectId);
+      const did = DID.parse(subjectId.toString());
 
-      switch (credential.subjectPosition) {
+      switch (opts.subjectPosition) {
         case '':
         case SubjectPosition.Index:
           claim.setIndexId(did.id);
@@ -58,7 +83,7 @@ export class Parser {
       }
     }
 
-    switch (credential.merklizedRootPosition) {
+    switch (opts.merklizedRootPosition) {
       case MerklizedRootPosition.Index:
         claim.setIndexMerklizedRoot(credential.merklize().root().bigInt());
         break;
@@ -75,7 +100,7 @@ export class Parser {
   }
 
   // ParseSlots converts payload to claim slots using provided schema
-  parseSlots(credential: Iden3Credential, schemaBytes: Uint8Array): ParsedSlots {
+  parseSlots(credential: W3CCredential, schemaBytes: Uint8Array): ParsedSlots {
     const schema: Schema = JSON.parse(new TextDecoder().decode(schemaBytes));
 
     if (schema?.$metadata?.serialization) {

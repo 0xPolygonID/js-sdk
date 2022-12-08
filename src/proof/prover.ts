@@ -1,4 +1,3 @@
-import { CircuitId } from './../circuit/models';
 import * as snarkjs from 'snarkjs';
 import { witnessBuilder } from './witness_calculator';
 
@@ -37,7 +36,6 @@ export class ProverService {
       const witnessCalculator = await witnessBuilder(wasm);
 
       const parsedData = JSON.parse(new TextDecoder().decode(inputs));
-      console.log(parsedData);
 
       const wtnsBytes: Uint8Array = await witnessCalculator.calculateWTNSBin(parsedData, 0);
 
