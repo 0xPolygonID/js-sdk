@@ -1,4 +1,3 @@
-import { Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import { Proof } from '@iden3/js-merkletree';
 import { ProofType } from './constants';
 

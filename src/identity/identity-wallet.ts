@@ -16,7 +16,12 @@ import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import { models } from '../constants';
 import { IdentityMerkleTrees } from '../merkle-tree';
 import { subjectPositionIndex, treeEntryFromCoreClaim } from './common';
-import { W3CCredential, Iden3SparseMerkleProof, ProofType,CredentialStatusType } from '../schema-processor';
+import {
+  W3CCredential,
+  Iden3SparseMerkleProof,
+  ProofType,
+  CredentialStatusType
+} from '../schema-processor';
 import { ClaimRequest, createCredential } from './helper';
 
 // IdentityStatus represents type for state Status
@@ -48,7 +53,10 @@ export interface IdentityState {
 }
 
 export interface IIdentityWallet {
-  createIdentity(seed: Uint8Array, hostUrl :string): Promise<{ did: DID; credential: W3CCredential }>;
+  createIdentity(
+    seed: Uint8Array,
+    hostUrl: string
+  ): Promise<{ did: DID; credential: W3CCredential }>;
   createProfile(nonce: number): Promise<void>;
   generateKey(): Promise<KmsKeyId>;
   getLatestStateById(id: Id): IdentityState;
@@ -70,7 +78,6 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   async createIdentity(seed: Uint8Array, hostUrl: string) {
-
     const identityMerkleTreesService = IdentityMerkleTrees.createIdentityMerkleTrees();
     const keyID = await this.kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
 
@@ -121,7 +128,7 @@ export class IdentityWallet implements IIdentityWallet {
       expiration,
       revNonce: revNonce
     };
-    hostUrl = hostUrl.replace(/\/$/, "").concat("/")
+    hostUrl = hostUrl.replace(/\/$/, '').concat('/');
 
     let credential: W3CCredential = null;
     try {
@@ -137,7 +144,6 @@ export class IdentityWallet implements IIdentityWallet {
     const claimsTreeHex = claimsTree.root.hex();
     const stateHex = currentState.hex();
 
-
     const did = DID.parseFromId(identifier);
     const mtpProof: Iden3SparseMerkleProof = {
       type: ProofType.Iden3SparseMerkle,
@@ -150,12 +156,12 @@ export class IdentityWallet implements IIdentityWallet {
         },
         authCoreClaim: authClaim.hex(),
         credentialStatus: {
-          id :  `${hostUrl}revocation/${revNonce}`,
+          id: `${hostUrl}revocation/${revNonce}`,
           revNonce,
           type: CredentialStatusType.SparseMerkleTreeProof
         }
       },
-      coreClaim: authClaim.hex(),
+      coreClaim: authClaim.hex()
     };
 
     credential.proof = [mtpProof];
