@@ -45,7 +45,7 @@ export class IdentityMerkleTrees {
   async generateRevocationProof(nonce: bigint, root: Hash): Promise<Proof> {
     return (await this._trees[MerkleTreeType.Revocations].generateProof(nonce, root))?.proof;
   }
-  
+
   // todo: implement initialization
   static createIdentityMerkleTrees(): IdentityMerkleTrees {
     const trees = mtTypes.map(() => new Merkletree(new InMemoryDB(str2Bytes('')), true, mtDepth));
@@ -77,24 +77,23 @@ export class IdentityMerkleTrees {
   static getMerkleTreeByIdentifierAndTypes(identifier: Id): IdentityMerkleTree[] {
     throw new Error('Method not implemented.');
   }
-  
+
   async addEntry(entry: Entry) {
     const { hi, hv } = await entry.hiHv();
     await this._trees[MerkleTreeType.Claims].add(hi.bigInt(), hv.bigInt());
   }
-  
+
   bindToIdentifier(identifier: Id): void {
-  
     if (this._identifier != null) {
       throw new Error("can't change not empty identifier");
     }
-    
-    if(this._imtModels.length < mtTypesCount) {
+
+    if (this._imtModels.length < mtTypesCount) {
       throw new Error("can't change not empty identifier");
     }
-    
+
     this._identifier = identifier;
-  
+
     for (const mtType of mtTypes) {
       this._imtModels[mtType].identifier = identifier.string();
       // save to db

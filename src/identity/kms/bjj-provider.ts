@@ -4,7 +4,7 @@ import * as providerHelpers from './provider-helpers';
 
 export class BjjProvider implements IKeyProvider {
   keyType: KmsKeyType;
-  private privateKey: PrivateKey ;
+  private privateKey: PrivateKey;
   constructor(keyType: KmsKeyType) {
     this.keyType = keyType;
   }
