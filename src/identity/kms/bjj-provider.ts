@@ -10,8 +10,6 @@ export class BjjProvider implements IKeyProvider {
   }
   async newPrivateKeyFromSeed(key: Uint8Array): Promise<KmsKeyId> {
     // bjj private key from seed buffer
-    console.log(key);
-    console.log(key.length);
     const newKey: Uint8Array = new Uint8Array(32);
     newKey.set(Uint8Array.from(key), 0);
     newKey.fill(key.length, 32, 0);

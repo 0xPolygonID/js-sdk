@@ -16,7 +16,7 @@ export interface State {
 
 // IssuerData is the data that is used to create a proof
 export interface IssuerData {
-  id?: Id;
+  id: string;
   state?: State;
   authCoreClaim?: CoreClaim;
   mtp?: Proof;
