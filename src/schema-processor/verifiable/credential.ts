@@ -98,6 +98,6 @@ export interface Issuer {
 // RevocationStatus status of revocation nonce. Info required to check revocation state of claim in circuits
 export interface RevocationStatus {
   // RevocationNonce is the nonce of the claim
-  mtp: Proof;
+mtp: Proof;
   issuer: Issuer;
 }

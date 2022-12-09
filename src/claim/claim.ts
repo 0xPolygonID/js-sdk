@@ -48,7 +48,7 @@ export class Claim {
     const signature = await bJJSignatureFromHexString(sigProof.signature);
 
     circuitClaim.signatureProof = {
-      issuerId: sigProof.issuerData.id,
+      issuerId: sigProof.issuerData.id.
       issuerTreeState: {
         state: strMTHex(sigProof.issuerData.state?.value),
         claimsRoot: strMTHex(sigProof.issuerData.state?.claimsTreeRoot),
