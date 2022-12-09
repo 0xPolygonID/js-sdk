@@ -13,7 +13,7 @@ import {
   issuerPK,
   defaultUserClaim,
   timestamp,
-  prepareIntArray,
+  prepareIntArray
 } from './utils';
 
 import expectedJson from './data/sig-v2-inputs.json';

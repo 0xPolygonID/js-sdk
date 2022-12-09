@@ -4,6 +4,7 @@ import {
   buildDIDType,
   Claim,
   ClaimOptions,
+  DID,
   DidMethod,
   getUnixTimestamp,
   Id,
@@ -15,7 +16,12 @@ import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import { models } from '../constants';
 import { IdentityMerkleTrees } from '../merkle-tree';
 import { subjectPositionIndex, treeEntryFromCoreClaim } from './common';
-import { W3CCredential, Iden3SparseMerkleProof, ProofType } from '../schema-processor';
+import {
+  W3CCredential,
+  Iden3SparseMerkleProof,
+  ProofType,
+  CredentialStatusType
+} from '../schema-processor';
 import { ClaimRequest, createCredential } from './helper';
 
 // IdentityStatus represents type for state Status
@@ -47,7 +53,10 @@ export interface IdentityState {
 }
 
 export interface IIdentityWallet {
-  createIdentity(seed: Uint8Array): Promise<{ identifier: Id; credential: W3CCredential }>;
+  createIdentity(
+    seed: Uint8Array,
+    hostUrl: string
+  ): Promise<{ did: DID; credential: W3CCredential }>;
   createProfile(nonce: number): Promise<void>;
   generateKey(): Promise<KmsKeyId>;
   getLatestStateById(id: Id): IdentityState;
@@ -68,11 +77,9 @@ export class IdentityWallet implements IIdentityWallet {
     this.kms = kms;
   }
 
-  async createIdentity(seed: Uint8Array) {
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
-
+  async createIdentity(seed: Uint8Array, hostUrl: string) {
     const identityMerkleTreesService = IdentityMerkleTrees.createIdentityMerkleTrees();
-    const keyID = await this.kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seedPhrase);
+    const keyID = await this.kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
 
     const pubKey = await this.kms.publicKey(keyID);
 
@@ -103,14 +110,14 @@ export class IdentityWallet implements IIdentityWallet {
 
     identityMerkleTreesService.bindToIdentifier(identifier);
 
-    const schema = JSON.parse(models.AuthBJJCredentialSchemaJSON);
+    const schema = JSON.parse(models.AuthBJJCredentialSchemaJson);
 
     const expiration = authClaim.getExpirationDate()
       ? getUnixTimestamp(authClaim.getExpirationDate())
       : 0;
 
     const request: ClaimRequest = {
-      credentialSchema: models.AuthBJJCredentialURL,
+      credentialSchema: models.AuthBJJCredentialSchemJsonURL,
       type: models.AuthBJJCredential,
       credentialSubject: {
         x: pubKey.p[0].toString(),
@@ -121,10 +128,11 @@ export class IdentityWallet implements IIdentityWallet {
       expiration,
       revNonce: revNonce
     };
+    hostUrl = hostUrl.replace(/\/$/, '').concat('/');
 
     let credential: W3CCredential = null;
     try {
-      credential = createCredential(identifier, request, schema);
+      credential = createCredential(hostUrl, identifier, request, schema);
     } catch (e) {
       throw new Error('Error create Iden3Credential');
     }
@@ -136,23 +144,30 @@ export class IdentityWallet implements IIdentityWallet {
     const claimsTreeHex = claimsTree.root.hex();
     const stateHex = currentState.hex();
 
+    const did = DID.parseFromId(identifier);
     const mtpProof: Iden3SparseMerkleProof = {
       type: ProofType.Iden3SparseMerkle,
       mtp: proof,
       issuerData: {
-        id: identifier,
+        id: did.toString(),
         state: {
           claimsTreeRoot: claimsTreeHex,
           value: stateHex
+        },
+        authCoreClaim: authClaim.hex(),
+        credentialStatus: {
+          id: `${hostUrl}revocation/${revNonce}`,
+          revNonce,
+          type: CredentialStatusType.SparseMerkleTreeProof
         }
       },
-      coreClaim: authClaim.hex(),
+      coreClaim: authClaim.hex()
     };
 
     credential.proof = [mtpProof];
 
     return {
-      identifier,
+      did,
       credential
     };
   }

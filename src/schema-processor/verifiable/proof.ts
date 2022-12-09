@@ -1,4 +1,3 @@
-import { Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import { Proof } from '@iden3/js-merkletree';
 import { ProofType } from './constants';
 
@@ -17,10 +16,10 @@ export interface State {
 // IssuerData is the data that is used to create a proof
 export interface IssuerData {
   id: string;
-  state?: State;
-  authCoreClaim?: CoreClaim;
+  state: State;
+  authCoreClaim: string;
   mtp?: Proof;
-  credentialStatus?: object;
+  credentialStatus: object;
 }
 
 // Iden3SparseMerkleProof JSON-LD structure
