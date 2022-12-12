@@ -1,4 +1,4 @@
-import {  KMS, KmsKeyId, KmsKeyType } from '../kms';
+import {  BjjProvider, KMS, KmsKeyId, KmsKeyType } from '../kms';
 import {
   Blockchain,
   buildDIDType,
@@ -11,7 +11,7 @@ import {
   NetworkId,
   SchemaHash
 } from '@iden3/js-iden3-core';
-import { Signature } from '@iden3/js-crypto';
+import { PublicKey, Signature } from '@iden3/js-crypto';
 import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import { models } from '../constants';
 import { subjectPositionIndex, treeEntryFromCoreClaim } from './common';
@@ -20,11 +20,13 @@ import {
   W3CCredential,
   Iden3SparseMerkleProof,
   ProofType,
-  CredentialStatusType
+  CredentialStatusType,
+  BJJSignatureProof2021
 } from '../schema-processor';
 import { ClaimRequest, createCredential } from './helper';
 import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
+import { keyPath } from '../kms/provider-helpers';
 
 
 // IdentityStatus represents type for state Status
@@ -223,7 +225,21 @@ export class IdentityWallet implements IIdentityWallet {
     return Promise.resolve(undefined);
   }
 
-  sign(payload:Uint8Array, credential:W3CCredential): Promise<Signature> {
-    this._kms.createKeyFromSeed()
+  async sign(payload:Uint8Array, credential:W3CCredential): Promise<Signature> {
+
+    if (credential.type.indexOf("AuthBJJCredential") === -1 ){
+      throw new Error("can't sign with not AuthBJJCredential credential")
+    }
+    const x = credential.credentialSubject["x"] as unknown as string;
+    const y = credential.credentialSubject["y"]as unknown as string;
+
+    var pb :PublicKey = new PublicKey([BigInt(x),BigInt(y)]);
+    const kp = keyPath(KmsKeyType.BabyJubJub,pb.hex())
+
+
+    const signature = await this._kms.sign({type:KmsKeyType.BabyJubJub,id:kp},payload)
+
+    return Signature.newFromCompressed(signature)
+    
   }
 }
