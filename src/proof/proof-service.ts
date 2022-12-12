@@ -27,23 +27,14 @@ import { SchemaLoader } from '../schema-processor/loader';
 import { IIdentityWallet } from '../identity';
 import { IKmsService } from '../identity/kms';
 import { ICredentialWallet } from '../credentials';
-import { IdentityMerkleTrees } from '../merkle-tree';
+import { IdentityMerkleTrees } from '../identity/mt';
 import { Schema } from '../schema-processor';
 import { Signature } from '@iden3/js-crypto';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
 
-// Query represents structure for query to atomic circuit
-export interface ProofQuery {
-  allowedIssuers?: string[];
-  req?: { [key: string]: unknown };
-  schema?: string; // string url
-  // schema?: Schema; // string url
-  claimId?: string;
-  context?: string;
-  type?: string; 
-}
+
 export interface IProofService {
   verifyProof(zkp: FullProof, circuitName: CircuitId): Promise<boolean>;
   generateProof(

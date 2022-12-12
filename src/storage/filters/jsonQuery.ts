@@ -1,6 +1,19 @@
-import { W3CCredential } from '../schema-processor';
-import { comparatorOptions, RepositoryError } from './repository';
-import { ProofQuery } from '../proof';
+import { W3CCredential,ProofQuery } from '../../verifiable';
+
+export enum SearchError {
+  NotDefinedQueryKey = 'not defined query key',
+  NotDefinedComparator = 'not defined comparator',
+}
+
+export const comparatorOptions = {
+  // todo check $noop operator
+  $noop: (a, b) => true,
+  $eq: (a, b) => a === b,
+  $in: (a: string, b: string[]) => b.includes(a),
+  $nin: (a: string, b: string[]) => !b.includes(a),
+  $gt: (a: number, b: number) => a > b,
+  $lt: (a: number, b: number) => a < b,
+};
 
 export const resolvePath = (object: object, path: string, defaultValue = null) => path
   .split('.')
@@ -8,7 +21,7 @@ export const resolvePath = (object: object, path: string, defaultValue = null) =
 
 export const createFilter = (path: string, operatorFunc, value, isReverseParams = false) => {
   if(!operatorFunc) {
-    throw new Error(RepositoryError.NotDefinedComparator);
+    throw new Error(SearchError.NotDefinedComparator);
   }
   return (credential: W3CCredential): boolean => {
     const credentialPathValue = resolvePath(credential, path);
@@ -24,7 +37,7 @@ export const createFilter = (path: string, operatorFunc, value, isReverseParams 
   };
 };
 
-export const createFiltersForCredentials = (query: ProofQuery) => {
+export const  StandardJSONCredentielsQueryFilter = (query: ProofQuery) => {
   return Object.keys(query).reduce((acc, queryKey)=> {
     const queryValue = query[queryKey];
     switch (queryKey) {
@@ -54,7 +67,7 @@ export const createFiltersForCredentials = (query: ProofQuery) => {
         
         return acc.concat(reqFilters);
       default:
-        throw new Error(RepositoryError.NotDefinedQueryKey);
+        throw new Error(SearchError.NotDefinedQueryKey);
     }
   }, []);
 };

@@ -1,7 +1,5 @@
 import { Signature, Hex } from '@iden3/js-crypto';
 export * from './credential-wallet';
-export * from './repository';
-export * from './repository-memory';
 
 // BJJSignatureFromHexString converts hex to  babyjub.Signature
 export const bJJSignatureFromHexString = async (sigHex: string): Promise<Signature> => {

@@ -37,3 +37,13 @@ export class BJJSignatureProof2021 {
   signature: string;
   coreClaim: string;
 }
+
+// Query represents structure for query to atomic circuit
+export interface ProofQuery {
+  allowedIssuers?: string[];
+  req?: { [key: string]: unknown };
+  schema?: string; // string url
+  claimId?: string;
+  context?: string;
+  type?: string; 
+}

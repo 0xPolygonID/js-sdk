@@ -1,6 +1,8 @@
-import { CredentialWallet, RepositoryError, RepositoryInMemory } from '../../src/credentials';
-import { ProofQuery } from '../../src/proof';
+import { CredentialWallet } from '../../src/credentials';
 import { W3CCredential } from '../../src/schema-processor';
+import { StorageErrors } from '../../src/storage/errors';
+import { SearchError } from '../../src/storage/filters/jsonQuery';
+import { InMemoryCredentialStorage } from '../../src/storage/memory';
 import { cred1, cred2, cred3 } from './mock';
 
 const credentialFlow = async (repository) => {
@@ -129,17 +131,17 @@ const credentialFlow = async (repository) => {
       }
     }
   };
-  await expect(credentialWallet.findByQuery(query)).rejects.toThrow(new Error(RepositoryError.NotDefinedComparator));  
+  await expect(credentialWallet.findByQuery(query)).rejects.toThrow(new Error(SearchError.NotDefinedComparator));  
   
   // invalid query
   const query2 = {
     allowedIssuers: ['*'],
     someProp: '',
   };
-  await expect(credentialWallet.findByQuery(query2)).rejects.toThrow(new Error(RepositoryError.NotDefinedQueryKey));
+  await expect(credentialWallet.findByQuery(query2)).rejects.toThrow(new Error(SearchError.NotDefinedQueryKey));
   
   // remove credential error
-  await expect(credentialWallet.remove('unknowId')).rejects.toThrow(new Error(RepositoryError.NotFoundCredentialForRemove));
+  await expect(credentialWallet.remove('unknowId')).rejects.toThrow(new Error(StorageErrors.NotFoundCredentialForRemove));
   
   await credentialWallet.remove('test1');
   const finalList = await credentialWallet.list();
@@ -148,7 +150,7 @@ const credentialFlow = async (repository) => {
 
 describe('credential wallet', () => {
   it('run in memory with 3 credential', async () => {
-    const repMemory = new RepositoryInMemory();
+    const repMemory = new InMemoryCredentialStorage();
     await credentialFlow(repMemory);
   });
 });

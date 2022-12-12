@@ -14,8 +14,8 @@ import {
 import { Signature } from '@iden3/js-crypto';
 import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import { models } from '../constants';
-import { IdentityMerkleTrees } from '../merkle-tree';
 import { subjectPositionIndex, treeEntryFromCoreClaim } from './common';
+import * as uuid from 'uuid';
 import {
   W3CCredential,
   Iden3SparseMerkleProof,
@@ -23,6 +23,8 @@ import {
   CredentialStatusType
 } from '../schema-processor';
 import { ClaimRequest, createCredential } from './helper';
+import { IDataStorage } from '../storage/interfaces/data-storage';
+import { MerkleTreeType } from '../storage/entities/mt';
 
 // IdentityStatus represents type for state Status
 export enum IdentityStatus {
@@ -69,19 +71,18 @@ export interface IIdentityWallet {
 }
 
 export class IdentityWallet implements IIdentityWallet {
-  private kms: KMS;
-  constructor() {
-    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub);
-    const kms = new KMS();
-    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
-    this.kms = kms;
+
+  constructor(private readonly _kms: KMS, private readonly _storage: IDataStorage) {
+
   }
 
   async createIdentity(seed: Uint8Array, hostUrl: string) {
-    const identityMerkleTreesService = IdentityMerkleTrees.createIdentityMerkleTrees();
-    const keyID = await this.kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
+    const tmpIdentifier = uuid.v4();
+    const trees = await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
 
-    const pubKey = await this.kms.publicKey(keyID);
+    const keyID = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
+
+    const pubKey = await this._kms.publicKey(keyID);
 
     const schemaHash = SchemaHash.newSchemaHashFromHex(models.AuthBJJCredentialHash);
 
@@ -95,9 +96,12 @@ export class IdentityWallet implements IIdentityWallet {
 
     const entry = treeEntryFromCoreClaim(authClaim);
 
-    await identityMerkleTreesService.addEntry(entry);
+    await this._storage.mt.addEntryToMerkleTree(tmpIdentifier, MerkleTreeType.Claims, entry);
 
-    const claimsTree = identityMerkleTreesService.claimsTree();
+    const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      tmpIdentifier,
+      MerkleTreeType.Claims
+    );
 
     const currentState = await hashElems([
       claimsTree.root.bigInt(),
@@ -107,8 +111,9 @@ export class IdentityWallet implements IIdentityWallet {
 
     const didType = buildDIDType(DidMethod.Iden3, Blockchain.Polygon, NetworkId.Mumbai);
     const identifier = Id.idGenesisFromIdenState(didType, currentState.bigInt());
+    const did = DID.parseFromId(identifier);
 
-    identityMerkleTreesService.bindToIdentifier(identifier);
+    await this._storage.mt.bindMerkleTreeToNewIdentifier(tmpIdentifier, did.toString());
 
     const schema = JSON.parse(models.AuthBJJCredentialSchemaJson);
 
@@ -139,12 +144,11 @@ export class IdentityWallet implements IIdentityWallet {
 
     const index = authClaim.hIndex();
 
-    const { proof } = await claimsTree.generateProof(index, ZERO_HASH); // correct?
+    const { proof } = await claimsTree.generateProof(index, claimsTree.root);
 
     const claimsTreeHex = claimsTree.root.hex();
     const stateHex = currentState.hex();
 
-    const did = DID.parseFromId(identifier);
     const mtpProof: Iden3SparseMerkleProof = {
       type: ProofType.Iden3SparseMerkle,
       mtp: proof,

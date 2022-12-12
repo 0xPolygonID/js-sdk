@@ -1,9 +1,8 @@
 import { W3CCredential } from '../verifiable/credential';
 
 import { Id } from '@iden3/js-iden3-core';
-import { RevocationStatus } from '../schema-processor';
-import { ProofQuery } from '../proof';
-import { IRepository } from './repository';
+import { ProofQuery, RevocationStatus } from '../schema-processor';
+import { IDataStorage } from '../storage/interfaces/data-storage';
 
 export interface ICredentialWallet {
   list(): Promise<W3CCredential[]>;
@@ -24,7 +23,7 @@ export interface ICredentialWallet {
 
 export class CredentialWallet implements ICredentialWallet {
   constructor(
-    private repository: IRepository
+    private storage: IDataStorage
   ) {
   }
   
@@ -53,30 +52,30 @@ export class CredentialWallet implements ICredentialWallet {
   }
   
   async findById(id: string): Promise<W3CCredential | undefined> {
-    return this.repository.findById(id);
+    return this.storage.findCredentialById(id);
   }
   
   async findByContextType(context: string, type: string): Promise<W3CCredential[]> {
-    return this.repository.findByQuery({context, type});
+    return this.storage.findCredentialByQuery({context, type});
   }
   
   async save(credential: W3CCredential): Promise<void> {
-    return this.repository.save(credential);
+    return this.storage.saveCredential(credential);
   }
   
   async saveAll(credentials: W3CCredential[]): Promise<void> {
-    return this.repository.saveAll(credentials);
+    return this.storage.saveAllCredentials(credentials);
   }  
   
   async remove(id): Promise<void> {
-    return this.repository.remove(id);
+    return this.storage.removeCredential(id);
   }
   
   async list(): Promise<W3CCredential[]> {
-    return this.repository.list();
+    return this.storage.listCredentials();
   }
   
   async findByQuery(query: ProofQuery): Promise<W3CCredential[]> {
-    return this.repository.findByQuery(query);
+    return this.storage.findCredentialByQuery(query);
   }
 }
