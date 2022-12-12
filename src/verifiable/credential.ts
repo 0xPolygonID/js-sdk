@@ -1,7 +1,7 @@
 import { BJJSignatureProof2021, Iden3SparseMerkleProof } from './proof';
 import { Claim } from '@iden3/js-iden3-core';
 import { Proof } from '@iden3/js-merkletree';
-import { merklizeJSONLD, Merklizer } from '../processor';
+import { merklizeJSONLD, Merklizer } from '../schema-processor/processor';
 import { CredentialStatusType, ProofType } from './constants';
 
 // Iden3Credential is that represents claim json-ld document
@@ -98,6 +98,6 @@ export interface Issuer {
 // RevocationStatus status of revocation nonce. Info required to check revocation state of claim in circuits
 export interface RevocationStatus {
   // RevocationNonce is the nonce of the claim
-mtp: Proof;
+  mtp: Proof;
   issuer: Issuer;
 }

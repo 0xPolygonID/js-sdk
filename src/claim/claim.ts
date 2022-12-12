@@ -4,7 +4,7 @@ import { Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import {
   BJJSignatureProof2021,
   Iden3SparseMerkleProof
-} from '../schema-processor/verifiable/proof';
+} from '../verifiable/proof';
 import { bJJSignatureFromHexString } from '../credentials';
 
 export class Claim {

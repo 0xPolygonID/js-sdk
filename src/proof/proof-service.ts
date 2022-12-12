@@ -1,6 +1,6 @@
-import { Iden3Credential } from './../schema-processor/verifiable/credential';
+import { Iden3Credential } from '../verifiable/credential';
 import { BJJSignatureProof } from './../circuits/models';
-import { VerifiableConstants } from './../schema-processor/verifiable/constants';
+import { VerifiableConstants } from '../verifiable/constants';
 import { KmsKeyId } from './../identity/kms/KMS';
 /* eslint-disable no-console */
 import { FullProof, ProofRequest } from './models';
@@ -20,7 +20,7 @@ import {
   AtomicQueryMTPInputs
 } from '../circuits';
 import { Claim } from '../claim';
-import { CredentialStatus, RevocationStatus } from '../schema-processor/verifiable/credential';
+import { CredentialStatus, RevocationStatus } from '../verifiable/credential';
 import { toClaimNonRevStatus } from './common';
 import { ProverService } from './prover';
 import { SchemaLoader } from '../schema-processor/loader';

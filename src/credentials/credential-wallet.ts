@@ -1,4 +1,4 @@
-import { W3CCredential } from './../schema-processor/verifiable/credential';
+import { W3CCredential } from '../verifiable/credential';
 
 import { Id } from '@iden3/js-iden3-core';
 import { RevocationStatus } from '../schema-processor';

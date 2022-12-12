@@ -1,5 +1,4 @@
 import { BytesHelper, checkBigIntInField, SchemaHash } from '@iden3/js-iden3-core';
-import { ParsedSlots } from './processor';
 
 const errSlotsOverflowMsg = 'slots overflow';
 // SwapEndianness swaps the endianness of the value encoded in buf. If buf is

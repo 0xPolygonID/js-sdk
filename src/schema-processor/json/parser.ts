@@ -1,4 +1,4 @@
-import { W3CCredential, MerklizedRootPosition, SubjectPosition } from '../verifiable';
+import { W3CCredential, MerklizedRootPosition, SubjectPosition } from '../../verifiable';
 
 import { Claim as CoreClaim, ClaimOptions, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { ParsedSlots } from '../processor';
