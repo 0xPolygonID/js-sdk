@@ -2,7 +2,7 @@ import { Signature, PublicKey } from '@iden3/js-crypto';
 
 export interface IKmsService {
   getBJJDigest(challenge: number): Uint8Array;
-  sign(keyId: KmsKeyId, challengeDigest: Uint8Array): Uint8Array;
+  sign(keyId: KmsKeyId, data: Uint8Array): Uint8Array;
   decodeBJJSignature(sigBytes: Uint8Array): Signature;
 }
 
@@ -19,6 +19,7 @@ export interface KmsKeyId {
 export interface IKeyProvider {
   keyType: KmsKeyType;
   publicKey(keyID: KmsKeyId): Promise<PublicKey>;
+  sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array>;
   newPrivateKeyFromSeed(key: Uint8Array): Promise<KmsKeyId>;
 }
 
@@ -54,5 +55,14 @@ export class KMS {
     }
 
     return keyProvider.publicKey(keyId);
+  }
+
+  async sign(keyId: KmsKeyId, data:Uint8Array): Promise<Uint8Array> {
+    const keyProvider = this.registry[keyId.type];
+    if (!keyProvider) {
+      throw new Error(`keyProvider not found for: ${keyId.type}`);
+    }
+
+    return keyProvider.sign(keyId, data);
   }
 }

@@ -1,4 +1,4 @@
 export type Identity = {
-  identifier:string,
-  profileNonce:string
+  identifier:string;
+  profileNonce:number;
 }

@@ -1,5 +1,5 @@
 import { IdentityWallet } from '../../src';
-import { BjjProvider, KMS, KmsKeyType } from '../../src/identity/kms';
+import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { IDataStorage } from '../../src/storage/interfaces/data-storage';
 import { InMemoryCredentialStorage, InMemoryIdentityStorage } from '../../src/storage/memory';
 import { InMemoryMerkleTreeStorage } from '../../src/storage/memory/merkletree';
