@@ -1,4 +1,4 @@
-import { BjjProvider, KMS, KmsKeyId, KmsKeyType } from './kms';
+import {  KMS, KmsKeyId, KmsKeyType } from '../kms';
 import {
   Blockchain,
   buildDIDType,
@@ -25,6 +25,7 @@ import {
 import { ClaimRequest, createCredential } from './helper';
 import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
+
 
 // IdentityStatus represents type for state Status
 export enum IdentityStatus {
@@ -59,7 +60,7 @@ export interface IIdentityWallet {
     seed: Uint8Array,
     hostUrl: string
   ): Promise<{ did: DID; credential: W3CCredential }>;
-  createProfile(nonce: number): Promise<void>;
+  createProfile(did :DID,nonce: number): Promise<DID>;
   generateKey(): Promise<KmsKeyId>;
   getLatestStateById(id: Id): IdentityState;
   generateMtp(credential): Promise<Claim>;
@@ -77,8 +78,10 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   async createIdentity(seed: Uint8Array, hostUrl: string) {
+    
     const tmpIdentifier = uuid.v4();
-    const trees = await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
+    
+    await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
 
     const keyID = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
 
@@ -176,8 +179,20 @@ export class IdentityWallet implements IIdentityWallet {
     };
   }
 
-  createProfile(nonce: number): Promise<void> {
-    return Promise.resolve(undefined);
+  async createProfile(did:DID, nonce: number): Promise<DID> {
+    
+    const id = did.id;
+
+    const identityM = await this._storage.identity.getIdentity(did.toString())
+    
+    if (identityM.profileNonce !== 0 ){
+      throw new Error("profiles can be created only from genesis identity")
+    }
+    
+    const profile = Id.profileId(id,BigInt(nonce));
+    const profileDID = DID.parseFromId(profile);
+    await this._storage.identity.saveIdentity({profileNonce:nonce,identifier:profileDID.toString()});
+    return profileDID;
   }
 
   generateKey(): Promise<KmsKeyId> {
@@ -208,7 +223,7 @@ export class IdentityWallet implements IIdentityWallet {
     return Promise.resolve(undefined);
   }
 
-  sign(payload, credential): Promise<Signature> {
-    return Promise.resolve(undefined);
+  sign(payload:Uint8Array, credential:W3CCredential): Promise<Signature> {
+    this._kms.createKeyFromSeed()
   }
 }

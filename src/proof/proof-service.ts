@@ -1,7 +1,7 @@
 import { Iden3Credential } from '../verifiable/credential';
 import { BJJSignatureProof } from './../circuits/models';
 import { VerifiableConstants } from '../verifiable/constants';
-import { KmsKeyId } from './../identity/kms/KMS';
+import { KmsKeyId } from '../kms/kms';
 /* eslint-disable no-console */
 import { FullProof, ProofRequest } from './models';
 import { getUnixTimestamp, Id } from '@iden3/js-iden3-core';
@@ -25,7 +25,7 @@ import { toClaimNonRevStatus } from './common';
 import { ProverService } from './prover';
 import { SchemaLoader } from '../schema-processor/loader';
 import { IIdentityWallet } from '../identity';
-import { IKmsService } from '../identity/kms';
+import { IKmsService } from '../kms';
 import { ICredentialWallet } from '../credentials';
 import { IdentityMerkleTrees } from '../identity/mt';
 import { Schema } from '../schema-processor';
