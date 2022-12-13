@@ -7,6 +7,6 @@ export interface IMerkleTreeStorage {
   addEntryToMerkleTree(identifier: string, mtType: MerkleTreeType, entry: Entry): Promise<void>;
 
   getMerkleTreeByIdentifierAndType(identifier: string, mtType: MerkleTreeType): Promise<Merkletree>;
-
+  
   bindMerkleTreeToNewIdentifier(oldIdentifier: string, newIdentifier: string): Promise<void>;
 }

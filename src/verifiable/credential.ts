@@ -47,7 +47,7 @@ export function extractProof(proof: object): { claim: Claim; proofType: ProofTyp
   if (proof instanceof Iden3SparseMerkleProof) {
     return {
       claim: new Claim().fromHex(proof.coreClaim),
-      proofType: ProofType.Iden3SparseMerkle
+      proofType: ProofType.Iden3SparseMerkleTree
     };
   }
   if (proof instanceof BJJSignatureProof2021) {

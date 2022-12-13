@@ -1,7 +1,7 @@
 import { KmsKeyId } from '../kms';
 import { AbstractPrivateKeyStore } from './abstract-key-store';
 
-export class MemoryProviteKeyStore implements AbstractPrivateKeyStore {
+export class InMemoryPrivateKeyStore implements AbstractPrivateKeyStore {
   private _data: Map<string, string>;
   constructor() {
     this._data = new Map<string, string>();

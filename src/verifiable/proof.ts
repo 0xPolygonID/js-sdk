@@ -1,6 +1,6 @@
 import { Proof } from '@iden3/js-merkletree';
 import { ProofType } from './constants';
-
+import { TreeState } from '../circuits';
 // State represents the state of the issuer
 export interface State {
   txId?: string;
@@ -45,5 +45,10 @@ export interface ProofQuery {
   schema?: string; // string url
   claimId?: string;
   context?: string;
-  type?: string; 
+  type?: string;
+}
+
+export interface MerkleTreeProofWithTreeState {
+  proof: Proof;
+  treeState: TreeState;
 }

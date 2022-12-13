@@ -1,4 +1,4 @@
-import {  BjjProvider, KMS, KmsKeyId, KmsKeyType } from '../kms';
+import { KMS, KmsKeyId, KmsKeyType } from '../kms';
 import {
   Blockchain,
   buildDIDType,
@@ -13,6 +13,8 @@ import {
 } from '@iden3/js-iden3-core';
 import { PublicKey, Signature } from '@iden3/js-crypto';
 import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
+import {} from '@iden3/js-iden3-core';
+
 import { models } from '../constants';
 import { subjectPositionIndex, treeEntryFromCoreClaim } from './common';
 import * as uuid from 'uuid';
@@ -21,13 +23,14 @@ import {
   Iden3SparseMerkleProof,
   ProofType,
   CredentialStatusType,
-  BJJSignatureProof2021
+  Parser,
+  BJJSignatureProof2021,
+  MerkleTreeProofWithTreeState
 } from '../schema-processor';
 import { ClaimRequest, createCredential } from './helper';
 import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
-import { keyPath } from '../kms/provider-helpers';
-
+import { getRandomBytes, keyPath } from '../kms/provider-helpers';
 
 // IdentityStatus represents type for state Status
 export enum IdentityStatus {
@@ -62,27 +65,23 @@ export interface IIdentityWallet {
     seed: Uint8Array,
     hostUrl: string
   ): Promise<{ did: DID; credential: W3CCredential }>;
-  createProfile(did :DID,nonce: number): Promise<DID>;
-  generateKey(): Promise<KmsKeyId>;
+  createProfile(did: DID, nonce: number, verifier: string): Promise<DID>;
+  generateKey(keyType: KmsKeyType): Promise<KmsKeyId>;
   getLatestStateById(id: Id): IdentityState;
-  generateMtp(credential): Promise<Claim>;
-  generateNonRevocationProof(credential): Promise<Claim>;
-  getGenesisIdentifier(): Id;
-  revokeKey(keyId: KmsKeyId): Promise<void>;
-  getIdentityInfo(id: Id): Promise<IdentityState>;
+  generateClaimMtp(did: DID, credential: W3CCredential): Promise<MerkleTreeProofWithTreeState>;
+  generateNonRevocationMtp(
+    did: DID,
+    credential: W3CCredential
+  ): Promise<MerkleTreeProofWithTreeState>;
   sign(payload, credential): Promise<Signature>;
 }
 
 export class IdentityWallet implements IIdentityWallet {
-
-  constructor(private readonly _kms: KMS, private readonly _storage: IDataStorage) {
-
-  }
+  constructor(private readonly _kms: KMS, private readonly _storage: IDataStorage) {}
 
   async createIdentity(seed: Uint8Array, hostUrl: string) {
-    
     const tmpIdentifier = uuid.v4();
-    
+
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
 
     const keyID = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
@@ -155,7 +154,7 @@ export class IdentityWallet implements IIdentityWallet {
     const stateHex = currentState.hex();
 
     const mtpProof: Iden3SparseMerkleProof = {
-      type: ProofType.Iden3SparseMerkle,
+      type: ProofType.Iden3SparseMerkleTree,
       mtp: proof,
       issuerData: {
         id: did.toString(),
@@ -175,71 +174,170 @@ export class IdentityWallet implements IIdentityWallet {
 
     credential.proof = [mtpProof];
 
+    await this._storage.identity.saveIdentity({
+      identifier: did.toString(),
+      state: currentState,
+      published: false,
+      genesis: true
+    });
+
+    await this._storage.credential.saveCredential(credential);
+
     return {
       did,
       credential
     };
   }
 
-  async createProfile(did:DID, nonce: number): Promise<DID> {
-    
+  async createProfile(did: DID, nonce: number, verifier: string): Promise<DID> {
     const id = did.id;
 
-    const identityM = await this._storage.identity.getIdentity(did.toString())
-    
-    if (identityM.profileNonce !== 0 ){
-      throw new Error("profiles can be created only from genesis identity")
+    const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
+      did.toString()
+    );
+
+    const existingProfile = identityProfiles.find(
+      (p) => p.nonce == nonce || p.verifier == verifier
+    );
+    if (!!existingProfile) {
+      throw new Error('profile with given nonce or verifier already exists');
     }
-    
-    const profile = Id.profileId(id,BigInt(nonce));
+
+    const profile = Id.profileId(id, BigInt(nonce));
     const profileDID = DID.parseFromId(profile);
-    await this._storage.identity.saveIdentity({profileNonce:nonce,identifier:profileDID.toString()});
+    await this._storage.identity.saveProfile({
+      id: profileDID.toString(),
+      nonce,
+      genesisIdentifier: did.toString(),
+      verifier
+    });
     return profileDID;
   }
 
-  generateKey(): Promise<KmsKeyId> {
-    return Promise.resolve(undefined);
+  async generateKey(keyType: KmsKeyType): Promise<KmsKeyId> {
+    const key = await this._kms.createKeyFromSeed(keyType, getRandomBytes(32));
+    return key;
   }
 
-  generateMtp(credential): Promise<Claim> {
-    return Promise.resolve(undefined);
+  async generateClaimMtp(
+    did: DID,
+    credential: W3CCredential
+  ): Promise<MerkleTreeProofWithTreeState> {
+    const coreClaim = await this.getCoreClaimFromCredential(credential);
+
+    const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      did.toString(),
+      MerkleTreeType.Claims
+    );
+    const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      did.toString(),
+      MerkleTreeType.Revocations
+    );
+    const rootsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      did.toString(),
+      MerkleTreeType.Roots
+    );
+
+    const { proof } = await claimsTree.generateProof(coreClaim.hIndex(), claimsTree.root);
+
+    const currentState = await hashElems([
+      claimsTree.root.bigInt(),
+      revocationTree.root.bigInt(),
+      rootsTree.root.bigInt()
+    ]);
+    return {
+      proof,
+      treeState: {
+        state: currentState,
+        claimsRoot: claimsTree.root,
+        revocationRoot: revocationTree.root,
+        rootOfRoots: rootsTree.root
+      }
+    };
   }
 
-  generateNonRevocationProof(credential): Promise<Claim> {
-    return Promise.resolve(undefined);
-  }
+  async generateNonRevocationMtp(
+    did: DID,
+    credential: W3CCredential
+  ): Promise<MerkleTreeProofWithTreeState> {
+    const coreClaim = await this.getCoreClaimFromCredential(credential);
 
-  getGenesisIdentifier(): Id {
-    return undefined;
-  }
+    const revNonce = coreClaim.getRevocationNonce();
 
-  getIdentityInfo(id: Id): Promise<IdentityState> {
-    return Promise.resolve(undefined);
+    const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      did.toString(),
+      MerkleTreeType.Claims
+    );
+    const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      did.toString(),
+      MerkleTreeType.Revocations
+    );
+    const rootsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      did.toString(),
+      MerkleTreeType.Roots
+    );
+
+    const { proof } = await revocationTree.generateProof(revNonce, revocationTree.root);
+
+    const currentState = await hashElems([
+      claimsTree.root.bigInt(),
+      revocationTree.root.bigInt(),
+      rootsTree.root.bigInt()
+    ]);
+    return {
+      proof,
+      treeState: {
+        state: currentState,
+        claimsRoot: claimsTree.root,
+        revocationRoot: revocationTree.root,
+        rootOfRoots: rootsTree.root
+      }
+    };
   }
 
   getLatestStateById(id: Id): IdentityState {
     return undefined;
   }
 
-  revokeKey(keyId: KmsKeyId): Promise<void> {
-    return Promise.resolve(undefined);
+  async sign(payload: Uint8Array, credential: W3CCredential): Promise<Signature> {
+    if (credential.type.indexOf('AuthBJJCredential') === -1) {
+      throw new Error("can't sign with not AuthBJJCredential credential");
+    }
+    const x = credential.credentialSubject['x'] as unknown as string;
+    const y = credential.credentialSubject['y'] as unknown as string;
+
+    var pb: PublicKey = new PublicKey([BigInt(x), BigInt(y)]);
+    const kp = keyPath(KmsKeyType.BabyJubJub, pb.hex());
+    
+    const signature = await this._kms.sign({ type: KmsKeyType.BabyJubJub, id: kp }, payload);
+
+    return Signature.newFromCompressed(signature);
   }
 
-  async sign(payload:Uint8Array, credential:W3CCredential): Promise<Signature> {
+  private async getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim> {
+    const coreClaimFromSigProof = await credential.getCoreClaimFromProof(ProofType.BJJSignature);
 
-    if (credential.type.indexOf("AuthBJJCredential") === -1 ){
-      throw new Error("can't sign with not AuthBJJCredential credential")
+    const coreClaimFromMtpProof = credential.getCoreClaimFromProof(ProofType.BJJSignature);
+
+    var coreClaim: Claim;
+    if (!coreClaimFromMtpProof && !coreClaimFromSigProof) {
+      throw new Error('core claim is not set proof');
     }
-    const x = credential.credentialSubject["x"] as unknown as string;
-    const y = credential.credentialSubject["y"]as unknown as string;
-
-    var pb :PublicKey = new PublicKey([BigInt(x),BigInt(y)]);
-    const kp = keyPath(KmsKeyType.BabyJubJub,pb.hex())
-
-
-    const signature = await this._kms.sign({type:KmsKeyType.BabyJubJub,id:kp},payload)
-
-    return Signature.newFromCompressed(signature)
-    
+    if (!coreClaimFromMtpProof) {
+      coreClaim = coreClaimFromSigProof;
+    }
+    if (!coreClaimFromSigProof) {
+      coreClaim = coreClaimFromMtpProof;
+    }
+    if (
+      coreClaimFromMtpProof &&
+      coreClaimFromSigProof &&
+      coreClaimFromMtpProof != coreClaimFromSigProof
+    ) {
+      throw new Error('core claim is set in both proofs but not equal');
+    } else {
+      coreClaim = coreClaimFromMtpProof;
+    }
+    return coreClaim;
   }
 }

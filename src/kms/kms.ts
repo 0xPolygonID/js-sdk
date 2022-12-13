@@ -40,12 +40,12 @@ export class KMS {
     this.registry[keyType] = keyProvider;
   }
 
-  async createKeyFromSeed(keyType: KmsKeyType, bites: Uint8Array): Promise<KmsKeyId> {
+  async createKeyFromSeed(keyType: KmsKeyType, bytes: Uint8Array): Promise<KmsKeyId> {
     const keyProvider = this.registry[keyType];
     if (!keyProvider) {
       throw new Error(`keyProvider not found for: ${keyType}`);
     }
-    return keyProvider.newPrivateKeyFromSeed(bites);
+    return keyProvider.newPrivateKeyFromSeed(bytes);
   }
 
   async publicKey(keyId: KmsKeyId): Promise<PublicKey> {
