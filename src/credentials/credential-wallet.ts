@@ -50,7 +50,7 @@ export class CredentialWallet implements ICredentialWallet {
       } catch (e) {
         console.error(e);
         const status = cred.credentialStatus as Iden3ReverseSparseMerkleTreeProof;
-        if (status?.statusIssuer.type === CredentialStatusType.SparseMerkleTreeProof) {
+        if (status?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
           return (await axios.get<RevocationStatus>(cred.credentialStatus.id)).data;
         }
         throw new Error(`can't fetch revocation status`);
