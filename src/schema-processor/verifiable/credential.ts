@@ -1,8 +1,25 @@
 import { BJJSignatureProof2021, Iden3SparseMerkleProof } from './proof';
 import { Claim } from '@iden3/js-iden3-core';
-import { Proof } from '@iden3/js-merkletree';
 import { merklizeJSONLD, Merklizer } from '../processor';
 import { CredentialStatusType, ProofType } from './constants';
+import { Proof } from '@iden3/js-merkletree';
+
+export interface SparseMerkleTreeProof {
+  id: string;
+  type: CredentialStatusType;
+  revocationNonce: string;
+}
+
+export interface Iden3ReverseSparseMerkleTreeProof {
+  id: string;
+  type: CredentialStatusType;
+  revocationNonce: string;
+  statusIssuer: {
+    id: string;
+    type: CredentialStatusType;
+    revocationNonce;
+  };
+}
 
 // Iden3Credential is that represents claim json-ld document
 export class W3CCredential {
@@ -12,7 +29,7 @@ export class W3CCredential {
   expirationDate?: number;
   issuanceDate?: number;
   credentialSubject: { [key: string]: object };
-  credentialStatus?: object;
+  credentialStatus?: SparseMerkleTreeProof | Iden3ReverseSparseMerkleTreeProof;
   issuer: string;
   credentialSchema: CredentialSchema;
   proof?: object;
