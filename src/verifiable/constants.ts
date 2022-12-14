@@ -23,6 +23,15 @@ export const VerifiableConstants = Object.freeze({
     IDEN3_COMM: 'iden3-communication',
     // PushNotificationServiceType is service type for delivering push notifications to identity
     PUSH_NOTIFICATION: 'push-notification'
+  },
+  AUTH: {
+    AUTH_BJJ_CREDENTAIL_HASH: '013fd3f623559d850fb5b02ff012d0e2',
+    AUTH_BJJ_CREDENTIAL_SCHEMA_JSON_URL:
+      'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/auth-v1.json',
+    AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD_URL:
+      'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/auth-v2.json-ld',
+    AUTH_BJJ_CREDENTIAL_TYPE: 'AuthBJJCredential',
+    AUTH_BJJ_CREDENTAIL_SCHEMA_JSON: `{"$schema":"http://json-schema.org/draft-07/schema#","$metadata":{"uris":{"jsonLdContext":"https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/auth-v2.json-ld","jsonSchema":"https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/auth-v1.json"},"serialization":{"indexDataSlotA":"x","indexDataSlotB":"y"}},"type":"object","required":["@context","id","type","issuanceDate","credentialSubject","credentialSchema","credentialStatus","issuer"],"properties":{"@context":{"type":["string","array","object"]},"id":{"type":"string"},"type":{"type":["string","array"],"items":{"type":"string"}},"issuer":{"type":["string","object"],"format":"uri","required":["id"],"properties":{"id":{"type":"string","format":"uri"}}},"issuanceDate":{"type":"string","format":"date-time"},"expirationDate":{"type":"string","format":"date-time"},"credentialSchema":{"type":"object","required":["id","type"],"properties":{"id":{"type":"string","format":"uri"},"type":{"type":"string"}}},"subjectPosition":{"type":"string","enum":["none","index","value"]},"merklizationRootPosition":{"type":"string","enum":["none","index","value"]},"revNonce":{"type":"integer"},"version":{"type":"integer"},"updatable":{"type":"boolean"},"credentialSubject":{"type":"object","required":["x","y"],"properties":{"id":{"title":"Credential Subject ID","type":"string","format":"uri"},"x":{"type":"string"},"y":{"type":"string"}}}}}`
   }
 });
 

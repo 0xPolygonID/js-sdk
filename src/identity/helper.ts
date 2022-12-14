@@ -21,7 +21,7 @@ export interface ClaimRequest {
 
 export const createCredential = (
   hostUrl: string,
-  issuer: Id,
+  issuer: DID,
   request: ClaimRequest,
   schema: Schema
 ): W3CCredential => {
@@ -33,8 +33,8 @@ export const createCredential = (
   const credentialType = [VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE, request.type];
 
   const expirationDate = request.expiration;
-  const issuanceDate = Date.now();
-  const issuerDID = DID.parseFromId(issuer);
+  const issuanceDate = Date.now() / 1000;
+  const issuerDID =  issuer.toString()
   const credentialSubject = request.credentialSubject;
   credentialSubject['type'] = request.type;
 
@@ -50,6 +50,7 @@ export const createCredential = (
     id: request.credentialSchema,
     type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
   };
+
 
   return cr;
 };

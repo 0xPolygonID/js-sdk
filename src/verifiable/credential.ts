@@ -4,22 +4,6 @@ import { merklizeJSONLD, Merklizer } from '../schema-processor/processor';
 import { CredentialStatusType, ProofType } from './constants';
 import { Proof } from '@iden3/js-merkletree';
 
-export interface SparseMerkleTreeProof {
-  id: string;
-  type: CredentialStatusType;
-  revocationNonce: string;
-}
-
-export interface Iden3ReverseSparseMerkleTreeProof {
-  id: string;
-  type: CredentialStatusType;
-  revocationNonce: string;
-  statusIssuer: {
-    id: string;
-    type: CredentialStatusType;
-    revocationNonce;
-  };
-}
 
 // Iden3Credential is that represents claim json-ld document
 export class W3CCredential {
@@ -28,8 +12,8 @@ export class W3CCredential {
   type: string[];
   expirationDate?: number;
   issuanceDate?: number;
-  credentialSubject: { [key: string]: object };
-  credentialStatus?: SparseMerkleTreeProof | Iden3ReverseSparseMerkleTreeProof;
+  credentialSubject: { [key: string]: object | string };
+  credentialStatus?: CredentialStatus | RHSCredentialStatus;
   issuer: string;
   credentialSchema: CredentialSchema;
   proof?: object;
