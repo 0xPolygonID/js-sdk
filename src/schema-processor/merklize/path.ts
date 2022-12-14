@@ -8,11 +8,10 @@ import {
   ERR_UNEXPECTED_ARR_ELEMENT
 } from './errors';
 import { IHasher, Parts } from './types';
-import { ContextParser } from 'jsonld-context-parser';
+import { ContextParser, JsonLdContextNormalized } from 'jsonld-context-parser';
 import { FetchDocumentLoader } from './documentLoaders/dlContextParser';
 import { DEFAULT_HASHER } from './constants';
 import { JsonLdDocument } from 'jsonld';
-import LDCtx from './ldCTX';
 
 const re = /^\d+$/;
 const sortArr = <T>(arr: Array<T>): Array<T> => {
@@ -106,7 +105,7 @@ export class Path {
 }
 
 const pathFromDocument = async (
-  ldCTX: LDCtx,
+  ldCTX: JsonLdContextNormalized | null,
   doc: JsonLdDocument,
   pathParts: Array<string>,
   acceptArray: boolean
@@ -117,6 +116,8 @@ const pathFromDocument = async (
 
   const term = pathParts[0];
   const newPathParts = pathParts.slice(1);
+
+  const ctxParser = new ContextParser({ documentLoader: new FetchDocumentLoader() });
 
   if (re.test(term)) {
     const num = parseInt(term);
@@ -146,7 +147,9 @@ const pathFromDocument = async (
 
   const ctxData = docObjMap['@context'];
   if (ctxData) {
-    await ldCTX.parse(ctxData);
+    ldCTX = await (ldCTX
+      ? ctxParser.parse(ctxData, { parentContext: ldCTX.getContextRaw() })
+      : ctxParser.parse(ctxData));
   }
 
   const elemKeys = sortArr(Object.keys(docObjMap));
@@ -177,11 +180,13 @@ const pathFromDocument = async (
     }
 
     for (const tt of types) {
-      const td = typedScopedCtx.getTermDefinition(tt);
+      const td = typedScopedCtx.getContextRaw()[tt];
       if (typeof td === 'object') {
         if (td) {
           const ctxObj = td['@context'];
-          await ldCTX.parse(ctxObj);
+          if (ctxObj) {
+            ldCTX = await ctxParser.parse(ctxObj, { parentContext: ldCTX.getContextRaw() });
+          }
         }
       }
     }
@@ -189,7 +194,7 @@ const pathFromDocument = async (
     break;
   }
 
-  const m = await ldCTX.getTermDefinition(term);
+  const m = await ldCTX.getContextRaw()[term];
   const id = m['@id'];
   if (!id) {
     throw ERR_NO_ID_ATTR;
@@ -233,7 +238,7 @@ export const newFieldPathFromCtx = async (
 };
 
 export const newPathFromDocument = async (
-  ldCTX: LDCtx,
+  ldCTX: JsonLdContextNormalized | null,
   docStr: string,
   path: string
 ): Promise<Path> => {

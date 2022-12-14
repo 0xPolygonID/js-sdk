@@ -10,7 +10,6 @@ import { Value } from './value';
 import { getQuadKey } from './quadKey';
 import { newRelationship } from './relationship';
 import { newNodeId } from './nodeID';
-import LDCtx from './ldCTX';
 import { Hash } from '@iden3/js-merkletree';
 
 export class Merkelizer {
@@ -45,8 +44,7 @@ export class Merkelizer {
   }
 
   async resolveDocPath(path: string): Promise<Path> {
-    const ldCTX = new LDCtx();
-    const realPath = await newPathFromDocument(ldCTX, this.srcDoc, path);
+    const realPath = await newPathFromDocument(null, this.srcDoc, path);
     realPath.hasher = this.hasher;
     return realPath;
   }

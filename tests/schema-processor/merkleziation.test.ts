@@ -11,7 +11,6 @@ import {
   newPathFromCtx,
   newPathFromDocument
 } from '../../src/schema-processor/merklize/path';
-import LDCtx from '../../src/schema-processor/merklize/ldCTX';
 import MerkleTree, { addEntriesToMerkleTree } from '../../src/schema-processor/merklize/merkleTree';
 import { newRDFEntry } from '../../src/schema-processor/merklize/rdfEntry';
 import merkleTree from '../../src/schema-processor/merklize/merkleTree';
@@ -62,7 +61,7 @@ describe('tests merkelization', () => {
   it('new path from document', async () => {
     const docStr = JSON.stringify(testDocument);
     const inp = 'credentialSubject.1.birthDate';
-    const ldCTX = new LDCtx();
+    const ldCTX = null;
 
     const res = await newPathFromDocument(ldCTX, docStr, inp);
     const expPath = newPath([
