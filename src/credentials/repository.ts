@@ -4,7 +4,7 @@ import { ProofQuery } from '../proof';
 export enum RepositoryError {
   NotDefinedQueryKey = 'not defined query key',
   NotDefinedComparator = 'not defined comparator',
-  NotFoundCredentialForRemove = 'not found credential for delete',
+  NotFoundCredentialForRemove = 'not found credential for delete'
 }
 export interface IRepository {
   save(credential: W3CCredential): Promise<void>;
@@ -22,7 +22,5 @@ export const comparatorOptions = {
   $in: (a: string, b: string[]) => b.includes(a),
   $nin: (a: string, b: string[]) => !b.includes(a),
   $gt: (a: number, b: number) => a > b,
-  $lt: (a: number, b: number) => a < b,
+  $lt: (a: number, b: number) => a < b
 };
-
-

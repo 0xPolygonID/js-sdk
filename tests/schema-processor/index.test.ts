@@ -1,4 +1,9 @@
 import { DIDDocumentJSONSchema, JsonSchemaValidator } from '../../src/schema-processor';
+import { entriesFromRDF, getDataSet } from '../../src/schema-processor/merklize/merkelizer';
+import { DEFAULT_HASHER } from '../../src/schema-processor/merklize/constants';
+import { testDocument } from './data/data';
+
+jest.setTimeout(50 * 60_00);
 
 describe.only('json validator', () => {
   it('test validator validate', async () => {
