@@ -6,7 +6,7 @@ import {
   ProofQuery,
 } from './../verifiable';
 
-import { Id } from '@iden3/js-iden3-core';
+import { DID, Id } from '@iden3/js-iden3-core';
 import { CredentialStatusType, RevocationStatus } from '../schema-processor';
 import axios from 'axios';
 import { getStatusFromRHS } from './revocation';
@@ -20,8 +20,7 @@ export interface ICredentialWallet {
   findById(id: string): Promise<W3CCredential | undefined>;
   findByContextType(context: string, type: string): Promise<W3CCredential[]>;
 
-  getAuthCredential(id: Id): W3CCredential;
-  findCredentialWithLatestVersion(id: Id, hash: string): W3CCredential;
+  getAuthCredential(id: DID): W3CCredential;
   getRevocationStatus(cred: W3CCredential): Promise<RevocationStatus>;
   getSchemaLoader(url: string, type: string): Promise<any>;
   findAllBySchemaHash(hash: string): Promise<W3CCredential[]>;
@@ -35,13 +34,11 @@ export class CredentialWallet implements ICredentialWallet {
   ) {
   }
   
-  getAuthCredential(id: Id): W3CCredential {
+  getAuthCredential(did: DID): W3CCredential {
+    // filter where issuer of auth credential is current did
     throw new Error('Method not implemented.');
   }
 
-  findCredentialWithLatestVersion(id: Id, hash: string): W3CCredential {
-    throw new Error('Method not implemented.');
-  }
 
   async getRevocationStatus(cred: W3CCredential): Promise<RevocationStatus> {
     if (cred.credentialStatus?.type === CredentialStatusType.SparseMerkleTreeProof) {
@@ -63,19 +60,12 @@ export class CredentialWallet implements ICredentialWallet {
     throw new Error('revocation status unknown');
   }
 
-  getSchemaLoader(url: string, type: string): Promise<any> {
-    throw new Error('Method not implemented.');
-  }
-
-  findAllBySchemaHash(hash: string): Promise<W3CCredential[]> {
-    throw new Error('Method not implemented.');
-  }
-
   findClaimsForCircuitQuery(
     claims: any,
     circuitQuery: any,
     requestFiled: any
   ): Promise<W3CCredential[]> {
+    console.log("don't know");
     throw new Error('Method not implemented.');
   }
 
