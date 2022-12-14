@@ -1,6 +1,5 @@
 // import { ProofQuery, RevocationStatus } from '../schema-processor';
-import { IDataStorage } from '../storage/interfaces/data-storage';
-import { IStateStorage } from './../blockchain/index';
+import { IDataStorage, IStateStorage } from '../storage/interfaces';
 import {
   Iden3ReverseSparseMerkleTreeProof,
   W3CCredential,
