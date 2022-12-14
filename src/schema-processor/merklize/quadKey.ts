@@ -1,5 +1,5 @@
 import { Iri } from 'jsonld/jsonld-spec';
-import { newNodeId, NodeID } from './nodeID';
+import { NodeID } from './nodeID';
 import { Quad } from 'n3';
 
 export class QuadKey {
@@ -27,9 +27,9 @@ export const getQuadKey = (q: Quad): QuadKey => {
     throw 'error: quad is empty';
   }
 
-  const subjectID = newNodeId(q.subject);
-  const p = q.predicate;
+  const subjectID = new NodeID(q.subject)
 
+  const p = q.predicate;
   if (!p) {
     throw 'error: predicate is empty';
   }

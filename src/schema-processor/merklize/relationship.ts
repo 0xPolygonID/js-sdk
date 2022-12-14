@@ -3,7 +3,7 @@ import { IHasher } from './types';
 import { DEFAULT_HASHER } from './constants';
 import { NamedNode, Quad, Variable } from 'n3';
 import { Path } from './path';
-import { newNodeId, NodeID } from './nodeID';
+import { NodeID } from './nodeID';
 import { getQuadKey, QuadKey } from './quadKey';
 
 class Relationship {
@@ -33,7 +33,7 @@ class Relationship {
   path(n: Quad, idx: number) {
     const k = new Path();
 
-    const subID = newNodeId(n.subject);
+    const subID = new NodeID(n.subject);
 
     let predicate: NamedNode | Variable;
 
@@ -96,12 +96,12 @@ export const newRelationship = async (
 
   const subjectSet: Map<string, number> = new Map();
   quads.forEach((q) => {
-    const subjID = newNodeId(q.subject);
+    const subjID = new NodeID(q.subject);
     subjectSet.set(subjID.toString(), 0);
   });
 
   quads.forEach((q) => {
-    const objID = newNodeId(q.object);
+    const objID = new NodeID(q.object);
     if (subjectSet.has(objID.toString())) {
       const qk = getQuadKey(q);
       r.setParent(objID, qk);

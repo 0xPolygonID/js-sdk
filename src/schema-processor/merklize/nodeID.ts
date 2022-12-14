@@ -1,5 +1,17 @@
 export class NodeID {
-  constructor(public tp: string, public val: string) {}
+  tp: string
+  val:string
+  constructor(n: { termType: string; value: string }) {
+    if(n.termType.length===0){
+      throw 'error: termtype empty';
+    }
+    if (n.value.length === 0) {
+      throw 'error: value empty';
+    }
+
+    this.tp = n.termType
+    this.val  = n.value
+  }
   toString() {
     return JSON.stringify({ tp: this.tp, val: this.val });
   }
@@ -16,17 +28,6 @@ export class NodeID {
       throw `error: expected 'val' type tp be string, found ${typeof obj.val}`;
     }
 
-    return new NodeID(obj.to, obj.val);
+    return new NodeID({ termType: obj.tp, value: obj.val});
   }
 }
-export const newNodeId = (n: { termType: string; value: string }): NodeID => {
-  if (!n) {
-    throw 'error: node is null';
-  }
-
-  if (!n.value) {
-    throw 'error: node value.ts is undefined';
-  }
-
-  return new NodeID(n.termType, n.value);
-};

@@ -9,7 +9,7 @@ import { getJsonLdDocLoader } from './documentLoaders/dlJSONLD';
 import { Value } from './value';
 import { getQuadKey } from './quadKey';
 import { newRelationship } from './relationship';
-import { newNodeId } from './nodeID';
+import {NodeID} from './nodeID';
 import { Hash } from '@iden3/js-merkletree';
 
 export class Merkelizer {
@@ -150,7 +150,7 @@ export const entriesFromRDFHasher = async (quads: Array<Quad>, hasher: IHasher) 
         break;
       case 'BlankNode':
         // eslint-disable-next-line no-case-declarations
-        const nID = newNodeId(q.object);
+        const nID = new NodeID(q.object);
         // eslint-disable-next-line no-case-declarations
         const p = rs.getParten(nID);
         if (p) {
