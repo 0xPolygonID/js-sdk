@@ -27,7 +27,7 @@ export const getQuadKey = (q: Quad): QuadKey => {
     throw 'error: quad is empty';
   }
 
-  const subjectID = new NodeID(q.subject)
+  const subjectID = new NodeID(q.subject);
 
   const p = q.predicate;
   if (!p) {

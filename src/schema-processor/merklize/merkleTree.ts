@@ -1,40 +1,23 @@
-import {
-  inMemmoryDB,
-  Merkletree as MT,
-  Proof,
-  str2Bytes,
-  ZERO_HASH,
-  Hash,
-  verifyProof
-} from '@iden3/js-merkletree';
+import { inMemmoryDB, str2Bytes, Merkletree } from '@iden3/js-merkletree';
 import { IHasher } from './types';
 import { stringToBytes } from '../../iden3comm/utils';
 import { RdfEntry } from './rdfEntry';
 
-class MerkleTree {
-  mt: MT;
-
-  constructor(prefix = '', writable = true, maxLevels = 40) {
-    const str = new inMemmoryDB(str2Bytes(prefix));
-    this.mt = new MT(str, writable, maxLevels);
-  }
-
-  async add(k: bigint, v: bigint) {
-    await this.mt.add(k, v);
-  }
-
-  async generateProof(v: bigint) {
-    return await this.mt.generateProof(v, ZERO_HASH);
-  }
-
-  static verifyProof(root: Hash, p: Proof, k: bigint, v: bigint) {
-    return verifyProof(root, p, k, v);
-  }
-
-  root() {
-    return this.mt.root;
-  }
-}
+export const getMerkleTreeInitParam = (
+  prefix = '',
+  writable = true,
+  maxLevels = 40
+): {
+  db: inMemmoryDB;
+  writable: boolean;
+  maxLevels: number;
+} => {
+  return {
+    db: new inMemmoryDB(str2Bytes(prefix)),
+    writable,
+    maxLevels
+  };
+};
 
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
 export const mkValueMtEntry = async (h: IHasher, v: any): Promise<bigint> => {
@@ -93,11 +76,9 @@ const mkValueTime = (h: IHasher, v: Date) => {
   return mkValueInt(h, BigInt(unixTimeStamp));
 };
 
-export const addEntriesToMerkleTree = async (mt: MerkleTree, entries: Array<RdfEntry>) => {
+export const addEntriesToMerkleTree = async (mt: Merkletree, entries: Array<RdfEntry>) => {
   for (const e of entries) {
     const { k, v } = await e.getKeyValueMTEntry();
     await mt.add(k, v);
   }
 };
-
-export default MerkleTree;

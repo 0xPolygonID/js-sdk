@@ -11,9 +11,12 @@ import {
   newPathFromCtx,
   newPathFromDocument
 } from '../../src/schema-processor/merklize/path';
-import MerkleTree, { addEntriesToMerkleTree } from '../../src/schema-processor/merklize/merkleTree';
+import {
+  addEntriesToMerkleTree,
+  getMerkleTreeInitParam
+} from '../../src/schema-processor/merklize/merkleTree';
 import { newRDFEntry } from '../../src/schema-processor/merklize/rdfEntry';
-import merkleTree from '../../src/schema-processor/merklize/merkleTree';
+import { Merkletree, verifyProof, ZERO_HASH } from "@iden3/js-merkletree"
 
 jest.setTimeout(50 * 60_00);
 
@@ -80,7 +83,8 @@ describe('tests merkelization', () => {
 
     const entries = await entriesFromRDF(dataSet, DEFAULT_HASHER);
 
-    const mt = new MerkleTree();
+    const { db, writable, maxLevels } = getMerkleTreeInitParam();
+    const mt = new Merkletree(db, writable, maxLevels);
     await addEntriesToMerkleTree(mt, entries);
 
     const path = newPath([
@@ -93,9 +97,9 @@ describe('tests merkelization', () => {
     const entry = newRDFEntry(path, birthDate);
 
     const { k, v } = await entry.getKeyValueMTEntry();
-    const { proof } = await mt.generateProof(k);
+    const { proof } = await mt.generateProof(k, ZERO_HASH);
 
-    const ok = await MerkleTree.verifyProof(mt.root(), proof, k, v);
+    const ok = await verifyProof(mt.root, proof, k, v);
     expect(ok).toBeTruthy();
   });
 
@@ -103,7 +107,8 @@ describe('tests merkelization', () => {
     const dataSet = await getDataSet(testDocument);
     const entries = await entriesFromRDF(dataSet, DEFAULT_HASHER);
 
-    const mt = new MerkleTree();
+    const { db, writable, maxLevels } = getMerkleTreeInitParam();
+    const mt = new Merkletree(db, writable, maxLevels);
     await addEntriesToMerkleTree(mt, entries);
 
     const path = newPath(['http://schema.org/identifier']);
@@ -111,9 +116,9 @@ describe('tests merkelization', () => {
     const entry = newRDFEntry(path, 83627465);
 
     const { k, v } = await entry.getKeyValueMTEntry();
-    const { proof } = await mt.generateProof(k);
+    const { proof } = await mt.generateProof(k, ZERO_HASH);
 
-    const ok = await MerkleTree.verifyProof(mt.root(), proof, k, v);
+    const ok = await verifyProof(mt.root, proof, k, v);
     expect(ok).toBeTruthy();
   });
 
@@ -135,7 +140,7 @@ describe('tests merkelization', () => {
     expect(birthDate.toUTCString()).toEqual(valueD.toUTCString());
 
     const valueMTEntry = await value.mkMTEntry();
-    const ok = merkleTree.verifyProof(mz.mt.root(), proof, pathMTEntry, valueMTEntry);
+    const ok = verifyProof(mz.mt.root, proof, pathMTEntry, valueMTEntry);
     expect(ok).toBeTruthy();
 
     expect(mz.root().Hex()).toEqual(
@@ -156,7 +161,7 @@ describe('tests merkelization', () => {
     expect(valueStr).toEqual('Bahamas');
 
     const valueMTEntry = await value.mkMTEntry();
-    const ok = merkleTree.verifyProof(mz.root(), proof, pathMTEntry, valueMTEntry);
+    const ok = verifyProof(mz.root(), proof, pathMTEntry, valueMTEntry);
     expect(ok).toBeTruthy();
 
     expect(mz.root().Hex()).toEqual(

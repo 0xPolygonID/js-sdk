@@ -1,4 +1,4 @@
-import MerkleTree, { addEntriesToMerkleTree } from './merkleTree';
+import { addEntriesToMerkleTree, getMerkleTreeInitParam } from './merkleTree';
 import { IHasher } from './types';
 import { Literal, Parser, Quad } from 'n3';
 import { DEFAULT_HASHER } from './constants';
@@ -9,20 +9,25 @@ import { getJsonLdDocLoader } from './documentLoaders/dlJSONLD';
 import { Value } from './value';
 import { getQuadKey } from './quadKey';
 import { newRelationship } from './relationship';
-import {NodeID} from './nodeID';
-import { Hash } from '@iden3/js-merkletree';
+import { NodeID } from './nodeID';
+import { Merkletree, Hash, ZERO_HASH } from '@iden3/js-merkletree';
 
 export class Merkelizer {
   constructor(
     public srcDoc: string = null,
-    public mt: MerkleTree = new MerkleTree(),
+    public mt: Merkletree = null,
     public hasher: IHasher = DEFAULT_HASHER,
     public entries: Map<string, RdfEntry> = new Map()
-  ) {}
+  ) {
+    if (!mt) {
+      const { db, writable, maxLevels } = getMerkleTreeInitParam();
+      this.mt = new Merkletree(db, writable, maxLevels);
+    }
+  }
 
   async proof(p: Path) {
     const kHash = await p.mtEntry();
-    const { proof } = await this.mt.generateProof(kHash);
+    const { proof } = await this.mt.generateProof(kHash, ZERO_HASH);
 
     let value: Value;
 
@@ -50,7 +55,7 @@ export class Merkelizer {
   }
 
   root(): Hash {
-    return this.mt.root();
+    return this.mt.root;
   }
 }
 export const getDataSet = async (doc: JsonLdDocument) => {
