@@ -1,4 +1,4 @@
-import { BJJSignatureProof2021, Iden3SparseMerkleProof } from './proof';
+import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof } from './proof';
 import { Claim } from '@iden3/js-iden3-core';
 import { merklizeJSONLD, Merklizer } from '../schema-processor/processor';
 import { CredentialStatusType, ProofType } from './constants';
@@ -56,15 +56,15 @@ export class W3CCredential {
         return claim;
       }
     }
-    throw new Error('proof not found');
+    return undefined;
   }
 }
 
 export function extractProof(proof: object): { claim: Claim; proofType: ProofType } {
-  if (proof instanceof Iden3SparseMerkleProof) {
+  if (proof instanceof Iden3SparseMerkleTreeProof) {
     return {
       claim: new Claim().fromHex(proof.coreClaim),
-      proofType: ProofType.Iden3SparseMerkleTree
+      proofType: ProofType.Iden3SparseMerkleTreeProof
     };
   }
   if (proof instanceof BJJSignatureProof2021) {

@@ -1,38 +1,23 @@
 import axios from 'axios';
 import { create, IPFSHTTPClient as IpfsHttpClient } from 'ipfs-http-client';
 
-// Schema is a protocol schema
-export interface Schema {
-  hash?: string;
-  url: string;
-  type: string;
-}
-
-export interface SchemaLoadResult {
-  schema: Uint8Array;
-  extension: string;
-}
-
 export interface ISchemaLoader {
-  load(schema: Schema): Promise<SchemaLoadResult>;
+  load(url: string): Promise<Uint8Array>;
 }
 
 export class UniversalSchemaLoader implements ISchemaLoader {
   constructor(private ipfsUrl: string) {}
-  public async load(schema: Schema): Promise<SchemaLoadResult> {
-    const l = getLoader(schema.url, this.ipfsUrl);
-    const schemaRes = await l.load(schema);
+  public async load(url: string): Promise<Uint8Array> {
+    const l = getLoader(url, this.ipfsUrl);
+    const schemaRes = await l.load(url);
     return schemaRes;
   }
 }
 
 export class HttpSchemaLoader implements ISchemaLoader {
-  public async load(schema: Schema): Promise<SchemaLoadResult> {
-    const resp = await axios.get(schema.url, { responseType: 'arraybuffer' });
-    return {
-      schema: resp.data as Uint8Array,
-      extension: 'json-ld'
-    };
+  public async load(url: string): Promise<Uint8Array> {
+    const resp = await axios.get(url, { responseType: 'arraybuffer' });
+    return resp.data as Uint8Array;
   }
 }
 export class IpfsSchemaLoader implements ISchemaLoader {
@@ -40,8 +25,8 @@ export class IpfsSchemaLoader implements ISchemaLoader {
   constructor(private readonly url: string) {
     this.client = create({ url: this.url });
   }
-  public async load(schema: Schema): Promise<SchemaLoadResult> {
-    const uri = new URL(schema.url);
+  public async load(url: string): Promise<Uint8Array> {
+    const uri = new URL(url);
 
     const schemaRes = this.client.cat(uri.host);
 
@@ -50,10 +35,7 @@ export class IpfsSchemaLoader implements ISchemaLoader {
       schemaBytes = Uint8Array.from(num);
     }
 
-    return {
-      schema: schemaBytes,
-      extension: 'json-ld'
-    };
+    return schemaBytes;
   }
 }
 

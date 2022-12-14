@@ -8,7 +8,7 @@ import {
   setBitBigEndian,
   testBit
 } from '@iden3/js-merkletree';
-import { IStateStorage } from '../blockchain';
+import { IStateStorage } from '../storage/interfaces';
 import { RevocationStatus, VerifiableConstants, W3CCredential } from '../schema-processor';
 import axios from 'axios';
 

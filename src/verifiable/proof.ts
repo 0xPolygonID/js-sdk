@@ -23,7 +23,7 @@ export interface IssuerData {
 }
 
 // Iden3SparseMerkleProof JSON-LD structure
-export class Iden3SparseMerkleProof {
+export class Iden3SparseMerkleTreeProof {
   type: ProofType;
   issuerData: IssuerData;
   mtp: Proof;

@@ -30,7 +30,7 @@ export enum ProofType {
   // BJJSignatureProofType schema type
   BJJSignature = 'BJJSignature2021',
   // Iden3SparseMerkleProofType schema
-  Iden3SparseMerkleTree = 'Iden3SparseMerkleProof'
+  Iden3SparseMerkleTreeProof = 'Iden3SparseMerkleTreeProof'
 }
 
 // CredentialStatusType type for understanding revocation type

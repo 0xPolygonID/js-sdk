@@ -50,7 +50,7 @@ export class BjjProvider implements IKeyProvider {
       throw new Error('data to sign is too large');
     }
 
-    const i = BytesHelper.bytesToInt(swapEndianness(data));
+    const i = BytesHelper.bytesToInt(data);
     if (!checkBigIntInField(i)) {
       throw new Error('data to sign is too large');
     }
