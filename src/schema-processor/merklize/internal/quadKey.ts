@@ -5,11 +5,11 @@ import { Quad } from 'n3';
 export class QuadKey {
   constructor(public subjectID: NodeID, public predicate: Iri) {}
 
-  toString() {
+  toString(): string {
     return JSON.stringify({ subjecID: this.subjectID, val: this.predicate });
   }
 
-  static parseQuadKey(str: string) {
+  static parseQuadKey(str: string): QuadKey {
     const obj = JSON.parse(str);
     if (!(obj.subjectID && obj.predicate)) {
       throw new Error('error: prased object is not of type QuadKey');

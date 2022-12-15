@@ -1,5 +1,5 @@
 import { Iri } from 'jsonld/jsonld-spec';
-import { IHasher } from '../types';
+import { Hasher } from '../types';
 import { DEFAULT_HASHER } from '../constants';
 import { NamedNode, Quad, Variable } from 'n3';
 import { Path } from './path';
@@ -11,26 +11,26 @@ class Relationship {
     // string should be derived from instance of NodeID for the below maps
     public parents: Map<string, QuadKey> = new Map(),
     public children: Map<string, Map<Iri, Array<NodeID>>> = new Map(),
-    public hasher: IHasher = DEFAULT_HASHER
+    public hasher: Hasher = DEFAULT_HASHER
   ) {}
 
-  getParten(k: NodeID) {
+  getParent(k: NodeID): QuadKey {
     return this.parents.get(k.toString());
   }
 
-  setParent(k: NodeID, v: QuadKey) {
+  setParent(k: NodeID, v: QuadKey): void {
     this.parents.set(k.toString(), v);
   }
 
-  getChildren(k: NodeID) {
+  getChildren(k: NodeID): Map<string, NodeID[]> {
     return this.children.get(k.toString());
   }
 
-  setChildren(k: NodeID, v: Map<Iri, Array<NodeID>>) {
+  setChildren(k: NodeID, v: Map<Iri, Array<NodeID>>): void {
     this.children.set(k.toString(), v);
   }
 
-  path(n: Quad, idx: number) {
+  path(n: Quad, idx: number): Path {
     const k = new Path();
 
     const subID = new NodeID(n.subject);
@@ -58,7 +58,7 @@ class Relationship {
     let nextKey = subID;
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const parent = this.getParten(nextKey);
+      const parent = this.getParent(nextKey);
       if (!parent) {
         break;
       }
@@ -90,7 +90,7 @@ class Relationship {
 
 export const newRelationship = async (
   quads: Array<Quad>,
-  hasher: IHasher
+  hasher: Hasher
 ): Promise<Relationship> => {
   const r = new Relationship(new Map(), new Map(), hasher ? hasher : DEFAULT_HASHER);
 

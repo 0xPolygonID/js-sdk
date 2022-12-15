@@ -1,25 +1,25 @@
 import { Path } from './path';
-import { IHasher } from '../types';
+import { Hasher } from '../types';
 import { DEFAULT_HASHER } from '../constants';
 import { mkValueMtEntry } from './merkleTree';
 
 export class RdfEntry {
   // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-  constructor(public key: Path, public value: any, public hasher: IHasher = DEFAULT_HASHER) {}
+  constructor(public key: Path, public value: any, public hasher: Hasher = DEFAULT_HASHER) {}
 
-  getHasher() {
+  getHasher(): Hasher {
     return this.hasher;
   }
 
-  async getKeyMtEntry() {
-    return await this.key.mtEntry();
+  getKeyMtEntry(): Promise<bigint> {
+    return this.key.mtEntry();
   }
 
-  async getValueMtEntry() {
-    return await mkValueMtEntry(this.getHasher(), this.value);
+  getValueMtEntry(): Promise<bigint> {
+    return mkValueMtEntry(this.getHasher(), this.value);
   }
 
-  async getKeyValueMTEntry() {
+  async getKeyValueMTEntry(): Promise<{ k: bigint; v: bigint }> {
     const k = await this.getKeyMtEntry();
     const v = await this.getValueMtEntry();
     return { k, v };
@@ -40,8 +40,7 @@ export const newRDFEntry = (k: Path, v: any) => {
     default:
       if (v instanceof Date) {
         e.value = v;
-      }
-      else {
+      } else {
         throw new Error(`error: incorrect value type ${typeof v}`);
       }
   }

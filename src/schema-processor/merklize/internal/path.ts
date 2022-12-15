@@ -7,7 +7,7 @@ import {
   ERR_TERM_IS_NOT_DEFINED,
   ERR_UNEXPECTED_ARR_ELEMENT
 } from '../errors';
-import { IHasher, Parts } from '../types';
+import { Hasher, Parts } from '../types';
 import { ContextParser, JsonLdContextNormalized } from 'jsonld-context-parser';
 import { FetchDocumentLoader } from '../documentLoaders/dlContextParser';
 import { DEFAULT_HASHER } from '../constants';
@@ -27,17 +27,17 @@ const sortArr = <T>(arr: Array<T>): Array<T> => {
 };
 
 export class Path {
-  constructor(public parts: Parts = [], public hasher: IHasher = DEFAULT_HASHER) {}
+  constructor(public parts: Parts = [], public hasher: Hasher = DEFAULT_HASHER) {}
 
-  reverse() {
+  reverse(): Parts {
     return this.parts.reverse();
   }
 
-  append(p: Parts) {
+  append(p: Parts): void {
     this.parts = this.parts.concat(p);
   }
 
-  prepend(p: Parts) {
+  prepend(p: Parts): void {
     this.parts = [...p, ...this.parts];
   }
 
@@ -65,7 +65,7 @@ export class Path {
     return await h.Hash(keyParts);
   }
 
-  async pathFromContext(docStr: string, path: string) {
+  async pathFromContext(docStr: string, path: string): Promise<void> {
     const doc = JSON.parse(docStr);
     const context = doc['@context'];
     if (!context) {
@@ -208,7 +208,7 @@ const pathFromDocument = async (
   return [id, ...moreParts];
 };
 
-export const newPath = (parts: Parts) => {
+export const newPath = (parts: Parts): Path => {
   const p = new Path();
   p.append(parts);
   return p;

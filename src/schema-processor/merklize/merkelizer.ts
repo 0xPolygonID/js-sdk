@@ -1,5 +1,5 @@
 import { addEntriesToMerkleTree, getMerkleTreeInitParam } from './internal/merkleTree';
-import { IHasher, Value } from './types';
+import { Hasher, Value } from './types';
 import { Literal, Parser, Quad } from 'n3';
 import { DEFAULT_HASHER } from './constants';
 import { RdfEntry } from './internal/rdfEntry';
@@ -9,13 +9,13 @@ import { getJsonLdDocLoader } from './documentLoaders/dlJSONLD';
 import { getQuadKey } from './internal/quadKey';
 import { newRelationship } from './internal/relationship';
 import { NodeID } from './internal/nodeID';
-import { Merkletree, Hash, ZERO_HASH } from '@iden3/js-merkletree';
+import { Merkletree, Hash, ZERO_HASH, Proof } from '@iden3/js-merkletree';
 
 export class Merkelizer {
   constructor(
     public srcDoc: string = null,
     public mt: Merkletree = null,
-    public hasher: IHasher = DEFAULT_HASHER,
+    public hasher: Hasher = DEFAULT_HASHER,
     public entries: Map<string, RdfEntry> = new Map()
   ) {
     if (!mt) {
@@ -24,7 +24,7 @@ export class Merkelizer {
     }
   }
 
-  async proof(p: Path) {
+  async proof(p: Path): Promise<{ proof: Proof; value: Value }> {
     const kHash = await p.mtEntry();
     const { proof } = await this.mt.generateProof(kHash, ZERO_HASH);
 
@@ -60,7 +60,7 @@ export class Merkelizer {
     return this.mt.root;
   }
 }
-export const getDataSet = async (doc: JsonLdDocument) => {
+export const getDataSet = async (doc: JsonLdDocument): Promise<Quad> => {
   const normalizedData = await canonize(doc, {
     format: 'application/n-quads',
     documentLoader: getJsonLdDocLoader()
@@ -84,7 +84,7 @@ export const merkelizeJSONLD = async (docStr: string): Promise<Merkelizer> => {
   return mz;
 };
 
-export const countEntries = (nodes: Array<Quad>) => {
+export const countEntries = (nodes: Array<Quad>): Map<string, number> => {
   const res: Map<string, number> = new Map();
   nodes.forEach((q) => {
     const key = getQuadKey(q);
@@ -98,11 +98,14 @@ export const countEntries = (nodes: Array<Quad>) => {
   return res;
 };
 
-export const entriesFromRDF = (quads: Array<Quad>, hasher: IHasher) => {
+export const entriesFromRDF = (quads: Array<Quad>, hasher: Hasher): Promise<Array<RdfEntry>> => {
   return entriesFromRDFHasher(quads, hasher);
 };
 
-export const entriesFromRDFHasher = async (quads: Array<Quad>, hasher: IHasher) => {
+export const entriesFromRDFHasher = async (
+  quads: Array<Quad>,
+  hasher: Hasher
+): Promise<Array<RdfEntry>> => {
   if (!quads.length) {
     throw new Error('error: quads are empty');
   }
@@ -159,7 +162,7 @@ export const entriesFromRDFHasher = async (quads: Array<Quad>, hasher: IHasher) 
         // eslint-disable-next-line no-case-declarations
         const nID = new NodeID(q.object);
         // eslint-disable-next-line no-case-declarations
-        const p = rs.getParten(nID);
+        const p = rs.getParent(nID);
         if (p) {
           continue;
         }
@@ -190,7 +193,8 @@ export const entriesFromRDFHasher = async (quads: Array<Quad>, hasher: IHasher) 
   return entries;
 };
 
-const getObjectDatatype = (q: Literal) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getObjectDatatype = (q: Literal): any => {
   return q.datatype.value;
 };
 
@@ -208,5 +212,7 @@ export const validateValue = (val: any): void => {
       }
   }
 
-  throw new Error(`unexpected value type ${typeof val}, expected boolean | number | bigint | Date | string`);
+  throw new Error(
+    `unexpected value type ${typeof val}, expected boolean | number | bigint | Date | string`
+  );
 };

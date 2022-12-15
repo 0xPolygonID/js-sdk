@@ -16,7 +16,7 @@ export class NodeID {
     return JSON.stringify({ tp: this.tp, val: this.val });
   }
 
-  static parseNodeID(str: string) {
+  static parseNodeID(str: string): NodeID {
     const obj = JSON.parse(str);
     if (!(obj.tp && obj.val)) {
       throw new Error('error: prased object is not of type NodeID');
