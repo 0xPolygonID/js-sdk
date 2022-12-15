@@ -1,3 +1,7 @@
+import { IRevocationService } from './revocation';
+
+import { DID } from '@iden3/js-iden3-core';
+import axios from 'axios';
 // import { ProofQuery, RevocationStatus } from '../schema-processor';
 import { IDataStorage, IStateStorage } from '../storage/interfaces';
 import {
@@ -8,7 +12,6 @@ import {
   CredentialStatus,
   MerklizedRootPosition
 } from './../verifiable';
-import { DID } from '@iden3/js-iden3-core';
 
 import {
   CredentialStatusType,
@@ -16,8 +19,6 @@ import {
   RHSCredentialStatus,
   Schema
 } from '../schema-processor';
-import axios from 'axios';
-import { getStatusFromRHS } from './revocation';
 import * as uuid from 'uuid';
 
 export interface ClaimRequest {
@@ -53,12 +54,15 @@ export interface ICredentialWallet {
 }
 
 export class CredentialWallet implements ICredentialWallet {
-  constructor(private storage: IDataStorage) {}
+  constructor(private readonly _storage: IDataStorage, private readonly _rhs: IRevocationService) {}
+
+
+ 
 
   async getAuthBJJCredential(did: DID): Promise<W3CCredential> {
     // filter where issuer of auth credential is current did
 
-    const authBJJcredsOfIssuer = await this.storage.credential.findCredentialsByQuery({
+    const authBJJcredsOfIssuer = await this._storage.credential.findCredentialsByQuery({
       context: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD_URL,
       type: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_TYPE,
       allowedIssuers: [did.toString()]
@@ -85,7 +89,7 @@ export class CredentialWallet implements ICredentialWallet {
 
     if (cred.credentialStatus?.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
       try {
-        return await getStatusFromRHS(cred, this.storage.states);
+        return await this._rhs.getStatusFromRHS(cred, this._storage.states);
       } catch (e) {
         console.error(e);
         const status = cred.credentialStatus as RHSCredentialStatus;
@@ -158,30 +162,30 @@ export class CredentialWallet implements ICredentialWallet {
   }
 
   async findById(id: string): Promise<W3CCredential | undefined> {
-    return this.storage.credential.findCredentialById(id);
+    return this._storage.credential.findCredentialById(id);
   }
 
   async findByContextType(context: string, type: string): Promise<W3CCredential[]> {
-    return this.storage.credential.findCredentialsByQuery({ context, type });
+    return this._storage.credential.findCredentialsByQuery({ context, type });
   }
 
   async save(credential: W3CCredential): Promise<void> {
-    return this.storage.credential.saveCredential(credential);
+    return this._storage.credential.saveCredential(credential);
   }
 
   async saveAll(credentials: W3CCredential[]): Promise<void> {
-    return this.storage.credential.saveAllCredentials(credentials);
+    return this._storage.credential.saveAllCredentials(credentials);
   }
 
   async remove(id): Promise<void> {
-    return this.storage.credential.removeCredential(id);
+    return this._storage.credential.removeCredential(id);
   }
 
   async list(): Promise<W3CCredential[]> {
-    return this.storage.credential.listCredentials();
+    return this._storage.credential.listCredentials();
   }
 
   async findByQuery(query: ProofQuery): Promise<W3CCredential[]> {
-    return this.storage.credential.findCredentialsByQuery(query);
+    return this._storage.credential.findCredentialsByQuery(query);
   }
 }
