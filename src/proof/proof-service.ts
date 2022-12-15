@@ -42,7 +42,7 @@ export interface ProofQuery {
   // schema?: Schema; // string url
   claimId?: string;
   context?: string;
-  type?: string; 
+  type?: string;
 }
 export interface IProofService {
   verifyProof(zkp: FullProof, circuitName: CircuitId): Promise<boolean>;

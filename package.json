@@ -27,7 +27,7 @@
     "dev:watch:analize": "webpack --env analize --watch --progress --config webpack.config.watch.js",
     "build": "npm run clean && webpack --progress --config webpack.config.prod.js --mode=production",
     "test:coverage": "jest --coverage",
-    "test": "jest",
+    "test": "NODE_OPTIONS=\\\"--experimental-vm-modules\\\" jest",
     "test:watch": "jest --watch",
     "lint": "eslint --fix --ext .js,.ts src/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
@@ -44,6 +44,7 @@
   "homepage": "https://github.com/iden3/polygonid-js-sdk#readme",
   "devDependencies": {
     "@types/jest": "^29.2.0",
+    "@types/jsonld": "^1.5.8",
     "@typescript-eslint/eslint-plugin": "^5.41.0",
     "clean-webpack-plugin": "^4.0.0",
     "eslint-config-prettier": "^8.5.0",
@@ -76,6 +77,9 @@
     "cross-sha256": "^1.2.0",
     "crypto-browserify": "^3.12.0",
     "ethers": "^5.7.2",
+    "jsonld": "^8.1.0",
+    "jsonld-context-parser": "^2.2.2",
+    "n3": "^1.16.3",
     "os-browserify": "^0.3.0",
     "rfc4648": "^1.5.2",
     "snarkjs": "^0.5.0",
