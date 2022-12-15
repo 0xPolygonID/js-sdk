@@ -1,6 +1,3 @@
-/*
- * Copyright (c) 2017-2021 Digital Bazaar, Inc. All rights reserved.
- */
 'use strict';
 
 import { RemoteDocument, Url } from 'jsonld/jsonld-spec';
@@ -35,19 +32,10 @@ const { httpClient } = require('@digitalbazaar/http-client');
  * @return the node document loader.
  */
 export class JsonLDLoader {
-  secure;
-  strictSSL;
-  maxRedirects;
-  headers;
   httpAgent;
   httpsAgent = null;
 
-  constructor(secure?, strictSSL?, maxRedirects?, headers?) {
-    this.secure = false;
-    this.strictSSL = true;
-    this.maxRedirects = -1;
-    this.headers = {};
-
+  constructor(public readonly secure= false, public readonly strictSSL=true, public readonly maxRedirects=-1, public headers={}) {
     // if no default user-agent header, copy headers and set one
     if (!('user-agent' in this.headers)) {
       this.headers = Object.assign({}, headers, {

@@ -1,12 +1,11 @@
 import { addEntriesToMerkleTree, getMerkleTreeInitParam } from './internal/merkleTree';
-import { IHasher } from './types';
+import {IHasher, Value} from './types';
 import { Literal, Parser, Quad } from 'n3';
 import { DEFAULT_HASHER } from './constants';
 import { RdfEntry } from './internal/rdfEntry';
 import { newPathFromDocument, Path } from './internal/path';
 import { canonize, JsonLdDocument } from 'jsonld';
 import { getJsonLdDocLoader } from './documentLoaders/dlJSONLD';
-import { Value } from './internal/value';
 import { getQuadKey } from './internal/quadKey';
 import { newRelationship } from './internal/relationship';
 import { NodeID } from './internal/nodeID';
@@ -37,7 +36,9 @@ export class Merkelizer {
       }
 
       const entry = this.entries.get(kHash.toString());
-      value = new Value(entry.value);
+
+      validateValue(entry.value)
+      value = entry.value as Value
     }
 
     return { proof, value };
@@ -45,7 +46,8 @@ export class Merkelizer {
 
   // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   mkValue(val: any): Value {
-    return new Value(val);
+    validateValue(val)
+    return val as Value;
   }
 
   async resolveDocPath(path: string): Promise<Path> {
@@ -191,3 +193,19 @@ export const entriesFromRDFHasher = async (quads: Array<Quad>, hasher: IHasher) 
 const getObjectDatatype = (q: Literal) => {
   return q.datatype.value;
 };
+
+export const validateValue = (val:any) :void=> {
+  switch (typeof val){
+    case "bigint":
+    case "boolean":
+    case "string":
+    case "number":
+      return
+    case "object":
+      if(val instanceof Date){
+        return
+      }
+  }
+
+  throw `unexpected value type ${typeof val}, expected boolean | number | bigint | Date | string`
+}
