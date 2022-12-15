@@ -1,6 +1,6 @@
 import { mkValueMtEntry } from './merkleTree';
-import { IHasher } from './types';
-import { DEFAULT_HASHER } from './constants';
+import { IHasher } from '../types';
+import { DEFAULT_HASHER } from '../constants';
 
 export class Value {
   // eslint-disable-next-line  @typescript-eslint/no-explicit-any

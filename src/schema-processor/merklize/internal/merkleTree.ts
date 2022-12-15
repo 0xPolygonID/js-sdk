@@ -1,6 +1,6 @@
-import { inMemmoryDB, str2Bytes, Merkletree } from '@iden3/js-merkletree';
-import { IHasher } from './types';
-import { stringToBytes } from '../../iden3comm/utils';
+import { inMemmoryDB, str2Bytes, Merkletree } from '../js-merkletree';
+import { IHasher } from '../types';
+import { stringToBytes } from '../../../iden3comm/utils';
 import { RdfEntry } from './rdfEntry';
 
 export const getMerkleTreeInitParam = (

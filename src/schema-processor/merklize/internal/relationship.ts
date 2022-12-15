@@ -1,6 +1,6 @@
 import { Iri } from 'jsonld/jsonld-spec';
-import { IHasher } from './types';
-import { DEFAULT_HASHER } from './constants';
+import { IHasher } from '../types';
+import { DEFAULT_HASHER } from '../constants';
 import { NamedNode, Quad, Variable } from 'n3';
 import { Path } from './path';
 import { NodeID } from './nodeID';

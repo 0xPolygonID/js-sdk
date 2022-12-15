@@ -1,6 +1,6 @@
 import { Path } from './path';
-import { IHasher } from './types';
-import { DEFAULT_HASHER } from './constants';
+import { IHasher } from '../types';
+import { DEFAULT_HASHER } from '../constants';
 import { mkValueMtEntry } from './merkleTree';
 
 export class RdfEntry {

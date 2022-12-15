@@ -1,15 +1,15 @@
-import { addEntriesToMerkleTree, getMerkleTreeInitParam } from './merkleTree';
+import { addEntriesToMerkleTree, getMerkleTreeInitParam } from './internal/merkleTree';
 import { IHasher } from './types';
 import { Literal, Parser, Quad } from 'n3';
 import { DEFAULT_HASHER } from './constants';
-import { RdfEntry } from './rdfEntry';
-import { newPathFromDocument, Path } from './path';
+import { RdfEntry } from './internal/rdfEntry';
+import { newPathFromDocument, Path } from './internal/path';
 import { canonize, JsonLdDocument } from 'jsonld';
 import { getJsonLdDocLoader } from './documentLoaders/dlJSONLD';
-import { Value } from './value';
-import { getQuadKey } from './quadKey';
-import { newRelationship } from './relationship';
-import { NodeID } from './nodeID';
+import { Value } from './internal/value';
+import { getQuadKey } from './internal/quadKey';
+import { newRelationship } from './internal/relationship';
+import { NodeID } from './internal/nodeID';
 import { Merkletree, Hash, ZERO_HASH } from '@iden3/js-merkletree';
 
 export class Merkelizer {

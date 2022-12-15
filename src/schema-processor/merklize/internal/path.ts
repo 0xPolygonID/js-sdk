@@ -6,11 +6,11 @@ import {
   ERR_PARSED_CONTEXT_IS_NULL,
   ERR_TERM_IS_NOT_DEFINED,
   ERR_UNEXPECTED_ARR_ELEMENT
-} from './errors';
-import { IHasher, Parts } from './types';
+} from '../errors';
+import { IHasher, Parts } from '../types';
 import { ContextParser, JsonLdContextNormalized } from 'jsonld-context-parser';
-import { FetchDocumentLoader } from './documentLoaders/dlContextParser';
-import { DEFAULT_HASHER } from './constants';
+import { FetchDocumentLoader } from '../documentLoaders/dlContextParser';
+import { DEFAULT_HASHER } from '../constants';
 import { JsonLdDocument } from 'jsonld';
 
 const re = /^\d+$/;
