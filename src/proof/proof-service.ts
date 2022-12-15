@@ -35,6 +35,16 @@ import { Signature } from '@iden3/js-crypto';
 const ErrAllClaimsRevoked = 'all claims are revoked';
 
 
+// // Query represents structure for query to atomic circuit
+// export interface ProofQuery {
+//   allowedIssuers?: string[];
+//   req?: { [key: string]: unknown };
+//   schema?: string; // string url
+//   // schema?: Schema; // string url
+//   claimId?: string;
+//   context?: string;
+//   type?: string;
+// }
 export interface IProofService {
   verifyProof(zkp: FullProof, circuitName: CircuitId): Promise<boolean>;
   generateProof(
