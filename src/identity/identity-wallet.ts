@@ -13,10 +13,10 @@ import {
   SchemaHash
 } from '@iden3/js-iden3-core';
 import { Hex, poseidon, PublicKey, Signature } from '@iden3/js-crypto';
-import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
+import { Data, ElemBytes, Entry, hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import {} from '@iden3/js-iden3-core';
 
-import { subjectPositionIndex, treeEntryFromCoreClaim } from './common';
+import { subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
 import {
   W3CCredential,
@@ -28,13 +28,13 @@ import {
   Parser,
   CoreClaimOptions
 } from '../schema-processor';
-import { ClaimRequest, createCredential } from './helper';
 import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
 import { getRandomBytes, keyPath } from '../kms/provider-helpers';
 import { UniversalSchemaLoader } from '../loaders';
-import { VerifiableConstants, BJJSignatureProof2021 } from '../verifiable';
-import { TreeState } from '../circuits';
+import { VerifiableConstants, BJJSignatureProof2021, MerklizedRootPosition } from '../verifiable';
+import { MTProof, TreeState } from '../circuits';
+import { ClaimRequest, ICredentialWallet } from '../credentials';
 
 // IdentityStatus represents type for state Status
 export enum IdentityStatus {
@@ -64,10 +64,17 @@ export interface IdentityState {
   createdAt?: string;
 }
 
+// CredentialIssueOptions
+export interface CredentialIssueOptions {
+  withPublish: boolean;
+  withRHS: string;
+}
+
 export interface IIdentityWallet {
   createIdentity(
     seed: Uint8Array,
-    hostUrl: string
+    hostUrl: string,
+    rhsUrl: string
   ): Promise<{ did: DID; credential: W3CCredential }>;
   createProfile(did: DID, nonce: number, verifier: string): Promise<DID>;
   generateKey(keyType: KmsKeyType): Promise<KmsKeyId>;
@@ -81,9 +88,13 @@ export interface IIdentityWallet {
 }
 
 export class IdentityWallet implements IIdentityWallet {
-  constructor(private readonly _kms: KMS, private readonly _storage: IDataStorage) {}
+  constructor(
+    private readonly _kms: KMS,
+    private readonly _storage: IDataStorage,
+    private readonly _credentialWallet: ICredentialWallet
+  ) {}
 
-  async createIdentity(seed: Uint8Array, hostUrl: string) {
+  async createIdentity(seed: Uint8Array, hostUrl: string, rhsUrl: string) {
     const tmpIdentifier = uuid.v4();
 
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
@@ -104,9 +115,12 @@ export class IdentityWallet implements IIdentityWallet {
     const revNonce = 0;
     authClaim.setRevocationNonce(BigInt(revNonce));
 
-    const entry = treeEntryFromCoreClaim(authClaim);
-
-    await this._storage.mt.addEntryToMerkleTree(tmpIdentifier, MerkleTreeType.Claims, entry);
+    await this._storage.mt.addToMerkleTree(
+      tmpIdentifier,
+      MerkleTreeType.Claims,
+      authClaim.hiHv().hi,
+      authClaim.hiHv().hv
+    );
 
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       tmpIdentifier,
@@ -148,7 +162,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     let credential: W3CCredential = null;
     try {
-      credential = createCredential(hostUrl, did, request, schema);
+      credential = this._credentialWallet.createCredential(hostUrl, did, request, schema, rhsUrl);
     } catch (e) {
       throw new Error('Error create Iden3Credential');
     }
@@ -170,20 +184,12 @@ export class IdentityWallet implements IIdentityWallet {
           value: stateHex
         },
         authCoreClaim: authClaim.hex(),
-        credentialStatus: {
-          id: `${hostUrl}/revocation/${revNonce}`,
-          revocatioNonce: revNonce,
-          type: CredentialStatusType.SparseMerkleTreeProof
-        }
+        credentialStatus: credential.credentialStatus,
+        mtp: proof
       },
       coreClaim: authClaim.hex()
     };
 
-    credential.credentialStatus = {
-      id: `${hostUrl}/revocation/${revNonce}`,
-      revocationNonce: revNonce,
-      type: CredentialStatusType.SparseMerkleTreeProof
-    };
     credential.proof = [mtpProof];
 
     await this._storage.identity.saveIdentity({
@@ -193,7 +199,7 @@ export class IdentityWallet implements IIdentityWallet {
       genesis: true
     });
 
-    await this._storage.credential.saveCredential(credential);
+    await this._credentialWallet.save(credential);
 
     return {
       did,
@@ -256,6 +262,7 @@ export class IdentityWallet implements IIdentityWallet {
       rootOfRoots: rootsTree.root
     };
   }
+
   async generateClaimMtp(
     did: DID,
     credential: W3CCredential
@@ -325,54 +332,52 @@ export class IdentityWallet implements IIdentityWallet {
     return Signature.newFromCompressed(signature);
   }
 
-  async issueCredential(issuerDID: DID, req: ClaimRequest, hostUrl: string) {
+  async issueCredential(
+    issuerDID: DID,
+    req: ClaimRequest,
+    hostUrl: string,
+    opts?: CredentialIssueOptions
+  ) {
+    if (!opts) {
+      opts = {
+        withPublish: true,
+        withRHS: ''
+      };
+    }
     const schema = await new UniversalSchemaLoader('ipfs.io').load(req.credentialSchema);
 
     const jsonSchema: Schema = JSON.parse(new TextDecoder().decode(schema));
 
     let credential: W3CCredential = null;
+
+    let revNonce = 0;
+    if (!req.revNonce) {
+      req.revNonce = Math.random() * 10000; // todo: rework
+    }
+    revNonce = req.revNonce;
+
     try {
-      credential = createCredential(hostUrl, issuerDID, req, jsonSchema);
+      credential = this._credentialWallet.createCredential(
+        hostUrl,
+        issuerDID,
+        req,
+        jsonSchema,
+        opts.withRHS
+      );
     } catch (e) {
       throw new Error('Error create Iden3Credential');
     }
 
-    const issuerAuthBJJCredential = await this._storage.credential.findCredentialByQuery({
-      context: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD_URL,
-      type: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_TYPE,
-      allowedIssuers: [issuerDID.toString()]
-    });
+    const issuerAuthBJJCredential = await this._credentialWallet.getAuthBJJCredential(issuerDID);
 
-    const revNonce = Math.random() * 10000; // todo: rework
-    credential.credentialStatus = {
-      id: `${hostUrl}/revocation/${revNonce}`,
-      revocationNonce: revNonce,
-      type: CredentialStatusType.SparseMerkleTreeProof
-    };
     var coreClaimOpts: CoreClaimOptions = {
       revNonce: revNonce,
       subjectPosition: req.subjectPosition,
-      merklizedRootPosition: req.merklizedRootPosition,
+      merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition),
       updatable: false,
       version: 0
     };
 
-    // TODO
-    //
-    /*
-        func DefineMerklizedRootPosition(metadata *jsonSuite.SchemaMetadata, position string) string {
-
-          if metadata != nil && metadata.Serialization != nil {
-            return ""
-          }
-
-          if position != "" {
-            return position
-          }
-
-          return utils.MerklizedRootPositionIndex
-        }
-    */
     const coreClaim = new Parser().parseClaim(
       credential,
       `${jsonSchema.$metadata.uris['jsonLdContext']}#${req.type}}`,
@@ -388,26 +393,50 @@ export class IdentityWallet implements IIdentityWallet {
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
 
-    const authIssuerCoreClaim = await this.getCoreClaimFromCredential(credential);
     const issuerTreeState = await this.getDIDTreeState(issuerDID);
+
+    const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
     const sigProof: BJJSignatureProof2021 = {
       type: ProofType.BJJSignature,
       issuerData: {
         id: issuerDID.toString(),
-        state: {
-          value: issuerTreeState.state.hex(),
-          claimsTreeRoot: issuerTreeState.claimsRoot.hex(),
-          revocationTreeRoot: issuerTreeState.revocationRoot.hex(),
-          rootOfRoots: issuerTreeState.rootOfRoots.hex()
-        },
-        authCoreClaim: authIssuerCoreClaim.hex(),
-        credentialStatus: issuerAuthBJJCredential[0].credentialStatus
+        state: mtpAuthBJJProof.issuerData.state,
+        authCoreClaim: mtpAuthBJJProof.coreClaim,
+        mtp: mtpAuthBJJProof.mtp,
+        credentialStatus: mtpAuthBJJProof.issuerData.credentialStatus
       },
       coreClaim: coreClaim.hex(),
       signature: Hex.encodeString(signature)
     };
     credential.proof = [sigProof];
+
+    await this._credentialWallet.save(credential);
+
+    await this._storage.mt.addToMerkleTree(
+      issuerDID.toString(),
+      MerkleTreeType.Claims,
+      coreClaim.hIndex(),
+      coreClaim.hValue()
+    );
+
+    await this._storage.identity.saveIdentity({
+      identifier: issuerDID.toString(),
+      state: issuerTreeState.state,
+      genesis: false,
+      published: false
+    });
+
     return credential;
+  }
+  private defineMTRootPosition(schema: Schema, position: string): string {
+    if (!!schema.$metadata && !!schema.$metadata.serialization) {
+      return '';
+    }
+    if (position !== '') {
+      return position;
+    }
+
+    return MerklizedRootPosition.Index;
   }
 
   private async getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim> {

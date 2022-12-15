@@ -1,15 +1,35 @@
 // import { ProofQuery, RevocationStatus } from '../schema-processor';
 import { IDataStorage, IStateStorage } from '../storage/interfaces';
 import {
-  Iden3ReverseSparseMerkleTreeProof,
   W3CCredential,
   ProofQuery,
+  VerifiableConstants,
+  SubjectPosition,
+  CredentialStatus,
+  MerklizedRootPosition
 } from './../verifiable';
+import { DID } from '@iden3/js-iden3-core';
 
-import { DID, Id } from '@iden3/js-iden3-core';
-import { CredentialStatusType, RevocationStatus } from '../schema-processor';
+import {
+  CredentialStatusType,
+  RevocationStatus,
+  RHSCredentialStatus,
+  Schema
+} from '../schema-processor';
 import axios from 'axios';
 import { getStatusFromRHS } from './revocation';
+import * as uuid from 'uuid';
+
+export interface ClaimRequest {
+  credentialSchema: string;
+  type: string;
+  credentialSubject: { [key: string]: any };
+  expiration?: number;
+  version: number;
+  revNonce: number;
+  subjectPosition?: SubjectPosition;
+  merklizedRootPosition?: MerklizedRootPosition;
+}
 
 export interface ICredentialWallet {
   list(): Promise<W3CCredential[]>;
@@ -20,25 +40,43 @@ export interface ICredentialWallet {
   findById(id: string): Promise<W3CCredential | undefined>;
   findByContextType(context: string, type: string): Promise<W3CCredential[]>;
 
-  getAuthCredential(id: DID): W3CCredential;
+  getAuthBJJCredential(did: DID): Promise<W3CCredential>;
   getRevocationStatus(cred: W3CCredential): Promise<RevocationStatus>;
-  getSchemaLoader(url: string, type: string): Promise<any>;
-  findAllBySchemaHash(hash: string): Promise<W3CCredential[]>;
   findClaimsForCircuitQuery(claims, circuitQuery, requestFiled): Promise<W3CCredential[]>;
+  createCredential(
+    hostUrl: string,
+    issuer: DID,
+    request: ClaimRequest,
+    schema: Schema,
+    rhsUrl?: string
+  ): W3CCredential;
 }
 
 export class CredentialWallet implements ICredentialWallet {
-  constructor(
-    private storage: IDataStorage,
-    private readonly stateStorage: IStateStorage
-  ) {
-  }
-  
-  getAuthCredential(did: DID): W3CCredential {
-    // filter where issuer of auth credential is current did
-    throw new Error('Method not implemented.');
-  }
+  constructor(private storage: IDataStorage) {}
 
+  async getAuthBJJCredential(did: DID): Promise<W3CCredential> {
+    // filter where issuer of auth credential is current did
+
+    const authBJJcredsOfIssuer = await this.storage.credential.findCredentialsByQuery({
+      context: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD_URL,
+      type: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_TYPE,
+      allowedIssuers: [did.toString()]
+    });
+
+    if (authBJJcredsOfIssuer.length == 0) {
+      throw new Error('no auth credentials found');
+    }
+    for (let index = 0; index < authBJJcredsOfIssuer.length; index++) {
+      const authCred = authBJJcredsOfIssuer[index];
+      const revocationStatus = await this.getRevocationStatus(authCred);
+
+      if (!revocationStatus.mtp.existence) {
+        return authCred;
+      }
+    }
+    throw new Error('all auth bjj credentials are revoked');
+  }
 
   async getRevocationStatus(cred: W3CCredential): Promise<RevocationStatus> {
     if (cred.credentialStatus?.type === CredentialStatusType.SparseMerkleTreeProof) {
@@ -47,10 +85,10 @@ export class CredentialWallet implements ICredentialWallet {
 
     if (cred.credentialStatus?.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
       try {
-        return await getStatusFromRHS(cred, this.stateStorage);
+        return await getStatusFromRHS(cred, this.storage.states);
       } catch (e) {
         console.error(e);
-        const status = cred.credentialStatus as Iden3ReverseSparseMerkleTreeProof;
+        const status = cred.credentialStatus as RHSCredentialStatus;
         if (status?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
           return (await axios.get<RevocationStatus>(cred.credentialStatus.id)).data;
         }
@@ -59,6 +97,56 @@ export class CredentialWallet implements ICredentialWallet {
     }
     throw new Error('revocation status unknown');
   }
+
+  createCredential = (
+    hostUrl: string,
+    issuer: DID,
+    request: ClaimRequest,
+    schema: Schema,
+    rhsUrl?: string
+  ): W3CCredential => {
+    const context = [
+      VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
+      VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
+      schema.$metadata.uris['jsonLdContext']
+    ];
+    const credentialType = [VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE, request.type];
+
+    const expirationDate = request.expiration;
+    const issuanceDate = Date.now() / 1000;
+    const issuerDID = issuer.toString();
+    const credentialSubject = request.credentialSubject;
+    credentialSubject['type'] = request.type;
+
+    const cr = new W3CCredential();
+    cr.id = `${hostUrl}/${uuid.v4()}`;
+    cr['@context'] = context;
+    cr.type = credentialType;
+    cr.expirationDate = expirationDate;
+    cr.issuanceDate = issuanceDate;
+    cr.credentialSubject = credentialSubject;
+    cr.issuer = issuerDID.toString();
+    cr.credentialSchema = {
+      id: request.credentialSchema,
+      type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
+    };
+
+    if (!!rhsUrl) {
+      cr.credentialStatus = {
+        id: `${rhsUrl}`,
+        revocatioNonce: request.revNonce,
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof
+      } as unknown as RHSCredentialStatus;
+    } else {
+      cr.credentialStatus = {
+        id: `${hostUrl}/revocation/${request.revNonce}`,
+        revocatioNonce: request.revNonce,
+        type: CredentialStatusType.SparseMerkleTreeProof
+      } as unknown as CredentialStatus;
+    }
+
+    return cr;
+  };
 
   findClaimsForCircuitQuery(
     claims: any,
@@ -74,7 +162,7 @@ export class CredentialWallet implements ICredentialWallet {
   }
 
   async findByContextType(context: string, type: string): Promise<W3CCredential[]> {
-    return this.storage.credential.findCredentialByQuery({context, type});
+    return this.storage.credential.findCredentialsByQuery({ context, type });
   }
 
   async save(credential: W3CCredential): Promise<void> {
@@ -83,8 +171,8 @@ export class CredentialWallet implements ICredentialWallet {
 
   async saveAll(credentials: W3CCredential[]): Promise<void> {
     return this.storage.credential.saveAllCredentials(credentials);
-  }  
-  
+  }
+
   async remove(id): Promise<void> {
     return this.storage.credential.removeCredential(id);
   }
@@ -94,6 +182,6 @@ export class CredentialWallet implements ICredentialWallet {
   }
 
   async findByQuery(query: ProofQuery): Promise<W3CCredential[]> {
-    return this.storage.credential.findCredentialByQuery(query);
+    return this.storage.credential.findCredentialsByQuery(query);
   }
 }

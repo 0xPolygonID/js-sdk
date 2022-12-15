@@ -14,7 +14,7 @@ export class InMemoryCredentialStorage implements ICredentialStorage {
     this._data = {};
     this._data[secret] = [];
   }
-  
+
   get data() {
     return this._data[this.secret];
   }
@@ -50,7 +50,7 @@ export class InMemoryCredentialStorage implements ICredentialStorage {
     return this.data.find((cred) => cred.id === id);
   }
   
-  async findCredentialByQuery(query: ProofQuery): Promise<W3CCredential[]> {
+  async findCredentialsByQuery(query: ProofQuery): Promise<W3CCredential[]> {
     const filters = StandardJSONCredentielsQueryFilter(query);
     return this.data.filter((credential) => filters.every((f) => f(credential)));
   }
