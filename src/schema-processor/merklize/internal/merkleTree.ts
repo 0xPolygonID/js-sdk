@@ -24,24 +24,21 @@ export const mkValueMtEntry = async (h: IHasher, v: any): Promise<bigint> => {
   switch (typeof v) {
     case 'bigint': {
       return mkValueInt(h, v);
-      break;
     }
     case 'string': {
       return mkValueString(h, v);
-      break;
     }
-    case 'boolean': {
-      return mkValueBool(h, v);
+    case 'boolean':
+      {
+        return mkValueBool(h, v);
+      }
       break;
-    }
-    case 'object': {
+    default: {
       if (v instanceof Date) {
         return mkValueTime(h, v);
       }
-      break;
-    }
-    default:
       throw `error: unexpected type ${typeof v}`;
+    }
   }
 };
 
@@ -60,9 +57,8 @@ const mkValueUInt = (h: IHasher, v: bigint) => {
 const mkValueBool = (h: IHasher, v: boolean) => {
   if (v) {
     return h.Hash([BigInt.asIntN(64, BigInt(1))]);
-  } else {
-    return h.Hash([BigInt.asIntN(64, BigInt(0))]);
   }
+  return h.Hash([BigInt.asIntN(64, BigInt(0))]);
 };
 
 const mkValueString = (h: IHasher, v: string) => {

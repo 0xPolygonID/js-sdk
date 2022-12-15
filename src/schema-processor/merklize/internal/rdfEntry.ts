@@ -40,9 +40,8 @@ export const newRDFEntry = (k: Path, v: any) => {
     default:
       if (v instanceof Date) {
         e.value = v;
-      } else {
-        throw `error: incorrect value type ${typeof v}`;
       }
+      throw `error: incorrect value type ${typeof v}`;
   }
   return e;
 };
