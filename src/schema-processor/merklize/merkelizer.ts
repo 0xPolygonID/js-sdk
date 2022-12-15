@@ -32,7 +32,7 @@ export class Merkelizer {
 
     if (proof.existence) {
       if (!this.entries.has(kHash.toString())) {
-        throw 'error: [assertion] no entry found while existence is true';
+        throw new Error('error: [assertion] no entry found while existence is true');
       }
 
       const entry = this.entries.get(kHash.toString());
@@ -89,7 +89,7 @@ export const countEntries = (nodes: Array<Quad>) => {
   nodes.forEach((q) => {
     const key = getQuadKey(q);
     if (!key) {
-      throw 'error: empty quad key';
+      throw new Error('error: empty quad key');
     }
     const c = res.has(key.toString()) ? res.get(key.toString()) : 0;
     res.set(key.toString(), c + 1);
@@ -104,7 +104,7 @@ export const entriesFromRDF = (quads: Array<Quad>, hasher: IHasher) => {
 
 export const entriesFromRDFHasher = async (quads: Array<Quad>, hasher: IHasher) => {
   if (!quads.length) {
-    throw 'error: quads are empty';
+    throw new Error('error: quads are empty');
   }
 
   const counts = countEntries(quads);
@@ -133,7 +133,7 @@ export const entriesFromRDFHasher = async (quads: Array<Quad>, hasher: IHasher) 
                 e.value = true;
                 break;
               default:
-                throw 'incorrect boolean value.ts';
+                throw new Error('incorrect boolean value.ts');
             }
             break;
           case 'http://www.w3.org/2001/XMLSchema#integer':
@@ -147,7 +147,7 @@ export const entriesFromRDFHasher = async (quads: Array<Quad>, hasher: IHasher) 
             // e.value.ts = DateTime.fromISO("1958-07-17 00:00:00 +0000")
             // const dateRegEx = /^\d{4}-\d{2}-\d{2}$/
             if (isNaN(Date.parse(qoVal))) {
-              throw `error: error parsing time string ${qoVal}`;
+              throw new Error(`error: error parsing time string ${qoVal}`);
             }
             e.value = new Date(Date.parse(qoVal));
             break;
@@ -163,20 +163,20 @@ export const entriesFromRDFHasher = async (quads: Array<Quad>, hasher: IHasher) 
         if (p) {
           continue;
         }
-        throw '[1] BlankNode is not supported yet';
+        throw new Error('[1] BlankNode is not supported yet');
       case 'NamedNode':
       case 'Variable':
         e.value = qoVal;
         break;
       default:
-        throw "unexpected Quad's Object type";
+        throw new Error("unexpected Quad's Object type");
     }
 
     const qKey = getQuadKey(q);
     let idx = NaN;
     switch (counts.get(qKey.toString())) {
       case 0:
-        throw '[assertion] key not found in counts';
+        throw new Error('[assertion] key not found in counts');
       case 1:
         // leave idx nil: only one element, do not consider it as an array
         break;
@@ -208,5 +208,5 @@ export const validateValue = (val: any): void => {
       }
   }
 
-  throw `unexpected value type ${typeof val}, expected boolean | number | bigint | Date | string`;
+  throw new Error(`unexpected value type ${typeof val}, expected boolean | number | bigint | Date | string`);
 };

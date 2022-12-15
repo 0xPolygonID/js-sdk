@@ -41,12 +41,12 @@ class Relationship {
       case 'NamedNode':
       case 'Variable':
         if (!n.predicate.value) {
-          throw 'predicate is full';
+          throw new Error('predicate is full');
         }
         predicate = n.predicate;
         break;
       default:
-        throw "unexpected quad's predicate type";
+        throw new Error("unexpected quad's predicate type");
     }
 
     if (!isNaN(idx)) {
@@ -78,7 +78,7 @@ class Relationship {
           }
         }
         if (!found) {
-          throw "error: [assertion] child not found in parent's relations";
+          throw new Error("error: [assertion] child not found in parent's relations");
         }
       }
       nextKey = parent.subjectID;

@@ -37,7 +37,7 @@ export const mkValueMtEntry = async (h: IHasher, v: any): Promise<bigint> => {
       if (v instanceof Date) {
         return mkValueTime(h, v);
       }
-      throw `error: unexpected type ${typeof v}`;
+      throw new Error(`error: unexpected type ${typeof v}`)
     }
   }
 };

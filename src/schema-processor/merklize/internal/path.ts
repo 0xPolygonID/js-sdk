@@ -58,7 +58,7 @@ export class Path {
         // TODO: convert BigInt into 64 bit
         keyParts[i] = BigInt.asIntN(64, BigInt(p));
       } else {
-        throw `error: unexpected type ${typeof p}`;
+        throw new Error(`error: unexpected type ${typeof p}`);
       }
     }
 
@@ -69,7 +69,7 @@ export class Path {
     const doc = JSON.parse(docStr);
     const context = doc['@context'];
     if (!context) {
-      throw ERR_CONTEXT_NOT_DEFINED;
+      throw new Error(ERR_CONTEXT_NOT_DEFINED);
     }
     const ctxParser = new ContextParser({ documentLoader: new FetchDocumentLoader() });
     let parsedCtx = await ctxParser.parse(doc['@context']);
@@ -82,16 +82,16 @@ export class Path {
         this.parts.push(parseInt(p));
       } else {
         if (!parsedCtx) {
-          throw ERR_PARSED_CONTEXT_IS_NULL;
+          throw new Error(ERR_PARSED_CONTEXT_IS_NULL);
         }
         const m = parsedCtx.getContextRaw()[p];
         if (typeof m !== 'object') {
-          throw ERR_TERM_IS_NOT_DEFINED;
+          throw new Error(ERR_TERM_IS_NOT_DEFINED);
         }
 
         const id = m['@id'];
         if (!id) {
-          throw ERR_NO_ID_ATTR;
+          throw new Error(ERR_NO_ID_ATTR);
         }
 
         const nextCtx = m['@context'];
@@ -127,17 +127,17 @@ const pathFromDocument = async (
   }
 
   if (typeof doc !== 'object') {
-    throw `error: expected type object got ${typeof doc}`;
+    throw new Error(`error: expected type object got ${typeof doc}`);
   }
 
   let docObjMap = {};
 
   if (Array.isArray(doc)) {
     if (doc.length === 0) {
-      throw "errror: can't generate path on zero-sized array";
+      throw new Error("errror: can't generate path on zero-sized array");
     }
     if (!acceptArray) {
-      throw ERR_UNEXPECTED_ARR_ELEMENT;
+      throw new Error(ERR_UNEXPECTED_ARR_ELEMENT);
     }
 
     return pathFromDocument(ldCTX, doc[0], pathParts, false);
@@ -168,7 +168,7 @@ const pathFromDocument = async (
     if (Array.isArray(docObjMap[key])) {
       docObjMap[key].forEach((e) => {
         if (typeof e !== 'string') {
-          throw `error: @type value must be an array of strings: ${typeof e}`;
+          throw new Error(`error: @type value must be an array of strings: ${typeof e}`);
         }
         types.push(e as string);
         types = sortArr(types);
@@ -176,7 +176,7 @@ const pathFromDocument = async (
     } else if (typeof docObjMap[key] === 'string') {
       types.push(docObjMap[key]);
     } else {
-      throw `error: unexpected @type fied type: ${typeof docObjMap[key]}`;
+      throw new Error(`error: unexpected @type fied type: ${typeof docObjMap[key]}`);
     }
 
     for (const tt of types) {
@@ -197,10 +197,10 @@ const pathFromDocument = async (
   const m = await ldCTX.getContextRaw()[term];
   const id = m['@id'];
   if (!id) {
-    throw ERR_NO_ID_ATTR;
+    throw new Error(ERR_NO_ID_ATTR);
   }
   if (typeof id !== 'string') {
-    throw `error: @id attr is not of type stirng: ${typeof id}`;
+    throw new Error(`error: @id attr is not of type stirng: ${typeof id}`);
   }
 
   const moreParts = await pathFromDocument(ldCTX, docObjMap[term], newPathParts, true);
@@ -226,10 +226,10 @@ export const newFieldPathFromCtx = async (
   fieldPath: string
 ): Promise<Path> => {
   if (ctxTyp === '') {
-    throw ERR_CTX_TYP_IS_EMPTY;
+    throw new Error(ERR_CTX_TYP_IS_EMPTY);
   }
   if (fieldPath === '') {
-    throw ERR_FIELD_PATH_IS_EMPTY;
+    throw new Error(ERR_FIELD_PATH_IS_EMPTY);
   }
 
   const fullPath = await newPathFromCtx(docStr, `${ctxTyp}.${fieldPath}`);
@@ -245,7 +245,7 @@ export const newPathFromDocument = async (
   const doc = JSON.parse(docStr);
   const pathParts = path.split('.');
   if (pathParts.length === 0) {
-    throw ERR_FIELD_PATH_IS_EMPTY;
+    throw new Error(ERR_FIELD_PATH_IS_EMPTY);
   }
 
   const p = await pathFromDocument(ldCTX, doc, pathParts, false);
