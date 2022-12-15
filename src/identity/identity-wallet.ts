@@ -35,6 +35,7 @@ import { UniversalSchemaLoader } from '../loaders';
 import { VerifiableConstants, BJJSignatureProof2021, MerklizedRootPosition } from '../verifiable';
 import { MTProof, TreeState } from '../circuits';
 import { ClaimRequest, ICredentialWallet } from '../credentials';
+import { RevocationService } from '../credentials/revocation';
 
 // IdentityStatus represents type for state Status
 export enum IdentityStatus {
@@ -393,7 +394,6 @@ export class IdentityWallet implements IIdentityWallet {
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
 
-    const issuerTreeState = await this.getDIDTreeState(issuerDID);
 
     const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
     const sigProof: BJJSignatureProof2021 = {
@@ -412,11 +412,22 @@ export class IdentityWallet implements IIdentityWallet {
 
     await this._credentialWallet.save(credential);
 
+
     await this._storage.mt.addToMerkleTree(
       issuerDID.toString(),
       MerkleTreeType.Claims,
       coreClaim.hIndex(),
       coreClaim.hValue()
+    );
+
+  
+    const issuerTreeState = await this.getDIDTreeState(issuerDID);
+
+    const rootsTree = await this._storage.mt.addToMerkleTree(
+      issuerDID.toString(),
+      MerkleTreeType.Roots,
+      issuerTreeState.claimsRoot.bigInt(),
+      BigInt(0)
     );
 
     await this._storage.identity.saveIdentity({
@@ -425,6 +436,16 @@ export class IdentityWallet implements IIdentityWallet {
       genesis: false,
       published: false
     });
+
+
+    if (opts.withPublish){
+      // TODO: publish
+    }
+    
+    if (opts.withRHS !== ""){
+      const rhs = new RevocationService(opts.withRHS)
+      rhs.pushHashesToRHS(issuerTreeState)
+    }
 
     return credential;
   }
