@@ -1,5 +1,5 @@
 import { addEntriesToMerkleTree, getMerkleTreeInitParam } from './internal/merkleTree';
-import {IHasher, Value} from './types';
+import { IHasher, Value } from './types';
 import { Literal, Parser, Quad } from 'n3';
 import { DEFAULT_HASHER } from './constants';
 import { RdfEntry } from './internal/rdfEntry';
@@ -37,8 +37,8 @@ export class Merkelizer {
 
       const entry = this.entries.get(kHash.toString());
 
-      validateValue(entry.value)
-      value = entry.value as Value
+      validateValue(entry.value);
+      value = entry.value as Value;
     }
 
     return { proof, value };
@@ -46,7 +46,7 @@ export class Merkelizer {
 
   // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   mkValue(val: any): Value {
-    validateValue(val)
+    validateValue(val);
     return val as Value;
   }
 
@@ -194,18 +194,19 @@ const getObjectDatatype = (q: Literal) => {
   return q.datatype.value;
 };
 
-export const validateValue = (val:any) :void=> {
-  switch (typeof val){
-    case "bigint":
-    case "boolean":
-    case "string":
-    case "number":
-      return
-    case "object":
-      if(val instanceof Date){
-        return
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const validateValue = (val: any): void => {
+  switch (typeof val) {
+    case 'bigint':
+    case 'boolean':
+    case 'string':
+    case 'number':
+      return;
+    case 'object':
+      if (val instanceof Date) {
+        return;
       }
   }
 
-  throw `unexpected value type ${typeof val}, expected boolean | number | bigint | Date | string`
-}
+  throw `unexpected value type ${typeof val}, expected boolean | number | bigint | Date | string`;
+};

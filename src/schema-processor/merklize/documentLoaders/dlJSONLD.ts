@@ -35,7 +35,12 @@ export class JsonLDLoader {
   httpAgent;
   httpsAgent = null;
 
-  constructor(public readonly secure= false, public readonly strictSSL=true, public readonly maxRedirects=-1, public headers={}) {
+  constructor(
+    public readonly secure = false,
+    public readonly strictSSL = true,
+    public readonly maxRedirects = -1,
+    public headers = {}
+  ) {
     // if no default user-agent header, copy headers and set one
     if (!('user-agent' in this.headers)) {
       this.headers = Object.assign({}, headers, {

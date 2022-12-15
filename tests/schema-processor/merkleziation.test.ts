@@ -10,13 +10,14 @@ import {
   newPath,
   newPathFromCtx,
   newPathFromDocument
-} from '../../src/schema-processor/merklize/path';
+} from '../../src/schema-processor/merklize/internal/path';
 import {
   addEntriesToMerkleTree,
-  getMerkleTreeInitParam
-} from '../../src/schema-processor/merklize/merkleTree';
-import { newRDFEntry } from '../../src/schema-processor/merklize/rdfEntry';
-import { Merkletree, verifyProof, ZERO_HASH } from "@iden3/js-merkletree"
+  getMerkleTreeInitParam,
+  mkValueMtEntry
+} from '../../src/schema-processor/merklize/internal/merkleTree';
+import { newRDFEntry } from '../../src/schema-processor/merklize/internal/rdfEntry';
+import { Merkletree, verifyProof, ZERO_HASH } from '@iden3/js-merkletree';
 
 jest.setTimeout(50 * 60_00);
 
@@ -133,13 +134,13 @@ describe('tests merkelization', () => {
 
     const pathMTEntry = await path.mtEntry();
 
-    expect(value.val).toBeInstanceOf(Date);
-    const valueD = value.asDate();
+    expect(value).toBeInstanceOf(Date);
+    const valueD = value as Date;
 
     const birthDate = new Date(Date.UTC(1958, 6, 18, 0, 0, 0, 0));
     expect(birthDate.toUTCString()).toEqual(valueD.toUTCString());
 
-    const valueMTEntry = await value.mkMTEntry();
+    const valueMTEntry = await mkValueMtEntry(DEFAULT_HASHER, valueD);
     const ok = verifyProof(mz.mt.root, proof, pathMTEntry, valueMTEntry);
     expect(ok).toBeTruthy();
 
@@ -156,11 +157,11 @@ describe('tests merkelization', () => {
 
     const pathMTEntry = await path.mtEntry();
 
-    expect(typeof value.val).toEqual('string');
-    const valueStr = value.asString();
+    expect(typeof value).toEqual('string');
+    const valueStr = value as string;
     expect(valueStr).toEqual('Bahamas');
 
-    const valueMTEntry = await value.mkMTEntry();
+    const valueMTEntry = await mkValueMtEntry(DEFAULT_HASHER, valueStr);
     const ok = verifyProof(mz.root(), proof, pathMTEntry, valueMTEntry);
     expect(ok).toBeTruthy();
 
