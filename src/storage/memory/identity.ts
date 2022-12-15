@@ -16,7 +16,7 @@ export class InMemoryIdentityStorage implements IIdentityStorage {
   }
 
   async getProfileByVerifier(verifier: string): Promise<Profile> {
-    for (let [, profiles] of this._profiles) {
+    for (const [, profiles] of this._profiles) {
       for (let index = 0; index < profiles.length; index++) {
         if (profiles[index].verifier === verifier) {
           return profiles[index];
@@ -26,12 +26,12 @@ export class InMemoryIdentityStorage implements IIdentityStorage {
     throw new Error('profile not found');
   }
   async getProfileById(profileId: string): Promise<Profile> {
-    for (let [, profiles] of this._profiles) {
+    for (const [, profiles] of this._profiles) {
       for (let index = 0; index < profiles.length; index++) {
         if (profiles[index].id === profileId) {
           return profiles[index];
         }
-      };
+      }
     }
     throw new Error('profile not found');
   }

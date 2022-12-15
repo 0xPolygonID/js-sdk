@@ -13,8 +13,8 @@ import { Merkletree, Hash, ZERO_HASH, Proof } from '@iden3/js-merkletree';
 
 export class Merkelizer {
   constructor(
-    public srcDoc: string = null,
-    public mt: Merkletree = null,
+    public srcDoc: string | null = null,
+    public mt: Merkletree | null = null,
     public hasher: Hasher = DEFAULT_HASHER,
     public entries: Map<string, RdfEntry> = new Map()
   ) {

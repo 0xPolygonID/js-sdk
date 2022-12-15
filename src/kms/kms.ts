@@ -57,7 +57,7 @@ export class KMS {
     return keyProvider.publicKey(keyId);
   }
 
-  async sign(keyId: KmsKeyId, data:Uint8Array): Promise<Uint8Array> {
+  async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {
     const keyProvider = this.registry[keyId.type];
     if (!keyProvider) {
       throw new Error(`keyProvider not found for: ${keyId.type}`);

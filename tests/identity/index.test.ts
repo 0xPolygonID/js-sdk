@@ -1,3 +1,4 @@
+import { IRevocationService } from './../../src/credentials/revocation';
 import { IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -26,7 +27,7 @@ describe('identity', () => {
       mt: new InMemoryMerkleTreeStorage(40),
       states: new EthStateStorage(defaultEthConnectionConfig)
     };
-    const credWallet = new CredentialWallet(dataStorage);
+    const credWallet = new CredentialWallet(dataStorage, {} as IRevocationService);
     wallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
   it('createIdentity', async () => {
@@ -84,7 +85,7 @@ describe('identity', () => {
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
     );
 
-    var enc = new TextEncoder(); // always utf-8
+    const enc = new TextEncoder(); // always utf-8
 
     const message = enc.encode('payload');
     const sig = await wallet.sign(message, credential);

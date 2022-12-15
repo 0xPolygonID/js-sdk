@@ -1,12 +1,14 @@
+import { IRevocationService } from './../../src/credentials/revocation';
+import { IDataStorage } from './../../src/storage/interfaces/data-storage';
 import { CredentialWallet } from '../../src/credentials';
-import { W3CCredential } from '../../src/schema-processor';
+import { ProofQuery, W3CCredential } from '../../src/schema-processor';
 import { StorageErrors } from '../../src/storage/errors';
 import { SearchError } from '../../src/storage/filters/jsonQuery';
 import { InMemoryCredentialStorage } from '../../src/storage/memory';
 import { cred1, cred2, cred3 } from './mock';
 
-const credentialFlow = async (repository) => {
-  const credentialWallet = new CredentialWallet(repository);
+const credentialFlow = async (storage: IDataStorage) => {
+  const credentialWallet = new CredentialWallet(storage, {} as IRevocationService);
 
   await credentialWallet.saveAll([cred1, cred2]);
 
@@ -131,18 +133,24 @@ const credentialFlow = async (repository) => {
       }
     }
   };
-  await expect(credentialWallet.findByQuery(query)).rejects.toThrow(new Error(SearchError.NotDefinedComparator));  
-  
+  await expect(credentialWallet.findByQuery(query)).rejects.toThrow(
+    new Error(SearchError.NotDefinedComparator)
+  );
+
   // invalid query
   const query2 = {
     allowedIssuers: ['*'],
     someProp: ''
   };
-  await expect(credentialWallet.findByQuery(query2)).rejects.toThrow(new Error(SearchError.NotDefinedQueryKey));
-  
+  await expect(credentialWallet.findByQuery(query2)).rejects.toThrow(
+    new Error(SearchError.NotDefinedQueryKey)
+  );
+
   // remove credential error
-  await expect(credentialWallet.remove('unknowId')).rejects.toThrow(new Error(StorageErrors.NotFoundCredentialForRemove));
-  
+  await expect(credentialWallet.remove('unknowId')).rejects.toThrow(
+    new Error(StorageErrors.NotFoundCredentialForRemove)
+  );
+
   await credentialWallet.remove('test1');
   const finalList = await credentialWallet.list();
   expect(finalList.length).toBe(2);
@@ -150,7 +158,9 @@ const credentialFlow = async (repository) => {
 
 describe('credential wallet', () => {
   it('run in memory with 3 credential', async () => {
-    const repMemory = new InMemoryCredentialStorage();
-    await credentialFlow(repMemory);
+    const storage = {
+      credential: new InMemoryCredentialStorage()
+    } as unknown as IDataStorage;
+    await credentialFlow(storage);
   });
 });

@@ -7,7 +7,8 @@ export interface IMerkleTreeStorage {
   addToMerkleTree(
     identifier: string,
     mtType: MerkleTreeType,
-    hindex: bigint, hvalue: bigint
+    hindex: bigint,
+    hvalue: bigint
   ): Promise<void>;
 
   getMerkleTreeByIdentifierAndType(identifier: string, mtType: MerkleTreeType): Promise<Merkletree>;

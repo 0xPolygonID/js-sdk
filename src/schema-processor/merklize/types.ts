@@ -1,9 +1,9 @@
 export type Bytes = Uint8Array;
 
 export interface Hasher {
-  Hash: (inp: Array<bigint>) => Promise<bigint>;
-  HashBytes: (b: Bytes) => Promise<bigint>;
-  Prime: () => bigint;
+  hash: (inp: Array<bigint>) => Promise<bigint>;
+  hashBytes: (b: Bytes) => Promise<bigint>;
+  prime: () => bigint;
 }
 
 export type Value = boolean | number | bigint | Date | string;

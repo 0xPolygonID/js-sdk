@@ -1,4 +1,3 @@
-import { KmsKeyId } from '../kms';
 import { AbstractPrivateKeyStore } from './abstract-key-store';
 
 export class InMemoryPrivateKeyStore implements AbstractPrivateKeyStore {

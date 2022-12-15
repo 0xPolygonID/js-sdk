@@ -4,7 +4,6 @@ import { merklizeJSONLD, Merklizer } from '../schema-processor/processor';
 import { CredentialStatusType, ProofType } from './constants';
 import { Proof } from '@iden3/js-merkletree';
 
-
 // Iden3Credential is that represents claim json-ld document
 export class W3CCredential {
   id: string;

@@ -5,7 +5,6 @@ const errSlotsOverflowMsg = 'slots overflow';
 // Big-Endian, the result will be Little-Endian and vice-versa.
 export const swapEndianness = (buf: Uint8Array): Uint8Array => buf.reverse();
 
-
 // FieldToByteArray convert fields to byte representation based on type
 export function fieldToByteArray(field: unknown): Uint8Array {
   let bigIntField: bigint;

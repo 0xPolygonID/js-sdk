@@ -29,7 +29,7 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
     }
     this._data[identifier] = [];
 
-    let treesMeta: IdentityMerkleTreeMetaInformation[] = [];
+    const treesMeta: IdentityMerkleTreeMetaInformation[] = [];
     mtTypes.forEach((t) => {
       const treeId = identifier!.concat('+' + t.toString());
       const tree = new Merkletree(new InMemoryDB(str2Bytes(treeId)), true, this.mtDepth);

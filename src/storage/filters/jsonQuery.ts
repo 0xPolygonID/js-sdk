@@ -1,8 +1,8 @@
-import { W3CCredential,ProofQuery } from '../../verifiable';
+import { W3CCredential, ProofQuery } from '../../verifiable';
 
 export enum SearchError {
   NotDefinedQueryKey = 'not defined query key',
-  NotDefinedComparator = 'not defined comparator',
+  NotDefinedComparator = 'not defined comparator'
 }
 
 export const comparatorOptions = {
@@ -12,20 +12,19 @@ export const comparatorOptions = {
   $in: (a: string, b: string[]) => b.includes(a),
   $nin: (a: string, b: string[]) => !b.includes(a),
   $gt: (a: number, b: number) => a > b,
-  $lt: (a: number, b: number) => a < b,
+  $lt: (a: number, b: number) => a < b
 };
 
 export const resolvePath = (object: object, path: string, defaultValue = null) =>
   path.split('.').reduce((o, p) => (o ? o[p] : defaultValue), object);
 
 export const createFilter = (path: string, operatorFunc, value, isReverseParams = false) => {
-  if(!operatorFunc) {
+  if (!operatorFunc) {
     throw new Error(SearchError.NotDefinedComparator);
   }
   return (credential: W3CCredential): boolean => {
     const credentialPathValue = resolvePath(credential, path);
     if (!credentialPathValue) {
-      console.log(`path '${path}' not found in credential id - '${credential.id}'`);
       return false;
       // throw new Error(`Not found path - ${path} to credential`);
     }
@@ -36,8 +35,8 @@ export const createFilter = (path: string, operatorFunc, value, isReverseParams 
   };
 };
 
-export const  StandardJSONCredentielsQueryFilter = (query: ProofQuery) => {
-  return Object.keys(query).reduce((acc, queryKey)=> {
+export const StandardJSONCredentielsQueryFilter = (query: ProofQuery) => {
+  return Object.keys(query).reduce((acc, queryKey) => {
     const queryValue = query[queryKey];
     switch (queryKey) {
       case 'claimId':

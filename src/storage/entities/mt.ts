@@ -13,4 +13,3 @@ export enum MerkleTreeType {
   // Roots is merkle tree type for roots tree
   Roots = 2
 }
-

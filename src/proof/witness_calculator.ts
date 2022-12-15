@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export async function witnessBuilder(code, options?) {
   options = options || {};
 
@@ -36,7 +37,7 @@ export async function witnessBuilder(code, options?) {
 
   function getMessage() {
     let message = '';
-    let c = (instance.exports as any as any).getMessageChar();
+    let c = (instance.exports as any).getMessageChar();
     while (c !== 0) {
       message += String.fromCharCode(c);
       c = (instance.exports as any).getMessageChar();

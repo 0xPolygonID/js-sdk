@@ -35,7 +35,7 @@ import { UniversalSchemaLoader } from '../loaders';
 import { VerifiableConstants, BJJSignatureProof2021, MerklizedRootPosition } from '../verifiable';
 import { MTProof, TreeState } from '../circuits';
 import { ClaimRequest, ICredentialWallet } from '../credentials';
-import { RevocationService } from '../credentials/revocation';
+import { RevocationService, TreesModel } from '../credentials/revocation';
 
 // IdentityStatus represents type for state Status
 export enum IdentityStatus {
@@ -218,7 +218,7 @@ export class IdentityWallet implements IIdentityWallet {
     const existingProfile = identityProfiles.find(
       (p) => p.nonce == nonce || p.verifier == verifier
     );
-    if (!!existingProfile) {
+    if (existingProfile) {
       throw new Error('profile with given nonce or verifier already exists');
     }
 
@@ -319,7 +319,7 @@ export class IdentityWallet implements IIdentityWallet {
     const x = credential.credentialSubject['x'] as unknown as string;
     const y = credential.credentialSubject['y'] as unknown as string;
 
-    var pb: PublicKey = new PublicKey([BigInt(x), BigInt(y)]);
+    const pb: PublicKey = new PublicKey([BigInt(x), BigInt(y)]);
     const kp = keyPath(KmsKeyType.BabyJubJub, pb.hex());
     return { type: KmsKeyType.BabyJubJub, id: kp };
   }
@@ -371,7 +371,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const issuerAuthBJJCredential = await this._credentialWallet.getAuthBJJCredential(issuerDID);
 
-    var coreClaimOpts: CoreClaimOptions = {
+    const coreClaimOpts: CoreClaimOptions = {
       revNonce: revNonce,
       subjectPosition: req.subjectPosition,
       merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition),
@@ -394,7 +394,6 @@ export class IdentityWallet implements IIdentityWallet {
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
 
-
     const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
     const sigProof: BJJSignatureProof2021 = {
       type: ProofType.BJJSignature,
@@ -412,7 +411,6 @@ export class IdentityWallet implements IIdentityWallet {
 
     await this._credentialWallet.save(credential);
 
-
     await this._storage.mt.addToMerkleTree(
       issuerDID.toString(),
       MerkleTreeType.Claims,
@@ -420,7 +418,6 @@ export class IdentityWallet implements IIdentityWallet {
       coreClaim.hValue()
     );
 
-  
     const issuerTreeState = await this.getDIDTreeState(issuerDID);
 
     const rootsTree = await this._storage.mt.addToMerkleTree(
@@ -437,14 +434,13 @@ export class IdentityWallet implements IIdentityWallet {
       published: false
     });
 
-
-    if (opts.withPublish){
+    if (opts.withPublish) {
       // TODO: publish
     }
-    
-    if (opts.withRHS !== ""){
-      const rhs = new RevocationService(opts.withRHS)
-      rhs.pushHashesToRHS(issuerTreeState)
+
+    if (opts.withRHS !== '') {
+      const rhs = new RevocationService(opts.withRHS);
+      rhs.pushHashesToRHS(issuerTreeState.state, {} as TreesModel);
     }
 
     return credential;
@@ -467,7 +463,7 @@ export class IdentityWallet implements IIdentityWallet {
       ProofType.Iden3SparseMerkleTreeProof
     );
 
-    var coreClaim: Claim;
+    let coreClaim: Claim;
     if (!coreClaimFromMtpProof && !coreClaimFromSigProof) {
       throw new Error('core claim is not set proof');
     }

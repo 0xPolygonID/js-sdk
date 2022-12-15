@@ -6,7 +6,7 @@ export function keyPath(keyType: KmsKeyType, keyID: string): string {
   return basePath + String(keyType) + ':' + keyID;
 }
 
-export function getRandomBytes(n:number): Uint8Array {
+export function getRandomBytes(n: number): Uint8Array {
   let array = new Uint8Array(n);
   const isBrowser = typeof window !== 'undefined';
 

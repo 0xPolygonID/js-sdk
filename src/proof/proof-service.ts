@@ -1,4 +1,4 @@
-import { Iden3Credential } from '../verifiable/credential';
+import { W3CCredential } from '../verifiable/credential';
 import { BJJSignatureProof } from './../circuits/models';
 import { VerifiableConstants } from '../verifiable/constants';
 import { KmsKeyId } from '../kms/kms';
@@ -14,26 +14,20 @@ import {
   strMTHex,
   StateInRelayCredentialHash,
   Query,
-  factoryComparer,
-  AtomicQuerySigInputs,
-  AuthInputs,
-  AtomicQueryMTPInputs
+  factoryComparer
 } from '../circuits';
 import { Claim } from '../claim';
 import { CredentialStatus, RevocationStatus } from '../verifiable/credential';
 import { toClaimNonRevStatus } from './common';
 import { ProverService } from './prover';
-import { SchemaLoader } from '../schema-processor/loader';
 import { IIdentityWallet } from '../identity';
 import { IKmsService } from '../kms';
 import { ICredentialWallet } from '../credentials';
 import { IdentityMerkleTrees } from '../identity/mt';
-import { Schema } from '../schema-processor';
 import { Signature } from '@iden3/js-crypto';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
-
 
 // // Query represents structure for query to atomic circuit
 // export interface ProofQuery {

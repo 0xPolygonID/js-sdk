@@ -2,8 +2,7 @@ import { IRevocationService } from './revocation';
 
 import { DID } from '@iden3/js-iden3-core';
 import axios from 'axios';
-// import { ProofQuery, RevocationStatus } from '../schema-processor';
-import { IDataStorage, IStateStorage } from '../storage/interfaces';
+import { IDataStorage } from '../storage/interfaces';
 import {
   W3CCredential,
   ProofQuery,
@@ -55,9 +54,6 @@ export interface ICredentialWallet {
 
 export class CredentialWallet implements ICredentialWallet {
   constructor(private readonly _storage: IDataStorage, private readonly _rhs: IRevocationService) {}
-
-
- 
 
   async getAuthBJJCredential(did: DID): Promise<W3CCredential> {
     // filter where issuer of auth credential is current did
@@ -135,7 +131,7 @@ export class CredentialWallet implements ICredentialWallet {
       type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
     };
 
-    if (!!rhsUrl) {
+    if (rhsUrl) {
       cr.credentialStatus = {
         id: `${rhsUrl}`,
         revocatioNonce: request.revNonce,
