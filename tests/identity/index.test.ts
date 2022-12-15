@@ -9,6 +9,7 @@ import {
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain';
+import { CredentialWallet } from '../../src/credentials';
 
 describe('identity', () => {
   let wallet: IdentityWallet;
@@ -25,12 +26,17 @@ describe('identity', () => {
       mt: new InMemoryMerkleTreeStorage(40),
       states: new EthStateStorage(defaultEthConnectionConfig)
     };
-    wallet = new IdentityWallet(kms, dataStorage);
+    const credWallet = new CredentialWallet(dataStorage);
+    wallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
   it('createIdentity', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(seedPhrase, 'http://metamask.com/');
+    const { did, credential } = await wallet.createIdentity(
+      seedPhrase,
+      'http://metamask.com/',
+      'http://rhs.com/node'
+    );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
     );
@@ -47,7 +53,11 @@ describe('identity', () => {
   it('createProfile', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(seedPhrase, 'http://metamask.com/');
+    const { did, credential } = await wallet.createIdentity(
+      seedPhrase,
+      'http://metamask.com/',
+      'http://rhs.com/node'
+    );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
     );
@@ -65,7 +75,11 @@ describe('identity', () => {
   it('sign', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(seedPhrase, 'http://metamask.com/');
+    const { did, credential } = await wallet.createIdentity(
+      seedPhrase,
+      'http://metamask.com/',
+      'http://rhs.com/node'
+    );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
     );
@@ -74,32 +88,41 @@ describe('identity', () => {
 
     const message = enc.encode('payload');
     const sig = await wallet.sign(message, credential);
-    console.log(sig.hex())
+    console.log(sig.hex());
 
-    expect(sig.hex()).toBe("5fdb4fc15898ee2eeed2ed13c5369a4f28870e51ac1aae8ad1f2108d2d39f38969881d7553344c658e63344e4ddc151fabfed5bf8fcf8663c183248b714d8b03")
+    expect(sig.hex()).toBe(
+      '5fdb4fc15898ee2eeed2ed13c5369a4f28870e51ac1aae8ad1f2108d2d39f38969881d7553344c658e63344e4ddc151fabfed5bf8fcf8663c183248b714d8b03'
+    );
   });
   it('generateMtp', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(seedPhrase, 'http://metamask.com/');
+    const { did, credential } = await wallet.createIdentity(
+      seedPhrase,
+      'http://metamask.com/',
+      'http://rhs.com/node'
+    );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
     );
 
-   const proof = await wallet.generateClaimMtp(did,credential)
+    const proof = await wallet.generateClaimMtp(did, credential);
 
     expect(proof.proof.existence).toBe(true);
   });
   it('generateNonRevProof', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(seedPhrase, 'http://metamask.com/');
+    const { did, credential } = await wallet.createIdentity(
+      seedPhrase,
+      'http://metamask.com/',
+      'http://rhs.com/node'
+    );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
     );
 
-   const proof = await wallet.generateNonRevocationMtp(did,credential)
-   
+    const proof = await wallet.generateNonRevocationMtp(did, credential);
 
     expect(proof.proof.existence).toBe(false);
   });

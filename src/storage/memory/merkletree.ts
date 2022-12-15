@@ -1,11 +1,10 @@
-import { Entry, InMemoryDB, Merkletree, str2Bytes } from '@iden3/js-merkletree';
+import { Entry, Hash, InMemoryDB, Merkletree, str2Bytes } from '@iden3/js-merkletree';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/mt';
 import * as uuid from 'uuid';
 
 import { IMerkleTreeStorage } from '../interfaces/merkletree';
 
 const mtTypes = [MerkleTreeType.Claims, MerkleTreeType.Revocations, MerkleTreeType.Roots];
-
 
 declare type TreeWithMetaInfo = {
   tree: Merkletree;
@@ -16,8 +15,8 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
   _data: {
     [v in string]: TreeWithMetaInfo[];
   };
-  mtDepth:number;
-  constructor(_mtDepth:number) {
+  mtDepth: number;
+  constructor(_mtDepth: number) {
     this.mtDepth = _mtDepth;
     this._data = {};
   }
@@ -59,15 +58,17 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
     return treeWithMeta!.tree;
   }
 
-  async addEntryToMerkleTree(identifier: string, mtType: MerkleTreeType, entry: Entry): Promise<void> {
-    const { hi, hv } = await entry.hiHv();
-
+  async addToMerkleTree(
+    identifier: string,
+    mtType: MerkleTreeType,
+    hindex: bigint,
+    hvalue: bigint
+  ): Promise<void> {
     for (let index = 0; index < this._data[identifier].length; index++) {
       if (this._data[identifier][index].metaInfo.type === mtType) {
-        await this._data[identifier][index].tree.add(hi.bigInt(), hv.bigInt());
-       }
+        await this._data[identifier][index].tree.add(hindex, hvalue);
+      }
     }
-  
   }
 
   async bindMerkleTreeToNewIdentifier(oldIdentifier: string, newIdentifier: string): Promise<void> {

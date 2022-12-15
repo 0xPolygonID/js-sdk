@@ -11,13 +11,21 @@ import {
   Siblings,
   Node
 } from '@iden3/js-merkletree';
+import { toLittleEndian } from '@iden3/js-iden3-core';
 import { IStateStorage } from '../storage/interfaces';
-import { RevocationStatus, VerifiableConstants, W3CCredential } from '../schema-processor';
+import {
+  BJJSignatureProof2021,
+  Iden3SparseMerkleTreeProof,
+  RevocationStatus,
+  VerifiableConstants,
+  W3CCredential
+} from '../schema-processor';
 import axios from 'axios';
 import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
 import { NODE_TYPE_MIDDLE } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
 import { TreeState } from '../circuits';
+import { BytesHelper, DID } from '@iden3/js-iden3-core';
 
 export enum NodeType {
   Unknown = 0,
@@ -55,6 +63,36 @@ interface NodeResponse {
   node: ProofNode;
   status: string;
 }
+export function isIssuerGenesis(
+  issuer: string,
+  proof: BJJSignatureProof2021 | Iden3SparseMerkleTreeProof
+): boolean {
+  const did = DID.parse(issuer);
+  const arr = BytesHelper.hexToBytes(proof.issuerData.state.value!);
+  const stateBigInt = BytesHelper.bytesToInt(arr);
+  return isGenesisStateId(did.id.bigInt(), stateBigInt);
+}
+
+export function isGenesisStateId(id: bigint, state: bigint): boolean {
+  const idBytes = toLittleEndian(id, 31);
+
+  const typeBJP0 = new Uint8Array(2);
+  const stateBytes = toLittleEndian(id, 32);
+  const idGenesisBytes = stateBytes.slice(-27);
+
+  // we take last 27 bytes, because of swapped endianness
+  const idFromStateBytes = Uint8Array.from([
+    ...typeBJP0,
+    ...idGenesisBytes,
+    ...BytesHelper.calculateChecksum(typeBJP0, idGenesisBytes)
+  ]);
+
+  if (JSON.stringify(idBytes) !== JSON.stringify(idFromStateBytes)) {
+    return false;
+  }
+
+  return true;
+}
 
 export class RevocationService implements IRevocationService {
   // http://localhost:8003
@@ -68,8 +106,17 @@ export class RevocationService implements IRevocationService {
   ): Promise<RevocationStatus> {
     //todo: check what is ID should be bigint
     const latestStateInfo = await stateStorage.getLatestStateById(cred.id);
-    if (latestStateInfo?.state === BigInt(0)) {
-      throw new Error(VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND);
+    const credProof = cred.proof![0] as Iden3SparseMerkleTreeProof // TODO: find proof in other way. Auth BJJ credentials have only mtp proof
+    if (latestStateInfo?.state === BigInt(0) && isIssuerGenesis(cred.issuer, credProof)) {
+      return {
+        mtp: new Proof(),
+        issuer:{
+          state: credProof.issuerData.state.value,
+          revocationTreeRoot: credProof.issuerData.state.revocationTreeRoot,
+          rootOfRoots: credProof.issuerData.state.rootOfRoots,
+          claimsTreeRoot: credProof.issuerData.state.claimsTreeRoot,
+        }
+      };
     }
     const hashedRevNonce = newHashFromBigInt(BigInt(cred?.credentialStatus?.revocationNonce ?? 0));
     const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));

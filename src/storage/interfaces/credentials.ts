@@ -5,6 +5,6 @@ export interface ICredentialStorage {
     saveAllCredentials(credentials: W3CCredential[]): Promise<void>;
     listCredentials(): Promise<W3CCredential[]>;
     removeCredential(id: string): Promise<void>;
-    findCredentialByQuery(query: ProofQuery): Promise<W3CCredential[]>;
+    findCredentialsByQuery(query: ProofQuery): Promise<W3CCredential[]>;
     findCredentialById(id: string): Promise<W3CCredential | undefined>;
 }
