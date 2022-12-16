@@ -1,12 +1,12 @@
-import * as entities from '../entities';
+import { Identity } from '../entities';
 import { Profile } from '../entities';
 
 export interface IIdentityStorage {
-  saveIdentity(identity: entities.Identity): Promise<void>;
-  getIdentity(identifier: string): Promise<entities.Identity>;
-  getAllIdentities(): Promise<entities.Identity[]>;
+  saveIdentity(identity: Identity): Promise<void>;
+  getIdentity(identifier: string): Promise<Identity | undefined>;
+  getAllIdentities(): Promise<Identity[]>;
 
-  saveProfile(identity: entities.Profile): Promise<void>;
+  saveProfile(identity: Profile): Promise<void>;
   getProfileByVerifier(verifier: string): Promise<Profile>;
   getProfileById(identifier: string): Promise<Profile>;
   getProfilesByGenesisIdentifier(genesisIdentifier: string): Promise<Profile[]>;

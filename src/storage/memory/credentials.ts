@@ -4,7 +4,7 @@ import { StandardJSONCredentielsQueryFilter } from '../filters/jsonQuery';
 import { ICredentialStorage } from '../interfaces/credentials';
 
 export class InMemoryCredentialStorage implements ICredentialStorage {
-  _data: {
+  private _data: {
     [v in string]: W3CCredential[];
   };
   constructor(private secret: string = 'main') {

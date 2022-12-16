@@ -3,37 +3,38 @@ import { Hasher } from '../types';
 import { DEFAULT_HASHER } from '../constants';
 import { NamedNode, Quad, Variable } from 'n3';
 import { Path } from './path';
-import { NodeID } from './nodeID';
+import { NodeId } from './nodeId';
+
 import { getQuadKey, QuadKey } from './quadKey';
 
 class Relationship {
   constructor(
     // string should be derived from instance of NodeID for the below maps
     public parents: Map<string, QuadKey> = new Map(),
-    public children: Map<string, Map<Iri, Array<NodeID>>> = new Map(),
+    public children: Map<string, Map<Iri, Array<NodeId>>> = new Map(),
     public hasher: Hasher = DEFAULT_HASHER
   ) {}
 
-  getParent(k: NodeID): QuadKey {
+  getParent(k: NodeId): QuadKey | undefined {
     return this.parents.get(k.toString());
   }
 
-  setParent(k: NodeID, v: QuadKey): void {
+  setParent(k: NodeId, v: QuadKey): void {
     this.parents.set(k.toString(), v);
   }
 
-  getChildren(k: NodeID): Map<string, NodeID[]> {
+  getChildren(k: NodeId): Map<string, NodeId[]> | undefined {
     return this.children.get(k.toString());
   }
 
-  setChildren(k: NodeID, v: Map<Iri, Array<NodeID>>): void {
+  setChildren(k: NodeId, v: Map<Iri, Array<NodeId>>): void {
     this.children.set(k.toString(), v);
   }
 
   path(n: Quad, idx: number): Path {
     const k = new Path();
 
-    const subID = new NodeID(n.subject);
+    const subID = new NodeId(n.subject);
 
     let predicate: NamedNode | Variable;
 
@@ -63,7 +64,7 @@ class Relationship {
         break;
       }
       const termChildren = this.getChildren(parent.subjectID);
-      const children = termChildren.get(parent.predicate);
+      const children = termChildren.get(parent.predicate) ?? [];
 
       if (children.length === 1) {
         k.append([parent.predicate]);
@@ -96,12 +97,12 @@ export const newRelationship = async (
 
   const subjectSet: Map<string, number> = new Map();
   quads.forEach((q) => {
-    const subjID = new NodeID(q.subject);
+    const subjID = new NodeId(q.subject);
     subjectSet.set(subjID.toString(), 0);
   });
 
   quads.forEach((q) => {
-    const objID = new NodeID(q.object);
+    const objID = new NodeId(q.object);
     if (subjectSet.has(objID.toString())) {
       const qk = getQuadKey(q);
       r.setParent(objID, qk);
@@ -111,7 +112,9 @@ export const newRelationship = async (
       }
       termChildren.set(
         qk.predicate,
-        termChildren.has(qk.predicate) ? [...termChildren.get(qk.predicate), objID] : [objID]
+        termChildren.has(qk.predicate)
+          ? [...(termChildren.get(qk.predicate) ?? []), objID]
+          : [objID]
       );
       r.setChildren(qk.subjectID, termChildren);
     }

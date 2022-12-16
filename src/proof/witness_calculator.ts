@@ -1,3 +1,4 @@
+/* eslint-disable require-await */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function witnessBuilder(code, options?) {
   options = options || {};

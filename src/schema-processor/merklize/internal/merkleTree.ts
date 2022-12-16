@@ -29,11 +29,9 @@ export const mkValueMtEntry = async (h: Hasher, v: any): Promise<bigint> => {
     case 'string': {
       return mkValueString(h, v);
     }
-    case 'boolean':
-      {
-        return mkValueBool(h, v);
-      }
-      break;
+    case 'boolean': {
+      return mkValueBool(h, v);
+    }
     default: {
       if (v instanceof Date) {
         return mkValueTime(h, v);

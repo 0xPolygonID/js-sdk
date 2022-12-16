@@ -12,6 +12,7 @@ export class InMemoryPrivateKeyStore implements AbstractPrivateKeyStore {
     }
     return privateKey;
   }
+
   async import(args: { alias: string; key: string }): Promise<void> {
     this._data.set(args.alias, args.key);
   }

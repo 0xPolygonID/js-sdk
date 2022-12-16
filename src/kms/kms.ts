@@ -1,11 +1,4 @@
-import { Signature, PublicKey } from '@iden3/js-crypto';
-
-export interface IKmsService {
-  getBJJDigest(challenge: number): Uint8Array;
-  sign(keyId: KmsKeyId, data: Uint8Array): Uint8Array;
-  decodeBJJSignature(sigBytes: Uint8Array): Signature;
-}
-
+import { PublicKey } from '@iden3/js-crypto';
 export enum KmsKeyType {
   BabyJubJub = 'BJJ',
   Ethereum = 'ETH'
@@ -33,7 +26,7 @@ export class KMS {
     ETH: null
   };
 
-  registerKeyProvider(keyType: KmsKeyType, keyProvider: IKeyProvider) {
+  registerKeyProvider(keyType: KmsKeyType, keyProvider: IKeyProvider): void {
     if (this.registry[keyType]) {
       throw new Error('present keyType');
     }

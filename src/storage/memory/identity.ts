@@ -35,12 +35,9 @@ export class InMemoryIdentityStorage implements IIdentityStorage {
     }
     throw new Error('profile not found');
   }
+
   async getProfilesByGenesisIdentifier(genesisIdentifier: string): Promise<Profile[]> {
-    const profiles = this._profiles.get(genesisIdentifier);
-    if (!profiles) {
-      return [];
-    }
-    return profiles;
+    return this._profiles.get(genesisIdentifier) ?? [];
   }
 
   async getAllIdentities(): Promise<Identity[]> {

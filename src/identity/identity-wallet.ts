@@ -379,7 +379,7 @@ export class IdentityWallet implements IIdentityWallet {
       version: 0
     };
 
-    const coreClaim = new Parser().parseClaim(
+    const coreClaim = await new Parser().parseClaim(
       credential,
       `${jsonSchema.$metadata.uris['jsonLdContext']}#${req.type}}`,
       schema,

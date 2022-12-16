@@ -1,6 +1,7 @@
 import { IRevocationService } from './revocation';
 
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
+
 import axios from 'axios';
 import { IDataStorage } from '../storage/interfaces';
 import {
@@ -8,7 +9,6 @@ import {
   ProofQuery,
   VerifiableConstants,
   SubjectPosition,
-  CredentialStatus,
   MerklizedRootPosition
 } from './../verifiable';
 
@@ -58,17 +58,18 @@ export class CredentialWallet implements ICredentialWallet {
   async getAuthBJJCredential(did: DID): Promise<W3CCredential> {
     // filter where issuer of auth credential is current did
 
-    const authBJJcredsOfIssuer = await this._storage.credential.findCredentialsByQuery({
+    const authBJJCredsOfIssuer = await this._storage.credential.findCredentialsByQuery({
       context: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD_URL,
       type: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_TYPE,
       allowedIssuers: [did.toString()]
     });
 
-    if (authBJJcredsOfIssuer.length == 0) {
+    if (authBJJCredsOfIssuer.length == 0) {
       throw new Error('no auth credentials found');
     }
-    for (let index = 0; index < authBJJcredsOfIssuer.length; index++) {
-      const authCred = authBJJcredsOfIssuer[index];
+
+    for (let index = 0; index < authBJJCredsOfIssuer.length; index++) {
+      const authCred = authBJJCredsOfIssuer[index];
       const revocationStatus = await this.getRevocationStatus(authCred);
 
       if (!revocationStatus.mtp.existence) {
@@ -113,7 +114,8 @@ export class CredentialWallet implements ICredentialWallet {
     const credentialType = [VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE, request.type];
 
     const expirationDate = request.expiration;
-    const issuanceDate = Date.now() / 1000;
+    const issuanceDate = getUnixTimestamp(new Date());
+
     const issuerDID = issuer.toString();
     const credentialSubject = request.credentialSubject;
     credentialSubject['type'] = request.type;
@@ -134,15 +136,15 @@ export class CredentialWallet implements ICredentialWallet {
     if (rhsUrl) {
       cr.credentialStatus = {
         id: `${rhsUrl}`,
-        revocatioNonce: request.revNonce,
+        revocationNonce: request.revNonce,
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof
-      } as unknown as RHSCredentialStatus;
+      };
     } else {
       cr.credentialStatus = {
         id: `${hostUrl}/revocation/${request.revNonce}`,
-        revocatioNonce: request.revNonce,
+        revocationNonce: request.revNonce,
         type: CredentialStatusType.SparseMerkleTreeProof
-      } as unknown as CredentialStatus;
+      };
     }
 
     return cr;
@@ -153,7 +155,6 @@ export class CredentialWallet implements ICredentialWallet {
     circuitQuery: any,
     requestFiled: any
   ): Promise<W3CCredential[]> {
-    console.log("don't know");
     throw new Error('Method not implemented.');
   }
 

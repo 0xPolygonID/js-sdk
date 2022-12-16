@@ -1,4 +1,4 @@
-import { Entry, Hash, InMemoryDB, Merkletree, str2Bytes } from '@iden3/js-merkletree';
+import { InMemoryDB, Merkletree, str2Bytes } from '@iden3/js-merkletree';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/mt';
 import * as uuid from 'uuid';
 
@@ -31,11 +31,11 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
 
     const treesMeta: IdentityMerkleTreeMetaInformation[] = [];
     mtTypes.forEach((t) => {
-      const treeId = identifier!.concat('+' + t.toString());
+      const treeId = identifier.concat('+' + t.toString());
       const tree = new Merkletree(new InMemoryDB(str2Bytes(treeId)), true, this.mtDepth);
 
-      const metaInfo = { treeId, identifier: identifier!, type: t };
-      this._data[identifier!].push({ tree, metaInfo });
+      const metaInfo = { treeId, identifier: identifier, type: t };
+      this._data[identifier].push({ tree, metaInfo });
 
       treesMeta.push(metaInfo);
     });

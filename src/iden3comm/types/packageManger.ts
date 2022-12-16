@@ -1,5 +1,4 @@
-import { IPacker, MediaType, PackerParams } from 'types/packer';
-import { Bytes } from 'types/index';
+import { IPacker, MediaType, PackerParams } from './packer';
 import { protocol } from '@iden3/js-iden3-auth';
 
 export type BasicMessage = protocol.Message & {
@@ -12,13 +11,13 @@ export interface IPackageManger {
 
   registerPackers(packers: Array<IPacker>): void;
 
-  pack(mediaType: MediaType, payload: Bytes, params: PackerParams): Promise<Bytes>;
+  pack(mediaType: MediaType, payload: Uint8Array, params: PackerParams): Promise<Uint8Array>;
 
-  unpack(envelope: Bytes): Promise<BasicMessage & { mediaType: MediaType }>;
+  unpack(envelope: Uint8Array): Promise<BasicMessage & { mediaType: MediaType }>;
 
-  unpackWithType(mediaType: MediaType, envelope: Bytes): Promise<BasicMessage>;
+  unpackWithType(mediaType: MediaType, envelope: Uint8Array): Promise<BasicMessage>;
 
-  getMediaType(envelope: Bytes): MediaType;
+  getMediaType(envelope: Uint8Array): MediaType;
 }
 
 export type EnvelopeStub = {

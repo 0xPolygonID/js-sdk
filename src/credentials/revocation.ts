@@ -8,8 +8,7 @@ import {
   testBit,
   Merkletree,
   NodeLeaf,
-  Siblings,
-  Node
+  Siblings
 } from '@iden3/js-merkletree';
 import { toLittleEndian } from '@iden3/js-iden3-core';
 import { IStateStorage } from '../storage/interfaces';
@@ -23,7 +22,6 @@ import axios from 'axios';
 import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
 import { NODE_TYPE_MIDDLE } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
-import { TreeState } from '../circuits';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
 
 export interface TreesModel {
@@ -73,7 +71,7 @@ export function isIssuerGenesis(
   proof: BJJSignatureProof2021 | Iden3SparseMerkleTreeProof
 ): boolean {
   const did = DID.parse(issuer);
-  const arr = BytesHelper.hexToBytes(proof.issuerData.state.value!);
+  const arr = BytesHelper.hexToBytes(proof.issuerData.state.value);
   const stateBigInt = BytesHelper.bytesToInt(arr);
   return isGenesisStateId(did.id.bigInt(), stateBigInt);
 }
@@ -102,7 +100,7 @@ export function isGenesisStateId(id: bigint, state: bigint): boolean {
 export class RevocationService implements IRevocationService {
   // http://localhost:8003
   constructor(private readonly _rhsURL: string) {
-    const nodeUrl = this._rhsURL.endsWith('/') ? `${this._rhsURL}node` : `${this._rhsURL}/node`;
+    this._rhsURL = this._rhsURL.endsWith('/') ? `${this._rhsURL}node` : `${this._rhsURL}/node`;
   }
 
   async getStatusFromRHS(
