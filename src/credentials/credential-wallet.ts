@@ -1,4 +1,4 @@
-import { IRevocationService } from './revocation';
+import { IRevocationService, RevocationService } from './revocation';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 
@@ -25,8 +25,8 @@ export interface ClaimRequest {
   type: string;
   credentialSubject: { [key: string]: any };
   expiration?: number;
-  version: number;
-  revNonce: number;
+  version?: number;
+  revNonce?: number;
   subjectPosition?: SubjectPosition;
   merklizedRootPosition?: MerklizedRootPosition;
 }
@@ -53,7 +53,7 @@ export interface ICredentialWallet {
 }
 
 export class CredentialWallet implements ICredentialWallet {
-  constructor(private readonly _storage: IDataStorage, private readonly _rhs: IRevocationService) {}
+  constructor(private readonly _storage: IDataStorage) {}
 
   async getAuthBJJCredential(did: DID): Promise<W3CCredential> {
     // filter where issuer of auth credential is current did
@@ -84,9 +84,15 @@ export class CredentialWallet implements ICredentialWallet {
       return (await axios.get<RevocationStatus>(cred.credentialStatus.id)).data;
     }
 
+    
     if (cred.credentialStatus?.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
+      const rhs = new RevocationService();
       try {
-        return await this._rhs.getStatusFromRHS(cred, this._storage.states);
+        return await rhs.getStatusFromRHS(
+          cred,
+          this._storage.states,
+          cred.credentialStatus.id
+        );
       } catch (e) {
         console.error(e);
         const status = cred.credentialStatus as RHSCredentialStatus;

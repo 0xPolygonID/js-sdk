@@ -439,8 +439,8 @@ export class IdentityWallet implements IIdentityWallet {
     }
 
     if (opts.withRHS !== '') {
-      const rhs = new RevocationService(opts.withRHS);
-      rhs.pushHashesToRHS(issuerTreeState.state, {} as TreesModel);
+      const rhs = new RevocationService();
+      rhs.pushHashesToRHS(issuerTreeState.state, {} as TreesModel, opts.withRHS);
     }
 
     return credential;

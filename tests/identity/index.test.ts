@@ -1,4 +1,4 @@
-import { IRevocationService } from './../../src/credentials/revocation';
+import { IRevocationService, RevocationService } from './../../src/credentials/revocation';
 import { IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -10,7 +10,7 @@ import {
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain';
-import { CredentialWallet } from '../../src/credentials';
+import { ClaimRequest, CredentialWallet } from '../../src/credentials';
 
 describe('identity', () => {
   let wallet: IdentityWallet;
@@ -27,7 +27,7 @@ describe('identity', () => {
       mt: new InMemoryMerkleTreeStorage(40),
       states: new EthStateStorage(defaultEthConnectionConfig)
     };
-    const credWallet = new CredentialWallet(dataStorage, {} as IRevocationService);
+    const credWallet = new CredentialWallet(dataStorage);
     wallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
   it('createIdentity', async () => {
@@ -49,7 +49,7 @@ describe('identity', () => {
       MerkleTreeType.Claims
     );
 
-    expect(claimsTree.root.bigInt()).not.toBe(0);
+    expect(claimsTree!.root.bigInt()).not.toBe(0);
   });
   it('createProfile', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
@@ -126,5 +126,58 @@ describe('identity', () => {
     const proof = await wallet.generateNonRevocationMtp(did, credential);
 
     expect(proof.proof.existence).toBe(false);
+  });
+
+  it('generateNonRevProof', async () => {
+    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
+
+    const { did, credential } = await wallet.createIdentity(
+      seedPhrase,
+      'http://metamask.com/',
+      'http://rhs.com/node'
+    );
+    expect(did.toString()).toBe(
+      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+    );
+
+    const proof = await wallet.generateNonRevocationMtp(did, credential);
+
+    expect(proof.proof.existence).toBe(false);
+  });
+
+  it('issueCredential', async () => {
+    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
+      'seedseedseedseedseedseedseedseed'
+    );
+    const seedPhraseUser: Uint8Array = new TextEncoder().encode('userseedseedseedseedseedseeduser');
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity(
+      seedPhraseIssuer,
+      'http://metamask.com/',
+      'http://rhs.com/node'
+    );
+
+    expect(issuerDID.toString()).toBe(
+      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+    );
+
+    const { did: userDID, credential: userAuthCredential } = await wallet.createIdentity(
+      seedPhraseUser,
+      'http://metamask.com/',
+      'http://rhs.com/node'
+    );
+
+    var claimReq: ClaimRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.toString(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 12345678888
+    };
+    await wallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/');
   });
 });

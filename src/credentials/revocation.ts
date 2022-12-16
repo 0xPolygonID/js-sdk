@@ -38,8 +38,12 @@ export enum NodeType {
 }
 
 export interface IRevocationService {
-  getStatusFromRHS(cred: W3CCredential, stateStorage: IStateStorage): Promise<RevocationStatus>;
-  pushHashesToRHS(state: Hash, trees: TreesModel): Promise<void>;
+  getStatusFromRHS(
+    cred: W3CCredential,
+    stateStorage: IStateStorage,
+    rhsURL: string
+  ): Promise<RevocationStatus>;
+  pushHashesToRHS(state: Hash, trees: TreesModel, rhsUrl: string): Promise<void>;
 }
 
 export class ProofNode {
@@ -98,16 +102,14 @@ export function isGenesisStateId(id: bigint, state: bigint): boolean {
 }
 
 export class RevocationService implements IRevocationService {
-  // http://localhost:8003
-  constructor(private readonly _rhsURL: string) {
-    this._rhsURL = this._rhsURL.endsWith('/') ? `${this._rhsURL}node` : `${this._rhsURL}/node`;
-  }
-
   async getStatusFromRHS(
     cred: W3CCredential,
-    stateStorage: IStateStorage
+    stateStorage: IStateStorage,
+    rhsURL: string
   ): Promise<RevocationStatus> {
     //todo: check what is ID should be bigint
+    if (!rhsURL) throw new Error('HTTP reverse hash service url is not specified');
+
     const latestStateInfo = await stateStorage.getLatestStateById(cred.id);
     const credProof = cred.proof![0] as Iden3SparseMerkleTreeProof; // TODO: find proof in other way. Auth BJJ credentials have only mtp proof
     if (latestStateInfo?.state === BigInt(0) && isIssuerGenesis(cred.issuer, credProof)) {
@@ -123,16 +125,15 @@ export class RevocationService implements IRevocationService {
     }
     const hashedRevNonce = newHashFromBigInt(BigInt(cred?.credentialStatus?.revocationNonce ?? 0));
     const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
-    return this.getNonRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot);
+    return this.getNonRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, rhsURL);
   }
 
   private async getNonRevocationStatusFromRHS(
     data: Hash,
-    issuerRoot: Hash
+    issuerRoot: Hash,
+    rhsURL: string
   ): Promise<RevocationStatus> {
-    if (!this._rhsURL) throw new Error('HTTP reverse hash service url is not specified');
-    const treeRoots = (await axios.get<NodeResponse>(`${this._rhsURL}/${issuerRoot.hex()}`)).data
-      ?.node;
+    const treeRoots = (await axios.get<NodeResponse>(`${rhsURL}/${issuerRoot.hex()}`)).data?.node;
     if (treeRoots.children.length !== 3) {
       throw new Error('state should has tree children');
     }
@@ -143,7 +144,7 @@ export class RevocationService implements IRevocationService {
     const roTR = treeRoots.children[2].hex();
 
     const rtrHashed = newHashFromString(rTR);
-    const nonRevProof = await this.rhsGenerateProof(rtrHashed, data);
+    const nonRevProof = await this.rhsGenerateProof(rtrHashed, data, rhsURL);
 
     return {
       mtp: nonRevProof,
@@ -172,7 +173,7 @@ export class RevocationService implements IRevocationService {
     return p;
   }
 
-  private async rhsGenerateProof(treeRoot: Hash, key: Hash): Promise<Proof> {
+  private async rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Promise<Proof> {
     let exists: boolean;
     const siblings: Hash[] = [];
     let nodeAux: NodeAux;
@@ -184,7 +185,7 @@ export class RevocationService implements IRevocationService {
       if (nextKey.bytes.every((i) => i === 0)) {
         return mkProof();
       }
-      const n = (await axios.get<NodeResponse>(`${this._rhsURL}/${nextKey.hex()}`)).data?.node;
+      const n = (await axios.get<NodeResponse>(`${rhsURL}/${nextKey.hex()}`)).data?.node;
 
       switch (n.nodeType()) {
         case NODE_TYPE_LEAF:
@@ -214,7 +215,7 @@ export class RevocationService implements IRevocationService {
 
     throw new Error('tree depth is too high');
   }
-  async pushHashesToRHS(state: Hash, trees: TreesModel): Promise<void> {
+  async pushHashesToRHS(state: Hash, trees: TreesModel, rhsUrl: string): Promise<void> {
     const nb = new NodesBuilder();
 
     await this.addRoRNode(nb, trees);
@@ -231,12 +232,11 @@ export class RevocationService implements IRevocationService {
     }
 
     if (nb.nodes.length > 0) {
-      await this.saveNodes(nb.nodes);
+      await this.saveNodes(nb.nodes, rhsUrl);
     }
   }
 
-  private async saveNodes(nodes: ProofNode[]): Promise<boolean> {
-    const nodeUrl = this._rhsURL.endsWith('/') ? `${this._rhsURL}node` : `${this._rhsURL}/node`;
+  private async saveNodes(nodes: ProofNode[], nodeUrl: string): Promise<boolean> {
     return (await (await axios.post(nodeUrl, nodes)).status) === 200;
   }
 
