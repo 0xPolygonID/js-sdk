@@ -1,4 +1,6 @@
+import { Hex } from '@iden3/js-crypto';
 import { BytesHelper, checkBigIntInField, SchemaHash } from '@iden3/js-iden3-core';
+import {keccak256} from '@lumeweb/js-sha3-browser';
 
 const errSlotsOverflowMsg = 'slots overflow';
 // SwapEndianness swaps the endianness of the value encoded in buf. If buf is
@@ -16,14 +18,11 @@ export function fieldToByteArray(field: unknown): Uint8Array {
   } else {
     throw new Error('field type is not supported');
   }
-  return swapEndianness(BytesHelper.intToBytes(bigIntField));
+  return BytesHelper.intToBytes(bigIntField);
 }
 
 // DataFillsSlot  checks if newData fills into slot capacity ()
 export function dataFillsSlot(slot: Uint8Array, newData: Uint8Array): boolean {
-  // TODO: check if SwapEndianness this is correct
-  // slot = append(slot, newData...)
-  // a := new(big.Int).SetBytes(SwapEndianness(slot))
   return checkBigIntInField(BytesHelper.bytesToInt(Uint8Array.from([...slot, ...newData])));
 }
 
@@ -32,21 +31,19 @@ export function checkDataInField(data: Uint8Array): boolean {
   return checkBigIntInField(BytesHelper.bytesToInt(data));
 }
 
-// Keccak256 calculates the Keccak256 hash of the input data.
-//todo: implement this function
-export const keccak256 = (data: Uint8Array): Uint8Array => Uint8Array.from([]);
-
 // CreateSchemaHash computes schema hash from schemaID
 export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
-  const sHash = keccak256(schemaId);
-  return new SchemaHash(sHash.slice(0, 16));
+
+  const  sHash = Hex.decodeString( keccak256(schemaId))
+
+  return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
 };
 
 export const fillSlot = (data, fieldName: string): Uint8Array => {
   let slot = Uint8Array.from([]);
 
   if (!fieldName) {
-    return slot;
+    return new Uint8Array(32);
   }
   const field = data[fieldName];
   if (!field) {

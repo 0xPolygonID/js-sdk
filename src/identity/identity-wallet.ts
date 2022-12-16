@@ -32,7 +32,12 @@ import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
 import { getRandomBytes, keyPath } from '../kms/provider-helpers';
 import { UniversalSchemaLoader } from '../loaders';
-import { VerifiableConstants, BJJSignatureProof2021, MerklizedRootPosition } from '../verifiable';
+import {
+  VerifiableConstants,
+  BJJSignatureProof2021,
+  MerklizedRootPosition,
+  SubjectPosition
+} from '../verifiable';
 import { MTProof, TreeState } from '../circuits';
 import { ClaimRequest, ICredentialWallet } from '../credentials';
 import { RevocationService, TreesModel } from '../credentials/revocation';
@@ -246,7 +251,7 @@ export class IdentityWallet implements IIdentityWallet {
     return key;
   }
 
-  private async getDIDTreeState(did: DID): Promise<TreeState> {
+  private async getDIDTreeState(did: DID): Promise<TreesModel> {
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       did.toString(),
       MerkleTreeType.Claims
@@ -259,16 +264,16 @@ export class IdentityWallet implements IIdentityWallet {
       did.toString(),
       MerkleTreeType.Roots
     );
-    const currentState = await hashElems([
+    const state = await hashElems([
       claimsTree.root.bigInt(),
       revocationTree.root.bigInt(),
       rootsTree.root.bigInt()
     ]);
     return {
-      state: currentState,
-      claimsRoot: claimsTree.root,
-      revocationRoot: revocationTree.root,
-      rootOfRoots: rootsTree.root
+      state,
+      claimsTree,
+      revocationTree,
+      rootsTree
     };
   }
 
@@ -278,7 +283,7 @@ export class IdentityWallet implements IIdentityWallet {
   ): Promise<MerkleTreeProofWithTreeState> {
     const coreClaim = await this.getCoreClaimFromCredential(credential);
 
-    const treeState = await this.getDIDTreeState(did);
+    const treesModel = await this.getDIDTreeState(did);
 
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       did.toString(),
@@ -289,7 +294,12 @@ export class IdentityWallet implements IIdentityWallet {
 
     return {
       proof,
-      treeState
+      treeState: {
+        state: treesModel.state,
+        claimsRoot: treesModel.claimsTree.root,
+        rootOfRoots: treesModel.rootsTree.root,
+        revocationRoot: treesModel.revocationTree.root
+      }
     };
   }
 
@@ -301,7 +311,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const revNonce = coreClaim.getRevocationNonce();
 
-    const treeState = await this.getDIDTreeState(did);
+    const treesModel = await this.getDIDTreeState(did);
 
     const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       did.toString(),
@@ -312,7 +322,12 @@ export class IdentityWallet implements IIdentityWallet {
 
     return {
       proof,
-      treeState
+      treeState: {
+        state: treesModel.state,
+        claimsRoot: treesModel.claimsTree.root,
+        rootOfRoots: treesModel.rootsTree.root,
+        revocationRoot: treesModel.revocationTree.root
+      }
     };
   }
 
@@ -353,6 +368,8 @@ export class IdentityWallet implements IIdentityWallet {
         withRHS: ''
       };
     }
+    hostUrl = hostUrl.replace(/\/$/, '');
+
     const schema = await new UniversalSchemaLoader('ipfs.io').load(req.credentialSchema);
 
     const jsonSchema: Schema = JSON.parse(new TextDecoder().decode(schema));
@@ -361,8 +378,9 @@ export class IdentityWallet implements IIdentityWallet {
 
     let revNonce = 0;
     if (!req.revNonce) {
-      req.revNonce = Math.random() * 10000; // todo: rework
+      req.revNonce = Math.round(Math.random() * 10000); // todo: rework
     }
+    req.subjectPosition = req.subjectPosition ?? SubjectPosition.Index;
     revNonce = req.revNonce;
 
     try {
@@ -389,7 +407,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const coreClaim = await new Parser().parseClaim(
       credential,
-      `${jsonSchema.$metadata.uris['jsonLdContext']}#${req.type}}`,
+      `${jsonSchema.$metadata.uris['jsonLdContext']}#${req.type}`,
       schema,
       coreClaimOpts
     );
@@ -398,7 +416,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const coreClaimHash = poseidon.hash([hi, hv]);
 
-    const keyKMSId = this.getKMSIdByAuthCredential(issuerAuthBJJCredential[0]);
+    const keyKMSId = this.getKMSIdByAuthCredential(issuerAuthBJJCredential);
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
 
@@ -417,6 +435,15 @@ export class IdentityWallet implements IIdentityWallet {
     };
     credential.proof = [sigProof];
 
+    return credential;
+  }
+
+  async createMtpProofForCredential(credential: W3CCredential, issuerDID: DID, rhsURL: string) {
+    
+
+    // TODO : this is an expiremental method
+   
+    const coreClaim = await credential.getCoreClaimFromProof(ProofType.BJJSignature);
     await this._credentialWallet.save(credential);
 
     await this._storage.mt.addToMerkleTree(
@@ -426,14 +453,19 @@ export class IdentityWallet implements IIdentityWallet {
       coreClaim.hValue()
     );
 
-    const issuerTreeState = await this.getDIDTreeState(issuerDID);
+    let issuerTreeState = await this.getDIDTreeState(issuerDID);
 
-    const rootsTree = await this._storage.mt.addToMerkleTree(
+    await this._storage.mt.addToMerkleTree(
       issuerDID.toString(),
       MerkleTreeType.Roots,
-      issuerTreeState.claimsRoot.bigInt(),
+      issuerTreeState.claimsTree.root.bigInt(),
       BigInt(0)
     );
+
+    issuerTreeState = await this.getDIDTreeState(issuerDID);
+
+    const rhs = new RevocationService();
+    rhs.pushHashesToRHS(issuerTreeState.state, issuerTreeState, rhsURL);
 
     await this._storage.identity.saveIdentity({
       identifier: issuerDID.toString(),
@@ -442,17 +474,9 @@ export class IdentityWallet implements IIdentityWallet {
       published: false
     });
 
-    if (opts.withPublish) {
-      // TODO: publish
-    }
-
-    if (opts.withRHS !== '') {
-      const rhs = new RevocationService();
-      rhs.pushHashesToRHS(issuerTreeState.state, {} as TreesModel, opts.withRHS);
-    }
-
-    return credential;
+    // TODO: add mtp credetnial gen
   }
+
   private defineMTRootPosition(schema: Schema, position: string): string {
     if (!!schema.$metadata && !!schema.$metadata.serialization) {
       return '';

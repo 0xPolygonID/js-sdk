@@ -8,7 +8,7 @@ import { InMemoryCredentialStorage } from '../../src/storage/memory';
 import { cred1, cred2, cred3 } from './mock';
 
 const credentialFlow = async (storage: IDataStorage) => {
-  const credentialWallet = new CredentialWallet(storage, {} as IRevocationService);
+  const credentialWallet = new CredentialWallet(storage);
 
   await credentialWallet.saveAll([cred1, cred2]);
 

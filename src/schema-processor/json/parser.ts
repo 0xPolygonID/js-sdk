@@ -1,8 +1,8 @@
 import { W3CCredential, MerklizedRootPosition, SubjectPosition } from '../../verifiable';
 
-import { Claim as CoreClaim, ClaimOptions, DID, SchemaHash } from '@iden3/js-iden3-core';
+import { Claim as CoreClaim, ClaimOptions, DID } from '@iden3/js-iden3-core';
 import { ParsedSlots } from '../processor';
-import { fillSlot } from '../utils';
+import { createSchemaHash, fillSlot } from '../utils';
 
 export interface SerializationSchema {
   indexDataSlotA: string;
@@ -53,8 +53,9 @@ export class Parser {
 
     const slots = this.parseSlots(credential, jsonSchemaBytes);
 
+    const schemaHash = createSchemaHash(new TextEncoder().encode(credentialType));
     const claim = CoreClaim.newClaim(
-      new SchemaHash(new TextEncoder().encode(credentialType)),
+      schemaHash,
       ClaimOptions.withIndexDataBytes(slots.indexA, slots.indexB),
       ClaimOptions.withValueDataBytes(slots.valueA, slots.valueB),
       ClaimOptions.withRevocationNonce(BigInt(opts.revNonce)),

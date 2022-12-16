@@ -10,7 +10,7 @@ import {
   NodeLeaf,
   Siblings
 } from '@iden3/js-merkletree';
-import { toLittleEndian } from '@iden3/js-iden3-core';
+import { toLittleEndian, buildDIDType, Id } from '@iden3/js-iden3-core';
 import { IStateStorage } from '../storage/interfaces';
 import {
   BJJSignatureProof2021,
@@ -23,11 +23,15 @@ import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
 import { NODE_TYPE_MIDDLE } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
+import { JsonRpcProvider } from '@ethersproject/providers';
+import { TreeState } from '../circuits';
 
 export interface TreesModel {
   claimsTree: Merkletree;
   revocationTree: Merkletree;
   rootsTree: Merkletree;
+  state:Hash;
+
 }
 
 export enum NodeType {
@@ -74,27 +78,19 @@ export function isIssuerGenesis(
   issuer: string,
   proof: BJJSignatureProof2021 | Iden3SparseMerkleTreeProof
 ): boolean {
+
   const did = DID.parse(issuer);
   const arr = BytesHelper.hexToBytes(proof.issuerData.state.value);
   const stateBigInt = BytesHelper.bytesToInt(arr);
-  return isGenesisStateId(did.id.bigInt(), stateBigInt);
+  const type = buildDIDType(did.method, did.blockchain, did.networkId);
+  return isGenesisStateId(did.id.bigInt(), stateBigInt, type);
 }
 
-export function isGenesisStateId(id: bigint, state: bigint): boolean {
-  const idBytes = toLittleEndian(id, 31);
+export function isGenesisStateId(id: bigint, state: bigint, type: Uint8Array): boolean {
 
-  const typeBJP0 = new Uint8Array(2);
-  const stateBytes = toLittleEndian(id, 32);
-  const idGenesisBytes = stateBytes.slice(-27);
+  const idFromState = Id.idGenesisFromIdenState(type, state);
 
-  // we take last 27 bytes, because of swapped endianness
-  const idFromStateBytes = Uint8Array.from([
-    ...typeBJP0,
-    ...idGenesisBytes,
-    ...BytesHelper.calculateChecksum(typeBJP0, idGenesisBytes)
-  ]);
-
-  if (JSON.stringify(idBytes) !== JSON.stringify(idFromStateBytes)) {
+  if (id.toString() !== idFromState.bigInt().toString()) {
     return false;
   }
 
@@ -110,7 +106,8 @@ export class RevocationService implements IRevocationService {
     //todo: check what is ID should be bigint
     if (!rhsURL) throw new Error('HTTP reverse hash service url is not specified');
 
-    const latestStateInfo = await stateStorage.getLatestStateById(cred.id);
+    const did = DID.parse(cred.issuer);
+    const latestStateInfo = await stateStorage.getLatestStateById(did.id.bigInt());
     const credProof = cred.proof![0] as Iden3SparseMerkleTreeProof; // TODO: find proof in other way. Auth BJJ credentials have only mtp proof
     if (latestStateInfo?.state === BigInt(0) && isIssuerGenesis(cred.issuer, credProof)) {
       return {
