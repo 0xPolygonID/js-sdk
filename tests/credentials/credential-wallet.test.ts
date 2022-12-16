@@ -138,22 +138,22 @@ const credentialFlow = async (storage: IDataStorage) => {
   );
 
   // // invalid query
-  // const query2 = {
-  //   allowedIssuers: ['*'],
-  //   someProp: ''
-  // };
-  // await expect(credentialWallet.findByQuery(query2)).rejects.toThrow(
-  //   new Error(SearchError.NotDefinedQueryKey)
-  // );
+  const query2 = {
+    allowedIssuers: ['*'],
+    someProp: ''
+  };
+  await expect(credentialWallet.findByQuery(query2)).rejects.toThrow(
+    new Error(SearchError.NotDefinedQueryKey)
+  );
 
-  // // remove credential error
-  // await expect(credentialWallet.remove('unknowId')).rejects.toThrow(
-  //   new Error(StorageErrors.NotFoundCredentialForRemove)
-  // );
+  // remove credential error
+  await expect(credentialWallet.remove('unknowId')).rejects.toThrow(
+    new Error(StorageErrors.NotFoundCredentialForRemove)
+  );
 
-  // await credentialWallet.remove('test1');
-  // const finalList = await credentialWallet.list();
-  // expect(finalList.length).toBe(2);
+  await credentialWallet.remove('test1');
+  const finalList = await credentialWallet.list();
+  expect(finalList.length).toBe(2);
 };
 
 describe('credential-wallet', () => {
