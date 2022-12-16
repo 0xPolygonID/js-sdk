@@ -184,7 +184,10 @@ describe('identity', () => {
       },
       expiration: 12345678888
     };
-    const issuerCred = await wallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/',{withPublish:false,withRHS:"http://rhs.node"});
+    const issuerCred = await wallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+      withPublish: false,
+      withRHS: 'http://rhs.node'
+    });
     console.log(JSON.stringify(issuerCred));
   });
 });

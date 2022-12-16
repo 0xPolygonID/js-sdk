@@ -30,8 +30,7 @@ export interface TreesModel {
   claimsTree: Merkletree;
   revocationTree: Merkletree;
   rootsTree: Merkletree;
-  state:Hash;
-
+  state: Hash;
 }
 
 export enum NodeType {
@@ -78,7 +77,6 @@ export function isIssuerGenesis(
   issuer: string,
   proof: BJJSignatureProof2021 | Iden3SparseMerkleTreeProof
 ): boolean {
-
   const did = DID.parse(issuer);
   const arr = BytesHelper.hexToBytes(proof.issuerData.state.value);
   const stateBigInt = BytesHelper.bytesToInt(arr);
@@ -87,7 +85,6 @@ export function isIssuerGenesis(
 }
 
 export function isGenesisStateId(id: bigint, state: bigint, type: Uint8Array): boolean {
-
   const idFromState = Id.idGenesisFromIdenState(type, state);
 
   if (id.toString() !== idFromState.bigInt().toString()) {

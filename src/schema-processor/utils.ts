@@ -1,6 +1,6 @@
 import { Hex } from '@iden3/js-crypto';
 import { BytesHelper, checkBigIntInField, SchemaHash } from '@iden3/js-iden3-core';
-import {keccak256} from '@lumeweb/js-sha3-browser';
+import { keccak256 } from '@lumeweb/js-sha3-browser';
 
 const errSlotsOverflowMsg = 'slots overflow';
 // SwapEndianness swaps the endianness of the value encoded in buf. If buf is
@@ -33,8 +33,7 @@ export function checkDataInField(data: Uint8Array): boolean {
 
 // CreateSchemaHash computes schema hash from schemaID
 export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
-
-  const  sHash = Hex.decodeString( keccak256(schemaId))
+  const sHash = Hex.decodeString(keccak256(schemaId));
 
   return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
 };

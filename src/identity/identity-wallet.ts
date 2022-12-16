@@ -439,10 +439,8 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   async createMtpProofForCredential(credential: W3CCredential, issuerDID: DID, rhsURL: string) {
-    
-
     // TODO : this is an expiremental method
-   
+
     const coreClaim = await credential.getCoreClaimFromProof(ProofType.BJJSignature);
     await this._credentialWallet.save(credential);
 

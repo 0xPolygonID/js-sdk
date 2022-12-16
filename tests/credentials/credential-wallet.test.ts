@@ -157,7 +157,7 @@ const credentialFlow = async (storage: IDataStorage) => {
 };
 
 describe('credential-wallet', () => {
-  it('run in memory with 3 credential',  async () => {
+  it('run in memory with 3 credential', async () => {
     const storage = {
       credential: new InMemoryCredentialStorage()
     } as unknown as IDataStorage;

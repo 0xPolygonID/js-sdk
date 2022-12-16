@@ -84,15 +84,10 @@ export class CredentialWallet implements ICredentialWallet {
       return (await axios.get<RevocationStatus>(cred.credentialStatus.id)).data;
     }
 
-    
     if (cred.credentialStatus?.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
       const rhs = new RevocationService();
       try {
-        return await rhs.getStatusFromRHS(
-          cred,
-          this._storage.states,
-          cred.credentialStatus.id
-        );
+        return await rhs.getStatusFromRHS(cred, this._storage.states, cred.credentialStatus.id);
       } catch (e) {
         console.error(e);
         const status = cred.credentialStatus as RHSCredentialStatus;
