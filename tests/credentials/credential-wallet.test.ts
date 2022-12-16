@@ -1,4 +1,3 @@
-import { IRevocationService } from './../../src/credentials/revocation';
 import { IDataStorage } from './../../src/storage/interfaces/data-storage';
 import { CredentialWallet } from '../../src/credentials';
 import { ProofQuery, W3CCredential } from '../../src/schema-processor';

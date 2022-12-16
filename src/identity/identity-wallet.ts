@@ -13,7 +13,7 @@ import {
   SchemaHash
 } from '@iden3/js-iden3-core';
 import { Hex, poseidon, PublicKey, Signature } from '@iden3/js-crypto';
-import { Data, ElemBytes, Entry, hashElems, ZERO_HASH } from '@iden3/js-merkletree';
+import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import {} from '@iden3/js-iden3-core';
 
 import { subjectPositionIndex } from './common';
@@ -23,7 +23,6 @@ import {
   Iden3SparseMerkleTreeProof,
   ProofType,
   Schema,
-  CredentialStatusType,
   MerkleTreeProofWithTreeState,
   Parser,
   CoreClaimOptions
@@ -38,9 +37,8 @@ import {
   MerklizedRootPosition,
   SubjectPosition
 } from '../verifiable';
-import { MTProof, TreeState } from '../circuits';
 import { ClaimRequest, ICredentialWallet } from '../credentials';
-import { RevocationService, TreesModel } from '../credentials/revocation';
+import { pushHashesToRHS, TreesModel } from '../credentials/revocation';
 
 // IdentityStatus represents type for state Status
 export enum IdentityStatus {
@@ -462,8 +460,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     issuerTreeState = await this.getDIDTreeState(issuerDID);
 
-    const rhs = new RevocationService();
-    rhs.pushHashesToRHS(issuerTreeState.state, issuerTreeState, rhsURL);
+    pushHashesToRHS(issuerTreeState.state, issuerTreeState, rhsURL);
 
     await this._storage.identity.saveIdentity({
       identifier: issuerDID.toString(),

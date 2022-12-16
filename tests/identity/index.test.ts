@@ -1,4 +1,3 @@
-import { IRevocationService, RevocationService } from './../../src/credentials/revocation';
 import { IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -16,7 +15,7 @@ describe('identity', () => {
   let wallet: IdentityWallet;
   let dataStorage: IDataStorage;
 
-  let mockStateStorage = {
+  const mockStateStorage = {
     getLatestStateById: jest.fn(async (issuerId: bigint) => {
       return { id: BigInt(0), state: BigInt(0) } as StateInfo;
     })
@@ -173,7 +172,7 @@ describe('identity', () => {
       seedPhraseUser
     );
 
-    var claimReq: ClaimRequest = {
+    const claimReq: ClaimRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',

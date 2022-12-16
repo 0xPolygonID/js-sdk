@@ -2,7 +2,7 @@ import { Merkletree } from '@iden3/js-merkletree';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/mt';
 
 export interface IMerkleTreeStorage {
-  createIdentityMerkleTrees(identifier?: string): Promise<IdentityMerkleTreeMetaInformation[]>;
+  createIdentityMerkleTrees(identifier: string): Promise<IdentityMerkleTreeMetaInformation[]>;
 
   addToMerkleTree(
     identifier: string,

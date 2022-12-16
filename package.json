@@ -65,11 +65,11 @@
     "webpack-dev-server": "^4.11.1"
   },
   "dependencies": {
-    "@iden3/js-crypto": "file:../js-crypto",
+    "@iden3/js-crypto": "git@github.com:iden3/js-crypto.git",
     "@iden3/js-iden3-auth": "^0.1.3-intermediate",
-    "@iden3/js-iden3-core": "file:../js-iden3-core",
-    "@iden3/js-jwz": "file:../js-jwz",
-    "@iden3/js-merkletree": "file:../js-merkletree",
+    "@iden3/js-iden3-core": "git@github.com:iden3/js-iden3-core.git",
+    "@iden3/js-jwz": "git@github.com:iden3/js-jwz.git",
+    "@iden3/js-merkletree": "git@github.com:iden3/js-merkletree.git",
     "assert": "^2.0.0",
     "axios": "^1.2.1",
     "base58-js": "^1.0.4",

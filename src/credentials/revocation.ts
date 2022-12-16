@@ -10,7 +10,7 @@ import {
   NodeLeaf,
   Siblings
 } from '@iden3/js-merkletree';
-import { toLittleEndian, buildDIDType, Id } from '@iden3/js-iden3-core';
+import { buildDIDType, Id } from '@iden3/js-iden3-core';
 import { IStateStorage } from '../storage/interfaces';
 import {
   BJJSignatureProof2021,
@@ -23,8 +23,6 @@ import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
 import { NODE_TYPE_MIDDLE } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
-import { JsonRpcProvider } from '@ethersproject/providers';
-import { TreeState } from '../circuits';
 
 export interface TreesModel {
   claimsTree: Merkletree;
@@ -33,20 +31,11 @@ export interface TreesModel {
   state: Hash;
 }
 
-export enum NodeType {
+enum NodeType {
   Unknown = 0,
   Middle = 1,
   Leaf = 2,
   State = 3
-}
-
-export interface IRevocationService {
-  getStatusFromRHS(
-    cred: W3CCredential,
-    stateStorage: IStateStorage,
-    rhsURL: string
-  ): Promise<RevocationStatus>;
-  pushHashesToRHS(state: Hash, trees: TreesModel, rhsUrl: string): Promise<void>;
 }
 
 export class ProofNode {
@@ -94,154 +83,156 @@ export function isGenesisStateId(id: bigint, state: bigint, type: Uint8Array): b
   return true;
 }
 
-export class RevocationService implements IRevocationService {
-  async getStatusFromRHS(
-    cred: W3CCredential,
-    stateStorage: IStateStorage,
-    rhsURL: string
-  ): Promise<RevocationStatus> {
-    //todo: check what is ID should be bigint
-    if (!rhsURL) throw new Error('HTTP reverse hash service url is not specified');
+export async function getStatusFromRHS(
+  cred: W3CCredential,
+  stateStorage: IStateStorage,
+  rhsURL: string
+): Promise<RevocationStatus> {
+  //todo: check what is ID should be bigint
+  if (!rhsURL) throw new Error('HTTP reverse hash service url is not specified');
 
-    const did = DID.parse(cred.issuer);
-    const latestStateInfo = await stateStorage.getLatestStateById(did.id.bigInt());
-    const credProof = cred.proof![0] as Iden3SparseMerkleTreeProof; // TODO: find proof in other way. Auth BJJ credentials have only mtp proof
-    if (latestStateInfo?.state === BigInt(0) && isIssuerGenesis(cred.issuer, credProof)) {
-      return {
-        mtp: new Proof(),
-        issuer: {
-          state: credProof.issuerData.state.value,
-          revocationTreeRoot: credProof.issuerData.state.revocationTreeRoot,
-          rootOfRoots: credProof.issuerData.state.rootOfRoots,
-          claimsTreeRoot: credProof.issuerData.state.claimsTreeRoot
-        }
-      };
-    }
-    const hashedRevNonce = newHashFromBigInt(BigInt(cred?.credentialStatus?.revocationNonce ?? 0));
-    const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
-    return this.getNonRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, rhsURL);
-  }
-
-  private async getNonRevocationStatusFromRHS(
-    data: Hash,
-    issuerRoot: Hash,
-    rhsURL: string
-  ): Promise<RevocationStatus> {
-    const treeRoots = (await axios.get<NodeResponse>(`${rhsURL}/${issuerRoot.hex()}`)).data?.node;
-    if (treeRoots.children.length !== 3) {
-      throw new Error('state should has tree children');
-    }
-
-    const s = issuerRoot.hex();
-    const cTR = treeRoots.children[0].hex();
-    const rTR = treeRoots.children[1].hex();
-    const roTR = treeRoots.children[2].hex();
-
-    const rtrHashed = newHashFromString(rTR);
-    const nonRevProof = await this.rhsGenerateProof(rtrHashed, data, rhsURL);
-
+  const did = DID.parse(cred.issuer);
+  const latestStateInfo = await stateStorage.getLatestStateById(did.id.bigInt());
+  const credProof = cred.proof![0] as Iden3SparseMerkleTreeProof; // TODO: find proof in other way. Auth BJJ credentials have only mtp proof
+  if (latestStateInfo?.state === BigInt(0) && isIssuerGenesis(cred.issuer, credProof)) {
     return {
-      mtp: nonRevProof,
+      mtp: new Proof(),
       issuer: {
-        state: s,
-        claimsTreeRoot: cTR,
-        revocationTreeRoot: rTR,
-        rootOfRoots: roTR
+        state: credProof.issuerData.state.value,
+        revocationTreeRoot: credProof.issuerData.state.revocationTreeRoot,
+        rootOfRoots: credProof.issuerData.state.rootOfRoots,
+        claimsTreeRoot: credProof.issuerData.state.claimsTreeRoot
       }
     };
   }
+  const hashedRevNonce = newHashFromBigInt(BigInt(cred?.credentialStatus?.revocationNonce ?? 0));
+  const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
+  return getNonRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, rhsURL);
+}
 
-  private newProofFromData(existence: boolean, allSiblings: Hash[], nodeAux: NodeAux): Proof {
-    const p = new Proof();
-    p.existence = existence;
-    p.nodeAux = nodeAux;
-    p.depth = allSiblings.length;
-
-    for (let i = 0; i < allSiblings.length; i++) {
-      const sibling = allSiblings[i];
-      if (JSON.stringify(allSiblings[i]) !== JSON.stringify(ZERO_HASH)) {
-        setBitBigEndian(p.notEmpties, i);
-        p.siblings.push(sibling);
-      }
-    }
-    return p;
+async function getNonRevocationStatusFromRHS(
+  data: Hash,
+  issuerRoot: Hash,
+  rhsURL: string
+): Promise<RevocationStatus> {
+  const treeRoots = (await axios.get<NodeResponse>(`${rhsURL}/${issuerRoot.hex()}`)).data?.node;
+  if (treeRoots.children.length !== 3) {
+    throw new Error('state should has tree children');
   }
 
-  private async rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Promise<Proof> {
-    let exists: boolean;
-    const siblings: Hash[] = [];
-    let nodeAux: NodeAux;
+  const s = issuerRoot.hex();
+  const cTR = treeRoots.children[0].hex();
+  const rTR = treeRoots.children[1].hex();
+  const roTR = treeRoots.children[2].hex();
 
-    const mkProof = () => this.newProofFromData(exists, siblings, nodeAux);
+  const rtrHashed = newHashFromString(rTR);
+  const nonRevProof = await rhsGenerateProof(rtrHashed, data, rhsURL);
 
-    let nextKey = treeRoot;
-    for (let depth = 0; depth < key.bytes.length * 8; depth++) {
-      if (nextKey.bytes.every((i) => i === 0)) {
-        return mkProof();
-      }
-      const n = (await axios.get<NodeResponse>(`${rhsURL}/${nextKey.hex()}`)).data?.node;
+  return {
+    mtp: nonRevProof,
+    issuer: {
+      state: s,
+      claimsTreeRoot: cTR,
+      revocationTreeRoot: rTR,
+      rootOfRoots: roTR
+    }
+  };
+}
 
-      switch (n.nodeType()) {
-        case NODE_TYPE_LEAF:
-          if (key.bytes.every((b, index) => b === n.children[0][index])) {
-            exists = true;
-            return mkProof();
-          }
-          // We found a leaf whose entry didn't match hIndex
-          nodeAux = {
-            key: n.children[0],
-            value: n.children[1]
-          };
+async function newProofFromData(
+  existence: boolean,
+  allSiblings: Hash[],
+  nodeAux: NodeAux
+): Promise<Proof> {
+  const p = new Proof();
+  p.existence = existence;
+  p.nodeAux = nodeAux;
+  p.depth = allSiblings.length;
+
+  for (let i = 0; i < allSiblings.length; i++) {
+    const sibling = allSiblings[i];
+    if (JSON.stringify(allSiblings[i]) !== JSON.stringify(ZERO_HASH)) {
+      setBitBigEndian(p.notEmpties, i);
+      p.siblings.push(sibling);
+    }
+  }
+  return p;
+}
+
+async function rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Promise<Proof> {
+  let exists: boolean;
+  const siblings: Hash[] = [];
+  let nodeAux: NodeAux;
+
+  const mkProof = () => newProofFromData(exists, siblings, nodeAux);
+
+  let nextKey = treeRoot;
+  for (let depth = 0; depth < key.bytes.length * 8; depth++) {
+    if (nextKey.bytes.every((i) => i === 0)) {
+      return mkProof();
+    }
+    const n = (await axios.get<NodeResponse>(`${rhsURL}/${nextKey.hex()}`)).data?.node;
+
+    switch (n.nodeType()) {
+      case NODE_TYPE_LEAF:
+        if (key.bytes.every((b, index) => b === n.children[0][index])) {
+          exists = true;
           return mkProof();
-        case NODE_TYPE_MIDDLE:
-          if (testBit(key.bytes, depth)) {
-            nextKey = n.children[1];
-            siblings.push(n.children[0]);
-          } else {
-            nextKey = n.children[0];
-            siblings.push(n.children[1]);
-          }
-          break;
-        default:
-          throw new Error(`found unexpected node type in tree ${n.hash.hex()}`);
-      }
-    }
-
-    throw new Error('tree depth is too high');
-  }
-  async pushHashesToRHS(state: Hash, trees: TreesModel, rhsUrl: string): Promise<void> {
-    const nb = new NodesBuilder();
-
-    await this.addRoRNode(nb, trees);
-
-    // add new state node
-    if (!state.bytes.every((b) => b === 0)) {
-      nb.addProofNode(
-        new ProofNode(state, [
-          trees.revocationTree.root,
-          trees.rootsTree.root,
-          trees.claimsTree.root
-        ])
-      );
-    }
-
-    if (nb.nodes.length > 0) {
-      await this.saveNodes(nb.nodes, rhsUrl);
+        }
+        // We found a leaf whose entry didn't match hIndex
+        nodeAux = {
+          key: n.children[0],
+          value: n.children[1]
+        };
+        return mkProof();
+      case NODE_TYPE_MIDDLE:
+        if (testBit(key.bytes, depth)) {
+          nextKey = n.children[1];
+          siblings.push(n.children[0]);
+        } else {
+          nextKey = n.children[0];
+          siblings.push(n.children[1]);
+        }
+        break;
+      default:
+        throw new Error(`found unexpected node type in tree ${n.hash.hex()}`);
     }
   }
 
-  private async saveNodes(nodes: ProofNode[], nodeUrl: string): Promise<boolean> {
-    return (await (await axios.post(nodeUrl, nodes)).status) === 200;
+  throw new Error('tree depth is too high');
+}
+export async function pushHashesToRHS(
+  state: Hash,
+  trees: TreesModel,
+  rhsUrl: string
+): Promise<void> {
+  const nb = new NodesBuilder();
+
+  await addRoRNode(nb, trees);
+
+  // add new state node
+  if (!state.bytes.every((b) => b === 0)) {
+    nb.addProofNode(
+      new ProofNode(state, [trees.revocationTree.root, trees.rootsTree.root, trees.claimsTree.root])
+    );
   }
 
-  addRoRNode(nb: NodesBuilder, trees: TreesModel): Promise<void> {
-    //todo: root
-    const currentRootsTree = trees.rootsTree;
-
-    const claimsTree = trees.claimsTree;
-    //to
-    return nb.addKey(currentRootsTree, claimsTree.root.bigInt());
+  if (nb.nodes.length > 0) {
+    await saveNodes(nb.nodes, rhsUrl);
   }
+}
+
+async function saveNodes(nodes: ProofNode[], nodeUrl: string): Promise<boolean> {
+  return (await (await axios.post(nodeUrl, nodes)).status) === 200;
+}
+
+function addRoRNode(nb: NodesBuilder, trees: TreesModel): Promise<void> {
+  //todo: root
+  const currentRootsTree = trees.rootsTree;
+
+  const claimsTree = trees.claimsTree;
+  //to
+  return nb.addKey(currentRootsTree, claimsTree.root.bigInt());
 }
 
 class NodesBuilder {
