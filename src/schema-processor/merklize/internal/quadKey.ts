@@ -1,5 +1,5 @@
 import { Iri } from 'jsonld/jsonld-spec';
-import { NodeId } from './nodeId';
+import { NodeId } from './node';
 
 import { Quad } from 'n3';
 

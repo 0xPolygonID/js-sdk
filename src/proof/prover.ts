@@ -1,8 +1,9 @@
+import { ZKProof } from '@iden3/js-jwz';
 import * as snarkjs from 'snarkjs';
+import { CircuitId } from '../circuits';
 import { witnessBuilder } from './witness_calculator';
 
 /* eslint-disable no-console */
-import { FullProof } from './models';
 
 // ProverConfig represents prover server config
 export interface ProverConfig {
@@ -13,13 +14,13 @@ export interface ProverConfig {
 export class ProverService {
   constructor(private readonly _config: ProverConfig) {}
 
-  async verify(zkp: FullProof, circuitName: CircuitId): Promise<boolean> {
+  async verify(zkp: ZKProof, circuitName: CircuitId): Promise<boolean> {
     try {
       const verKey: Uint8Array = await this._config.circuitsLoader.loadVerificationKey(circuitName);
 
       await snarkjs.groth16.verify(
         JSON.parse(new TextDecoder().decode(verKey)),
-        zkp.pubSignals,
+        zkp.pub_signals,
         zkp.proof
       );
       return true;
@@ -30,7 +31,7 @@ export class ProverService {
   }
 
   // Generate calls prover-server for proof generation
-  async generate(inputs: Uint8Array, circuitId: CircuitId): Promise<FullProof> {
+  async generate(inputs: Uint8Array, circuitId: CircuitId): Promise<ZKProof> {
     try {
       const wasm: Uint8Array = await this._config.circuitsLoader.loadWasm(circuitId);
       const witnessCalculator = await witnessBuilder(wasm);
@@ -45,7 +46,7 @@ export class ProverService {
 
       return {
         proof: proof,
-        pubSignals: publicSignals
+        pub_signals: publicSignals
       };
     } catch (e) {
       console.log(e);

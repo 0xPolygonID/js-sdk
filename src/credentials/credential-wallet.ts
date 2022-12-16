@@ -1,5 +1,3 @@
-import { IRevocationService } from './revocation';
-
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 
 import axios from 'axios';
@@ -19,14 +17,15 @@ import {
   Schema
 } from '../schema-processor';
 import * as uuid from 'uuid';
+import { getStatusFromRHS } from './revocation';
 
 export interface ClaimRequest {
   credentialSchema: string;
   type: string;
   credentialSubject: { [key: string]: any };
   expiration?: number;
-  version: number;
-  revNonce: number;
+  version?: number;
+  revNonce?: number;
   subjectPosition?: SubjectPosition;
   merklizedRootPosition?: MerklizedRootPosition;
 }
@@ -53,7 +52,7 @@ export interface ICredentialWallet {
 }
 
 export class CredentialWallet implements ICredentialWallet {
-  constructor(private readonly _storage: IDataStorage, private readonly _rhs: IRevocationService) {}
+  constructor(private readonly _storage: IDataStorage) {}
 
   async getAuthBJJCredential(did: DID): Promise<W3CCredential> {
     // filter where issuer of auth credential is current did
@@ -64,7 +63,7 @@ export class CredentialWallet implements ICredentialWallet {
       allowedIssuers: [did.toString()]
     });
 
-    if (authBJJCredsOfIssuer.length == 0) {
+    if (!authBJJCredsOfIssuer.length) {
       throw new Error('no auth credentials found');
     }
 
@@ -86,7 +85,7 @@ export class CredentialWallet implements ICredentialWallet {
 
     if (cred.credentialStatus?.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
       try {
-        return await this._rhs.getStatusFromRHS(cred, this._storage.states);
+        return await getStatusFromRHS(cred, this._storage.states, cred.credentialStatus.id);
       } catch (e) {
         console.error(e);
         const status = cred.credentialStatus as RHSCredentialStatus;

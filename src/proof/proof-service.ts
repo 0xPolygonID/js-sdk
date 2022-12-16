@@ -3,7 +3,7 @@ import { BJJSignatureProof } from './../circuits/models';
 import { VerifiableConstants } from '../verifiable/constants';
 import { KmsKeyId } from '../kms/kms';
 /* eslint-disable no-console */
-import { FullProof, ProofRequest } from './models';
+import { ProofRequest } from './models';
 import { getUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { Proof } from '@iden3/js-merkletree';
 import {
@@ -12,7 +12,6 @@ import {
   CircuitId,
   TreeState,
   strMTHex,
-  StateInRelayCredentialHash,
   Query,
   factoryComparer
 } from '../circuits';

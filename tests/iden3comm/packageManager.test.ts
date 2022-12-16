@@ -9,11 +9,10 @@ import {
   mockVerifyState,
   ProvingMethodGroth16Auth
 } from '../../src/iden3comm/mock/proving';
-import { proving, Token } from '@iden3/js-jwz';
+import { proving, Token, ProvingMethodAlg } from '@iden3/js-jwz';
 import { bytesToString, stringToBytes } from '../../src/iden3comm/utils';
 import { circuits } from '../../src/iden3comm/mock/jsCircuits';
 import { Id } from '@iden3/js-iden3-core';
-import { ProvingMethodAlg } from '@iden3/js-jwz/src/proving';
 
 describe('tests packageManager', () => {
   it('tests package manager with zkp  packer', async () => {

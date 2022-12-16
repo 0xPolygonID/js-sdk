@@ -1,5 +1,5 @@
 import { Id } from '@iden3/js-iden3-core';
-import { proving, Token } from '@iden3/js-jwz';
+import { proving, Token, ProvingMethodAlg } from '@iden3/js-jwz';
 import { circuits } from '../../src/iden3comm/mock/jsCircuits';
 import { bytesToString, stringToBytes } from '../../src/iden3comm/utils';
 import { AuthDataPrepareHandlerFunc, StateVerificationHandlerFunc } from '../../src/iden3comm';
@@ -9,10 +9,9 @@ import {
   mockVerifyState,
   ProvingMethodGroth16Auth
 } from '../../src/iden3comm/mock/proving';
-import { ProvingMethodAlg } from '@iden3/js-jwz/src/proving';
 
 describe('zkp packer tests', () => {
-  it.only('test zkp packer', async () => {
+  it('test zkp packer', async () => {
     const keys = new Map();
     const emptyBuff = new ArrayBuffer(0);
     keys.set('auth', new Uint8Array(emptyBuff));

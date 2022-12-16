@@ -22,7 +22,7 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
   }
 
   async createIdentityMerkleTrees(
-    identifier?: string
+    identifier: string
   ): Promise<IdentityMerkleTreeMetaInformation[]> {
     if (!identifier) {
       identifier = `${uuid.v4()}`;
@@ -55,7 +55,11 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
     const treeWithMeta = this._data[identifier].find(
       (treeWithInfo) => treeWithInfo.metaInfo.type == mtType
     );
-    return treeWithMeta!.tree;
+    if (!treeWithMeta) {
+      throw new Error(`Merkle tree not found for identifier ${identifier} and type ${mtType}`);
+    }
+
+    return treeWithMeta.tree;
   }
 
   async addToMerkleTree(

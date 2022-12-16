@@ -1,5 +1,4 @@
-import { ZKProof, ProvingMethodAlg } from '@iden3/js-jwz/src/proving';
-import { ProvingMethod } from '@iden3/js-jwz';
+import { ProvingMethod, ProvingMethodAlg, ZKProof } from '@iden3/js-jwz';
 import { Id } from '@iden3/js-iden3-core';
 import { CircuitID } from './jsCircuits';
 

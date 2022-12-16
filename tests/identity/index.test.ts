@@ -1,21 +1,25 @@
-/* eslint-disable no-console */
-import { IRevocationService } from './../../src/credentials/revocation';
 import { IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { MerkleTreeType } from '../../src/storage/entities/mt';
-import { IDataStorage } from '../../src/storage/interfaces';
+import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import {
   InMemoryCredentialStorage,
   InMemoryIdentityStorage,
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
-import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain';
-import { CredentialWallet } from '../../src/credentials';
+import { ClaimRequest, CredentialWallet } from '../../src/credentials';
+import { StateInfo } from '../../src/storage/entities/state';
 
 describe('identity', () => {
   let wallet: IdentityWallet;
   let dataStorage: IDataStorage;
+
+  const mockStateStorage = {
+    getLatestStateById: jest.fn(async (issuerId: bigint) => {
+      return { id: BigInt(0), state: BigInt(0) } as StateInfo;
+    })
+  } as IStateStorage;
   beforeEach(async () => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
@@ -26,9 +30,9 @@ describe('identity', () => {
       credential: new InMemoryCredentialStorage(),
       identity: new InMemoryIdentityStorage(),
       mt: new InMemoryMerkleTreeStorage(40),
-      states: new EthStateStorage(defaultEthConnectionConfig)
+      states: mockStateStorage
     };
-    const credWallet = new CredentialWallet(dataStorage, {} as IRevocationService);
+    const credWallet = new CredentialWallet(dataStorage);
     wallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
   it('createIdentity', async () => {
@@ -127,5 +131,62 @@ describe('identity', () => {
     const proof = await wallet.generateNonRevocationMtp(did, credential);
 
     expect(proof.proof.existence).toBe(false);
+  });
+
+  it('generateNonRevProof', async () => {
+    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
+
+    const { did, credential } = await wallet.createIdentity(
+      'http://metamask.com/',
+      'http://rhs.com/node',
+      seedPhrase
+    );
+    expect(did.toString()).toBe(
+      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+    );
+
+    const proof = await wallet.generateNonRevocationMtp(did, credential);
+
+    expect(proof.proof.existence).toBe(false);
+  });
+
+  it('issueCredential', async () => {
+    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
+      'seedseedseedseedseedseedseedseed'
+    );
+    const seedPhraseUser: Uint8Array = new TextEncoder().encode('userseedseedseedseedseedseeduser');
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity(
+      'http://metamask.com/',
+      'http://rhs.com/node',
+      seedPhraseIssuer
+    );
+
+    expect(issuerDID.toString()).toBe(
+      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+    );
+
+    const { did: userDID, credential: userAuthCredential } = await wallet.createIdentity(
+      'http://metamask.com/',
+      'http://rhs.com/node',
+      seedPhraseUser
+    );
+
+    const claimReq: ClaimRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.toString(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 12345678888
+    };
+    const issuerCred = await wallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+      withPublish: false,
+      withRHS: 'http://rhs.node'
+    });
+    console.log(JSON.stringify(issuerCred));
   });
 });

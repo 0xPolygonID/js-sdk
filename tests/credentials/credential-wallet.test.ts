@@ -1,4 +1,3 @@
-import { IRevocationService } from './../../src/credentials/revocation';
 import { IDataStorage } from './../../src/storage/interfaces/data-storage';
 import { CredentialWallet } from '../../src/credentials';
 import { ProofQuery, W3CCredential } from '../../src/schema-processor';
@@ -8,7 +7,7 @@ import { InMemoryCredentialStorage } from '../../src/storage/memory';
 import { cred1, cred2, cred3 } from './mock';
 
 const credentialFlow = async (storage: IDataStorage) => {
-  const credentialWallet = new CredentialWallet(storage, {} as IRevocationService);
+  const credentialWallet = new CredentialWallet(storage);
 
   await credentialWallet.saveAll([cred1, cred2]);
 
@@ -157,7 +156,7 @@ const credentialFlow = async (storage: IDataStorage) => {
 };
 
 describe('credential-wallet', () => {
-  it('run in memory with 3 credential',  async () => {
+  it('run in memory with 3 credential', async () => {
     const storage = {
       credential: new InMemoryCredentialStorage()
     } as unknown as IDataStorage;

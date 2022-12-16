@@ -38,7 +38,7 @@ export class EthStateStorage implements IStateStorage {
     this.stateContract = new ethers.Contract(this.ethConfig.contractAddress, abi, provider);
   }
 
-  async getLatestStateById(issuerId: string): Promise<StateInfo> {
+  async getLatestStateById(issuerId: bigint): Promise<StateInfo> {
     return await this.stateContract.getStateInfoById(issuerId);
   }
 }

@@ -3,7 +3,7 @@ import { Hasher } from '../types';
 import { DEFAULT_HASHER } from '../constants';
 import { NamedNode, Quad, Variable } from 'n3';
 import { Path } from './path';
-import { NodeId } from './nodeId';
+import { NodeId } from './node';
 
 import { getQuadKey, QuadKey } from './quadKey';
 
