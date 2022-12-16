@@ -9,7 +9,7 @@ import { getJsonLdDocLoader } from './documentLoaders/dlJSONLD';
 import { getQuadKey } from './internal/quadKey';
 import { newRelationship } from './internal/relationship';
 import { Merkletree, Hash, ZERO_HASH, Proof } from '@iden3/js-merkletree';
-import { NodeId } from './internal/nodeId';
+import { NodeId } from './internal/node';
 
 export class Merkelizer {
   constructor(
