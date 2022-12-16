@@ -73,9 +73,9 @@ export interface CredentialIssueOptions {
 
 export interface IIdentityWallet {
   createIdentity(
-    seed: Uint8Array,
     hostUrl: string,
-    rhsUrl: string
+    rhsUrl: string,
+    seed?: Uint8Array
   ): Promise<{ did: DID; credential: W3CCredential }>;
   createProfile(did: DID, nonce: number, verifier: string): Promise<DID>;
   generateKey(keyType: KmsKeyType): Promise<KmsKeyId>;
@@ -95,10 +95,18 @@ export class IdentityWallet implements IIdentityWallet {
     private readonly _credentialWallet: ICredentialWallet
   ) {}
 
-  async createIdentity(seed: Uint8Array, hostUrl: string, rhsUrl: string) {
+  async createIdentity(
+    hostUrl: string,
+    rhsUrl: string,
+    seed?: Uint8Array
+  ): Promise<{ did: DID; credential: W3CCredential }> {
     const tmpIdentifier = uuid.v4();
 
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
+
+    if (!seed) {
+      seed = getRandomBytes(32);
+    }
 
     const keyID = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
 

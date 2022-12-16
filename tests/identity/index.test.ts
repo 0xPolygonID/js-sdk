@@ -34,9 +34,9 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      seedPhrase,
       'http://metamask.com/',
-      'http://rhs.com/node'
+      'http://rhs.com/node',
+      seedPhrase
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
@@ -49,15 +49,15 @@ describe('identity', () => {
       MerkleTreeType.Claims
     );
 
-    expect(claimsTree!.root.bigInt()).not.toBe(0);
+    expect(claimsTree?.root.bigInt()).not.toBe(0);
   });
   it('createProfile', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      seedPhrase,
       'http://metamask.com/',
-      'http://rhs.com/node'
+      'http://rhs.com/node',
+      seedPhrase
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
@@ -77,9 +77,9 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      seedPhrase,
       'http://metamask.com/',
-      'http://rhs.com/node'
+      'http://rhs.com/node',
+      seedPhrase
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
@@ -99,9 +99,9 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      seedPhrase,
       'http://metamask.com/',
-      'http://rhs.com/node'
+      'http://rhs.com/node',
+      seedPhrase
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
@@ -115,9 +115,9 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      seedPhrase,
       'http://metamask.com/',
-      'http://rhs.com/node'
+      'http://rhs.com/node',
+      seedPhrase
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
@@ -132,9 +132,9 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      seedPhrase,
       'http://metamask.com/',
-      'http://rhs.com/node'
+      'http://rhs.com/node',
+      seedPhrase
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
@@ -152,9 +152,10 @@ describe('identity', () => {
     const seedPhraseUser: Uint8Array = new TextEncoder().encode('userseedseedseedseedseedseeduser');
 
     const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity(
-      seedPhraseIssuer,
       'http://metamask.com/',
-      'http://rhs.com/node'
+      'http://rhs.com/node',
+      seedPhraseIssuer
+
     );
 
     expect(issuerDID.toString()).toBe(
@@ -162,9 +163,9 @@ describe('identity', () => {
     );
 
     const { did: userDID, credential: userAuthCredential } = await wallet.createIdentity(
-      seedPhraseUser,
       'http://metamask.com/',
-      'http://rhs.com/node'
+      'http://rhs.com/node',
+      seedPhraseUser
     );
 
     var claimReq: ClaimRequest = {
