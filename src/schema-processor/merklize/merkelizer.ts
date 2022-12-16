@@ -8,13 +8,13 @@ import { canonize, JsonLdDocument } from 'jsonld';
 import { getJsonLdDocLoader } from './documentLoaders/dlJSONLD';
 import { getQuadKey } from './internal/quadKey';
 import { newRelationship } from './internal/relationship';
-import { NodeID } from './internal/nodeID';
 import { Merkletree, Hash, ZERO_HASH, Proof } from '@iden3/js-merkletree';
+import { NodeId } from './internal/nodeId';
 
 export class Merkelizer {
   constructor(
-    public srcDoc: string = null,
-    public mt: Merkletree = null,
+    public srcDoc: string | null = null,
+    public mt: Merkletree | null = null,
     public hasher: Hasher = DEFAULT_HASHER,
     public entries: Map<string, RdfEntry> = new Map()
   ) {
@@ -26,9 +26,9 @@ export class Merkelizer {
 
   async proof(p: Path): Promise<{ proof: Proof; value: Value }> {
     const kHash = await p.mtEntry();
-    const { proof } = await this.mt.generateProof(kHash, ZERO_HASH);
+    const { proof } = await this.mt!.generateProof(kHash, ZERO_HASH);
 
-    let value: Value;
+    let value: Value = '';
 
     if (proof.existence) {
       if (!this.entries.has(kHash.toString())) {
@@ -37,8 +37,8 @@ export class Merkelizer {
 
       const entry = this.entries.get(kHash.toString());
 
-      validateValue(entry.value);
-      value = entry.value as Value;
+      validateValue(entry!.value);
+      value = entry!.value as Value;
     }
 
     return { proof, value };
@@ -51,13 +51,13 @@ export class Merkelizer {
   }
 
   async resolveDocPath(path: string): Promise<Path> {
-    const realPath = await newPathFromDocument(null, this.srcDoc, path);
+    const realPath = await newPathFromDocument(null, this.srcDoc!, path);
     realPath.hasher = this.hasher;
     return realPath;
   }
 
   root(): Hash {
-    return this.mt.root;
+    return this.mt!.root;
   }
 }
 export const getDataSet = async (doc: JsonLdDocument): Promise<Quad> => {
@@ -72,7 +72,7 @@ export const getDataSet = async (doc: JsonLdDocument): Promise<Quad> => {
 
 export const merkelizeJSONLD = async (docStr: string): Promise<Merkelizer> => {
   const mz = new Merkelizer(docStr);
-  const dataset = await getDataSet(JSON.parse(mz.srcDoc));
+  const dataset = await getDataSet(JSON.parse(mz.srcDoc!));
   const entries = await entriesFromRDFHasher(dataset, DEFAULT_HASHER);
 
   for (const e of entries) {
@@ -80,7 +80,7 @@ export const merkelizeJSONLD = async (docStr: string): Promise<Merkelizer> => {
     mz.entries.set(k.toString(), e);
   }
 
-  await addEntriesToMerkleTree(mz.mt, entries);
+  await addEntriesToMerkleTree(mz.mt!, entries);
   return mz;
 };
 
@@ -91,7 +91,7 @@ export const countEntries = (nodes: Array<Quad>): Map<string, number> => {
     if (!key) {
       throw new Error('error: empty quad key');
     }
-    const c = res.has(key.toString()) ? res.get(key.toString()) : 0;
+    const c = res.has(key.toString()) ? res.get(key.toString()) ?? 0 : 0;
     res.set(key.toString(), c + 1);
   });
 
@@ -160,7 +160,7 @@ export const entriesFromRDFHasher = async (
         break;
       case 'BlankNode':
         // eslint-disable-next-line no-case-declarations
-        const nID = new NodeID(q.object);
+        const nID = new NodeId(q.object);
         // eslint-disable-next-line no-case-declarations
         const p = rs.getParent(nID);
         if (p) {
@@ -184,7 +184,7 @@ export const entriesFromRDFHasher = async (
         // leave idx nil: only one element, do not consider it as an array
         break;
       default:
-        idx = seenCount.get(qKey.toString()) ? seenCount.get(qKey.toString()) : 0;
+        idx = seenCount.get(qKey.toString()) ? seenCount.get(qKey.toString()) ?? 0 : 0;
         seenCount.set(qKey.toString(), idx + 1);
     }
     e.key = rs.path(q, idx);

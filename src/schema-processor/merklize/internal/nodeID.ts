@@ -1,4 +1,4 @@
-export class NodeID {
+export class NodeId {
   tp: string;
   val: string;
   constructor(n: { termType: string; value: string }) {
@@ -12,11 +12,12 @@ export class NodeID {
     this.tp = n.termType;
     this.val = n.value;
   }
+
   toString() {
     return JSON.stringify({ tp: this.tp, val: this.val });
   }
 
-  static parseNodeID(str: string): NodeID {
+  static parseNodeID(str: string): NodeId {
     const obj = JSON.parse(str);
     if (!(obj.tp && obj.val)) {
       throw new Error('error: prased object is not of type NodeID');
@@ -28,6 +29,6 @@ export class NodeID {
       throw new Error(`error: expected 'val' type tp be string, found ${typeof obj.val}`);
     }
 
-    return new NodeID({ termType: obj.tp, value: obj.val });
+    return new NodeId({ termType: obj.tp, value: obj.val });
   }
 }

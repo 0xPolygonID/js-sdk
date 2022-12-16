@@ -1,1 +1,1 @@
-export interface IDataStorage {}
+export * from './interfaces';

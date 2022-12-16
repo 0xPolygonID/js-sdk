@@ -1,9 +1,10 @@
 import { Iri } from 'jsonld/jsonld-spec';
-import { NodeID } from './nodeID';
+import { NodeId } from './nodeId';
+
 import { Quad } from 'n3';
 
 export class QuadKey {
-  constructor(public subjectID: NodeID, public predicate: Iri) {}
+  constructor(public subjectID: NodeId, public predicate: Iri) {}
 
   toString(): string {
     return JSON.stringify({ subjecID: this.subjectID, val: this.predicate });
@@ -18,7 +19,7 @@ export class QuadKey {
       throw new Error(`error: expected 'predicate' type tp be string, found ${typeof obj.tp}`);
     }
 
-    return new QuadKey(NodeID.parseNodeID(obj.subjectID), obj.predicate);
+    return new QuadKey(NodeId.parseNodeID(obj.subjectID), obj.predicate);
   }
 }
 
@@ -27,7 +28,7 @@ export const getQuadKey = (q: Quad): QuadKey => {
     throw new Error('error: quad is empty');
   }
 
-  const subjectID = new NodeID(q.subject);
+  const subjectID = new NodeId(q.subject);
 
   const p = q.predicate;
   if (!p) {

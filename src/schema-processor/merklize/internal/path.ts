@@ -53,7 +53,7 @@ export class Path {
       const p = this.parts[i];
       if (typeof p === 'string') {
         const b = new TextEncoder().encode(p);
-        keyParts[i] = await h.HashBytes(b);
+        keyParts[i] = await h.hashBytes(b);
       } else if (typeof p === 'number') {
         // TODO: convert BigInt into 64 bit
         keyParts[i] = BigInt.asIntN(64, BigInt(p));
@@ -62,7 +62,7 @@ export class Path {
       }
     }
 
-    return await h.Hash(keyParts);
+    return await h.hash(keyParts);
   }
 
   async pathFromContext(docStr: string, path: string): Promise<void> {

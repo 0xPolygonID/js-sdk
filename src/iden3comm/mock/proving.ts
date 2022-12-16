@@ -1,4 +1,3 @@
-import { Bytes } from '../types';
 import { ZKProof, ProvingMethodAlg } from '@iden3/js-jwz/src/proving';
 import { ProvingMethod } from '@iden3/js-jwz';
 import { Id } from '@iden3/js-iden3-core';
@@ -15,13 +14,13 @@ export class ProvingMethodGroth16Auth implements ProvingMethod {
 
   // Verify return no error for any proof
   //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async verify(messageHash: Bytes, proof: ZKProof, verificationKey: Bytes) {
+  async verify(messageHash: Uint8Array, proof: ZKProof, verificationKey: Uint8Array) {
     return true;
   }
 
   // Prove generates proof using auth circuit and groth16 alg, checks that proven message hash is set as a part of circuit specific inputs
   //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async prove(inputs: Bytes, provingKey: Bytes, wasm: Bytes) {
+  async prove(inputs: Uint8Array, provingKey: Uint8Array, wasm: Uint8Array) {
     return {
       proof: {
         pi_a: new Array<string>(),
@@ -39,7 +38,7 @@ export class ProvingMethodGroth16Auth implements ProvingMethod {
 }
 
 export const mockPrepareAuthInputs = (
-  hash: Bytes, //eslint-disable-line @typescript-eslint/no-unused-vars
+  hash: Uint8Array, //eslint-disable-line @typescript-eslint/no-unused-vars
   id: Id, //eslint-disable-line @typescript-eslint/no-unused-vars
   circuitID: CircuitID //eslint-disable-line @typescript-eslint/no-unused-vars
 ) => {
@@ -52,6 +51,4 @@ export const mockPrepareAuthInputs = (
 export const mockVerifyState = async (
   id: CircuitID, //eslint-disable-line @typescript-eslint/no-unused-vars
   signals: Array<string> //eslint-disable-line @typescript-eslint/no-unused-vars
-) => {
-  return true;
-};
+) => true;

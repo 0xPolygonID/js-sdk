@@ -1,7 +1,6 @@
 import {
   AuthDataPrepareFunc,
   BasicMessage,
-  Bytes,
   IPacker,
   MediaType,
   StateVerificationFunc,
@@ -25,7 +24,7 @@ export const MEDIA_TYPE_ZKP_MESSAGE: MediaType = 'application/iden3-zkp-json';
 export class AuthDataPrepareHandlerFunc {
   constructor(public readonly authDataPrepareFunc: AuthDataPrepareFunc) {}
 
-  prepare(hash: Bytes, id: Id, circuitID: CircuitID) {
+  prepare(hash: Uint8Array, id: Id, circuitID: CircuitID) {
     return this.authDataPrepareFunc(hash, id, circuitID);
   }
 }
@@ -43,16 +42,16 @@ class ZKPPacker implements IPacker {
     public provingMethod: ProvingMethod,
     public authDataPreparer: AuthDataPrepareHandlerFunc,
     public stateVerifier: StateVerificationHandlerFunc,
-    public provingKey: Bytes,
-    public wasm: Bytes,
-    public verificationKeys: Map<CircuitID, Bytes>
+    public provingKey: Uint8Array,
+    public wasm: Uint8Array,
+    public verificationKeys: Map<CircuitID, Uint8Array>
   ) {}
 
-  async pack(payload: Bytes, params: ZKPPackerParams): Promise<Bytes> {
+  async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
     const token = new Token(
       this.provingMethod,
       bytesToString(payload),
-      (hash: Bytes, circuitID: CircuitID) => {
+      (hash: Uint8Array, circuitID: CircuitID) => {
         return this.authDataPreparer.prepare(hash, params.senderID, circuitID);
       }
     );
@@ -61,7 +60,7 @@ class ZKPPacker implements IPacker {
     return stringToBytes(tokenStr);
   }
 
-  async unpack(envelope: Bytes): Promise<BasicMessage> {
+  async unpack(envelope: Uint8Array): Promise<BasicMessage> {
     const token = await Token.parse(bytesToString(envelope));
     const verificationKey = this.verificationKeys.get(token.circuitId);
     if (!verificationKey) {

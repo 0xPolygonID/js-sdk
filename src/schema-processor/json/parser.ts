@@ -1,4 +1,4 @@
-import { W3CCredential, MerklizedRootPosition, SubjectPosition } from '../verifiable';
+import { W3CCredential, MerklizedRootPosition, SubjectPosition } from '../../verifiable';
 
 import { Claim as CoreClaim, ClaimOptions, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { ParsedSlots } from '../processor';
@@ -33,12 +33,12 @@ export interface CoreClaimOptions {
 // Parser can parse claim data according to specification
 export class Parser {
   // ParseClaim creates Claim object from W3CCredential
-  parseClaim(
+  async parseClaim(
     credential: W3CCredential,
     credentialType: string,
     jsonSchemaBytes: Uint8Array,
     opts?: CoreClaimOptions
-  ): CoreClaim {
+  ): Promise<CoreClaim> {
     if (!opts) {
       opts = {
         revNonce: 0,
@@ -85,10 +85,10 @@ export class Parser {
 
     switch (opts.merklizedRootPosition) {
       case MerklizedRootPosition.Index:
-        claim.setIndexMerklizedRoot(credential.merklize().root().bigInt());
+        claim.setIndexMerklizedRoot((await credential.merklize()).root().bigInt());
         break;
       case MerklizedRootPosition.Value:
-        claim.setValueMerklizedRoot(credential.merklize().root().bigInt());
+        claim.setValueMerklizedRoot((await credential.merklize()).root().bigInt());
         break;
       case MerklizedRootPosition.None:
         break;

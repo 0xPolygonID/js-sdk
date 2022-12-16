@@ -144,7 +144,7 @@ describe('tests merkelization', () => {
     const ok = verifyProof(mz.mt.root, proof, pathMTEntry, valueMTEntry);
     expect(ok).toBeTruthy();
 
-    expect(mz.root().Hex()).toEqual(
+    expect(mz.root().hex()).toEqual(
       'd001de1d1b74d3b24b394566511da50df18532264c473845ea51e915a588b02a'
     );
   });
@@ -165,7 +165,7 @@ describe('tests merkelization', () => {
     const ok = verifyProof(mz.root(), proof, pathMTEntry, valueMTEntry);
     expect(ok).toBeTruthy();
 
-    expect(mz.root().Hex()).toEqual(
+    expect(mz.root().hex()).toEqual(
       'd001de1d1b74d3b24b394566511da50df18532264c473845ea51e915a588b02a'
     );
   });

@@ -1,4 +1,4 @@
-import { BasicMessage, Bytes, EnvelopeStub, HeaderStub } from '../types';
+import { BasicMessage, EnvelopeStub, HeaderStub } from '../types';
 import { basicMessageFactory, envelopeStubFactory, headerStubFactory } from './messg';
 import { bytesToString, stringToBytes } from './bytes';
 import { ErrNotEnvelopeStub, ErrNotHeaderStub, ErrNotProtocolMesg } from '../errors';
@@ -39,13 +39,13 @@ const isProtocolMessage = (messg: { [key in string]: any }) => {
   return true;
 };
 
-export const envelopeToProtocolMessage = async (e: Bytes): Promise<BasicMessage> => {
+export const envelopeToProtocolMessage = async (e: Uint8Array): Promise<BasicMessage> => {
   const t = await Token.parse(bytesToString(e));
   const pBytes = stringToBytes(t.getPayload());
   return bytesToProtocolMessage(pBytes);
 };
 
-export const bytesToProtocolMessage = (bytes: Bytes) => {
+export const bytesToProtocolMessage = (bytes: Uint8Array) => {
   const str = bytesToString(bytes);
   const messg = JSON.parse(str);
   if (!isProtocolMessage(messg)) {
@@ -54,7 +54,7 @@ export const bytesToProtocolMessage = (bytes: Bytes) => {
   return messg as BasicMessage;
 };
 
-export const bytesToEnvelopeStub = (envelope: Bytes): EnvelopeStub => {
+export const bytesToEnvelopeStub = (envelope: Uint8Array): EnvelopeStub => {
   const tmpObj = envelopeStubFactory();
   const str = bytesToString(envelope);
   const messg = JSON.parse(str);
@@ -64,7 +64,7 @@ export const bytesToEnvelopeStub = (envelope: Bytes): EnvelopeStub => {
   return messg as EnvelopeStub;
 };
 
-export const bytesToHeaderStub = (envelope: Bytes): HeaderStub => {
+export const bytesToHeaderStub = (envelope: Uint8Array): HeaderStub => {
   const tmpObj = headerStubFactory();
   const str = bytesToString(envelope);
   const messg = JSON.parse(str);

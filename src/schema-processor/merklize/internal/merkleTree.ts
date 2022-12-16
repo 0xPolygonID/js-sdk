@@ -1,4 +1,5 @@
-import { inMemmoryDB, str2Bytes, Merkletree } from '@iden3/js-merkletree';
+import { InMemoryDB, str2Bytes, Merkletree } from '@iden3/js-merkletree';
+
 import { Hasher } from '../types';
 import { stringToBytes } from '../../../iden3comm/utils';
 import { RdfEntry } from './rdfEntry';
@@ -8,12 +9,12 @@ export const getMerkleTreeInitParam = (
   writable = true,
   maxLevels = 40
 ): {
-  db: inMemmoryDB;
+  db: InMemoryDB;
   writable: boolean;
   maxLevels: number;
 } => {
   return {
-    db: new inMemmoryDB(str2Bytes(prefix)),
+    db: new InMemoryDB(str2Bytes(prefix)),
     writable,
     maxLevels
   };
@@ -28,11 +29,9 @@ export const mkValueMtEntry = async (h: Hasher, v: any): Promise<bigint> => {
     case 'string': {
       return mkValueString(h, v);
     }
-    case 'boolean':
-      {
-        return mkValueBool(h, v);
-      }
-      break;
+    case 'boolean': {
+      return mkValueBool(h, v);
+    }
     default: {
       if (v instanceof Date) {
         return mkValueTime(h, v);
@@ -46,7 +45,7 @@ const mkValueInt = (h: Hasher, v: bigint): bigint => {
   if (v >= 0) {
     return BigInt.asIntN(64, v);
   }
-  return h.Prime() + BigInt.asIntN(64, v);
+  return h.prime() + BigInt.asIntN(64, v);
 };
 
 // eslint-disable-next-line  @typescript-eslint/no-unused-vars
@@ -56,14 +55,14 @@ const mkValueUInt = (h: Hasher, v: bigint): bigint => {
 
 const mkValueBool = (h: Hasher, v: boolean): Promise<bigint> => {
   if (v) {
-    return h.Hash([BigInt.asIntN(64, BigInt(1))]);
+    return h.hash([BigInt.asIntN(64, BigInt(1))]);
   }
-  return h.Hash([BigInt.asIntN(64, BigInt(0))]);
+  return h.hash([BigInt.asIntN(64, BigInt(0))]);
 };
 
 const mkValueString = (h: Hasher, v: string): Promise<bigint> => {
   const b = stringToBytes(v);
-  return h.HashBytes(b);
+  return h.hashBytes(b);
 };
 
 const mkValueTime = (h: Hasher, v: Date): bigint => {

@@ -1,4 +1,4 @@
-import { BasicMessage, Bytes, IPackageManger, IPacker, MediaType, PackerParams } from './types';
+import { BasicMessage, IPackageManger, IPacker, MediaType, PackerParams } from './types';
 import { bytesToEnvelopeStub, bytesToHeaderStub } from './utils/envelope';
 import { bytesToString, stringToBytes } from './utils';
 import { base64 } from 'rfc4648';
@@ -16,12 +16,12 @@ export class PackageManger implements IPackageManger {
     });
   }
 
-  async pack(mediaType: MediaType, payload: Bytes, params: PackerParams): Promise<Bytes> {
+  async pack(mediaType: MediaType, payload: Uint8Array, params: PackerParams): Promise<Uint8Array> {
     const p = this.packers.get(mediaType);
-    return await p.pack(payload, params);
+    return await p!.pack(payload, params);
   }
 
-  async unpack(envelope: Bytes): Promise<BasicMessage & { mediaType: MediaType }> {
+  async unpack(envelope: Uint8Array): Promise<BasicMessage & { mediaType: MediaType }> {
     const decodedStr = bytesToString(envelope);
     const safeEnvelope = decodedStr.trim();
     const mediaType = this.getMediaType(stringToBytes(safeEnvelope));
@@ -31,22 +31,22 @@ export class PackageManger implements IPackageManger {
     };
   }
 
-  async unpackWithType(mediaType: MediaType, envelope: Bytes): Promise<BasicMessage> {
+  async unpackWithType(mediaType: MediaType, envelope: Uint8Array): Promise<BasicMessage> {
     const decoder = new TextDecoder('utf-8');
     const decodedStr = decoder.decode(envelope);
     const safeEnvelope = decodedStr.trim();
     return await this.unpackWithSafeEnvelope(mediaType, stringToBytes(safeEnvelope));
   }
 
-  async unpackWithSafeEnvelope(mediaType: MediaType, envelope: Bytes): Promise<BasicMessage> {
+  async unpackWithSafeEnvelope(mediaType: MediaType, envelope: Uint8Array): Promise<BasicMessage> {
     const p = this.packers.get(mediaType);
-    const msg = p.unpack(envelope);
+    const msg = await p!.unpack(envelope);
     return msg;
   }
 
-  getMediaType(envelope: Bytes): MediaType {
+  getMediaType(envelope: Uint8Array): MediaType {
     const envelopeStr = bytesToString(envelope);
-    let base64HeaderBytes: Bytes;
+    let base64HeaderBytes: Uint8Array;
 
     // full seriliazed
     if (envelopeStr.split('')[0] === '{') {

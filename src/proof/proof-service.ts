@@ -1,7 +1,7 @@
-import { Iden3Credential } from './../schema-processor/verifiable/credential';
+import { W3CCredential } from '../verifiable/credential';
 import { BJJSignatureProof } from './../circuits/models';
-import { VerifiableConstants } from './../schema-processor/verifiable/constants';
-import { KmsKeyId } from './../identity/kms/KMS';
+import { VerifiableConstants } from '../verifiable/constants';
+import { KmsKeyId } from '../kms/kms';
 /* eslint-disable no-console */
 import { FullProof, ProofRequest } from './models';
 import { getUnixTimestamp, Id } from '@iden3/js-iden3-core';
@@ -14,36 +14,31 @@ import {
   strMTHex,
   StateInRelayCredentialHash,
   Query,
-  factoryComparer,
-  AtomicQuerySigInputs,
-  AuthInputs,
-  AtomicQueryMTPInputs
+  factoryComparer
 } from '../circuits';
 import { Claim } from '../claim';
-import { CredentialStatus, RevocationStatus } from '../schema-processor/verifiable/credential';
+import { CredentialStatus, RevocationStatus } from '../verifiable/credential';
 import { toClaimNonRevStatus } from './common';
 import { ProverService } from './prover';
-import { SchemaLoader } from '../schema-processor/loader';
 import { IIdentityWallet } from '../identity';
-import { IKmsService } from '../identity/kms';
+import { IKmsService } from '../kms';
 import { ICredentialWallet } from '../credentials';
-import { IdentityMerkleTrees } from '../merkle-tree';
-import { Schema } from '../schema-processor';
+import { IdentityMerkleTrees } from '../identity/mt';
 import { Signature } from '@iden3/js-crypto';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
 
-// Query represents structure for query to atomic circuit
-export interface ProofQuery {
-  allowedIssuers?: string[];
-  req?: { [key: string]: unknown };
-  schema?: string; // string url
-  // schema?: Schema; // string url
-  claimId?: string;
-  context?: string;
-  type?: string;
-}
+// // Query represents structure for query to atomic circuit
+// export interface ProofQuery {
+//   allowedIssuers?: string[];
+//   req?: { [key: string]: unknown };
+//   schema?: string; // string url
+//   // schema?: Schema; // string url
+//   claimId?: string;
+//   context?: string;
+//   type?: string;
+// }
 export interface IProofService {
   verifyProof(zkp: FullProof, circuitName: CircuitId): Promise<boolean>;
   generateProof(

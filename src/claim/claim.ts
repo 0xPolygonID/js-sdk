@@ -4,7 +4,7 @@ import { Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import {
   BJJSignatureProof2021,
   Iden3SparseMerkleProof
-} from '../schema-processor/verifiable/proof';
+} from '../verifiable/proof';
 import { bJJSignatureFromHexString } from '../credentials';
 
 export class Claim {
@@ -48,7 +48,7 @@ export class Claim {
     const signature = await bJJSignatureFromHexString(sigProof.signature);
 
     circuitClaim.signatureProof = {
-      issuerId: sigProof.issuerData.id,
+      issuerId: sigProof.issuerData.id.
       issuerTreeState: {
         state: strMTHex(sigProof.issuerData.state?.value),
         claimsRoot: strMTHex(sigProof.issuerData.state?.claimsTreeRoot),
