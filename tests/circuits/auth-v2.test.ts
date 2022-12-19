@@ -1,12 +1,8 @@
 import { AuthV2PubSignals } from './../../src/circuits/auth-v2';
-import { Id, SchemaHash } from '@iden3/js-iden3-core';
-import { ZERO_HASH, newHashFromString, newHashFromBigInt } from '@iden3/js-merkletree';
-import {
-  AuthV2Inputs,
-  AtomicQueryMTPV2PubSignals,
-  prepareCircuitArrayValues
-} from '../../src/circuits';
-import { IdentityTest, userPK, issuerPK, timestamp, globalTree } from './utils';
+import { Id } from '@iden3/js-iden3-core';
+import { ZERO_HASH, newHashFromBigInt } from '@iden3/js-merkletree';
+import { AuthV2Inputs } from '../../src/circuits';
+import { IdentityTest, userPK, issuerPK, globalTree } from './utils';
 
 import expectedJson from './data/auth-v2-inputs.json';
 
@@ -54,122 +50,7 @@ describe('auth-v2', () => {
     expect(actualJson).toEqual(expectedJson);
   });
 
-  it('TestAtomicQueryMTPV2Outputs_CircuitUnmarshal', () => {
-    const out = new AtomicQueryMTPV2PubSignals();
-    out.pubSignalsUnmarshal(
-      new TextEncoder().encode(
-        `[
-   "0",
-   "19104853439462320209059061537253618984153217267677512271018416655565783041",
-   "23",
-   "23528770672049181535970744460798517976688641688582489375761566420828291073",
-   "5687720250943511874245715094520098014548846873346473635855112185560372332782",
-   "5687720250943511874245715094520098014548846873346473635855112185560372332782",
-   "1642074362",
-   "180410020913331409885634153623124536270",
-   "0",
-   "0",
-   "2",
-   "1",
-   "10",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0",
-   "0"
-  ]`
-      )
-    );
-
-    const expValue = prepareCircuitArrayValues([BigInt(10)], 64);
-
-    const exp = new AtomicQueryMTPV2PubSignals();
-    exp.requestID = BigInt(23);
-    exp.userID = Id.fromBigInt(
-      BigInt('19104853439462320209059061537253618984153217267677512271018416655565783041')
-    );
-    exp.issuerID = Id.fromBigInt(
-      BigInt('23528770672049181535970744460798517976688641688582489375761566420828291073')
-    );
-    exp.issuerClaimIdenState = newHashFromString(
-      '5687720250943511874245715094520098014548846873346473635855112185560372332782'
-    );
-    exp.issuerClaimNonRevState = newHashFromString(
-      '5687720250943511874245715094520098014548846873346473635855112185560372332782'
-    );
-    exp.claimSchema = SchemaHash.newSchemaHashFromInt(
-      BigInt('180410020913331409885634153623124536270')
-    );
-
-    exp.slotIndex = 2;
-    exp.operator = 1;
-    exp.value = expValue;
-    exp.timestamp = timestamp;
-    exp.merklized = 0;
-    exp.claimPathKey = BigInt(0);
-    exp.claimPathNotExists = 0;
-    expect(exp).toEqual(out);
-  });
-
-  it(' TestAuthV2Circuit_CircuitUnmarshal', () => {
+  it('authV2Outputs_CircuitUnmarshal', () => {
     // generate mock Data.
     const intID = BigInt(
       '19224224881555258540966250468059781351205177043309252290095510834143232000'
@@ -183,12 +64,18 @@ describe('auth-v2', () => {
     );
     const state = newHashFromBigInt(stateInt);
 
-    const out = [identifier.bigInt().toString(), challenge.toString(), state.bigInt().toString()];
-    const bytesOut = new TextEncoder().encode(JSON.stringify(out));
+    const out = new TextEncoder().encode(
+      JSON.stringify([
+        identifier.bigInt().toString(),
+        challenge.toString(),
+        state.bigInt().toString()
+      ])
+    );
 
-    const ao = new AuthV2PubSignals().pubSignalsUnmarshal(bytesOut);
-    expect(challenge).toEqual(ao.challenge);
+    const ao = new AuthV2PubSignals();
+    ao.pubSignalsUnmarshal(out);
+    expect(challenge.toString()).toEqual(ao.challenge.toString());
     expect(state.bigInt().toString()).toEqual(ao.GISTRoot.bigInt().toString());
-    expect(identifier).toEqual(ao.userID);
+    expect(identifier.string()).toEqual(ao.userID.string());
   });
 });

@@ -72,7 +72,7 @@ export function authClaimFromPubKey(x: bigint, y: bigint): Claim {
 }
 
 export function authV2ClaimFromPubKey(x: bigint, y: bigint): Claim {
-  const schemaHash = new SchemaHash(Hex.decodeString('013fd3f623559d850fb5b02ff012d0e2'));
+  const schemaHash = new SchemaHash(SchemaHash.authSchemaHash.bytes);
 
   // NOTE: We take nonce as hash of public key to make it random
   // We don't use random number here because this test vectors will be used for tests
