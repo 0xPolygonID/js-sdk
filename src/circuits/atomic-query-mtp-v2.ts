@@ -19,6 +19,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
   claimSubjectProfileNonce: bigint;
   // claim issued for user
   claim: ClaimWithMTPProof;
+  skipClaimRevocationCheck: boolean;
   requestID: bigint;
 
   currentTimeStamp: number;
@@ -91,6 +92,12 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
 
     s.claimPathKey = valueProof.path.toString();
 
+    if (this.skipClaimRevocationCheck) {
+      s.isRevocationChecked = 0;
+    } else {
+      s.isRevocationChecked = 1;
+    }
+
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
 
     s.value = bigIntArrayToStringArray(values);
@@ -120,6 +127,7 @@ interface AtomicQueryMTPV2CircuitInputs {
   issuerClaimNonRevMtpAuxHi?: string;
   issuerClaimNonRevMtpAuxHv?: string;
   issuerClaimNonRevMtpNoAux: string;
+  isRevocationChecked: number;
   claimSchema: string;
   claimPathNotExists: number;
   claimPathMtp: string[];
@@ -148,7 +156,10 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
   timestamp: number;
   merklized: number;
   claimPathKey?: bigint;
+  // 0 for inclusion, 1 for non-inclusion
   claimPathNotExists: number;
+  // 0 revocation not check, // 1 for check revocation
+  isRevocationChecked: number;
 
   // PubSignalsUnmarshal unmarshal credentialAtomicQueryMTP.circom public signals array to AtomicQueryMTPPubSignals
   pubSignalsUnmarshal(data: Uint8Array): AtomicQueryMTPV2PubSignals {
@@ -170,7 +181,7 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
     // 12 is a number of fields in AtomicQueryMTPV2PubSignals before values, values is last element in the proof and
     // it is length could be different base on the circuit configuration. The length could be modified by set value
     // in ValueArraySize
-    const fieldLength = 12;
+    const fieldLength = 13;
 
     const sVals: string[] = JSON.parse(new TextDecoder().decode(data));
 
@@ -202,6 +213,10 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
 
     // - issuerClaimIdenState
     this.issuerClaimIdenState = newHashFromString(sVals[fieldIdx]);
+    fieldIdx++;
+
+    // - isRevocationChecked
+    this.isRevocationChecked = parseInt(sVals[fieldIdx]);
     fieldIdx++;
 
     // - issuerClaimNonRevState

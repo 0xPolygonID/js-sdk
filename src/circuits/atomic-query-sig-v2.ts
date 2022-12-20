@@ -21,6 +21,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
 
   // claim issued for user
   claim: ClaimWithSigProof;
+  skipClaimRevocationCheck: boolean;
 
   currentTimeStamp: number;
 
@@ -116,6 +117,11 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
       slotIndex: this.query.slotIndex
     };
 
+    if (this.skipClaimRevocationCheck) {
+      s.isRevocationChecked = 0;
+    } else {
+      s.isRevocationChecked = 1;
+    }
     const nodeAuxNonRev = getNodeAuxValue(this.claim.nonRevProof.proof);
     s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev.key.bigInt().toString();
     s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev.value.bigInt().toString();
@@ -135,6 +141,12 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
     s.claimPathMtpAuxHv = nodAuxJSONLD.value.bigInt().toString();
 
     s.claimPathKey = valueProof.path.toString();
+
+    if (this.skipClaimRevocationCheck) {
+      s.isRevocationChecked = 0;
+    } else {
+      s.isRevocationChecked = 1;
+    }
 
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
     s.value = bigIntArrayToStringArray(values);
@@ -172,6 +184,7 @@ interface AtomicQuerySigV2CircuitInputs {
   issuerAuthClaimsTreeRoot: string;
   issuerAuthRevTreeRoot: string;
   issuerAuthRootsTreeRoot: string;
+  isRevocationChecked: number;
   claimPathNotExists: number;
   claimPathMtp: string[];
   claimPathMtpNoAux: string;
@@ -199,7 +212,10 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
   timestamp: number;
   merklized: number;
   claimPathKey?: bigint;
+  // 0 for inclusion, 1 for non-inclusion
   claimPathNotExists: number;
+  // 0 revocation not check, // 1 for check revocation
+  isRevocationChecked: number;
 
   // PubSignalsUnmarshal unmarshal credentialAtomicQueryMTP.circom public signals array to AtomicQueryMTPPubSignals
   pubSignalsUnmarshal(data: Uint8Array): AtomicQuerySigV2PubSignals {
@@ -221,7 +237,7 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
     // 12 is a number of fields in AtomicQuerySigV2PubSignals before values, values is last element in the proof and
     // it is length could be different base on the circuit configuration. The length could be modified by set value
     // in ValueArraySize
-    const fieldLength = 12;
+    const fieldLength = 13;
 
     const sVals: string[] = JSON.parse(new TextDecoder().decode(data));
 
@@ -253,6 +269,10 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
 
     // - issuerID
     this.issuerID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
+    fieldIdx++;
+
+    // - isRevocationChecked
+    this.isRevocationChecked = parseInt(sVals[fieldIdx]);
     fieldIdx++;
 
     // - issuerClaimNonRevState
