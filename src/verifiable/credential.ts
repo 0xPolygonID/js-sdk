@@ -40,6 +40,40 @@ export class W3CCredential {
     }
     return undefined;
   }
+  getBJJSignature2021Proof(): BJJSignatureProof2021 {
+    const proofType: ProofType = ProofType.BJJSignature;
+    if (Array.isArray(this.proof)) {
+      for (const proof of this.proof) {
+        const { claim: _, proofType: extractedProofType } = extractProof(proof);
+        if (proofType === extractedProofType) {
+          return proof as BJJSignatureProof2021;
+        }
+      }
+    } else if (typeof this.proof === 'object') {
+      const { claim: _, proofType: extractedProofType } = extractProof(this.proof);
+      if (extractedProofType == proofType) {
+        return this.proof as BJJSignatureProof2021;
+      }
+    }
+    throw new Error("no bjj proof in the credential");
+  }
+  getIden3SparseMerkleTreeProof(): Iden3SparseMerkleTreeProof {
+    const proofType: ProofType = ProofType.Iden3SparseMerkleTreeProof;
+    if (Array.isArray(this.proof)) {
+      for (const proof of this.proof) {
+        const { claim: _, proofType: extractedProofType } = extractProof(proof);
+        if (proofType === extractedProofType) {
+          return proof as Iden3SparseMerkleTreeProof;
+        }
+      }
+    } else if (typeof this.proof === 'object') {
+      const { claim: _, proofType: extractedProofType } = extractProof(this.proof);
+      if (extractedProofType == proofType) {
+        return this.proof as Iden3SparseMerkleTreeProof;
+      }
+    }
+    throw new Error("no iden3 smt proof in the credential");
+  }
 }
 
 export function extractProof(proof: object): { claim: Claim; proofType: ProofType } {
@@ -100,3 +134,4 @@ export interface RevocationStatus {
   mtp: Proof;
   issuer: Issuer;
 }
+

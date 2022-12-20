@@ -1,4 +1,4 @@
-import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
+import { buildDIDType, BytesHelper, DID, getUnixTimestamp, Id } from '@iden3/js-iden3-core';
 
 import axios from 'axios';
 import { IDataStorage } from '../storage/interfaces';
@@ -7,7 +7,10 @@ import {
   ProofQuery,
   VerifiableConstants,
   SubjectPosition,
-  MerklizedRootPosition
+  MerklizedRootPosition,
+  CredentialStatus,
+  BJJSignatureProof2021,
+  Iden3SparseMerkleTreeProof
 } from './../verifiable';
 
 import {
@@ -18,6 +21,7 @@ import {
 } from '../schema-processor';
 import * as uuid from 'uuid';
 import { getStatusFromRHS } from './revocation';
+import { Proof } from '@iden3/js-merkletree';
 
 export interface ClaimRequest {
   credentialSchema: string;
@@ -40,7 +44,12 @@ export interface ICredentialWallet {
   findByContextType(context: string, type: string): Promise<W3CCredential[]>;
 
   getAuthBJJCredential(did: DID): Promise<W3CCredential>;
-  getRevocationStatus(cred: W3CCredential): Promise<RevocationStatus>;
+  getRevocationStatusFromCredential(cred: W3CCredential): Promise<RevocationStatus>;
+  getRevocationStatus(
+    credStatus: CredentialStatus | RHSCredentialStatus,
+    issuerDID: DID,
+    mtp: Iden3SparseMerkleTreeProof
+  );
   findClaimsForCircuitQuery(claims, circuitQuery, requestFiled): Promise<W3CCredential[]>;
   createCredential(
     hostUrl: string,
@@ -69,7 +78,7 @@ export class CredentialWallet implements ICredentialWallet {
 
     for (let index = 0; index < authBJJCredsOfIssuer.length; index++) {
       const authCred = authBJJCredsOfIssuer[index];
-      const revocationStatus = await this.getRevocationStatus(authCred);
+      const revocationStatus = await this.getRevocationStatusFromCredential(authCred);
 
       if (!revocationStatus.mtp.existence) {
         return authCred;
@@ -78,19 +87,45 @@ export class CredentialWallet implements ICredentialWallet {
     throw new Error('all auth bjj credentials are revoked');
   }
 
-  async getRevocationStatus(cred: W3CCredential): Promise<RevocationStatus> {
-    if (cred.credentialStatus?.type === CredentialStatusType.SparseMerkleTreeProof) {
-      return (await axios.get<RevocationStatus>(cred.credentialStatus.id)).data;
+  async getRevocationStatusFromCredential(cred: W3CCredential): Promise<RevocationStatus> {
+    const mtp = cred.getIden3SparseMerkleTreeProof();
+
+    const issuerDID = DID.parse(cred.issuer);
+
+    return await this.getRevocationStatus(cred.credentialStatus!, issuerDID, mtp);
+  }
+
+  async getRevocationStatus(
+    credStatus: CredentialStatus | RHSCredentialStatus,
+    issuerDID: DID,
+    mtp: Iden3SparseMerkleTreeProof
+  ): Promise<RevocationStatus> {
+    if (credStatus.type === CredentialStatusType.SparseMerkleTreeProof) {
+      return (await axios.get<RevocationStatus>(credStatus.id)).data;
     }
 
-    if (cred.credentialStatus?.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
+    if (credStatus.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
       try {
-        return await getStatusFromRHS(cred, this._storage.states, cred.credentialStatus.id);
+        return await getStatusFromRHS(issuerDID, credStatus, this._storage.states);
       } catch (e) {
-        console.error(e);
-        const status = cred.credentialStatus as RHSCredentialStatus;
+        if (
+          (e as Error).message.includes('') &&
+          isIssuerGenesis(issuerDID.toString(), mtp.issuerData.state.value)
+        ) {
+          return {
+            mtp: new Proof(),
+            issuer: {
+              state: mtp.issuerData.state.value,
+              revocationTreeRoot: mtp.issuerData.state.revocationTreeRoot,
+              rootOfRoots: mtp.issuerData.state.rootOfRoots,
+              claimsTreeRoot: mtp.issuerData.state.claimsTreeRoot
+            }
+          };
+        }
+
+        const status = credStatus as RHSCredentialStatus;
         if (status?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
-          return (await axios.get<RevocationStatus>(cred.credentialStatus.id)).data;
+          return (await axios.get<RevocationStatus>(credStatus.id)).data;
         }
         throw new Error(`can't fetch revocation status`);
       }
@@ -184,4 +219,21 @@ export class CredentialWallet implements ICredentialWallet {
   async findByQuery(query: ProofQuery): Promise<W3CCredential[]> {
     return this._storage.credential.findCredentialsByQuery(query);
   }
+}
+
+export function isIssuerGenesis(issuer: string, state: string): boolean {
+  const did = DID.parse(issuer);
+  const arr = BytesHelper.hexToBytes(state);
+  const stateBigInt = BytesHelper.bytesToInt(arr);
+  const type = buildDIDType(did.method, did.blockchain, did.networkId);
+  return isGenesisStateId(did.id.bigInt(), stateBigInt, type);
+}
+
+export function isGenesisStateId(id: bigint, state: bigint, type: Uint8Array): boolean {
+  const idFromState = Id.idGenesisFromIdenState(type, state);
+
+  if (id.toString() !== idFromState.bigInt().toString()) {
+    return false;
+  }
+  return true;
 }

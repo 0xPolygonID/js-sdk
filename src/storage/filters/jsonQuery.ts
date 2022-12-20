@@ -51,6 +51,8 @@ export const StandardJSONCredentielsQueryFilter = (query: ProofQuery) => {
         return acc.concat(createFilter('type', comparatorOptions.$in, queryValue, true));
       case 'context':
         return acc.concat(createFilter('@context', comparatorOptions.$in, queryValue, true));
+      case 'credentialSubjectId':
+          return acc.concat(createFilter('credentialSubject.id', comparatorOptions.$eq, queryValue));
       case 'schema':
         return acc.concat(createFilter('credentialSchema.id', comparatorOptions.$eq, queryValue));
       case 'req':

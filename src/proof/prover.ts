@@ -1,6 +1,7 @@
 import { ZKProof } from '@iden3/js-jwz';
 import * as snarkjs from 'snarkjs';
 import { CircuitId } from '../circuits';
+import { FullProof } from './proof-service';
 import { witnessBuilder } from './witness_calculator';
 
 /* eslint-disable no-console */
@@ -14,7 +15,7 @@ export interface ProverConfig {
 export class ProverService {
   constructor(private readonly _config: ProverConfig) {}
 
-  async verify(zkp: ZKProof, circuitName: CircuitId): Promise<boolean> {
+  async verify(zkp: FullProof, circuitName: CircuitId): Promise<boolean> {
     try {
       const verKey: Uint8Array = await this._config.circuitsLoader.loadVerificationKey(circuitName);
 
@@ -31,7 +32,7 @@ export class ProverService {
   }
 
   // Generate calls prover-server for proof generation
-  async generate(inputs: Uint8Array, circuitId: CircuitId): Promise<ZKProof> {
+  async generate(inputs: Uint8Array, circuitId: string): Promise<ZKProof> {
     try {
       const wasm: Uint8Array = await this._config.circuitsLoader.loadWasm(circuitId);
       const witnessCalculator = await witnessBuilder(wasm);

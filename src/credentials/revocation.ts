@@ -10,13 +10,11 @@ import {
   NodeLeaf,
   Siblings
 } from '@iden3/js-merkletree';
-import { buildDIDType, Id } from '@iden3/js-iden3-core';
 import { IStateStorage } from '../storage/interfaces';
 import {
-  BJJSignatureProof2021,
-  Iden3SparseMerkleTreeProof,
+  CredentialStatus,
   RevocationStatus,
-  W3CCredential
+  RHSCredentialStatus,
 } from '../schema-processor';
 import axios from 'axios';
 import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
@@ -62,52 +60,19 @@ interface NodeResponse {
   node: ProofNode;
   status: string;
 }
-export function isIssuerGenesis(
-  issuer: string,
-  proof: BJJSignatureProof2021 | Iden3SparseMerkleTreeProof
-): boolean {
-  const did = DID.parse(issuer);
-  const arr = BytesHelper.hexToBytes(proof.issuerData.state.value);
-  const stateBigInt = BytesHelper.bytesToInt(arr);
-  const type = buildDIDType(did.method, did.blockchain, did.networkId);
-  return isGenesisStateId(did.id.bigInt(), stateBigInt, type);
-}
-
-export function isGenesisStateId(id: bigint, state: bigint, type: Uint8Array): boolean {
-  const idFromState = Id.idGenesisFromIdenState(type, state);
-
-  if (id.toString() !== idFromState.bigInt().toString()) {
-    return false;
-  }
-
-  return true;
-}
 
 export async function getStatusFromRHS(
-  cred: W3CCredential,
-  stateStorage: IStateStorage,
-  rhsURL: string
+  issuer: DID,
+  credStatus: CredentialStatus | RHSCredentialStatus,
+  stateStorage: IStateStorage
 ): Promise<RevocationStatus> {
-  //todo: check what is ID should be bigint
-  if (!rhsURL) throw new Error('HTTP reverse hash service url is not specified');
-
-  const did = DID.parse(cred.issuer);
-  const latestStateInfo = await stateStorage.getLatestStateById(did.id.bigInt());
-  const credProof = cred.proof![0] as Iden3SparseMerkleTreeProof; // TODO: find proof in other way. Auth BJJ credentials have only mtp proof
-  if (latestStateInfo?.state === BigInt(0) && isIssuerGenesis(cred.issuer, credProof)) {
-    return {
-      mtp: new Proof(),
-      issuer: {
-        state: credProof.issuerData.state.value,
-        revocationTreeRoot: credProof.issuerData.state.revocationTreeRoot,
-        rootOfRoots: credProof.issuerData.state.rootOfRoots,
-        claimsTreeRoot: credProof.issuerData.state.claimsTreeRoot
-      }
-    };
+  const latestStateInfo = await stateStorage.getLatestStateById(issuer.id.bigInt());
+  if (latestStateInfo?.state === BigInt(0)) {
+    throw new Error('issuer state not found');
   }
-  const hashedRevNonce = newHashFromBigInt(BigInt(cred?.credentialStatus?.revocationNonce ?? 0));
+  const hashedRevNonce = newHashFromBigInt(BigInt(credStatus.revocationNonce ?? 0));
   const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
-  return getNonRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, rhsURL);
+  return getNonRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, credStatus.id);
 }
 
 async function getNonRevocationStatusFromRHS(
@@ -115,6 +80,8 @@ async function getNonRevocationStatusFromRHS(
   issuerRoot: Hash,
   rhsURL: string
 ): Promise<RevocationStatus> {
+  if (!rhsURL) throw new Error('HTTP reverse hash service url is not specified');
+
   const treeRoots = (await axios.get<NodeResponse>(`${rhsURL}/${issuerRoot.hex()}`)).data?.node;
   if (treeRoots.children.length !== 3) {
     throw new Error('state should has tree children');
