@@ -1,6 +1,7 @@
-import { Claim, IdPosition } from '@iden3/js-iden3-core';
+import { Claim, IdPosition, MerklizedRootPosition } from '@iden3/js-iden3-core';
 import { Data, ElemBytes, Entry } from '@iden3/js-merkletree';
-import { MerklizedRootPosition, SchemaMetadata, SubjectPosition } from '../schema-processor';
+import { SchemaMetadata } from '../schema-processor';
+import { SubjectPosition } from '../verifiable';
 
 export const treeEntryFromCoreClaim = (claim: Claim): Entry => {
   const { index, value } = claim.rawSlots();

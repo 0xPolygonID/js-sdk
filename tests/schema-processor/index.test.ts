@@ -1,4 +1,5 @@
-import { DIDDocumentJSONSchema, JsonSchemaValidator } from '../../src/schema-processor';
+import { JsonSchemaValidator } from "../../src/schema-processor";
+import { DIDDocumentJSONSchema } from "../../src/verifiable";
 
 jest.setTimeout(50 * 60_00);
 

@@ -11,16 +11,13 @@ import {
   Siblings
 } from '@iden3/js-merkletree';
 import { IStateStorage } from '../storage/interfaces';
-import {
-  CredentialStatus,
-  RevocationStatus,
-  RHSCredentialStatus,
-} from '../schema-processor';
+
 import axios from 'axios';
 import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
 import { NODE_TYPE_MIDDLE } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
+import { CredentialStatus, RevocationStatus, RHSCredentialStatus, VerifiableConstants } from '../verifiable';
 
 export interface TreesModel {
   claimsTree: Merkletree;
@@ -68,7 +65,7 @@ export async function getStatusFromRHS(
 ): Promise<RevocationStatus> {
   const latestStateInfo = await stateStorage.getLatestStateById(issuer.id.bigInt());
   if (latestStateInfo?.state === BigInt(0)) {
-    throw new Error('issuer state not found');
+    throw new Error(VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND);
   }
   const hashedRevNonce = newHashFromBigInt(BigInt(credStatus.revocationNonce ?? 0));
   const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));

@@ -9,14 +9,13 @@ import {
   SubjectPosition,
   MerklizedRootPosition,
   CredentialStatus,
-  BJJSignatureProof2021,
-  Iden3SparseMerkleTreeProof
+  Iden3SparseMerkleTreeProof,
+  RHSCredentialStatus,
+  RevocationStatus,
+  CredentialStatusType
 } from './../verifiable';
 
 import {
-  CredentialStatusType,
-  RevocationStatus,
-  RHSCredentialStatus,
   Schema
 } from '../schema-processor';
 import * as uuid from 'uuid';
@@ -109,7 +108,7 @@ export class CredentialWallet implements ICredentialWallet {
         return await getStatusFromRHS(issuerDID, credStatus, this._storage.states);
       } catch (e) {
         if (
-          (e as Error).message.includes('') &&
+          (e as Error).message.includes(VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND) &&
           isIssuerGenesis(issuerDID.toString(), mtp.issuerData.state.value)
         ) {
           return {

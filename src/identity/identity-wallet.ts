@@ -19,11 +19,7 @@ import {} from '@iden3/js-iden3-core';
 import { subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
 import {
-  W3CCredential,
-  Iden3SparseMerkleTreeProof,
-  ProofType,
   Schema,
-  MerkleTreeProofWithTreeState,
   Parser,
   CoreClaimOptions
 } from '../schema-processor';
@@ -35,7 +31,11 @@ import {
   VerifiableConstants,
   BJJSignatureProof2021,
   MerklizedRootPosition,
-  SubjectPosition
+  SubjectPosition,
+  W3CCredential,
+  MerkleTreeProofWithTreeState,
+  Iden3SparseMerkleTreeProof,
+  ProofType
 } from '../verifiable';
 import { ClaimRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/revocation';
