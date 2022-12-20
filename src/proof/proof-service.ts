@@ -1,10 +1,8 @@
 import { RHSCredentialStatus, W3CCredential } from '../verifiable/credential';
-import { BJJSignatureProof } from './../circuits/models';
-import { ProofType, VerifiableConstants } from '../verifiable/constants';
+import { ProofType } from '../verifiable/constants';
 import { KMS, KmsKeyId } from '../kms/kms';
 /* eslint-disable no-console */
 import { DID, getUnixTimestamp, Id, Claim } from '@iden3/js-iden3-core';
-import { Proof } from '@iden3/js-merkletree';
 import {
   buildTreeState,
   CircuitClaim,
