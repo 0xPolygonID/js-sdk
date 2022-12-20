@@ -17,7 +17,12 @@ import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
 import { NODE_TYPE_MIDDLE } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
-import { CredentialStatus, RevocationStatus, RHSCredentialStatus, VerifiableConstants } from '../verifiable';
+import {
+  CredentialStatus,
+  RevocationStatus,
+  RHSCredentialStatus,
+  VerifiableConstants
+} from '../verifiable';
 
 export interface TreesModel {
   claimsTree: Merkletree;

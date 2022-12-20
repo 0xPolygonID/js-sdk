@@ -35,7 +35,7 @@ export enum CircuitId {
   // AtomicQueryMTPV2 is a type for credentialAtomicQueryMTPV2.circom
   AtomicQueryMTPV2 = 'credentialAtomicQueryMTPV2',
   // AtomicQuerySig is a type for credentialAttrQuerySig.circom
-  AtomicQuerySigV2 = 'credentialAtomicQuerySigV2',
+  AtomicQuerySigV2 = 'credentialAtomicQuerySigV2'
 }
 
 export class CircuitClaim {

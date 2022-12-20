@@ -15,9 +15,7 @@ import {
   CredentialStatusType
 } from './../verifiable';
 
-import {
-  Schema
-} from '../schema-processor';
+import { Schema } from '../schema-processor';
 import * as uuid from 'uuid';
 import { getStatusFromRHS } from './revocation';
 import { Proof } from '@iden3/js-merkletree';
@@ -48,7 +46,7 @@ export interface ICredentialWallet {
     credStatus: CredentialStatus | RHSCredentialStatus,
     issuerDID: DID,
     mtp: Iden3SparseMerkleTreeProof
-  );
+  ): Promise<RevocationStatus>;
   findClaimsForCircuitQuery(claims, circuitQuery, requestFiled): Promise<W3CCredential[]>;
   createCredential(
     hostUrl: string,
@@ -230,9 +228,5 @@ export function isIssuerGenesis(issuer: string, state: string): boolean {
 
 export function isGenesisStateId(id: bigint, state: bigint, type: Uint8Array): boolean {
   const idFromState = Id.idGenesisFromIdenState(type, state);
-
-  if (id.toString() !== idFromState.bigInt().toString()) {
-    return false;
-  }
-  return true;
+  return id.toString() === idFromState.bigInt().toString();
 }

@@ -18,11 +18,7 @@ import {} from '@iden3/js-iden3-core';
 
 import { subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
-import {
-  Schema,
-  Parser,
-  CoreClaimOptions
-} from '../schema-processor';
+import { Schema, Parser, CoreClaimOptions } from '../schema-processor';
 import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
 import { getRandomBytes, keyPath } from '../kms/provider-helpers';

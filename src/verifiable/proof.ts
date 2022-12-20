@@ -44,7 +44,7 @@ export interface ProofQuery {
   req?: { [key: string]: unknown };
   schema?: string; // string url
   claimId?: string;
-  credentialSubjectId?:string;
+  credentialSubjectId?: string;
   context?: string;
   type?: string;
 }

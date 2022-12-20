@@ -24,7 +24,7 @@ export class W3CCredential {
     return await merkelizeJSONLD(JSON.stringify(credential));
   }
 
-  getCoreClaimFromProof(proofType: ProofType): Claim {
+  getCoreClaimFromProof(proofType: ProofType): Claim | undefined {
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
         const { claim, proofType: extractedProofType } = extractProof(proof);
@@ -44,35 +44,36 @@ export class W3CCredential {
     const proofType: ProofType = ProofType.BJJSignature;
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
-        const { claim: _, proofType: extractedProofType } = extractProof(proof);
+        const { proofType: extractedProofType } = extractProof(proof);
         if (proofType === extractedProofType) {
           return proof as BJJSignatureProof2021;
         }
       }
     } else if (typeof this.proof === 'object') {
-      const { claim: _, proofType: extractedProofType } = extractProof(this.proof);
+      const { proofType: extractedProofType } = extractProof(this.proof);
       if (extractedProofType == proofType) {
         return this.proof as BJJSignatureProof2021;
       }
     }
-    throw new Error("no bjj proof in the credential");
+    throw new Error('no bjj proof in the credential');
   }
+
   getIden3SparseMerkleTreeProof(): Iden3SparseMerkleTreeProof {
     const proofType: ProofType = ProofType.Iden3SparseMerkleTreeProof;
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
-        const { claim: _, proofType: extractedProofType } = extractProof(proof);
+        const { proofType: extractedProofType } = extractProof(proof);
         if (proofType === extractedProofType) {
           return proof as Iden3SparseMerkleTreeProof;
         }
       }
     } else if (typeof this.proof === 'object') {
-      const { claim: _, proofType: extractedProofType } = extractProof(this.proof);
+      const { proofType: extractedProofType } = extractProof(this.proof);
       if (extractedProofType == proofType) {
         return this.proof as Iden3SparseMerkleTreeProof;
       }
     }
-    throw new Error("no iden3 smt proof in the credential");
+    throw new Error('no iden3 smt proof in the credential');
   }
 }
 
@@ -134,4 +135,3 @@ export interface RevocationStatus {
   mtp: Proof;
   issuer: Issuer;
 }
-

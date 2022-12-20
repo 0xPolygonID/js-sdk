@@ -1,16 +1,14 @@
+import { MTProof } from './../circuits/models';
 import { RHSCredentialStatus, W3CCredential } from '../verifiable/credential';
 import { ProofType } from '../verifiable/constants';
-import { KMS, KmsKeyId } from '../kms/kms';
+import { KMS } from '../kms/kms';
 /* eslint-disable no-console */
-import { DID, getUnixTimestamp, Id, Claim } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp, Claim } from '@iden3/js-iden3-core';
 import {
-  buildTreeState,
   CircuitClaim,
   CircuitId,
-  TreeState,
   strMTHex,
   Query,
-  factoryComparer,
   AtomicQueryMTPV2Inputs,
   AtomicQuerySigV2Inputs,
   AuthV2Inputs
@@ -22,12 +20,10 @@ import { IIdentityWallet } from '../identity';
 import { ICredentialWallet } from '../credentials';
 import { Hex, Signature } from '@iden3/js-crypto';
 import {
-  BJJSignatureProof2021,
   Iden3SparseMerkleTreeProof,
   MerkleTreeProofWithTreeState,
   ProofQuery
 } from '../verifiable';
-import { getStatusFromRHS } from '../credentials/revocation';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -178,7 +174,7 @@ export class ProofService implements IProofService {
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZKPRequest
-  ) :Promise<Uint8Array>{
+  ): Promise<Uint8Array> {
     const claims: W3CCredential[] = [];
     let circuitInputs;
 
@@ -248,6 +244,22 @@ export class ProofService implements IProofService {
 
     const signature = await bJJSignatureFromHexString(sigProof.signature);
 
+    const rs: RevocationStatus = await this._credentialWallet.getRevocationStatus(
+      sigProof.issuerData.credentialStatus as RHSCredentialStatus,
+      DID.parse(sigProof.issuerData.id),
+      sigProof.issuerData.mtp as unknown as Iden3SparseMerkleTreeProof
+    );
+    //todo: check if this is correct
+    const issuerAuthNonRevProof: MTProof = {
+      treeState: {
+        state: strMTHex(rs.issuer.state),
+        claimsRoot: strMTHex(rs.issuer.claimsTreeRoot),
+        revocationRoot: strMTHex(rs.issuer.revocationTreeRoot),
+        rootOfRoots: strMTHex(rs.issuer.rootOfRoots)
+      },
+      proof: rs.mtp
+    };
+
     circuitClaim.signatureProof = {
       signature,
       issuerAuthIncProof: {
@@ -260,11 +272,7 @@ export class ProofService implements IProofService {
         }
       },
       issuerAuthClaim: new Claim().fromHex(sigProof.coreClaim),
-      issuerAuthNonRevProof: this._credentialWallet.getRevocationStatus(
-        sigProof.issuerData.credentialStatus as RHSCredentialStatus,
-        DID.parse(sigProof.issuerData.id),
-        sigProof.issuerData.mtp as unknown as Iden3SparseMerkleTreeProof
-      )
+      issuerAuthNonRevProof
     };
 
     return circuitClaim;
