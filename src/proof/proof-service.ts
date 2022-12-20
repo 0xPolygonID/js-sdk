@@ -1,56 +1,88 @@
-import { W3CCredential } from '../verifiable/credential';
-import { BJJSignatureProof } from './../circuits/models';
-import { VerifiableConstants } from '../verifiable/constants';
-import { KmsKeyId } from '../kms/kms';
+import { MTProof } from './../circuits/models';
+import { RHSCredentialStatus, W3CCredential } from '../verifiable/credential';
+import { ProofType } from '../verifiable/constants';
+import { KMS } from '../kms/kms';
 /* eslint-disable no-console */
-import { ProofRequest } from './models';
-import { getUnixTimestamp, Id } from '@iden3/js-iden3-core';
-import { Proof } from '@iden3/js-merkletree';
+import { DID, getUnixTimestamp, Claim } from '@iden3/js-iden3-core';
 import {
-  buildTreeState,
   CircuitClaim,
   CircuitId,
-  TreeState,
   strMTHex,
   Query,
-  factoryComparer
+  AtomicQueryMTPV2Inputs,
+  AtomicQuerySigV2Inputs,
+  AuthV2Inputs
 } from '../circuits';
-import { Claim } from '../claim';
-import { CredentialStatus, RevocationStatus } from '../verifiable/credential';
+import { RevocationStatus } from '../verifiable/credential';
 import { toClaimNonRevStatus } from './common';
 import { ProverService } from './prover';
 import { IIdentityWallet } from '../identity';
-import { IKmsService } from '../kms';
 import { ICredentialWallet } from '../credentials';
-import { IdentityMerkleTrees } from '../identity/mt';
-import { Signature } from '@iden3/js-crypto';
+import { Hex, Signature } from '@iden3/js-crypto';
+import {
+  Iden3SparseMerkleTreeProof,
+  MerkleTreeProofWithTreeState,
+  ProofQuery
+} from '../verifiable';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
 
-// // Query represents structure for query to atomic circuit
-// export interface ProofQuery {
-//   allowedIssuers?: string[];
-//   req?: { [key: string]: unknown };
-//   schema?: string; // string url
-//   // schema?: Schema; // string url
-//   claimId?: string;
-//   context?: string;
-//   type?: string;
-// }
+interface PreparedAuthBJJCredential {
+  authCredential: W3CCredential;
+  signature: Signature;
+  incProof: MerkleTreeProofWithTreeState;
+  nonRevProof: MerkleTreeProofWithTreeState;
+  authCoreClaim: Claim;
+}
+interface PreparedCredential {
+  credential: W3CCredential;
+  credentialCoreClaim: Claim;
+  revStatus: RevocationStatus;
+}
+// ZKPRequest is a request for zkp proof
+export interface ZKPRequest {
+  id: number;
+  circuitId: string;
+  optional?: boolean;
+  query: ProofQuery;
+}
+
+// ZKPResponse is a response with a zkp
+export interface ZKPResponse {
+  id: number;
+  circuitId: string; // `circuitId` compatibility with golang implementation.
+  pub_signals: string[];
+  proof: ProofData;
+}
+
+export interface FullProof {
+  pub_signals: string[];
+  proof: ProofData;
+}
+
+// ProofData is a result of snarkJS groth16 proof generation
+export interface ProofData {
+  pi_a: string[];
+  pi_b: string[][];
+  pi_c: string[];
+  protocol?: string;
+  curve?: string;
+}
+
 export interface IProofService {
   verifyProof(zkp: FullProof, circuitName: CircuitId): Promise<boolean>;
   generateProof(
-    proofReq: ProofRequest,
-    identifier: Id
-  ): Promise<{ proof: FullProof; claims: Claim[] }>;
+    proofReq: ZKPRequest,
+    identifier: DID
+  ): Promise<{ proof: FullProof; credentials: W3CCredential[] }>;
 }
 
 export class ProofService implements IProofService {
   constructor(
     private readonly _identityWallet: IIdentityWallet,
     private readonly _credentialWallet: ICredentialWallet,
-    private readonly _kms: IKmsService,
+    private readonly _kms: KMS,
     private readonly _prover: ProverService
   ) {}
 
@@ -59,278 +91,202 @@ export class ProofService implements IProofService {
   }
 
   async generateProof(
-    proofReq: ProofRequest,
-    identifier: Id
-  ): Promise<{ proof: FullProof; claims: Claim[] }> {
-    const { inputs, claims }: { inputs: Uint8Array; claims: Claim[] } = await this.prepareInputs(
-      identifier,
-      proofReq
-    );
+    proofReq: ZKPRequest,
+    identifier: DID
+  ): Promise<{ proof: FullProof; credentials: W3CCredential[] }> {
+    const { inputs, creds } = await this.prepareInputs(identifier, proofReq);
 
     const proof = await this._prover.generate(inputs, proofReq.circuitId);
-    return { proof, claims };
+    return { proof, credentials: creds };
   }
 
   private async prepareInputs(
-    identifier: Id,
-    proofReq: ProofRequest
-  ): Promise<{ inputs: Uint8Array; claims: Claim[] }> {
-    const { authClaim, signature, treeState } = this.prepareAuthBJJCredential(identifier, proofReq);
-    const { authClaimData, nonRevocationProof } = await this.getAuthClaimData(
-      identifier,
-      authClaim,
-      treeState
-    );
-    this.convertQueryToCircuitQuery(authClaimData, identifier, signature, proofReq);
+    did: DID,
+    proofReq: ZKPRequest
+  ): Promise<{ inputs: Uint8Array; creds: W3CCredential[] }> {
+    const preparedAuthBJJCredential = await this.prepareAuthBJJCredential(did, proofReq);
 
-    return { inputs: null, claims: null } as unknown as { inputs: Uint8Array; claims: Claim[] };
+    const preparedCredential = await this.prepareCredential(did, proofReq.query);
+
+    const inputs = await this.generateInputs(
+      preparedAuthBJJCredential,
+      preparedCredential,
+      did,
+      proofReq
+    );
+    return { inputs, creds: [preparedCredential.credential] };
   }
 
-  async getAuthClaimData(
-    identifier: Id,
-    authClaim: Claim,
-    treeState: TreeState
-  ): Promise<{ authClaimData: CircuitClaim; nonRevocationProof: Proof }> {
-    //todo: introduce interface here
-    const identityTrees = await IdentityMerkleTrees.getIdentityMerkleTrees(identifier);
-
-    const claimsTree = identityTrees.claimsTree();
-
-    // get index hash of authClaim
-    const coreClaim = authClaim.coreClaim;
-    const hIndex = await coreClaim.hIndex();
-    const authClaimMTP = await claimsTree.generateProof(hIndex, treeState.claimsRoot);
-
-    const authClaimData = await authClaim.newCircuitClaimData();
-    authClaimData.proof = authClaimMTP.proof;
-    authClaimData.treeState = treeState;
-
-    // revocation / non revocation MTP for the latest identity state
-    const nonRevocationProof = await identityTrees.generateRevocationProof(
-      BigInt(authClaim.revNonce),
-      treeState.revocationRoot
-    );
-
-    authClaimData.nonRevProof = {
-      treeState: treeState,
-      proof: nonRevocationProof
-    };
-
-    return { authClaimData, nonRevocationProof };
-  }
-
-  async getClaimDataForAtomicQueryCircuit(
-    identifier: Id,
-    rules: { [key: string]: unknown }
-  ): Promise<{ claim: Claim; claimData: CircuitClaim; circuitQuery: Query }> {
-    let claims: Claim[] = [];
-    const query = rules['query'] as ProofQuery;
+  async prepareCredential(did: DID, query: ProofQuery): Promise<PreparedCredential> {
+    let credentials: W3CCredential[] = [];
 
     if (!query.claimId) {
-      // if claimID exist. Search by claimID.
-      const c = await this._credentialWallet.findById(identifier); //, query.claimId)
-      // we need to be sure that the hallmark selected by ID matches circuitQuery.
-      claims.push(c);
+      const credential = await this._credentialWallet.findById(query.claimId!);
+      credentials.push(credential!);
     } else {
-      // if claimID NOT exist in request select all claims and filter it.
-      claims = await this._credentialWallet.findAllBySchemaHash(identifier.string());
+      query.credentialSubjectId = did.toString();
+      credentials = await this._credentialWallet.findByQuery(query);
     }
-
-    const loader = await this._credentialWallet.getSchemaLoader('', '');
-
-    const { circuitQuery, requestFiled } = this.toCircuitsQuery(query, loader);
-
-    claims = await this.findClaimsForCircuitQuery(claims, circuitQuery, requestFiled);
-
-    if (claims.length === 0) {
+    if (credentials.length === 0) {
       throw new Error('could not find claims for query');
     }
-    const { claim, revStatus } = this.findNonRevokedClaim(claims);
+    const { cred, revStatus } = await this.findNonRevokedClaim(credentials);
 
-    const claimData = await claim.newCircuitClaimData();
-    const nonRevProof = toClaimNonRevStatus(revStatus);
-    claimData.nonRevProof = nonRevProof;
-
-    return { claim, claimData, circuitQuery };
+    const credCoreClaim = cred.getCoreClaimFromProof(ProofType.BJJSignature);
+    return { credential: cred, revStatus, credentialCoreClaim: credCoreClaim };
   }
 
-  findNonRevokedClaim(claims: Claim[]): { claim: Claim; revStatus: RevocationStatus } {
-    for (const claim of claims) {
-      const revStatus = this._credentialWallet.getRevocationStatus(claim);
-      // current claim revoked. To try next claim.
-      if (!revStatus) {
+  async findNonRevokedClaim(creds: W3CCredential[]): Promise<{
+    cred: W3CCredential;
+    revStatus: RevocationStatus;
+  }> {
+    for (const cred of creds) {
+      const revStatus = await this._credentialWallet.getRevocationStatusFromCredential(cred);
+      if (revStatus.mtp.existence) {
         continue;
       }
-      return { claim, revStatus };
+      return { cred, revStatus };
     }
     throw new Error(ErrAllClaimsRevoked);
   }
 
-  private findClaimsForCircuitQuery(claims: Claim[], cq: Query, filter: string): Claim[] {
-    const validClaims: Claim[] = [];
-    if (!filter) {
-      return claims;
-    }
+  private async prepareAuthBJJCredential(
+    did: DID,
+    proofReq: ZKPRequest
+  ): Promise<PreparedAuthBJJCredential> {
+    const authCredential = await this._credentialWallet.getAuthBJJCredential(did);
 
-    for (const claim of claims) {
-      const parsedClaimData = claim.data;
-      const filterData = parsedClaimData[filter];
-      // try next claim if this claim doesn't contain target key.
-      if (!filterData) {
-        continue;
-      }
-      const cmp = factoryComparer(BigInt(filterData), cq.values, cq.operator);
+    const incProof = await this._identityWallet.generateClaimMtp(did, authCredential);
 
-      const ok = cmp.compare(cq.operator);
-      // try next claim if this claim doesn't contain target value.
-      if (!ok) {
-        continue;
-      }
-      validClaims.push(claim);
-    }
-    return validClaims;
-  }
+    const nonRevProof = await this._identityWallet.generateNonRevocationMtp(did, authCredential);
 
-  private prepareAuthBJJCredential(
-    identifier: Id,
-    proofReq: ProofRequest
-  ): { authClaim: Claim; signature: Signature; treeState: TreeState } {
-    const authClaim = this._credentialWallet.getAuthCredential(identifier);
-    const idState = this._identityWallet.getLatestStateById(identifier);
-    const treeState = buildTreeState(
-      idState.state,
-      idState.claimsTreeRoot,
-      idState.revocationTreeRoot,
-      idState.rootOfRoots
+    const signature = await this._identityWallet.sign(proofReq.id, authCredential);
+
+    const authCoreClaim = authCredential.getCoreClaimFromProof(
+      ProofType.Iden3SparseMerkleTreeProof
     );
-    const challengeDigest = this._kms.getBJJDigest(proofReq.challenge);
-    const sigBytes = this._kms.sign({} as KmsKeyId, challengeDigest);
-    const signature = this._kms.decodeBJJSignature(sigBytes);
 
-    return { authClaim, signature, treeState };
+    return { authCredential, incProof, nonRevProof, signature, authCoreClaim };
   }
 
-  private async convertQueryToCircuitQuery(
-    authClaimData: CircuitClaim,
-    identifier: Id,
-    signature: Signature,
-    proofReq: ProofRequest
-  ) {
-    const claims: Claim[] = [];
+  private async generateInputs(
+    preparedAuthCredential: PreparedAuthBJJCredential,
+    preparedCredential: PreparedCredential,
+    identifier: DID,
+    proofReq: ZKPRequest
+  ): Promise<Uint8Array> {
+    const claims: W3CCredential[] = [];
     let circuitInputs;
 
-    if (proofReq.circuitId === CircuitId.AtomicQueryMTP) {
-      const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
-        identifier,
-        proofReq.rules
-      );
-      const cs: CredentialStatus = JSON.parse(claimData.credentialStatus);
-      const revStatus = this._credentialWallet.getStatus(cs);
-      claimData.nonRevProof = {
+    if (proofReq.circuitId === CircuitId.AtomicQueryMTPV2) {
+      const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
+
+      circuitClaimData.nonRevProof = {
         treeState: {
-          state: strMTHex(revStatus.issuer.state),
-          claimsRoot: strMTHex(revStatus.issuer.claims_tree_root),
-          revocationRoot: strMTHex(revStatus.issuer.revocation_tree_root),
-          rootOfRoots: strMTHex(revStatus.issuer.root_of_roots)
+          state: strMTHex(preparedCredential.revStatus.issuer.state),
+          claimsRoot: strMTHex(preparedCredential.revStatus.issuer.claimsTreeRoot),
+          revocationRoot: strMTHex(preparedCredential.revStatus.issuer.revocationTreeRoot),
+          rootOfRoots: strMTHex(preparedCredential.revStatus.issuer.rootOfRoots)
         },
-        proof: revStatus.mtp
+        proof: preparedCredential.revStatus.mtp
       };
 
-      claims.push(claim);
-
-      circuitInputs = new AtomicQueryMTPInputs();
+      circuitInputs = new AtomicQueryMTPV2Inputs();
       circuitInputs.id = identifier;
-      circuitInputs.authClaim = authClaimData;
-      circuitInputs.challenge = BigInt(proofReq.challenge);
-      circuitInputs.signature = signature;
-      circuitInputs.query = circuitQuery;
-      circuitInputs.claim = claimData;
+      circuitInputs.challenge = BigInt(proofReq.id);
+      circuitInputs.query = this.toCircuitsQuery(proofReq.query);
+      circuitInputs.claim = circuitClaimData;
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
+    } else if (proofReq.circuitId === CircuitId.AtomicQuerySigV2) {
+      const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
-      console.log('Claim.Proof: ', claimData.proof);
-      console.log('Claim.NonRevProof: ', claimData.nonRevProof);
-    }
-    // else if (proofReq.circuitId === CircuitId.AtomicQueryMTPWithRelay) {
-    //   const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
-    //     identifier,
-    //     proofReq.rules
-    //   );
+      const issuerAuthClaimNonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
-    //   claims.push(claim);
+      circuitClaimData.signatureProof.issuerAuthNonRevProof = issuerAuthClaimNonRevProof;
 
-    //   const latestRelayClaim = this._credentialWallet.findCredentialWithLatestVersion(
-    //     identifier,
-    //     StateInRelayCredentialHash
-    //   );
-
-    //   const rsClaim: RevocationStatus =
-    //     this._credentialWallet.getRevocationStatus(latestRelayClaim);
-    //   if (!rsClaim) {
-    //     throw new Error('relay claim with latest user state is revoked');
-    //   }
-
-    //   const stateInRelayClaimData = await latestRelayClaim.newCircuitClaimData();
-
-    //   claims.push(latestRelayClaim);
-
-    //   circuitInputs = new AtomicQueryMTPWithRelayInputs();
-    //   circuitInputs.id = identifier;
-    //   circuitInputs.authClaim = authClaimData;
-    //   circuitInputs.challenge = BigInt(proofReq.challenge);
-    //   circuitInputs.signature = signature;
-    //   circuitInputs.userStateInRelayClaim = stateInRelayClaimData;
-    //   circuitInputs.query = circuitQuery;
-    //   circuitInputs.claim = claimData;
-    //   circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-    // }
-    else if (proofReq.circuitId === CircuitId.AtomicQuerySig) {
-      const { claim, claimData, circuitQuery } = await this.getClaimDataForAtomicQueryCircuit(
-        identifier,
-        proofReq.rules
-      );
-
-      // const { signatureProof, bjjProof } = this._identityWallet.sigProofFromClaim(claim);
-      claimData.signatureProof = {} as BJJSignatureProof;
-      let issuerAuthClaimNonRevStatus: RevocationStatus;
-      try {
-        issuerAuthClaimNonRevStatus = this._credentialWallet.getRevocationStatus(
-          {} as Iden3Credential
-        );
-      } catch (e) {
-        if (e.message === VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND) {
-          issuerAuthClaimNonRevStatus = {
-            mtp: new Proof()
-          } as RevocationStatus;
-        } else {
-          throw e;
-        }
-      }
-
-      const issuerAuthClaimNonRevProof = toClaimNonRevStatus(issuerAuthClaimNonRevStatus);
-
-      claimData.signatureProof.issuerAuthNonRevProof = issuerAuthClaimNonRevProof;
-
-      circuitInputs = new AtomicQuerySigInputs();
+      circuitInputs = new AtomicQuerySigV2Inputs();
       circuitInputs.id = identifier;
-      circuitInputs.authClaim = authClaimData;
-      circuitInputs.challenge = proofReq.challenge;
-      circuitInputs.signature = signature;
-      circuitInputs.query = circuitQuery;
-      circuitInputs.claim = claimData;
+      circuitInputs.authClaim = preparedAuthCredential.authCoreClaim;
+      circuitInputs.challenge = proofReq.id;
+      circuitInputs.signature = preparedAuthCredential.signature;
+      circuitInputs.query = this.toCircuitsQuery(proofReq.query);
+      circuitInputs.claim = circuitClaimData;
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-      claims.push(claim);
-    } else if (proofReq.circuitId === CircuitId.Auth) {
-      circuitInputs = new AuthInputs();
+    } else if (proofReq.circuitId === CircuitId.AuthV2) {
+      circuitInputs = new AuthV2Inputs();
       circuitInputs.id = identifier;
-      circuitInputs.authClaim = authClaimData;
-      circuitInputs.signature = signature;
-      circuitInputs.challenge = proofReq.challenge;
+      circuitInputs.authClaim = preparedAuthCredential.authCoreClaim;
+      circuitInputs.signature = preparedAuthCredential.signature;
+      circuitInputs.challenge = proofReq.id;
     } else {
       throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
     const inputs: Uint8Array = await circuitInputs.inputsMarshal();
-    return { inputs, claims };
+    return inputs;
   }
 
-  toCircuitsQuery(query: Query, loader: SchemaLoader): Query {}
+  // NewCircuitClaimData generates circuits claim structure
+  async newCircuitClaimData(prepareCredential: PreparedCredential): Promise<CircuitClaim> {
+    const smtProof = prepareCredential.credential.getIden3SparseMerkleTreeProof();
+    const circuitClaim = new CircuitClaim();
+    circuitClaim.claim = prepareCredential.credentialCoreClaim;
+    circuitClaim.proof = smtProof.mtp;
+
+    circuitClaim.issuerId = DID.parse(prepareCredential.credential.issuer).id;
+    circuitClaim.treeState = {
+      state: strMTHex(smtProof.issuerData.state?.value),
+      claimsRoot: strMTHex(smtProof.issuerData.state?.claimsTreeRoot),
+      revocationRoot: strMTHex(smtProof.issuerData.state?.revocationTreeRoot),
+      rootOfRoots: strMTHex(smtProof.issuerData.state?.rootOfRoots)
+    };
+
+    const sigProof = prepareCredential.credential.getBJJSignature2021Proof();
+
+    const signature = await bJJSignatureFromHexString(sigProof.signature);
+
+    const rs: RevocationStatus = await this._credentialWallet.getRevocationStatus(
+      sigProof.issuerData.credentialStatus as RHSCredentialStatus,
+      DID.parse(sigProof.issuerData.id),
+      sigProof.issuerData.mtp as unknown as Iden3SparseMerkleTreeProof
+    );
+    //todo: check if this is correct
+    const issuerAuthNonRevProof: MTProof = {
+      treeState: {
+        state: strMTHex(rs.issuer.state),
+        claimsRoot: strMTHex(rs.issuer.claimsTreeRoot),
+        revocationRoot: strMTHex(rs.issuer.revocationTreeRoot),
+        rootOfRoots: strMTHex(rs.issuer.rootOfRoots)
+      },
+      proof: rs.mtp
+    };
+
+    circuitClaim.signatureProof = {
+      signature,
+      issuerAuthIncProof: {
+        proof: sigProof.issuerData.mtp!,
+        treeState: {
+          state: strMTHex(sigProof.issuerData.state?.value),
+          claimsRoot: strMTHex(sigProof.issuerData.state?.claimsTreeRoot),
+          revocationRoot: strMTHex(sigProof.issuerData.state?.revocationTreeRoot),
+          rootOfRoots: strMTHex(sigProof.issuerData.state?.rootOfRoots)
+        }
+      },
+      issuerAuthClaim: new Claim().fromHex(sigProof.coreClaim),
+      issuerAuthNonRevProof
+    };
+
+    return circuitClaim;
+  }
+  toCircuitsQuery(query: ProofQuery): Query {
+    return {} as Query;
+  }
 }
+
+// BJJSignatureFromHexString converts hex to  babyjub.Signature
+export const bJJSignatureFromHexString = async (sigHex: string): Promise<Signature> => {
+  const signatureBytes = Hex.decodeString(sigHex);
+  const sig = Uint8Array.from(signatureBytes).slice(0, 64);
+  // TODO: call decompress
+  const bjjSig = await (Signature as any).decompress(sig);
+  return bjjSig as Signature;
+};

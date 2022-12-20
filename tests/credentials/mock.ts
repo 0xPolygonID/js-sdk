@@ -1,4 +1,4 @@
-import { W3CCredential } from '../../src/schema-processor';
+import { W3CCredential } from '../../src/verifiable';
 
 export const createTestCredential = (credData: object) => {
   const cred: W3CCredential = new W3CCredential();

@@ -1,10 +1,10 @@
 import { IDataStorage } from './../../src/storage/interfaces/data-storage';
 import { CredentialWallet } from '../../src/credentials';
-import { ProofQuery, W3CCredential } from '../../src/schema-processor';
 import { StorageErrors } from '../../src/storage/errors';
 import { SearchError } from '../../src/storage/filters/jsonQuery';
 import { InMemoryCredentialStorage } from '../../src/storage/memory';
 import { cred1, cred2, cred3 } from './mock';
+import { ProofQuery, W3CCredential } from '../../src/verifiable';
 
 const credentialFlow = async (storage: IDataStorage) => {
   const credentialWallet = new CredentialWallet(storage);

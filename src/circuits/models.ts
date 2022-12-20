@@ -28,22 +28,14 @@ export class Query {
 
 // CircuitID is alias for circuit identifier
 export enum CircuitId {
-  // AuthCircuitID is a type that must be used for auth.circom
-  Auth = 'auth',
   // Auth is a type that must be used for authV2.circom
   AuthV2 = 'authV2',
   // StateTransition is a type that must be used for stateTransition.circom
   StateTransition = 'stateTransition',
-  // AtomicQueryMTP is a type for credentialAtomicQueryMTP.circom
-  AtomicQueryMTP = 'credentialAtomicQueryMTP',
   // AtomicQueryMTPV2 is a type for credentialAtomicQueryMTPV2.circom
   AtomicQueryMTPV2 = 'credentialAtomicQueryMTPV2',
   // AtomicQuerySig is a type for credentialAttrQuerySig.circom
-  AtomicQuerySig = 'credentialAtomicQuerySig',
-  // AtomicQuerySigV2 is a type for credentialAttrQuerySigV2.circom
-  AtomicQuerySigV2 = 'credentialAtomicQuerySigV2',
-  // JsonLDAtomicQueryMTP is a type for credentialJsonLDAtomicQueryMTP.circom
-  JsonLDAtomicQueryMTP = 'credentialJsonLDAtomicQueryMTP'
+  AtomicQuerySigV2 = 'credentialAtomicQuerySigV2'
 }
 
 export class CircuitClaim {
