@@ -1,12 +1,10 @@
 const IDEN3_PROTOCOL = 'https://iden3-communication.io/';
 
 export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
-  // AuthorizationRequestMessageType defines auth request type of the communication protocol
-  AUTHORIZATION_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'authorization/1.0/request',
   // AuthorizationV2RequestMessageType defines auth V2 request type of the communication protocol
   AUTHORIZATION_V2_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'authorization/2.0/request',
   // AuthorizationResponseMessageType defines auth response type of the communication protocol
-  AuthorizationResponseMessageType: IDEN3_PROTOCOL + 'authorization/1.0/response',
+  AUTHORIZATION_RESPONSE_MESSAGE_TYPE: IDEN3_PROTOCOL + 'authorization/1.0/response',
   // CredentialIssuanceRequestMessageType accepts request for credential creation
   CREDENTIAL_ISSUANCE_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/1.0/issuance-request',
   // CredentialFetchRequestMessageType is type for request of credential generation

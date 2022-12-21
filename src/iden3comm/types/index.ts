@@ -11,9 +11,7 @@ export * from './packageManger';
 export type ProtocolMessage = string;
 export type MediaType = string;
 
-type JSONValue = string | number | boolean | JSONObject | JSONArray;
-
-type JSONArray = Array<JSONValue>;
+type JSONValue = string | number | boolean | object | Array<object>;
 
 export type JSONObject = {
   [x: string]: JSONValue;
