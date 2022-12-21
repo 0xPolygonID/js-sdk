@@ -48,7 +48,7 @@ describe('zkp packer tests', () => {
     );
     const iden3msg = await p.unpack(msgZKP);
 
-    expect(PROTOCOL_MESSAGE_TYPE.AuthorizationResponseMessageType).toEqual(iden3msg.type);
+    expect(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE).toEqual(iden3msg.type);
   });
 });
 
