@@ -6,7 +6,7 @@ import {
   mockPrepareAuthInputs,
   mockVerifyState,
   ProvingMethodGroth16Authv2
-} from '../../src/iden3comm/mock/proving';
+} from './mock/proving';
 import { ProvingParams, VerificationParams } from '../../src/iden3comm/types';
 import { AuthV2PubSignals } from '../../src/circuits';
 import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';

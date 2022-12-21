@@ -1,7 +1,7 @@
 import { ProvingMethod, ProvingMethodAlg, ZKProof } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
-import { CircuitID } from '../types/index';
-import { Bytes } from '../types';
+import { CircuitID } from '../../../src/iden3comm/types';
+import { Bytes } from '../../../src/iden3comm/types';
 import { Eddsa } from '@iden3/js-crypto';
 import { newBigIntFromBytes } from '@iden3/js-merkletree';
 

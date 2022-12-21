@@ -8,7 +8,7 @@ import {
   mockPrepareAuthInputs,
   mockVerifyState,
   ProvingMethodGroth16Authv2
-} from '../../src/iden3comm/mock/proving';
+} from './mock/proving';
 import { proving, ProvingMethodAlg, ProvingMethod } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import {
