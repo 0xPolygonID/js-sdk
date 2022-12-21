@@ -1,10 +1,8 @@
-import { IPacker, MediaType, PackerParams } from './packer';
-import { protocol } from '@iden3/js-iden3-auth';
+import { IPacker, PackerParams } from './packer';
+import { MediaType } from './';
+import { MessageFetchRequestMessage } from './protocol/messages';
 
-export type BasicMessage = protocol.Message & {
-  from: string;
-  to: string;
-};
+export type BasicMessage = MessageFetchRequestMessage;
 
 export interface IPackageManger {
   packers: Map<MediaType, IPacker>;
@@ -13,7 +11,9 @@ export interface IPackageManger {
 
   pack(mediaType: MediaType, payload: Uint8Array, params: PackerParams): Promise<Uint8Array>;
 
-  unpack(envelope: Uint8Array): Promise<BasicMessage & { mediaType: MediaType }>;
+  unpack(
+    envelope: Uint8Array
+  ): Promise<{ unpackedMessage: BasicMessage; unpackedMediaType: MediaType }>;
 
   unpackWithType(mediaType: MediaType, envelope: Uint8Array): Promise<BasicMessage>;
 

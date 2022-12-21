@@ -1,15 +1,18 @@
 import {
   AuthDataPrepareFunc,
   BasicMessage,
+  Bytes,
   IPacker,
   MediaType,
+  ProvingParams,
   StateVerificationFunc,
+  VerificationParams,
   ZKPPackerParams
 } from '../types';
-import { Token, ProvingMethod, Header } from '@iden3/js-jwz';
-import { CircuitID, circuits } from '../mock/jsCircuits';
-import { Id } from '@iden3/js-iden3-core';
-import { bytesToString, stringToBytes } from '../utils';
+import { Token, Header, ProvingMethodAlg, proving } from '@iden3/js-jwz';
+import { CircuitID } from '../types/index';
+import { AuthV2PubSignals, CircuitId } from '../../circuits/index';
+import { DID, Id } from '@iden3/js-iden3-core';
 import { bytesToProtocolMessage } from '../utils/envelope';
 import {
   ErrPackedWithUnsupportedCircuit,
@@ -18,18 +21,20 @@ import {
   ErrStateVerificationFailed,
   ErrUnkownCircuitID
 } from '../errors';
+import { byteDecoder, byteEncoder } from '../utils';
+import { MEDIA_TYPE } from '../constants';
 
-export const MEDIA_TYPE_ZKP_MESSAGE: MediaType = 'application/iden3-zkp-json';
+const { getProvingMethod } = proving;
 
-export class AuthDataPrepareHandlerFunc {
-  constructor(public readonly authDataPrepareFunc: AuthDataPrepareFunc) {}
+export class DataPrepareHandlerFunc {
+  constructor(public readonly dataPrepareFunc: AuthDataPrepareFunc) {}
 
-  prepare(hash: Uint8Array, id: Id, circuitID: CircuitID) {
-    return this.authDataPrepareFunc(hash, id, circuitID);
+  prepare(hash: Uint8Array, id: DID, circuitID: CircuitID): Bytes {
+    return this.dataPrepareFunc(hash, id, circuitID);
   }
 }
 
-export class StateVerificationHandlerFunc {
+export class VerificationHandlerFunc {
   constructor(public readonly stateVerificationFunc: StateVerificationFunc) {}
 
   verify(id: CircuitID, pubSignals: Array<string>): Promise<boolean> {
@@ -39,47 +44,53 @@ export class StateVerificationHandlerFunc {
 
 class ZKPPacker implements IPacker {
   constructor(
-    public provingMethod: ProvingMethod,
-    public authDataPreparer: AuthDataPrepareHandlerFunc,
-    public stateVerifier: StateVerificationHandlerFunc,
-    public provingKey: Uint8Array,
-    public wasm: Uint8Array,
-    public verificationKeys: Map<CircuitID, Uint8Array>
+    // string is derived by JSON.parse(ProvingMethodAlg)
+    public prover: Map<string, ProvingParams>,
+    // string is derived by JSON.parse(ProvingMethodAlg)
+    public verification: Map<string, VerificationParams>
   ) {}
 
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
+    const provingMethod = await getProvingMethod(params.provingMethodAlg);
+    const { provingKey, wasm, dataPreparer } = this.prover.get(
+      JSON.stringify(params.provingMethodAlg)
+    );
+
     const token = new Token(
-      this.provingMethod,
-      bytesToString(payload),
+      provingMethod,
+      byteDecoder.decode(payload),
       (hash: Uint8Array, circuitID: CircuitID) => {
-        return this.authDataPreparer.prepare(hash, params.senderID, circuitID);
+        return dataPreparer.prepare(hash, params.senderID, circuitID);
       }
     );
-    token.setHeader(Header.Type, MEDIA_TYPE_ZKP_MESSAGE);
-    const tokenStr = await token.prove(this.provingKey, this.wasm);
-    return stringToBytes(tokenStr);
+    token.setHeader(Header.Type, MEDIA_TYPE.MEDIA_TYPE_ZKP_MESSAGE);
+    const tokenStr = await token.prove(provingKey, wasm);
+    return byteEncoder.encode(tokenStr);
   }
 
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
-    const token = await Token.parse(bytesToString(envelope));
-    const verificationKey = this.verificationKeys.get(token.circuitId);
+    const token = await Token.parse(byteDecoder.decode(envelope));
+    const provingMethodAlg: ProvingMethodAlg = {
+      alg: token.alg,
+      circuitId: token.circuitId
+    };
+    const { key: verificationKey, verificationFn } = this.verification.get(
+      JSON.stringify(provingMethodAlg)
+    );
     if (!verificationKey) {
-      throw ErrPackedWithUnsupportedCircuit;
+      throw new Error(ErrPackedWithUnsupportedCircuit);
     }
     const isValid = await token.verify(verificationKey);
     if (!isValid) {
-      throw ErrProofIsInvalid;
+      throw new Error(ErrProofIsInvalid);
     }
 
-    const sVerficationRes = await this.stateVerifier.verify(
-      token.circuitId,
-      token.zkProof.pub_signals
-    );
+    const sVerficationRes = await verificationFn.verify(token.circuitId, token.zkProof.pub_signals);
     if (!sVerficationRes) {
-      throw ErrStateVerificationFailed;
+      throw new Error(ErrStateVerificationFailed);
     }
 
-    const messg = bytesToProtocolMessage(stringToBytes(token.getPayload()));
+    const messg = bytesToProtocolMessage(byteEncoder.encode(token.getPayload()));
 
     // should throw if errror
     verifySender(token, messg);
@@ -88,24 +99,33 @@ class ZKPPacker implements IPacker {
   }
 
   mediaType(): MediaType {
-    return MEDIA_TYPE_ZKP_MESSAGE;
+    return MEDIA_TYPE.MEDIA_TYPE_ZKP_MESSAGE;
   }
 }
 
 const verifySender = (token: Token, msg: BasicMessage): void => {
   switch (token.circuitId) {
-    case circuits.authCircuitID:
-      // eslint-disable-next-line no-case-declarations
-      const authPubSigs = circuits.unmarshallToAuthPubSignals(token.zkProof.pub_signals);
-      // eslint-disable-next-line no-case-declarations
-      const { userId } = authPubSigs;
-      if (userId.string() !== msg.from) {
-        throw ErrSenderNotUsedTokenCreation;
+    case CircuitId.AuthV2:
+      if (!verifyAuthV2Sender(msg.from, token.zkProof.pub_signals)) {
+        throw new Error(ErrSenderNotUsedTokenCreation);
       }
       break;
     default:
-      throw ErrUnkownCircuitID;
+      throw new Error(ErrUnkownCircuitID);
   }
+};
+
+const verifyAuthV2Sender = (from: string, pubSignals: Array<string>): boolean => {
+  const byteEncoder = new TextEncoder();
+  const authSignals = new AuthV2PubSignals();
+
+  const pubSig = authSignals.pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(pubSignals)));
+  return checkSender(from, pubSig.userID);
+};
+
+const checkSender = (from: string, id: Id): boolean => {
+  const did = DID.parseFromId(id);
+  return from === did.toString();
 };
 
 export default ZKPPacker;

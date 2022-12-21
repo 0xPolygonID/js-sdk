@@ -6,7 +6,9 @@ export const basicMessageFactory = (): BasicMessage => {
     typ: '',
     thid: '',
     type: '',
-    body: {},
+    body: {
+      id: ''
+    },
     from: '',
     to: ''
   };

@@ -1,13 +1,13 @@
 import { BasicMessage, EnvelopeStub, HeaderStub } from '../types';
 import { basicMessageFactory, envelopeStubFactory, headerStubFactory } from './messg';
-import { bytesToString, stringToBytes } from './bytes';
 import { ErrNotEnvelopeStub, ErrNotHeaderStub, ErrNotProtocolMesg } from '../errors';
 import { Token } from '@iden3/js-jwz';
+import { byteDecoder, byteEncoder } from './index';
 
 const objectIs = (
   obj: { [key in string]: any }, //eslint-disable-line @typescript-eslint/no-explicit-any
   targetObj: { [key in string]: any } //eslint-disable-line @typescript-eslint/no-explicit-any
-) => {
+): boolean => {
   Object.keys(targetObj).forEach((prop) => {
     if (!obj[prop]) {
       return false;
@@ -20,7 +20,7 @@ const objectIs = (
 };
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isProtocolMessage = (messg: { [key in string]: any }) => {
+const isProtocolMessage = (messg: { [key in string]: any }): boolean => {
   const basicMessg = basicMessageFactory();
   Object.keys(basicMessg).forEach((prop) => {
     if (!messg[prop]) {
@@ -40,36 +40,36 @@ const isProtocolMessage = (messg: { [key in string]: any }) => {
 };
 
 export const envelopeToProtocolMessage = async (e: Uint8Array): Promise<BasicMessage> => {
-  const t = await Token.parse(bytesToString(e));
-  const pBytes = stringToBytes(t.getPayload());
+  const t = await Token.parse(byteDecoder.decode(e));
+  const pBytes = byteEncoder.encode(t.getPayload());
   return bytesToProtocolMessage(pBytes);
 };
 
-export const bytesToProtocolMessage = (bytes: Uint8Array) => {
-  const str = bytesToString(bytes);
+export const bytesToProtocolMessage = (bytes: Uint8Array): BasicMessage => {
+  const str = byteDecoder.decode(bytes);
   const messg = JSON.parse(str);
   if (!isProtocolMessage(messg)) {
-    throw ErrNotProtocolMesg;
+    throw new Error(ErrNotProtocolMesg);
   }
   return messg as BasicMessage;
 };
 
 export const bytesToEnvelopeStub = (envelope: Uint8Array): EnvelopeStub => {
   const tmpObj = envelopeStubFactory();
-  const str = bytesToString(envelope);
+  const str = byteDecoder.decode(envelope);
   const messg = JSON.parse(str);
   if (!objectIs(messg, tmpObj)) {
-    throw ErrNotEnvelopeStub;
+    throw new Error(ErrNotEnvelopeStub);
   }
   return messg as EnvelopeStub;
 };
 
 export const bytesToHeaderStub = (envelope: Uint8Array): HeaderStub => {
   const tmpObj = headerStubFactory();
-  const str = bytesToString(envelope);
+  const str = byteDecoder.decode(envelope);
   const messg = JSON.parse(str);
   if (!objectIs(messg, tmpObj)) {
-    throw ErrNotHeaderStub;
+    throw new Error(ErrNotHeaderStub);
   }
   return messg as HeaderStub;
 };

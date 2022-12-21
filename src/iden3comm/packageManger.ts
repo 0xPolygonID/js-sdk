@@ -1,7 +1,7 @@
 import { BasicMessage, IPackageManger, IPacker, MediaType, PackerParams } from './types';
 import { bytesToEnvelopeStub, bytesToHeaderStub } from './utils/envelope';
-import { bytesToString, stringToBytes } from './utils';
 import { base64 } from 'rfc4648';
+import { byteEncoder, byteDecoder } from './utils';
 
 export class PackageManger implements IPackageManger {
   packers: Map<MediaType, IPacker>;
@@ -18,16 +18,25 @@ export class PackageManger implements IPackageManger {
 
   async pack(mediaType: MediaType, payload: Uint8Array, params: PackerParams): Promise<Uint8Array> {
     const p = this.packers.get(mediaType);
-    return await p!.pack(payload, params);
+    if (!p) {
+      throw new Error(`packer for mediatype ${mediaType} not found`);
+    }
+
+    return await p.pack(payload, params);
   }
 
-  async unpack(envelope: Uint8Array): Promise<BasicMessage & { mediaType: MediaType }> {
-    const decodedStr = bytesToString(envelope);
+  async unpack(
+    envelope: Uint8Array
+  ): Promise<{ unpackedMessage: BasicMessage; unpackedMediaType: MediaType }> {
+    const decodedStr = byteDecoder.decode(envelope);
     const safeEnvelope = decodedStr.trim();
-    const mediaType = this.getMediaType(stringToBytes(safeEnvelope));
+    const mediaType = this.getMediaType(byteEncoder.encode(safeEnvelope));
     return {
-      ...(await this.unpackWithSafeEnvelope(mediaType, stringToBytes(safeEnvelope))),
-      mediaType
+      unpackedMessage: await this.unpackWithSafeEnvelope(
+        mediaType,
+        byteEncoder.encode(safeEnvelope)
+      ),
+      unpackedMediaType: mediaType
     };
   }
 
@@ -35,17 +44,20 @@ export class PackageManger implements IPackageManger {
     const decoder = new TextDecoder('utf-8');
     const decodedStr = decoder.decode(envelope);
     const safeEnvelope = decodedStr.trim();
-    return await this.unpackWithSafeEnvelope(mediaType, stringToBytes(safeEnvelope));
+    return await this.unpackWithSafeEnvelope(mediaType, byteEncoder.encode(safeEnvelope));
   }
 
   async unpackWithSafeEnvelope(mediaType: MediaType, envelope: Uint8Array): Promise<BasicMessage> {
     const p = this.packers.get(mediaType);
-    const msg = await p!.unpack(envelope);
+    if (!p) {
+      throw new Error(`packer for mediatype ${mediaType} not found`);
+    }
+    const msg = await p.unpack(envelope);
     return msg;
   }
 
   getMediaType(envelope: Uint8Array): MediaType {
-    const envelopeStr = bytesToString(envelope);
+    const envelopeStr = byteDecoder.decode(envelope);
     let base64HeaderBytes: Uint8Array;
 
     // full seriliazed
