@@ -78,7 +78,9 @@ interface StateTransitionInputsInternal {
 }
 
 export class StateTransitionPubSignals {
-  constructor(public userId: Id, public oldUserState: Hash, public newUserState: Hash) {}
+  userId: Id;
+  oldUserState: Hash;
+  newUserState: Hash
 
   // PubSignalsUnmarshal unmarshal stateTransition.circom public signals
   pubSignalsUnmarshal(data: Uint8Array): StateTransitionPubSignals {
