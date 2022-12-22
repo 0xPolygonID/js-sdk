@@ -1,5 +1,5 @@
 import { buildTreeState, ClaimNonRevStatus } from '../circuits';
-import { RevocationStatus } from '../schema-processor';
+import { RevocationStatus } from '../verifiable';
 
 export const toClaimNonRevStatus = (s: RevocationStatus): ClaimNonRevStatus => {
   return {

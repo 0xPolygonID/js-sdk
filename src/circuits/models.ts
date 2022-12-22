@@ -18,7 +18,7 @@ export interface ClaimNonRevStatus {
 export class Query {
   slotIndex: number;
   values: bigint[];
-  operator: Operators;
+  operator: number;
   valueProof?: ValueProof;
 
   validate(): void {
