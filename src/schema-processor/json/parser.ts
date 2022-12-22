@@ -136,7 +136,7 @@ export class Parser {
 
   getFieldSlotIndex(field: string, schemaBytes: Uint8Array): number {
     const schema: Schema = JSON.parse(new TextDecoder().decode(schemaBytes));
-    if (schema?.$metadata?.serialization) {
+    if (!schema?.$metadata?.serialization) {
       throw new Error('serialization info is not set');
     }
 

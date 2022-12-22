@@ -49,6 +49,9 @@ export class InMemoryCredentialStorage implements ICredentialStorage {
 
   async findCredentialsByQuery(query: ProofQuery): Promise<W3CCredential[]> {
     const filters = StandardJSONCredentielsQueryFilter(query);
-    return this.data.filter((credential) => filters.every((f) => f(credential)));
+    const credentials =  this.data.filter((credential) => 
+    filters.every((f) => f(credential))
+    );
+    return credentials;
   }
 }

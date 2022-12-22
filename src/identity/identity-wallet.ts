@@ -84,7 +84,8 @@ export interface IIdentityWallet {
     did: DID,
     credential: W3CCredential
   ): Promise<MerkleTreeProofWithTreeState>;
-  sign(payload, credential): Promise<Signature>;
+  sign(payload: Uint8Array, credential: W3CCredential): Promise<Signature>;
+  signChallenge(payload: bigint, credential: W3CCredential): Promise<Signature>;
 }
 
 export class IdentityWallet implements IIdentityWallet {
@@ -346,6 +347,13 @@ export class IdentityWallet implements IIdentityWallet {
     const payload = poseidon.hashBytes(message);
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(payload));
+
+    return Signature.newFromCompressed(signature);
+  }
+  async signChallenge(challenge: bigint, credential: W3CCredential): Promise<Signature> {
+    const keyKMSId = this.getKMSIdByAuthCredential(credential);
+
+    const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(challenge));
 
     return Signature.newFromCompressed(signature);
   }
