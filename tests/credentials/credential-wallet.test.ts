@@ -5,6 +5,32 @@ import { SearchError } from '../../src/storage/filters/jsonQuery';
 import { InMemoryCredentialStorage } from '../../src/storage/memory';
 import { cred1, cred2, cred3 } from './mock';
 import { ProofQuery, W3CCredential } from '../../src/verifiable';
+import { BrowserCredentialStorage } from '../../src/storage/local-storage/credentials';
+
+class LocalStorageMock {
+  store: object;
+  constructor() {
+    this.store = {};
+  }
+
+  clear() {
+    this.store = {};
+  }
+
+  getItem(key) {
+    return this.store[key] || null;
+  }
+
+  setItem(key, value) {
+    this.store[key] = value;
+  }
+
+  removeItem(key) {
+    delete this.store[key];
+  }
+}
+
+global.localStorage = new LocalStorageMock() as unknown as Storage;
 
 const credentialFlow = async (storage: IDataStorage) => {
   const credentialWallet = new CredentialWallet(storage);
@@ -159,6 +185,12 @@ describe('credential-wallet', () => {
   it('run in memory with 3 credential', async () => {
     const storage = {
       credential: new InMemoryCredentialStorage()
+    } as unknown as IDataStorage;
+    await credentialFlow(storage);
+  });
+  it('run in local storage with 3 credential', async () => {
+    const storage = {
+      credential: new BrowserCredentialStorage()
     } as unknown as IDataStorage;
     await credentialFlow(storage);
   });

@@ -5,9 +5,16 @@ export enum SearchError {
   NotDefinedComparator = 'not defined comparator'
 }
 
-export const comparatorOptions = {
-  // todo check $noop operator
-  $noop: (a, b) => true,
+export type FilterOperatorMethod = '$noop' | '$eq' | '$in' | '$nin' | '$gt' | '$lt';
+
+export type FilterOperatorFunction = (a, b) => boolean;
+
+export interface IFilterQuery {
+  execute(credential: W3CCredential): boolean;
+}
+
+export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFunction } = {
+  $noop: () => true,
   $eq: (a, b) => a === b,
   $in: (a: string, b: string[]) => b.includes(a),
   $nin: (a: string, b: string[]) => !b.includes(a),
@@ -35,41 +42,66 @@ export const createFilter = (path: string, operatorFunc, value, isReverseParams 
   };
 };
 
-export const StandardJSONCredentielsQueryFilter = (query: ProofQuery) => {
-  return Object.keys(query).reduce((acc, queryKey) => {
+export class FilterQuery implements IFilterQuery {
+  constructor(
+    public path: string,
+    public operatorFunc: FilterOperatorFunction,
+    public value,
+    public isReverseParams = false
+  ) {}
+  execute(credential: W3CCredential): boolean {
+    if (!this.operatorFunc) {
+      throw new Error(SearchError.NotDefinedComparator);
+    }
+    const credentialPathValue = resolvePath(credential, this.path);
+    if (!credentialPathValue) {
+      return false;
+    }
+    if (this.isReverseParams) {
+      return this.operatorFunc(this.value, credentialPathValue);
+    }
+    return this.operatorFunc(credentialPathValue, this.value);
+  }
+}
+
+export const StandardJSONCredentielsQueryFilter = (query: ProofQuery): FilterQuery[] => {
+  return Object.keys(query).reduce((acc: FilterQuery[], queryKey) => {
     const queryValue = query[queryKey];
     switch (queryKey) {
       case 'claimId':
-        return acc.concat(createFilter('id', comparatorOptions.$eq, queryValue));
-      case 'allowedIssuers':
+        return acc.concat(new FilterQuery('id', comparatorOptions.$eq, queryValue));
+      case 'allowedIssuers': {
         const [first] = queryValue || [];
         if (first && first === '*') {
           return acc;
         }
-        return acc.concat(createFilter('issuer', comparatorOptions.$in, queryValue));
+        return acc.concat(new FilterQuery('issuer', comparatorOptions.$in, queryValue));
+      }
       case 'type':
-        return acc.concat(createFilter('type', comparatorOptions.$in, queryValue, true));
+        return acc.concat(new FilterQuery('type', comparatorOptions.$in, queryValue, true));
       case 'context':
-        return acc.concat(createFilter('@context', comparatorOptions.$in, queryValue, true));
+        return acc.concat(new FilterQuery('@context', comparatorOptions.$in, queryValue, true));
       case 'credentialSubjectId':
-        return acc.concat(createFilter('credentialSubject.id', comparatorOptions.$eq, queryValue));
+        return acc.concat(
+          new FilterQuery('credentialSubject.id', comparatorOptions.$eq, queryValue)
+        );
       case 'schema':
-        return acc.concat(createFilter('credentialSchema.id', comparatorOptions.$eq, queryValue));
-      case 'req':
-        const reqFilters = Object.keys(queryValue).reduce((acc, fieldKey) => {
+        return acc.concat(
+          new FilterQuery('credentialSchema.id', comparatorOptions.$eq, queryValue)
+        );
+      case 'req': {
+        const reqFilters = Object.keys(queryValue).reduce((acc: FilterQuery[], fieldKey) => {
           const fieldParams = queryValue[fieldKey];
           const res = Object.keys(fieldParams).map((comparator) => {
             const value = fieldParams[comparator];
-            return createFilter(
-              `credentialSubject.${fieldKey}`,
-              comparatorOptions[comparator],
-              value
-            );
+            const path = `credentialSubject.${fieldKey}`;
+            return new FilterQuery(path, comparatorOptions[comparator], value);
           });
           return acc.concat(res);
         }, []);
 
         return acc.concat(reqFilters);
+      }
       default:
         throw new Error(SearchError.NotDefinedQueryKey);
     }
