@@ -1,4 +1,4 @@
-import { promises as fs } from 'fs';
+import * as fs from 'fs';
 import { TextEncoder } from 'node:util';
 
 export interface IKeyLoader {
@@ -12,9 +12,8 @@ export class FSKeyLoader implements IKeyLoader {
     if (isBrowser()){
       throw new Error("can not use fs loader in the browser");
     }
-    const data = await fs.readFile(`${this.dir}/${path}`, 'utf8');
-    const enc = new TextEncoder();
-    return enc.encode(data);
+    const data = await fs.readFileSync(`${this.dir}/${path}`);
+    return new Uint8Array(data);
   }
   
 }
