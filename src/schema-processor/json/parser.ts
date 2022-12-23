@@ -86,10 +86,12 @@ export class Parser {
 
     switch (opts.merklizedRootPosition) {
       case MerklizedRootPosition.Index:
-        claim.setIndexMerklizedRoot((await credential.merklize()).root().bigInt());
+        const mk1 = await credential.merklize();
+        claim.setIndexMerklizedRoot(mk1.root().bigInt());
         break;
       case MerklizedRootPosition.Value:
-        claim.setValueMerklizedRoot((await credential.merklize()).root().bigInt());
+        const mk = await credential.merklize();
+        claim.setValueMerklizedRoot(mk.root().bigInt());
         break;
       case MerklizedRootPosition.None:
         break;

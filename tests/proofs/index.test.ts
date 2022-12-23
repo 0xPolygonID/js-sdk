@@ -14,7 +14,7 @@ import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 
-describe('proofs', () => {
+describe.only('proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -56,7 +56,7 @@ describe('proofs', () => {
 
     proofService = new ProofService(idWallet, credWallet, kms, circuitStorage);
   });
-  it('proof', async () => {
+  it.skip('sigv2-non-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
@@ -85,6 +85,71 @@ describe('proofs', () => {
     const claimReq: ClaimRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.toString(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 1693526400 ,
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+      withPublish: false,
+      withRHS: 'http://rhs.node'
+    });
+
+    console.log(JSON.stringify(issuerCred));
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZKPRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+        req: {
+          documentType: {
+            $eq: 99
+          }
+        }
+      }
+    };
+    const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
+    console.log(proof);
+  });
+  it.only('sigv2-merklized', async () => {
+    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
+      'seedseedseedseedseedseedseedseed'
+    );
+    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
+
+    const { did: userDID, credential } = await idWallet.createIdentity(
+      'http://metamask.com/',
+      'http://rhs.com/node',
+      seedPhrase
+    );
+    expect(userDID.toString()).toBe(
+      'did:iden3:polygon:mumbai:wuw5tydZ7AAd3efwEqPprnqjiNHR24jqruSPKmV1V'
+    );
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
+      'http://metamask.com/',
+      'http://rhs.com/node',
+      seedPhraseIssuer
+    );
+
+    expect(issuerDID.toString()).toBe(
+      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
+    );
+   
+
+    const claimReq: ClaimRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: userDID.toString(),

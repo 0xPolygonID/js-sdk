@@ -381,6 +381,8 @@ export class IdentityWallet implements IIdentityWallet {
       req.revNonce = Math.round(Math.random() * 10000); // todo: rework
     }
     req.subjectPosition = req.subjectPosition ?? SubjectPosition.Index;
+
+
     revNonce = req.revNonce;
 
     try {
@@ -421,6 +423,7 @@ export class IdentityWallet implements IIdentityWallet {
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
 
     const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
+    
     const sigProof: BJJSignatureProof2021 = {
       type: ProofType.BJJSignature,
       issuerData: {
@@ -462,7 +465,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     issuerTreeState = await this.getDIDTreeState(issuerDID);
 
-    pushHashesToRHS(issuerTreeState.state, issuerTreeState, rhsURL);
+    // pushHashesToRHS(issuerTreeState.state, issuerTreeState, rhsURL);
 
     await this._storage.identity.saveIdentity({
       identifier: issuerDID.toString(),
@@ -478,10 +481,9 @@ export class IdentityWallet implements IIdentityWallet {
     if (!!schema.$metadata && !!schema.$metadata.serialization) {
       return '';
     }
-    if (position !== '') {
+    if (position !== undefined && position !== ''){
       return position;
     }
-
     return MerklizedRootPosition.Index;
   }
 
