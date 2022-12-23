@@ -71,8 +71,8 @@ export class EthStateStorage implements IStateStorage {
     );
 
     const txnReceipt = await tx.wait();
-    const status = txnReceipt.status as number;
-    const txnHash = txnReceipt.transactionHash as string;
+    const status:number = txnReceipt.status;
+    const txnHash:string = txnReceipt.transactionHash;
 
     if (status === 0) {
       throw new Error(`transaction: ${txnHash} failed to mined`);
