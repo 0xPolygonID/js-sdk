@@ -37,6 +37,7 @@ export const defaultEthConnectionConfig: EthConnectionConfig = {
 
 export class EthStateStorage implements IStateStorage {
   public stateContract: ethers.Contract;
+
   constructor(private readonly ethConfig: EthConnectionConfig = defaultEthConnectionConfig) {
     const provider = new ethers.providers.JsonRpcProvider(this.ethConfig.url);
     this.stateContract = new ethers.Contract(this.ethConfig.contractAddress, abi, provider);
@@ -71,8 +72,8 @@ export class EthStateStorage implements IStateStorage {
     );
 
     const txnReceipt = await tx.wait();
-    const status:number = txnReceipt.status;
-    const txnHash:string = txnReceipt.transactionHash;
+    const status: number = txnReceipt.status;
+    const txnHash: string = txnReceipt.transactionHash;
 
     if (status === 0) {
       throw new Error(`transaction: ${txnHash} failed to mined`);
