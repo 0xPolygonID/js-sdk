@@ -1,7 +1,11 @@
 import { IStateStorage } from '../interfaces/state';
-import { ethers } from 'ethers';
+import { ethers, Signer } from 'ethers';
 import { StateInfo } from '../entities/state';
 import abi from './state-abi.json';
+import { FullProof } from '../../proof';
+import { StateTransitionPubSignals } from '../../circuits';
+import { isIssuerGenesis } from '../../credentials';
+import { DID } from '@iden3/js-iden3-core';
 
 export interface EthConnectionConfig {
   url: string;
@@ -40,5 +44,40 @@ export class EthStateStorage implements IStateStorage {
 
   async getLatestStateById(issuerId: bigint): Promise<StateInfo> {
     return await this.stateContract.getStateInfoById(issuerId);
+  }
+
+  async publishState(proof: FullProof, signer: Signer): Promise<string> {
+    const byteEncoder = new TextEncoder();
+    const contract = this.stateContract.connect(signer);
+
+    const stateTransitionPubSig = new StateTransitionPubSignals();
+    stateTransitionPubSig.pubSignalsUnmarshal(
+      byteEncoder.encode(JSON.stringify(proof.pub_signals))
+    );
+    const { userId, oldUserState, newUserState } = stateTransitionPubSig;
+    const isOldStateGenesis = isIssuerGenesis(
+      DID.parseFromId(userId).toString(),
+      oldUserState.hex()
+    );
+
+    const tx = await contract.transitState(
+      userId,
+      oldUserState,
+      newUserState,
+      isOldStateGenesis,
+      proof.proof.pi_a[2],
+      proof.proof.pi_b[2][2],
+      proof.proof.pi_c[2]
+    );
+
+    const txnReceipt = await tx.wait();
+    const status = txnReceipt.status as number;
+    const txnHash = txnReceipt.transactionHash as string;
+
+    if (status === 0) {
+      throw new Error(`transaction: ${txnHash} failed to mined`);
+    }
+
+    return txnHash;
   }
 }
