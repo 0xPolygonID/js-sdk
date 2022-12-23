@@ -187,6 +187,5 @@ describe('identity', () => {
       withPublish: false,
       withRHS: 'http://rhs.node'
     });
-    console.log(JSON.stringify(issuerCred));
   });
 });

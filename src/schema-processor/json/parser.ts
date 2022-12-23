@@ -126,7 +126,7 @@ export class Parser {
 
     result.indexA = fillSlot(data, schema.indexDataSlotA);
     result.indexB = fillSlot(data, schema.indexDataSlotB);
-    result.valueA = fillSlot(data, schema.valueDataSlotB);
+    result.valueA = fillSlot(data, schema.valueDataSlotA);
     result.valueB = fillSlot(data, schema.valueDataSlotB);
 
     return result;

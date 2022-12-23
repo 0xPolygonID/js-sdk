@@ -112,9 +112,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const pubKey = await this._kms.publicKey(keyID);
 
-    const schemaHash = SchemaHash.newSchemaHashFromHex(
-      VerifiableConstants.AUTH.AUTH_BJJ_CREDENTAIL_HASH
-    );
+    const schemaHash = SchemaHash.authSchemaHash;
 
     const authClaim = Claim.newClaim(
       schemaHash,

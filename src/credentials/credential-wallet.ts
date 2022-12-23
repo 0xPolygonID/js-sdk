@@ -46,7 +46,7 @@ export interface ICredentialWallet {
   getRevocationStatus(
     credStatus: CredentialStatus | RHSCredentialStatus,
     issuerDID: DID,
-    issuerData: IssuerData,
+    issuerData: IssuerData
   ): Promise<RevocationStatus>;
   findClaimsForCircuitQuery(claims, circuitQuery, requestFiled): Promise<W3CCredential[]>;
   createCredential(
@@ -89,10 +89,10 @@ export class CredentialWallet implements ICredentialWallet {
     const mtpProof = cred.getIden3SparseMerkleTreeProof();
     const sigProof = cred.getBJJSignature2021Proof();
 
-    let issuerData : IssuerData | undefined = mtpProof ? mtpProof.issuerData : sigProof.issuerData;
-    if (!issuerData){
-       throw new Error("no sig / mtp proof to check issuer info")
-    } 
+    let issuerData: IssuerData | undefined = mtpProof ? mtpProof.issuerData : sigProof.issuerData;
+    if (!issuerData) {
+      throw new Error('no sig / mtp proof to check issuer info');
+    }
     const issuerDID = DID.parse(cred.issuer);
 
     return await this.getRevocationStatus(cred.credentialStatus!, issuerDID, issuerData);
@@ -118,7 +118,7 @@ export class CredentialWallet implements ICredentialWallet {
           return {
             mtp: new Proof(),
             issuer: {
-              state:issuerData.state.value,
+              state: issuerData.state.value,
               revocationTreeRoot: issuerData.state.revocationTreeRoot,
               rootOfRoots: issuerData.state.rootOfRoots,
               claimsTreeRoot: issuerData.state.claimsTreeRoot
@@ -150,7 +150,8 @@ export class CredentialWallet implements ICredentialWallet {
     ];
     const credentialType = [VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE, request.type];
 
-    const expirationDate = request.expiration;
+    const expirationDate =
+      !request.expiration || request.expiration == 0 ? null : request.expiration;
     const issuanceDate = getUnixTimestamp(new Date());
 
     const issuerDID = issuer.toString();
@@ -161,8 +162,8 @@ export class CredentialWallet implements ICredentialWallet {
     cr.id = `${hostUrl}/${uuid.v4()}`;
     cr['@context'] = context;
     cr.type = credentialType;
-    cr.expirationDate = expirationDate;
-    cr.issuanceDate = issuanceDate;
+    cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : null;
+    cr.issuanceDate = new Date().toISOString()
     cr.credentialSubject = credentialSubject;
     cr.issuer = issuerDID.toString();
     cr.credentialSchema = {
@@ -187,7 +188,7 @@ export class CredentialWallet implements ICredentialWallet {
     return cr;
   };
 
-  findClaimsForCircuitQuery(
+  async findClaimsForCircuitQuery(
     claims: any,
     circuitQuery: any,
     requestFiled: any

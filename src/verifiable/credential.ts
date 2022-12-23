@@ -9,8 +9,8 @@ export class W3CCredential {
   id: string;
   '@context': string[];
   type: string[];
-  expirationDate?: number;
-  issuanceDate?: number;
+  expirationDate?: string;
+  issuanceDate?: string;
   credentialSubject: { [key: string]: object | string };
   credentialStatus?: CredentialStatus | RHSCredentialStatus;
   issuer: string;

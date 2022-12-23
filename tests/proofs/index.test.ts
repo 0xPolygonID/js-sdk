@@ -68,7 +68,7 @@ describe('proofs', () => {
       seedPhrase
     );
     expect(userDID.toString()).toBe(
-      'did:iden3:polygon:mumbai:x6PfWy7PSx1L6R2XoGbDBaGyyDp6Ne3DecrCnosQq'
+      'did:iden3:polygon:mumbai:wuw5tydZ7AAd3efwEqPprnqjiNHR24jqruSPKmV1V'
     );
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
@@ -78,7 +78,7 @@ describe('proofs', () => {
     );
 
     expect(issuerDID.toString()).toBe(
-      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
    
 
@@ -91,12 +91,14 @@ describe('proofs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 12345678888
+      expiration: 1693526400 ,
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
       withPublish: false,
       withRHS: 'http://rhs.node'
     });
+
+    console.log(JSON.stringify(issuerCred));
 
     await credWallet.save(issuerCred);
 
