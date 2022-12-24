@@ -1,6 +1,5 @@
-import { promises as fs } from 'fs';
-import { TextEncoder } from 'node:util';
-
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { promises: fs } = require('fs');
 export interface IKeyLoader {
   load(circuitId: string): Promise<Uint8Array>;
 }

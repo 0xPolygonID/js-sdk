@@ -1,15 +1,13 @@
 'use strict';
 
 import { RemoteDocument, Url } from 'jsonld/jsonld-spec';
-
+import 'cross-fetch/polyfill';
 import https from 'https';
 import http from 'http';
 import { parseLinkHeader } from 'jsonld/lib/util';
 import { LINK_HEADER_CONTEXT } from 'jsonld/lib/constants';
 import JsonLdError from 'jsonld/lib/JsonLdError';
 import { prependBase } from 'jsonld/lib/url';
-// eslint-disable-next-line  @typescript-eslint/no-var-requires
-const { httpClient } = require('@digitalbazaar/http-client');
 
 /**
  * Creates a built-in node document loader.
@@ -180,7 +178,7 @@ async function _fetch({ url, headers, strictSSL, httpAgent, httpsAgent }) {
     const options: {
       // eslint-disable-next-line  @typescript-eslint/no-explicit-any
       headers: any;
-      redirect: string;
+      redirect: RequestRedirect;
       throwHttpErrors: boolean;
       // eslint-disable-next-line  @typescript-eslint/no-explicit-any
       agent?: any;
@@ -198,8 +196,9 @@ async function _fetch({ url, headers, strictSSL, httpAgent, httpsAgent }) {
         options.agent = httpAgent;
       }
     }
-    const res = await httpClient.get(url, options);
-    return { res, body: res.data };
+    const res = await fetch(url, { headers, redirect: options.redirect });
+    const body = await res.text();
+    return { res, body };
   } catch (e) {
     // HTTP errors have a response in them
     // ky considers redirects HTTP errors

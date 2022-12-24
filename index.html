@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible"
+        content="IE=edge">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+    <script src="./dist/umd/index.js"></script>
+    <title>Test</title>
+</head>
+
+<body>
+    Test browser
+</body>
+<script>
+    const { 
+        InMemoryPrivateKeyStore,
+        InMemoryCredentialStorage,
+        InMemoryIdentityStorage,
+        InMemoryMerkleTreeStorage,
+        BrowserCredentialStorage,
+        BjjProvider,
+        KmsKeyType,
+        IdentityWallet,
+        CredentialWallet,
+        KMS
+     } = IdenPolygonIdSdk;
+
+    const run = async () => {
+        const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
+    const kms = new KMS();
+    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+
+    dataStorage = {
+      credential: new BrowserCredentialStorage(),
+      identity: new InMemoryIdentityStorage(),
+      mt: new InMemoryMerkleTreeStorage(40),
+      states: {
+        getLatestStateById: async (issuerId) => {
+            return { id: BigInt(0), state: BigInt(0) };
+        }
+      }
+    };
+    const credWallet = new CredentialWallet(dataStorage);
+    wallet = new IdentityWallet(kms, dataStorage, credWallet);
+    console.log(wallet);
+
+    const seedPhrase = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
+
+    const { did, credential } = await wallet.createIdentity(
+        'http://metamask.com/',
+        'http://rhs.com/node',
+        seedPhrase
+    );
+    console.log(did.toString());
+    console.assert(did.toString() === 'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J');
+
+    };
+    run();
+</script>
+
+</html>

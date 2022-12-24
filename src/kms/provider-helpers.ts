@@ -1,5 +1,6 @@
-import { KmsKeyType } from './kms';
-import { randomBytes } from 'crypto';
+import { KmsKeyType } from './store';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { randomBytes } = require('crypto');
 
 export function keyPath(keyType: KmsKeyType, keyID: string): string {
   const basePath = '';

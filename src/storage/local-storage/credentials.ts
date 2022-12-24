@@ -1,4 +1,4 @@
-import { BrowserLocalStorage } from './index';
+import { BrowserLocalStorage } from './db';
 import { ProofQuery, W3CCredential } from '../../verifiable';
 import { StorageErrors } from '../errors';
 import { StandardJSONCredentielsQueryFilter } from '../filters/jsonQuery';
