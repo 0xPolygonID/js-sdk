@@ -230,6 +230,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const profile = Id.profileId(id, BigInt(nonce));
     const profileDID = DID.parseFromId(profile);
+    
     await this._storage.identity.saveProfile({
       id: profileDID.toString(),
       nonce,
