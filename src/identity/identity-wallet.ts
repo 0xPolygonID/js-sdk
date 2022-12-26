@@ -78,7 +78,6 @@ export interface IIdentityWallet {
   ): Promise<{ did: DID; credential: W3CCredential }>;
   createProfile(did: DID, nonce: number, verifier: string): Promise<DID>;
   generateKey(keyType: KmsKeyType): Promise<KmsKeyId>;
-  getLatestStateById(id: Id): IdentityState;
   generateClaimMtp(did: DID, credential: W3CCredential): Promise<MerkleTreeProofWithTreeState>;
   generateNonRevocationMtp(
     did: DID,
@@ -135,7 +134,7 @@ export class IdentityWallet implements IIdentityWallet {
     );
 
     const currentState = await hashElems([
-      claimsTree.root.bigInt(),
+      claimsTree!.root.bigInt(),
       ZERO_HASH.bigInt(),
       ZERO_HASH.bigInt()
     ]);
@@ -148,8 +147,9 @@ export class IdentityWallet implements IIdentityWallet {
 
     const schema = JSON.parse(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTAIL_SCHEMA_JSON);
 
-    const expiration = authClaim.getExpirationDate()
-      ? getUnixTimestamp(authClaim.getExpirationDate())
+    const authData = authClaim.getExpirationDate();
+    const expiration = authData
+      ? getUnixTimestamp(authData)
       : 0;
 
     const request: ClaimRequest = {
@@ -167,7 +167,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     hostUrl = hostUrl.replace(/\/$/, '');
 
-    let credential: W3CCredential = null;
+    let credential: W3CCredential = new W3CCredential();
     try {
       credential = this._credentialWallet.createCredential(hostUrl, did, request, schema, rhsUrl);
     } catch (e) {
@@ -191,7 +191,7 @@ export class IdentityWallet implements IIdentityWallet {
           value: stateHex
         },
         authCoreClaim: authClaim.hex(),
-        credentialStatus: credential.credentialStatus,
+        credentialStatus: credential.credentialStatus!,
         mtp: proof
       },
       coreClaim: authClaim.hex()
@@ -325,10 +325,6 @@ export class IdentityWallet implements IIdentityWallet {
     };
   }
 
-  getLatestStateById(id: Id): IdentityState {
-    return undefined;
-  }
-
   private getKMSIdByAuthCredential(credential: W3CCredential): KmsKeyId {
     if (credential.type.indexOf('AuthBJJCredential') === -1) {
       throw new Error("can't sign with not AuthBJJCredential credential");
@@ -375,7 +371,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const jsonSchema: Schema = JSON.parse(new TextDecoder().decode(schema));
 
-    let credential: W3CCredential = null;
+    let credential: W3CCredential = new W3CCredential();
 
     let revNonce = 0;
     if (!req.revNonce) {
@@ -403,14 +399,14 @@ export class IdentityWallet implements IIdentityWallet {
     const coreClaimOpts: CoreClaimOptions = {
       revNonce: revNonce,
       subjectPosition: req.subjectPosition,
-      merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition),
+      merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition!),
       updatable: false,
       version: 0
     };
 
     const coreClaim = await new Parser().parseClaim(
       credential,
-      `${jsonSchema.$metadata.uris['jsonLdContext']}#${req.type}`,
+      `${jsonSchema.$metadata!.uris['jsonLdContext']}#${req.type}`,
       schema,
       coreClaimOpts
     );
@@ -423,7 +419,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
 
-    const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
+    const mtpAuthBJJProof = issuerAuthBJJCredential.proof![0] as Iden3SparseMerkleTreeProof;
     
     const sigProof: BJJSignatureProof2021 = {
       type: ProofType.BJJSignature,
@@ -451,8 +447,8 @@ export class IdentityWallet implements IIdentityWallet {
     await this._storage.mt.addToMerkleTree(
       issuerDID.toString(),
       MerkleTreeType.Claims,
-      coreClaim.hIndex(),
-      coreClaim.hValue()
+      coreClaim!.hIndex(),
+      coreClaim!.hValue()
     );
 
     let issuerTreeState = await this.getDIDTreeState(issuerDID);
@@ -500,10 +496,10 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error('core claim is not set proof');
     }
     if (!coreClaimFromMtpProof) {
-      coreClaim = coreClaimFromSigProof;
+      coreClaim = coreClaimFromSigProof!;
     }
     if (!coreClaimFromSigProof) {
-      coreClaim = coreClaimFromMtpProof;
+      coreClaim = coreClaimFromMtpProof!;
     }
     if (
       coreClaimFromMtpProof &&
@@ -512,7 +508,7 @@ export class IdentityWallet implements IIdentityWallet {
     ) {
       throw new Error('core claim is set in both proofs but not equal');
     } else {
-      coreClaim = coreClaimFromMtpProof;
+      coreClaim = coreClaimFromMtpProof!;
     }
     return coreClaim;
   }

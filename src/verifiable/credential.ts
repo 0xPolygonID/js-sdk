@@ -40,7 +40,7 @@ export class W3CCredential {
     }
     return undefined;
   }
-  getBJJSignature2021Proof(): BJJSignatureProof2021 {
+  getBJJSignature2021Proof(): (BJJSignatureProof2021 | undefined) {
     const proofType: ProofType = ProofType.BJJSignature;
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
@@ -58,7 +58,7 @@ export class W3CCredential {
    return undefined;
   }
 
-  getIden3SparseMerkleTreeProof(): Iden3SparseMerkleTreeProof {
+  getIden3SparseMerkleTreeProof(): (Iden3SparseMerkleTreeProof |undefined) {
     const proofType: ProofType = ProofType.Iden3SparseMerkleTreeProof;
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
