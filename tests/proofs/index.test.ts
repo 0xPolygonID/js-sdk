@@ -14,7 +14,7 @@ import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 
-describe.only('proofs', () => {
+describe.skip('proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
