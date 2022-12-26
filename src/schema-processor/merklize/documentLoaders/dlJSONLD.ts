@@ -9,7 +9,7 @@ import { LINK_HEADER_CONTEXT } from 'jsonld/lib/constants';
 import JsonLdError from 'jsonld/lib/JsonLdError';
 import { prependBase } from 'jsonld/lib/url';
 // eslint-disable-next-line  @typescript-eslint/no-var-requires
-const { httpClient } = require('@digitalbazaar/http-client');
+import axios from 'axios';
 
 /**
  * Creates a built-in node document loader.
@@ -185,7 +185,7 @@ async function _fetch({ url, headers, strictSSL, httpAgent, httpsAgent }) {
       // eslint-disable-next-line  @typescript-eslint/no-explicit-any
       agent?: any;
     } = {
-      headers,
+      headers:{...headers,  "Accept-Encoding": "gzip,deflate,compress" },
       redirect: 'manual',
       // ky specific to avoid redirects throwing
       throwHttpErrors: false
@@ -198,7 +198,7 @@ async function _fetch({ url, headers, strictSSL, httpAgent, httpsAgent }) {
         options.agent = httpAgent;
       }
     }
-    const res = await httpClient.get(url, options);
+    const res = await axios.get(url,options);
     return { res, body: res.data };
   } catch (e) {
     // HTTP errors have a response in them

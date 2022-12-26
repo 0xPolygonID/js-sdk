@@ -1,7 +1,6 @@
 import { InMemoryDB, str2Bytes, Merkletree } from '@iden3/js-merkletree';
 
 import { Hasher } from '../types';
-import { stringToBytes } from '../../../iden3comm/utils';
 import { RdfEntry } from './rdfEntry';
 
 export const getMerkleTreeInitParam = (
@@ -58,6 +57,11 @@ const mkValueBool = (h: Hasher, v: boolean): Promise<bigint> => {
     return h.hash([BigInt.asIntN(64, BigInt(1))]);
   }
   return h.hash([BigInt.asIntN(64, BigInt(0))]);
+};
+
+const stringToBytes = (str: string): Uint8Array => {
+  const textEncoder = new TextEncoder();
+  return textEncoder.encode(str);
 };
 
 const mkValueString = (h: Hasher, v: string): Promise<bigint> => {

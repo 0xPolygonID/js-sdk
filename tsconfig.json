@@ -3,7 +3,7 @@
     "declaration": true,
     "declarationDir": "./dist/types",
     "sourceMap": true,
-    "target": "es6",
+    "target": "es2020",
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "esModuleInterop": true

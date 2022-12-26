@@ -9,8 +9,8 @@ export class W3CCredential {
   id: string;
   '@context': string[];
   type: string[];
-  expirationDate?: number;
-  issuanceDate?: number;
+  expirationDate?: string;
+  issuanceDate?: string;
   credentialSubject: { [key: string]: object | string };
   credentialStatus?: CredentialStatus | RHSCredentialStatus;
   issuer: string;
@@ -55,7 +55,7 @@ export class W3CCredential {
         return this.proof as BJJSignatureProof2021;
       }
     }
-    throw new Error('no bjj proof in the credential');
+   return undefined;
   }
 
   getIden3SparseMerkleTreeProof(): Iden3SparseMerkleTreeProof {
@@ -73,7 +73,7 @@ export class W3CCredential {
         return this.proof as Iden3SparseMerkleTreeProof;
       }
     }
-    throw new Error('no iden3 smt proof in the credential');
+    return undefined;
   }
 }
 

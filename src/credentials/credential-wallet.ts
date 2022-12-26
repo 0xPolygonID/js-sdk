@@ -12,7 +12,8 @@ import {
   Iden3SparseMerkleTreeProof,
   RHSCredentialStatus,
   RevocationStatus,
-  CredentialStatusType
+  CredentialStatusType,
+  IssuerData
 } from './../verifiable';
 
 import { Schema } from '../schema-processor';
@@ -45,7 +46,7 @@ export interface ICredentialWallet {
   getRevocationStatus(
     credStatus: CredentialStatus | RHSCredentialStatus,
     issuerDID: DID,
-    mtp: Iden3SparseMerkleTreeProof
+    issuerData: IssuerData
   ): Promise<RevocationStatus>;
   findClaimsForCircuitQuery(claims, circuitQuery, requestFiled): Promise<W3CCredential[]>;
   createCredential(
@@ -85,17 +86,22 @@ export class CredentialWallet implements ICredentialWallet {
   }
 
   async getRevocationStatusFromCredential(cred: W3CCredential): Promise<RevocationStatus> {
-    const mtp = cred.getIden3SparseMerkleTreeProof();
+    const mtpProof = cred.getIden3SparseMerkleTreeProof();
+    const sigProof = cred.getBJJSignature2021Proof();
 
+    let issuerData: IssuerData | undefined = mtpProof ? mtpProof.issuerData : sigProof.issuerData;
+    if (!issuerData) {
+      throw new Error('no sig / mtp proof to check issuer info');
+    }
     const issuerDID = DID.parse(cred.issuer);
 
-    return await this.getRevocationStatus(cred.credentialStatus!, issuerDID, mtp);
+    return await this.getRevocationStatus(cred.credentialStatus!, issuerDID, issuerData);
   }
 
   async getRevocationStatus(
     credStatus: CredentialStatus | RHSCredentialStatus,
     issuerDID: DID,
-    mtp: Iden3SparseMerkleTreeProof
+    issuerData: IssuerData
   ): Promise<RevocationStatus> {
     if (credStatus.type === CredentialStatusType.SparseMerkleTreeProof) {
       return (await axios.get<RevocationStatus>(credStatus.id)).data;
@@ -107,15 +113,15 @@ export class CredentialWallet implements ICredentialWallet {
       } catch (e) {
         if (
           (e as Error).message.includes(VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND) &&
-          isIssuerGenesis(issuerDID.toString(), mtp.issuerData.state.value)
+          isIssuerGenesis(issuerDID.toString(), issuerData.state.value)
         ) {
           return {
             mtp: new Proof(),
             issuer: {
-              state: mtp.issuerData.state.value,
-              revocationTreeRoot: mtp.issuerData.state.revocationTreeRoot,
-              rootOfRoots: mtp.issuerData.state.rootOfRoots,
-              claimsTreeRoot: mtp.issuerData.state.claimsTreeRoot
+              state: issuerData.state.value,
+              revocationTreeRoot: issuerData.state.revocationTreeRoot,
+              rootOfRoots: issuerData.state.rootOfRoots,
+              claimsTreeRoot: issuerData.state.claimsTreeRoot
             }
           };
         }
@@ -144,7 +150,8 @@ export class CredentialWallet implements ICredentialWallet {
     ];
     const credentialType = [VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE, request.type];
 
-    const expirationDate = request.expiration;
+    const expirationDate =
+      !request.expiration || request.expiration == 0 ? null : request.expiration;
     const issuanceDate = getUnixTimestamp(new Date());
 
     const issuerDID = issuer.toString();
@@ -155,8 +162,8 @@ export class CredentialWallet implements ICredentialWallet {
     cr.id = `${hostUrl}/${uuid.v4()}`;
     cr['@context'] = context;
     cr.type = credentialType;
-    cr.expirationDate = expirationDate;
-    cr.issuanceDate = issuanceDate;
+    cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : null;
+    cr.issuanceDate = new Date().toISOString()
     cr.credentialSubject = credentialSubject;
     cr.issuer = issuerDID.toString();
     cr.credentialSchema = {
@@ -181,7 +188,7 @@ export class CredentialWallet implements ICredentialWallet {
     return cr;
   };
 
-  findClaimsForCircuitQuery(
+  async findClaimsForCircuitQuery(
     claims: any,
     circuitQuery: any,
     requestFiled: any

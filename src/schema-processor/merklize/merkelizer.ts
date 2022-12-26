@@ -3,7 +3,7 @@ import { Hasher, Value } from './types';
 import { Literal, Parser, Quad } from 'n3';
 import { DEFAULT_HASHER } from './constants';
 import { RdfEntry } from './internal/rdfEntry';
-import { newPathFromDocument, Path } from './internal/path';
+import { newPathFromDocument,newFieldPathFromCtx, Path } from './internal/path';
 import { canonize, JsonLdDocument } from 'jsonld';
 import { getJsonLdDocLoader } from './documentLoaders/dlJSONLD';
 import { getQuadKey } from './internal/quadKey';
@@ -215,4 +215,13 @@ export const validateValue = (val: any): void => {
   throw new Error(
     `unexpected value type ${typeof val}, expected boolean | number | bigint | Date | string`
   );
+};
+
+
+export const getContextPathKey = async (
+  docStr: string,
+  ctxTyp: string,
+  fieldPath: string,
+): Promise<Path> => {
+  return await newFieldPathFromCtx(docStr, ctxTyp, fieldPath);
 };

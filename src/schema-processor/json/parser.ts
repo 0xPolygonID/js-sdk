@@ -86,10 +86,12 @@ export class Parser {
 
     switch (opts.merklizedRootPosition) {
       case MerklizedRootPosition.Index:
-        claim.setIndexMerklizedRoot((await credential.merklize()).root().bigInt());
+        const mk1 = await credential.merklize();
+        claim.setIndexMerklizedRoot(mk1.root().bigInt());
         break;
       case MerklizedRootPosition.Value:
-        claim.setValueMerklizedRoot((await credential.merklize()).root().bigInt());
+        const mk = await credential.merklize();
+        claim.setValueMerklizedRoot(mk.root().bigInt());
         break;
       case MerklizedRootPosition.None:
         break;
@@ -126,7 +128,7 @@ export class Parser {
 
     result.indexA = fillSlot(data, schema.indexDataSlotA);
     result.indexB = fillSlot(data, schema.indexDataSlotB);
-    result.valueA = fillSlot(data, schema.valueDataSlotB);
+    result.valueA = fillSlot(data, schema.valueDataSlotA);
     result.valueB = fillSlot(data, schema.valueDataSlotB);
 
     return result;
@@ -136,7 +138,7 @@ export class Parser {
 
   getFieldSlotIndex(field: string, schemaBytes: Uint8Array): number {
     const schema: Schema = JSON.parse(new TextDecoder().decode(schemaBytes));
-    if (schema?.$metadata?.serialization) {
+    if (!schema?.$metadata?.serialization) {
       throw new Error('serialization info is not set');
     }
 

@@ -84,7 +84,8 @@ export interface IIdentityWallet {
     did: DID,
     credential: W3CCredential
   ): Promise<MerkleTreeProofWithTreeState>;
-  sign(payload, credential): Promise<Signature>;
+  sign(payload: Uint8Array, credential: W3CCredential): Promise<Signature>;
+  signChallenge(payload: bigint, credential: W3CCredential): Promise<Signature>;
 }
 
 export class IdentityWallet implements IIdentityWallet {
@@ -111,9 +112,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const pubKey = await this._kms.publicKey(keyID);
 
-    const schemaHash = SchemaHash.newSchemaHashFromHex(
-      VerifiableConstants.AUTH.AUTH_BJJ_CREDENTAIL_HASH
-    );
+    const schemaHash = SchemaHash.authSchemaHash;
 
     const authClaim = Claim.newClaim(
       schemaHash,
@@ -231,6 +230,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const profile = Id.profileId(id, BigInt(nonce));
     const profileDID = DID.parseFromId(profile);
+    
     await this._storage.identity.saveProfile({
       id: profileDID.toString(),
       nonce,
@@ -349,6 +349,13 @@ export class IdentityWallet implements IIdentityWallet {
 
     return Signature.newFromCompressed(signature);
   }
+  async signChallenge(challenge: bigint, credential: W3CCredential): Promise<Signature> {
+    const keyKMSId = this.getKMSIdByAuthCredential(credential);
+
+    const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(challenge));
+
+    return Signature.newFromCompressed(signature);
+  }
 
   async issueCredential(
     issuerDID: DID,
@@ -375,6 +382,8 @@ export class IdentityWallet implements IIdentityWallet {
       req.revNonce = Math.round(Math.random() * 10000); // todo: rework
     }
     req.subjectPosition = req.subjectPosition ?? SubjectPosition.Index;
+
+
     revNonce = req.revNonce;
 
     try {
@@ -415,6 +424,7 @@ export class IdentityWallet implements IIdentityWallet {
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
 
     const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
+    
     const sigProof: BJJSignatureProof2021 = {
       type: ProofType.BJJSignature,
       issuerData: {
@@ -456,7 +466,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     issuerTreeState = await this.getDIDTreeState(issuerDID);
 
-    pushHashesToRHS(issuerTreeState.state, issuerTreeState, rhsURL);
+    // pushHashesToRHS(issuerTreeState.state, issuerTreeState, rhsURL);
 
     await this._storage.identity.saveIdentity({
       identifier: issuerDID.toString(),
@@ -472,10 +482,9 @@ export class IdentityWallet implements IIdentityWallet {
     if (!!schema.$metadata && !!schema.$metadata.serialization) {
       return '';
     }
-    if (position !== '') {
+    if (position !== undefined && position !== ''){
       return position;
     }
-
     return MerklizedRootPosition.Index;
   }
 

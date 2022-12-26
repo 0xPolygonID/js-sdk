@@ -18,11 +18,11 @@ export interface ClaimNonRevStatus {
 export class Query {
   slotIndex: number;
   values: bigint[];
-  operator: Operators;
+  operator: number;
   valueProof?: ValueProof;
 
   validate(): void {
-    if (this.values.some((v) => !v)) throw new Error(CircuitError.EmptyQueryValue);
+    if (this.values.some((v) => typeof(v) !== 'bigint')) throw new Error(CircuitError.EmptyQueryValue);
   }
 }
 
