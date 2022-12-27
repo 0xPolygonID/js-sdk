@@ -37,6 +37,7 @@ export const defaultEthConnectionConfig: EthConnectionConfig = {
 
 export class EthStateStorage implements IStateStorage {
   public stateContract: ethers.Contract;
+  public provider :ethers.providers.JsonRpcProvider;
 
   constructor(private readonly ethConfig: EthConnectionConfig = defaultEthConnectionConfig) {
     const provider = new ethers.providers.JsonRpcProvider(this.ethConfig.url);

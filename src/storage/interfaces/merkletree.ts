@@ -14,7 +14,7 @@ export interface IMerkleTreeStorage {
   getMerkleTreeByIdentifierAndType(
     identifier: string,
     mtType: MerkleTreeType
-  ): Promise<Merkletree | undefined>;
+  ): Promise<Merkletree>;
 
   bindMerkleTreeToNewIdentifier(oldIdentifier: string, newIdentifier: string): Promise<void>;
 }

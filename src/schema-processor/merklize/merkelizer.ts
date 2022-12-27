@@ -26,7 +26,7 @@ export class Merkelizer {
 
   async proof(p: Path): Promise<{ proof: Proof; value: Value }> {
     const kHash = await p.mtEntry();
-    const { proof } = await this.mt.generateProof(kHash, ZERO_HASH);
+    const { proof } = await this.mt!.generateProof(kHash, ZERO_HASH);
 
     let value: Value = '';
 
@@ -37,8 +37,8 @@ export class Merkelizer {
 
       const entry = this.entries.get(kHash.toString());
 
-      validateValue(entry.value);
-      value = entry.value as Value;
+      validateValue(entry!.value);
+      value = entry!.value as Value;
     }
 
     return { proof, value };
@@ -57,10 +57,10 @@ export class Merkelizer {
   }
 
   root(): Hash {
-    return this.mt.root;
+    return this.mt!.root;
   }
 }
-export const getDataSet = async (doc: JsonLdDocument): Promise<Quad> => {
+export const getDataSet = async (doc: JsonLdDocument): Promise<typeof Quad> => {
   const normalizedData = await canonize(doc, {
     format: 'application/n-quads',
     documentLoader: getJsonLdDocLoader()
@@ -72,7 +72,7 @@ export const getDataSet = async (doc: JsonLdDocument): Promise<Quad> => {
 
 export const merkelizeJSONLD = async (docStr: string): Promise<Merkelizer> => {
   const mz = new Merkelizer(docStr);
-  const dataset = await getDataSet(JSON.parse(mz.srcDoc));
+  const dataset = await getDataSet(JSON.parse(mz.srcDoc!));
   const entries = await entriesFromRDFHasher(dataset, DEFAULT_HASHER);
 
   for (const e of entries) {
@@ -80,11 +80,11 @@ export const merkelizeJSONLD = async (docStr: string): Promise<Merkelizer> => {
     mz.entries.set(k.toString(), e);
   }
 
-  await addEntriesToMerkleTree(mz.mt, entries);
+  await addEntriesToMerkleTree(mz.mt!, entries);
   return mz;
 };
 
-export const countEntries = (nodes: Array<Quad>): Map<string, number> => {
+export const countEntries = (nodes: Array<typeof Quad>): Map<string, number> => {
   const res: Map<string, number> = new Map();
   nodes.forEach((q) => {
     const key = getQuadKey(q);
@@ -98,12 +98,12 @@ export const countEntries = (nodes: Array<Quad>): Map<string, number> => {
   return res;
 };
 
-export const entriesFromRDF = (quads: Array<Quad>, hasher: Hasher): Promise<Array<RdfEntry>> => {
+export const entriesFromRDF = (quads: Array<typeof Quad>, hasher: Hasher): Promise<Array<RdfEntry>> => {
   return entriesFromRDFHasher(quads, hasher);
 };
 
 export const entriesFromRDFHasher = async (
-  quads: Array<Quad>,
+  quads: Array<typeof Quad>,
   hasher: Hasher
 ): Promise<Array<RdfEntry>> => {
   if (!quads.length) {
@@ -125,7 +125,7 @@ export const entriesFromRDFHasher = async (
     switch (qo) {
       case 'Literal':
         // eslint-disable-next-line no-case-declarations
-        const dataType = getObjectDatatype(q.object as Literal);
+        const dataType = getObjectDatatype(q.object as  typeof Literal);
         switch (dataType) {
           case 'http://www.w3.org/2001/XMLSchema#boolean':
             switch (qoVal) {
@@ -194,7 +194,7 @@ export const entriesFromRDFHasher = async (
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getObjectDatatype = (q: Literal): any => {
+const getObjectDatatype = (q: typeof Literal): any => {
   return q.datatype.value;
 };
 

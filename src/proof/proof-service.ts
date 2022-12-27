@@ -269,7 +269,7 @@ export class ProofService implements IProofService {
 
   // NewCircuitClaimData generates circuits claim structure
   private async newCircuitClaimData(prepareCredential: PreparedCredential): Promise<CircuitClaim> {
-    const smtProof: Iden3SparseMerkleTreeProof =
+    const smtProof: Iden3SparseMerkleTreeProof | undefined =
       prepareCredential.credential.getIden3SparseMerkleTreeProof();
 
     const circuitClaim = new CircuitClaim();
@@ -318,7 +318,7 @@ export class ProofService implements IProofService {
             rootOfRoots: strMTHex(sigProof.issuerData.state?.rootOfRoots)
           }
         },
-        issuerAuthClaim: new Claim().fromHex(sigProof.issuerData.authCoreClaim),
+        issuerAuthClaim: new Claim().fromHex(sigProof.issuerData.authCoreClaim!),
         issuerAuthNonRevProof
       };
     }

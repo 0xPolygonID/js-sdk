@@ -89,7 +89,7 @@ export class CredentialWallet implements ICredentialWallet {
     const mtpProof = cred.getIden3SparseMerkleTreeProof();
     const sigProof = cred.getBJJSignature2021Proof();
 
-    let issuerData: IssuerData | undefined = mtpProof ? mtpProof.issuerData : sigProof.issuerData;
+    let issuerData: IssuerData | undefined = mtpProof ? mtpProof.issuerData : sigProof!.issuerData;
     if (!issuerData) {
       throw new Error('no sig / mtp proof to check issuer info');
     }
@@ -113,7 +113,7 @@ export class CredentialWallet implements ICredentialWallet {
       } catch (e) {
         if (
           (e as Error).message.includes(VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND) &&
-          isIssuerGenesis(issuerDID.toString(), issuerData.state.value)
+          isIssuerGenesis(issuerDID.toString(), issuerData.state.value!)
         ) {
           return {
             mtp: new Proof(),
@@ -146,7 +146,7 @@ export class CredentialWallet implements ICredentialWallet {
     const context = [
       VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
       VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
-      schema.$metadata.uris['jsonLdContext']
+      schema.$metadata!.uris['jsonLdContext']
     ];
     const credentialType = [VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE, request.type];
 
@@ -162,7 +162,7 @@ export class CredentialWallet implements ICredentialWallet {
     cr.id = `${hostUrl}/${uuid.v4()}`;
     cr['@context'] = context;
     cr.type = credentialType;
-    cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : null;
+    cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
     cr.issuanceDate = new Date().toISOString()
     cr.credentialSubject = credentialSubject;
     cr.issuer = issuerDID.toString();
