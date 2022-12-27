@@ -17,9 +17,9 @@ export interface State {
 export interface IssuerData {
   id: string;
   state: State;
-  authCoreClaim: string;
+  authCoreClaim?: string;
   mtp?: Proof;
-  credentialStatus: object;
+  credentialStatus?: object;
 }
 
 // Iden3SparseMerkleProof JSON-LD structure

@@ -1,13 +1,14 @@
 'use strict';
 
 import { RemoteDocument, Url } from 'jsonld/jsonld-spec';
-import 'cross-fetch/polyfill';
 import https from 'https';
 import http from 'http';
 import { parseLinkHeader } from 'jsonld/lib/util';
 import { LINK_HEADER_CONTEXT } from 'jsonld/lib/constants';
 import JsonLdError from 'jsonld/lib/JsonLdError';
 import { prependBase } from 'jsonld/lib/url';
+// eslint-disable-next-line  @typescript-eslint/no-var-requires
+import axios from 'axios';
 
 /**
  * Creates a built-in node document loader.
@@ -47,7 +48,7 @@ export class JsonLDLoader {
     }
   }
 
-  async loadDocument(url, redirects = []) {
+  async loadDocument(url: string, redirects: string[] = []) {
     const isHttp = url.startsWith('http:');
     const isHttps = url.startsWith('https:');
     if (!isHttp && !isHttps) {
@@ -66,10 +67,10 @@ export class JsonLDLoader {
       );
     }
     // TODO: disable cache until HTTP caching implemented
-    let doc = null; //cache.get(url);
-    if (doc !== null) {
-      return doc;
-    }
+    // let doc = null; //cache.get(url);
+    // if (doc !== null) {
+    //   return doc;
+    // }
 
     let alternate = null;
 
@@ -80,7 +81,7 @@ export class JsonLDLoader {
       httpAgent: this.httpAgent,
       httpsAgent: this.httpsAgent
     });
-    doc = { contextUrl: null, documentUrl: url, document: body || null };
+    let doc = { contextUrl: null, documentUrl: url, document: body || null };
 
     // handle error
     const statusText = http.STATUS_CODES[res.status];
@@ -119,10 +120,10 @@ export class JsonLDLoader {
       alternate = linkHeaders.alternate;
       if (
         alternate &&
-        alternate.type == 'application/ld+json' &&
+        alternate['type'] == 'application/ld+json' &&
         !(contentType || '').match(/^application\/(\w*\+)?json$/)
       ) {
-        location = prependBase(url, alternate.target);
+        location = prependBase(url, alternate['target']);
       }
     }
 
@@ -183,7 +184,7 @@ async function _fetch({ url, headers, strictSSL, httpAgent, httpsAgent }) {
       // eslint-disable-next-line  @typescript-eslint/no-explicit-any
       agent?: any;
     } = {
-      headers,
+      headers: { ...headers, 'Accept-Encoding': 'gzip,deflate,compress' },
       redirect: 'manual',
       // ky specific to avoid redirects throwing
       throwHttpErrors: false
@@ -196,9 +197,8 @@ async function _fetch({ url, headers, strictSSL, httpAgent, httpsAgent }) {
         options.agent = httpAgent;
       }
     }
-    const res = await fetch(url, { headers, redirect: options.redirect });
-    const body = await res.text();
-    return { res, body };
+    const res = await axios.get(url, options);
+    return { res, body: res.data };
   } catch (e) {
     // HTTP errors have a response in them
     // ky considers redirects HTTP errors

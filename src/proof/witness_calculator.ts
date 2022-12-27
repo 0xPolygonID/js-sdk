@@ -2,6 +2,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function witnessBuilder(code, options?) {
   options = options || {};
+  let errStr = '';
+  let msgStr = '';
 
   const wasmModule = await WebAssembly.compile(code);
 
@@ -28,6 +30,25 @@ export async function witnessBuilder(code, options?) {
       },
       showSharedRWMemory: function () {
         printSharedRWMemory();
+      },
+      printErrorMessage: function () {
+        errStr += getMessage() + '\n';
+        // console.error(getMessage());
+      },
+      writeBufferMessage: function () {
+        const msg = getMessage();
+        // Any calls to `log()` will always end with a `\n`, so that's when we print and reset
+        if (msg === '\n') {
+          console.log(msgStr);
+          msgStr = '';
+        } else {
+          // If we've buffered other content, put a space in between the items
+          if (msgStr !== '') {
+            msgStr += ' ';
+          }
+          // Then append the message to the message we are creating
+          msgStr += msg;
+        }
       }
     }
   });
@@ -47,11 +68,18 @@ export async function witnessBuilder(code, options?) {
   }
 
   function printSharedRWMemory() {
-    const shared_rw_memory_size = (instance.exports as any).getFieldNumLen32();
+    const shared_rw_memory_size = this.getFieldNumLen32();
     const arr = new Uint32Array(shared_rw_memory_size);
     for (let j = 0; j < shared_rw_memory_size; j++) {
-      arr[shared_rw_memory_size - 1 - j] = (instance.exports as any).readSharedRWMemory(j);
+      arr[shared_rw_memory_size - 1 - j] = this.readSharedRWMemory(j);
     }
+
+    // If we've buffered other content, put a space in between the items
+    if (msgStr !== '') {
+      msgStr += ' ';
+    }
+    // Then append the value to the message we are creating
+    msgStr += fromArray32(arr).toString();
   }
 }
 

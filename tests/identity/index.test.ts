@@ -44,7 +44,7 @@ describe('identity', () => {
       seedPhrase
     );
     expect(did.toString()).toBe(
-      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
     const dbCred = await dataStorage.credential.findCredentialById(credential.id);
     expect(credential).toBe(dbCred);
@@ -65,12 +65,12 @@ describe('identity', () => {
       seedPhrase
     );
     expect(did.toString()).toBe(
-      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const profileDID = await wallet.createProfile(did, 10, 'http://polygonissuer.com/');
     expect(profileDID.toString()).toBe(
-      'did:iden3:polygon:mumbai:x6eHDnzugJTh4jF31rJVvr151tgr8YzPpLmYy5Yy4'
+      'did:iden3:polygon:mumbai:x2Ld4XmxEo6oGCSr3MsqBa5PmJie6WJ6pFbetzYuq'
     );
 
     const dbProfile = await dataStorage.identity.getProfileByVerifier('http://polygonissuer.com/');
@@ -87,7 +87,7 @@ describe('identity', () => {
       seedPhrase
     );
     expect(did.toString()).toBe(
-      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const enc = new TextEncoder(); // always utf-8
@@ -109,7 +109,7 @@ describe('identity', () => {
       seedPhrase
     );
     expect(did.toString()).toBe(
-      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const proof = await wallet.generateClaimMtp(did, credential);
@@ -125,7 +125,7 @@ describe('identity', () => {
       seedPhrase
     );
     expect(did.toString()).toBe(
-      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const proof = await wallet.generateNonRevocationMtp(did, credential);
@@ -142,7 +142,7 @@ describe('identity', () => {
       seedPhrase
     );
     expect(did.toString()).toBe(
-      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const proof = await wallet.generateNonRevocationMtp(did, credential);
@@ -163,7 +163,7 @@ describe('identity', () => {
     );
 
     expect(issuerDID.toString()).toBe(
-      'did:iden3:polygon:mumbai:x5FK8BRpdZTCDp2v4g8jMugssmjUq4eL7oJtBXC1J'
+      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const { did: userDID, credential: userAuthCredential } = await wallet.createIdentity(
@@ -187,6 +187,5 @@ describe('identity', () => {
       withPublish: false,
       withRHS: 'http://rhs.node'
     });
-    console.log(JSON.stringify(issuerCred));
   });
 });
