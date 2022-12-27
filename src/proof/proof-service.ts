@@ -318,7 +318,7 @@ export class ProofService implements IProofService {
             rootOfRoots: strMTHex(sigProof.issuerData.state?.rootOfRoots)
           }
         },
-        issuerAuthClaim: new Claim().fromHex(sigProof.issuerData.authCoreClaim),
+        issuerAuthClaim: new Claim().fromHex(sigProof.issuerData.authCoreClaim!),
         issuerAuthNonRevProof
       };
     }

@@ -13,8 +13,9 @@ import { IProofService, ProofService, ZKPRequest } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
+import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 
-describe.skip('proofs', () => {
+describe('proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -25,6 +26,7 @@ describe.skip('proofs', () => {
     getLatestStateById: jest.fn(async (issuerId: bigint) => {
       return { id: BigInt(0), state: BigInt(0) } as StateInfo;
     })
+    
   } as IStateStorage;
   beforeEach(async () => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
@@ -121,7 +123,7 @@ describe.skip('proofs', () => {
     const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
   });
-  it.only('sigv2-merklized', async () => {
+  it.skip('sigv2-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
@@ -183,6 +185,87 @@ describe.skip('proofs', () => {
         }
       }
     };
+    const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
+    console.log(proof);
+  })
+  it.skip('mtpv2-non-merklized', async () => {
+
+
+    const rhsURL = '';
+    let conf = defaultEthConnectionConfig;
+    conf.url = '';
+    conf.contractAddress = '';
+    const ethStorage = new EthStateStorage(conf);
+
+
+    
+    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
+      'seedseedseedseedseedseedseedseed'
+    );
+    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
+
+    const { did: userDID, credential } = await idWallet.createIdentity(
+      'http://metamask.com/',
+      rhsURL,
+      seedPhrase
+    );
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
+      'http://metamask.com/',
+      rhsURL,
+      seedPhraseIssuer
+    );
+
+    const claimReq: ClaimRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.toString(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 1693526400 ,
+    };
+
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+      withPublish: false,
+      withRHS: 'http://ec2-34-247-165-109.eu-west-1.compute.amazonaws.com:9999'
+    });
+
+    console.log(JSON.stringify(issuerCred));
+
+    await credWallet.save(issuerCred);
+
+  
+   const creds = await idWallet.createMtpProofForCredentials([issuerCred],issuerDID)
+
+    // publish to rhs
+
+    await idWallet.publishStateToRHS(issuerDID, rhsURL);
+
+    // publish state 
+    
+
+
+    const proofReq: ZKPRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQueryMTPV2,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+        req: {
+          documentType: {
+            $eq: 99
+          }
+        }
+      }
+    };
+
+
     const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
   });

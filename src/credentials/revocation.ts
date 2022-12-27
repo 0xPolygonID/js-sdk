@@ -196,11 +196,9 @@ async function saveNodes(nodes: ProofNode[], nodeUrl: string): Promise<boolean> 
 }
 
 function addRoRNode(nb: NodesBuilder, trees: TreesModel): Promise<void> {
-  //todo: root
   const currentRootsTree = trees.rootsTree;
-
   const claimsTree = trees.claimsTree;
-  //to
+  
   return nb.addKey(currentRootsTree, claimsTree.root.bigInt());
 }
 
