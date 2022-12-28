@@ -16,7 +16,7 @@ import { FSKeyLoader } from '../../src/loaders';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import { ethers, Signer } from 'ethers';
 
-describe.only('proofs', () => {
+describe.skip('sig proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -58,38 +58,12 @@ describe.only('proofs', () => {
       )
     });
 
-    circuitStorage.saveCircuitData(CircuitId.AtomicQueryMTPV2, {
-      wasm: await loader.load(`${CircuitId.AtomicQueryMTPV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AtomicQueryMTPV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
-    });
-
-    circuitStorage.saveCircuitData(CircuitId.StateTransition, {
-      wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
-    });
-
-
-
-    let conf = defaultEthConnectionConfig;
-    conf.url = '';
-    conf.contractAddress = '';
-    const ethStorage = new EthStateStorage(conf);
-    ethStorage.publishState = mockStateStorage.publishState;
-
-    dataStorage.states = ethStorage;
-
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, kms, circuitStorage);
   });
-  it.skip('sigv2-non-merklized', async () => {
+  it('sigv2-non-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
@@ -122,8 +96,6 @@ describe.only('proofs', () => {
       withRHS: 'http://rhs.node'
     });
 
-    console.log(JSON.stringify(issuerCred));
-
     await credWallet.save(issuerCred);
 
     const proofReq: ZKPRequest = {
@@ -145,7 +117,7 @@ describe.only('proofs', () => {
     const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
   });
-  it.skip('sigv2-merklized', async () => {
+  it('sigv2-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
@@ -178,8 +150,6 @@ describe.only('proofs', () => {
       withRHS: 'http://rhs.node'
     });
 
-    console.log(JSON.stringify(issuerCred));
-
     await credWallet.save(issuerCred);
 
     const proofReq: ZKPRequest = {
@@ -201,98 +171,5 @@ describe.only('proofs', () => {
     const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
   });
-  it.only('mtpv2-non-merklized', async () => {
-    const rhsURL = '';
-    let conf = defaultEthConnectionConfig;
-    conf.url = '';
-    conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
-    const ethStorage = new EthStateStorage(conf);
-    ethStorage.publishState = mockStateStorage.publishState;
 
-    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
-      'seedseedseedseedseedseedseedseed'
-    );
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
-
-    const { did: userDID, credential } = await idWallet.createIdentity(
-      'http://metamask.com/',
-      rhsURL,
-      seedPhrase
-    );
-
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
-      rhsURL,
-      seedPhraseIssuer
-    );
-    await credWallet.save(issuerAuthCredential);
-
-    const claimReq: ClaimRequest = {
-      credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
-      type: 'KYCAgeCredential',
-      credentialSubject: {
-        id: userDID.toString(),
-        birthday: 19960424,
-        documentType: 99
-      },
-      expiration: 1693526400
-    };
-
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
-      withRHS: 'http://ec2-34-247-165-109.eu-west-1.compute.amazonaws.com:9999'
-    });
-
-    console.log(JSON.stringify(issuerCred));
-
-    await credWallet.save(issuerCred);
-
-    const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
-
-    // publish to rhs
-
-    await idWallet.publishStateToRHS(issuerDID, rhsURL);
-    
-
-    // you must store stat info (e.g. state and it's roots)
-
-    const ethSigner = new ethers.Wallet('', undefined);
-    const txId = await proofService.transiteState(
-      issuerDID,
-      res.oldTreeState,
-      true,
-      mockStateStorage,
-      ethSigner
-    );
-
-    console.log(txId);
-    const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
-      issuerDID,
-      res.credentials,
-      txId
-    );
-
-    credWallet.saveAll(credsWithIden3MTPProof);
-
-    const proofReq: ZKPRequest = {
-      id: 1,
-      circuitId: CircuitId.AtomicQueryMTPV2,
-      optional: false,
-      query: {
-        allowedIssuers: ['*'],
-        type: claimReq.type,
-        context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
-          documentType: {
-            $eq: 99
-          }
-        }
-      }
-    };
-
-    const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
-    console.log(proof);
-  });
 });

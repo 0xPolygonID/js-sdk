@@ -23,6 +23,7 @@ import {
   RHSCredentialStatus,
   VerifiableConstants
 } from '../verifiable';
+import { strMTHex } from '../circuits';
 
 export interface TreesModel {
   claimsTree: Merkletree;
@@ -64,8 +65,32 @@ export class ProofNode {
   }
 }
 
+export class ProofNodeHex {
+  constructor(public hash: Hash = ZERO_HASH, public children: string[] = []) {}
+
+  nodeType(): NodeType {
+    if (this.children.length === 2) {
+      return NodeType.Middle;
+    }
+
+    if (this.children.length === 3 && this.children[2] === newHashFromBigInt(BigInt(1)).hex()) {
+      return NodeType.Leaf;
+    }
+
+    if (this.children.length === 3) {
+      return NodeType.State;
+    }
+
+    return NodeType.Unknown;
+  }
+}
 interface NodeResponse {
   node: ProofNode;
+  status: string;
+}
+
+interface NodeResponseHex {
+  node: ProofNodeHex;
   status: string;
 }
 
@@ -90,17 +115,17 @@ async function getNonRevocationStatusFromRHS(
 ): Promise<RevocationStatus> {
   if (!rhsURL) throw new Error('HTTP reverse hash service url is not specified');
 
-  const treeRoots = (await axios.get<NodeResponse>(`${rhsURL}/node/${issuerRoot.hex()}`)).data?.node;
+  const treeRoots = (await axios.get<NodeResponseHex>(`${rhsURL}/node/${issuerRoot.hex()}`)).data?.node;
   if (treeRoots.children.length !== 3) {
     throw new Error('state should has tree children');
   }
 
   const s = issuerRoot.hex();
-  const cTR = treeRoots.children[0].hex();
-  const rTR = treeRoots.children[1].hex();
-  const roTR = treeRoots.children[2].hex();
+  const cTR = treeRoots.children[0];
+  const rTR = treeRoots.children[1];
+  const roTR = treeRoots.children[2];
 
-  const rtrHashed = newHashFromString(rTR);
+  const rtrHashed = strMTHex(rTR);
   const nonRevProof = await rhsGenerateProof(rtrHashed, data, `${rhsURL}/node`);
 
   return {
@@ -135,7 +160,7 @@ async function newProofFromData(
 }
 
 async function rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Promise<Proof> {
-  let exists: boolean;
+  let exists: boolean = false;
   const siblings: Hash[] = [];
   let nodeAux: NodeAux;
 
@@ -208,16 +233,7 @@ async function saveNodes(nodes: ProofNode[], nodeUrl: string): Promise<boolean> 
     nodes[0].children[2].bigInt(),
   ]);
 
-  if (st.hex() != nodes[0].hash.hex()){
-    console.log(st.hex())
-    console.log(st.bigInt())
-    console.log(nodes[0].hash.hex())
-    console.log(nodes[0].hash.bigInt())
-
-  }
-
   const nodesJSON = nodes.map(n => n.toJSON())
-  console.log(JSON.stringify(nodesJSON));
   return (await (await axios.post(nodeUrl + '/node', nodesJSON)).status) === 200;
 }
 
@@ -246,7 +262,6 @@ class NodesBuilder {
 
     
     for (const n of newNodes) {
-      // console.log(n.toJSON())
       if (!this.seen.get(n.hash.hex())) {
         this.nodes.push(n);
         this.seen.set(n.hash.hex(), true);

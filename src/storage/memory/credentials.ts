@@ -33,7 +33,6 @@ export class InMemoryCredentialStorage implements ICredentialStorage {
 
   async saveAllCredentials(credentials: W3CCredential[]): Promise<void> {
     credentials.forEach(credential => {
-      console.log(credential);
         this.saveCredential(credential);
     });
   }

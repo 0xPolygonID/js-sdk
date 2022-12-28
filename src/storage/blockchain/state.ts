@@ -1,5 +1,5 @@
 import { IStateStorage } from '../interfaces/state';
-import { ethers, Signer } from 'ethers';
+import { BigNumber, ethers, Signer } from 'ethers';
 import { StateInfo } from '../entities/state';
 import abi from './state-abi.json';
 import { FullProof } from '../../proof';
@@ -45,7 +45,20 @@ export class EthStateStorage implements IStateStorage {
   }
 
   async getLatestStateById(issuerId: bigint): Promise<StateInfo> {
-    return await this.stateContract.getStateInfoById(issuerId);
+    const rawData = await this.stateContract.getStateInfoById(issuerId);
+    let stateInfo: StateInfo = {
+      id: BigNumber.from(rawData[0]).toBigInt(),
+      state: BigNumber.from(rawData[1]).toBigInt(),
+      replacedByState: BigNumber.from(rawData[2]).toBigInt(),
+      createdAtTimestamp: BigNumber.from(rawData[3]).toBigInt(),
+      replacedAtTimestamp: BigNumber.from(rawData[4]).toBigInt(),
+      createdAtBlock: BigNumber.from(rawData[5]).toBigInt(),
+      replacedAtBlock: BigNumber.from(rawData[6]).toBigInt()
+    };
+
+    console.log(stateInfo);
+
+    return stateInfo;
   }
 
   async publishState(proof: FullProof, signer: Signer): Promise<string> {

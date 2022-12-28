@@ -99,7 +99,6 @@ describe('identity', () => {
 
     const message = enc.encode('payload');
     const sig = await wallet.sign(message, credential);
-    console.log(sig.hex());
 
     expect(sig.hex()).toBe(
       '5fdb4fc15898ee2eeed2ed13c5369a4f28870e51ac1aae8ad1f2108d2d39f38969881d7553344c658e63344e4ddc151fabfed5bf8fcf8663c183248b714d8b03'

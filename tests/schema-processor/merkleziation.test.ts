@@ -25,9 +25,6 @@ describe('tests merkelization', () => {
   it('checks dataset creation', async () => {
     const dataSet = await getDataSet(testDocument);
     const res = await entriesFromRDF(dataSet, DEFAULT_HASHER);
-
-    // eslint-disable-next-line no-console
-    // console.log('--------->', res);
   });
 
   it('new path creation from document', async () => {

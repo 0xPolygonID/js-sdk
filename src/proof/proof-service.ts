@@ -151,10 +151,8 @@ export class ProofService implements IProofService {
 
     const inputs = await circuitInputs.inputsMarshal();
 
-    console.log(new TextDecoder().decode(inputs));
     const proof = await this._prover.generate(inputs, CircuitId.StateTransition);
 
-    console.log(JSON.stringify(proof));
     const txId = await stateStorage.publishState(proof, ethSigner);
     return txId;
   }
@@ -303,8 +301,6 @@ export class ProofService implements IProofService {
     } else {
       throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
-
-    console.log(new TextDecoder().decode(inputs));
     return inputs;
   }
 
