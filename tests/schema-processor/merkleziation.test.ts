@@ -27,7 +27,7 @@ describe('tests merkelization', () => {
     const res = await entriesFromRDF(dataSet, DEFAULT_HASHER);
 
     // eslint-disable-next-line no-console
-    console.log('--------->', res);
+    // console.log('--------->', res);
   });
 
   it('new path creation from document', async () => {
@@ -141,7 +141,7 @@ describe('tests merkelization', () => {
     expect(birthDate.toUTCString()).toEqual(valueD.toUTCString());
 
     const valueMTEntry = await mkValueMtEntry(DEFAULT_HASHER, valueD);
-    const ok = verifyProof(mz.mt.root, proof, pathMTEntry, valueMTEntry);
+    const ok = verifyProof(mz.mt!.root, proof, pathMTEntry, valueMTEntry);
     expect(ok).toBeTruthy();
 
     expect(mz.root().hex()).toEqual(

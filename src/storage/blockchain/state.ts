@@ -37,11 +37,11 @@ export const defaultEthConnectionConfig: EthConnectionConfig = {
 
 export class EthStateStorage implements IStateStorage {
   public stateContract: ethers.Contract;
-  public provider :ethers.providers.JsonRpcProvider;
+  public provider: ethers.providers.JsonRpcProvider;
 
   constructor(private readonly ethConfig: EthConnectionConfig = defaultEthConnectionConfig) {
-    const provider = new ethers.providers.JsonRpcProvider(this.ethConfig.url);
-    this.stateContract = new ethers.Contract(this.ethConfig.contractAddress, abi, provider);
+    this.provider = new ethers.providers.JsonRpcProvider(this.ethConfig.url);
+    this.stateContract = new ethers.Contract(this.ethConfig.contractAddress, abi, this.provider);
   }
 
   async getLatestStateById(issuerId: bigint): Promise<StateInfo> {
@@ -56,21 +56,23 @@ export class EthStateStorage implements IStateStorage {
     stateTransitionPubSig.pubSignalsUnmarshal(
       byteEncoder.encode(JSON.stringify(proof.pub_signals))
     );
-    const { userId, oldUserState, newUserState } = stateTransitionPubSig;
-    const isOldStateGenesis = isIssuerGenesis(
-      DID.parseFromId(userId).toString(),
-      oldUserState.hex()
-    );
+    const { userId, oldUserState, newUserState, isOldStateGenesis } = stateTransitionPubSig;
 
-    const tx = await contract.transitState(
-      userId,
-      oldUserState,
-      newUserState,
+    const payload = [
+      userId.bigInt().toString(),
+      oldUserState.bigInt().toString(),
+      newUserState.bigInt().toString(),
       isOldStateGenesis,
-      proof.proof.pi_a[2],
-      proof.proof.pi_b[2][2],
-      proof.proof.pi_c[2]
-    );
+      proof.proof.pi_a.slice(0, 2),
+      [
+        [proof.proof.pi_b[0][1].toString(), proof.proof.pi_b[0][0].toString()],
+        [proof.proof.pi_b[1][1].toString(), proof.proof.pi_b[1][0].toString()]
+      ],
+      proof.proof.pi_c.slice(0, 2)
+    ];
+    const g = await contract.estimateGas.transitState(...payload);
+
+    const tx = await contract.transitState(...payload);
 
     const txnReceipt = await tx.wait();
     const status: number = txnReceipt.status;

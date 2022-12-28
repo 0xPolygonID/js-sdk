@@ -4,20 +4,17 @@ import { StandardJSONCredentielsQueryFilter } from '../filters/jsonQuery';
 import { ICredentialStorage } from '../interfaces/credentials';
 
 export class InMemoryCredentialStorage implements ICredentialStorage {
-  private _data: {
-    [v in string]: W3CCredential[];
-  };
-  constructor(private secret: string = 'main') {
-    this._data = {};
-    this._data[secret] = [];
+  private _data: W3CCredential[];
+  constructor() {
+    this._data = [];
   }
 
   get data() {
-    return this._data[this.secret];
+    return this._data;
   }
 
   set data(v) {
-    this._data[this.secret] = v;
+    this._data = v;
   }
 
   async listCredentials(): Promise<W3CCredential[]> {
@@ -25,12 +22,20 @@ export class InMemoryCredentialStorage implements ICredentialStorage {
   }
 
   async saveCredential(credential: W3CCredential): Promise<void> {
-    // todo check if present the same id before save
-    this._data[this.secret].push(credential);
+    // upsert
+    const index = this._data.findIndex((c) => c.id === credential.id);
+    if (index === -1) {
+      this._data.push(credential);
+    } else {
+      this._data[index] = credential;
+    }
   }
 
   async saveAllCredentials(credentials: W3CCredential[]): Promise<void> {
-    this._data[this.secret].push(...credentials);
+    credentials.forEach(credential => {
+      console.log(credential);
+        this.saveCredential(credential);
+    });
   }
 
   async removeCredential(id: string): Promise<void> {
@@ -49,9 +54,7 @@ export class InMemoryCredentialStorage implements ICredentialStorage {
 
   async findCredentialsByQuery(query: ProofQuery): Promise<W3CCredential[]> {
     const filters = StandardJSONCredentielsQueryFilter(query);
-    const credentials =  this.data.filter((credential) => 
-    filters.every((f) => f(credential))
-    );
+    const credentials = this.data.filter((credential) => filters.every((f) => f(credential)));
     return credentials;
   }
 }

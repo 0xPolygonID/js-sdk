@@ -56,6 +56,12 @@ export class ProofNode {
 
     return NodeType.Unknown;
   }
+  toJSON() {
+    return {
+      hash: this.hash.hex(),
+      children: this.children.map((h) => h.hex())
+    };
+  }
 }
 
 interface NodeResponse {
@@ -84,7 +90,7 @@ async function getNonRevocationStatusFromRHS(
 ): Promise<RevocationStatus> {
   if (!rhsURL) throw new Error('HTTP reverse hash service url is not specified');
 
-  const treeRoots = (await axios.get<NodeResponse>(`${rhsURL}/${issuerRoot.hex()}`)).data?.node;
+  const treeRoots = (await axios.get<NodeResponse>(`${rhsURL}/node/${issuerRoot.hex()}`)).data?.node;
   if (treeRoots.children.length !== 3) {
     throw new Error('state should has tree children');
   }
@@ -95,7 +101,7 @@ async function getNonRevocationStatusFromRHS(
   const roTR = treeRoots.children[2].hex();
 
   const rtrHashed = newHashFromString(rTR);
-  const nonRevProof = await rhsGenerateProof(rtrHashed, data, rhsURL);
+  const nonRevProof = await rhsGenerateProof(rtrHashed, data, `${rhsURL}/node`);
 
   return {
     mtp: nonRevProof,
@@ -182,7 +188,7 @@ export async function pushHashesToRHS(
   // add new state node
   if (!state.bytes.every((b) => b === 0)) {
     nb.addProofNode(
-      new ProofNode(state, [trees.revocationTree.root, trees.rootsTree.root, trees.claimsTree.root])
+      new ProofNode(state, [trees.claimsTree.root, trees.revocationTree.root, trees.rootsTree.root])
     );
   }
 
@@ -192,13 +198,33 @@ export async function pushHashesToRHS(
 }
 
 async function saveNodes(nodes: ProofNode[], nodeUrl: string): Promise<boolean> {
-  return (await (await axios.post(nodeUrl, nodes)).status) === 200;
+  
+
+  // check that node is ok
+
+  const st = await hashElems([
+    nodes[0].children[0].bigInt(),
+    nodes[0].children[1].bigInt(),
+    nodes[0].children[2].bigInt(),
+  ]);
+
+  if (st.hex() != nodes[0].hash.hex()){
+    console.log(st.hex())
+    console.log(st.bigInt())
+    console.log(nodes[0].hash.hex())
+    console.log(nodes[0].hash.bigInt())
+
+  }
+
+  const nodesJSON = nodes.map(n => n.toJSON())
+  console.log(JSON.stringify(nodesJSON));
+  return (await (await axios.post(nodeUrl + '/node', nodesJSON)).status) === 200;
 }
 
 function addRoRNode(nb: NodesBuilder, trees: TreesModel): Promise<void> {
   const currentRootsTree = trees.rootsTree;
   const claimsTree = trees.claimsTree;
-  
+
   return nb.addKey(currentRootsTree, claimsTree.root.bigInt());
 }
 
@@ -218,7 +244,9 @@ class NodesBuilder {
     const node = new NodeLeaf(nodeKeyHash, nodeValueHash);
     const newNodes: ProofNode[] = await buildNodesUp(siblings, node);
 
+    
     for (const n of newNodes) {
+      // console.log(n.toJSON())
       if (!this.seen.get(n.hash.hex())) {
         this.nodes.push(n);
         this.seen.set(n.hash.hex(), true);
@@ -244,6 +272,9 @@ async function buildNodesUp(siblings: Siblings, node: NodeLeaf): Promise<ProofNo
   let prevHash = await node.getKey();
   const sl = siblings.length;
   const nodes = new Array<ProofNode>(sl + 1);
+  for (let index = 0; index < nodes.length; index++) {
+    nodes[index] = new ProofNode();
+  }
   nodes[sl].hash = prevHash;
   const hashOfOne = newHashFromBigInt(BigInt(1));
 
