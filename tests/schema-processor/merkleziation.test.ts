@@ -17,7 +17,7 @@ import {
   mkValueMtEntry
 } from '../../src/schema-processor/merklize/internal/merkleTree';
 import { newRDFEntry } from '../../src/schema-processor/merklize/internal/rdfEntry';
-import { Merkletree, verifyProof, ZERO_HASH } from '@iden3/js-merkletree';
+import { Merkletree, verifyProof } from '@iden3/js-merkletree';
 
 jest.setTimeout(50 * 60_00);
 
@@ -95,7 +95,7 @@ describe('tests merkelization', () => {
     const entry = newRDFEntry(path, birthDate);
 
     const { k, v } = await entry.getKeyValueMTEntry();
-    const { proof } = await mt.generateProof(k, ZERO_HASH);
+    const { proof } = await mt.generateProof(k);
 
     const ok = await verifyProof(mt.root, proof, k, v);
     expect(ok).toBeTruthy();
@@ -114,7 +114,7 @@ describe('tests merkelization', () => {
     const entry = newRDFEntry(path, 83627465);
 
     const { k, v } = await entry.getKeyValueMTEntry();
-    const { proof } = await mt.generateProof(k, ZERO_HASH);
+    const { proof } = await mt.generateProof(k);
 
     const ok = await verifyProof(mt.root, proof, k, v);
     expect(ok).toBeTruthy();

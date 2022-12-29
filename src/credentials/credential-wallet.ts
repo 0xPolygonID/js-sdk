@@ -89,7 +89,9 @@ export class CredentialWallet implements ICredentialWallet {
     const mtpProof = cred.getIden3SparseMerkleTreeProof();
     const sigProof = cred.getBJJSignature2021Proof();
 
-    let issuerData: IssuerData | undefined = mtpProof ? mtpProof.issuerData : sigProof!.issuerData;
+    const issuerData: IssuerData | undefined = mtpProof
+      ? mtpProof.issuerData
+      : sigProof!.issuerData;
     if (!issuerData) {
       throw new Error('no sig / mtp proof to check issuer info');
     }
@@ -163,7 +165,7 @@ export class CredentialWallet implements ICredentialWallet {
     cr['@context'] = context;
     cr.type = credentialType;
     cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
-    cr.issuanceDate = new Date().toISOString()
+    cr.issuanceDate = new Date().toISOString();
     cr.credentialSubject = credentialSubject;
     cr.issuer = issuerDID.toString();
     cr.credentialSchema = {

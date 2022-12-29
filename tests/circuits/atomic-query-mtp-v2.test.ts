@@ -18,8 +18,8 @@ import {
 
 import expectedJson from './data/mtp-v2-inputs.json';
 
-describe('atomic-query-mtp-v2', () => {
-  it('TestAttrQueryMTPV2_PrepareInputs', async () => {
+describe.only('atomic-query-mtp-v2', () => {
+  it.only('TestAttrQueryMTPV2_PrepareInputs', async () => {
     const user = await IdentityTest.newIdentity(userPK);
     const issuer = await IdentityTest.newIdentity(issuerPK);
 

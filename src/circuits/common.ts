@@ -1,5 +1,14 @@
 import { Hex } from '@iden3/js-crypto';
-import { newHashFromHex, Hash, ZERO_HASH, Proof, newHashFromString, newBigIntFromBytes, newHashFromBigInt, swapEndianness } from '@iden3/js-merkletree';
+import {
+  newHashFromHex,
+  Hash,
+  ZERO_HASH,
+  Proof,
+  newHashFromString,
+  newBigIntFromBytes,
+  newHashFromBigInt,
+  swapEndianness
+} from '@iden3/js-merkletree';
 import { TreeState } from './models';
 
 export const defaultMTLevels = 32; // max MT levels, default value for identity circuits
@@ -39,18 +48,15 @@ export class BaseConfig {
   }
 }
 
-
 // StrMTHex string to merkle tree hash
-export const strMTHex = (s: string | undefined): Hash =>{
-  if (!s){
+export const strMTHex = (s: string | undefined): Hash => {
+  if (!s) {
     return ZERO_HASH;
   }
-  let h = new Hash();
-  h.value = swapEndianness( Hex.decodeString(s));
-  return h
-
-} 
-
+  const h = new Hash();
+  h.value = swapEndianness(Hex.decodeString(s));
+  return h;
+};
 
 // BuildtreeState returns circuits.treeState structure
 export const buildTreeState = (

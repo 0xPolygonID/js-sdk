@@ -8,12 +8,10 @@ import {
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { StateInfo } from '../../src/storage/entities/state';
-import { FullProof, IProofService, ProofService, ZKPRequest } from '../../src/proof';
+import { FullProof, ProofService, ZKPRequest } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
-import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import { ethers, Signer } from 'ethers';
 
 describe.skip('mtp proofs', () => {
@@ -25,7 +23,7 @@ describe.skip('mtp proofs', () => {
 
   const mockStateStorage = {
     getLatestStateById: jest.fn(async (issuerId: bigint) => {
-      return  {
+      return {
         id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
         state: 15316103435703269893947162180693935798669021972402205481551466808302934202991n,
         replacedByState: 0n,
@@ -33,7 +31,7 @@ describe.skip('mtp proofs', () => {
         replacedAtTimestamp: 0n,
         createdAtBlock: 30258020n,
         replacedAtBlock: 0n
-      }
+      };
     }),
     publishState: jest.fn(async (proof: FullProof, signer: Signer) => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
@@ -75,7 +73,6 @@ describe.skip('mtp proofs', () => {
       )
     });
 
-
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
@@ -112,12 +109,13 @@ describe.skip('mtp proofs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400
+      expiration: 1693526400,
+      revNonce: 1000
     };
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
       withPublish: false,
-      withRHS: rhsURL,
+      withRHS: rhsURL
     });
 
     await credWallet.save(issuerCred);
@@ -127,7 +125,6 @@ describe.skip('mtp proofs', () => {
     // publish to rhs
 
     await idWallet.publishStateToRHS(issuerDID, rhsURL);
-    
 
     // you must store stat info (e.g. state and it's roots)
 

@@ -11,10 +11,7 @@ export interface IMerkleTreeStorage {
     hvalue: bigint
   ): Promise<void>;
 
-  getMerkleTreeByIdentifierAndType(
-    identifier: string,
-    mtType: MerkleTreeType
-  ): Promise<Merkletree>;
+  getMerkleTreeByIdentifierAndType(identifier: string, mtType: MerkleTreeType): Promise<Merkletree>;
 
   bindMerkleTreeToNewIdentifier(oldIdentifier: string, newIdentifier: string): Promise<void>;
 }

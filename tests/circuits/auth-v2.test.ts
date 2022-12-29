@@ -1,6 +1,6 @@
 import { AuthV2PubSignals } from './../../src/circuits/auth-v2';
 import { Id } from '@iden3/js-iden3-core';
-import { ZERO_HASH, newHashFromBigInt } from '@iden3/js-merkletree';
+import { newHashFromBigInt } from '@iden3/js-merkletree';
 import { AuthV2Inputs } from '../../src/circuits';
 import { IdentityTest, userPK, issuerPK, globalTree } from './utils';
 
@@ -17,7 +17,7 @@ describe('auth-v2', () => {
     const gTree = globalTree();
 
     await gTree.add(user2.id.bigInt(), user2.state().bigInt());
-    const globalProof = await gTree.generateProof(user.id.bigInt(), ZERO_HASH);
+    const globalProof = await gTree.generateProof(user.id.bigInt());
 
     const authClaimIncMTP = await user.claimMTPRaw(user.authClaim);
     const authClaimNonRevMTP = await user.claimRevMTPRaw(user.authClaim);

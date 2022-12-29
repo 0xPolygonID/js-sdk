@@ -284,7 +284,8 @@ export class IdentityWallet implements IIdentityWallet {
         revocationRoot: treesModel.revocationTree.root
       }
     };
-  }s
+  }
+  s;
 
   async generateNonRevocationMtp(
     did: DID,
@@ -368,7 +369,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     let revNonce = 0;
     if (!req.revNonce) {
-      req.revNonce = 1000; //  Math.round(Math.random() * 10000); // todo: rework
+      req.revNonce = Math.round(Math.random() * 10000);
     }
     req.subjectPosition = req.subjectPosition ?? SubjectPosition.Index;
 
@@ -429,14 +430,25 @@ export class IdentityWallet implements IIdentityWallet {
 
     return credential;
   }
+  async revokeCredential(issuerDID: DID, credential: W3CCredential): Promise<number> {
+    const issuerTree = await this.getDIDTreeState(issuerDID);
+
+    const coreClaim = await credential.getCoreClaimFromProof(ProofType.BJJSignature);
+
+    const nonce = coreClaim.getRevocationNonce();
+
+    await issuerTree.revocationTree.add(nonce, BigInt(0));
+
+    return Number(BigInt.asUintN(64, nonce));
+  }
 
   async addCredentialsToMerkleTree(
     credentials: W3CCredential[],
     issuerDID: DID
   ): Promise<Iden3ProofCreationResult> {
-    let oldIssuerTree = await this.getDIDTreeState(issuerDID);
+    const oldIssuerTree = await this.getDIDTreeState(issuerDID);
 
-    let oldTreeState: TreeState = {
+    const oldTreeState: TreeState = {
       revocationRoot: oldIssuerTree.revocationTree.root,
       claimsRoot: oldIssuerTree.claimsTree.root,
       state: oldIssuerTree.state,
@@ -457,7 +469,7 @@ export class IdentityWallet implements IIdentityWallet {
       );
     }
 
-    let newIssuerTreeState = await this.getDIDTreeState(issuerDID);
+    const newIssuerTreeState = await this.getDIDTreeState(issuerDID);
 
     await this._storage.mt.addToMerkleTree(
       issuerDID.toString(),
@@ -465,7 +477,7 @@ export class IdentityWallet implements IIdentityWallet {
       newIssuerTreeState.claimsTree.root.bigInt(),
       BigInt(0)
     );
-    let newIssuerTreeStateWithROR = await this.getDIDTreeState(issuerDID);
+    const newIssuerTreeStateWithROR = await this.getDIDTreeState(issuerDID);
 
     return {
       credentials,
@@ -520,8 +532,8 @@ export class IdentityWallet implements IIdentityWallet {
     }
     return credentials;
   }
-  async publishStateToRHS(issuerDID: DID, rhsURL: string): Promise<void> {
-    let treeState = await this.getDIDTreeState(issuerDID);
+  async publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void> {
+    const treeState = await this.getDIDTreeState(issuerDID);
 
     await pushHashesToRHS(
       treeState.state,
@@ -531,7 +543,8 @@ export class IdentityWallet implements IIdentityWallet {
         state: treeState.state,
         rootsTree: treeState.rootsTree
       },
-      rhsURL
+      rhsURL,
+      revokedNonces
     );
   }
   private defineMTRootPosition(schema: Schema, position: string): string {

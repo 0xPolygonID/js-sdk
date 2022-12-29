@@ -210,12 +210,12 @@ export class IdentityTest {
 
   async claimMTPRaw(claim: Claim): Promise<{ proof: Proof; value: bigint }> {
     const { hi } = claim.hiHv();
-    return await this.clt.generateProof(hi, ZERO_HASH);
+    return await this.clt.generateProof(hi);
   }
 
   async claimRevMTPRaw(claim: Claim): Promise<{ proof: Proof; value: bigint }> {
     const revNonce = claim.getRevocationNonce();
-    return await this.ret.generateProof(revNonce, ZERO_HASH);
+    return await this.ret.generateProof(revNonce);
   }
 
   signClaim(claim: Claim): Signature {

@@ -46,7 +46,7 @@ export class EthStateStorage implements IStateStorage {
 
   async getLatestStateById(issuerId: bigint): Promise<StateInfo> {
     const rawData = await this.stateContract.getStateInfoById(issuerId);
-    let stateInfo: StateInfo = {
+    const stateInfo: StateInfo = {
       id: BigNumber.from(rawData[0]).toBigInt(),
       state: BigNumber.from(rawData[1]).toBigInt(),
       replacedByState: BigNumber.from(rawData[2]).toBigInt(),

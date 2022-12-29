@@ -80,8 +80,8 @@ interface StateTransitionInputsInternal {
 export class StateTransitionPubSignals {
   userId: Id;
   oldUserState: Hash;
-  newUserState: Hash
-  isOldStateGenesis:boolean;
+  newUserState: Hash;
+  isOldStateGenesis: boolean;
 
   // PubSignalsUnmarshal unmarshal stateTransition.circom public signals
   pubSignalsUnmarshal(data: Uint8Array): StateTransitionPubSignals {
@@ -97,7 +97,7 @@ export class StateTransitionPubSignals {
     this.userId = Id.fromBigInt(BigInt(sVals[0]));
     this.oldUserState = newHashFromString(sVals[1]);
     this.newUserState = newHashFromString(sVals[2]);
-    this.isOldStateGenesis = sVals[3] == BigInt(1) ;
+    this.isOldStateGenesis = sVals[3] == BigInt(1);
 
     return this;
   }

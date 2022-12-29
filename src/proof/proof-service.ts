@@ -136,7 +136,7 @@ export class ProofService implements IProofService {
 
     const signature = await this._identityWallet.signChallenge(challenge, authInfo.authCredential);
 
-    let circuitInputs = new StateTransitionInputs();
+    const circuitInputs = new StateTransitionInputs();
     circuitInputs.id = did.id;
 
     circuitInputs.signature = signature;
@@ -151,6 +151,7 @@ export class ProofService implements IProofService {
 
     const inputs = await circuitInputs.inputsMarshal();
 
+    console.log(new TextDecoder().decode(inputs));
     const proof = await this._prover.generate(inputs, CircuitId.StateTransition);
 
     const txId = await stateStorage.publishState(proof, ethSigner);
@@ -170,7 +171,7 @@ export class ProofService implements IProofService {
   private async prepareCredential(did: DID, query: ProofQuery): Promise<PreparedCredential> {
     let credentials: W3CCredential[] = [];
 
-    if (!!query.claimId) {
+    if (query.claimId) {
       const credential = await this._credentialWallet.findById(query.claimId!);
       if (!credential) {
         throw new Error("claim doesn't exist");
@@ -215,7 +216,11 @@ export class ProofService implements IProofService {
       treeStateInfo
     );
 
-    const nonRevProof = await this._identityWallet.generateNonRevocationMtp(did, authCredential,treeStateInfo);
+    const nonRevProof = await this._identityWallet.generateNonRevocationMtp(
+      did,
+      authCredential,
+      treeStateInfo
+    );
 
     const authCoreClaim = authCredential.getCoreClaimFromProof(
       ProofType.Iden3SparseMerkleTreeProof
@@ -249,7 +254,7 @@ export class ProofService implements IProofService {
         proof: preparedCredential.revStatus.mtp
       };
 
-      let circuitInputs = new AtomicQueryMTPV2Inputs();
+      const circuitInputs = new AtomicQueryMTPV2Inputs();
       circuitInputs.id = identifier.id;
       circuitInputs.requestID = BigInt(proofReq.id);
       circuitInputs.query = await this.toCircuitsQuery(
@@ -278,7 +283,7 @@ export class ProofService implements IProofService {
 
       circuitClaimData.signatureProof.issuerAuthNonRevProof = issuerAuthClaimNonRevProof;
 
-      let circuitInputs = new AtomicQuerySigV2Inputs();
+      const circuitInputs = new AtomicQuerySigV2Inputs();
       circuitInputs.id = identifier.id;
       circuitInputs.claim = {
         issuerID: circuitClaimData.issuerId,
@@ -453,7 +458,7 @@ export class ProofService implements IProofService {
       break;
     }
 
-    let operator: number = 0;
+    let operator = 0;
     const values: bigint[] = new Array<bigint>(64).fill(BigInt(0));
     for (const [key, value] of Object.entries(fieldReq)) {
       if (!QueryOperators[key]) {

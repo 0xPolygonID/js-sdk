@@ -9,12 +9,11 @@ import {
 } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
 import { StateInfo } from '../../src/storage/entities/state';
-import { FullProof, IProofService, ProofService, ZKPRequest } from '../../src/proof';
+import { FullProof, ProofService, ZKPRequest } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
-import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
-import { ethers, Signer } from 'ethers';
+import { Signer } from 'ethers';
 
 describe.skip('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -63,7 +62,7 @@ describe.skip('sig proofs', () => {
 
     proofService = new ProofService(idWallet, credWallet, kms, circuitStorage);
   });
-  it('sigv2-non-merklized', async () => {
+  it.skip('sigv2-non-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
@@ -117,7 +116,7 @@ describe.skip('sig proofs', () => {
     const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
   });
-  it('sigv2-merklized', async () => {
+  it.skip('sigv2-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
