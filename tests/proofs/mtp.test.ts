@@ -15,7 +15,7 @@ import { FSKeyLoader } from '../../src/loaders';
 import { ethers, Signer } from 'ethers';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 
-describe.only('mtp proofs', () => {
+describe.skip('mtp proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -173,7 +173,7 @@ describe.only('mtp proofs', () => {
     console.log(proof);
   });
 
-  it.only('mtpv2-merklized', async () => {
+  it.skip('mtpv2-merklized', async () => {
     const rhsURL = 'http://ec2-34-247-165-109.eu-west-1.compute.amazonaws.com:9999'; //TODO:add
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
