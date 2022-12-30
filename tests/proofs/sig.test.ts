@@ -170,5 +170,4 @@ describe.skip('sig proofs', () => {
     const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
   });
-
 });

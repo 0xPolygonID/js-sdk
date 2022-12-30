@@ -8,7 +8,7 @@ import {
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { FullProof} from '../../src/proof';
+import { FullProof } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
@@ -84,24 +84,23 @@ describe.skip('rhs', () => {
     );
 
     credWallet = new CredentialWallet(dataStorage);
-    credWallet.getRevocationStatusFromCredential = jest.fn(async (cred:W3CCredential) => {
-        const r : RevocationStatus = {
-            mtp : {
-                existence:false,
-                nodeAux:undefined,
-                siblings:[],
-            } as unknown as  Proof,
-            issuer:{}
-        }
-        return r;
-    })
+    credWallet.getRevocationStatusFromCredential = jest.fn(async (cred: W3CCredential) => {
+      const r: RevocationStatus = {
+        mtp: {
+          existence: false,
+          nodeAux: undefined,
+          siblings: []
+        } as unknown as Proof,
+        issuer: {}
+      };
+      return r;
+    });
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
-
   });
 
   it.skip('genesis', async () => {
     const rhsUrl = ''; // TODO: ARL
- 
+
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
@@ -296,11 +295,7 @@ describe.skip('rhs', () => {
 
     // state is published to blockchain (2)
 
-    const rhsStatus = await getStatusFromRHS(
-      issuerDID,
-      credRHSStatus,
-      dataStorage.states
-    );
+    const rhsStatus = await getStatusFromRHS(issuerDID, credRHSStatus, dataStorage.states);
 
     expect(rhsStatus.issuer.state).toBe(latestTree.state.hex());
     expect(rhsStatus.issuer.claimsTreeRoot).toBe(latestTree.claimsTree.root.hex());

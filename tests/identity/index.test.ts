@@ -21,7 +21,7 @@ describe('identity', () => {
     getLatestStateById: jest.fn(async (issuerId: bigint) => {
       return { id: BigInt(0), state: BigInt(0) } as StateInfo;
     }),
-    publishState: jest.fn(async (proof:FullProof, signer :Signer) => {
+    publishState: jest.fn(async (proof: FullProof, signer: Signer) => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
     })
   } as IStateStorage;
