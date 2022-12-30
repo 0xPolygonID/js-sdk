@@ -1,4 +1,4 @@
-import { MTProof, ValueProof } from './../circuits/models';
+import { MTProof, TreeState, ValueProof } from './../circuits/models';
 import { RHSCredentialStatus, W3CCredential } from '../verifiable/credential';
 import { ProofType } from '../verifiable/constants';
 import { KMS } from '../kms/kms';
@@ -12,9 +12,7 @@ import {
   Query,
   AtomicQueryMTPV2Inputs,
   AtomicQuerySigV2Inputs,
-  AuthV2Inputs,
   QueryOperators,
-  Operators,
   StateTransitionInputs
 } from '../circuits';
 import { RevocationStatus } from '../verifiable/credential';
@@ -22,7 +20,7 @@ import { toClaimNonRevStatus } from './common';
 import { NativeProver } from './prover';
 import { IIdentityWallet } from '../identity';
 import { ICredentialWallet } from '../credentials';
-import { Hex, Signature } from '@iden3/js-crypto';
+import { Hex, Poseidon, Signature } from '@iden3/js-crypto';
 import {
   Iden3SparseMerkleTreeProof,
   MerkleTreeProofWithTreeState,
@@ -35,13 +33,14 @@ import { Parser } from '../schema-processor';
 import {} from '../schema-processor';
 import { getContextPathKey } from '../schema-processor/merklize/merkelizer';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
+import { IStateStorage } from '../storage/interfaces';
+import { Signer } from 'ethers';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
 
 interface PreparedAuthBJJCredential {
   authCredential: W3CCredential;
-  signature: Signature;
   incProof: MerkleTreeProofWithTreeState;
   nonRevProof: MerkleTreeProofWithTreeState;
   authCoreClaim: Claim;
@@ -118,32 +117,63 @@ export class ProofService implements IProofService {
     return { proof, credentials: creds };
   }
 
+  // transiteState is done always to the latest state
+  async transiteState(
+    did: DID,
+    oldTreeState: TreeState,
+    isOldStateGenesis: boolean,
+    stateStorage: IStateStorage,
+    ethSigner: Signer
+  ): Promise<string> {
+    const authInfo = await this.prepareAuthBJJCredential(did, oldTreeState);
+
+    const newTreeState = await this._identityWallet.getDIDTreeState(did);
+
+    const challenge = Poseidon.hash([oldTreeState.state.bigInt(), newTreeState.state.bigInt()]);
+
+    const signature = await this._identityWallet.signChallenge(challenge, authInfo.authCredential);
+
+    const circuitInputs = new StateTransitionInputs();
+    circuitInputs.id = did.id;
+
+    circuitInputs.signature = signature;
+    circuitInputs.isOldStateGenesis = isOldStateGenesis;
+    circuitInputs.newState = newTreeState.state;
+    circuitInputs.oldTreeState = oldTreeState;
+    circuitInputs.authClaim = {
+      claim: authInfo.authCoreClaim,
+      incProof: authInfo.incProof,
+      nonRevProof: authInfo.nonRevProof
+    };
+
+    const inputs = await circuitInputs.inputsMarshal();
+
+    console.log(new TextDecoder().decode(inputs));
+    const proof = await this._prover.generate(inputs, CircuitId.StateTransition);
+
+    const txId = await stateStorage.publishState(proof, ethSigner);
+    return txId;
+  }
+
   private async prepareInputs(
     did: DID,
     proofReq: ZKPRequest
   ): Promise<{ inputs: Uint8Array; creds: W3CCredential[] }> {
-    const preparedAuthBJJCredential = await this.prepareAuthBJJCredential(did, proofReq);
-
     const preparedCredential = await this.prepareCredential(did, proofReq.query);
 
-    const inputs = await this.generateInputs(
-      preparedAuthBJJCredential,
-      preparedCredential,
-      did,
-      proofReq
-    );
+    const inputs = await this.generateInputs(preparedCredential, did, proofReq);
     return { inputs, creds: [preparedCredential.credential] };
   }
 
   private async prepareCredential(did: DID, query: ProofQuery): Promise<PreparedCredential> {
     let credentials: W3CCredential[] = [];
 
-    if (!!query.claimId) {
-      const credential = await this._credentialWallet.findById(query.claimId!);
+    if (query.claimId) {
+      const credential = await this._credentialWallet.findById(query.claimId);
       if (!credential) {
         throw new Error("claim doesn't exist");
       }
-      credentials.push(credential!);
+      credentials.push(credential);
     } else {
       query.credentialSubjectId = did.toString();
       credentials = await this._credentialWallet.findByQuery(query);
@@ -154,7 +184,7 @@ export class ProofService implements IProofService {
     const { cred, revStatus } = await this.findNonRevokedClaim(credentials);
 
     const credCoreClaim = cred.getCoreClaimFromProof(ProofType.BJJSignature);
-    return { credential: cred, revStatus, credentialCoreClaim: credCoreClaim! };
+    return { credential: cred, revStatus, credentialCoreClaim: credCoreClaim };
   }
 
   private async findNonRevokedClaim(creds: W3CCredential[]): Promise<{
@@ -173,15 +203,21 @@ export class ProofService implements IProofService {
 
   private async prepareAuthBJJCredential(
     did: DID,
-    proofReq: ZKPRequest
+    treeStateInfo?: TreeState
   ): Promise<PreparedAuthBJJCredential> {
     const authCredential = await this._credentialWallet.getAuthBJJCredential(did);
 
-    const incProof = await this._identityWallet.generateClaimMtp(did, authCredential);
+    const incProof = await this._identityWallet.generateClaimMtp(
+      did,
+      authCredential,
+      treeStateInfo
+    );
 
-    const nonRevProof = await this._identityWallet.generateNonRevocationMtp(did, authCredential);
-
-    const signature = await this._identityWallet.signChallenge(BigInt(proofReq.id), authCredential);
+    const nonRevProof = await this._identityWallet.generateNonRevocationMtp(
+      did,
+      authCredential,
+      treeStateInfo
+    );
 
     const authCoreClaim = authCredential.getCoreClaimFromProof(
       ProofType.Iden3SparseMerkleTreeProof
@@ -190,18 +226,20 @@ export class ProofService implements IProofService {
       throw new Error('auth core claim is not defined for auth bjj credential');
     }
 
-    return { authCredential, incProof, nonRevProof, signature, authCoreClaim };
+    return { authCredential, incProof, nonRevProof, authCoreClaim };
   }
 
   private async generateInputs(
-    preparedAuthCredential: PreparedAuthBJJCredential,
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZKPRequest
   ): Promise<Uint8Array> {
     let inputs: Uint8Array;
     if (proofReq.circuitId === CircuitId.AtomicQueryMTPV2) {
-      const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
+      const circuitClaimData = await this.newCircuitClaimData(
+        preparedCredential.credential,
+        preparedCredential.credentialCoreClaim
+      );
 
       circuitClaimData.nonRevProof = {
         treeState: {
@@ -213,7 +251,7 @@ export class ProofService implements IProofService {
         proof: preparedCredential.revStatus.mtp
       };
 
-      let circuitInputs = new AtomicQueryMTPV2Inputs();
+      const circuitInputs = new AtomicQueryMTPV2Inputs();
       circuitInputs.id = identifier.id;
       circuitInputs.requestID = BigInt(proofReq.id);
       circuitInputs.query = await this.toCircuitsQuery(
@@ -233,19 +271,22 @@ export class ProofService implements IProofService {
 
       inputs = await circuitInputs.inputsMarshal();
     } else if (proofReq.circuitId === CircuitId.AtomicQuerySigV2) {
-      const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
+      const circuitClaimData = await this.newCircuitClaimData(
+        preparedCredential.credential,
+        preparedCredential.credentialCoreClaim
+      );
 
       const issuerAuthClaimNonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
       circuitClaimData.signatureProof.issuerAuthNonRevProof = issuerAuthClaimNonRevProof;
 
-      let circuitInputs = new AtomicQuerySigV2Inputs();
+      const circuitInputs = new AtomicQuerySigV2Inputs();
       circuitInputs.id = identifier.id;
       circuitInputs.claim = {
         issuerID: circuitClaimData.issuerId,
         signatureProof: circuitClaimData.signatureProof,
         claim: circuitClaimData.claim,
-        nonRevProof:issuerAuthClaimNonRevProof
+        nonRevProof: issuerAuthClaimNonRevProof
       };
       circuitInputs.requestID = BigInt(proofReq.id);
       circuitInputs.claimSubjectProfileNonce = BigInt(0);
@@ -262,19 +303,20 @@ export class ProofService implements IProofService {
     } else {
       throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
-
-    console.log(new TextDecoder().decode(inputs))
     return inputs;
   }
 
   // NewCircuitClaimData generates circuits claim structure
-  private async newCircuitClaimData(prepareCredential: PreparedCredential): Promise<CircuitClaim> {
+  private async newCircuitClaimData(
+    credential: W3CCredential,
+    coreClaim: Claim
+  ): Promise<CircuitClaim> {
     const smtProof: Iden3SparseMerkleTreeProof | undefined =
-      prepareCredential.credential.getIden3SparseMerkleTreeProof();
+      credential.getIden3SparseMerkleTreeProof();
 
     const circuitClaim = new CircuitClaim();
-    circuitClaim.claim = prepareCredential.credentialCoreClaim;
-    circuitClaim.issuerId = DID.parse(prepareCredential.credential.issuer).id;
+    circuitClaim.claim = coreClaim;
+    circuitClaim.issuerId = DID.parse(credential.issuer).id;
 
     if (smtProof) {
       circuitClaim.proof = smtProof.mtp;
@@ -286,7 +328,7 @@ export class ProofService implements IProofService {
       };
     }
 
-    const sigProof = prepareCredential.credential.getBJJSignature2021Proof();
+    const sigProof = credential.getBJJSignature2021Proof();
 
     if (sigProof) {
       const signature = await bJJSignatureFromHexString(sigProof.signature);
@@ -310,7 +352,7 @@ export class ProofService implements IProofService {
       circuitClaim.signatureProof = {
         signature,
         issuerAuthIncProof: {
-          proof: sigProof.issuerData.mtp!,
+          proof: sigProof.issuerData.mtp,
           treeState: {
             state: strMTHex(sigProof.issuerData.state?.value),
             claimsRoot: strMTHex(sigProof.issuerData.state?.claimsTreeRoot),
@@ -318,7 +360,7 @@ export class ProofService implements IProofService {
             rootOfRoots: strMTHex(sigProof.issuerData.state?.rootOfRoots)
           }
         },
-        issuerAuthClaim: new Claim().fromHex(sigProof.issuerData.authCoreClaim!),
+        issuerAuthClaim: new Claim().fromHex(sigProof.issuerData.authCoreClaim),
         issuerAuthNonRevProof
       };
     }
@@ -365,7 +407,6 @@ export class ProofService implements IProofService {
     parsedQuery.query.valueProof.mtp = proof;
     parsedQuery.query.valueProof.value = BigInt(value.toString());
 
-
     if (merklizedPosition == MerklizedRootPosition.Index) {
       parsedQuery.query.slotIndex = 2; // value data slot a
     } else {
@@ -380,7 +421,7 @@ export class ProofService implements IProofService {
     const loader = new UniversalSchemaLoader('ipfs.io');
     const schema = await loader.load(credential.credentialSchema.id);
 
-    if (Object.keys(query.req!).length > 1) {
+    if (query.req && Object.keys(query.req).length > 1) {
       throw new Error('mulptiple requets are not suppored');
     }
 
@@ -414,7 +455,7 @@ export class ProofService implements IProofService {
       break;
     }
 
-    let operator: number = 0;
+    let operator = 0;
     const values: bigint[] = new Array<bigint>(64).fill(BigInt(0));
     for (const [key, value] of Object.entries(fieldReq)) {
       if (!QueryOperators[key]) {

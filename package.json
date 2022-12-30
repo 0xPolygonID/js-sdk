@@ -27,7 +27,7 @@
     "dev:watch:analize": "webpack --env analize --watch --progress --config webpack.config.watch.js",
     "build": "npm run clean && webpack --progress --config webpack.config.prod.js --mode=production",
     "test:coverage": "jest --coverage",
-    "test": "NODE_OPTIONS=\\\"--experimental-vm-modules\\\" jest",
+    "test": "NODE_OPTIONS=\\\"--experimental-vm-modules\\\" jest --runInBand",
     "test:watch": "NODE_OPTIONS=\\\"--experimental-vm-modules\\\" jest --watch",
     "lint": "eslint --fix --ext .js,.ts src/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""

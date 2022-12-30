@@ -45,8 +45,8 @@ export interface CredentialIssueOptions {
 // CredentialIssueOptions
 export interface Iden3ProofCreationResult {
   credentials: W3CCredential[];
-  oldTree: TreesModel;
-  newTree: TreesModel;
+  oldTreeState: TreeState;
+  newTreeState: TreeState;
 }
 
 export interface IIdentityWallet {
@@ -57,10 +57,16 @@ export interface IIdentityWallet {
   ): Promise<{ did: DID; credential: W3CCredential }>;
   createProfile(did: DID, nonce: number, verifier: string): Promise<DID>;
   generateKey(keyType: KmsKeyType): Promise<KmsKeyId>;
-  generateClaimMtp(did: DID, credential: W3CCredential): Promise<MerkleTreeProofWithTreeState>;
+  getDIDTreeState(did: DID): Promise<TreesModel>;
+  generateClaimMtp(
+    did: DID,
+    credential: W3CCredential,
+    treeState?: TreeState
+  ): Promise<MerkleTreeProofWithTreeState>;
   generateNonRevocationMtp(
     did: DID,
-    credential: W3CCredential
+    credential: W3CCredential,
+    treeState?: TreeState
   ): Promise<MerkleTreeProofWithTreeState>;
   sign(payload: Uint8Array, credential: W3CCredential): Promise<Signature>;
   signChallenge(payload: bigint, credential: W3CCredential): Promise<Signature>;
@@ -113,7 +119,7 @@ export class IdentityWallet implements IIdentityWallet {
     );
 
     const currentState = await hashElems([
-      claimsTree!.root.bigInt(),
+      claimsTree.root.bigInt(),
       ZERO_HASH.bigInt(),
       ZERO_HASH.bigInt()
     ]);
@@ -168,7 +174,7 @@ export class IdentityWallet implements IIdentityWallet {
           value: stateHex
         },
         authCoreClaim: authClaim.hex(),
-        credentialStatus: credential.credentialStatus!,
+        credentialStatus: credential.credentialStatus,
         mtp: proof
       },
       coreClaim: authClaim.hex()
@@ -222,7 +228,7 @@ export class IdentityWallet implements IIdentityWallet {
     return key;
   }
 
-  private async getDIDTreeState(did: DID): Promise<TreesModel> {
+  async getDIDTreeState(did: DID): Promise<TreesModel> {
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       did.toString(),
       MerkleTreeType.Claims
@@ -240,6 +246,7 @@ export class IdentityWallet implements IIdentityWallet {
       revocationTree.root.bigInt(),
       rootsTree.root.bigInt()
     ]);
+
     return {
       state,
       claimsTree,
@@ -250,7 +257,8 @@ export class IdentityWallet implements IIdentityWallet {
 
   async generateClaimMtp(
     did: DID,
-    credential: W3CCredential
+    credential: W3CCredential,
+    treeState?: TreeState
   ): Promise<MerkleTreeProofWithTreeState> {
     const coreClaim = await this.getCoreClaimFromCredential(credential);
 
@@ -261,11 +269,14 @@ export class IdentityWallet implements IIdentityWallet {
       MerkleTreeType.Claims
     );
 
-    const { proof } = await claimsTree.generateProof(coreClaim.hIndex(), claimsTree.root);
+    const { proof } = await claimsTree.generateProof(
+      coreClaim.hIndex(),
+      treeState ? treeState.claimsRoot : treesModel.claimsTree.root
+    );
 
     return {
       proof,
-      treeState: {
+      treeState: treeState ?? {
         state: treesModel.state,
         claimsRoot: treesModel.claimsTree.root,
         rootOfRoots: treesModel.rootsTree.root,
@@ -273,10 +284,12 @@ export class IdentityWallet implements IIdentityWallet {
       }
     };
   }
+  s;
 
   async generateNonRevocationMtp(
     did: DID,
-    credential: W3CCredential
+    credential: W3CCredential,
+    treeState?: TreeState
   ): Promise<MerkleTreeProofWithTreeState> {
     const coreClaim = await this.getCoreClaimFromCredential(credential);
 
@@ -289,11 +302,14 @@ export class IdentityWallet implements IIdentityWallet {
       MerkleTreeType.Revocations
     );
 
-    const { proof } = await revocationTree.generateProof(revNonce, revocationTree.root);
+    const { proof } = await revocationTree.generateProof(
+      revNonce,
+      treeState ? treeState.revocationRoot : treesModel.revocationTree.root
+    );
 
     return {
       proof,
-      treeState: {
+      treeState: treeState ?? {
         state: treesModel.state,
         claimsRoot: treesModel.claimsTree.root,
         rootOfRoots: treesModel.rootsTree.root,
@@ -352,7 +368,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     let revNonce = 0;
     if (!req.revNonce) {
-      req.revNonce = Math.round(Math.random() * 10000); // todo: rework
+      req.revNonce = Math.round(Math.random() * 10000);
     }
     req.subjectPosition = req.subjectPosition ?? SubjectPosition.Index;
 
@@ -375,14 +391,14 @@ export class IdentityWallet implements IIdentityWallet {
     const coreClaimOpts: CoreClaimOptions = {
       revNonce: revNonce,
       subjectPosition: req.subjectPosition,
-      merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition!),
+      merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition),
       updatable: false,
       version: 0
     };
 
     const coreClaim = await new Parser().parseClaim(
       credential,
-      `${jsonSchema.$metadata!.uris['jsonLdContext']}#${req.type}`,
+      `${jsonSchema.$metadata.uris['jsonLdContext']}#${req.type}`,
       schema,
       coreClaimOpts
     );
@@ -395,7 +411,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
 
-    const mtpAuthBJJProof = issuerAuthBJJCredential.proof![0] as Iden3SparseMerkleTreeProof;
+    const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
 
     const sigProof: BJJSignatureProof2021 = {
       type: ProofType.BJJSignature,
@@ -413,12 +429,30 @@ export class IdentityWallet implements IIdentityWallet {
 
     return credential;
   }
+  async revokeCredential(issuerDID: DID, credential: W3CCredential): Promise<number> {
+    const issuerTree = await this.getDIDTreeState(issuerDID);
 
-  async createMtpProofForCredentials(
+    const coreClaim = await credential.getCoreClaimFromProof(ProofType.BJJSignature);
+
+    const nonce = coreClaim.getRevocationNonce();
+
+    await issuerTree.revocationTree.add(nonce, BigInt(0));
+
+    return Number(BigInt.asUintN(64, nonce));
+  }
+
+  async addCredentialsToMerkleTree(
     credentials: W3CCredential[],
     issuerDID: DID
   ): Promise<Iden3ProofCreationResult> {
-    let oldIssuerTreeState = await this.getDIDTreeState(issuerDID);
+    const oldIssuerTree = await this.getDIDTreeState(issuerDID);
+
+    const oldTreeState: TreeState = {
+      revocationRoot: oldIssuerTree.revocationTree.root,
+      claimsRoot: oldIssuerTree.claimsTree.root,
+      state: oldIssuerTree.state,
+      rootOfRoots: oldIssuerTree.rootsTree.root
+    };
 
     for (let index = 0; index < credentials.length; index++) {
       const credential = credentials[index];
@@ -429,12 +463,12 @@ export class IdentityWallet implements IIdentityWallet {
       await this._storage.mt.addToMerkleTree(
         issuerDID.toString(),
         MerkleTreeType.Claims,
-        coreClaim!.hIndex(),
-        coreClaim!.hValue()
+        coreClaim.hIndex(),
+        coreClaim.hValue()
       );
     }
 
-    let newIssuerTreeState = await this.getDIDTreeState(issuerDID);
+    const newIssuerTreeState = await this.getDIDTreeState(issuerDID);
 
     await this._storage.mt.addToMerkleTree(
       issuerDID.toString(),
@@ -442,12 +476,34 @@ export class IdentityWallet implements IIdentityWallet {
       newIssuerTreeState.claimsTree.root.bigInt(),
       BigInt(0)
     );
+    const newIssuerTreeStateWithROR = await this.getDIDTreeState(issuerDID);
 
+    return {
+      credentials,
+      newTreeState: {
+        revocationRoot: newIssuerTreeStateWithROR.revocationTree.root,
+        claimsRoot: newIssuerTreeStateWithROR.claimsTree.root,
+        state: newIssuerTreeStateWithROR.state,
+        rootOfRoots: newIssuerTreeStateWithROR.rootsTree.root
+      },
+      oldTreeState: oldTreeState
+    };
+  }
+
+  async generateIden3SparseMerkleTreeProof(
+    issuerDID: DID,
+    credentials: W3CCredential[],
+    txId: string,
+    blockNumber?: number,
+    blockTimestamp?: number
+  ): Promise<W3CCredential[]> {
     for (let index = 0; index < credentials.length; index++) {
-      const mtpWithProof = await this.generateClaimMtp(issuerDID, credentials[0]);
+      const credential = credentials[index];
+
+      const mtpWithProof = await this.generateClaimMtp(issuerDID, credential);
 
       // credential must have a bjj signature proof
-      const coreClaim = await credentials[index].getCoreClaimFromProof(ProofType.BJJSignature);
+      const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
 
       const mtpProof: Iden3SparseMerkleTreeProof = {
         type: ProofType.Iden3SparseMerkleTreeProof,
@@ -458,23 +514,25 @@ export class IdentityWallet implements IIdentityWallet {
             claimsTreeRoot: mtpWithProof.treeState.claimsRoot.hex(),
             revocationTreeRoot: mtpWithProof.treeState.revocationRoot.hex(),
             rootOfRoots: mtpWithProof.treeState.rootOfRoots.hex(),
-            value: mtpWithProof.treeState.state.hex()
+            value: mtpWithProof.treeState.state.hex(),
+            txId,
+            blockNumber,
+            blockTimestamp
           },
           mtp: mtpWithProof.proof
         },
-        coreClaim: coreClaim!.hex()
+        coreClaim: coreClaim.hex()
       };
       if (Array.isArray(credentials[index].proof)) {
-        (credentials[index].proof as any[]).push(mtpProof);
+        (credentials[index].proof as unknown[]).push(mtpProof);
       } else {
         credentials[index].proof = mtpProof;
       }
     }
-    return { credentials, newTree: newIssuerTreeState, oldTree: oldIssuerTreeState };
+    return credentials;
   }
-
-  async publishStateToRHS(issuerDID: DID, rhsURL: string): Promise<void> {
-    let treeState = await this.getDIDTreeState(issuerDID);
+  async publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void> {
+    const treeState = await this.getDIDTreeState(issuerDID);
 
     await pushHashesToRHS(
       treeState.state,
@@ -484,10 +542,10 @@ export class IdentityWallet implements IIdentityWallet {
         state: treeState.state,
         rootsTree: treeState.rootsTree
       },
-      rhsURL
+      rhsURL,
+      revokedNonces
     );
   }
-
   private defineMTRootPosition(schema: Schema, position: string): string {
     if (!!schema.$metadata && !!schema.$metadata.serialization) {
       return '';
@@ -510,10 +568,10 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error('core claim is not set proof');
     }
     if (!coreClaimFromMtpProof) {
-      coreClaim = coreClaimFromSigProof!;
+      return coreClaimFromSigProof;
     }
     if (!coreClaimFromSigProof) {
-      coreClaim = coreClaimFromMtpProof!;
+      return coreClaimFromMtpProof;
     }
     if (
       coreClaimFromMtpProof &&
@@ -522,7 +580,7 @@ export class IdentityWallet implements IIdentityWallet {
     ) {
       throw new Error('core claim is set in both proofs but not equal');
     } else {
-      coreClaim = coreClaimFromMtpProof!;
+      coreClaim = coreClaimFromMtpProof;
     }
     return coreClaim;
   }

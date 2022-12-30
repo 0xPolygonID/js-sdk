@@ -6,7 +6,7 @@ export enum SearchError {
 }
 
 export const comparatorOptions = {
-  // todo check $noop operator
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   $noop: (a, b) => true,
   $eq: (a, b) => a === b,
   $in: (a: string, b: string[]) => b.includes(a),
@@ -41,12 +41,13 @@ export const StandardJSONCredentielsQueryFilter = (query: ProofQuery) => {
     switch (queryKey) {
       case 'claimId':
         return acc.concat(createFilter('id', comparatorOptions.$eq, queryValue));
-      case 'allowedIssuers':
+      case 'allowedIssuers': {
         const [first] = queryValue || [];
         if (first && first === '*') {
           return acc;
         }
         return acc.concat(createFilter('issuer', comparatorOptions.$in, queryValue));
+      }
       case 'type':
         return acc.concat(createFilter('type', comparatorOptions.$in, queryValue, true));
       case 'context':
@@ -55,7 +56,7 @@ export const StandardJSONCredentielsQueryFilter = (query: ProofQuery) => {
         return acc.concat(createFilter('credentialSubject.id', comparatorOptions.$eq, queryValue));
       case 'schema':
         return acc.concat(createFilter('credentialSchema.id', comparatorOptions.$eq, queryValue));
-      case 'req':
+      case 'req': {
         const reqFilters = Object.keys(queryValue).reduce((acc, fieldKey) => {
           const fieldParams = queryValue[fieldKey];
           const res = Object.keys(fieldParams).map((comparator) => {
@@ -70,6 +71,7 @@ export const StandardJSONCredentielsQueryFilter = (query: ProofQuery) => {
         }, []);
 
         return acc.concat(reqFilters);
+      }
       default:
         throw new Error(SearchError.NotDefinedQueryKey);
     }

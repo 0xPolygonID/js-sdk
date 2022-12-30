@@ -1,10 +1,9 @@
 import { ZKProof } from '@iden3/js-jwz';
 import * as snarkjs from 'snarkjs';
 import { CircuitId } from '../circuits';
-import { IKeyLoader } from '../loaders';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { FullProof } from './proof-service';
-import {witnessBuilder} from './witness_calculator';
+import { witnessBuilder } from './witness_calculator';
 
 /* eslint-disable no-console */
 
