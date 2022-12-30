@@ -26,7 +26,7 @@ export class Merkelizer {
 
   async proof(p: Path): Promise<{ proof: Proof; value: Value }> {
     const kHash = await p.mtEntry();
-    const { proof } = await this.mt!.generateProof(kHash);
+    const { proof } = await this.mt.generateProof(kHash);
 
     let value: Value = '';
 
@@ -37,8 +37,8 @@ export class Merkelizer {
 
       const entry = this.entries.get(kHash.toString());
 
-      validateValue(entry!.value);
-      value = entry!.value as Value;
+      validateValue(entry.value);
+      value = entry.value as Value;
     }
 
     return { proof, value };
@@ -51,13 +51,13 @@ export class Merkelizer {
   }
 
   async resolveDocPath(path: string): Promise<Path> {
-    const realPath = await newPathFromDocument(null, this.srcDoc!, path);
+    const realPath = await newPathFromDocument(null, this.srcDoc, path);
     realPath.hasher = this.hasher;
     return realPath;
   }
 
   root(): Hash {
-    return this.mt!.root;
+    return this.mt.root;
   }
 }
 export const getDataSet = async (doc: JsonLdDocument): Promise<typeof Quad> => {
@@ -72,7 +72,7 @@ export const getDataSet = async (doc: JsonLdDocument): Promise<typeof Quad> => {
 
 export const merkelizeJSONLD = async (docStr: string): Promise<Merkelizer> => {
   const mz = new Merkelizer(docStr);
-  const dataset = await getDataSet(JSON.parse(mz.srcDoc!));
+  const dataset = await getDataSet(JSON.parse(mz.srcDoc));
   const entries = await entriesFromRDFHasher(dataset, DEFAULT_HASHER);
 
   for (const e of entries) {
@@ -80,7 +80,7 @@ export const merkelizeJSONLD = async (docStr: string): Promise<Merkelizer> => {
     mz.entries.set(k.toString(), e);
   }
 
-  await addEntriesToMerkleTree(mz.mt!, entries);
+  await addEntriesToMerkleTree(mz.mt, entries);
   return mz;
 };
 

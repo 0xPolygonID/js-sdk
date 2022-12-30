@@ -13,7 +13,7 @@ import {
   SchemaHash
 } from '@iden3/js-iden3-core';
 import { Hex, poseidon, PublicKey, Signature } from '@iden3/js-crypto';
-import { Hash, hashElems, ZERO_HASH } from '@iden3/js-merkletree';
+import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import {} from '@iden3/js-iden3-core';
 
 import { subjectPositionIndex } from './common';
@@ -31,8 +31,7 @@ import {
   W3CCredential,
   MerkleTreeProofWithTreeState,
   Iden3SparseMerkleTreeProof,
-  ProofType,
-  State
+  ProofType
 } from '../verifiable';
 import { ClaimRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/revocation';
@@ -120,7 +119,7 @@ export class IdentityWallet implements IIdentityWallet {
     );
 
     const currentState = await hashElems([
-      claimsTree!.root.bigInt(),
+      claimsTree.root.bigInt(),
       ZERO_HASH.bigInt(),
       ZERO_HASH.bigInt()
     ]);
@@ -175,7 +174,7 @@ export class IdentityWallet implements IIdentityWallet {
           value: stateHex
         },
         authCoreClaim: authClaim.hex(),
-        credentialStatus: credential.credentialStatus!,
+        credentialStatus: credential.credentialStatus,
         mtp: proof
       },
       coreClaim: authClaim.hex()
@@ -392,14 +391,14 @@ export class IdentityWallet implements IIdentityWallet {
     const coreClaimOpts: CoreClaimOptions = {
       revNonce: revNonce,
       subjectPosition: req.subjectPosition,
-      merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition!),
+      merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition),
       updatable: false,
       version: 0
     };
 
     const coreClaim = await new Parser().parseClaim(
       credential,
-      `${jsonSchema.$metadata!.uris['jsonLdContext']}#${req.type}`,
+      `${jsonSchema.$metadata.uris['jsonLdContext']}#${req.type}`,
       schema,
       coreClaimOpts
     );
@@ -412,7 +411,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
 
-    const mtpAuthBJJProof = issuerAuthBJJCredential.proof![0] as Iden3SparseMerkleTreeProof;
+    const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
 
     const sigProof: BJJSignatureProof2021 = {
       type: ProofType.BJJSignature,
@@ -464,8 +463,8 @@ export class IdentityWallet implements IIdentityWallet {
       await this._storage.mt.addToMerkleTree(
         issuerDID.toString(),
         MerkleTreeType.Claims,
-        coreClaim!.hIndex(),
-        coreClaim!.hValue()
+        coreClaim.hIndex(),
+        coreClaim.hValue()
       );
     }
 
@@ -522,10 +521,10 @@ export class IdentityWallet implements IIdentityWallet {
           },
           mtp: mtpWithProof.proof
         },
-        coreClaim: coreClaim!.hex()
+        coreClaim: coreClaim.hex()
       };
       if (Array.isArray(credentials[index].proof)) {
-        (credentials[index].proof as any[]).push(mtpProof);
+        (credentials[index].proof as unknown[]).push(mtpProof);
       } else {
         credentials[index].proof = mtpProof;
       }
@@ -569,10 +568,10 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error('core claim is not set proof');
     }
     if (!coreClaimFromMtpProof) {
-      return coreClaimFromSigProof!;
+      return coreClaimFromSigProof;
     }
     if (!coreClaimFromSigProof) {
-      return coreClaimFromMtpProof!;
+      return coreClaimFromMtpProof;
     }
     if (
       coreClaimFromMtpProof &&
@@ -581,7 +580,7 @@ export class IdentityWallet implements IIdentityWallet {
     ) {
       throw new Error('core claim is set in both proofs but not equal');
     } else {
-      coreClaim = coreClaimFromMtpProof!;
+      coreClaim = coreClaimFromMtpProof;
     }
     return coreClaim;
   }

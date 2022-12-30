@@ -11,7 +11,7 @@ export class W3CCredential {
   type: string[];
   expirationDate?: string;
   issuanceDate?: string;
-  credentialSubject: { [key: string]: object | string };
+  credentialSubject: { [key: string]: object | string | number };
   credentialStatus?: CredentialStatus | RHSCredentialStatus;
   issuer: string;
   credentialSchema: CredentialSchema;

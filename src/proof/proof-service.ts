@@ -12,9 +12,7 @@ import {
   Query,
   AtomicQueryMTPV2Inputs,
   AtomicQuerySigV2Inputs,
-  AuthV2Inputs,
   QueryOperators,
-  Operators,
   StateTransitionInputs
 } from '../circuits';
 import { RevocationStatus } from '../verifiable/credential';
@@ -35,7 +33,6 @@ import { Parser } from '../schema-processor';
 import {} from '../schema-processor';
 import { getContextPathKey } from '../schema-processor/merklize/merkelizer';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
-import { TreesModel } from '../credentials/revocation';
 import { IStateStorage } from '../storage/interfaces';
 import { Signer } from 'ethers';
 
@@ -172,11 +169,11 @@ export class ProofService implements IProofService {
     let credentials: W3CCredential[] = [];
 
     if (query.claimId) {
-      const credential = await this._credentialWallet.findById(query.claimId!);
+      const credential = await this._credentialWallet.findById(query.claimId);
       if (!credential) {
         throw new Error("claim doesn't exist");
       }
-      credentials.push(credential!);
+      credentials.push(credential);
     } else {
       query.credentialSubjectId = did.toString();
       credentials = await this._credentialWallet.findByQuery(query);
@@ -187,7 +184,7 @@ export class ProofService implements IProofService {
     const { cred, revStatus } = await this.findNonRevokedClaim(credentials);
 
     const credCoreClaim = cred.getCoreClaimFromProof(ProofType.BJJSignature);
-    return { credential: cred, revStatus, credentialCoreClaim: credCoreClaim! };
+    return { credential: cred, revStatus, credentialCoreClaim: credCoreClaim };
   }
 
   private async findNonRevokedClaim(creds: W3CCredential[]): Promise<{
@@ -355,7 +352,7 @@ export class ProofService implements IProofService {
       circuitClaim.signatureProof = {
         signature,
         issuerAuthIncProof: {
-          proof: sigProof.issuerData.mtp!,
+          proof: sigProof.issuerData.mtp,
           treeState: {
             state: strMTHex(sigProof.issuerData.state?.value),
             claimsRoot: strMTHex(sigProof.issuerData.state?.claimsTreeRoot),
@@ -363,7 +360,7 @@ export class ProofService implements IProofService {
             rootOfRoots: strMTHex(sigProof.issuerData.state?.rootOfRoots)
           }
         },
-        issuerAuthClaim: new Claim().fromHex(sigProof.issuerData.authCoreClaim!),
+        issuerAuthClaim: new Claim().fromHex(sigProof.issuerData.authCoreClaim),
         issuerAuthNonRevProof
       };
     }
@@ -424,7 +421,7 @@ export class ProofService implements IProofService {
     const loader = new UniversalSchemaLoader('ipfs.io');
     const schema = await loader.load(credential.credentialSchema.id);
 
-    if (Object.keys(query.req!).length > 1) {
+    if (query.req && Object.keys(query.req).length > 1) {
       throw new Error('mulptiple requets are not suppored');
     }
 

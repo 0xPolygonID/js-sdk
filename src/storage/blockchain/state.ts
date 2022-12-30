@@ -4,8 +4,6 @@ import { StateInfo } from '../entities/state';
 import abi from './state-abi.json';
 import { FullProof } from '../../proof';
 import { StateTransitionPubSignals } from '../../circuits';
-import { isIssuerGenesis } from '../../credentials';
-import { DID } from '@iden3/js-iden3-core';
 
 export interface EthConnectionConfig {
   url: string;
@@ -56,8 +54,6 @@ export class EthStateStorage implements IStateStorage {
       replacedAtBlock: BigNumber.from(rawData[6]).toBigInt()
     };
 
-    console.log(stateInfo);
-
     return stateInfo;
   }
 
@@ -83,7 +79,8 @@ export class EthStateStorage implements IStateStorage {
       ],
       proof.proof.pi_c.slice(0, 2)
     ];
-    const g = await contract.estimateGas.transitState(...payload);
+
+    await contract.estimateGas.transitState(...payload);
 
     const tx = await contract.transitState(...payload);
 

@@ -1,7 +1,6 @@
 import {
   Hash,
   newHashFromBigInt,
-  newHashFromString,
   NodeAux,
   ZERO_HASH,
   setBitBigEndian,
@@ -14,15 +13,9 @@ import { IStateStorage } from '../storage/interfaces';
 
 import axios from 'axios';
 import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
-import { NODE_TYPE_MIDDLE } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
-import { BytesHelper, DID } from '@iden3/js-iden3-core';
-import {
-  CredentialStatus,
-  RevocationStatus,
-  RHSCredentialStatus,
-  VerifiableConstants
-} from '../verifiable';
+import { DID } from '@iden3/js-iden3-core';
+import { CredentialStatus, RevocationStatus, RHSCredentialStatus } from '../verifiable';
 import { strMTHex } from '../circuits';
 
 export interface TreesModel {
@@ -102,7 +95,6 @@ async function getRevocationStatusFromRHS(
 ): Promise<RevocationStatus> {
   if (!rhsURL) throw new Error('HTTP reverse hash service url is not specified');
 
-  console.log(`${rhsURL}/node/${issuerRoot.hex()}`);
   const treeRoots = (await axios.get<NodeHexResponse>(`${rhsURL}/node/${issuerRoot.hex()}`)).data
     ?.node;
   if (treeRoots.children.length !== 3) {
@@ -160,7 +152,6 @@ async function rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Prom
     if (nextKey.bytes.every((i) => i === 0)) {
       return mkProof();
     }
-    console.log(`${rhsURL}/${nextKey.hex()}`);
     const resp = (await axios.get<NodeHexResponse>(`${rhsURL}/${nextKey.hex()}`)).data?.node;
 
     const n = ProofNode.fromHex(resp);
@@ -219,14 +210,6 @@ export async function pushHashesToRHS(
 }
 
 async function saveNodes(nodes: ProofNode[], nodeUrl: string): Promise<boolean> {
-  // check that node is ok
-
-  const st = await hashElems([
-    nodes[0].children[0].bigInt(),
-    nodes[0].children[1].bigInt(),
-    nodes[0].children[2].bigInt()
-  ]);
-
   const nodesJSON = nodes.map((n) => n.toJSON());
   return (await (await axios.post(nodeUrl + '/node', nodesJSON)).status) === 200;
 }
