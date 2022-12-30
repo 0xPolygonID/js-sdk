@@ -14,6 +14,7 @@ import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 import { Signer } from 'ethers';
+import { VerifiableConstants } from '../../src/verifiable';
 
 describe.skip('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -24,7 +25,7 @@ describe.skip('sig proofs', () => {
 
   const mockStateStorage = {
     getLatestStateById: jest.fn(async (issuerId: bigint) => {
-      return { id: BigInt(0), state: BigInt(0) } as StateInfo;
+      throw new Error(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
     }),
     publishState: jest.fn(async (proof: FullProof, signer: Signer) => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';

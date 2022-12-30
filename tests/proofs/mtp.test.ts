@@ -223,9 +223,10 @@ describe.skip('mtp proofs', () => {
     // you must store stat info (e.g. state and it's roots)
 
     const ethSigner = new ethers.Wallet(
-      '08562dec34e81fbc26f719048efb075f217bf911521d4e674cf7b7ad51f989eb',
+      '',
       ethStorage.provider
-    ); //TODO:add
+    ); 
+    
     const txId = await proofService.transiteState(
       issuerDID,
       res.oldTreeState,
