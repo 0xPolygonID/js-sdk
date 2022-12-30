@@ -97,7 +97,7 @@ export class StateTransitionPubSignals {
     this.userId = Id.fromBigInt(BigInt(sVals[0]));
     this.oldUserState = newHashFromString(sVals[1]);
     this.newUserState = newHashFromString(sVals[2]);
-    this.isOldStateGenesis = sVals[3] == BigInt(1);
+    this.isOldStateGenesis = BigInt(sVals[3]) === BigInt(1);
 
     return this;
   }
