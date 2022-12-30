@@ -20,6 +20,7 @@ import { Schema } from '../schema-processor';
 import * as uuid from 'uuid';
 import { getStatusFromRHS } from './revocation';
 import { Proof } from '@iden3/js-merkletree';
+import { ethers } from 'ethers';
 
 export interface ClaimRequest {
   credentialSchema: string;
@@ -113,8 +114,10 @@ export class CredentialWallet implements ICredentialWallet {
       try {
         return await getStatusFromRHS(issuerDID, credStatus, this._storage.states);
       } catch (e) {
+        console.log(e['reason']);
+        console.log(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
         if (
-          (e as Error).message.includes(VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND) &&
+          (e['reason'].includes(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST)) &&
           isIssuerGenesis(issuerDID.toString(), issuerData.state.value!)
         ) {
           return {

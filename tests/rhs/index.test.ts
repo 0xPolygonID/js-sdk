@@ -33,7 +33,7 @@ describe.skip('rhs', () => {
 
   const mockStateStorageForGenesisState = {
     getLatestStateById: jest.fn(async (issuerId: bigint) => {
-      throw new Error(VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND);
+      throw new Error(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
     }),
     publishState: jest.fn(async (proof: FullProof, signer: Signer) => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
@@ -100,8 +100,8 @@ describe.skip('rhs', () => {
   });
 
   it.skip('genesis', async () => {
-    const rhsUrl = 'http://ec2-34-247-165-109.eu-west-1.compute.amazonaws.com:9999';
-
+    const rhsUrl = ''; // TODO: ARL
+ 
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
@@ -129,10 +129,10 @@ describe.skip('rhs', () => {
 
     await expect(
       getStatusFromRHS(issuerDID, credRHSStatus, mockStateStorageForGenesisState)
-    ).rejects.toThrow(VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND);
+    ).rejects.toThrow(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
   });
   it.skip('mocked issuer state', async () => {
-    const rhsUrl = 'http://ec2-34-247-165-109.eu-west-1.compute.amazonaws.com:9999';
+    const rhsUrl = ''; // TODO: add url
 
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
@@ -202,7 +202,7 @@ describe.skip('rhs', () => {
     expect(rhsStatus.mtp.existence).toBe(false);
   });
   it.skip('two creds. one revoked', async () => {
-    const rhsUrl = 'http://ec2-34-247-165-109.eu-west-1.compute.amazonaws.com:9999';
+    const rhsUrl = ''; // TODO :add url
 
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
