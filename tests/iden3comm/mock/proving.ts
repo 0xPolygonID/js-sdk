@@ -1,7 +1,6 @@
+import { CircuitId } from './../../../src/circuits/models';
 import { ProvingMethod, ProvingMethodAlg, ZKProof } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
-import { CircuitID } from '../../../src/iden3comm/types';
-import { Bytes } from '../../../src/iden3comm/types';
 import { Eddsa } from '@iden3/js-crypto';
 import { newBigIntFromBytes } from '@iden3/js-merkletree';
 
@@ -48,8 +47,8 @@ export class ProvingMethodGroth16Authv2 implements ProvingMethod {
 export const mockPrepareAuthInputs = (
   hash: Uint8Array, //eslint-disable-line @typescript-eslint/no-unused-vars
   id: DID, //eslint-disable-line @typescript-eslint/no-unused-vars
-  circuitID: CircuitID //eslint-disable-line @typescript-eslint/no-unused-vars
-): Bytes => {
+  circuitID: CircuitId //eslint-disable-line @typescript-eslint/no-unused-vars
+): Uint8Array => {
   const bytesEncoder = new TextEncoder();
   const challenge = newBigIntFromBytes(hash);
 
@@ -68,6 +67,6 @@ export const mockPrepareAuthInputs = (
 
 //eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const mockVerifyState = async (
-  id: CircuitID, //eslint-disable-line @typescript-eslint/no-unused-vars
+  id: CircuitId, //eslint-disable-line @typescript-eslint/no-unused-vars
   signals: Array<string> //eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<boolean> => true;

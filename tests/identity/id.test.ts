@@ -2,14 +2,13 @@ import { IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { MerkleTreeType } from '../../src/storage/entities/mt';
-import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
+import { IDataStorage, IStateStorage, StateProof } from '../../src/storage/interfaces';
 import {
   InMemoryCredentialStorage,
   InMemoryIdentityStorage,
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { FullProof } from '../../src/proof';
 import { Signer } from 'ethers';
 import { VerifiableConstants } from '../../src/verifiable';
 
@@ -17,14 +16,26 @@ describe('identity', () => {
   let wallet: IdentityWallet;
   let dataStorage: IDataStorage;
 
-  const mockStateStorage = {
-    getLatestStateById: jest.fn(async (issuerId: bigint) => {
+  const mockStateStorage: IStateStorage = {
+    getLatestStateById: jest.fn(async (t) => {
       throw new Error(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
     }),
-    publishState: jest.fn(async (proof: FullProof, signer: Signer) => {
+    publishState: jest.fn(async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+    }),
+    getGISTProof: jest.fn((): Promise<StateProof> => {
+      return Promise.resolve({
+        root: 0n,
+        existence: false,
+        siblings: [],
+        index: 0n,
+        value: 0n,
+        auxExistence: false,
+        auxIndex: 0n,
+        auxValue: 0n
+      });
     })
-  } as IStateStorage;
+  };
   beforeEach(async () => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);

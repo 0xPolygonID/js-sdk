@@ -1,19 +1,17 @@
 import { IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
+import { IDataStorage, IStateStorage, StateProof } from '../../src/storage/interfaces';
 import {
   InMemoryCredentialStorage,
   InMemoryIdentityStorage,
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { StateInfo } from '../../src/storage/entities/state';
-import { FullProof, ProofService, ZKPRequest } from '../../src/proof';
+import { ProofService, ZKPRequest } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
-import { Signer } from 'ethers';
 import { VerifiableConstants } from '../../src/verifiable';
 
 describe.skip('sig proofs', () => {
@@ -23,14 +21,26 @@ describe.skip('sig proofs', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
 
-  const mockStateStorage = {
-    getLatestStateById: jest.fn(async (issuerId: bigint) => {
+  const mockStateStorage: IStateStorage = {
+    getLatestStateById: jest.fn(async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
     }),
-    publishState: jest.fn(async (proof: FullProof, signer: Signer) => {
+    publishState: jest.fn(async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+    }),
+    getGISTProof: jest.fn((): Promise<StateProof> => {
+      return Promise.resolve({
+        root: 0n,
+        existence: false,
+        siblings: [],
+        index: 0n,
+        value: 0n,
+        auxExistence: false,
+        auxIndex: 0n,
+        auxValue: 0n
+      });
     })
-  } as IStateStorage;
+  };
   beforeEach(async () => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
@@ -61,7 +71,7 @@ describe.skip('sig proofs', () => {
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, kms, circuitStorage);
+    proofService = new ProofService(idWallet, credWallet, kms, circuitStorage, mockStateStorage);
   });
   it.skip('sigv2-non-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
@@ -69,7 +79,7 @@ describe.skip('sig proofs', () => {
     );
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential } = await idWallet.createIdentity(
+    const { did: userDID, credential: cred } = await idWallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
       seedPhrase
@@ -114,7 +124,7 @@ describe.skip('sig proofs', () => {
         }
       }
     };
-    const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
+    const { proof, credential } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
   });
   it.skip('sigv2-merklized', async () => {
@@ -168,7 +178,7 @@ describe.skip('sig proofs', () => {
         }
       }
     };
-    const { proof, credentials } = await proofService.generateProof(proofReq, userDID);
+    const { proof, credential: cred } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
   });
 });

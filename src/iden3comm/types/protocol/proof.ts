@@ -32,15 +32,3 @@ export type ProofGenerationResponseMessage = {
 export type ResponseMessageBody = {
   scope: Array<ZeroKnowledgeProofResponse>;
 };
-
-export type ProofData = {
-  pi_a: Array<string>;
-  pi_b: Array<string>;
-  pi_c: Array<string>;
-  protocol: string;
-};
-
-export type ZKProof = {
-  proof: ProofData;
-  pub_signals: Array<string>;
-};

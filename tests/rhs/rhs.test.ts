@@ -1,18 +1,16 @@
 import { IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
+import { IDataStorage, IStateStorage, StateProof } from '../../src/storage/interfaces';
 import {
   InMemoryCredentialStorage,
   InMemoryIdentityStorage,
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { FullProof } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
-import { Signer } from 'ethers';
 import { getStatusFromRHS } from '../../src/credentials/revocation';
 import {
   CredentialStatus,
@@ -31,17 +29,29 @@ describe.skip('rhs', () => {
 
   let dataStorage: IDataStorage;
 
-  const mockStateStorageForGenesisState = {
-    getLatestStateById: jest.fn(async (issuerId: bigint) => {
+  const mockStateStorageForGenesisState: IStateStorage = {
+    getLatestStateById: jest.fn(async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
     }),
-    publishState: jest.fn(async (proof: FullProof, signer: Signer) => {
+    publishState: jest.fn(async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+    }),
+    getGISTProof: jest.fn((): Promise<StateProof> => {
+      return Promise.resolve({
+        root: 0n,
+        existence: false,
+        siblings: [],
+        index: 0n,
+        value: 0n,
+        auxExistence: false,
+        auxIndex: 0n,
+        auxValue: 0n
+      });
     })
-  } as IStateStorage;
+  };
 
-  const mockStateStorageForDefinedState = {
-    getLatestStateById: jest.fn(async (issuerId: bigint) => {
+  const mockStateStorageForDefinedState: IStateStorage = {
+    getLatestStateById: jest.fn(async () => {
       return {
         id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
         state: 15316103435703269893947162180693935798669021972402205481551466808302934202991n,
@@ -52,10 +62,22 @@ describe.skip('rhs', () => {
         replacedAtBlock: 0n
       };
     }),
-    publishState: jest.fn(async (proof: FullProof, signer: Signer) => {
+    publishState: jest.fn(async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+    }),
+    getGISTProof: jest.fn((): Promise<StateProof> => {
+      return Promise.resolve({
+        root: 0n,
+        existence: false,
+        siblings: [],
+        index: 0n,
+        value: 0n,
+        auxExistence: false,
+        auxIndex: 0n,
+        auxValue: 0n
+      });
     })
-  } as IStateStorage;
+  };
 
   beforeEach(async () => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
@@ -63,7 +85,7 @@ describe.skip('rhs', () => {
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
 
-    let conf = defaultEthConnectionConfig;
+    const conf = defaultEthConnectionConfig;
     conf.url = '';
     conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
     const ethStorage = new EthStateStorage(conf);

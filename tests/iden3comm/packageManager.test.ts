@@ -13,7 +13,7 @@ import {
   ProvingParams,
   VerificationParams
 } from '../../src/iden3comm/types';
-import { MEDIA_TYPE, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
+import { MediaTypes, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 
 const { registerProvingMethod } = proving;
 
@@ -61,18 +61,16 @@ describe('tests packageManager with ZKP Packer', () => {
     const targetID = DID.parse(targetIdentifier);
 
     const msgBytes = byteEncoder.encode(
-      JSON.stringify(
-        createFetchCredentialMessage(MEDIA_TYPE.MEDIA_TYPE_ZKP_MESSAGE, senderDID, targetID)
-      )
+      JSON.stringify(createFetchCredentialMessage(MediaTypes.ZKPMessage, senderDID, targetID))
     );
 
-    const e = await pm.pack(MEDIA_TYPE.MEDIA_TYPE_ZKP_MESSAGE, msgBytes, {
+    const e = await pm.pack(MediaTypes.ZKPMessage, msgBytes, {
       senderID: senderDID,
       provingMethodAlg: new ProvingMethodAlg('groth16-mock', 'authV2')
     });
 
     const { unpackedMessage, unpackedMediaType } = await pm.unpack(e);
-    expect(unpackedMediaType).toEqual(MEDIA_TYPE.MEDIA_TYPE_ZKP_MESSAGE);
+    expect(unpackedMediaType).toEqual(MediaTypes.ZKPMessage);
     expect(senderDID.toString()).toEqual(unpackedMessage.from);
     expect(byteDecoder.decode(msgBytes)).toEqual(JSON.stringify(unpackedMessage));
   });

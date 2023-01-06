@@ -27,6 +27,7 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   REVOCATION_STATUS_RESPONSE_MESSAGE_TYPE: IDEN3_PROTOCOL + 'revocation/1.0/status'
 });
 
-export enum MEDIA_TYPE {
-  MEDIA_TYPE_ZKP_MESSAGE = 'application/iden3-zkp-json'
+export enum MediaTypes {
+  ZKPMessage = 'application/iden3-zkp-json',
+  PlainMessage = 'application/iden3comm-plain-json'
 }

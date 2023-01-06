@@ -1,7 +1,6 @@
 import {
   AuthDataPrepareFunc,
   BasicMessage,
-  Bytes,
   IPacker,
   MediaType,
   ProvingParams,
@@ -10,7 +9,6 @@ import {
   ZKPPackerParams
 } from '../types';
 import { Token, Header, ProvingMethodAlg, proving } from '@iden3/js-jwz';
-import { CircuitID } from '../types/index';
 import { AuthV2PubSignals, CircuitId } from '../../circuits/index';
 import { DID, Id } from '@iden3/js-iden3-core';
 import { bytesToProtocolMessage } from '../utils/envelope';
@@ -22,22 +20,22 @@ import {
   ErrUnkownCircuitID
 } from '../errors';
 import { byteDecoder, byteEncoder } from '../utils';
-import { MEDIA_TYPE } from '../constants';
+import { MediaTypes } from '../constants';
 
 const { getProvingMethod } = proving;
 
 export class DataPrepareHandlerFunc {
   constructor(public readonly dataPrepareFunc: AuthDataPrepareFunc) {}
 
-  prepare(hash: Uint8Array, id: DID, circuitID: CircuitID): Bytes {
-    return this.dataPrepareFunc(hash, id, circuitID);
+  prepare(hash: Uint8Array, id: DID, circuitId: CircuitId): Uint8Array {
+    return this.dataPrepareFunc(hash, id, circuitId);
   }
 }
 
 export class VerificationHandlerFunc {
   constructor(public readonly stateVerificationFunc: StateVerificationFunc) {}
 
-  verify(id: CircuitID, pubSignals: Array<string>): Promise<boolean> {
+  verify(id: string, pubSignals: Array<string>): Promise<boolean> {
     return this.stateVerificationFunc(id, pubSignals);
   }
 }
@@ -59,11 +57,11 @@ class ZKPPacker implements IPacker {
     const token = new Token(
       provingMethod,
       byteDecoder.decode(payload),
-      (hash: Uint8Array, circuitID: CircuitID) => {
+      (hash: Uint8Array, circuitID: CircuitId) => {
         return dataPreparer.prepare(hash, params.senderID, circuitID);
       }
     );
-    token.setHeader(Header.Type, MEDIA_TYPE.MEDIA_TYPE_ZKP_MESSAGE);
+    token.setHeader(Header.Type, MediaTypes.ZKPMessage);
     const tokenStr = await token.prove(provingKey, wasm);
     return byteEncoder.encode(tokenStr);
   }
@@ -99,7 +97,7 @@ class ZKPPacker implements IPacker {
   }
 
   mediaType(): MediaType {
-    return MEDIA_TYPE.MEDIA_TYPE_ZKP_MESSAGE;
+    return MediaTypes.ZKPMessage;
   }
 }
 

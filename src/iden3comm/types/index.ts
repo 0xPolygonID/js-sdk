@@ -17,6 +17,3 @@ export type JSONObject = {
   [x: string]: JSONValue;
 };
 
-export type Bytes = Uint8Array;
-
-export type CircuitID = string;
