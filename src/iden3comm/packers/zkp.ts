@@ -27,7 +27,7 @@ const { getProvingMethod } = proving;
 export class DataPrepareHandlerFunc {
   constructor(public readonly dataPrepareFunc: AuthDataPrepareFunc) {}
 
-  prepare(hash: Uint8Array, id: DID, circuitId: CircuitId): Uint8Array {
+  prepare(hash: Uint8Array, id: DID, circuitId: CircuitId): Promise<Uint8Array> {
     return this.dataPrepareFunc(hash, id, circuitId);
   }
 }

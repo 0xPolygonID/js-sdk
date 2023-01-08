@@ -5,9 +5,3 @@ dist
 .idea
 .vscode
 /tests/proofs/testdata
-tests/test_data/authV2/circuit_final.zkey
-tests/test_data/authV2/circuit.wasm
-tests/test_data/authV2/verification_key.json
-tests/test_data/stateTransition/circuit_final.zkey
-tests/test_data/stateTransition/circuit.wasm
-tests/test_data/stateTransition/verification_key.json

@@ -10,8 +10,12 @@ import {
   ZeroKnowledgeProofResponse
 } from '../iden3comm';
 import { DID } from '@iden3/js-iden3-core';
-import { ProvingMethodAlg } from '@iden3/js-jwz';
-export class AuthHandler {
+import { proving } from '@iden3/js-jwz';
+
+export interface IAuthHandler {
+  handleAuthorizationRequest(id: DID, request: Uint8Array): Promise<Uint8Array>;
+}
+export class AuthHandler implements IAuthHandler {
   constructor(private readonly _packer: IPacker, private readonly _proofService: IProofService) {}
 
   async handleAuthorizationRequest(id: DID, request: Uint8Array): Promise<Uint8Array> {
@@ -58,11 +62,7 @@ export class AuthHandler {
 
     return await this._packer.pack(msgBytes, {
       senderID: id,
-      provingMethodAlg: new ProvingMethodAlg('groth16', 'authV2')
+      provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
     });
-  }
-
-  async verifyState(id: CircuitId, signals: string[]): Promise<boolean> {
-    return Promise.resolve(true);
   }
 }

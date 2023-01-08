@@ -1,5 +1,6 @@
+import { RootInfo, StateProof } from './../entities/state';
 import { ZKProof } from '@iden3/js-jwz';
-import { IStateStorage, StateProof } from '../interfaces/state';
+import { IStateStorage } from '../interfaces/state';
 import { BigNumber, ethers, Signer } from 'ethers';
 import { StateInfo } from '../entities/state';
 import abi from './state-abi.json';
@@ -107,6 +108,19 @@ export class EthStateStorage implements IStateStorage {
       auxExistence: data.auxExistence,
       auxIndex: BigInt(data.auxIndex.toString()),
       auxValue: BigInt(data.auxValue.toString())
+    };
+  }
+
+  async getGISTRootInfo(id: bigint): Promise<RootInfo> {
+    const data = await this.stateContract.getGISTRootInfo(id);
+
+    return {
+      root: BigInt(data.root.toString()),
+      replacedByRoot: BigInt(data.replacedByRoot.toString()),
+      createdAtTimestamp: BigInt(data.createdAtTimestamp.toString()),
+      replacedAtTimestamp: BigInt(data.replacedAtTimestamp.toString()),
+      createdAtBlock: BigInt(data.createdAtBlock.toString()),
+      replacedAtBlock: BigInt(data.replacedAtBlock.toString())
     };
   }
 }

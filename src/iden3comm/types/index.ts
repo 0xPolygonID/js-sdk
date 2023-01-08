@@ -16,4 +16,3 @@ type JSONValue = string | number | boolean | object | Array<object>;
 export type JSONObject = {
   [x: string]: JSONValue;
 };
-

@@ -1,6 +1,7 @@
+import { buildDIDType, Id, DID } from '@iden3/js-iden3-core';
 import { NodeAux, newHashFromBigInt, Hash, Proof, setBitBigEndian } from '@iden3/js-merkletree';
 import { buildTreeState, ClaimNonRevStatus, GISTProof } from '../circuits';
-import { StateProof } from '../storage/interfaces';
+import { StateProof } from '../storage/entities/state';
 import { RevocationStatus } from '../verifiable';
 
 export const toClaimNonRevStatus = (s: RevocationStatus): ClaimNonRevStatus => {
@@ -62,4 +63,12 @@ export const toGISTProof = (smtProof: StateProof): GISTProof => {
     root,
     proof
   };
+};
+
+export const isGenesisStateId = (id: bigint, state: bigint): boolean => {
+  const coreId = Id.fromBigInt(id);
+  const userDID = DID.parseFromId(coreId);
+  const didType = buildDIDType(userDID.method, userDID.blockchain, userDID.networkId);
+  const genesisId = Id.idGenesisFromIdenState(didType, state);
+  return id.toString() === genesisId.bigInt().toString();
 };

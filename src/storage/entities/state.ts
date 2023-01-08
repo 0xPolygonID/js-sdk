@@ -8,3 +8,23 @@ export interface StateInfo {
   createdAtBlock?: bigint;
   replacedAtBlock?: bigint;
 }
+
+export interface StateProof {
+  root: bigint;
+  existence: boolean;
+  siblings: bigint[];
+  index: bigint;
+  value: bigint;
+  auxExistence: boolean;
+  auxIndex: bigint;
+  auxValue: bigint;
+}
+
+export interface RootInfo {
+  root: bigint;
+  replacedByRoot: bigint;
+  createdAtTimestamp: bigint;
+  replacedAtTimestamp: bigint;
+  createdAtBlock: bigint;
+  replacedAtBlock: bigint;
+}

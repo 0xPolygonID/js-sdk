@@ -1,7 +1,7 @@
 import { IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage, StateProof } from '../../src/storage/interfaces';
+import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import {
   InMemoryCredentialStorage,
   InMemoryIdentityStorage,
@@ -21,12 +21,12 @@ import {
   W3CCredential
 } from '../../src/verifiable';
 import { Proof } from '@iden3/js-merkletree';
+import { RootInfo, StateProof } from '../../src/storage/entities/state';
 
 /// integration tests!!!
 describe.skip('rhs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
-
   let dataStorage: IDataStorage;
 
   const mockStateStorageForGenesisState: IStateStorage = {
@@ -46,6 +46,16 @@ describe.skip('rhs', () => {
         auxExistence: false,
         auxIndex: 0n,
         auxValue: 0n
+      });
+    }),
+    getGISTRootInfo: jest.fn((): Promise<RootInfo> => {
+      return Promise.resolve({
+        root: 0n,
+        replacedByRoot: 0n,
+        createdAtTimestamp: 0n,
+        replacedAtTimestamp: 0n,
+        createdAtBlock: 0n,
+        replacedAtBlock: 0n
       });
     })
   };
@@ -75,6 +85,16 @@ describe.skip('rhs', () => {
         auxExistence: false,
         auxIndex: 0n,
         auxValue: 0n
+      });
+    }),
+    getGISTRootInfo: jest.fn((): Promise<RootInfo> => {
+      return Promise.resolve({
+        root: 0n,
+        replacedByRoot: 0n,
+        createdAtTimestamp: 0n,
+        replacedAtTimestamp: 0n,
+        createdAtBlock: 0n,
+        replacedAtBlock: 0n
       });
     })
   };

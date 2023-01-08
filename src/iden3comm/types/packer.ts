@@ -14,7 +14,12 @@ export type ZKPPackerParams = {
   provingMethodAlg: ProvingMethodAlg;
 };
 
-export type AuthDataPrepareFunc = (hash: Uint8Array, id: DID, circuitId: CircuitId) => Uint8Array;
+export type AuthDataPrepareFunc = (
+  hash: Uint8Array,
+  id: DID,
+  circuitId: CircuitId
+) => Promise<Uint8Array>;
+
 export type StateVerificationFunc = (id: string, pubSignals: Array<string>) => Promise<boolean>;
 
 export interface IPacker {
