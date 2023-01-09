@@ -9,7 +9,6 @@ export * from './packer';
 export * from './packageManger';
 
 export type ProtocolMessage = string;
-export type MediaType = string;
 
 type JSONValue = string | number | boolean | object | Array<object>;
 

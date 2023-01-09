@@ -1,9 +1,9 @@
 import { DID } from '@iden3/js-iden3-core';
 import { DataPrepareHandlerFunc, VerificationHandlerFunc } from '../packers';
 import { BasicMessage } from './index';
-import { MediaType } from '../types';
 import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
+import { MediaType } from '../constants';
 
 export type PackerParams = {
   [key in string]: any; //eslint-disable-line @typescript-eslint/no-explicit-any

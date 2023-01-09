@@ -1,11 +1,4 @@
-import { byteDecoder, byteEncoder } from './../../src/iden3comm/utils/index';
-import { MediaTypes, PROTOCOL_MESSAGE_TYPE } from './../../src/iden3comm/constants';
-import {
-  AuthorizationRequestMessage,
-  AuthorizationRequestMessageBody,
-  ZeroKnowledgeProofRequest
-} from './../../src/iden3comm/types/protocol/auth';
-import { AuthHandler, IAuthHandler, IdentityWallet } from '../../src';
+import { IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
@@ -19,22 +12,10 @@ import { IProofService, ProofService, ZKPRequest } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
-import { ethers, Signer } from 'ethers';
+import { ethers } from 'ethers';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
-import {
-  AuthDataPrepareFunc,
-  DataPrepareHandlerFunc,
-  IPacker,
-  ProvingParams,
-  StateVerificationFunc,
-  VerificationHandlerFunc,
-  VerificationParams
-} from '../../src/iden3comm';
-import { CircuitData } from '../../src/storage/entities/circuitData';
-import { proving } from '@iden3/js-jwz';
-import ZKPPacker from '../../src/iden3comm/packers/zkp';
 
 describe('mtp proofs', () => {
   let idWallet: IdentityWallet;
@@ -44,8 +25,6 @@ describe('mtp proofs', () => {
   let proofService: IProofService;
 
   let ethStorage: EthStateStorage;
-  let authHandler: IAuthHandler;
-  let packer: IPacker;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: jest.fn(async () => {
@@ -133,43 +112,7 @@ describe('mtp proofs', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, kms, circuitStorage, mockStateStorage);
-    packer = await initZKPPacker(
-      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.authDataPrepare,
-      proofService.verifyState
-    );
-    authHandler = new AuthHandler(packer, proofService);
   });
-
-  const initZKPPacker = async (
-    circuitData: CircuitData,
-    prepareFn: AuthDataPrepareFunc,
-    stateVerificationFn: StateVerificationFunc
-  ): Promise<IPacker> => {
-    const authInputsHandler = new DataPrepareHandlerFunc(prepareFn);
-
-    const verificationFn = new VerificationHandlerFunc(stateVerificationFn);
-    const mapKey = JSON.stringify(proving.provingMethodGroth16AuthV2Instance);
-
-    const verificationParamMap: Map<string, VerificationParams> = new Map([
-      [
-        mapKey,
-        {
-          key: circuitData.verificationKey,
-          verificationFn
-        }
-      ]
-    ]);
-
-    const provingParamMap: Map<string, ProvingParams> = new Map();
-    provingParamMap.set(mapKey, {
-      dataPreparer: authInputsHandler,
-      provingKey: circuitData.provingKey,
-      wasm: circuitData.wasm
-    });
-
-    return new ZKPPacker(provingParamMap, verificationParamMap);
-  };
 
   it.only('mtpv2-non-merklized', async () => {
     const rhsURL = 'http://localhost:8080';
@@ -260,32 +203,6 @@ describe('mtp proofs', () => {
 
     const { proof, credential: cred } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
-
-    authHandler = new AuthHandler(packer, proofService);
-    const authReqBody: AuthorizationRequestMessageBody = {
-      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
-      reason: 'reason',
-      message: 'mesage',
-      did_doc: {},
-      scope: [proofReq as ZeroKnowledgeProofRequest]
-    };
-
-    const authReq: AuthorizationRequestMessage = {
-      id: '1234442-123123-123123',
-      typ: MediaTypes.PlainMessage,
-      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_V2_REQUEST_MESSAGE_TYPE,
-      thid: '1234442-123123-123123',
-      body: authReqBody,
-      from: issuerDID.id.string(),
-      to: userDID.id.string()
-    };
-
-    const authRes = await authHandler.handleAuthorizationRequest(
-      userDID,
-      byteEncoder.encode(JSON.stringify(authReq))
-    );
-
-    console.log(JSON.stringify(byteDecoder.decode(authRes)));
   });
 
   it.skip('mtpv2-merklized', async () => {

@@ -2,7 +2,6 @@ import {
   AuthDataPrepareFunc,
   BasicMessage,
   IPacker,
-  MediaType,
   ProvingParams,
   StateVerificationFunc,
   VerificationParams,
@@ -20,7 +19,7 @@ import {
   ErrUnkownCircuitID
 } from '../errors';
 import { byteDecoder, byteEncoder } from '../utils';
-import { MediaTypes } from '../constants';
+import { MediaType } from '../constants';
 
 const { getProvingMethod } = proving;
 
@@ -61,7 +60,7 @@ class ZKPPacker implements IPacker {
         return dataPreparer.prepare(hash, params.senderID, circuitID);
       }
     );
-    token.setHeader(Header.Type, MediaTypes.ZKPMessage);
+    token.setHeader(Header.Type, MediaType.ZKPMessage);
     const tokenStr = await token.prove(provingKey, wasm);
     return byteEncoder.encode(tokenStr);
   }
@@ -97,7 +96,7 @@ class ZKPPacker implements IPacker {
   }
 
   mediaType(): MediaType {
-    return MediaTypes.ZKPMessage;
+    return MediaType.ZKPMessage;
   }
 }
 

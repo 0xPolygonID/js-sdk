@@ -1,6 +1,6 @@
 import { IPacker, PackerParams } from './packer';
-import { MediaType } from './';
 import { MessageFetchRequestMessage } from './protocol/messages';
+import { MediaType } from '../constants';
 
 export type BasicMessage = MessageFetchRequestMessage;
 

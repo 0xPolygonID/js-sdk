@@ -1,8 +1,8 @@
 const IDEN3_PROTOCOL = 'https://iden3-communication.io/';
 
 export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
-  // AuthorizationV2RequestMessageType defines auth V2 request type of the communication protocol
-  AUTHORIZATION_V2_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'authorization/2.0/request',
+  // AuthorizationV2RequestMessageType defines auth request type of the communication protocol
+  AUTHORIZATION_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'authorization/1.0/request',
   // AuthorizationResponseMessageType defines auth response type of the communication protocol
   AUTHORIZATION_RESPONSE_MESSAGE_TYPE: IDEN3_PROTOCOL + 'authorization/1.0/response',
   // CredentialIssuanceRequestMessageType accepts request for credential creation
@@ -27,7 +27,7 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   REVOCATION_STATUS_RESPONSE_MESSAGE_TYPE: IDEN3_PROTOCOL + 'revocation/1.0/status'
 });
 
-export enum MediaTypes {
+export enum MediaType {
   ZKPMessage = 'application/iden3-zkp-json',
   PlainMessage = 'application/iden3comm-plain-json'
 }

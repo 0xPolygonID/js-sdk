@@ -78,7 +78,7 @@ export interface IProofService {
     identifier: DID
   ): Promise<{ proof: ZKProof; credential: W3CCredential }>;
 
-  authDataPrepare(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
+  generateAuthV2Inputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
 
   verifyState(circuitId: string, pubSignals: Array<string>): Promise<boolean>;
 
@@ -124,7 +124,7 @@ export class ProofService implements IProofService {
     const proof = await this._prover.generate(inputs, proofReq.circuitId);
     return { proof, credential: preparedCredential.credential };
   }
-  // transiteState is done always to the latest state
+  // transitState is done always to the latest state
   async transitState(
     did: DID,
     oldTreeState: TreeState,
@@ -485,7 +485,14 @@ export class ProofService implements IProofService {
 
   /*TODO: not sure if this is the right place for this function*/
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async authDataPrepare(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array> {
+  async generateAuthV2Inputs(
+    hash: Uint8Array,
+    did: DID,
+    circuitId: CircuitId
+  ): Promise<Uint8Array> {
+    if (circuitId !== CircuitId.AuthV2) {
+      throw new Error('CircuitId is not supported');
+    }
     // todo: check if bigint is correct
     const challenge = BytesHelper.bytesToInt(hash);
     const authPrepared = await this.prepareAuthBJJCredential(did);

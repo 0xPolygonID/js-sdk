@@ -1,6 +1,6 @@
 import { ZKProof } from '@iden3/js-jwz';
-import { MediaType, ProtocolMessage } from '../';
-import { JSONObject } from '../index';
+import { MediaType } from '../../constants';
+import { JSONObject, ProtocolMessage } from '../index';
 
 // AuthorizationResponseMessage is struct the represents iden3message authorization response
 export type AuthorizationResponseMessage = {

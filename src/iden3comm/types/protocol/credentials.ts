@@ -1,6 +1,7 @@
-import { MediaType, ProtocolMessage } from '../';
+import { ProtocolMessage } from '../index';
 import { JSONObject } from '../index';
 import { W3CCredential } from '../../../verifiable';
+import { MediaType } from '../../constants';
 
 // CredentialIssuanceRequestMessage represent Iden3message for credential request
 export type CredentialIssuanceRequestMessage = {

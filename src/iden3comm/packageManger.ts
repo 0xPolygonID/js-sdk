@@ -1,7 +1,8 @@
-import { BasicMessage, IPackageManger, IPacker, MediaType, PackerParams } from './types';
+import { BasicMessage, IPackageManger, IPacker, PackerParams } from './types';
 import { bytesToEnvelopeStub, bytesToHeaderStub } from './utils/envelope';
 import { base64 } from 'rfc4648';
 import { byteEncoder, byteDecoder } from './utils';
+import { MediaType } from './constants';
 
 export class PackageManger implements IPackageManger {
   packers: Map<MediaType, IPacker>;
@@ -19,7 +20,7 @@ export class PackageManger implements IPackageManger {
   async pack(mediaType: MediaType, payload: Uint8Array, params: PackerParams): Promise<Uint8Array> {
     const p = this.packers.get(mediaType);
     if (!p) {
-      throw new Error(`packer for mediatype ${mediaType} not found`);
+      throw new Error(`packer for media type ${mediaType} not found`);
     }
 
     return await p.pack(payload, params);
@@ -50,7 +51,7 @@ export class PackageManger implements IPackageManger {
   async unpackWithSafeEnvelope(mediaType: MediaType, envelope: Uint8Array): Promise<BasicMessage> {
     const p = this.packers.get(mediaType);
     if (!p) {
-      throw new Error(`packer for mediatype ${mediaType} not found`);
+      throw new Error(`packer for media type ${mediaType} not found`);
     }
     const msg = await p.unpack(envelope);
     return msg;
@@ -60,7 +61,7 @@ export class PackageManger implements IPackageManger {
     const envelopeStr = byteDecoder.decode(envelope);
     let base64HeaderBytes: Uint8Array;
 
-    // full seriliazed
+    // full serialized
     if (envelopeStr.split('')[0] === '{') {
       const envelopeStub = bytesToEnvelopeStub(envelope);
       base64HeaderBytes = base64.parse(envelopeStub.protected, { loose: true });
