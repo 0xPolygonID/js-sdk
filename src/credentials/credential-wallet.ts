@@ -1,4 +1,4 @@
-import { buildDIDType, BytesHelper, DID, getUnixTimestamp, Id } from '@iden3/js-iden3-core';
+import { buildDIDType, BytesHelper, DID, Id } from '@iden3/js-iden3-core';
 
 import axios from 'axios';
 import { IDataStorage } from '../storage/interfaces';
@@ -9,7 +9,6 @@ import {
   SubjectPosition,
   MerklizedRootPosition,
   CredentialStatus,
-  Iden3SparseMerkleTreeProof,
   RHSCredentialStatus,
   RevocationStatus,
   CredentialStatusType,
@@ -24,7 +23,7 @@ import { Proof } from '@iden3/js-merkletree';
 export interface ClaimRequest {
   credentialSchema: string;
   type: string;
-  credentialSubject: { [key: string]: any };
+  credentialSubject: { [key: string]: string | object | number };
   expiration?: number;
   version?: number;
   revNonce?: number;
@@ -48,7 +47,6 @@ export interface ICredentialWallet {
     issuerDID: DID,
     issuerData: IssuerData
   ): Promise<RevocationStatus>;
-  findClaimsForCircuitQuery(claims, circuitQuery, requestFiled): Promise<W3CCredential[]>;
   createCredential(
     hostUrl: string,
     issuer: DID,
@@ -89,13 +87,13 @@ export class CredentialWallet implements ICredentialWallet {
     const mtpProof = cred.getIden3SparseMerkleTreeProof();
     const sigProof = cred.getBJJSignature2021Proof();
 
-    let issuerData: IssuerData | undefined = mtpProof ? mtpProof.issuerData : sigProof!.issuerData;
+    const issuerData: IssuerData | undefined = mtpProof ? mtpProof.issuerData : sigProof.issuerData;
     if (!issuerData) {
       throw new Error('no sig / mtp proof to check issuer info');
     }
     const issuerDID = DID.parse(cred.issuer);
 
-    return await this.getRevocationStatus(cred.credentialStatus!, issuerDID, issuerData);
+    return await this.getRevocationStatus(cred.credentialStatus, issuerDID, issuerData);
   }
 
   async getRevocationStatus(
@@ -111,9 +109,10 @@ export class CredentialWallet implements ICredentialWallet {
       try {
         return await getStatusFromRHS(issuerDID, credStatus, this._storage.states);
       } catch (e) {
+        const errMsg = e['reason'] ?? e.message;
         if (
-          (e as Error).message.includes(VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND) &&
-          isIssuerGenesis(issuerDID.toString(), issuerData.state.value!)
+          errMsg.includes(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST) &&
+          isIssuerGenesis(issuerDID.toString(), issuerData.state.value)
         ) {
           return {
             mtp: new Proof(),
@@ -146,13 +145,12 @@ export class CredentialWallet implements ICredentialWallet {
     const context = [
       VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
       VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
-      schema.$metadata!.uris['jsonLdContext']
+      schema.$metadata.uris['jsonLdContext']
     ];
     const credentialType = [VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE, request.type];
 
     const expirationDate =
       !request.expiration || request.expiration == 0 ? null : request.expiration;
-    const issuanceDate = getUnixTimestamp(new Date());
 
     const issuerDID = issuer.toString();
     const credentialSubject = request.credentialSubject;
@@ -163,7 +161,7 @@ export class CredentialWallet implements ICredentialWallet {
     cr['@context'] = context;
     cr.type = credentialType;
     cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
-    cr.issuanceDate = new Date().toISOString()
+    cr.issuanceDate = new Date().toISOString();
     cr.credentialSubject = credentialSubject;
     cr.issuer = issuerDID.toString();
     cr.credentialSchema = {
@@ -187,14 +185,6 @@ export class CredentialWallet implements ICredentialWallet {
 
     return cr;
   };
-
-  async findClaimsForCircuitQuery(
-    claims: any,
-    circuitQuery: any,
-    requestFiled: any
-  ): Promise<W3CCredential[]> {
-    throw new Error('Method not implemented.');
-  }
 
   async findById(id: string): Promise<W3CCredential | undefined> {
     return this._storage.credential.findCredentialById(id);

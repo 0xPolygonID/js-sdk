@@ -81,7 +81,7 @@ export class JsonLDLoader {
       httpAgent: this.httpAgent,
       httpsAgent: this.httpsAgent
     });
-    let doc = { contextUrl: null, documentUrl: url, document: body || null };
+    const doc = { contextUrl: null, documentUrl: url, document: body || null };
 
     // handle error
     const statusText = http.STATUS_CODES[res.status];

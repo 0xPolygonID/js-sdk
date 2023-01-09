@@ -1,7 +1,6 @@
 import {
   Hash,
   newHashFromBigInt,
-  newHashFromString,
   NodeAux,
   ZERO_HASH,
   setBitBigEndian,
@@ -14,15 +13,10 @@ import { IStateStorage } from '../storage/interfaces';
 
 import axios from 'axios';
 import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
-import { NODE_TYPE_MIDDLE } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
-import { BytesHelper, DID } from '@iden3/js-iden3-core';
-import {
-  CredentialStatus,
-  RevocationStatus,
-  RHSCredentialStatus,
-  VerifiableConstants
-} from '../verifiable';
+import { DID } from '@iden3/js-iden3-core';
+import { CredentialStatus, RevocationStatus, RHSCredentialStatus } from '../verifiable';
+import { strMTHex } from '../circuits';
 
 export interface TreesModel {
   claimsTree: Merkletree;
@@ -46,7 +40,10 @@ export class ProofNode {
       return NodeType.Middle;
     }
 
-    if (this.children.length === 3 && this.children[2] === newHashFromBigInt(BigInt(1))) {
+    if (
+      this.children.length === 3 &&
+      this.children[2].hex() === newHashFromBigInt(BigInt(1)).hex()
+    ) {
       return NodeType.Leaf;
     }
 
@@ -56,10 +53,27 @@ export class ProofNode {
 
     return NodeType.Unknown;
   }
+  toJSON() {
+    return {
+      hash: this.hash.hex(),
+      children: this.children.map((h) => h.hex())
+    };
+  }
+  static fromHex(hexNode: ProofNodeHex): ProofNode {
+    return new ProofNode(
+      strMTHex(hexNode.hash),
+      hexNode.children.map((ch) => strMTHex(ch))
+    );
+  }
 }
 
-interface NodeResponse {
-  node: ProofNode;
+interface ProofNodeHex {
+  hash: string;
+  children: string[];
+}
+
+interface NodeHexResponse {
+  node: ProofNodeHex;
   status: string;
 }
 
@@ -69,33 +83,31 @@ export async function getStatusFromRHS(
   stateStorage: IStateStorage
 ): Promise<RevocationStatus> {
   const latestStateInfo = await stateStorage.getLatestStateById(issuer.id.bigInt());
-  if (latestStateInfo?.state === BigInt(0)) {
-    throw new Error(VerifiableConstants.ERRORS.ISSUER_STATE_NOT_FOUND);
-  }
   const hashedRevNonce = newHashFromBigInt(BigInt(credStatus.revocationNonce ?? 0));
   const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
-  return getNonRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, credStatus.id);
+  return getRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, credStatus.id);
 }
 
-async function getNonRevocationStatusFromRHS(
+async function getRevocationStatusFromRHS(
   data: Hash,
   issuerRoot: Hash,
   rhsURL: string
 ): Promise<RevocationStatus> {
   if (!rhsURL) throw new Error('HTTP reverse hash service url is not specified');
 
-  const treeRoots = (await axios.get<NodeResponse>(`${rhsURL}/${issuerRoot.hex()}`)).data?.node;
+  const treeRoots = (await axios.get<NodeHexResponse>(`${rhsURL}/node/${issuerRoot.hex()}`)).data
+    ?.node;
   if (treeRoots.children.length !== 3) {
     throw new Error('state should has tree children');
   }
 
   const s = issuerRoot.hex();
-  const cTR = treeRoots.children[0].hex();
-  const rTR = treeRoots.children[1].hex();
-  const roTR = treeRoots.children[2].hex();
+  const cTR = treeRoots.children[0];
+  const rTR = treeRoots.children[1];
+  const roTR = treeRoots.children[2];
 
-  const rtrHashed = newHashFromString(rTR);
-  const nonRevProof = await rhsGenerateProof(rtrHashed, data, rhsURL);
+  const rtrHashed = strMTHex(rTR);
+  const nonRevProof = await rhsGenerateProof(rtrHashed, data, `${rhsURL}/node`);
 
   return {
     mtp: nonRevProof,
@@ -129,7 +141,7 @@ async function newProofFromData(
 }
 
 async function rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Promise<Proof> {
-  let exists: boolean;
+  let exists = false;
   const siblings: Hash[] = [];
   let nodeAux: NodeAux;
 
@@ -140,11 +152,12 @@ async function rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Prom
     if (nextKey.bytes.every((i) => i === 0)) {
       return mkProof();
     }
-    const n = (await axios.get<NodeResponse>(`${rhsURL}/${nextKey.hex()}`)).data?.node;
+    const resp = (await axios.get<NodeHexResponse>(`${rhsURL}/${nextKey.hex()}`)).data?.node;
 
+    const n = ProofNode.fromHex(resp);
     switch (n.nodeType()) {
-      case NODE_TYPE_LEAF:
-        if (key.bytes.every((b, index) => b === n.children[0][index])) {
+      case NodeType.Leaf:
+        if (key.bytes.every((b, index) => b === n.children[0].bytes[index])) {
           exists = true;
           return mkProof();
         }
@@ -154,7 +167,7 @@ async function rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Prom
           value: n.children[1]
         };
         return mkProof();
-      case NODE_TYPE_MIDDLE:
+      case NodeType.Middle:
         if (testBit(key.bytes, depth)) {
           nextKey = n.children[1];
           siblings.push(n.children[0]);
@@ -173,16 +186,21 @@ async function rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Prom
 export async function pushHashesToRHS(
   state: Hash,
   trees: TreesModel,
-  rhsUrl: string
+  rhsUrl: string,
+  revokedNonces?: number[]
 ): Promise<void> {
   const nb = new NodesBuilder();
+
+  if (revokedNonces?.length > 0) {
+    await addRevocationNode(nb, trees, revokedNonces);
+  }
 
   await addRoRNode(nb, trees);
 
   // add new state node
   if (!state.bytes.every((b) => b === 0)) {
     nb.addProofNode(
-      new ProofNode(state, [trees.revocationTree.root, trees.rootsTree.root, trees.claimsTree.root])
+      new ProofNode(state, [trees.claimsTree.root, trees.revocationTree.root, trees.rootsTree.root])
     );
   }
 
@@ -192,14 +210,26 @@ export async function pushHashesToRHS(
 }
 
 async function saveNodes(nodes: ProofNode[], nodeUrl: string): Promise<boolean> {
-  return (await (await axios.post(nodeUrl, nodes)).status) === 200;
+  const nodesJSON = nodes.map((n) => n.toJSON());
+  return (await (await axios.post(nodeUrl + '/node', nodesJSON)).status) === 200;
 }
 
-function addRoRNode(nb: NodesBuilder, trees: TreesModel): Promise<void> {
+async function addRoRNode(nb: NodesBuilder, trees: TreesModel): Promise<void> {
   const currentRootsTree = trees.rootsTree;
   const claimsTree = trees.claimsTree;
-  
+
   return nb.addKey(currentRootsTree, claimsTree.root.bigInt());
+}
+async function addRevocationNode(
+  nb: NodesBuilder,
+  trees: TreesModel,
+  revokedNonces: number[]
+): Promise<void> {
+  const revocationTree = trees.revocationTree;
+
+  for (const nonce of revokedNonces) {
+    await nb.addKey(revocationTree, BigInt(nonce));
+  }
 }
 
 class NodesBuilder {
@@ -244,6 +274,9 @@ async function buildNodesUp(siblings: Siblings, node: NodeLeaf): Promise<ProofNo
   let prevHash = await node.getKey();
   const sl = siblings.length;
   const nodes = new Array<ProofNode>(sl + 1);
+  for (let index = 0; index < nodes.length; index++) {
+    nodes[index] = new ProofNode();
+  }
   nodes[sl].hash = prevHash;
   const hashOfOne = newHashFromBigInt(BigInt(1));
 

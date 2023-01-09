@@ -1,11 +1,9 @@
 import { IStateStorage } from '../interfaces/state';
-import { ethers, Signer } from 'ethers';
+import { BigNumber, ethers, Signer } from 'ethers';
 import { StateInfo } from '../entities/state';
 import abi from './state-abi.json';
 import { FullProof } from '../../proof';
 import { StateTransitionPubSignals } from '../../circuits';
-import { isIssuerGenesis } from '../../credentials';
-import { DID } from '@iden3/js-iden3-core';
 
 export interface EthConnectionConfig {
   url: string;
@@ -37,15 +35,26 @@ export const defaultEthConnectionConfig: EthConnectionConfig = {
 
 export class EthStateStorage implements IStateStorage {
   public stateContract: ethers.Contract;
-  public provider :ethers.providers.JsonRpcProvider;
+  public provider: ethers.providers.JsonRpcProvider;
 
   constructor(private readonly ethConfig: EthConnectionConfig = defaultEthConnectionConfig) {
-    const provider = new ethers.providers.JsonRpcProvider(this.ethConfig.url);
-    this.stateContract = new ethers.Contract(this.ethConfig.contractAddress, abi, provider);
+    this.provider = new ethers.providers.JsonRpcProvider(this.ethConfig.url);
+    this.stateContract = new ethers.Contract(this.ethConfig.contractAddress, abi, this.provider);
   }
 
   async getLatestStateById(issuerId: bigint): Promise<StateInfo> {
-    return await this.stateContract.getStateInfoById(issuerId);
+    const rawData = await this.stateContract.getStateInfoById(issuerId);
+    const stateInfo: StateInfo = {
+      id: BigNumber.from(rawData[0]).toBigInt(),
+      state: BigNumber.from(rawData[1]).toBigInt(),
+      replacedByState: BigNumber.from(rawData[2]).toBigInt(),
+      createdAtTimestamp: BigNumber.from(rawData[3]).toBigInt(),
+      replacedAtTimestamp: BigNumber.from(rawData[4]).toBigInt(),
+      createdAtBlock: BigNumber.from(rawData[5]).toBigInt(),
+      replacedAtBlock: BigNumber.from(rawData[6]).toBigInt()
+    };
+
+    return stateInfo;
   }
 
   async publishState(proof: FullProof, signer: Signer): Promise<string> {
@@ -56,21 +65,24 @@ export class EthStateStorage implements IStateStorage {
     stateTransitionPubSig.pubSignalsUnmarshal(
       byteEncoder.encode(JSON.stringify(proof.pub_signals))
     );
-    const { userId, oldUserState, newUserState } = stateTransitionPubSig;
-    const isOldStateGenesis = isIssuerGenesis(
-      DID.parseFromId(userId).toString(),
-      oldUserState.hex()
-    );
+    const { userId, oldUserState, newUserState, isOldStateGenesis } = stateTransitionPubSig;
 
-    const tx = await contract.transitState(
-      userId,
-      oldUserState,
-      newUserState,
+    const payload = [
+      userId.bigInt().toString(),
+      oldUserState.bigInt().toString(),
+      newUserState.bigInt().toString(),
       isOldStateGenesis,
-      proof.proof.pi_a[2],
-      proof.proof.pi_b[2][2],
-      proof.proof.pi_c[2]
-    );
+      proof.proof.pi_a.slice(0, 2),
+      [
+        [proof.proof.pi_b[0][1].toString(), proof.proof.pi_b[0][0].toString()],
+        [proof.proof.pi_b[1][1].toString(), proof.proof.pi_b[1][0].toString()]
+      ],
+      proof.proof.pi_c.slice(0, 2)
+    ];
+
+    await contract.estimateGas.transitState(...payload);
+
+    const tx = await contract.transitState(...payload);
 
     const txnReceipt = await tx.wait();
     const status: number = txnReceipt.status;

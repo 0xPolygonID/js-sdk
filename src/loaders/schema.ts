@@ -48,7 +48,7 @@ export function getLoader(url: string, ipfsConfigUrl?: string): ISchemaLoader {
     case 'https:':
       return new HttpSchemaLoader();
     case 'ipfs:':
-      return new IpfsSchemaLoader(ipfsConfigUrl!);
+      return new IpfsSchemaLoader(ipfsConfigUrl);
 
     default:
       throw new Error(`loader for ${uri.protocol} is not supported`);

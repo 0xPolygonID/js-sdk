@@ -11,7 +11,7 @@ export class W3CCredential {
   type: string[];
   expirationDate?: string;
   issuanceDate?: string;
-  credentialSubject: { [key: string]: object | string };
+  credentialSubject: { [key: string]: object | string | number };
   credentialStatus?: CredentialStatus | RHSCredentialStatus;
   issuer: string;
   credentialSchema: CredentialSchema;
@@ -40,7 +40,7 @@ export class W3CCredential {
     }
     return undefined;
   }
-  getBJJSignature2021Proof(): (BJJSignatureProof2021 | undefined) {
+  getBJJSignature2021Proof(): BJJSignatureProof2021 | undefined {
     const proofType: ProofType = ProofType.BJJSignature;
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
@@ -55,10 +55,10 @@ export class W3CCredential {
         return this.proof as BJJSignatureProof2021;
       }
     }
-   return undefined;
+    return undefined;
   }
 
-  getIden3SparseMerkleTreeProof(): (Iden3SparseMerkleTreeProof |undefined) {
+  getIden3SparseMerkleTreeProof(): Iden3SparseMerkleTreeProof | undefined {
     const proofType: ProofType = ProofType.Iden3SparseMerkleTreeProof;
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
@@ -131,7 +131,6 @@ export interface Issuer {
 
 // RevocationStatus status of revocation nonce. Info required to check revocation state of claim in circuits
 export interface RevocationStatus {
-  // RevocationNonce is the nonce of the claim
   mtp: Proof;
   issuer: Issuer;
 }

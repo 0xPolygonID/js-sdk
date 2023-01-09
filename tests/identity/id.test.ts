@@ -9,7 +9,9 @@ import {
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { StateInfo } from '../../src/storage/entities/state';
+import { FullProof } from '../../src/proof';
+import { Signer } from 'ethers';
+import { VerifiableConstants } from '../../src/verifiable';
 
 describe('identity', () => {
   let wallet: IdentityWallet;
@@ -17,7 +19,10 @@ describe('identity', () => {
 
   const mockStateStorage = {
     getLatestStateById: jest.fn(async (issuerId: bigint) => {
-      return { id: BigInt(0), state: BigInt(0) } as StateInfo;
+      throw new Error(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
+    }),
+    publishState: jest.fn(async (proof: FullProof, signer: Signer) => {
+      return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
     })
   } as IStateStorage;
   beforeEach(async () => {
@@ -94,7 +99,6 @@ describe('identity', () => {
 
     const message = enc.encode('payload');
     const sig = await wallet.sign(message, credential);
-    console.log(sig.hex());
 
     expect(sig.hex()).toBe(
       '5fdb4fc15898ee2eeed2ed13c5369a4f28870e51ac1aae8ad1f2108d2d39f38969881d7553344c658e63344e4ddc151fabfed5bf8fcf8663c183248b714d8b03'
@@ -150,7 +154,7 @@ describe('identity', () => {
     expect(proof.proof.existence).toBe(false);
   });
 
-  it('issueCredential', async () => {
+  it.only('issueCredential', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
