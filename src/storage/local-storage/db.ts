@@ -8,7 +8,7 @@ export class BrowserLocalStorage<Type> {
   }
 
   load(): Type {
-    const rawCache = localStorage.getItem(this.localStorageKey) || '{}';
+    const rawCache = localStorage.getItem(this.localStorageKey) || null;
     let cache: Type;
     try {
       cache = JSON.parse(rawCache);

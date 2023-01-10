@@ -3,28 +3,21 @@ import { ProofQuery, W3CCredential } from '../../verifiable';
 import { StorageErrors } from '../errors';
 import { StandardJSONCredentielsQueryFilter } from '../filters/jsonQuery';
 import { ICredentialStorage } from '../interfaces';
-
-export type W3CStoreRecord = {
-  [v in string]: W3CCredential[];
-};
-
 export class BrowserCredentialStorage
-  extends BrowserLocalStorage<W3CStoreRecord>
+  extends BrowserLocalStorage<W3CCredential[]>
   implements ICredentialStorage
 {
-  constructor(private secret: string = 'main') {
+  constructor() {
     super(BrowserCredentialStorage.storageKey);
   }
 
   get data(): W3CCredential[] {
     const data = this.load();
-    return data[this.secret] || [];
+    return data || [];
   }
 
   set data(newData) {
-    const data = this.load();
-    data[this.secret] = newData;
-    this.save(data);
+    this.save(newData);
   }
 
   static storageKey = 'credentials';
