@@ -1,5 +1,5 @@
 import { BasicMessage, IPackageManger, IPacker, PackerParams } from './types';
-import { bytesToEnvelopeStub, bytesToHeaderStub } from './utils/envelope';
+import { bytesToHeaderStub } from './utils/envelope';
 import { base64 } from 'rfc4648';
 import { byteEncoder, byteDecoder } from './utils';
 import { MediaType } from './constants';
@@ -31,7 +31,7 @@ export class PackageManger implements IPackageManger {
   ): Promise<{ unpackedMessage: BasicMessage; unpackedMediaType: MediaType }> {
     const decodedStr = byteDecoder.decode(envelope);
     const safeEnvelope = decodedStr.trim();
-    const mediaType = this.getMediaType(byteEncoder.encode(safeEnvelope));
+    const mediaType = this.getMediaType(safeEnvelope);
     return {
       unpackedMessage: await this.unpackWithSafeEnvelope(
         mediaType,
@@ -57,16 +57,15 @@ export class PackageManger implements IPackageManger {
     return msg;
   }
 
-  getMediaType(envelope: Uint8Array): MediaType {
-    const envelopeStr = byteDecoder.decode(envelope);
+  getMediaType(envelope: string): MediaType {
     let base64HeaderBytes: Uint8Array;
 
     // full serialized
-    if (envelopeStr.split('')[0] === '{') {
-      const envelopeStub = bytesToEnvelopeStub(envelope);
-      base64HeaderBytes = base64.parse(envelopeStub.protected, { loose: true });
+    if (envelope[0] === '{') {
+      const envelopeStub = JSON.parse(envelope);
+      return envelopeStub.typ as MediaType;
     } else {
-      const header = envelopeStr.split('.')[0];
+      const header = envelope.split('.')[0];
       base64HeaderBytes = base64.parse(header, { loose: true });
     }
 

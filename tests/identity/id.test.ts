@@ -12,14 +12,14 @@ import { ClaimRequest, CredentialWallet } from '../../src/credentials';
 import { Signer } from 'ethers';
 import { VerifiableConstants } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
-
+jest.mock('@digitalbazaar/http-client', () => ({}));
 describe('identity', () => {
   let wallet: IdentityWallet;
   let dataStorage: IDataStorage;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: jest.fn(async (t) => {
-      throw new Error(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
+      throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
     }),
     publishState: jest.fn(async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
@@ -176,7 +176,7 @@ describe('identity', () => {
     expect(proof.proof.existence).toBe(false);
   });
 
-  it.only('issueCredential', async () => {
+  it('issueCredential', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );

@@ -1,9 +1,10 @@
+import { MediaType } from '../constants';
 import { BasicMessage, EnvelopeStub, HeaderStub } from '../types';
 
 export const basicMessageFactory = (): BasicMessage => {
   return {
     id: '',
-    typ: '',
+    typ: '' as MediaType,
     thid: '',
     type: '',
     body: {
@@ -22,6 +23,6 @@ export const envelopeStubFactory = (): EnvelopeStub => {
 
 export const headerStubFactory = (): HeaderStub => {
   return {
-    typ: ''
+    typ: '' as MediaType
   };
 };

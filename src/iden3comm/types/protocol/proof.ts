@@ -1,4 +1,5 @@
-import { MediaType, ProtocolMessage } from '../';
+import { ProtocolMessage } from '../';
+import { MediaType } from '../../constants';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from './auth';
 
 // ProofGenerationRequestMessage is struct the represents body for proof generation request

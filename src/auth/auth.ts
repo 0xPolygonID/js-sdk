@@ -1,3 +1,4 @@
+import { byteDecoder } from './../iden3comm/utils/index';
 import { MediaType } from './../iden3comm/constants';
 import { ProofQuery } from '../verifiable/proof';
 import { CircuitId } from '../circuits/models';
@@ -5,6 +6,7 @@ import { IProofService, ZKPRequest } from '../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../iden3comm/constants';
 
 import {
+  AuthorizationRequestMessage,
   AuthorizationRequestMessageBody,
   AuthorizationResponseMessage,
   IPackageManger,
@@ -15,7 +17,14 @@ import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 
 export interface IAuthHandler {
-  handleAuthorizationRequest(id: DID, request: Uint8Array): Promise<Uint8Array>;
+  handleAuthorizationRequest(
+    id: DID,
+    request: Uint8Array
+  ): Promise<{
+    token: string;
+    authRequest: AuthorizationRequestMessage;
+    authResponse: AuthorizationResponseMessage;
+  }>;
 }
 export class AuthHandler implements IAuthHandler {
   constructor(
@@ -23,19 +32,23 @@ export class AuthHandler implements IAuthHandler {
     private readonly _proofService: IProofService
   ) {}
 
-  async handleAuthorizationRequest(did: DID, request: Uint8Array): Promise<Uint8Array> {
+  async handleAuthorizationRequest(
+    did: DID,
+    request: Uint8Array
+  ): Promise<{
+    token: string;
+    authRequest: AuthorizationRequestMessage;
+    authResponse: AuthorizationResponseMessage;
+  }> {
     const { unpackedMessage: message } = await this._packerMgr.unpack(request);
-
-    //todo: check if this check is necessary
+    const authRequest = message as unknown as AuthorizationRequestMessage;
     if (message.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid media type');
     }
-
     const authRequestBody = message.body as unknown as AuthorizationRequestMessageBody;
 
     const guid = uuid.v4();
     const authResponse: AuthorizationResponseMessage = {
-      //todo: generate new uuid
       id: guid,
       typ: MediaType.ZKPMessage,
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
@@ -67,10 +80,12 @@ export class AuthHandler implements IAuthHandler {
       authResponse.body.scope.push(zkpRes);
     }
     const msgBytes = new TextEncoder().encode(JSON.stringify(authResponse));
-
-    return await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
-      senderID: did,
-      provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-    });
+    const token = byteDecoder.decode(
+      await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
+        senderID: did,
+        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+      })
+    );
+    return { authRequest, authResponse, token };
   }
 }

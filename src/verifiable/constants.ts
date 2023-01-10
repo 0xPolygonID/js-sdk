@@ -3,7 +3,7 @@ export const VerifiableConstants = Object.freeze({
     FiELD_IS_EMPTY: 'fieldPath is empty',
     CONTEXT_TYPE_IS_EMPTY: 'ctxType is empty',
     // ErrStateNotFound issuer state is genesis state.
-    IDENENTITY_DOES_NOT_EXIST: 'Identity does not exist'
+    IDENTITY_DOES_NOT_EXIST: 'Identity does not exist'
   },
   CREDENTIAL_TYPE: {
     // VerifiableCredential is a W3C verifiable credential type

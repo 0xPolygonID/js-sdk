@@ -17,7 +17,7 @@ export interface IPackageManger {
 
   unpackWithType(mediaType: MediaType, envelope: Uint8Array): Promise<BasicMessage>;
 
-  getMediaType(envelope: Uint8Array): MediaType;
+  getMediaType(envelope: string): MediaType;
 }
 
 export type EnvelopeStub = {

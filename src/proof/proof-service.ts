@@ -155,7 +155,6 @@ export class ProofService implements IProofService {
 
     const inputs = circuitInputs.inputsMarshal();
 
-    console.log(new TextDecoder().decode(inputs));
     const proof = await this._prover.generate(inputs, CircuitId.StateTransition);
 
     const txId = await stateStorage.publishState(proof, ethSigner);
@@ -300,7 +299,7 @@ export class ProofService implements IProofService {
         preparedCredential.credentialCoreClaim
       );
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-      inputs = await circuitInputs.inputsMarshal();
+      inputs = circuitInputs.inputsMarshal();
     } else {
       throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
@@ -494,7 +493,7 @@ export class ProofService implements IProofService {
       throw new Error('CircuitId is not supported');
     }
     // todo: check if bigint is correct
-    const challenge = BytesHelper.bytesToInt(hash);
+    const challenge = BytesHelper.bytesToInt(hash.reverse());
     const authPrepared = await this.prepareAuthBJJCredential(did);
 
     const authClaimData = await this.newCircuitClaimData(
@@ -517,7 +516,7 @@ export class ProofService implements IProofService {
     authInputs.profileNonce = 0n;
     authInputs.authClaim = authClaimData.claim;
     authInputs.authClaimIncMtp = authClaimData.proof;
-    authInputs.authClaimNonRevMtp = authClaimData.nonRevProof.proof;
+    authInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
     authInputs.treeState = authClaimData.treeState;
     authInputs.signature = signature;
     authInputs.challenge = challenge;
@@ -526,6 +525,9 @@ export class ProofService implements IProofService {
   }
 
   async verifyState(circuitId: string, pubSignals: Array<string>): Promise<boolean> {
+    if (circuitId !== CircuitId.AuthV2) {
+      throw new Error(`CircuitId is not supported ${circuitId}`);
+    }
     const gistRoot = newHashFromString(pubSignals[2]).bigInt();
     const globalStateInfo = await this._stateStorage.getGISTRootInfo(gistRoot);
 

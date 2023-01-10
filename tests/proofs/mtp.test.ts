@@ -8,24 +8,26 @@ import {
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { IProofService, ProofService, ZKPRequest } from '../../src/proof';
+import { ProofService, ZKPRequest } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
-import { ethers } from 'ethers';
+import { ethers, Signer } from 'ethers';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 
-describe('mtp proofs', () => {
+jest.mock('@digitalbazaar/http-client', () => ({}));
+
+describe.skip('mtp proofs', () => {
+  jest.setTimeout(1000000);
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
   let dataStorage: IDataStorage;
-  let proofService: IProofService;
+  let proofService: ProofService;
 
   let ethStorage: EthStateStorage;
-
   const mockStateStorage: IStateStorage = {
     getLatestStateById: jest.fn(async () => {
       return {
@@ -79,15 +81,10 @@ describe('mtp proofs', () => {
 
     const circuitStorage = new InMemoryCircuitStorage();
 
+    // todo: change this loader
     const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
 
-    circuitStorage.saveCircuitData(CircuitId.AuthV2, {
-      wasm: await loader.load(`${CircuitId.AuthV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AuthV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(`${CircuitId.AuthV2.toString()}/verification_key.json`)
-    });
-
-    circuitStorage.saveCircuitData(CircuitId.AtomicQueryMTPV2, {
+    await circuitStorage.saveCircuitData(CircuitId.AtomicQueryMTPV2, {
       wasm: await loader.load(`${CircuitId.AtomicQueryMTPV2.toString()}/circuit.wasm`),
       provingKey: await loader.load(`${CircuitId.AtomicQueryMTPV2.toString()}/circuit_final.zkey`),
       verificationKey: await loader.load(
@@ -95,7 +92,7 @@ describe('mtp proofs', () => {
       )
     });
 
-    circuitStorage.saveCircuitData(CircuitId.StateTransition, {
+    await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
       wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
       provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
       verificationKey: await loader.load(
@@ -104,25 +101,25 @@ describe('mtp proofs', () => {
     });
 
     const conf = defaultEthConnectionConfig;
-    // conf.url = ''; // TODO: add url here
-    // conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
+    conf.url = ''; // TODO: add url here
+    conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
     ethStorage = new EthStateStorage(conf);
     dataStorage.states = ethStorage;
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, kms, circuitStorage, mockStateStorage);
+    proofService = new ProofService(idWallet, credWallet, kms, circuitStorage, ethStorage);
   });
 
-  it.only('mtpv2-non-merklized', async () => {
-    const rhsURL = 'http://localhost:8080';
+  it('mtpv2-non-merklized', async () => {
+    const rhsURL = ''; //TODO:add
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential } = await idWallet.createIdentity(
+    const { did: userDID } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsURL,
       seedPhrase
@@ -149,7 +146,7 @@ describe('mtp proofs', () => {
     };
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: true,
+      withPublish: false,
       withRHS: rhsURL
     });
 
@@ -163,11 +160,7 @@ describe('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet(
-      '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-      new ethers.providers.JsonRpcProvider()
-    );
-
+    const ethSigner = new ethers.Wallet('', undefined); //TODO:add
     const txId = await proofService.transitState(
       issuerDID,
       res.oldTreeState,
@@ -201,11 +194,11 @@ describe('mtp proofs', () => {
       }
     };
 
-    const { proof, credential: cred } = await proofService.generateProof(proofReq, userDID);
+    const { proof } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
   });
 
-  it.skip('mtpv2-merklized', async () => {
+  it('mtpv2-merklized', async () => {
     const rhsURL = 'http://ec2-34-247-165-109.eu-west-1.compute.amazonaws.com:9999'; //TODO:add
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
@@ -289,7 +282,7 @@ describe('mtp proofs', () => {
       }
     };
 
-    const { proof, credential: cred } = await proofService.generateProof(proofReq, userDID);
+    const { proof } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
   });
 });

@@ -42,15 +42,15 @@ export class VerificationHandlerFunc {
 class ZKPPacker implements IPacker {
   constructor(
     // string is derived by JSON.parse(ProvingMethodAlg)
-    public prover: Map<string, ProvingParams>,
+    public provingParamsMap: Map<string, ProvingParams>,
     // string is derived by JSON.parse(ProvingMethodAlg)
-    public verification: Map<string, VerificationParams>
+    public verificationParamsMap: Map<string, VerificationParams>
   ) {}
 
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
     const provingMethod = await getProvingMethod(params.provingMethodAlg);
-    const { provingKey, wasm, dataPreparer } = this.prover.get(
-      JSON.stringify(params.provingMethodAlg)
+    const { provingKey, wasm, dataPreparer } = this.provingParamsMap.get(
+      params.provingMethodAlg.toString()
     );
 
     const token = new Token(
@@ -71,8 +71,8 @@ class ZKPPacker implements IPacker {
       alg: token.alg,
       circuitId: token.circuitId
     };
-    const { key: verificationKey, verificationFn } = this.verification.get(
-      JSON.stringify(provingMethodAlg)
+    const { key: verificationKey, verificationFn } = this.verificationParamsMap.get(
+      provingMethodAlg.toString()
     );
     if (!verificationKey) {
       throw new Error(ErrPackedWithUnsupportedCircuit);

@@ -22,6 +22,7 @@ import {
 } from '../../src/verifiable';
 import { Proof } from '@iden3/js-merkletree';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
+jest.mock('@digitalbazaar/http-client', () => ({}));
 
 /// integration tests!!!
 describe.skip('rhs', () => {
@@ -31,7 +32,7 @@ describe.skip('rhs', () => {
 
   const mockStateStorageForGenesisState: IStateStorage = {
     getLatestStateById: jest.fn(async () => {
-      throw new Error(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
+      throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
     }),
     publishState: jest.fn(async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
@@ -170,7 +171,7 @@ describe.skip('rhs', () => {
 
     await expect(
       getStatusFromRHS(issuerDID, credRHSStatus, mockStateStorageForGenesisState)
-    ).rejects.toThrow(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
+    ).rejects.toThrow(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
   });
   it.skip('mocked issuer state', async () => {
     const rhsUrl = ''; // TODO: add url

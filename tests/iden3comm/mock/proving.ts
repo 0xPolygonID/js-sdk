@@ -67,6 +67,6 @@ export const mockPrepareAuthInputs = (
 
 //eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const mockVerifyState = async (
-  id: CircuitId, //eslint-disable-line @typescript-eslint/no-unused-vars
+  id: string, //eslint-disable-line @typescript-eslint/no-unused-vars
   signals: Array<string> //eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<boolean> => true;

@@ -9,10 +9,12 @@ export type PackerParams = {
   [key in string]: any; //eslint-disable-line @typescript-eslint/no-explicit-any
 };
 
-export type ZKPPackerParams = {
+export type ZKPPackerParams = PackerParams & {
   senderID: DID;
   provingMethodAlg: ProvingMethodAlg;
 };
+
+export type PlainPackerParams = PackerParams;
 
 export type AuthDataPrepareFunc = (
   hash: Uint8Array,
