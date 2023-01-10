@@ -67,10 +67,7 @@ class ZKPPacker implements IPacker {
 
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
     const token = await Token.parse(byteDecoder.decode(envelope));
-    const provingMethodAlg: ProvingMethodAlg = {
-      alg: token.alg,
-      circuitId: token.circuitId
-    };
+    const provingMethodAlg = new ProvingMethodAlg(token.alg, token.circuitId);
     const { key: verificationKey, verificationFn } = this.verificationParamsMap.get(
       provingMethodAlg.toString()
     );

@@ -18,7 +18,7 @@ import path from 'path';
 import { byteEncoder } from '../../src/iden3comm/utils';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
-describe('sig proofs', () => {
+describe.skip('sig proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 

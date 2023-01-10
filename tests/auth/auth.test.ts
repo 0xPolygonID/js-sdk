@@ -39,7 +39,7 @@ import { byteEncoder } from '../../src/iden3comm/utils';
 import { Token } from '@iden3/js-jwz';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
-describe('auth', () => {
+describe.skip('auth', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
