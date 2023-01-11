@@ -184,6 +184,9 @@ export class ProofService implements IProofService {
     const { cred, revStatus } = await this.findNonRevokedClaim(creds);
 
     const credCoreClaim = cred.getCoreClaimFromProof(ProofType.BJJSignature);
+    if (!credCoreClaim) {
+      throw new Error('credential must have coreClaim representation in the signature proof');
+    }
     return { credential: cred, revStatus, credentialCoreClaim: credCoreClaim };
   }
 
@@ -348,6 +351,12 @@ export class ProofService implements IProofService {
         },
         proof: rs.mtp
       };
+      if (!sigProof.issuerData.mtp) {
+        throw new Error('issuer auth credential must have a mtp proof');
+      }
+      if (!sigProof.issuerData.authCoreClaim) {
+        throw new Error('issuer auth credential must have a core claim proof');
+      }
 
       circuitClaim.signatureProof = {
         signature,

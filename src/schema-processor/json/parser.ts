@@ -17,7 +17,7 @@ export interface SchemaMetadata {
 }
 
 export interface Schema {
-  $metadata?: SchemaMetadata;
+  $metadata: SchemaMetadata;
   $schema: string;
   type: string;
 }

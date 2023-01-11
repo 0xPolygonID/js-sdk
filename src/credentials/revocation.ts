@@ -191,7 +191,7 @@ export async function pushHashesToRHS(
 ): Promise<void> {
   const nb = new NodesBuilder();
 
-  if (revokedNonces?.length > 0) {
+  if (revokedNonces) {
     await addRevocationNode(nb, trees, revokedNonces);
   }
 

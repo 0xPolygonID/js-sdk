@@ -12,7 +12,7 @@ export class W3CCredential {
   expirationDate?: string;
   issuanceDate?: string;
   credentialSubject: { [key: string]: object | string | number };
-  credentialStatus?: CredentialStatus | RHSCredentialStatus;
+  credentialStatus: CredentialStatus | RHSCredentialStatus;
   issuer: string;
   credentialSchema: CredentialSchema;
   proof?: object;
