@@ -20,6 +20,7 @@ import { newRDFEntry } from '../../src/schema-processor/merklize/internal/rdfEnt
 import { Merkletree, verifyProof } from '@iden3/js-merkletree';
 
 jest.setTimeout(50 * 60_00);
+jest.mock('@digitalbazaar/http-client', () => ({}));
 
 describe('tests merkelization', () => {
   it('checks dataset creation', async () => {

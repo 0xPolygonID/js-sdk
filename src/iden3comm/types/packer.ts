@@ -1,36 +1,44 @@
 import { DID } from '@iden3/js-iden3-core';
 import { DataPrepareHandlerFunc, VerificationHandlerFunc } from '../packers';
-import { BasicMessage, Bytes } from './index';
-import { CircuitID, MediaType } from '../types/index';
+import { BasicMessage } from './index';
 import { ProvingMethodAlg } from '@iden3/js-jwz';
+import { CircuitId } from '../../circuits';
+import { MediaType } from '../constants';
 
 export type PackerParams = {
   [key in string]: any; //eslint-disable-line @typescript-eslint/no-explicit-any
 };
 
-export type ZKPPackerParams = {
+export type ZKPPackerParams = PackerParams & {
   senderID: DID;
   provingMethodAlg: ProvingMethodAlg;
 };
 
-export type AuthDataPrepareFunc = (hash: Bytes, id: DID, circuitID: CircuitID) => Bytes;
-export type StateVerificationFunc = (id: CircuitID, pubSignals: Array<string>) => Promise<boolean>;
+export type PlainPackerParams = PackerParams;
+
+export type AuthDataPrepareFunc = (
+  hash: Uint8Array,
+  id: DID,
+  circuitId: CircuitId
+) => Promise<Uint8Array>;
+
+export type StateVerificationFunc = (id: string, pubSignals: Array<string>) => Promise<boolean>;
 
 export interface IPacker {
-  pack(payload: Bytes, param: PackerParams): Promise<Bytes>;
+  pack(payload: Uint8Array, param: PackerParams): Promise<Uint8Array>;
 
-  unpack(envelope: Bytes): Promise<BasicMessage>;
+  unpack(envelope: Uint8Array): Promise<BasicMessage>;
 
   mediaType(): MediaType;
 }
 
 export type VerificationParams = {
-  key: Bytes;
+  key: Uint8Array;
   verificationFn: VerificationHandlerFunc;
 };
 
 export type ProvingParams = {
   dataPreparer: DataPrepareHandlerFunc;
-  provingKey: Bytes;
-  wasm: Bytes;
+  provingKey: Uint8Array;
+  wasm: Uint8Array;
 };

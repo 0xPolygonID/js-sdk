@@ -17,7 +17,7 @@ import {
 } from './utils';
 
 import expectedJson from './data/sig-v2-inputs.json';
-
+jest.mock('@digitalbazaar/http-client', () => ({}));
 describe('atomic-query-sig-v2', () => {
   it('TestAttrQuerySigV2_PrepareInputs', async () => {
     const user = await IdentityTest.newIdentity(userPK);

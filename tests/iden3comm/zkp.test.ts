@@ -6,13 +6,11 @@ import { mockPrepareAuthInputs, mockVerifyState, ProvingMethodGroth16Authv2 } fr
 import { ProvingParams, VerificationParams } from '../../src/iden3comm/types';
 import { AuthV2PubSignals } from '../../src/circuits';
 import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
+import { byteDecoder, byteEncoder } from '../../src/iden3comm/utils';
 
 const { registerProvingMethod } = proving;
 
 describe('zkp packer tests', () => {
-  const byteEncoder = new TextEncoder();
-  const byteDecoder = new TextDecoder();
-
   it('test zkp packer pack', async () => {
     const p = await initZKPPacker();
 
@@ -60,7 +58,7 @@ const initZKPPacker = async (): Promise<ZKPPacker> => {
   });
 
   const verificationFn = new VerificationHandlerFunc(mockVerifyState);
-  const mapKey = JSON.stringify(mockProvingMethod.methodAlg);
+  const mapKey = mockProvingMethod.methodAlg.toString();
 
   const mockVerificationParamMap: Map<string, VerificationParams> = new Map();
   mockVerificationParamMap.set(mapKey, {

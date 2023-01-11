@@ -9,22 +9,44 @@ import {
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { FullProof } from '../../src/proof';
 import { Signer } from 'ethers';
 import { VerifiableConstants } from '../../src/verifiable';
-
+import { RootInfo, StateProof } from '../../src/storage/entities/state';
+jest.mock('@digitalbazaar/http-client', () => ({}));
 describe('identity', () => {
   let wallet: IdentityWallet;
   let dataStorage: IDataStorage;
 
-  const mockStateStorage = {
-    getLatestStateById: jest.fn(async (issuerId: bigint) => {
-      throw new Error(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST);
+  const mockStateStorage: IStateStorage = {
+    getLatestStateById: jest.fn(async (t) => {
+      throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
     }),
-    publishState: jest.fn(async (proof: FullProof, signer: Signer) => {
+    publishState: jest.fn(async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+    }),
+    getGISTProof: jest.fn((): Promise<StateProof> => {
+      return Promise.resolve({
+        root: 0n,
+        existence: false,
+        siblings: [],
+        index: 0n,
+        value: 0n,
+        auxExistence: false,
+        auxIndex: 0n,
+        auxValue: 0n
+      });
+    }),
+    getGISTRootInfo: jest.fn((): Promise<RootInfo> => {
+      return Promise.resolve({
+        root: 0n,
+        replacedByRoot: 0n,
+        createdAtTimestamp: 0n,
+        replacedAtTimestamp: 0n,
+        createdAtBlock: 0n,
+        replacedAtBlock: 0n
+      });
     })
-  } as IStateStorage;
+  };
   beforeEach(async () => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
@@ -154,7 +176,7 @@ describe('identity', () => {
     expect(proof.proof.existence).toBe(false);
   });
 
-  it.only('issueCredential', async () => {
+  it('issueCredential', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );

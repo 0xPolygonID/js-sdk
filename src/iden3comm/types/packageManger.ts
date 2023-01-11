@@ -1,6 +1,6 @@
 import { IPacker, PackerParams } from './packer';
-import { MediaType } from './';
 import { MessageFetchRequestMessage } from './protocol/messages';
+import { MediaType } from '../constants';
 
 export type BasicMessage = MessageFetchRequestMessage;
 
@@ -17,7 +17,7 @@ export interface IPackageManger {
 
   unpackWithType(mediaType: MediaType, envelope: Uint8Array): Promise<BasicMessage>;
 
-  getMediaType(envelope: Uint8Array): MediaType;
+  getMediaType(envelope: string): MediaType;
 }
 
 export type EnvelopeStub = {

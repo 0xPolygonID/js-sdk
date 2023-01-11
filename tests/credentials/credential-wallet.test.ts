@@ -6,6 +6,8 @@ import { InMemoryCredentialStorage } from '../../src/storage/memory';
 import { cred1, cred2, cred3 } from './mock';
 import { ProofQuery, W3CCredential } from '../../src/verifiable';
 
+jest.mock('@digitalbazaar/http-client', () => ({}));
+
 const credentialFlow = async (storage: IDataStorage) => {
   const credentialWallet = new CredentialWallet(storage);
 

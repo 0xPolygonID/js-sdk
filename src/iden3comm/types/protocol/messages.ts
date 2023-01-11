@@ -1,4 +1,5 @@
-import { MediaType, ProtocolMessage } from '../';
+import { ProtocolMessage } from '../';
+import { MediaType } from '../../constants';
 
 // MessageFetchRequestMessage represent Iden3message for message fetch request.
 export type MessageFetchRequestMessage = {

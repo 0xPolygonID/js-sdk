@@ -1,6 +1,7 @@
 // RevocationStatusRequestMessage is struct the represents body for proof generation request
-import { MediaType, ProtocolMessage } from '../';
+import { ProtocolMessage } from '../';
 import { RevocationStatus } from '../../../verifiable';
+import { MediaType } from '../../constants';
 
 // RevocationStatusRequestMessage is struct the represents body for proof generation request
 export type RevocationStatusRequestMessage = {

@@ -111,7 +111,7 @@ export class CredentialWallet implements ICredentialWallet {
       } catch (e) {
         const errMsg = e['reason'] ?? e.message;
         if (
-          errMsg.includes(VerifiableConstants.ERRORS.IDENENTITY_DOES_NOT_EXIST) &&
+          errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
           isIssuerGenesis(issuerDID.toString(), issuerData.state.value)
         ) {
           return {

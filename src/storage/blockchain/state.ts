@@ -1,8 +1,9 @@
+import { RootInfo, StateProof } from './../entities/state';
+import { ZKProof } from '@iden3/js-jwz';
 import { IStateStorage } from '../interfaces/state';
 import { BigNumber, ethers, Signer } from 'ethers';
 import { StateInfo } from '../entities/state';
 import abi from './state-abi.json';
-import { FullProof } from '../../proof';
 import { StateTransitionPubSignals } from '../../circuits';
 
 export interface EthConnectionConfig {
@@ -34,8 +35,8 @@ export const defaultEthConnectionConfig: EthConnectionConfig = {
 };
 
 export class EthStateStorage implements IStateStorage {
-  public stateContract: ethers.Contract;
-  public provider: ethers.providers.JsonRpcProvider;
+  public readonly stateContract: ethers.Contract;
+  public readonly provider: ethers.providers.JsonRpcProvider;
 
   constructor(private readonly ethConfig: EthConnectionConfig = defaultEthConnectionConfig) {
     this.provider = new ethers.providers.JsonRpcProvider(this.ethConfig.url);
@@ -57,7 +58,7 @@ export class EthStateStorage implements IStateStorage {
     return stateInfo;
   }
 
-  async publishState(proof: FullProof, signer: Signer): Promise<string> {
+  async publishState(proof: ZKProof, signer: Signer): Promise<string> {
     const byteEncoder = new TextEncoder();
     const contract = this.stateContract.connect(signer);
 
@@ -93,5 +94,33 @@ export class EthStateStorage implements IStateStorage {
     }
 
     return txnHash;
+  }
+
+  async getGISTProof(id: bigint): Promise<StateProof> {
+    const data = await this.stateContract.getGISTProof(id);
+
+    return {
+      root: BigInt(data.root.toString()),
+      existence: data.existence,
+      siblings: data.siblings?.map((sibling) => BigInt(sibling.toString())),
+      index: BigInt(data.index.toString()),
+      value: BigInt(data.value.toString()),
+      auxExistence: data.auxExistence,
+      auxIndex: BigInt(data.auxIndex.toString()),
+      auxValue: BigInt(data.auxValue.toString())
+    };
+  }
+
+  async getGISTRootInfo(id: bigint): Promise<RootInfo> {
+    const data = await this.stateContract.getGISTRootInfo(id);
+
+    return {
+      root: BigInt(data.root.toString()),
+      replacedByRoot: BigInt(data.replacedByRoot.toString()),
+      createdAtTimestamp: BigInt(data.createdAtTimestamp.toString()),
+      replacedAtTimestamp: BigInt(data.replacedAtTimestamp.toString()),
+      createdAtBlock: BigInt(data.createdAtBlock.toString()),
+      replacedAtBlock: BigInt(data.replacedAtBlock.toString())
+    };
   }
 }
