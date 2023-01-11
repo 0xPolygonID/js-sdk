@@ -16,22 +16,22 @@ export class BrowserCredentialStorage
     return data || [];
   }
 
-  set data(newData) {
-    this.save(newData);
+  set data(newData: W3CCredential[]) {
+    super.save(newData);
   }
 
-  static storageKey = 'credentials';
+  static readonly storageKey = 'credentials';
 
   async listCredentials(): Promise<W3CCredential[]> {
     return this.data;
   }
 
   async saveCredential(credential: W3CCredential): Promise<void> {
-    this.data = [...Array.from(this.data), credential];
+    this.data = [...this.data, credential];
   }
 
   async saveAllCredentials(credentials: W3CCredential[]): Promise<void> {
-    this.data = [...Array.from(this.data), ...credentials];
+    this.data = [...this.data, ...credentials];
   }
 
   async removeCredential(id: string): Promise<void> {

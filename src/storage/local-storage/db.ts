@@ -7,10 +7,8 @@ export class BrowserLocalStorage<Type> {
     }
   }
 
-  load(): Type {
-    const rawCache = localStorage.getItem(this.localStorageKey) || null;
-    // it will throw exeption if rawCache is not valid json.
-    return JSON.parse(rawCache ?? '{}') as Type
-   
+  load(): Type | undefined {
+    const data = localStorage.getItem(this.localStorageKey);
+    return data && JSON.parse(data);
   }
 }
