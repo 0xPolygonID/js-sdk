@@ -8,7 +8,7 @@ import {
   StateTransitionPubSignals
 } from '../../src/circuits/state-transition';
 import { generate } from './utils';
-
+jest.mock('@digitalbazaar/http-client', () => ({}));
 describe('state-transition', () => {
   it.skip('TestStateTransitionOutput_GetJSONObj', () => {
     const id = Id.fromString('1124NoAu14diR5EM1kgUha2uHFkvUrPrTXMtf4tncZ');

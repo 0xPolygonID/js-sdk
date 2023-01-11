@@ -2,7 +2,6 @@ import { ZKProof } from '@iden3/js-jwz';
 import * as snarkjs from 'snarkjs';
 import { CircuitId } from '../circuits';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
-import { FullProof } from './proof-service';
 import { witnessBuilder } from './witness_calculator';
 
 /* eslint-disable no-console */
@@ -11,7 +10,7 @@ import { witnessBuilder } from './witness_calculator';
 export class NativeProver {
   constructor(private readonly _circuitStorage: ICircuitStorage) {}
 
-  async verify(zkp: FullProof, circuitName: CircuitId): Promise<boolean> {
+  async verify(zkp: ZKProof, circuitName: CircuitId): Promise<boolean> {
     try {
       const verKey: Uint8Array = (await this._circuitStorage.loadCircuitData(circuitName))
         .verificationKey;

@@ -32,6 +32,8 @@ class LocalStorageMock {
 
 global.localStorage = new LocalStorageMock() as unknown as Storage;
 
+jest.mock('@digitalbazaar/http-client', () => ({}));
+
 const credentialFlow = async (storage: IDataStorage) => {
   const credentialWallet = new CredentialWallet(storage);
 

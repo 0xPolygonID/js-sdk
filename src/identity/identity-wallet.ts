@@ -14,7 +14,6 @@ import {
 } from '@iden3/js-iden3-core';
 import { Hex, poseidon, PublicKey, Signature } from '@iden3/js-crypto';
 import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
-import {} from '@iden3/js-iden3-core';
 
 import { subjectPositionIndex } from './common';
 import * as uuid from 'uuid';

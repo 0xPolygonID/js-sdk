@@ -9,21 +9,17 @@ import { proving, ProvingMethodAlg, ProvingMethod } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import {
   CredentialFetchRequestMessage,
-  MediaType,
   ProvingParams,
   VerificationParams
 } from '../../src/iden3comm/types';
-import { MEDIA_TYPE, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
+import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
+import { byteDecoder, byteEncoder } from '../../src/iden3comm/utils';
 
 const { registerProvingMethod } = proving;
 
 describe('tests packageManager with ZKP Packer', () => {
   it('tests package manager with zkp  packer', async () => {
     const pm = new PackageManger();
-
-    const byteEncoder = new TextEncoder();
-    const byteDecoder = new TextDecoder();
-
     const mockAuthInputsHandler = new DataPrepareHandlerFunc(mockPrepareAuthInputs);
 
     const mockProvingMethod = new ProvingMethodGroth16Authv2(
@@ -35,7 +31,7 @@ describe('tests packageManager with ZKP Packer', () => {
     });
 
     const verificationFn = new VerificationHandlerFunc(mockVerifyState);
-    const mapKey = JSON.stringify(mockProvingMethod.methodAlg);
+    const mapKey = mockProvingMethod.methodAlg.toString();
 
     const mockVerificationParamMap: Map<string, VerificationParams> = new Map();
     mockVerificationParamMap.set(mapKey, {
@@ -61,18 +57,16 @@ describe('tests packageManager with ZKP Packer', () => {
     const targetID = DID.parse(targetIdentifier);
 
     const msgBytes = byteEncoder.encode(
-      JSON.stringify(
-        createFetchCredentialMessage(MEDIA_TYPE.MEDIA_TYPE_ZKP_MESSAGE, senderDID, targetID)
-      )
+      JSON.stringify(createFetchCredentialMessage(MediaType.ZKPMessage, senderDID, targetID))
     );
 
-    const e = await pm.pack(MEDIA_TYPE.MEDIA_TYPE_ZKP_MESSAGE, msgBytes, {
+    const e = await pm.pack(MediaType.ZKPMessage, msgBytes, {
       senderID: senderDID,
       provingMethodAlg: new ProvingMethodAlg('groth16-mock', 'authV2')
     });
 
     const { unpackedMessage, unpackedMediaType } = await pm.unpack(e);
-    expect(unpackedMediaType).toEqual(MEDIA_TYPE.MEDIA_TYPE_ZKP_MESSAGE);
+    expect(unpackedMediaType).toEqual(MediaType.ZKPMessage);
     expect(senderDID.toString()).toEqual(unpackedMessage.from);
     expect(byteDecoder.decode(msgBytes)).toEqual(JSON.stringify(unpackedMessage));
   });

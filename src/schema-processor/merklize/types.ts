@@ -1,8 +1,6 @@
-export type Bytes = Uint8Array;
-
 export interface Hasher {
   hash: (inp: Array<bigint>) => Promise<bigint>;
-  hashBytes: (b: Bytes) => Promise<bigint>;
+  hashBytes: (b: Uint8Array) => Promise<bigint>;
   prime: () => bigint;
 }
 

@@ -17,7 +17,7 @@ import {
 } from './utils';
 
 import expectedJson from './data/mtp-v2-inputs.json';
-
+jest.mock('@digitalbazaar/http-client', () => ({}));
 describe('atomic-query-mtp-v2', () => {
   it('TestAttrQueryMTPV2_PrepareInputs', async () => {
     const user = await IdentityTest.newIdentity(userPK);

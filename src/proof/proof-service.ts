@@ -1,10 +1,17 @@
+import { newHashFromString } from '@iden3/js-merkletree';
 import { MTProof, TreeState, ValueProof } from './../circuits/models';
 import { RHSCredentialStatus, W3CCredential } from '../verifiable/credential';
 import { ProofType } from '../verifiable/constants';
 import { KMS } from '../kms/kms';
 
 /* eslint-disable no-console */
-import { DID, getUnixTimestamp, Claim, MerklizedRootPosition } from '@iden3/js-iden3-core';
+import {
+  DID,
+  getUnixTimestamp,
+  Claim,
+  MerklizedRootPosition,
+  BytesHelper
+} from '@iden3/js-iden3-core';
 import {
   CircuitClaim,
   CircuitId,
@@ -13,10 +20,11 @@ import {
   AtomicQueryMTPV2Inputs,
   AtomicQuerySigV2Inputs,
   QueryOperators,
-  StateTransitionInputs
+  StateTransitionInputs,
+  AuthV2Inputs
 } from '../circuits';
 import { RevocationStatus } from '../verifiable/credential';
-import { toClaimNonRevStatus } from './common';
+import { toClaimNonRevStatus, toGISTProof } from './common';
 import { NativeProver } from './prover';
 import { IIdentityWallet } from '../identity';
 import { ICredentialWallet } from '../credentials';
@@ -29,12 +37,11 @@ import {
 
 import { UniversalSchemaLoader } from '../loaders';
 import { Parser } from '../schema-processor';
-
-import {} from '../schema-processor';
 import { getContextPathKey } from '../schema-processor/merklize/merkelizer';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { IStateStorage } from '../storage/interfaces';
 import { Signer } from 'ethers';
+import { ZKProof } from '@iden3/js-jwz';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -62,63 +69,63 @@ export interface QueryWithFieldName {
   query: Query;
   fieldName: string;
 }
-// ZKPResponse is a response with a zkp
-export interface ZKPResponse {
-  id: number;
-  circuitId: string; // `circuitId` compatibility with golang implementation.
-  pub_signals: string[];
-  proof: ProofData;
-}
-
-export interface FullProof {
-  pub_signals: string[];
-  proof: ProofData;
-}
-
-// ProofData is a result of snarkJS groth16 proof generation
-export interface ProofData {
-  pi_a: string[];
-  pi_b: string[][];
-  pi_c: string[];
-  protocol?: string;
-  curve?: string;
-}
 
 export interface IProofService {
-  verifyProof(zkp: FullProof, circuitName: CircuitId): Promise<boolean>;
+  verifyProof(zkp: ZKProof, circuitName: CircuitId): Promise<boolean>;
+
   generateProof(
     proofReq: ZKPRequest,
     identifier: DID
-  ): Promise<{ proof: FullProof; credentials: W3CCredential[] }>;
+  ): Promise<{ proof: ZKProof; credential: W3CCredential }>;
+
+  generateAuthV2Inputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
+
+  verifyState(circuitId: string, pubSignals: Array<string>): Promise<boolean>;
+
+  transitState(
+    did: DID,
+    oldTreeState: TreeState,
+    isOldStateGenesis: boolean,
+    stateStorage: IStateStorage,
+    ethSigner: Signer
+  ): Promise<string>;
 }
 
 export class ProofService implements IProofService {
-  private _prover: NativeProver;
+  private readonly _prover: NativeProver;
   constructor(
     private readonly _identityWallet: IIdentityWallet,
     private readonly _credentialWallet: ICredentialWallet,
     private readonly _kms: KMS,
-    private readonly _circuitStorage: ICircuitStorage
+    private readonly _circuitStorage: ICircuitStorage,
+    private readonly _stateStorage: IStateStorage
   ) {
     this._prover = new NativeProver(_circuitStorage);
   }
 
-  async verifyProof(zkp: FullProof, circuitId: CircuitId): Promise<boolean> {
+  async verifyProof(zkp: ZKProof, circuitId: CircuitId): Promise<boolean> {
     return this._prover.verify(zkp, circuitId);
   }
 
   async generateProof(
     proofReq: ZKPRequest,
-    identifier: DID
-  ): Promise<{ proof: FullProof; credentials: W3CCredential[] }> {
-    const { inputs, creds } = await this.prepareInputs(identifier, proofReq);
+    identifier: DID,
+    credential?: W3CCredential
+  ): Promise<{ proof: ZKProof; credential: W3CCredential }> {
+    let preparedCredential: PreparedCredential;
+    if (credential) {
+      preparedCredential = await this.getPreparedCredential([credential]);
+    } else {
+      const credentials = await this.findCredentialsByQuery(identifier, proofReq.query);
+      preparedCredential = await this.getPreparedCredential(credentials);
+    }
+    const inputs = await this.generateInputs(preparedCredential, identifier, proofReq);
 
     const proof = await this._prover.generate(inputs, proofReq.circuitId);
-    return { proof, credentials: creds };
+    return { proof, credential: preparedCredential.credential };
   }
-
-  // transiteState is done always to the latest state
-  async transiteState(
+  // transitState is done always to the latest state
+  async transitState(
     did: DID,
     oldTreeState: TreeState,
     isOldStateGenesis: boolean,
@@ -146,26 +153,15 @@ export class ProofService implements IProofService {
       nonRevProof: authInfo.nonRevProof
     };
 
-    const inputs = await circuitInputs.inputsMarshal();
+    const inputs = circuitInputs.inputsMarshal();
 
-    console.log(new TextDecoder().decode(inputs));
     const proof = await this._prover.generate(inputs, CircuitId.StateTransition);
 
     const txId = await stateStorage.publishState(proof, ethSigner);
     return txId;
   }
 
-  private async prepareInputs(
-    did: DID,
-    proofReq: ZKPRequest
-  ): Promise<{ inputs: Uint8Array; creds: W3CCredential[] }> {
-    const preparedCredential = await this.prepareCredential(did, proofReq.query);
-
-    const inputs = await this.generateInputs(preparedCredential, did, proofReq);
-    return { inputs, creds: [preparedCredential.credential] };
-  }
-
-  private async prepareCredential(did: DID, query: ProofQuery): Promise<PreparedCredential> {
+  private async findCredentialsByQuery(did: DID, query: ProofQuery): Promise<W3CCredential[]> {
     let credentials: W3CCredential[] = [];
 
     if (query.claimId) {
@@ -181,7 +177,11 @@ export class ProofService implements IProofService {
     if (credentials.length === 0) {
       throw new Error('could not find claims for query');
     }
-    const { cred, revStatus } = await this.findNonRevokedClaim(credentials);
+    return credentials;
+  }
+
+  private async getPreparedCredential(creds: W3CCredential[]): Promise<PreparedCredential> {
+    const { cred, revStatus } = await this.findNonRevokedClaim(creds);
 
     const credCoreClaim = cred.getCoreClaimFromProof(ProofType.BJJSignature);
     return { credential: cred, revStatus, credentialCoreClaim: credCoreClaim };
@@ -269,7 +269,7 @@ export class ProofService implements IProofService {
       circuitInputs.profileNonce = BigInt(0);
       circuitInputs.skipClaimRevocationCheck = false;
 
-      inputs = await circuitInputs.inputsMarshal();
+      inputs = circuitInputs.inputsMarshal();
     } else if (proofReq.circuitId === CircuitId.AtomicQuerySigV2) {
       const circuitClaimData = await this.newCircuitClaimData(
         preparedCredential.credential,
@@ -299,7 +299,7 @@ export class ProofService implements IProofService {
         preparedCredential.credentialCoreClaim
       );
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-      inputs = await circuitInputs.inputsMarshal();
+      inputs = circuitInputs.inputsMarshal();
     } else {
       throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
@@ -414,6 +414,7 @@ export class ProofService implements IProofService {
     }
     return parsedQuery.query;
   }
+
   private async prepareNonMerklizedQuery(
     query: ProofQuery,
     credential: W3CCredential
@@ -431,6 +432,7 @@ export class ProofService implements IProofService {
 
     return parsedQuery.query;
   }
+
   private async parseRequest(req?: { [key: string]: unknown }): Promise<QueryWithFieldName> {
     if (!req) {
       const query = new Query();
@@ -478,6 +480,73 @@ export class ProofService implements IProofService {
     query.values = values;
 
     return { query, fieldName };
+  }
+
+  /*TODO: not sure if this is the right place for this function*/
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async generateAuthV2Inputs(
+    hash: Uint8Array,
+    did: DID,
+    circuitId: CircuitId
+  ): Promise<Uint8Array> {
+    if (circuitId !== CircuitId.AuthV2) {
+      throw new Error('CircuitId is not supported');
+    }
+    // todo: check if bigint is correct
+    const challenge = BytesHelper.bytesToInt(hash.reverse());
+    const authPrepared = await this.prepareAuthBJJCredential(did);
+
+    const authClaimData = await this.newCircuitClaimData(
+      authPrepared.authCredential,
+      authPrepared.authCoreClaim
+    );
+
+    const signature = await this._identityWallet.signChallenge(
+      challenge,
+      authPrepared.authCredential
+    );
+    const id = did.id;
+    const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
+
+    const gistProof = toGISTProof(stateProof);
+
+    const authInputs = new AuthV2Inputs();
+
+    authInputs.genesisID = id;
+    authInputs.profileNonce = 0n;
+    authInputs.authClaim = authClaimData.claim;
+    authInputs.authClaimIncMtp = authClaimData.proof;
+    authInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
+    authInputs.treeState = authClaimData.treeState;
+    authInputs.signature = signature;
+    authInputs.challenge = challenge;
+    authInputs.gistProof = gistProof;
+    return authInputs.inputsMarshal();
+  }
+
+  async verifyState(circuitId: string, pubSignals: Array<string>): Promise<boolean> {
+    if (circuitId !== CircuitId.AuthV2) {
+      throw new Error(`CircuitId is not supported ${circuitId}`);
+    }
+    const gistRoot = newHashFromString(pubSignals[2]).bigInt();
+    const globalStateInfo = await this._stateStorage.getGISTRootInfo(gistRoot);
+
+    if (globalStateInfo.createdAtTimestamp === 0n) {
+      throw new Error(`gist state doesn't exists in contract`);
+    }
+
+    if (globalStateInfo.root !== gistRoot) {
+      throw new Error(`gist info contains invalid state`);
+    }
+
+    if (globalStateInfo.replacedByRoot !== 0n) {
+      if (globalStateInfo.replacedAtTimestamp === 0n) {
+        throw new Error(`state was replaced, but replaced time unknown`);
+      }
+      return false;
+    }
+
+    return true;
   }
 }
 // BJJSignatureFromHexString converts hex to  babyjub.Signature

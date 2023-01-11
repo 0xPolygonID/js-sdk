@@ -1,5 +1,6 @@
 // DeviceRegistrationRequestMessage represent Iden3message for register device request
-import { MediaType, ProtocolMessage } from '../';
+import { ProtocolMessage } from '../';
+import { MediaType } from '../../constants';
 
 // DeviceRegistrationRequestMessage represent Iden3message for register device request
 export type DeviceRegistrationRequestMessage = {
