@@ -18,8 +18,8 @@
     "build:esm": "tsc -p config/tsconfig.esm.json",
     "clean": "rimraf ./dist",
     "test:coverage": "jest --coverage",
-    "test": "NODE_OPTIONS=\\\"--experimental-vm-modules\\\" jest --runInBand",
-    "test:watch": "NODE_OPTIONS=\\\"--experimental-vm-modules\\\" jest --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "lint": "eslint --fix --ext .js,.ts src/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
   },

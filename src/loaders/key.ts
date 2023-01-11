@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { promises: fs } = require('fs');
+import * as fs from 'fs';
 
 export interface IKeyLoader {
   load(path): Promise<Uint8Array>;
