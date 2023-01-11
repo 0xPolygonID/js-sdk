@@ -27,11 +27,11 @@ export class BrowserCredentialStorage
   }
 
   async saveCredential(credential: W3CCredential): Promise<void> {
-    this.data = [...this.data, credential];
+    this.data = [...Array.from(this.data), credential];
   }
 
   async saveAllCredentials(credentials: W3CCredential[]): Promise<void> {
-    this.data = [...this.data, ...credentials];
+    this.data = [...Array.from(this.data), ...credentials];
   }
 
   async removeCredential(id: string): Promise<void> {
