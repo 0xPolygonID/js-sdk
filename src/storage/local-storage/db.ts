@@ -9,12 +9,8 @@ export class BrowserLocalStorage<Type> {
 
   load(): Type {
     const rawCache = localStorage.getItem(this.localStorageKey) || null;
-    let cache: Type;
-    try {
-      cache = JSON.parse(rawCache);
-    } catch (e: unknown) {
-      cache = {} as Type;
-    }
-    return cache;
+    // it will throw exeption if rawCache is not valid json.
+    return JSON.parse(rawCache ?? '{}') as Type
+   
   }
 }
