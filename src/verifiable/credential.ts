@@ -1,4 +1,4 @@
-import { Merkelizer, merkelizeJSONLD } from './../schema-processor/merklize/merkelizer';
+import { Merkelizer, merkelizeJSONLD } from '../schema-processor/merklize/merklizer';
 import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof } from './proof';
 import { Claim } from '@iden3/js-iden3-core';
 import { CredentialStatusType, ProofType } from './constants';

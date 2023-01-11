@@ -1,1 +1,1 @@
-export { Merkelizer, getContextPathKey } from './merkelizer';
+export { Merkelizer, getContextPathKey } from './merklizer';

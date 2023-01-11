@@ -37,7 +37,7 @@ import {
 
 import { UniversalSchemaLoader } from '../loaders';
 import { Parser } from '../schema-processor';
-import { getContextPathKey } from '../schema-processor/merklize/merkelizer';
+import { getContextPathKey } from '../schema-processor/merklize/merklizer';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { IStateStorage } from '../storage/interfaces';
 import { Signer } from 'ethers';

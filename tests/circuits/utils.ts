@@ -1,4 +1,4 @@
-import { merkelizeJSONLD, Merkelizer } from './../../src/schema-processor/merklize/merkelizer';
+import { merkelizeJSONLD, Merkelizer } from './../../src/schema-processor/merklize/merklizer';
 import {
   Claim,
   Id,
