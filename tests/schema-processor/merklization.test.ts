@@ -2,7 +2,7 @@ import {
   entriesFromRDF,
   getDataSet,
   merkelizeJSONLD
-} from '../../src/schema-processor/merklize/merkelizer';
+} from '../../src/schema-processor/merklize/merklizer';
 import { cred_v1, cred_v2, testDocument } from './data/data';
 import { DEFAULT_HASHER } from '../../src/schema-processor/merklize/constants';
 import {

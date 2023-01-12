@@ -1,7 +1,6 @@
 'use strict';
 
 import { RemoteDocument, Url } from 'jsonld/jsonld-spec';
-
 import https from 'https';
 import http from 'http';
 import { parseLinkHeader } from 'jsonld/lib/util';
@@ -180,7 +179,7 @@ async function _fetch({ url, headers, strictSSL, httpAgent, httpsAgent }) {
     const options: {
       // eslint-disable-next-line  @typescript-eslint/no-explicit-any
       headers: any;
-      redirect: string;
+      redirect: RequestRedirect;
       throwHttpErrors: boolean;
       // eslint-disable-next-line  @typescript-eslint/no-explicit-any
       agent?: any;

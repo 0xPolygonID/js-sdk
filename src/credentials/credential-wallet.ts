@@ -87,7 +87,9 @@ export class CredentialWallet implements ICredentialWallet {
     const mtpProof = cred.getIden3SparseMerkleTreeProof();
     const sigProof = cred.getBJJSignature2021Proof();
 
-    const issuerData: IssuerData | undefined = mtpProof ? mtpProof.issuerData : sigProof.issuerData;
+    const issuerData: IssuerData | undefined = mtpProof
+      ? mtpProof.issuerData
+      : sigProof?.issuerData;
     if (!issuerData) {
       throw new Error('no sig / mtp proof to check issuer info');
     }
@@ -142,6 +144,9 @@ export class CredentialWallet implements ICredentialWallet {
     schema: Schema,
     rhsUrl?: string
   ): W3CCredential => {
+    if (!schema.$metadata.uris['jsonLdContext']) {
+      throw new Error('jsonLdContext is missing is the schema');
+    }
     const context = [
       VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
       VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,

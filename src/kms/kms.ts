@@ -1,23 +1,11 @@
 import { PublicKey } from '@iden3/js-crypto';
-export enum KmsKeyType {
-  BabyJubJub = 'BJJ',
-  Ethereum = 'ETH'
-}
-
-export interface KmsKeyId {
-  type: KmsKeyType;
-  id: string;
-}
-
+import { KmsKeyId, KmsKeyType } from './store';
 export interface IKeyProvider {
   keyType: KmsKeyType;
   publicKey(keyID: KmsKeyId): Promise<PublicKey>;
   sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array>;
   newPrivateKeyFromSeed(key: Uint8Array): Promise<KmsKeyId>;
 }
-
-export const KeyTypeBabyJubJub = 'BJJ';
-
 export class KMS {
   private registry: {
     [keyType in KmsKeyType]: IKeyProvider;

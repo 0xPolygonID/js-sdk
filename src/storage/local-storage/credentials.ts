@@ -1,40 +1,37 @@
+import { BrowserLocalStorage } from './db';
 import { ProofQuery, W3CCredential } from '../../verifiable';
 import { StorageErrors } from '../errors';
 import { StandardJSONCredentielsQueryFilter } from '../filters/jsonQuery';
-import { ICredentialStorage } from '../interfaces/credentials';
-
-export class InMemoryCredentialStorage implements ICredentialStorage {
-  private _data: W3CCredential[];
+import { ICredentialStorage } from '../interfaces';
+export class BrowserCredentialStorage
+  extends BrowserLocalStorage<W3CCredential[]>
+  implements ICredentialStorage
+{
   constructor() {
-    this._data = [];
+    super(BrowserCredentialStorage.storageKey);
   }
 
-  get data() {
-    return this._data;
+  get data(): W3CCredential[] {
+    const data = this.load();
+    return data || [];
   }
 
-  set data(v) {
-    this._data = v;
+  set data(newData: W3CCredential[]) {
+    super.save(newData);
   }
+
+  static readonly storageKey = 'credentials';
 
   async listCredentials(): Promise<W3CCredential[]> {
     return this.data;
   }
 
   async saveCredential(credential: W3CCredential): Promise<void> {
-    // upsert
-    const index = this._data.findIndex((c) => c.id === credential.id);
-    if (index === -1) {
-      this._data.push(credential);
-    } else {
-      this._data[index] = credential;
-    }
+    this.data = [...this.data, credential];
   }
 
   async saveAllCredentials(credentials: W3CCredential[]): Promise<void> {
-    credentials.forEach((credential) => {
-      this.saveCredential(credential);
-    });
+    this.data = [...this.data, ...credentials];
   }
 
   async removeCredential(id: string): Promise<void> {

@@ -8,7 +8,7 @@ export type AuthorizationResponseMessage = {
   typ?: MediaType;
   type: ProtocolMessage;
   thid?: string;
-  body?: AuthorizationMessageResponseBody;
+  body: AuthorizationMessageResponseBody;
   from?: string;
   to?: string;
 };

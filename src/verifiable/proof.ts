@@ -6,10 +6,10 @@ export interface State {
   txId?: string;
   blockTimestamp?: number;
   blockNumber?: number;
-  rootOfRoots?: string;
-  claimsTreeRoot?: string;
-  revocationTreeRoot?: string;
-  value?: string;
+  rootOfRoots: string;
+  claimsTreeRoot: string;
+  revocationTreeRoot: string;
+  value: string;
   status?: string;
 }
 

@@ -169,6 +169,8 @@ export class IdentityWallet implements IIdentityWallet {
       issuerData: {
         id: did.toString(),
         state: {
+          rootOfRoots: ZERO_HASH.hex(),
+          revocationTreeRoot: ZERO_HASH.hex(),
           claimsTreeRoot: claimsTreeHex,
           value: stateHex
         },
@@ -410,6 +412,9 @@ export class IdentityWallet implements IIdentityWallet {
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
 
+    if (!issuerAuthBJJCredential.proof) {
+      throw new Error('issuer auth credential must have proof');
+    }
     const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
 
     const sigProof: BJJSignatureProof2021 = {
@@ -431,8 +436,11 @@ export class IdentityWallet implements IIdentityWallet {
   async revokeCredential(issuerDID: DID, credential: W3CCredential): Promise<number> {
     const issuerTree = await this.getDIDTreeState(issuerDID);
 
-    const coreClaim = await credential.getCoreClaimFromProof(ProofType.BJJSignature);
+    const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
 
+    if (!coreClaim) {
+      throw new Error('credential must have coreClaim representation in the signature proof');
+    }
     const nonce = coreClaim.getRevocationNonce();
 
     await issuerTree.revocationTree.add(nonce, BigInt(0));
@@ -458,6 +466,10 @@ export class IdentityWallet implements IIdentityWallet {
 
       // credential must have a bjj signature proof
       const coreClaim = await credential.getCoreClaimFromProof(ProofType.BJJSignature);
+
+      if (!coreClaim) {
+        throw new Error('credential must have coreClaim representation in the signature proof');
+      }
 
       await this._storage.mt.addToMerkleTree(
         issuerDID.toString(),
@@ -504,6 +516,10 @@ export class IdentityWallet implements IIdentityWallet {
       // credential must have a bjj signature proof
       const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
 
+      if (!coreClaim) {
+        throw new Error('credential must have coreClaim representation in the signature proof');
+      }
+
       const mtpProof: Iden3SparseMerkleTreeProof = {
         type: ProofType.Iden3SparseMerkleTreeProof,
         mtp: mtpWithProof.proof,
@@ -545,42 +561,37 @@ export class IdentityWallet implements IIdentityWallet {
       revokedNonces
     );
   }
-  private defineMTRootPosition(schema: Schema, position: string): string {
-    if (!!schema.$metadata && !!schema.$metadata.serialization) {
+  private defineMTRootPosition(schema: Schema, position?: string): string {
+    if (schema.$metadata?.serialization) {
       return '';
     }
-    if (position !== undefined && position !== '') {
+    if (position) {
       return position;
     }
     return MerklizedRootPosition.Index;
   }
 
   private async getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim> {
-    const coreClaimFromSigProof = await credential.getCoreClaimFromProof(ProofType.BJJSignature);
+    const coreClaimFromSigProof = credential.getCoreClaimFromProof(ProofType.BJJSignature);
 
     const coreClaimFromMtpProof = credential.getCoreClaimFromProof(
       ProofType.Iden3SparseMerkleTreeProof
     );
 
-    let coreClaim: Claim;
-    if (!coreClaimFromMtpProof && !coreClaimFromSigProof) {
-      throw new Error('core claim is not set proof');
-    }
-    if (!coreClaimFromMtpProof) {
-      return coreClaimFromSigProof;
-    }
-    if (!coreClaimFromSigProof) {
-      return coreClaimFromMtpProof;
-    }
     if (
       coreClaimFromMtpProof &&
       coreClaimFromSigProof &&
-      coreClaimFromMtpProof != coreClaimFromSigProof
+      coreClaimFromMtpProof.hex() !== coreClaimFromSigProof.hex()
     ) {
-      throw new Error('core claim is set in both proofs but not equal');
-    } else {
-      coreClaim = coreClaimFromMtpProof;
+      throw new Error('core claim representations is set in both proofs but they are not equal');
     }
+    if (!coreClaimFromMtpProof && !coreClaimFromSigProof) {
+      throw new Error('core claim is not set in credential proofs');
+    }
+
+    //eslint-disable-next-line  @typescript-eslint/no-non-null-assertion
+    const coreClaim = coreClaimFromMtpProof ?? coreClaimFromSigProof!;
+
     return coreClaim;
   }
 }

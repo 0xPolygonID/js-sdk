@@ -5,6 +5,32 @@ import { SearchError } from '../../src/storage/filters/jsonQuery';
 import { InMemoryCredentialStorage } from '../../src/storage/memory';
 import { cred1, cred2, cred3 } from './mock';
 import { ProofQuery, W3CCredential } from '../../src/verifiable';
+import { BrowserCredentialStorage } from '../../src/storage/local-storage/credentials';
+
+class LocalStorageMock {
+  store: object;
+  constructor() {
+    this.store = {};
+  }
+
+  clear() {
+    this.store = {};
+  }
+
+  getItem(key: string) {
+    return this.store[key] || null;
+  }
+
+  setItem(key: string, value: string) {
+    this.store[key] = value;
+  }
+
+  removeItem(key: string) {
+    delete this.store[key];
+  }
+}
+
+global.localStorage = new LocalStorageMock() as unknown as Storage;
 
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
@@ -161,6 +187,12 @@ describe('credential-wallet', () => {
   it('run in memory with 3 credential', async () => {
     const storage = {
       credential: new InMemoryCredentialStorage()
+    } as unknown as IDataStorage;
+    await credentialFlow(storage);
+  });
+  it('run in local storage with 3 credential', async () => {
+    const storage = {
+      credential: new BrowserCredentialStorage()
     } as unknown as IDataStorage;
     await credentialFlow(storage);
   });
