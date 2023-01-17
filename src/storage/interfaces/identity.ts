@@ -8,6 +8,6 @@ export interface IIdentityStorage {
 
   saveProfile(identity: Profile): Promise<void>;
   getProfileByVerifier(verifier: string): Promise<Profile>;
-  getProfileById(identifier: string): Promise<Profile>;
+  getProfile(identifier: string): Promise<Profile>;
   getProfilesByGenesisIdentifier(genesisIdentifier: string): Promise<Profile[]>;
 }

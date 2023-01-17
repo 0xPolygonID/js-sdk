@@ -14,6 +14,7 @@ import {
 } from '../iden3comm';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
+
 import * as uuid from 'uuid';
 
 export interface IAuthHandler {
