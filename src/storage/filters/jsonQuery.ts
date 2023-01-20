@@ -64,7 +64,7 @@ export class FilterQuery implements IFilterQuery {
   }
 }
 
-export const StandardJSONCredentielsQueryFilter = (query: ProofQuery): FilterQuery[] => {
+export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQuery[] => {
   return Object.keys(query).reduce((acc: FilterQuery[], queryKey) => {
     const queryValue = query[queryKey];
     switch (queryKey) {

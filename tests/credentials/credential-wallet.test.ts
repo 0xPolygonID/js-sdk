@@ -1,11 +1,11 @@
+import { InMemoryDataSource } from './../../src/storage/memory/data-source';
+import { CredentialStorage } from './../../src/storage/shared/credential-storage';
 import { IDataStorage } from './../../src/storage/interfaces/data-storage';
 import { CredentialWallet } from '../../src/credentials';
-import { StorageErrors } from '../../src/storage/errors';
 import { SearchError } from '../../src/storage/filters/jsonQuery';
-import { InMemoryCredentialStorage } from '../../src/storage/memory';
 import { cred1, cred2, cred3 } from './mock';
 import { ProofQuery, W3CCredential } from '../../src/verifiable';
-import { BrowserCredentialStorage } from '../../src/storage/local-storage/credentials';
+import { BrowserDataSource } from '../../src/storage/local-storage/data-source';
 
 class LocalStorageMock {
   store: object;
@@ -164,7 +164,7 @@ const credentialFlow = async (storage: IDataStorage) => {
     new Error(SearchError.NotDefinedComparator)
   );
 
-  // // invalid query
+  // invalid query
   const query2 = {
     allowedIssuers: ['*'],
     someProp: ''
@@ -175,7 +175,7 @@ const credentialFlow = async (storage: IDataStorage) => {
 
   // remove credential error
   await expect(credentialWallet.remove('unknowId')).rejects.toThrow(
-    new Error(StorageErrors.NotFoundCredentialForRemove)
+    new Error('item not found to delete: unknowId')
   );
 
   await credentialWallet.remove('test1');
@@ -186,13 +186,15 @@ const credentialFlow = async (storage: IDataStorage) => {
 describe('credential-wallet', () => {
   it('run in memory with 3 credential', async () => {
     const storage = {
-      credential: new InMemoryCredentialStorage()
+      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>())
     } as unknown as IDataStorage;
     await credentialFlow(storage);
   });
   it('run in local storage with 3 credential', async () => {
     const storage = {
-      credential: new BrowserCredentialStorage()
+      credential: new CredentialStorage(
+        new BrowserDataSource<W3CCredential>(CredentialStorage.storageKey)
+      )
     } as unknown as IDataStorage;
     await credentialFlow(storage);
   });

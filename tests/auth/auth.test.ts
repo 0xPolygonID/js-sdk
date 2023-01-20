@@ -1,11 +1,11 @@
 import { defaultEthConnectionConfig, EthStateStorage } from './../../src/storage/blockchain/state';
 import { PlainPacker } from './../../src/iden3comm/packers/plain';
-import { AuthHandler, IAuthHandler, IdentityWallet } from '../../src';
+import { AuthHandler, CredentialStorage, IAuthHandler, IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import {
-  InMemoryCredentialStorage,
+  InMemoryDataSource,
   InMemoryIdentityStorage,
   InMemoryMerkleTreeStorage
 } from '../../src/storage/memory';
@@ -14,7 +14,7 @@ import { ProofService, ZKPRequest } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
-import { VerifiableConstants } from '../../src/verifiable';
+import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CircuitData } from '../../src/storage/entities/circuitData';
@@ -120,7 +120,7 @@ describe.skip('auth', () => {
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
     dataStorage = {
-      credential: new InMemoryCredentialStorage(),
+      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
       identity: new InMemoryIdentityStorage(),
       mt: new InMemoryMerkleTreeStorage(40),
       states: new EthStateStorage(defaultEthConnectionConfig)
@@ -131,12 +131,14 @@ describe.skip('auth', () => {
     const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
 
     await circuitStorage.saveCircuitData(CircuitId.AuthV2, {
+      circuitId: CircuitId.AuthV2.toString(),
       wasm: await loader.load(`${CircuitId.AuthV2.toString()}/circuit.wasm`),
       provingKey: await loader.load(`${CircuitId.AuthV2.toString()}/circuit_final.zkey`),
       verificationKey: await loader.load(`${CircuitId.AuthV2.toString()}/verification_key.json`)
     });
 
     await circuitStorage.saveCircuitData(CircuitId.AtomicQuerySigV2, {
+      circuitId: CircuitId.AtomicQuerySigV2.toString(),
       wasm: await loader.load(`${CircuitId.AtomicQuerySigV2.toString()}/circuit.wasm`),
       provingKey: await loader.load(`${CircuitId.AtomicQuerySigV2.toString()}/circuit_final.zkey`),
       verificationKey: await loader.load(
@@ -145,6 +147,7 @@ describe.skip('auth', () => {
     });
 
     await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
+      circuitId: CircuitId.StateTransition.toString(),
       wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
       provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
       verificationKey: await loader.load(

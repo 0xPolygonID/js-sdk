@@ -21,7 +21,7 @@ export class IdentityRepository implements IIdentityStorage {
     }
     throw new Error('profile not found');
   }
-  async getProfile(profileId: string): Promise<Profile> {
+  async getProfileById(profileId: string): Promise<Profile> {
     return this.profileSource.get(profileId, 'id');
   }
 

@@ -1,34 +1,37 @@
+import { StorageErrors } from '../errors';
 import { IDataSource } from '../interfaces/data-source';
 
 export class InMemoryDataSource<Type> implements IDataSource<Type> {
-  private _data: Map<string, Type[]>;
+  private _data: Type[] = [];
 
-  constructor(private readonly _storageKey: string) {
-    this._data = new Map<string, Type[]>();
-    this._data.set(_storageKey, []);
+  save(key: string, value: Type, keyName = 'id'): void {
+    const itemIndex = this._data.findIndex((i) => i[keyName] === key);
+    if (itemIndex === -1) {
+      this._data.push(value);
+    } else {
+      this._data[itemIndex] = value;
+    }
   }
-  delete(key: string, keyName = 'key'): void {
-    let items = this._data.get(this._storageKey);
-    items = items.filter((i) => i[keyName] !== key);
-    this._data.set(this._storageKey, items);
+
+  patchData(value: Type[]): void {
+    this._data = value;
+  }
+
+  get(key: string, keyName = 'id'): Type | undefined {
+    return this._data.find((t) => t[keyName] === key);
   }
 
   load(): Type[] {
-    return this._data.get(this._storageKey);
+    return this._data;
   }
-  save(key: string, value: Type, keyName = 'key'): void {
-    const items = this._data.get(this._storageKey);
 
-    const itemIndex = items.findIndex((i) => i[keyName] === key);
-    if (itemIndex === -1) {
-      items.push(value);
-    } else {
-      items[itemIndex] = value;
+  delete(key: string, keyName = 'id'): void {
+    const newData = this._data.filter((i) => i[keyName] !== key);
+
+    if (newData.length === this._data.length) {
+      throw new Error(`${StorageErrors.ItemNotFound} to delete: ${key}`);
     }
-    // TODO: check if we can set only one item
-    this._data.set(this._storageKey, items);
-  }
-  get(key: string, keyName = 'key'): Type | undefined {
-    return this._data.get(this._storageKey).find((t) => t[keyName] === key);
+
+    this._data = newData;
   }
 }
