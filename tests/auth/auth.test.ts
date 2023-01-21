@@ -1,14 +1,12 @@
+import { Identity, Profile } from './../../src/storage/entities/identity';
+import { IdentityStorage } from './../../src/storage/shared/identity-storage';
 import { defaultEthConnectionConfig, EthStateStorage } from './../../src/storage/blockchain/state';
 import { PlainPacker } from './../../src/iden3comm/packers/plain';
 import { AuthHandler, CredentialStorage, IAuthHandler, IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
-import {
-  InMemoryDataSource,
-  InMemoryIdentityStorage,
-  InMemoryMerkleTreeStorage
-} from '../../src/storage/memory';
+import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService, ZKPRequest } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
@@ -121,7 +119,10 @@ describe.skip('auth', () => {
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
     dataStorage = {
       credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
-      identity: new InMemoryIdentityStorage(),
+      identity: new IdentityStorage(
+        new InMemoryDataSource<Identity>(),
+        new InMemoryDataSource<Profile>()
+      ),
       mt: new InMemoryMerkleTreeStorage(40),
       states: new EthStateStorage(defaultEthConnectionConfig)
     };

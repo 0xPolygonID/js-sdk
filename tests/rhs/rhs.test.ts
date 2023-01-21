@@ -1,10 +1,10 @@
 import { InMemoryDataSource } from './../../src/storage/memory/data-source';
 import { CredentialStorage } from './../../src/storage/shared/credential-storage';
-import { IdentityWallet } from '../../src';
+import { Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
-import { InMemoryIdentityStorage, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
+import { InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { FSKeyLoader } from '../../src/loaders';
@@ -112,7 +112,10 @@ describe.skip('rhs', () => {
 
     dataStorage = {
       credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
-      identity: new InMemoryIdentityStorage(),
+      identity: new IdentityStorage(
+        new InMemoryDataSource<Identity>(),
+        new InMemoryDataSource<Profile>()
+      ),
       mt: new InMemoryMerkleTreeStorage(40),
       states: ethStorage
     };

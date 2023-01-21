@@ -18,7 +18,7 @@
         const {
         InMemoryPrivateKeyStore,
         InMemoryCredentialStorage,
-        InMemoryIdentityStorage,
+        IdentityStorage,
         InMemoryMerkleTreeStorage,
         CredentialStorage,
         W3CCredential,
@@ -40,7 +40,10 @@
             credential: new CredentialStorage(
                 new BrowserDataSource(CredentialStorage.storageKey)
             ),
-            identity: new InMemoryIdentityStorage(),
+            identity: new IdentityStorage(
+                new BrowserDataSource(IdentityStorage.identitiesStorageKey),
+                new BrowserDataSource(IdentityStorage.profilesStorageKey)
+            ),
             mt: new InMemoryMerkleTreeStorage(40),
             states: {
                 getLatestStateById: async (issuerId) => {
@@ -63,7 +66,7 @@
         console.assert(did.toString() === 'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth');
 
     };
-    run();
+    run().catch(console.error);
 </script>
 
 </html>

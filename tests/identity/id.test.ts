@@ -1,9 +1,9 @@
-import { CredentialStorage, IdentityWallet } from '../../src';
+import { CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { MerkleTreeType } from '../../src/storage/entities/mt';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
-import { InMemoryDataSource, InMemoryIdentityStorage, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
+import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
 import { Signer } from 'ethers';
 import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
@@ -51,7 +51,10 @@ describe('identity', () => {
 
     dataStorage = {
       credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
-      identity: new InMemoryIdentityStorage(),
+      identity: new IdentityStorage(
+        new InMemoryDataSource<Identity>(),
+        new InMemoryDataSource<Profile>()
+      ),
       mt: new InMemoryMerkleTreeStorage(40),
       states: mockStateStorage
     };
