@@ -15,11 +15,11 @@
     Test browser
 </body>
 <script>
-        const {
+    const {
         InMemoryPrivateKeyStore,
         InMemoryCredentialStorage,
         IdentityStorage,
-        InMemoryMerkleTreeStorage,
+        MerkleTreeLocalStorage,
         CredentialStorage,
         W3CCredential,
         BrowserDataSource,
@@ -44,7 +44,7 @@
                 new BrowserDataSource(IdentityStorage.identitiesStorageKey),
                 new BrowserDataSource(IdentityStorage.profilesStorageKey)
             ),
-            mt: new InMemoryMerkleTreeStorage(40),
+            mt: new MerkleTreeLocalStorage(40),
             states: {
                 getLatestStateById: async (issuerId) => {
                     return { id: BigInt(0), state: BigInt(0) };
