@@ -1,3 +1,3 @@
-export * from './credentials';
-export * from './identity';
+// export * from './credentials';
 export * from './merkletree';
+export * from './data-source';

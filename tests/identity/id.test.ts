@@ -1,16 +1,12 @@
-import { IdentityWallet } from '../../src';
+import { CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { MerkleTreeType } from '../../src/storage/entities/mt';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
-import {
-  InMemoryCredentialStorage,
-  InMemoryIdentityStorage,
-  InMemoryMerkleTreeStorage
-} from '../../src/storage/memory';
+import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
 import { Signer } from 'ethers';
-import { VerifiableConstants } from '../../src/verifiable';
+import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 describe('identity', () => {
@@ -54,8 +50,11 @@ describe('identity', () => {
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
 
     dataStorage = {
-      credential: new InMemoryCredentialStorage(),
-      identity: new InMemoryIdentityStorage(),
+      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
+      identity: new IdentityStorage(
+        new InMemoryDataSource<Identity>(),
+        new InMemoryDataSource<Profile>()
+      ),
       mt: new InMemoryMerkleTreeStorage(40),
       states: mockStateStorage
     };

@@ -1,12 +1,8 @@
-import { IdentityWallet } from '../../src';
+import { CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
-import {
-  InMemoryCredentialStorage,
-  InMemoryIdentityStorage,
-  InMemoryMerkleTreeStorage
-} from '../../src/storage/memory';
+import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService, ZKPRequest } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
@@ -16,6 +12,7 @@ import { ethers, Signer } from 'ethers';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
+import { W3CCredential } from '../../src/verifiable';
 
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
@@ -73,8 +70,11 @@ describe.skip('mtp proofs', () => {
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
 
     dataStorage = {
-      credential: new InMemoryCredentialStorage(),
-      identity: new InMemoryIdentityStorage(),
+      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
+      identity: new IdentityStorage(
+        new InMemoryDataSource<Identity>(),
+        new InMemoryDataSource<Profile>()
+      ),
       mt: new InMemoryMerkleTreeStorage(40),
       states: mockStateStorage
     };
@@ -85,6 +85,7 @@ describe.skip('mtp proofs', () => {
     const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
 
     await circuitStorage.saveCircuitData(CircuitId.AtomicQueryMTPV2, {
+      circuitId: CircuitId.AtomicQueryMTPV2,
       wasm: await loader.load(`${CircuitId.AtomicQueryMTPV2.toString()}/circuit.wasm`),
       provingKey: await loader.load(`${CircuitId.AtomicQueryMTPV2.toString()}/circuit_final.zkey`),
       verificationKey: await loader.load(
@@ -93,6 +94,7 @@ describe.skip('mtp proofs', () => {
     });
 
     await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
+      circuitId: CircuitId.StateTransition,
       wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
       provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
       verificationKey: await loader.load(
