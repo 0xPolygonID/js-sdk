@@ -23,8 +23,6 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
       for (let index = 0; index < mtTypes.length; index++) {
         const mType = mtTypes[index];
         const treeId = identifier.concat('+' + mType.toString());
-        const _ = new Merkletree(new LocalStorageDB(str2Bytes(treeId)), true, this._mtDepth);
-
         const metaInfo = { treeId, identifier, type: mType };
         treesMeta.push(metaInfo);
       }
