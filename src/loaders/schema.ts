@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { create, IPFSHTTPClient as IpfsHttpClient } from 'ipfs-http-client';
+import { create, IPFSHTTPClient } from 'ipfs-http-client';
 
 export interface ISchemaLoader {
   load(url: string): Promise<Uint8Array>;
@@ -21,7 +21,7 @@ export class HttpSchemaLoader implements ISchemaLoader {
   }
 }
 export class IpfsSchemaLoader implements ISchemaLoader {
-  private readonly client: IpfsHttpClient;
+  private readonly client: IPFSHTTPClient;
   constructor(private readonly url: string) {
     this.client = create({ url: this.url });
   }
