@@ -1,4 +1,4 @@
-import { bytes2Hex, LocalStorageDB, Merkletree, str2Bytes } from '@iden3/js-merkletree';
+import { LocalStorageDB, Merkletree, str2Bytes } from '@iden3/js-merkletree';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/mt';
 import * as uuid from 'uuid';
 
