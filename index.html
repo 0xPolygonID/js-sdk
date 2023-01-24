@@ -16,8 +16,7 @@
 </body>
 <script>
     const {
-        InMemoryPrivateKeyStore,
-        InMemoryCredentialStorage,
+        LocalStoragePrivateKeyStore,
         IdentityStorage,
         MerkleTreeLocalStorage,
         CredentialStorage,
@@ -31,8 +30,8 @@
     } = IdenPolygonIdSdk;
 
     const run = async () => {
-        const memoryKeyStore = new InMemoryPrivateKeyStore();
-        const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
+        const keyStore = new LocalStoragePrivateKeyStore();
+        const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, keyStore);
         const kms = new KMS();
         kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
 
