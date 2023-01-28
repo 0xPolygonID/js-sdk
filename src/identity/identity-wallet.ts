@@ -47,8 +47,19 @@ export interface Iden3ProofCreationResult {
   oldTreeState: TreeState;
   newTreeState: TreeState;
 }
-
+/**
+ * Interface for IdentityWallet
+ * @public
+ */
 export interface IIdentityWallet {
+  /**
+   * Create new Identity
+   *
+   * @param {string} hostUrl - hostUrl
+   * @param {string} rhsUrl - rhsUrl
+   * @param {Uint8Array} seed - seed Uint8Array
+   * @returns { DID, W3CCredential }
+   */
   createIdentity(
     hostUrl: string,
     rhsUrl: string,
@@ -70,14 +81,23 @@ export interface IIdentityWallet {
   sign(payload: Uint8Array, credential: W3CCredential): Promise<Signature>;
   signChallenge(payload: bigint, credential: W3CCredential): Promise<Signature>;
 }
-
+/** @public */
 export class IdentityWallet implements IIdentityWallet {
+  /**
+   * Constructs a new instance of the `IdentityWallet` class
+   *
+   * @param {KMS} _kms - KSM
+   * @param {IDataStorage} _storage - IDataStorage
+   * @param {ICredentialWallet} _credentialWallet - ICredentialWallet
+   * @public
+   */
   constructor(
     private readonly _kms: KMS,
     private readonly _storage: IDataStorage,
     private readonly _credentialWallet: ICredentialWallet
   ) {}
-
+  
+  /** {@inheritDoc IIdentityWallet.createIdentity} */
   async createIdentity(
     hostUrl: string,
     rhsUrl: string,
