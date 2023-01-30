@@ -210,7 +210,7 @@ export class ProofService implements IProofService {
   ): Promise<PreparedAuthBJJCredential> {
     const authCredential = await this._credentialWallet.getAuthBJJCredential(did);
 
-    const incProof = await this._identityWallet.generateClaimMtp(
+    const incProof = await this._identityWallet.generateCredentialMtp(
       did,
       authCredential,
       treeStateInfo

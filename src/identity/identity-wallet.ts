@@ -53,50 +53,179 @@ export interface Iden3ProofCreationResult {
  */
 export interface IIdentityWallet {
   /**
-   * Create new Identity
+   * Create Identity creates Auth BJJ credential,
+   * Merkle trees for claims, revocations and root of roots,
+   * adds auth BJJ credential to claims tree and generates mtp of inclusion
+   * based on the resulting state it provides an identifier in DID form.
    *
-   * @param {string} hostUrl - hostUrl
-   * @param {string} rhsUrl - rhsUrl
-   * @param {Uint8Array} seed - seed Uint8Array
-   * @returns { DID, W3CCredential }
+   * @param {string} hostUrl - hostUrl is used as a part of the identifier of Auth BJJ credential
+   * @param {string} rhsUrl - rhsUrl is url to reverse hash service, so revocation status can be fetched for Auth BJJ credential
+   * @param {Uint8Array} seed - if present the BJJ private key will be created from the given seed
+   * @returns { DID, W3CCredential } - returns did and Auth BJJ credential
    */
   createIdentity(
     hostUrl: string,
     rhsUrl: string,
     seed?: Uint8Array
   ): Promise<{ did: DID; credential: W3CCredential }>;
+
+  /**
+   *
+   *
+   * @param {DID} did - identity to derive profile from
+   * @param {number} nonce - unique integer number to generate a profile
+   * @param {string} verifier - verifier identity/alias in a string from
+   * @returns profile did
+   */
   createProfile(did: DID, nonce: number, verifier: string): Promise<DID>;
+
+  /**
+   *
+   *
+   * @param {KmsKeyType} keyType - supported key type by KMS
+   * @returns creates a new key BJJ or ECDSA
+   */
   generateKey(keyType: KmsKeyType): Promise<KmsKeyId>;
+
+  /**
+   * gets a tree model for given did that includes claims tree, revocation tree, the root of roots tree and calculated state hash
+   *
+   * @param {DID} did - did which trees info we need to receive
+   * @returns
+   * */
   getDIDTreeState(did: DID): Promise<TreesModel>;
-  generateClaimMtp(
+
+  /**
+   * Generates proof of credential inclusion / non-inclusion to the given claims tree
+   * and its root or to the current root of the Claims tree in the given Merkle tree storage.
+   *
+   * @param {DID} did - issuer did 
+   * @param {W3CCredential} credential - credential to generate mtp
+   * @param {TreeState} [treeState] - tree state when to generate a proof
+   * @returns MerkleTreeProof and TreeState on which proof has been generated
+   */
+  generateCredentialMtp(
     did: DID,
     credential: W3CCredential,
     treeState?: TreeState
   ): Promise<MerkleTreeProofWithTreeState>;
+
+  /**
+   * Generates proof of credential revocation nonce inclusion / non-inclusion to the given revocation tree
+   * and its root or to the current root of the Revocation tree in the given Merkle tree storage.
+   *
+   * @param {DID} did
+   * @param {W3CCredential} credential
+   * @param {TreeState} [treeState]
+   * @returns MerkleTreeProof and TreeState on which proof has been generated
+   */
   generateNonRevocationMtp(
     did: DID,
     credential: W3CCredential,
     treeState?: TreeState
   ): Promise<MerkleTreeProofWithTreeState>;
+
+  /**
+   * Signs a payload of arbitrary size with an Auth BJJ Credential that identifies a key for signing.
+   *
+   * @param {Uint8Array} payload
+   * @param {W3CCredential} credential - Auth BJJ Credential
+   * @returns signature object with R8 and S params
+   */
   sign(payload: Uint8Array, credential: W3CCredential): Promise<Signature>;
+
+  /**
+   * Signs a big integer with an Auth BJJ Credential that identifies a key for signing.
+   *
+   *
+   * @param {bigint} payload - big number in Field
+   * @param {W3CCredential} credential - Auth BJJ credential
+   * @returns signature object with R8 and S params
+   */
   signChallenge(payload: bigint, credential: W3CCredential): Promise<Signature>;
+
+  /**
+   *
+   *
+   * @param {DID} issuerDID  - identifier of the issuer
+   * @param {W3CCredential} credential - credential to revoke
+   * @returns a revocation nonce of credential
+   */
+  revokeCredential(issuerDID: DID, credential: W3CCredential): Promise<number>;
+
+  /**
+   * Generate Iden3SparseMerkleTree proof of inclusion to issuer state of specific credentials
+   *
+   * @param {DID} issuerDID - issuer did
+   * @param {W3CCredential[]} credentials - list of verifiable credentials to generate a proof
+   * @param {string} txId - transaction hash in which state transition has been done
+   * @param {number} [blockNumber] - block number in which state transition has been done
+   * @param {number} [blockTimestamp] - block timestamp in which state transition has been done
+   * @returns credentials with an Iden3SparseMerkleTreeProof
+   */
+  generateIden3SparseMerkleTreeProof(
+    issuerDID: DID,
+    credentials: W3CCredential[],
+    txId: string,
+    blockNumber?: number,
+    blockTimestamp?: number
+  ): Promise<W3CCredential[]>;
+
+  /**
+   * adds verifiable credentials to issuer Claims Merkle tree
+   *
+   * @param {W3CCredential[]} credentials - credentials to include in the claims tree
+   * @param {DID} issuerDID - issuer did
+   * @returns old tree state and tree state with included credentials
+   */
+  addCredentialsToMerkleTree(
+    credentials: W3CCredential[],
+    issuerDID: DID
+  ): Promise<Iden3ProofCreationResult>;
+
+  /**
+   *
+   *
+   * @param {DID} issuerDID - issuer did
+   * @param {string} rhsURL - reverse hash service URL
+   * @param {number[]} [revokedNonces] - revoked nonces for the period from the last published
+   */
+  publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void>;
 }
-/** @public */
+
+/**
+ * @public
+ * Wallet instance to manage the digital identity based on iden3 protocol
+ * allows to:
+ *      - create identity/profile
+ *      - sign payloads (bigint / bytes)
+ *      - generate keys
+ *      - generate Merkle tree proofs of inclusion / non-inclusion to Merkle trees
+ *      - issue credentials with a BJJSignature and Iden3SparseMerkleTree Proofs
+ *      - revoke credentials
+ *      - add credentials to Merkle trees
+ *      - push states to reverse hash service
+ *
+ *
+ * @export
+ * @class IdentityWallet
+ * @implements {IIdentityWallet}
+ */
 export class IdentityWallet implements IIdentityWallet {
   /**
    * Constructs a new instance of the `IdentityWallet` class
    *
-   * @param {KMS} _kms - KSM
-   * @param {IDataStorage} _storage - IDataStorage
-   * @param {ICredentialWallet} _credentialWallet - ICredentialWallet
+   * @param {KMS} _kms - Key Management System that allows signing data with BJJ key
+   * @param {IDataStorage} _storage - data storage to access credential / identity / Merkle tree data
+   * @param {ICredentialWallet} _credentialWallet - credential wallet instance to quickly access credential CRUD functionality
    * @public
    */
-  constructor(
+  public constructor(
     private readonly _kms: KMS,
     private readonly _storage: IDataStorage,
     private readonly _credentialWallet: ICredentialWallet
   ) {}
-  
+
   /** {@inheritDoc IIdentityWallet.createIdentity} */
   async createIdentity(
     hostUrl: string,
@@ -218,6 +347,7 @@ export class IdentityWallet implements IIdentityWallet {
     };
   }
 
+  /** {@inheritDoc IIdentityWallet.createProfile} */
   async createProfile(did: DID, nonce: number, verifier: string): Promise<DID> {
     const id = did.id;
 
@@ -244,11 +374,13 @@ export class IdentityWallet implements IIdentityWallet {
     return profileDID;
   }
 
+  /** {@inheritDoc IIdentityWallet.generateKey} */
   async generateKey(keyType: KmsKeyType): Promise<KmsKeyId> {
     const key = await this._kms.createKeyFromSeed(keyType, getRandomBytes(32));
     return key;
   }
 
+  /** {@inheritDoc IIdentityWallet.getDIDTreeState} */
   async getDIDTreeState(did: DID): Promise<TreesModel> {
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       did.toString(),
@@ -276,7 +408,8 @@ export class IdentityWallet implements IIdentityWallet {
     };
   }
 
-  async generateClaimMtp(
+  /** {@inheritDoc IIdentityWallet.generateClaimMtp} */
+  async generateCredentialMtp(
     did: DID,
     credential: W3CCredential,
     treeState?: TreeState
@@ -305,8 +438,8 @@ export class IdentityWallet implements IIdentityWallet {
       }
     };
   }
-  s;
 
+  /** {@inheritDoc IIdentityWallet.generateNonRevocationMtp} */
   async generateNonRevocationMtp(
     did: DID,
     credential: W3CCredential,
@@ -339,18 +472,7 @@ export class IdentityWallet implements IIdentityWallet {
     };
   }
 
-  private getKMSIdByAuthCredential(credential: W3CCredential): KmsKeyId {
-    if (credential.type.indexOf('AuthBJJCredential') === -1) {
-      throw new Error("can't sign with not AuthBJJCredential credential");
-    }
-    const x = credential.credentialSubject['x'] as unknown as string;
-    const y = credential.credentialSubject['y'] as unknown as string;
-
-    const pb: PublicKey = new PublicKey([BigInt(x), BigInt(y)]);
-    const kp = keyPath(KmsKeyType.BabyJubJub, pb.hex());
-    return { type: KmsKeyType.BabyJubJub, id: kp };
-  }
-
+  /** {@inheritDoc IIdentityWallet.sign} */
   async sign(message: Uint8Array, credential: W3CCredential): Promise<Signature> {
     const keyKMSId = this.getKMSIdByAuthCredential(credential);
     const payload = poseidon.hashBytes(message);
@@ -359,6 +481,8 @@ export class IdentityWallet implements IIdentityWallet {
 
     return Signature.newFromCompressed(signature);
   }
+
+  /** {@inheritDoc IIdentityWallet.signChallenge} */
   async signChallenge(challenge: bigint, credential: W3CCredential): Promise<Signature> {
     const keyKMSId = this.getKMSIdByAuthCredential(credential);
 
@@ -367,6 +491,7 @@ export class IdentityWallet implements IIdentityWallet {
     return Signature.newFromCompressed(signature);
   }
 
+  /** {@inheritDoc IIdentityWallet.issueCredential} */
   async issueCredential(
     issuerDID: DID,
     req: ClaimRequest,
@@ -453,6 +578,8 @@ export class IdentityWallet implements IIdentityWallet {
 
     return credential;
   }
+
+  /** {@inheritDoc IIdentityWallet.revokeCredential} */
   async revokeCredential(issuerDID: DID, credential: W3CCredential): Promise<number> {
     const issuerTree = await this.getDIDTreeState(issuerDID);
 
@@ -468,6 +595,7 @@ export class IdentityWallet implements IIdentityWallet {
     return Number(BigInt.asUintN(64, nonce));
   }
 
+  /** {@inheritDoc IIdentityWallet.addCredentialsToMerkleTree} */
   async addCredentialsToMerkleTree(
     credentials: W3CCredential[],
     issuerDID: DID
@@ -521,6 +649,7 @@ export class IdentityWallet implements IIdentityWallet {
     };
   }
 
+  /** {@inheritDoc IIdentityWallet.generateIden3SparseMerkleTreeProof} */
   async generateIden3SparseMerkleTreeProof(
     issuerDID: DID,
     credentials: W3CCredential[],
@@ -531,7 +660,7 @@ export class IdentityWallet implements IIdentityWallet {
     for (let index = 0; index < credentials.length; index++) {
       const credential = credentials[index];
 
-      const mtpWithProof = await this.generateClaimMtp(issuerDID, credential);
+      const mtpWithProof = await this.generateCredentialMtp(issuerDID, credential);
 
       // credential must have a bjj signature proof
       const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
@@ -566,6 +695,8 @@ export class IdentityWallet implements IIdentityWallet {
     }
     return credentials;
   }
+
+  /** {@inheritDoc IIdentityWallet.publishStateToRHS} */
   async publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void> {
     const treeState = await this.getDIDTreeState(issuerDID);
 
@@ -581,6 +712,19 @@ export class IdentityWallet implements IIdentityWallet {
       revokedNonces
     );
   }
+
+  private getKMSIdByAuthCredential(credential: W3CCredential): KmsKeyId {
+    if (credential.type.indexOf('AuthBJJCredential') === -1) {
+      throw new Error("can't sign with not AuthBJJCredential credential");
+    }
+    const x = credential.credentialSubject['x'] as unknown as string;
+    const y = credential.credentialSubject['y'] as unknown as string;
+
+    const pb: PublicKey = new PublicKey([BigInt(x), BigInt(y)]);
+    const kp = keyPath(KmsKeyType.BabyJubJub, pb.hex());
+    return { type: KmsKeyType.BabyJubJub, id: kp };
+  }
+
   private defineMTRootPosition(schema: Schema, position?: string): string {
     if (schema.$metadata?.serialization) {
       return '';

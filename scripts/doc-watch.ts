@@ -138,14 +138,21 @@ function replaceAll(str: string, find: string, replace: string) {
 	return str.replace(new RegExp(escapeRegExp(find), 'g'), replace)
 }
 
-chokidar.watch(path.join(__dirname, '../dist/types'), {
-	ignoreInitial: true
-}).on('all', async (event, path) => {
+chokidar.watch(path.join(__dirname, '../src/'), {
+	ignoreInitial: true,
+	usePolling:true,
+	persistent:true,
+	interval:1000,
+}).on('change', async (event, path) => {
 	console.log(`${event} - ${path} - present changes, building...`);
 	await main();
 	console.log('finished building...');
+}).on('ready', async (event, path) => {
+	// console.log(`${event} - ${path} - present changes, building...`);
+	// await main();
+	console.log('ready building...');
 });
-main();
+ main();
 
 
 
