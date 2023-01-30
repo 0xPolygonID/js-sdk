@@ -32,13 +32,16 @@ jobs:
         continue-on-error: true
         run: npm list
       - name: Install modules
-        run: npm install
+        run: npm ci
 
       - name: Run Prettier
         run: npm run format
 
       - name: Run ESLint
         run: npm run lint
+
+      - name: Run Build
+        run: npm run build
 
       - name: Run Tests
         run: npm run test
