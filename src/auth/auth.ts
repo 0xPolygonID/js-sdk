@@ -17,6 +17,12 @@ import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
 
+/**
+ * Interface that allows the processing of the authorization request in the raw format for given identifier
+ *
+ * @export
+ * @interface IAuthHandler
+ */
 export interface IAuthHandler {
   handleAuthorizationRequest(
     id: DID,
@@ -27,12 +33,33 @@ export interface IAuthHandler {
     authResponse: AuthorizationResponseMessage;
   }>;
 }
+/**
+ *
+ * Auth Handler is an implementation of the IAuthHandler interface.
+ * Allow to process AuthorizationRequest protocol message and produce JWZ response.
+ *
+ * @export
+ * @class AuthHandler
+ * @implements {IAuthHandler}
+ */
 export class AuthHandler implements IAuthHandler {
+  /**
+   * Creates an instance of AuthHandler.
+   * @param {IPackageManger} _packerMgr - package manager to unpack message envelope
+   * @param {IProofService} _proofService -  proof service to verify zk proofs
+   */
   constructor(
     private readonly _packerMgr: IPackageManger,
     private readonly _proofService: IProofService
   ) {}
 
+  /**
+   * Handles only messages with authorization/v1.0/request type
+   * Generates all requested proofs and wraps authorization response message to JWZ token
+   * @param {DID} did - an identity that will process the request
+   * @param {Uint8Array} request - raw request
+   * @returns JWZ token, parsed request and response
+   */
   async handleAuthorizationRequest(
     did: DID,
     request: Uint8Array

@@ -1,7 +1,21 @@
 import { AbstractPrivateKeyStore } from './abstract-key-store';
 
+/**
+ * Allows storing keys in the local storage of the browser
+ * (NOT ENCRYPTED: DO NOT USE IN THE PRODUCTION)
+ *
+ * @export
+ * @class LocalStoragePrivateKeyStore
+ * @implements {AbstractPrivateKeyStore}
+ */
 export class LocalStoragePrivateKeyStore implements AbstractPrivateKeyStore {
   static readonly storageKey = 'keystore';
+  /**
+   * Gets key from the local storage
+   *
+   * @param {{ alias: string }} args
+   * @returns hex string
+   */
   async get(args: { alias: string }): Promise<string> {
     const dataStr = localStorage.getItem(LocalStoragePrivateKeyStore.storageKey);
     if (!dataStr) {
@@ -15,6 +29,12 @@ export class LocalStoragePrivateKeyStore implements AbstractPrivateKeyStore {
     return privateKey.value;
   }
 
+  /**
+   * Import key to the local storage
+   *
+   * @param {{ alias: string; key: string }} args - alias and private key in the hex
+   * @returns void
+   */
   async import(args: { alias: string; key: string }): Promise<void> {
     const dataStr = localStorage.getItem(LocalStoragePrivateKeyStore.storageKey);
     let data = [];

@@ -1,5 +1,12 @@
 import { AbstractPrivateKeyStore } from './abstract-key-store';
 
+/**
+ * Key Store to use in memory
+ *
+ * @export
+ * @class InMemoryPrivateKeyStore
+ * @implements {AbstractPrivateKeyStore}
+ */
 export class InMemoryPrivateKeyStore implements AbstractPrivateKeyStore {
   private _data: Map<string, string>;
   constructor() {
