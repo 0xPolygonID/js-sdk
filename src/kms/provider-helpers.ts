@@ -2,11 +2,26 @@ import { KmsKeyType } from './store';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { randomBytes } = require('crypto');
 
+/**
+ * builds key path
+ *
+ * @export
+ * @param {KmsKeyType} keyType - key type
+ * @param {string} keyID - key id
+ * @returns string path
+ */
 export function keyPath(keyType: KmsKeyType, keyID: string): string {
   const basePath = '';
   return basePath + String(keyType) + ':' + keyID;
 }
 
+/**
+ * generates Uint8Array with random bytes of size n
+ *
+ * @export
+ * @param {number} n - size of array
+ * @returns Uint8Array
+ */
 export function getRandomBytes(n: number): Uint8Array {
   let array = new Uint8Array(n);
   const isBrowser = typeof window !== 'undefined';
