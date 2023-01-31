@@ -11,7 +11,13 @@ import {
   prepareCircuitArrayValues
 } from './common';
 
-// AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
+/**
+ * AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
+ *
+ * @export
+ * @class AtomicQueryMTPV2Inputs
+ * @extends {BaseConfig}
+ */
 export class AtomicQueryMTPV2Inputs extends BaseConfig {
   // auth
   id: Id;
@@ -27,12 +33,21 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
   // query
   query: Query;
 
+  /**
+   * validate AtomicQueryMTPV2 inputs
+   *
+   */
   validate(): void {
     if (!this.requestID) {
       throw new Error(CircuitError.EmptyRequestID);
     }
   }
 
+  /**
+   *
+   * inputs marshalling
+   * @returns {*}  {Uint8Array}
+   */
   inputsMarshal(): Uint8Array {
     this.validate();
     if (this.query.valueProof) {
@@ -142,7 +157,13 @@ interface AtomicQueryMTPV2CircuitInputs {
   value: string[];
 }
 
-// AtomicQueryMTPPubSignals public signals
+/**
+ * public signals
+ *
+ * @export
+ * @class AtomicQueryMTPV2PubSignals
+ * @extends {BaseConfig}
+ */
 export class AtomicQueryMTPV2PubSignals extends BaseConfig {
   requestID?: bigint;
   userID?: Id;

@@ -4,6 +4,14 @@ import { Hash, newHashFromString } from '@iden3/js-merkletree';
 import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
 import { ClaimWithMTPProof, TreeState, CircuitError } from './models';
 
+/**
+ * StateTransition circuit representation
+ * Inputs and public signals declaration, marshalling and parsing
+ * 
+ * @export
+ * @class StateTransitionInputs
+ * @extends {BaseConfig}
+ */
 export class StateTransitionInputs extends BaseConfig {
   id: Id;
   oldTreeState: TreeState;
@@ -12,7 +20,11 @@ export class StateTransitionInputs extends BaseConfig {
   authClaim: ClaimWithMTPProof;
   signature: Signature;
 
-  // CircuitInputMarshal returns Circom private inputs for stateTransition.circom
+  /**
+   * CircuitInputMarshal returns Circom private inputs for stateTransition.circom
+   *
+   * @returns {*}  {Uint8Array}
+   */
   inputsMarshal(): Uint8Array {
     if (!this.authClaim.incProof.proof) {
       throw new Error(CircuitError.EmptyAuthClaimProof);
@@ -77,13 +89,24 @@ interface StateTransitionInputsInternal {
   signatureS: string;
 }
 
+/**
+ * Public signals of StateTransition circuit
+ *
+ * @export
+ * @class StateTransitionPubSignals
+ */
 export class StateTransitionPubSignals {
   userId: Id;
   oldUserState: Hash;
   newUserState: Hash;
   isOldStateGenesis: boolean;
 
-  // PubSignalsUnmarshal unmarshal stateTransition.circom public signals
+  /**
+   *
+   * pubSignalsUnmarshal unmarshal stateTransition.circom public signal
+   * @param {Uint8Array} data
+   * @returns {*}  {StateTransitionPubSignals}
+   */
   pubSignalsUnmarshal(data: Uint8Array): StateTransitionPubSignals {
     const sVals = JSON.parse(new TextDecoder().decode(data));
 

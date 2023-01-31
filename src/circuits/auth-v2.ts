@@ -4,6 +4,14 @@ import { CircuitError, GISTProof, TreeState } from './models';
 import { BaseConfig, getNodeAuxValue } from './common';
 import { Signature } from '@iden3/js-crypto';
 
+/**
+ *  Auth v2 circuit representation
+ * Inputs and public signals declaration, marshalling and parsing
+ * 
+ * @export
+ * @class AuthV2Inputs
+ * @extends {BaseConfig}
+ */
 export class AuthV2Inputs extends BaseConfig {
   genesisID?: Id;
   profileNonce?: bigint;
@@ -111,6 +119,12 @@ interface AuthV2CircuitInputs {
 }
 
 // AuthV2PubSignals auth.circom public signals
+/** 
+ * public signals
+ *
+ * @export
+ * @class AuthV2PubSignals
+ */
 export class AuthV2PubSignals {
   userID: Id;
   challenge: bigint;
