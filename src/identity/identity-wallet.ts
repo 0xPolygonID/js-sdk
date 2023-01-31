@@ -62,6 +62,7 @@ export interface IIdentityWallet {
    * @param {string} rhsUrl - rhsUrl is url to reverse hash service, so revocation status can be fetched for Auth BJJ credential
    * @param {Uint8Array} seed - if present the BJJ private key will be created from the given seed
    * @returns { DID, W3CCredential } - returns did and Auth BJJ credential
+   * @beta
    */
   createIdentity(
     hostUrl: string,
@@ -196,19 +197,14 @@ export interface IIdentityWallet {
 /**
  * @public
  * Wallet instance to manage the digital identity based on iden3 protocol
- * allows to:
- *      - create identity/profile
- *      - sign payloads (bigint / bytes)
- *      - generate keys
- *      - generate Merkle tree proofs of inclusion / non-inclusion to Merkle trees
- *      - issue credentials with a BJJSignature and Iden3SparseMerkleTree Proofs
- *      - revoke credentials
- *      - add credentials to Merkle trees
- *      - push states to reverse hash service
+ * allows to: create identity/profile, sign payloads (bigint / bytes), generate keys,
+ * generate Merkle tree proofs of inclusion / non-inclusion to Merkle trees, issue credentials with a BJJSignature and Iden3SparseMerkleTree Proofs,
+ * revoke credentials, add credentials to Merkle trees, push states to reverse hash service
  *
  *
  * @export
  * @class IdentityWallet
+ * @beta
  * @implements {IIdentityWallet}
  */
 export class IdentityWallet implements IIdentityWallet {
@@ -226,8 +222,10 @@ export class IdentityWallet implements IIdentityWallet {
     private readonly _credentialWallet: ICredentialWallet
   ) {}
 
-  /** {@inheritDoc IIdentityWallet.createIdentity} */
-  async createIdentity(
+  /** 
+  * {@inheritDoc IIdentityWallet.createIdentity} 
+  */
+  async  createIdentity(
     hostUrl: string,
     rhsUrl: string,
     seed?: Uint8Array
