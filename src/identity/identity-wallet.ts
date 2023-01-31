@@ -37,11 +37,23 @@ import { pushHashesToRHS, TreesModel } from '../credentials/revocation';
 import { TreeState } from '../circuits';
 
 // CredentialIssueOptions
+/**
+ * Credential issue options
+ * with publishing to chain and to reverse hash service
+ *
+ * @export
+ * @interface CredentialIssueOptions
+ */
 export interface CredentialIssueOptions {
   withPublish: boolean;
   withRHS: string;
 }
-// CredentialIssueOptions
+/**
+ *  Proof creation result
+ *
+ * @export
+ * @interface Iden3ProofCreationResult
+ */
 export interface Iden3ProofCreationResult {
   credentials: W3CCredential[];
   oldTreeState: TreeState;
@@ -61,7 +73,7 @@ export interface IIdentityWallet {
    * @param {string} hostUrl - hostUrl is used as a part of the identifier of Auth BJJ credential
    * @param {string} rhsUrl - rhsUrl is url to reverse hash service, so revocation status can be fetched for Auth BJJ credential
    * @param {Uint8Array} seed - if present the BJJ private key will be created from the given seed
-   * @returns { DID, W3CCredential } - returns did and Auth BJJ credential
+   * @returns Promise<{ DID, W3CCredential }> - returns did and Auth BJJ credential
    * @beta
    */
   createIdentity(
@@ -89,6 +101,22 @@ export interface IIdentityWallet {
   generateKey(keyType: KmsKeyType): Promise<KmsKeyId>;
 
   /**
+   *
+   *
+   * @param {DID} issuerDID - issuer identity
+   * @param {ClaimRequest} req - claim request
+   * @param {string} hostUrl - url that will be a part of credential id prefix
+   * @param {CredentialIssueOptions} [opts] - with / without RHS
+   * @returns `Promise<W3CCredential>` - returns did and Auth BJJ credential
+   */
+  issueCredential(
+    issuerDID: DID,
+    req: ClaimRequest,
+    hostUrl: string,
+    opts?: CredentialIssueOptions
+  ): Promise<W3CCredential>
+
+  /**
    * gets a tree model for given did that includes claims tree, revocation tree, the root of roots tree and calculated state hash
    *
    * @param {DID} did - did which trees info we need to receive
@@ -100,7 +128,7 @@ export interface IIdentityWallet {
    * Generates proof of credential inclusion / non-inclusion to the given claims tree
    * and its root or to the current root of the Claims tree in the given Merkle tree storage.
    *
-   * @param {DID} did - issuer did 
+   * @param {DID} did - issuer did
    * @param {W3CCredential} credential - credential to generate mtp
    * @param {TreeState} [treeState] - tree state when to generate a proof
    * @returns MerkleTreeProof and TreeState on which proof has been generated
@@ -222,10 +250,10 @@ export class IdentityWallet implements IIdentityWallet {
     private readonly _credentialWallet: ICredentialWallet
   ) {}
 
-  /** 
-  * {@inheritDoc IIdentityWallet.createIdentity} 
-  */
-  async  createIdentity(
+  /**
+   * {@inheritDoc IIdentityWallet.createIdentity}
+   */
+  async createIdentity(
     hostUrl: string,
     rhsUrl: string,
     seed?: Uint8Array
@@ -495,7 +523,7 @@ export class IdentityWallet implements IIdentityWallet {
     req: ClaimRequest,
     hostUrl: string,
     opts?: CredentialIssueOptions
-  ) {
+  ): Promise<W3CCredential> {
     if (!opts) {
       opts = {
         withPublish: true,

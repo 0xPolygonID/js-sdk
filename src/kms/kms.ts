@@ -70,7 +70,7 @@ export class KMS {
    *
    * @param {KmsKeyId} keyId - key id
    * @param {Uint8Array} data - prepared data bytes 
-   * @returns {*}  {Promise<Uint8Array>}
+   * @returns `Promise<Uint8Array>` - return signature
    */
   async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {
     const keyProvider = this.registry[keyId.type];
