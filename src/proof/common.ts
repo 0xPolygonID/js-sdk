@@ -4,7 +4,13 @@ import { buildTreeState, ClaimNonRevStatus, GISTProof } from '../circuits';
 import { StateProof } from '../storage/entities/state';
 import { RevocationStatus } from '../verifiable';
 
-export const toClaimNonRevStatus = (s: RevocationStatus): ClaimNonRevStatus => {
+export /**
+ * converts verifiable RevocationStatus model to 
+ *
+ * @param {RevocationStatus} s
+ * @returns {*}  {ClaimNonRevStatus}
+ */
+const toClaimNonRevStatus = (s: RevocationStatus): ClaimNonRevStatus => {
   return {
     proof: s.mtp,
     treeState: buildTreeState(
