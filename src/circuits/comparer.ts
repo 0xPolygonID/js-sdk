@@ -5,7 +5,8 @@ export enum Operators {
   LT = 2,
   GT = 3,
   IN = 4,
-  NIN = 5
+  NIN = 5,
+  NE = 6
 }
 
 // QueryOperators represents operators for atomic circuits
@@ -15,7 +16,8 @@ export const QueryOperators = {
   $lt: Operators.LT,
   $gt: Operators.GT,
   $in: Operators.IN,
-  $nin: Operators.NIN
+  $nin: Operators.NIN,
+  $ne: Operators.NE
 };
 
 // Comparer value.
@@ -34,6 +36,8 @@ export class Scalar implements IComparer {
         return this.x < this.y;
       case Operators.GT:
         return this.x > this.y;
+      case Operators.NE:
+        return this.x !== this.y;
       default:
         throw new Error('unknown compare type for scalar');
     }
@@ -61,6 +65,7 @@ export const factoryComparer = (x: bigint, y: bigint[], operator: Operators): IC
     case Operators.EQ:
     case Operators.LT:
     case Operators.GT:
+    case Operators.NE:
       if (y.length !== 1) {
         throw new Error('currently we support only one value for scalar comparison');
       }
