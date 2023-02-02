@@ -73,7 +73,7 @@ export interface IIdentityWallet {
    * @param {string} hostUrl - hostUrl is used as a part of the identifier of Auth BJJ credential
    * @param {string} rhsUrl - rhsUrl is url to reverse hash service, so revocation status can be fetched for Auth BJJ credential
    * @param {Uint8Array} seed - if present the BJJ private key will be created from the given seed
-   * @returns Promise<{ DID, W3CCredential }> - returns did and Auth BJJ credential
+   * @returns `Promise<{ did: DID; credential: W3CCredential }>` - returns did and Auth BJJ credential
    * @beta
    */
   createIdentity(
@@ -83,31 +83,31 @@ export interface IIdentityWallet {
   ): Promise<{ did: DID; credential: W3CCredential }>;
 
   /**
-   *
+   * Creates profile based on genesis identifier
    *
    * @param {DID} did - identity to derive profile from
    * @param {number} nonce - unique integer number to generate a profile
    * @param {string} verifier - verifier identity/alias in a string from
-   * @returns profile did
+   * @returns `Promise<DID>` - profile did
    */
   createProfile(did: DID, nonce: number, verifier: string): Promise<DID>;
 
   /**
-   *
+   * generates a new key
    *
    * @param {KmsKeyType} keyType - supported key type by KMS
-   * @returns creates a new key BJJ or ECDSA
+   * @returns `Promise<KmsKeyId>` - creates a new key BJJ or ECDSA
    */
   generateKey(keyType: KmsKeyType): Promise<KmsKeyId>;
 
   /**
-   *
+   * issues new credential from issuer according to the claim request
    *
    * @param {DID} issuerDID - issuer identity
    * @param {ClaimRequest} req - claim request
    * @param {string} hostUrl - url that will be a part of credential id prefix
    * @param {CredentialIssueOptions} [opts] - with / without RHS
-   * @returns `Promise<W3CCredential>` - returns did and Auth BJJ credential
+   * @returns `Promise<W3CCredential>` - returns created W3CCredential
    */
   issueCredential(
     issuerDID: DID,
@@ -120,7 +120,7 @@ export interface IIdentityWallet {
    * gets a tree model for given did that includes claims tree, revocation tree, the root of roots tree and calculated state hash
    *
    * @param {DID} did - did which trees info we need to receive
-   * @returns
+   * @returns `Promise<TreesModel>`
    * */
   getDIDTreeState(did: DID): Promise<TreesModel>;
 
@@ -131,7 +131,7 @@ export interface IIdentityWallet {
    * @param {DID} did - issuer did
    * @param {W3CCredential} credential - credential to generate mtp
    * @param {TreeState} [treeState] - tree state when to generate a proof
-   * @returns MerkleTreeProof and TreeState on which proof has been generated
+   * @returns `Promise<MerkleTreeProofWithTreeState>` - MerkleTreeProof and TreeState on which proof has been generated
    */
   generateCredentialMtp(
     did: DID,
@@ -146,7 +146,7 @@ export interface IIdentityWallet {
    * @param {DID} did
    * @param {W3CCredential} credential
    * @param {TreeState} [treeState]
-   * @returns MerkleTreeProof and TreeState on which proof has been generated
+   * @returns `Promise<MerkleTreeProofWithTreeState>` -  MerkleTreeProof and TreeState on which proof has been generated
    */
   generateNonRevocationMtp(
     did: DID,
@@ -159,7 +159,7 @@ export interface IIdentityWallet {
    *
    * @param {Uint8Array} payload
    * @param {W3CCredential} credential - Auth BJJ Credential
-   * @returns signature object with R8 and S params
+   * @returns `Promise<Signature>`-  the signature object with R8 and S params
    */
   sign(payload: Uint8Array, credential: W3CCredential): Promise<Signature>;
 
@@ -169,7 +169,7 @@ export interface IIdentityWallet {
    *
    * @param {bigint} payload - big number in Field
    * @param {W3CCredential} credential - Auth BJJ credential
-   * @returns signature object with R8 and S params
+   * @returns `Promise<Signature>` - the signature object with R8 and S params
    */
   signChallenge(payload: bigint, credential: W3CCredential): Promise<Signature>;
 
@@ -178,7 +178,7 @@ export interface IIdentityWallet {
    *
    * @param {DID} issuerDID  - identifier of the issuer
    * @param {W3CCredential} credential - credential to revoke
-   * @returns a revocation nonce of credential
+   * @returns `Promise<number>` a revocation nonce of credential
    */
   revokeCredential(issuerDID: DID, credential: W3CCredential): Promise<number>;
 
@@ -190,7 +190,7 @@ export interface IIdentityWallet {
    * @param {string} txId - transaction hash in which state transition has been done
    * @param {number} [blockNumber] - block number in which state transition has been done
    * @param {number} [blockTimestamp] - block timestamp in which state transition has been done
-   * @returns credentials with an Iden3SparseMerkleTreeProof
+   * @returns `Promise<W3CCredential[]>` credentials with an Iden3SparseMerkleTreeProof
    */
   generateIden3SparseMerkleTreeProof(
     issuerDID: DID,
@@ -205,7 +205,7 @@ export interface IIdentityWallet {
    *
    * @param {W3CCredential[]} credentials - credentials to include in the claims tree
    * @param {DID} issuerDID - issuer did
-   * @returns old tree state and tree state with included credentials
+   * @returns `Promise<Iden3ProofCreationResult>`- old tree state and tree state with included credentials
    */
   addCredentialsToMerkleTree(
     credentials: W3CCredential[],
@@ -218,6 +218,7 @@ export interface IIdentityWallet {
    * @param {DID} issuerDID - issuer did
    * @param {string} rhsURL - reverse hash service URL
    * @param {number[]} [revokedNonces] - revoked nonces for the period from the last published
+   * @returns `Promise<void>`
    */
   publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void>;
 }

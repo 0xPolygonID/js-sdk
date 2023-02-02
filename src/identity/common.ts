@@ -3,19 +3,13 @@ import { Data, ElemBytes, Entry } from '@iden3/js-merkletree';
 import { SchemaMetadata } from '../schema-processor';
 import { SubjectPosition } from '../verifiable';
 
-export const treeEntryFromCoreClaim = (claim: Claim): Entry => {
-  const { index, value } = claim.rawSlots();
-  const el: ElemBytes[] = [...index, ...value].map((el) => {
-    const elByte = new ElemBytes();
-    elByte.value = el.bytes;
-    return elByte;
-  });
-  const data = new Data();
-  data.value = el;
-  return new Entry(data);
-};
-
-export const subjectPositionIndex = (idPosition: IdPosition): SubjectPosition => {
+/**
+ * determines subject position
+ *
+ * @param {IdPosition} idPosition - index / none / value
+ * @returns {SubjectPosition}
+ */
+export  const subjectPositionIndex = (idPosition: IdPosition): SubjectPosition => {
   switch (idPosition) {
     case IdPosition.Index:
       return SubjectPosition.Index;
@@ -26,6 +20,13 @@ export const subjectPositionIndex = (idPosition: IdPosition): SubjectPosition =>
   }
 };
 
+/**
+ * returns merklized root position based on schema serialization metadata and expected position
+ *
+ * @param {SchemaMetadata} [metadata] - schema metadata
+ * @param {MerklizedRootPosition} [position] - expected mt root position
+ * @returns {MerklizedRootPosition}
+ */
 export const defineMerklizedRootPosition = (
   metadata?: SchemaMetadata,
   position?: MerklizedRootPosition

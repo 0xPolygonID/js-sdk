@@ -46,7 +46,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
   /**
    *
    * inputs marshalling
-   * @returns {*}  {Uint8Array}
+   * @returns {Uint8Array}
    */
   inputsMarshal(): Uint8Array {
     this.validate();
@@ -182,7 +182,12 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
   // 0 revocation not check, // 1 for check revocation
   isRevocationChecked: number;
 
-  // PubSignalsUnmarshal unmarshal credentialAtomicQueryMTP.circom public signals array to AtomicQueryMTPPubSignals
+  /**
+   * PubSignalsUnmarshal unmarshal credentialAtomicQueryMTP.circom public signals array to AtomicQueryMTPPubSignals
+   *
+   * @param {Uint8Array} data
+   * @returns AtomicQueryMTPV2PubSignals
+   */
   pubSignalsUnmarshal(data: Uint8Array): AtomicQueryMTPV2PubSignals {
     // expected order:
     // merklized

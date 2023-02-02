@@ -9,7 +9,7 @@ import {
   AuthorizationRequestMessage,
   AuthorizationRequestMessageBody,
   AuthorizationResponseMessage,
-  IPackageManger,
+  IPackageManager,
   ZeroKnowledgeProofResponse
 } from '../iden3comm';
 import { DID } from '@iden3/js-iden3-core';
@@ -45,11 +45,11 @@ export interface IAuthHandler {
 export class AuthHandler implements IAuthHandler {
   /**
    * Creates an instance of AuthHandler.
-   * @param {IPackageManger} _packerMgr - package manager to unpack message envelope
+   * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    * @param {IProofService} _proofService -  proof service to verify zk proofs
    */
   constructor(
-    private readonly _packerMgr: IPackageManger,
+    private readonly _packerMgr: IPackageManager,
     private readonly _proofService: IProofService
   ) {}
 
@@ -58,7 +58,7 @@ export class AuthHandler implements IAuthHandler {
    * Generates all requested proofs and wraps authorization response message to JWZ token
    * @param {DID} did - an identity that will process the request
    * @param {Uint8Array} request - raw request
-   * @returns JWZ token, parsed request and response
+   * @returns `Promise<{token: string; authRequest: AuthorizationRequestMessage; authResponse: AuthorizationResponseMessage;}>` JWZ token, parsed request and response
    */
   async handleAuthorizationRequest(
     did: DID,

@@ -5,25 +5,44 @@ import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
 import { MediaType } from '../constants';
 
+/**
+ *  parameters for any packer
+ */
 export type PackerParams = {
   [key in string]: any; //eslint-disable-line @typescript-eslint/no-explicit-any
 };
-
+/**
+ *  parameters for zkp packer
+ */
 export type ZKPPackerParams = PackerParams & {
   senderID: DID;
   provingMethodAlg: ProvingMethodAlg;
 };
 
+/**
+ *  parameters for plain packer
+ */
 export type PlainPackerParams = PackerParams;
-
+/**
+ *  signature of auth signals function preparer
+ */
 export type AuthDataPrepareFunc = (
   hash: Uint8Array,
   id: DID,
   circuitId: CircuitId
 ) => Promise<Uint8Array>;
 
+/**
+ *  signature of state function verifier
+ */
 export type StateVerificationFunc = (id: string, pubSignals: Array<string>) => Promise<boolean>;
 
+/**
+ * Defines method that must be implemented by any packer
+ *
+ * @export
+ * @interface IPacker
+ */
 export interface IPacker {
   pack(payload: Uint8Array, param: PackerParams): Promise<Uint8Array>;
 
@@ -31,12 +50,17 @@ export interface IPacker {
 
   mediaType(): MediaType;
 }
-
+/**
+ * Params for verification of auth circuit public signals
+ */
 export type VerificationParams = {
   key: Uint8Array;
   verificationFn: VerificationHandlerFunc;
 };
 
+/**
+ * Params for generation of proof for auth circuit
+ */
 export type ProvingParams = {
   dataPreparer: DataPrepareHandlerFunc;
   provingKey: Uint8Array;

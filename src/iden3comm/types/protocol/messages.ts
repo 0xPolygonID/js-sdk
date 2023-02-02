@@ -1,7 +1,7 @@
 import { ProtocolMessage } from '../';
 import { MediaType } from '../../constants';
 
-// MessageFetchRequestMessage represent Iden3message for message fetch request.
+/**  MessageFetchRequestMessage represent Iden3message for message fetch request. */
 export type MessageFetchRequestMessage = {
   id: string;
   typ?: MediaType;
@@ -12,7 +12,7 @@ export type MessageFetchRequestMessage = {
   to?: string;
 };
 
-// MessageFetchRequestMessageBody is struct the represents body for message fetch request.
+/** MessageFetchRequestMessageBody is struct the represents body for message fetch request. */ 
 export type MessageFetchRequestMessageBody = {
   id: string;
 };

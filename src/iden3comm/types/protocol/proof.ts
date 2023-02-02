@@ -2,7 +2,7 @@ import { ProtocolMessage } from '../';
 import { MediaType } from '../../constants';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from './auth';
 
-// ProofGenerationRequestMessage is struct the represents body for proof generation request
+/** ProofGenerationRequestMessage is struct the represents body for proof generation request */
 export type ProofGenerationRequestMessage = {
   id: string;
   typ?: MediaType;
@@ -13,12 +13,12 @@ export type ProofGenerationRequestMessage = {
   to?: string;
 };
 
-// ProofGenerationRequestMessageBody is struct the represents body for proof generation request
+/** ProofGenerationRequestMessageBody is struct the represents body for proof generation request */
 export type ProofGenerationRequestMessageBody = {
   scope: Array<ZeroKnowledgeProofRequest>;
 };
 
-// ProofGenerationResponseMessage is struct the represents body for proof generation request
+/** ProofGenerationResponseMessage is struct the represents body for proof generation request */
 export type ProofGenerationResponseMessage = {
   id: string;
   typ?: MediaType;
@@ -29,7 +29,7 @@ export type ProofGenerationResponseMessage = {
   to?: string;
 };
 
-// ResponseMessageBody is struct the represents request for revocation status
+/** ResponseMessageBody is struct the represents request for revocation status */
 export type ResponseMessageBody = {
   scope: Array<ZeroKnowledgeProofResponse>;
 };

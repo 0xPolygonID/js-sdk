@@ -40,19 +40,21 @@ export interface ClaimRequest {
 export interface ICredentialWallet {
   /**
    * List of W3C Credential
+   *
+   * @returns `Promise<W3CCredential[]`
    */
   list(): Promise<W3CCredential[]>;
   /**
    * saves W3C credential (upsert)
    * @param {W3CCredential} credential - credential to save 
-   * @returns void
+   * @returns `Promise<void>`
    * 
    */
   save(credential: W3CCredential): Promise<void>;
    /**
    * saves the batch of W3C credentials (upsert)
-   * @param {W3CCredential[]} credentials - credentias to save
-   * @returns void
+   * @param {W3CCredential[]} credentials - credentials to save
+   * @returns `Promise<void>`
    */
   saveAll(credentials: W3CCredential[]): Promise<void>;
 
@@ -60,27 +62,28 @@ export interface ICredentialWallet {
    *
    * removes W3C credentials from data storage
    * @param {string} id
-   * @returns void
+   * @returns `Promise<void>`
    */
   remove(id: string): Promise<void>;
   /**
    * Find credential using iden3 query language
    *
    * @param {ProofQuery} query  - protocol query to find credential
-   * @returns W3CCredential array
+   * @returns `Promise<W3CCredential[]>`
    */
   findByQuery(query: ProofQuery): Promise<W3CCredential[]>;
   /**
    * Finds the credential by its id
    *
    * @param {string} id - id of credential
+   * @returns `Promise<W3CCredential | undefined>`
    */
   findById(id: string): Promise<W3CCredential | undefined>;
   /**
    * Finds credentials by JSON-LD schema and type 
    *
    * @param {string} context - the URL of JSON-LD schema where type is defined 
-   * @returns W3CCredential
+   * @returns `Promise<W3CCredential[]>`
    */
   findByContextType(context: string, type: string): Promise<W3CCredential[]>;
 
@@ -88,7 +91,7 @@ export interface ICredentialWallet {
    * Finds Auth BJJ credential for given user
    * 
    * @param {DID} did - the issuer of Auth BJJ credential
-   * @returns W3CCredential with AuthBJJCredential type
+   * @returns `Promise<W3CCredential>` W3CCredential with AuthBJJCredential type
    */
   getAuthBJJCredential(did: DID): Promise<W3CCredential>;
 
@@ -97,7 +100,7 @@ export interface ICredentialWallet {
    * Supported types for credentialStatus field: SparseMerkleTreeProof, Iden3ReverseSparseMerkleTreeProof
    *
    * @param {W3CCredential} cred - credential for which lib should build revocation status
-   * @returns RevocationStatus
+   * @returns `Promise<RevocationStatus>`
    */
   getRevocationStatusFromCredential(cred: W3CCredential): Promise<RevocationStatus>;
   /**
@@ -106,7 +109,7 @@ export interface ICredentialWallet {
    * @param {(CredentialStatus | RHSCredentialStatus)} credStatus - credentialStatus field of the Verifiable Credential.  Supported types for credentialStatus field: SparseMerkleTreeProof, Iden3ReverseSparseMerkleTreeProof
    * @param {DID} issuerDID  - credential issuer identity 
    * @param {IssuerData} issuerData - metadata of the issuer, usually contained in the BjjSignature / Iden3SparseMerkleTreeProof
-   * @returns RevocationStatus
+   * @returns `Promise<RevocationStatus>`
    */
   getRevocationStatus(
     credStatus: CredentialStatus | RHSCredentialStatus,
@@ -336,6 +339,14 @@ export class CredentialWallet implements ICredentialWallet {
   }
 }
 
+/**
+ * Checks if issuer did is created from given state is genesis
+ *
+ * @export
+ * @param {string} issuer - did (string)
+ * @param {string} state  - hex state 
+ * @returns {*}  {boolean}
+ */
 export function isIssuerGenesis(issuer: string, state: string): boolean {
   const did = DID.parse(issuer);
   const arr = BytesHelper.hexToBytes(state);
@@ -344,6 +355,15 @@ export function isIssuerGenesis(issuer: string, state: string): boolean {
   return isGenesisStateId(did.id.bigInt(), stateBigInt, type);
 }
 
+/**
+ * Checks if id is created from given state and type is genesis
+ *
+ * @export
+ * @param {bigint} id
+ * @param {bigint} state
+ * @param {Uint8Array} type
+ * @returns {*}  {boolean} - returns if id is genesis
+ */
 export function isGenesisStateId(id: bigint, state: bigint, type: Uint8Array): boolean {
   const idFromState = Id.idGenesisFromIdenState(type, state);
   return id.toString() === idFromState.bigInt().toString();

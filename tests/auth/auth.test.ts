@@ -21,8 +21,8 @@ import {
   AuthorizationRequestMessage,
   AuthorizationRequestMessageBody,
   DataPrepareHandlerFunc,
-  IPackageManger,
-  PackageManger,
+  IPackageManager,
+  PackageManager,
   ProvingParams,
   StateVerificationFunc,
   VerificationHandlerFunc,
@@ -44,7 +44,7 @@ describe.skip('auth', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
   let authHandler: IAuthHandler;
-  let packageMgr: IPackageManger;
+  let packageMgr: IPackageManager;
   const rhsUrl = 'http://localhost:8080';
 
   const mockStateStorage: IStateStorage = {
@@ -82,7 +82,7 @@ describe.skip('auth', () => {
     circuitData: CircuitData,
     prepareFn: AuthDataPrepareFunc,
     stateVerificationFn: StateVerificationFunc
-  ): Promise<IPackageManger> => {
+  ): Promise<IPackageManager> => {
     const authInputsHandler = new DataPrepareHandlerFunc(prepareFn);
 
     const verificationFn = new VerificationHandlerFunc(stateVerificationFn);
@@ -104,7 +104,7 @@ describe.skip('auth', () => {
       wasm: circuitData.wasm
     });
 
-    const mgr: IPackageManger = new PackageManger();
+    const mgr: IPackageManager = new PackageManager();
     const packer = new ZKPPacker(provingParamMap, verificationParamMap);
     const plainPacker = new PlainPacker();
     mgr.registerPackers([packer, plainPacker]);

@@ -39,13 +39,25 @@ const isProtocolMessage = (messg: { [key in string]: any }): boolean => {
   return true;
 };
 
+/**
+ *
+ *
+ * @param {Uint8Array} e
+ * @returns {*}  {Promise<BasicMessage>}
+ */
 export const envelopeToProtocolMessage = async (e: Uint8Array): Promise<BasicMessage> => {
   const t = await Token.parse(byteDecoder.decode(e));
   const pBytes = byteEncoder.encode(t.getPayload());
   return bytesToProtocolMessage(pBytes);
 };
 
-export const bytesToProtocolMessage = (bytes: Uint8Array): BasicMessage => {
+/**
+ * helper function to convert serialized JSON bytes to protocol message
+ *
+ * @param {Uint8Array} bytes
+ * @returns  {BasicMessage}
+ */
+export  const bytesToProtocolMessage = (bytes: Uint8Array): BasicMessage => {
   const str = byteDecoder.decode(bytes);
   const messg = JSON.parse(str);
   if (!isProtocolMessage(messg)) {
@@ -54,6 +66,14 @@ export const bytesToProtocolMessage = (bytes: Uint8Array): BasicMessage => {
   return messg as BasicMessage;
 };
 
+/**
+ * helper function to convert serialized JSON bytes to envelop stub
+ * so we can work with protected field of jwt token
+ *
+ *
+ * @param {Uint8Array} envelope
+ * @returns {EnvelopeStub}
+ */
 export const bytesToEnvelopeStub = (envelope: Uint8Array): EnvelopeStub => {
   const tmpObj = envelopeStubFactory();
   const str = byteDecoder.decode(envelope);
@@ -64,7 +84,14 @@ export const bytesToEnvelopeStub = (envelope: Uint8Array): EnvelopeStub => {
   return messg as EnvelopeStub;
 };
 
-export const bytesToHeaderStub = (envelope: Uint8Array): HeaderStub => {
+ /**
+ * helper function to convert serialized JSON bytes to header stub
+ * so we can work with know the media type of the message
+ * 
+ * @param {Uint8Array} envelope
+ * @returns {HeaderStub}
+ */
+ export const bytesToHeaderStub = (envelope: Uint8Array): HeaderStub => {
   const tmpObj = headerStubFactory();
   const str = byteDecoder.decode(envelope);
   const messg = JSON.parse(str);

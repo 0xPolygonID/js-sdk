@@ -129,8 +129,14 @@ export class AuthV2PubSignals {
   userID: Id;
   challenge: bigint;
   GISTRoot: Hash;
-  // PubSignalsUnmarshal unmarshal auth.circom public inputs to AuthPubSignals
+  // 
 
+  /**
+   * PubSignalsUnmarshal unmarshal auth.circom public inputs to AuthPubSignals
+   *
+   * @param {Uint8Array} data
+   * @returns AuthV2PubSignals
+   */
   pubSignalsUnmarshal(data: Uint8Array): AuthV2PubSignals {
     const len = 3;
     const sVals: string[] = JSON.parse(new TextDecoder().decode(data));
