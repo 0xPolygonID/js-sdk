@@ -22,7 +22,8 @@ import { strMTHex } from '../circuits';
  * Interface to unite contains three trees: claim, revocation and rootOfRoots
  * Also contains the current state of identity
  * @export
- * @interface TreesModel
+ * @beta
+ * @interface   TreesModel
  */
 export interface TreesModel {
   claimsTree: Merkletree;
@@ -43,11 +44,12 @@ enum NodeType {
  * it contains the current node hash and its children
  *
  * @export
+ * @beta
  * @class ProofNode
  */
 export class ProofNode {
   /**
-   * 
+   *
    * Creates an instance of ProofNode.
    * @param {Hash} [hash=ZERO_HASH] - current node hash
    * @param {Hash[]} [children=[]] -  children of the node
@@ -81,7 +83,7 @@ export class ProofNode {
   /**
    * JSON Representation of ProofNode with a hex values
    *
-   * @returns {*}  
+   * @returns {*}
    */
   toJSON() {
     return {
@@ -115,7 +117,7 @@ interface NodeHexResponse {
 }
 
 /**
- * 
+ *
  * Fetches and Builds a revocation status for a given credential
  * Supported types for credentialStatus field: SparseMerkleTreeProof, Iden3ReverseSparseMerkleTreeProof
  *
@@ -128,7 +130,7 @@ interface NodeHexResponse {
 export async function getStatusFromRHS(
   issuer: DID,
   credStatus: CredentialStatus | RHSCredentialStatus,
-  stateStorage: IStateStorage 
+  stateStorage: IStateStorage
 ): Promise<RevocationStatus> {
   const latestStateInfo = await stateStorage.getLatestStateById(issuer.id.bigInt());
   const hashedRevNonce = newHashFromBigInt(BigInt(credStatus.revocationNonce ?? 0));
@@ -140,8 +142,8 @@ export async function getStatusFromRHS(
  * gets partial revocation status info from rhs service.
  *
  * @param {Hash} data - hash to fetch
- * @param {Hash} issuerRoot - issuer root wich is a part of url
- * @param {string} rhsURL - base URL for reverse hash service 
+ * @param {Hash} issuerRoot - issuer root which is a part of url
+ * @param {string} rhsURL - base URL for reverse hash service
  * @returns {*}  {Promise<RevocationStatus>}
  */
 async function getRevocationStatusFromRHS(
@@ -196,8 +198,7 @@ async function newProofFromData(
   return p;
 }
 
-
- async  function rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Promise<Proof> {
+async function rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Promise<Proof> {
   let exists = false;
   const siblings: Hash[] = [];
   let nodeAux: NodeAux;
@@ -243,8 +244,8 @@ async function newProofFromData(
 
 /**
  * Pushes identity state information to a reverse hash service.
- * 
- * A reverse hash service (RHS) is a centralized or decentrilized service for storing publicly available data about identity.
+ *
+ * A reverse hash service (RHS) is a centralized or decentralized service for storing publicly available data about identity.
  * Such data are identity state and state of revocation tree and roots tree root tree.
  *
  * @export
@@ -306,6 +307,7 @@ async function addRevocationNode(
 /**
  * Builder to send state information to Reverse hash Service
  *
+ * @beta
  * @class NodesBuilder
  */
 class NodesBuilder {

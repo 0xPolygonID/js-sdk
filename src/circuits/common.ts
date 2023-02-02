@@ -22,6 +22,7 @@ export const ErrorEmptyIssuerAuthClaimNonRevProof =
  * base config for circuit inputs
  *
  * @export
+ * @beta
  * @class BaseConfig
  */
 export class BaseConfig {
@@ -57,7 +58,6 @@ export class BaseConfig {
   }
 }
 
-
 /**
  * converts hex to Hash
  *
@@ -73,7 +73,7 @@ export const strMTHex = (s: string | undefined): Hash => {
   return h;
 };
 
- /**
+/**
  * converts hexes of tree roots to Hashes
  *
  * @param {(string | undefined)} state - state of tree hex
@@ -82,7 +82,7 @@ export const strMTHex = (s: string | undefined): Hash => {
  * @param {(string | undefined)} rootOfRoots - root of roots tree root hex
  * @returns {*}  {TreeState}
  */
- export const buildTreeState = (
+export const buildTreeState = (
   state: string | undefined,
   claimsTreeRoot: string | undefined,
   revocationTreeRoot: string | undefined,
@@ -94,14 +94,14 @@ export const strMTHex = (s: string | undefined): Hash => {
   rootOfRoots: strMTHex(rootOfRoots)
 });
 
- /**
+/**
  * siblings as string array
  *
  * @param {Hash[]} siblings - siblings array as Hashes
  * @param {number} levels - levels number
  * @returns {*}  {string[]}
  */
- export const prepareSiblingsStr = (siblings: Hash[], levels: number): string[] => {
+export const prepareSiblingsStr = (siblings: Hash[], levels: number): string[] => {
   // Add the rest of empty levels to the siblings
   for (let i = siblings.length; i < levels; i++) {
     siblings.push(ZERO_HASH);
@@ -109,14 +109,14 @@ export const strMTHex = (s: string | undefined): Hash => {
   return siblings.map((s) => s.bigInt().toString());
 };
 
- /**
+/**
  * Constructs siblings from proof
  *
- * @param {Proof} proof - mtp 
+ * @param {Proof} proof - mtp
  * @param {number} levels - siblings max count
  * @returns {*}  {Hash[]}
  */
- export const circomSiblings = (proof: Proof, levels: number): Hash[] => {
+export const circomSiblings = (proof: Proof, levels: number): Hash[] => {
   const siblings = proof.allSiblings();
   // Add the rest of empty levels to the siblings
   for (let i = siblings.length; i < levels; i++) {
@@ -125,9 +125,8 @@ export const strMTHex = (s: string | undefined): Hash => {
   return siblings;
 };
 
-
- /**
- * PrepareCircuitArrayValues padding values to size. 
+/**
+ * PrepareCircuitArrayValues padding values to size.
  * Validate array size and throw an exception if array is bigger than size
  * if array is bigger, circuit cannot compile because number of inputs does not match
  *
@@ -136,7 +135,7 @@ export const strMTHex = (s: string | undefined): Hash => {
  * @param {number} size - size to pad
  * @returns {*}  {bigint[]}
  */
- export const prepareCircuitArrayValues = (arr: bigint[], size: number): bigint[] => {
+export const prepareCircuitArrayValues = (arr: bigint[], size: number): bigint[] => {
   if (arr.length > size) {
     throw new Error(`array size ${arr.length} is bigger max expected size ${size}`);
   }
@@ -149,25 +148,25 @@ export const strMTHex = (s: string | undefined): Hash => {
   return arr;
 };
 
- /**
- * converts each big integer in array to string 
+/**
+ * converts each big integer in array to string
  *
  * @param {bigint[]} arr -  array of big numbers
  * @returns {*}  {string[]}
  */
- export const bigIntArrayToStringArray = (arr: bigint[]): string[] => {
+export const bigIntArrayToStringArray = (arr: bigint[]): string[] => {
   return arr.map((a) => a.toString());
 };
 
-// PrepareSiblings prepare siblings for zk 
- /**
+// PrepareSiblings prepare siblings for zk
+/**
  *
  *
  * @param {Hash[]} siblings
  * @param {number} levels
  * @returns {*}  {bigint[]}
  */
- export const prepareSiblings = (siblings: Hash[], levels: number): bigint[] => {
+export const prepareSiblings = (siblings: Hash[], levels: number): bigint[] => {
   // Add the rest of empty levels to the siblings
   for (let i = siblings.length; i < levels; i++) {
     siblings.push(ZERO_HASH);
@@ -180,7 +179,8 @@ export const strMTHex = (s: string | undefined): Hash => {
  * auxiliary node
  *
  * @export
- * @interface NodeAuxValue
+ * @beta
+ * @interface   NodeAuxValue
  */
 export interface NodeAuxValue {
   key: Hash;
@@ -190,8 +190,8 @@ export interface NodeAuxValue {
 
 export /**
  * gets auxiliary node from proof
- * 
- * @param {(Proof | undefined)} p - mtp 
+ *
+ * @param {(Proof | undefined)} p - mtp
  * @returns {*}  {NodeAuxValue}
  */
 const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
@@ -220,7 +220,7 @@ const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
   };
 };
 
- /**
+/**
  * converts boolean existence param to integer
  * if true - 1, else - 0
  *

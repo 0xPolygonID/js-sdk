@@ -3,11 +3,23 @@ import { BytesHelper, checkBigIntInField, SchemaHash } from '@iden3/js-iden3-cor
 import { keccak256 } from '@lumeweb/js-sha3-browser';
 
 const errSlotsOverflowMsg = 'slots overflow';
-// SwapEndianness swaps the endianness of the value encoded in buf. If buf is
-// Big-Endian, the result will be Little-Endian and vice-versa.
+
+/**
+ * SwapEndianness swaps the endianness of the value encoded in buf. If buf is
+ * Big-Endian, the result will be Little-Endian and vice-versa.
+ *
+ * @param {Uint8Array} buf - bytes to swap
+ * @returns {*}  {Uint8Array} - swapped bytes
+ */
 export const swapEndianness = (buf: Uint8Array): Uint8Array => buf.reverse();
 
-// FieldToByteArray convert fields to byte representation based on type
+/**
+ * FieldToByteArray convert fields to byte representation based on type
+ *
+ * @export
+ * @param {unknown} field - field to convert
+ * @returns {*}  {Uint8Array}
+ */
 export function fieldToByteArray(field: unknown): Uint8Array {
   let bigIntField: bigint;
 
@@ -21,23 +33,48 @@ export function fieldToByteArray(field: unknown): Uint8Array {
   return BytesHelper.intToBytes(bigIntField);
 }
 
-// DataFillsSlot  checks if newData fills into slot capacity ()
+/**
+ * checks if data fills into slot capacity ()
+ *
+ * @export
+ * @param {Uint8Array} slot - current slot data
+ * @param {Uint8Array} newData - new slot data
+ * @returns {*}  {boolean}
+ */
 export function dataFillsSlot(slot: Uint8Array, newData: Uint8Array): boolean {
   return checkBigIntInField(BytesHelper.bytesToInt(Uint8Array.from([...slot, ...newData])));
 }
 
-// CheckDataInField  checks if data is in Q field
+/**
+ * check if byte data is in Q field
+ *
+ * @export
+ * @param {Uint8Array} data - bytes payload
+ * @returns {*}  {boolean}
+ */
 export function checkDataInField(data: Uint8Array): boolean {
   return checkBigIntInField(BytesHelper.bytesToInt(data));
 }
 
-// CreateSchemaHash computes schema hash from schemaID
+/**
+ * Calculates schema hash
+ *
+ * @param {Uint8Array} schemaId
+ * @returns {*}  {SchemaHash}
+ */
 export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
   const sHash = Hex.decodeString(keccak256(schemaId));
 
   return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
 };
 
+/**
+ * checks if data can fill the slot
+ *
+ * @param {*} data - object that contains field
+ * @param {string} fieldName - field name
+ * @returns {*}  {Uint8Array} - filled slot
+ */
 export const fillSlot = (data, fieldName: string): Uint8Array => {
   let slot = Uint8Array.from([]);
 

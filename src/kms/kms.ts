@@ -1,18 +1,49 @@
 import { PublicKey } from '@iden3/js-crypto';
 import { KmsKeyId, KmsKeyType } from './store';
+/**
+ * KeyProvider is responsible for signing and creation of the keys
+ *
+ * @export
+ * @beta
+ * @interface   IKeyProvider
+ */
 export interface IKeyProvider {
+  /**
+   * property to store key type
+   *
+   * @type {KmsKeyType}
+   */
   keyType: KmsKeyType;
+  /**
+   * gets public key by key id
+   *
+   * @param {KmsKeyId} keyID - kms key identifier
+   * @returns `Promise<PublicKey>`
+   */
   publicKey(keyID: KmsKeyId): Promise<PublicKey>;
+  /**
+   * sign data with kms key
+   *
+   * @param {KmsKeyId} keyId - key identifier
+   * @param {Uint8Array} data  - bytes payload
+   * @returns `Promise<Uint8Array>`
+   */
   sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array>;
-  newPrivateKeyFromSeed(key: Uint8Array): Promise<KmsKeyId>;
+  /**
+   * creates new key pair from given seed
+   *
+   * @param {Uint8Array} seed - seed
+   * @returns `Promise<KmsKeyId>`
+   */
+  newPrivateKeyFromSeed(seed: Uint8Array): Promise<KmsKeyId>;
 }
-/** 
+/**
  * Key management system class contains different key providers.
  * allows to register custom provider, create key, get public key and sign
  *
- *
+ * @beta
  * @export
- * @class KMS
+ * @class KMS - class
  */
 export class KMS {
   private registry: {
@@ -23,7 +54,7 @@ export class KMS {
   };
 
   /**
-   * register key provider in the KMS 
+   * register key provider in the KMS
    *
    * @param {KmsKeyType} keyType - kms key type
    * @param {IKeyProvider} keyProvider - key provider implementation
@@ -69,7 +100,7 @@ export class KMS {
    * sign Uint8Array with giv KmsKeyIden
    *
    * @param {KmsKeyId} keyId - key id
-   * @param {Uint8Array} data - prepared data bytes 
+   * @param {Uint8Array} data - prepared data bytes
    * @returns `Promise<Uint8Array>` - return signature
    */
   async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {

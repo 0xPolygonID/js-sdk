@@ -6,14 +6,13 @@ import { BasicMessage, EnvelopeStub, HeaderStub } from '../types';
  *
  * @returns {*}  {BasicMessage}
  */
-export  const basicMessageFactory = (): BasicMessage => {
+export const basicMessageFactory = (): BasicMessage => {
   return {
     id: '',
     typ: '' as MediaType,
     thid: '',
     type: '',
-    body: {
-    },
+    body: {},
     from: '',
     to: ''
   };

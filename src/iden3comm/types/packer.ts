@@ -41,7 +41,8 @@ export type StateVerificationFunc = (id: string, pubSignals: Array<string>) => P
  * Defines method that must be implemented by any packer
  *
  * @export
- * @interface IPacker
+ * @beta
+ * @interface   IPacker
  */
 export interface IPacker {
   pack(payload: Uint8Array, param: PackerParams): Promise<Uint8Array>;

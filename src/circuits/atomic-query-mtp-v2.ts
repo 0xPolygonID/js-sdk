@@ -15,6 +15,7 @@ import {
  * AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
  *
  * @export
+ * @beta
  * @class AtomicQueryMTPV2Inputs
  * @extends {BaseConfig}
  */
@@ -161,6 +162,7 @@ interface AtomicQueryMTPV2CircuitInputs {
  * public signals
  *
  * @export
+ * @beta
  * @class AtomicQueryMTPV2PubSignals
  * @extends {BaseConfig}
  */

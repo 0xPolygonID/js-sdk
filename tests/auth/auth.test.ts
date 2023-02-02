@@ -8,7 +8,7 @@ import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { ProofService, ZKPRequest } from '../../src/proof';
+import { ProofService } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
@@ -159,7 +159,7 @@ describe.skip('auth', () => {
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, kms, circuitStorage, mockStateStorage);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
       proofService.generateAuthV2Inputs.bind(proofService),
@@ -195,13 +195,12 @@ describe.skip('auth', () => {
       expiration: 1693526400
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: 'http://metamask.com/'
     });
 
     await credWallet.save(issuerCred);
 
-    const proofReq: ZKPRequest = {
+    const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
       circuitId: CircuitId.AtomicQuerySigV2,
       optional: false,

@@ -13,7 +13,8 @@ export enum KmsKeyType {
  * ID of the key that describe contain key type
  *
  * @export
- * @interface KmsKeyId
+ * @beta
+ * @interface   KmsKeyId
  */
 export interface KmsKeyId {
   type: KmsKeyType;

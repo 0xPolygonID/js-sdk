@@ -7,17 +7,22 @@ import * as providerHelpers from './provider-helpers';
 
 /**
  * Provider for Baby Jub Jub keys
- *
+ * @beta
  * @export
+ * @beta
  * @class BjjProvider
- * @implements {IKeyProvider}
+ * @implements implements IKeyProvider interface
  */
 export class BjjProvider implements IKeyProvider {
+  /**
+   * key type that is handled by BJJ Provider
+   * @type {KmsKeyType}
+   */
   keyType: KmsKeyType;
   private keyStore: AbstractPrivateKeyStore;
   /**
    * Creates an instance of BjjProvider.
-   * @param {KmsKeyType} keyType - kms key type 
+   * @param {KmsKeyType} keyType - kms key type
    * @param {AbstractPrivateKeyStore} keyStore - key store for kms
    */
   constructor(keyType: KmsKeyType, keyStore: AbstractPrivateKeyStore) {
@@ -26,8 +31,7 @@ export class BjjProvider implements IKeyProvider {
   }
   /**
    * generates a baby jub jub key from a seed phrase
-   * 
-   * @param {Uint8Array} seed - byte array seed 
+   * @param {Uint8Array} seed - byte array seed
    * @returns kms key identifier
    */
   async newPrivateKeyFromSeed(seed: Uint8Array): Promise<KmsKeyId> {
@@ -47,11 +51,10 @@ export class BjjProvider implements IKeyProvider {
     return kmsId;
   }
 
-
   /**
    * Gets public key by kmsKeyId
    *
-   * @param {KmsKeyId} keyId
+   * @param {KmsKeyId} keyId - key identifier
    */
   async publicKey(keyId: KmsKeyId): Promise<PublicKey> {
     const privateKey: PrivateKey = await this.privateKey(keyId);
@@ -59,11 +62,11 @@ export class BjjProvider implements IKeyProvider {
   }
 
   /**
-   * signs prepared payload of size - 32 bytes, 
+   * signs prepared payload of size,
    * with a key id
    *
-   * @param {KmsKeyId} keyId
-   * @param {Uint8Array} data
+   * @param {KmsKeyId} keyId  - key identifier
+   * @param {Uint8Array} data - data to sign (32 bytes)
    * @returns Uint8Array signature
    */
   async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {

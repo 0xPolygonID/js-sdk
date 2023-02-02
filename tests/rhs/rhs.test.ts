@@ -222,7 +222,6 @@ describe.skip('rhs', () => {
     };
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: rhsUrl
     });
 
@@ -292,7 +291,6 @@ describe.skip('rhs', () => {
     };
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: rhsUrl
     });
 
@@ -322,7 +320,6 @@ describe.skip('rhs', () => {
       claimReq2,
       'http://metamask.com/',
       {
-        withPublish: false,
         withRHS: rhsUrl
       }
     );

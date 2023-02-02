@@ -11,16 +11,41 @@ declare type TreeWithMetaInfo = {
   metaInfo: IdentityMerkleTreeMetaInformation;
 };
 
+/**
+ *
+ *
+ * @export
+ * @beta
+ * @class InMemoryMerkleTreeStorage
+ * @implements implements IMerkleTreeStorage interface
+ */
 export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
+  /**
+   * key value storage for trees where key is identifier
+   *
+   * @type {{
+   *     [v in string]: TreeWithMetaInfo[];
+   *   }}
+   */
   _data: {
     [v in string]: TreeWithMetaInfo[];
   };
+  /**
+   * tree depth
+   *
+   * @type {number}
+   */
   mtDepth: number;
+  /**
+   * Creates an instance of InMemoryMerkleTreeStorage.
+   * @param {number} _mtDepth
+   */
   constructor(_mtDepth: number) {
     this.mtDepth = _mtDepth;
     this._data = {};
   }
 
+  /** create trees in the  memory*/
   async createIdentityMerkleTrees(
     identifier: string
   ): Promise<IdentityMerkleTreeMetaInformation[]> {
@@ -42,12 +67,13 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
     return treesMeta;
   }
 
+  /** get trees meta info from the memory */
   async getIdentityMerkleTreesInfo(
     identifier: string
   ): Promise<IdentityMerkleTreeMetaInformation[]> {
     return this._data[identifier].map((treeWithInfo) => treeWithInfo.metaInfo);
   }
-
+  /** get merkle tree by identifier and type from memory */
   async getMerkleTreeByIdentifierAndType(
     identifier: string,
     mtType: MerkleTreeType
@@ -61,7 +87,7 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
 
     return treeWithMeta.tree;
   }
-
+  /** adds entry to merkle tree in the memory */
   async addToMerkleTree(
     identifier: string,
     mtType: MerkleTreeType,
@@ -75,6 +101,7 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
     }
   }
 
+  /** bind merkle tree identifier in memory */
   async bindMerkleTreeToNewIdentifier(oldIdentifier: string, newIdentifier: string): Promise<void> {
     this._data[newIdentifier] = [...this._data[oldIdentifier]];
     delete this._data[oldIdentifier];

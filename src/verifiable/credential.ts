@@ -4,7 +4,14 @@ import { Claim } from '@iden3/js-iden3-core';
 import { CredentialStatusType, ProofType } from './constants';
 import { Proof } from '@iden3/js-merkletree';
 
-// Iden3Credential is that represents claim json-ld document
+/**
+ * W3C Verifiable credential
+ *
+ * https://www.w3.org/2018/credentials/v1
+ * @export
+ * @beta
+ * @class W3CCredential
+ */
 export class W3CCredential {
   id: string;
   '@context': string[];
@@ -17,13 +24,23 @@ export class W3CCredential {
   credentialSchema: CredentialSchema;
   proof?: object;
 
-  // Merklize merklizes verifiable credential
+  /**
+   * merklization of the verifiable credential
+   *
+   * @returns `Promise<Merkelizer>`
+   */
   async merklize(): Promise<Merkelizer> {
     const credential = { ...this };
     delete credential.proof;
     return await merkelizeJSONLD(JSON.stringify(credential));
   }
 
+  /**
+   * gets core claim representation from credential proof
+   *
+   * @param {ProofType} proofType
+   * @returns {*}  {(Claim | undefined)}
+   */
   getCoreClaimFromProof(proofType: ProofType): Claim | undefined {
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
@@ -40,6 +57,11 @@ export class W3CCredential {
     }
     return undefined;
   }
+  /**
+   * checks BJJSignatureProof2021 in W3C VC
+   *
+   * @returns {*}  {(BJJSignatureProof2021 | undefined)}
+   */
   getBJJSignature2021Proof(): BJJSignatureProof2021 | undefined {
     const proofType: ProofType = ProofType.BJJSignature;
     if (Array.isArray(this.proof)) {
@@ -58,6 +80,11 @@ export class W3CCredential {
     return undefined;
   }
 
+  /**
+   * checks Iden3SparseMerkleTreeProof in W3C VC
+   *
+   * @returns {*}  {(Iden3SparseMerkleTreeProof | undefined)}
+   */
   getIden3SparseMerkleTreeProof(): Iden3SparseMerkleTreeProof | undefined {
     const proofType: ProofType = ProofType.Iden3SparseMerkleTreeProof;
     if (Array.isArray(this.proof)) {
@@ -77,6 +104,13 @@ export class W3CCredential {
   }
 }
 
+/**
+ * extracts core claim from Proof and returns Proof Type
+ *
+ * @export
+ * @param {object} proof - proof of vc
+ * @returns {*}  {{ claim: Claim; proofType: ProofType }}
+ */
 export function extractProof(proof: object): { claim: Claim; proofType: ProofType } {
   if (proof instanceof Iden3SparseMerkleTreeProof) {
     return {
@@ -102,12 +136,25 @@ export function extractProof(proof: object): { claim: Claim; proofType: ProofTyp
   throw new Error('proof format is not supported');
 }
 
+/**
+ * Credential schema vc
+ *
+ * @export
+ * @beta
+ * @interface   CredentialSchema
+ */
 export interface CredentialSchema {
   id: string;
   type: string;
 }
 
-// RHSCredentialStatus contains type, url to fetch RHS info, issuer ID and revocation nonce and backup option to fetch credential status
+/**
+ * RHSCredentialStatus contains type, url to fetch RHS info, issuer ID and revocation nonce and backup option to fetch credential status
+ *
+ * @export
+ * @beta
+ * @interface   RHSCredentialStatus
+ */
 export interface RHSCredentialStatus {
   id: string;
   type: CredentialStatusType;
@@ -115,13 +162,26 @@ export interface RHSCredentialStatus {
   statusIssuer?: CredentialStatus;
 }
 
-// CredentialStatus contains type and revocation Url
+/**
+ *
+ * CredentialStatus contains type and revocation Url
+ * @export
+ * @beta
+ * @interface   CredentialStatus
+ */
 export interface CredentialStatus {
   id: string;
   type: CredentialStatusType;
   revocationNonce?: number;
 }
 
+/**
+ * Issuer tree information
+ *
+ * @export
+ * @beta
+ * @interface   Issuer
+ */
 export interface Issuer {
   state?: string;
   rootOfRoots?: string;
@@ -129,7 +189,13 @@ export interface Issuer {
   revocationTreeRoot?: string;
 }
 
-// RevocationStatus status of revocation nonce. Info required to check revocation state of claim in circuits
+/**
+ *
+ * RevocationStatus status of revocation nonce. Info required to check revocation state of claim in circuits
+ * @export
+ * @beta
+ * @interface   RevocationStatus
+ */
 export interface RevocationStatus {
   mtp: Proof;
   issuer: Issuer;

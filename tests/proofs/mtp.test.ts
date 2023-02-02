@@ -4,7 +4,7 @@ import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { ProofService, ZKPRequest } from '../../src/proof';
+import { ProofService} from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
@@ -13,6 +13,7 @@ import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/b
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { W3CCredential } from '../../src/verifiable';
+import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
@@ -110,7 +111,7 @@ describe.skip('mtp proofs', () => {
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, kms, circuitStorage, ethStorage);
+    proofService = new ProofService(idWallet, credWallet,  circuitStorage, ethStorage);
   });
 
   it('mtpv2-non-merklized', async () => {
@@ -148,7 +149,6 @@ describe.skip('mtp proofs', () => {
     };
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: rhsURL
     });
 
@@ -179,7 +179,7 @@ describe.skip('mtp proofs', () => {
 
     credWallet.saveAll(credsWithIden3MTPProof);
 
-    const proofReq: ZKPRequest = {
+    const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
       circuitId: CircuitId.AtomicQueryMTPV2,
       optional: false,
@@ -235,7 +235,6 @@ describe.skip('mtp proofs', () => {
     };
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: rhsURL
     });
 
@@ -267,7 +266,7 @@ describe.skip('mtp proofs', () => {
 
     credWallet.saveAll(credsWithIden3MTPProof);
 
-    const proofReq: ZKPRequest = {
+    const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
       circuitId: CircuitId.AtomicQueryMTPV2,
       optional: false,

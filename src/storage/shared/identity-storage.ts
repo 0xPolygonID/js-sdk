@@ -2,10 +2,33 @@ import { Identity, Profile } from '../entities';
 import { IDataSource } from '../interfaces/data-source';
 import { IIdentityStorage } from '../interfaces/identity';
 
+/**
+ * Implementation of the IIdentityStorage with KV data source
+ *
+ * @export
+ * @beta
+ * @class IdentityStorage
+ * @implements implements IIdentityStorage interface
+ */
 export class IdentityStorage implements IIdentityStorage {
+  /**
+   * storage key for identities
+   *
+   * @static
+   */
   static readonly identitiesStorageKey = 'identities';
+  /**
+   * storage key for profiles
+   *
+   * @static
+   */
   static readonly profilesStorageKey = 'profiles';
 
+  /**
+   * Creates an instance of IdentityStorage.
+   * @param {IDataSource<Identity>} _identityDataSource - data source for identities
+   * @param {IDataSource<Profile>} _profileDataSource - data source for profiles
+   */
   constructor(
     private readonly _identityDataSource: IDataSource<Identity>,
     private readonly _profileDataSource: IDataSource<Profile>

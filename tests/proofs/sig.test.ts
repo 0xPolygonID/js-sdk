@@ -4,7 +4,7 @@ import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { ProofService, ZKPRequest } from '../../src/proof';
+import { ProofService } from '../../src/proof';
 import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
@@ -12,6 +12,7 @@ import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { byteEncoder } from '../../src/iden3comm/utils';
+import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
 describe.skip('sig proofs', () => {
@@ -101,7 +102,7 @@ describe.skip('sig proofs', () => {
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, kms, circuitStorage, mockStateStorage);
+    proofService = new ProofService(idWallet, credWallet,  circuitStorage, mockStateStorage);
   });
 
   it('sigv2-non-merklized', async () => {
@@ -131,13 +132,12 @@ describe.skip('sig proofs', () => {
       expiration: 1693526400
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: rhsUrl
     });
 
     await credWallet.save(issuerCred);
 
-    const proofReq: ZKPRequest = {
+    const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
       circuitId: CircuitId.AtomicQuerySigV2,
       optional: false,
@@ -187,13 +187,12 @@ describe.skip('sig proofs', () => {
       expiration: 1693526400
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: 'http://rhs.node'
     });
 
     await credWallet.save(issuerCred);
 
-    const proofReq: ZKPRequest = {
+    const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
       circuitId: CircuitId.AtomicQuerySigV2,
       optional: false,

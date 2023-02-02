@@ -7,8 +7,9 @@ import { Signature } from '@iden3/js-crypto';
 /**
  *  Auth v2 circuit representation
  * Inputs and public signals declaration, marshalling and parsing
- * 
+ *
  * @export
+ * @beta
  * @class AuthV2Inputs
  * @extends {BaseConfig}
  */
@@ -119,17 +120,18 @@ interface AuthV2CircuitInputs {
 }
 
 // AuthV2PubSignals auth.circom public signals
-/** 
+/**
  * public signals
  *
  * @export
+ * @beta
  * @class AuthV2PubSignals
  */
 export class AuthV2PubSignals {
   userID: Id;
   challenge: bigint;
   GISTRoot: Hash;
-  // 
+  //
 
   /**
    * PubSignalsUnmarshal unmarshal auth.circom public inputs to AuthPubSignals

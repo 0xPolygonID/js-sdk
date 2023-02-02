@@ -7,8 +7,9 @@ import { ClaimWithMTPProof, TreeState, CircuitError } from './models';
 /**
  * StateTransition circuit representation
  * Inputs and public signals declaration, marshalling and parsing
- * 
+ *
  * @export
+ * @beta
  * @class StateTransitionInputs
  * @extends {BaseConfig}
  */
@@ -93,6 +94,7 @@ interface StateTransitionInputsInternal {
  * Public signals of StateTransition circuit
  *
  * @export
+ * @beta
  * @class StateTransitionPubSignals
  */
 export class StateTransitionPubSignals {

@@ -11,12 +11,12 @@ import {
   prepareSiblingsStr
 } from './common';
 
-// 
 /**
- * AtomicQuerySigV2Inputs represenation for credentialAtomicQuerySig.circom
+ * AtomicQuerySigV2Inputs representation for credentialAtomicQuerySig.circom
  * Inputs and public signals declaration, marshalling and parsing
- * 
+ *
  * @export
+ * @beta
  * @class AtomicQuerySigV2Inputs
  * @extends {BaseConfig}
  */
@@ -66,7 +66,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
   }
 
   /**
-   * marshal inputs 
+   * marshal inputs
    *
    * @returns {*}  {Uint8Array}
    */
@@ -172,7 +172,6 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
   }
 }
 
-
 interface AtomicQuerySigV2CircuitInputs {
   requestID: string;
   userGenesisID: string;
@@ -216,9 +215,10 @@ interface AtomicQuerySigV2CircuitInputs {
 }
 
 /**
- * 
+ *
  * public signals
  * @export
+ * @beta
  * @class AtomicQuerySigV2PubSignals
  * @extends {BaseConfig}
  */
@@ -240,7 +240,7 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
   // 0 revocation not check, // 1 for check revocation
   isRevocationChecked: number;
 
-  // 
+  //
   /**
    *
    * PubSignalsUnmarshal unmarshal credentialAtomicQuerySig.circom public signals array to AtomicQuerySugPubSignals

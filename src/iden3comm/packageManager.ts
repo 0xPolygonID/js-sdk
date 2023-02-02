@@ -8,8 +8,9 @@ import { MediaType } from './constants';
  * Basic package manager for iden3 communication protocol
  *
  * @export
+ * @beta
  * @class PackageManager
- * @implements {IPackageManager}
+ * @implements implements IPackageManager interface
  */
 export class PackageManager implements IPackageManager {
   packers: Map<MediaType, IPacker>;
@@ -27,7 +28,6 @@ export class PackageManager implements IPackageManager {
       this.packers.set(p.mediaType(), p);
     });
   }
-
 
   /** {@inheritDoc IPackageManager.pack} */
   async pack(mediaType: MediaType, payload: Uint8Array, params: PackerParams): Promise<Uint8Array> {
@@ -61,8 +61,11 @@ export class PackageManager implements IPackageManager {
     const safeEnvelope = decodedStr.trim();
     return await this.unpackWithSafeEnvelope(mediaType, byteEncoder.encode(safeEnvelope));
   }
- 
-  private async unpackWithSafeEnvelope(mediaType: MediaType, envelope: Uint8Array): Promise<BasicMessage> {
+
+  private async unpackWithSafeEnvelope(
+    mediaType: MediaType,
+    envelope: Uint8Array
+  ): Promise<BasicMessage> {
     const p = this.packers.get(mediaType);
     if (!p) {
       throw new Error(`packer for media type ${mediaType} not found`);

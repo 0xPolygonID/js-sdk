@@ -5,7 +5,6 @@ import { MerkleTreeType } from '../../src/storage/entities/mt';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { Signer } from 'ethers';
 import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 jest.mock('@digitalbazaar/http-client', () => ({}));
@@ -137,7 +136,7 @@ describe('identity', () => {
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
-    const proof = await wallet.generateClaimMtp(did, credential);
+    const proof = await wallet.generateCredentialMtp(did, credential);
 
     expect(proof.proof.existence).toBe(true);
   });
@@ -209,7 +208,6 @@ describe('identity', () => {
       expiration: 12345678888
     };
     const issuerCred = await wallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: 'http://rhs.node'
     });
   });

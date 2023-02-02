@@ -6,7 +6,8 @@ import { Hash, Proof } from '@iden3/js-merkletree';
  * TreeState is model for merkle tree roots
  *
  * @export
- * @interface TreeState
+ * @beta
+ * @interface   TreeState
  */
 export interface TreeState {
   state: Hash;
@@ -20,7 +21,8 @@ export interface TreeState {
  * TreeState and Proof of inclusion / non-inclusion
  *
  * @export
- * @interface ClaimNonRevStatus
+ * @beta
+ * @interface   ClaimNonRevStatus
  */
 export interface ClaimNonRevStatus {
   treeState: TreeState;
@@ -30,6 +32,7 @@ export interface ClaimNonRevStatus {
  * Query represents basic request to claim slot verification
  *
  * @export
+ * @beta
  * @class Query
  */
 export class Query {
@@ -47,7 +50,6 @@ export class Query {
       throw new Error(CircuitError.EmptyQueryValue);
   }
 }
-
 
 /**
  * CircuitID is alias for circuit identifier
@@ -70,6 +72,7 @@ export enum CircuitId {
  * Claim structure for circuit inputs
  *
  * @export
+ * @beta
  * @class CircuitClaim
  */
 export class CircuitClaim {
@@ -82,10 +85,11 @@ export class CircuitClaim {
 }
 
 /**
- * 
+ *
  * Claim for circuit with non revocation proof and signature proof
  * @export
- * @interface ClaimWithSigProof
+ * @beta
+ * @interface   ClaimWithSigProof
  */
 export interface ClaimWithSigProof {
   issuerID: Id;
@@ -98,7 +102,8 @@ export interface ClaimWithSigProof {
  * Claim for circuit with non revocation proof and proof of merkle tree inclusion
  *
  * @export
- * @interface ClaimWithMTPProof
+ * @beta
+ * @interface   ClaimWithMTPProof
  */
 export interface ClaimWithMTPProof {
   issuerID?: Id;
@@ -111,7 +116,8 @@ export interface ClaimWithMTPProof {
  * prepared bjj signature for circuits with auth bjj claim data
  *
  * @export
- * @interface BJJSignatureProof
+ * @beta
+ * @interface   BJJSignatureProof
  */
 export interface BJJSignatureProof {
   signature: Signature;
@@ -124,7 +130,8 @@ export interface BJJSignatureProof {
  * prepared mtp with a tree state
  *
  * @export
- * @interface MTProof
+ * @beta
+ * @interface   MTProof
  */
 export interface MTProof {
   proof: Proof;
@@ -134,7 +141,8 @@ export interface MTProof {
  * global identity state proof
  *
  * @export
- * @interface GISTProof
+ * @beta
+ * @interface   GISTProof
  */
 export interface GISTProof {
   root: Hash;
@@ -171,6 +179,7 @@ export enum CircuitError {
  * ValueProof represents a Merkle Proof for a value stored as MT
  *
  * @export
+ * @beta
  * @class ValueProof
  */
 export class ValueProof {

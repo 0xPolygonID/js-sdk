@@ -1,5 +1,4 @@
 import { IPacker, PackerParams } from './packer';
-import { MessageFetchRequestMessage } from './protocol/messages';
 import { MediaType } from '../constants';
 import { ProtocolMessage } from '.';
 
@@ -13,12 +12,12 @@ export type BasicMessage = {
   to?: string;
 };
 
-
 /**
  * Interface for defining the registry of packers
  *
  * @export
- * @interface IPackageManager
+ * @beta
+ * @interface   IPackageManager
  */
 export interface IPackageManager {
   /**

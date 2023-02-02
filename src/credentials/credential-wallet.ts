@@ -20,14 +20,45 @@ import * as uuid from 'uuid';
 import { getStatusFromRHS } from './revocation';
 import { Proof } from '@iden3/js-merkletree';
 
+/**
+ * Request to core library to create Core Claim from W3C Verifiable Credential
+ *
+ * @export
+ * @beta
+ * @interface ClaimRequest
+ */
 export interface ClaimRequest {
+  /**
+   * JSON credential schema
+   */
   credentialSchema: string;
+  /**
+   * Credential type
+   */
   type: string;
+  /**
+   * Credential subject, usually contains claims and identifier
+   */
   credentialSubject: { [key: string]: string | object | number };
+  /**
+   * expiration time
+   */
   expiration?: number;
+  /**
+   * claim version
+   */
   version?: number;
+  /**
+   * revocation nonce
+   */
   revNonce?: number;
+  /**
+   * subject position (index / value / none)
+   */
   subjectPosition?: SubjectPosition;
+  /**
+   * merklizedRootPosition (index / value / none)
+   */
   merklizedRootPosition?: MerklizedRootPosition;
 }
 
@@ -35,7 +66,8 @@ export interface ClaimRequest {
  * Interface to work with credential wallets
  *
  * @export
- * @interface ICredentialWallet
+ * @beta
+ * @interface   ICredentialWallet
  */
 export interface ICredentialWallet {
   /**
@@ -46,12 +78,12 @@ export interface ICredentialWallet {
   list(): Promise<W3CCredential[]>;
   /**
    * saves W3C credential (upsert)
-   * @param {W3CCredential} credential - credential to save 
+   * @param {W3CCredential} credential - credential to save
    * @returns `Promise<void>`
-   * 
+   *
    */
   save(credential: W3CCredential): Promise<void>;
-   /**
+  /**
    * saves the batch of W3C credentials (upsert)
    * @param {W3CCredential[]} credentials - credentials to save
    * @returns `Promise<void>`
@@ -80,16 +112,16 @@ export interface ICredentialWallet {
    */
   findById(id: string): Promise<W3CCredential | undefined>;
   /**
-   * Finds credentials by JSON-LD schema and type 
+   * Finds credentials by JSON-LD schema and type
    *
-   * @param {string} context - the URL of JSON-LD schema where type is defined 
+   * @param {string} context - the URL of JSON-LD schema where type is defined
    * @returns `Promise<W3CCredential[]>`
    */
   findByContextType(context: string, type: string): Promise<W3CCredential[]>;
 
   /**
    * Finds Auth BJJ credential for given user
-   * 
+   *
    * @param {DID} did - the issuer of Auth BJJ credential
    * @returns `Promise<W3CCredential>` W3CCredential with AuthBJJCredential type
    */
@@ -107,7 +139,7 @@ export interface ICredentialWallet {
    * Fetches Revocation status depended on type
    *
    * @param {(CredentialStatus | RHSCredentialStatus)} credStatus - credentialStatus field of the Verifiable Credential.  Supported types for credentialStatus field: SparseMerkleTreeProof, Iden3ReverseSparseMerkleTreeProof
-   * @param {DID} issuerDID  - credential issuer identity 
+   * @param {DID} issuerDID  - credential issuer identity
    * @param {IssuerData} issuerData - metadata of the issuer, usually contained in the BjjSignature / Iden3SparseMerkleTreeProof
    * @returns `Promise<RevocationStatus>`
    */
@@ -135,15 +167,15 @@ export interface ICredentialWallet {
   ): W3CCredential;
 }
 
-
 /**
  *
- * Wallet instance is a wrapper of CRUD logic for W3C credentials, 
- * also it allows to fetch revocation statuses. 
+ * Wallet instance is a wrapper of CRUD logic for W3C credentials,
+ * also it allows to fetch revocation statuses.
  *
  * @export
+ * @beta
  * @class CredentialWallet
- * @implements {ICredentialWallet}
+ * @implements implements ICredentialWallet interface
  */
 export class CredentialWallet implements ICredentialWallet {
   /**
@@ -152,11 +184,10 @@ export class CredentialWallet implements ICredentialWallet {
    */
   constructor(private readonly _storage: IDataStorage) {}
 
-  /** 
-  * {@inheritDoc ICredentialWallet.getAuthBJJCredential} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.getAuthBJJCredential}
+   */
   async getAuthBJJCredential(did: DID): Promise<W3CCredential> {
-    
     // filter where the issuer of auth credential is given did
 
     const authBJJCredsOfIssuer = await this._storage.credential.findCredentialsByQuery({
@@ -180,9 +211,9 @@ export class CredentialWallet implements ICredentialWallet {
     throw new Error('all auth bjj credentials are revoked');
   }
 
-  /** 
-  * {@inheritDoc ICredentialWallet.getRevocationStatusFromCredential} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.getRevocationStatusFromCredential}
+   */
   async getRevocationStatusFromCredential(cred: W3CCredential): Promise<RevocationStatus> {
     const mtpProof = cred.getIden3SparseMerkleTreeProof();
     const sigProof = cred.getBJJSignature2021Proof();
@@ -198,9 +229,9 @@ export class CredentialWallet implements ICredentialWallet {
     return await this.getRevocationStatus(cred.credentialStatus, issuerDID, issuerData);
   }
 
-  /** 
-  * {@inheritDoc ICredentialWallet.getRevocationStatus} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.getRevocationStatus}
+   */
   async getRevocationStatus(
     credStatus: CredentialStatus | RHSCredentialStatus,
     issuerDID: DID,
@@ -239,9 +270,9 @@ export class CredentialWallet implements ICredentialWallet {
     }
     throw new Error('revocation status unknown');
   }
-  /** 
-  * {@inheritDoc ICredentialWallet.createCredential} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.createCredential}
+   */
   createCredential = (
     hostUrl: string,
     issuer: DID,
@@ -260,7 +291,7 @@ export class CredentialWallet implements ICredentialWallet {
     const credentialType = [VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE, request.type];
 
     const expirationDate =
-      !request.expiration || request.expiration == 0 ? null: request.expiration;
+      !request.expiration || request.expiration == 0 ? null : request.expiration;
 
     const issuerDID = issuer.toString();
     const credentialSubject = request.credentialSubject;
@@ -295,45 +326,45 @@ export class CredentialWallet implements ICredentialWallet {
 
     return cr;
   };
-  /** 
-  * {@inheritDoc ICredentialWallet.findById} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.findById}
+   */
   async findById(id: string): Promise<W3CCredential | undefined> {
     return this._storage.credential.findCredentialById(id);
   }
-  /** 
-  * {@inheritDoc ICredentialWallet.findByContextType} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.findByContextType}
+   */
   async findByContextType(context: string, type: string): Promise<W3CCredential[]> {
     return this._storage.credential.findCredentialsByQuery({ context, type });
   }
-  /** 
-  * {@inheritDoc ICredentialWallet.save} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.save}
+   */
   async save(credential: W3CCredential): Promise<void> {
     return this._storage.credential.saveCredential(credential);
   }
-  /** 
-  * {@inheritDoc ICredentialWallet.saveAll} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.saveAll}
+   */
   async saveAll(credentials: W3CCredential[]): Promise<void> {
     return this._storage.credential.saveAllCredentials(credentials);
   }
-  /** 
-  * {@inheritDoc ICredentialWallet.remove} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.remove}
+   */
   async remove(id): Promise<void> {
     return this._storage.credential.removeCredential(id);
   }
-  /** 
-  * {@inheritDoc ICredentialWallet.list} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.list}
+   */
   async list(): Promise<W3CCredential[]> {
     return this._storage.credential.listCredentials();
   }
-  /** 
-  * {@inheritDoc ICredentialWallet.findByQuery} 
-  */
+  /**
+   * {@inheritDoc ICredentialWallet.findByQuery}
+   */
   async findByQuery(query: ProofQuery): Promise<W3CCredential[]> {
     return this._storage.credential.findCredentialsByQuery(query);
   }
@@ -344,7 +375,7 @@ export class CredentialWallet implements ICredentialWallet {
  *
  * @export
  * @param {string} issuer - did (string)
- * @param {string} state  - hex state 
+ * @param {string} state  - hex state
  * @returns {*}  {boolean}
  */
 export function isIssuerGenesis(issuer: string, state: string): boolean {

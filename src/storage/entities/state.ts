@@ -1,4 +1,10 @@
-// StateInfo information about state from chain.
+/**
+ * state information of identity from chain.
+ *
+ * @export
+ * @beta
+ * @interface   StateInfo
+ */
 export interface StateInfo {
   id?: bigint;
   state?: bigint;
@@ -9,6 +15,13 @@ export interface StateInfo {
   replacedAtBlock?: bigint;
 }
 
+/**
+ * state proof of identity from chain
+ *
+ * @export
+ * @beta
+ * @interface   StateProof
+ */
 export interface StateProof {
   root: bigint;
   existence: boolean;
@@ -20,6 +33,13 @@ export interface StateProof {
   auxValue: bigint;
 }
 
+/**
+ * global identity state root info from chain
+ *
+ * @export
+ * @beta
+ * @interface   RootInfo
+ */
 export interface RootInfo {
   root: bigint;
   replacedByRoot: bigint;

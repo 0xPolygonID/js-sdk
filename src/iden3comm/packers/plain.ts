@@ -8,12 +8,11 @@ import { MediaType } from '../constants';
  * Plain packer just serializes bytes to JSON and adds media type
  *
  * @export
+ * @beta
  * @class PlainPacker
- * @implements {IPacker}
+ * @implements implements IPacker interface
  */
 export class PlainPacker implements IPacker {
-  // 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   /**
    * Pack returns packed message to transport envelope
    *
@@ -21,6 +20,8 @@ export class PlainPacker implements IPacker {
    * @param {PlainPackerParams} _params - not used here
    * @returns `Promise<Uint8Array>`
    */
+  //
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async pack(payload: Uint8Array, _params: PlainPackerParams): Promise<Uint8Array> {
     const msg = JSON.parse(byteDecoder.decode(payload));
     msg.typ = MediaType.PlainMessage;

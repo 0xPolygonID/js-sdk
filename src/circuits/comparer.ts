@@ -15,8 +15,8 @@ export enum Operators {
 
 // QueryOperators represents operators for atomic circuits
 
- /** @type {*} */
- export const QueryOperators = {
+/** @type {*} */
+export const QueryOperators = {
   $noop: Operators.NOOP,
   $eq: Operators.EQ,
   $lt: Operators.LT,
@@ -32,10 +32,11 @@ export interface IComparer {
 
 /**
  * Scalar is used to compare two scalar value.
- * 
+ *
  * @export
+ * @beta
  * @class Scalar
- * @implements {IComparer}
+ * @implements implements IComparer interface
  */
 export class Scalar implements IComparer {
   /**
@@ -47,7 +48,7 @@ export class Scalar implements IComparer {
   /**
    * compares two  scalar values
    *
-   * @param {Operators} operator - EQ / LT / GT 
+   * @param {Operators} operator - EQ / LT / GT
    * @returns {*}  {boolean}
    */
   compare(operator: Operators): boolean {
@@ -68,8 +69,9 @@ export class Scalar implements IComparer {
  * Vector uses for find/not find x scalar type in y vector type.
  *
  * @export
+ * @beta
  * @class Vector
- * @implements {IComparer}
+ * @implements implements IComparer interface
  */
 export class Vector implements IComparer {
   /**
@@ -96,15 +98,15 @@ export class Vector implements IComparer {
   }
 }
 
- /**
+/**
  * FactoryComparer depends on input data will return right comparer.
  *
- * @param {bigint} x - val x 
+ * @param {bigint} x - val x
  * @param {bigint[]} y - array of values y
  * @param {Operators} operator - EQ / LT / GT / IN / NIN
  * @returns {*}  {IComparer}
  */
- export const factoryComparer = (x: bigint, y: bigint[], operator: Operators): IComparer => {
+export const factoryComparer = (x: bigint, y: bigint[], operator: Operators): IComparer => {
   switch (operator) {
     case Operators.EQ:
     case Operators.LT:

@@ -5,8 +5,9 @@ import { AbstractPrivateKeyStore } from './abstract-key-store';
  * (NOT ENCRYPTED: DO NOT USE IN THE PRODUCTION)
  *
  * @export
+ * @beta
  * @class LocalStoragePrivateKeyStore
- * @implements {AbstractPrivateKeyStore}
+ * @implements implements AbstractPrivateKeyStore interface
  */
 export class LocalStoragePrivateKeyStore implements AbstractPrivateKeyStore {
   static readonly storageKey = 'keystore';

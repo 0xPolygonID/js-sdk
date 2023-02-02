@@ -1,3 +1,4 @@
+/** Verifiable constants */
 export const VerifiableConstants = Object.freeze({
   ERRORS: {
     FiELD_IS_EMPTY: 'fieldPath is empty',
@@ -35,6 +36,12 @@ export const VerifiableConstants = Object.freeze({
   }
 });
 
+/**
+ * Proof type for Verifiable Credential supported by sdk
+ *
+ * @export
+ * @enum {number}
+ */
 export enum ProofType {
   // BJJSignatureProofType schema type
   BJJSignature = 'BJJSignature2021',
@@ -42,7 +49,12 @@ export enum ProofType {
   Iden3SparseMerkleTreeProof = 'Iden3SparseMerkleTreeProof'
 }
 
-// CredentialStatusType type for understanding revocation type
+/**
+ * CredentialStatusType type for revocation type
+ *
+ * @export
+ * @enum {number}
+ */
 export enum CredentialStatusType {
   // SparseMerkleTreeProof is CredentialStatusType for standard MTP result handlers
   SparseMerkleTreeProof = 'SparseMerkleTreeProof',
@@ -50,10 +62,22 @@ export enum CredentialStatusType {
   Iden3ReverseSparseMerkleTreeProof = 'Iden3ReverseSparseMerkleTreeProof'
 }
 
+/**
+ * W3C Proof purpose
+ *
+ * @export
+ * @enum {number}
+ */
 export enum ProofPurpose {
   Authentication = 'Authentication'
 }
 
+/**
+ * Merklized Core.Claim root position for vc creation
+ *
+ * @export
+ * @enum {number}
+ */
 export enum MerklizedRootPosition {
   // PositionIndex merklized root is stored in index.
   Index = 'index',
@@ -63,6 +87,12 @@ export enum MerklizedRootPosition {
   None = ''
 }
 
+/**
+ * Subject Core.Claim position for vc creation
+ *
+ * @export
+ * @enum {number}
+ */
 export enum SubjectPosition {
   // CredentialSubjectPositionNone is for self issued Iden3Credential
   None = '',

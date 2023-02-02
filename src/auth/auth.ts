@@ -1,8 +1,7 @@
 import { byteDecoder } from './../iden3comm/utils/index';
 import { MediaType } from './../iden3comm/constants';
-import { ProofQuery } from '../verifiable/proof';
 import { CircuitId } from '../circuits/models';
-import { IProofService, ZKPRequest } from '../proof/proof-service';
+import { IProofService } from '../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../iden3comm/constants';
 
 import {
@@ -10,6 +9,7 @@ import {
   AuthorizationRequestMessageBody,
   AuthorizationResponseMessage,
   IPackageManager,
+  ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../iden3comm';
 import { DID } from '@iden3/js-iden3-core';
@@ -21,7 +21,8 @@ import * as uuid from 'uuid';
  * Interface that allows the processing of the authorization request in the raw format for given identifier
  *
  * @export
- * @interface IAuthHandler
+ * @beta
+ * @interface   IAuthHandler
  */
 export interface IAuthHandler {
   handleAuthorizationRequest(
@@ -35,12 +36,13 @@ export interface IAuthHandler {
 }
 /**
  *
- * Auth Handler is an implementation of the IAuthHandler interface.
- * Allow to process AuthorizationRequest protocol message and produce JWZ response.
+ * Allows to process AuthorizationRequest protocol message and produce JWZ response.
  *
  * @export
+ * @beta
+
  * @class AuthHandler
- * @implements {IAuthHandler}
+ * @implements implements IAuthHandler interface
  */
 export class AuthHandler implements IAuthHandler {
   /**
@@ -54,7 +56,7 @@ export class AuthHandler implements IAuthHandler {
   ) {}
 
   /**
-   * Handles only messages with authorization/v1.0/request type
+   * Handles only messages with <i>authorization/v1.0/request</i> type
    * Generates all requested proofs and wraps authorization response message to JWZ token
    * @param {DID} did - an identity that will process the request
    * @param {Uint8Array} request - raw request
@@ -90,10 +92,10 @@ export class AuthHandler implements IAuthHandler {
       to: message.from
     };
     for (const proofReq of authRequestBody.scope) {
-      const zkpReq: ZKPRequest = {
+      const zkpReq: ZeroKnowledgeProofRequest = {
         id: proofReq.id,
         circuitId: proofReq.circuitId as CircuitId,
-        query: proofReq.query as ProofQuery
+        query: proofReq.query
       };
 
       const { proof } = await this._proofService.generateProof(zkpReq, did);

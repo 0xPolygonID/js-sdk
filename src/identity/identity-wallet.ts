@@ -42,17 +42,22 @@ import { TreeState } from '../circuits';
  * with publishing to chain and to reverse hash service
  *
  * @export
- * @interface CredentialIssueOptions
+ * @beta
+ * @interface   CredentialIssueOptions
  */
 export interface CredentialIssueOptions {
-  withPublish: boolean;
+  /**
+   * option to show if reverse hash service is used to check the Credential Status
+   *
+   */
   withRHS: string;
 }
 /**
  *  Proof creation result
  *
  * @export
- * @interface Iden3ProofCreationResult
+ * @beta
+ * @interface   Iden3ProofCreationResult
  */
 export interface Iden3ProofCreationResult {
   credentials: W3CCredential[];
@@ -114,7 +119,7 @@ export interface IIdentityWallet {
     req: ClaimRequest,
     hostUrl: string,
     opts?: CredentialIssueOptions
-  ): Promise<W3CCredential>
+  ): Promise<W3CCredential>;
 
   /**
    * gets a tree model for given did that includes claims tree, revocation tree, the root of roots tree and calculated state hash
@@ -232,9 +237,10 @@ export interface IIdentityWallet {
  *
  *
  * @export
- * @class IdentityWallet
  * @beta
- * @implements {IIdentityWallet}
+ * @class IdentityWallet - class
+ * @beta
+ * @implements implements IIdentityWallet interface
  */
 export class IdentityWallet implements IIdentityWallet {
   /**
@@ -527,7 +533,6 @@ export class IdentityWallet implements IIdentityWallet {
   ): Promise<W3CCredential> {
     if (!opts) {
       opts = {
-        withPublish: true,
         withRHS: ''
       };
     }

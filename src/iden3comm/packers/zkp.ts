@@ -16,7 +16,7 @@ import {
   ErrProofIsInvalid,
   ErrSenderNotUsedTokenCreation,
   ErrStateVerificationFailed,
-  ErrUnkownCircuitID
+  ErrUnknownCircuitID
 } from '../errors';
 import { byteDecoder, byteEncoder } from '../utils';
 import { MediaType } from '../constants';
@@ -27,6 +27,7 @@ const { getProvingMethod } = proving;
  * Handler to
  *
  * @export
+ * @beta
  * @class DataPrepareHandlerFunc
  */
 export class DataPrepareHandlerFunc {
@@ -39,9 +40,9 @@ export class DataPrepareHandlerFunc {
   /**
    *
    *
-   * @param {Uint8Array} hash - challenge that will be signed 
+   * @param {Uint8Array} hash - challenge that will be signed
    * @param {DID} id - did of identity that will prepare inputs
-   * @param {CircuitId} circuitId - circuit id 
+   * @param {CircuitId} circuitId - circuit id
    * @returns `Promise<Uint8Array>`
    */
   prepare(hash: Uint8Array, id: DID, circuitId: CircuitId): Promise<Uint8Array> {
@@ -53,6 +54,7 @@ export class DataPrepareHandlerFunc {
  * Handler to verify public signals of authorization circuits
  *
  * @export
+ * @beta
  * @class VerificationHandlerFunc
  */
 export class VerificationHandlerFunc {
@@ -75,11 +77,12 @@ export class VerificationHandlerFunc {
 }
 
 /**
- * Packer that can pack message to JWZ token, 
+ * Packer that can pack message to JWZ token,
  * and unpack and validate JWZ envelope
  *
+ * @beta
  * @class ZKPPacker
- * @implements {IPacker}
+ * @implements implements IPacker interface
  */
 class ZKPPacker implements IPacker {
   /**
@@ -137,14 +140,17 @@ class ZKPPacker implements IPacker {
       throw new Error(ErrProofIsInvalid);
     }
 
-    const sVerficationRes = await verificationFn.verify(token.circuitId, token.zkProof.pub_signals);
-    if (!sVerficationRes) {
+    const verificationResult = await verificationFn.verify(
+      token.circuitId,
+      token.zkProof.pub_signals
+    );
+    if (!verificationResult) {
       throw new Error(ErrStateVerificationFailed);
     }
 
     const message = bytesToProtocolMessage(byteEncoder.encode(token.getPayload()));
 
-    // should throw if errror
+    // should throw if error
     verifySender(token, message);
 
     return message;
@@ -163,7 +169,7 @@ const verifySender = (token: Token, msg: BasicMessage): void => {
       }
       break;
     default:
-      throw new Error(ErrUnkownCircuitID);
+      throw new Error(ErrUnknownCircuitID);
   }
 };
 

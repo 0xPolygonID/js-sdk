@@ -1,5 +1,4 @@
-import { Claim, IdPosition, MerklizedRootPosition } from '@iden3/js-iden3-core';
-import { Data, ElemBytes, Entry } from '@iden3/js-merkletree';
+import { IdPosition, MerklizedRootPosition } from '@iden3/js-iden3-core';
 import { SchemaMetadata } from '../schema-processor';
 import { SubjectPosition } from '../verifiable';
 
@@ -9,7 +8,7 @@ import { SubjectPosition } from '../verifiable';
  * @param {IdPosition} idPosition - index / none / value
  * @returns {SubjectPosition}
  */
-export  const subjectPositionIndex = (idPosition: IdPosition): SubjectPosition => {
+export const subjectPositionIndex = (idPosition: IdPosition): SubjectPosition => {
   switch (idPosition) {
     case IdPosition.Index:
       return SubjectPosition.Index;
