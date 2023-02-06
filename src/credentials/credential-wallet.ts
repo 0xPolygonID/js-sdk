@@ -15,7 +15,7 @@ import {
   IssuerData
 } from './../verifiable';
 
-import { Schema } from '../schema-processor';
+import { JSONSchema } from '../schema-processor';
 import * as uuid from 'uuid';
 import { getStatusFromRHS } from './revocation';
 import { Proof } from '@iden3/js-merkletree';
@@ -154,7 +154,7 @@ export interface ICredentialWallet {
    * @param {string} hostUrl - URL that will be used as a prefix for credential identifier
    * @param {DID} issuer - issuer identity
    * @param {ClaimRequest} request - specification of claim creation parameters
-   * @param {Schema} schema - JSON schema for W3C Verifiable Credential
+   * @param {JSONSchema} schema - JSON schema for W3C Verifiable Credential
    * @param {string} [rhsUrl] - URL of reverse hash service, if it's not set - host url is used for 'SparseMerkleTreeProof' credential status type
    * @returns W3CCredential
    */
@@ -162,7 +162,7 @@ export interface ICredentialWallet {
     hostUrl: string,
     issuer: DID,
     request: ClaimRequest,
-    schema: Schema,
+    schema: JSONSchema,
     rhsUrl?: string
   ): W3CCredential;
 }
@@ -277,7 +277,7 @@ export class CredentialWallet implements ICredentialWallet {
     hostUrl: string,
     issuer: DID,
     request: ClaimRequest,
-    schema: Schema,
+    schema: JSONSchema,
     rhsUrl?: string
   ): W3CCredential => {
     if (!schema.$metadata.uris['jsonLdContext']) {

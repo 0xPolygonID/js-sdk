@@ -50,7 +50,7 @@ export interface SchemaMetadata {
  * @beta
  * @interface   Schema
  */
-export interface Schema {
+export interface JSONSchema {
   $metadata: SchemaMetadata;
   $schema: string;
   type: string;
@@ -167,7 +167,7 @@ export class Parser {
    * @returns `ParsedSlots`
    */
   parseSlots(credential: W3CCredential, schemaBytes: Uint8Array): ParsedSlots {
-    const schema: Schema = JSON.parse(new TextDecoder().decode(schemaBytes));
+    const schema: JSONSchema = JSON.parse(new TextDecoder().decode(schemaBytes));
 
     if (schema?.$metadata?.serialization) {
       return this.assignSlots(credential.credentialSubject, schema.$metadata.serialization);
@@ -205,7 +205,7 @@ export class Parser {
    * @returns `number`
    */
   getFieldSlotIndex(field: string, schemaBytes: Uint8Array): number {
-    const schema: Schema = JSON.parse(new TextDecoder().decode(schemaBytes));
+    const schema: JSONSchema = JSON.parse(new TextDecoder().decode(schemaBytes));
     if (!schema?.$metadata?.serialization) {
       throw new Error('serialization info is not set');
     }

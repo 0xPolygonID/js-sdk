@@ -17,7 +17,7 @@ import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
 import { subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
-import { Schema, Parser, CoreClaimOptions } from '../schema-processor';
+import { JSONSchema, Parser, CoreClaimOptions } from '../schema-processor';
 import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
 import { getRandomBytes, keyPath } from '../kms/provider-helpers';
@@ -312,7 +312,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     await this._storage.mt.bindMerkleTreeToNewIdentifier(tmpIdentifier, did.toString());
 
-    const schema = JSON.parse(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTAIL_SCHEMA_JSON);
+    const schema = JSON.parse(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSON);
 
     const authData = authClaim.getExpirationDate();
     const expiration = authData ? getUnixTimestamp(authData) : 0;
@@ -541,7 +541,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const schema = await new UniversalSchemaLoader('ipfs.io').load(req.credentialSchema);
 
-    const jsonSchema: Schema = JSON.parse(new TextDecoder().decode(schema));
+    const jsonSchema: JSONSchema = JSON.parse(new TextDecoder().decode(schema));
 
     let credential: W3CCredential = new W3CCredential();
 
@@ -758,7 +758,7 @@ export class IdentityWallet implements IIdentityWallet {
     return { type: KmsKeyType.BabyJubJub, id: kp };
   }
 
-  private defineMTRootPosition(schema: Schema, position?: string): string {
+  private defineMTRootPosition(schema: JSONSchema, position?: string): string {
     if (schema.$metadata?.serialization) {
       return '';
     }
