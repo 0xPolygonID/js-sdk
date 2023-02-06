@@ -376,7 +376,7 @@ export class CredentialWallet implements ICredentialWallet {
  * @export
  * @param {string} issuer - did (string)
  * @param {string} state  - hex state
- * @returns {*}  {boolean}
+ * @returns boolean
  */
 export function isIssuerGenesis(issuer: string, state: string): boolean {
   const did = DID.parse(issuer);
@@ -393,7 +393,7 @@ export function isIssuerGenesis(issuer: string, state: string): boolean {
  * @param {bigint} id
  * @param {bigint} state
  * @param {Uint8Array} type
- * @returns {*}  {boolean} - returns if id is genesis
+ * @returns boolean - returns if id is genesis
  */
 export function isGenesisStateId(id: bigint, state: bigint, type: Uint8Array): boolean {
   const idFromState = Id.idGenesisFromIdenState(type, state);

@@ -29,7 +29,7 @@ export interface IFilterQuery {
    * applies filter to verifiable credential
    *
    * @param {W3CCredential} credential - credential to query
-   * @returns {*}  {boolean}
+   * @returns boolean
    */
   execute(credential: W3CCredential): boolean;
 }

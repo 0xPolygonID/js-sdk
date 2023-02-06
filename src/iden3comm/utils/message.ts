@@ -4,7 +4,7 @@ import { BasicMessage, EnvelopeStub, HeaderStub } from '../types';
 /**
  * creates empty basic message
  *
- * @returns {*}  {BasicMessage}
+ * @returns BasicMessage
  */
 export const basicMessageFactory = (): BasicMessage => {
   return {

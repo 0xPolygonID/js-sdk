@@ -35,7 +35,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
   query: Query;
 
   /**
-   * validate AtomicQueryMTPV2 inputs
+   * Validate AtomicQueryMTPV2 inputs
    *
    */
   validate(): void {
@@ -46,7 +46,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
 
   /**
    *
-   * inputs marshalling
+   * Inputs marshalling
    * @returns {Uint8Array}
    */
   inputsMarshal(): Uint8Array {
@@ -159,7 +159,7 @@ interface AtomicQueryMTPV2CircuitInputs {
 }
 
 /**
- * public signals
+ * Public signals
  *
  * @export
  * @beta

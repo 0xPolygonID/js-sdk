@@ -41,9 +41,8 @@ const isProtocolMessage = (message: { [key in string]: any }): boolean => {
 
 /**
  *
- *
  * @param {Uint8Array} e
- * @returns {*}  {Promise<BasicMessage>}
+ * @returns Promise<BasicMessage>
  */
 export const envelopeToProtocolMessage = async (e: Uint8Array): Promise<BasicMessage> => {
   const t = await Token.parse(byteDecoder.decode(e));

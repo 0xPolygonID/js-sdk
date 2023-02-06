@@ -3,7 +3,7 @@ import { SchemaMetadata } from '../schema-processor';
 import { SubjectPosition } from '../verifiable';
 
 /**
- * determines subject position
+ * Determines subject position
  *
  * @param {IdPosition} idPosition - index / none / value
  * @returns {SubjectPosition}
@@ -20,7 +20,7 @@ export const subjectPositionIndex = (idPosition: IdPosition): SubjectPosition =>
 };
 
 /**
- * returns merklized root position based on schema serialization metadata and expected position
+ * Returns merklized root position based on schema serialization metadata and expected position
  *
  * @param {SchemaMetadata} [metadata] - schema metadata
  * @param {MerklizedRootPosition} [position] - expected mt root position

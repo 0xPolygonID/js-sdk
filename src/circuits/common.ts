@@ -33,7 +33,7 @@ export class BaseConfig {
   /**
    *  getMTLevel max circuit MT levels
    *
-   * @returns {*}  {number}
+   * @returns number
    */
   getMTLevel(): number {
     return this.mtLevel ? this.mtLevel : defaultMTLevels;
@@ -42,7 +42,7 @@ export class BaseConfig {
   /**
    * GetValueArrSize return size of circuits value array size
    *
-   * @returns {*}  {number}
+   * @returns number
    */
   getValueArrSize(): number {
     return this.valueArraySize ? this.valueArraySize : defaultValueArraySize;
@@ -51,7 +51,7 @@ export class BaseConfig {
   /**
    * getMTLevelOnChain return level on chain for given circuit
    *
-   * @returns {*}  {number}
+   * @returns number
    */
   getMTLevelOnChain(): number {
     return this.mtLevelOnChain ? this.mtLevelOnChain : defaultMTLevelsOnChain;
@@ -62,7 +62,7 @@ export class BaseConfig {
  * converts hex to Hash
  *
  * @param {(string | undefined)} s - string hex
- * @returns {*}  {Hash}
+ * @returns Hash
  */
 export const strMTHex = (s: string | undefined): Hash => {
   if (!s) {
@@ -80,7 +80,7 @@ export const strMTHex = (s: string | undefined): Hash => {
  * @param {(string | undefined)} claimsTreeRoot - claims tree root hex
  * @param {(string | undefined)} revocationTreeRoot - revocation tree root hex
  * @param {(string | undefined)} rootOfRoots - root of roots tree root hex
- * @returns {*}  {TreeState}
+ * @returns TreeState
  */
 export const buildTreeState = (
   state: string | undefined,
@@ -99,7 +99,7 @@ export const buildTreeState = (
  *
  * @param {Hash[]} siblings - siblings array as Hashes
  * @param {number} levels - levels number
- * @returns {*}  {string[]}
+ * @returns string[]
  */
 export const prepareSiblingsStr = (siblings: Hash[], levels: number): string[] => {
   // Add the rest of empty levels to the siblings
@@ -114,7 +114,7 @@ export const prepareSiblingsStr = (siblings: Hash[], levels: number): string[] =
  *
  * @param {Proof} proof - mtp
  * @param {number} levels - siblings max count
- * @returns {*}  {Hash[]}
+ * @returns Hash[]
  */
 export const circomSiblings = (proof: Proof, levels: number): Hash[] => {
   const siblings = proof.allSiblings();
@@ -133,7 +133,7 @@ export const circomSiblings = (proof: Proof, levels: number): Hash[] => {
  *
  * @param {bigint[]} arr - given values
  * @param {number} size - size to pad
- * @returns {*}  {bigint[]}
+ * @returns bigint[]
  */
 export const prepareCircuitArrayValues = (arr: bigint[], size: number): bigint[] => {
   if (arr.length > size) {
@@ -152,7 +152,7 @@ export const prepareCircuitArrayValues = (arr: bigint[], size: number): bigint[]
  * converts each big integer in array to string
  *
  * @param {bigint[]} arr -  array of big numbers
- * @returns {*}  {string[]}
+ * @returns string[]
  */
 export const bigIntArrayToStringArray = (arr: bigint[]): string[] => {
   return arr.map((a) => a.toString());
@@ -164,7 +164,7 @@ export const bigIntArrayToStringArray = (arr: bigint[]): string[] => {
  *
  * @param {Hash[]} siblings
  * @param {number} levels
- * @returns {*}  {bigint[]}
+ * @returns bigint[]
  */
 export const prepareSiblings = (siblings: Hash[], levels: number): bigint[] => {
   // Add the rest of empty levels to the siblings
@@ -192,7 +192,7 @@ export /**
  * gets auxiliary node from proof
  *
  * @param {(Proof | undefined)} p - mtp
- * @returns {*}  {NodeAuxValue}
+ * @returns NodeAuxValue
  */
 const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
   // proof of inclusion
@@ -225,7 +225,7 @@ const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
  * if true - 1, else - 0
  *
  * @param {boolean} b - existence
- * @returns {*}  {number}
+ * @returns number
  */
 export const existenceToInt = (b: boolean): number => (b ? 0 : 1);
 
@@ -234,7 +234,7 @@ export const existenceToInt = (b: boolean): number => (b ? 0 : 1);
  *
  * @export
  * @param {object} obj
- * @returns {*}  {object}
+ * @returns object
  */
 export function getProperties(obj: object): object {
   const result: object = {};

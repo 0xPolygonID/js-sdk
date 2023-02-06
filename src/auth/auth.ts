@@ -56,7 +56,7 @@ export class AuthHandler implements IAuthHandler {
   ) {}
 
   /**
-   * Handles only messages with <i>authorization/v1.0/request</i> type
+   * Handles only messages with authorization/v1.0/request type
    * Generates all requested proofs and wraps authorization response message to JWZ token
    * @param {DID} did - an identity that will process the request
    * @param {Uint8Array} request - raw request

@@ -14,9 +14,8 @@ export enum Operators {
   NE = 6
 }
 
-// QueryOperators represents operators for atomic circuits
 
-/** @type {*} */
+/** QueryOperators represents operators for atomic circuits */
 export const QueryOperators = {
   $noop: Operators.NOOP,
   $eq: Operators.EQ,
@@ -51,7 +50,7 @@ export class Scalar implements IComparer {
    * compares two  scalar values
    *
    * @param {Operators} operator - EQ / LT / GT
-   * @returns {*}  {boolean}
+   * @returns boolean
    */
   compare(operator: Operators): boolean {
     switch (operator) {
@@ -88,7 +87,7 @@ export class Vector implements IComparer {
    *
    *
    * @param {Operators} operator - IN / NIN
-   * @returns {*}  {boolean}
+   * @returns boolean
    */
   compare(operator: Operators): boolean {
     switch (operator) {
@@ -108,7 +107,7 @@ export class Vector implements IComparer {
  * @param {bigint} x - val x
  * @param {bigint[]} y - array of values y
  * @param {Operators} operator - EQ / LT / GT / IN / NIN
- * @returns {*}  {IComparer}
+ * @returns IComparer
  */
 export const factoryComparer = (x: bigint, y: bigint[], operator: Operators): IComparer => {
   switch (operator) {

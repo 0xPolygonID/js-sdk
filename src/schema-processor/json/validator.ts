@@ -21,7 +21,7 @@ export class JsonSchemaValidator {
    *
    * @param {Uint8Array} dataB - payload to validate
    * @param {Uint8Array} schemaB - schema to process
-   * @returns {*}  {Promise<boolean>}
+   * @returns Promise<boolean>
    */
   async validate(dataB: Uint8Array, schemaB: Uint8Array): Promise<boolean> {
     const schema = JSON.parse(new TextDecoder().decode(schemaB));

@@ -98,7 +98,7 @@ export interface IIdentityWallet {
   createProfile(did: DID, nonce: number, verifier: string): Promise<DID>;
 
   /**
-   * generates a new key
+   * Generates a new key
    *
    * @param {KmsKeyType} keyType - supported key type by KMS
    * @returns `Promise<KmsKeyId>` - creates a new key BJJ or ECDSA
@@ -106,7 +106,7 @@ export interface IIdentityWallet {
   generateKey(keyType: KmsKeyType): Promise<KmsKeyId>;
 
   /**
-   * issues new credential from issuer according to the claim request
+   * Issues new credential from issuer according to the claim request
    *
    * @param {DID} issuerDID - issuer identity
    * @param {ClaimRequest} req - claim request
@@ -122,7 +122,7 @@ export interface IIdentityWallet {
   ): Promise<W3CCredential>;
 
   /**
-   * gets a tree model for given did that includes claims tree, revocation tree, the root of roots tree and calculated state hash
+   * Gets a tree model for given did that includes claims tree, revocation tree, the root of roots tree and calculated state hash
    *
    * @param {DID} did - did which trees info we need to receive
    * @returns `Promise<TreesModel>`
@@ -206,7 +206,7 @@ export interface IIdentityWallet {
   ): Promise<W3CCredential[]>;
 
   /**
-   * adds verifiable credentials to issuer Claims Merkle tree
+   * Adds verifiable credentials to issuer Claims Merkle tree
    *
    * @param {W3CCredential[]} credentials - credentials to include in the claims tree
    * @param {DID} issuerDID - issuer did

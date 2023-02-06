@@ -68,7 +68,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
   /**
    * marshal inputs
    *
-   * @returns {*}  {Uint8Array}
+   * @returns Uint8Array
    */
   inputsMarshal(): Uint8Array {
     this.validate();
@@ -245,7 +245,7 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
    *
    * PubSignalsUnmarshal unmarshal credentialAtomicQuerySig.circom public signals array to AtomicQuerySugPubSignals
    * @param {Uint8Array} data
-   * @returns {*}  {AtomicQuerySigV2PubSignals}
+   * @returns AtomicQuerySigV2PubSignals
    */
   pubSignalsUnmarshal(data: Uint8Array): AtomicQuerySigV2PubSignals {
     // expected order:

@@ -1,12 +1,11 @@
 import { InMemoryDataSource } from './../../src/storage/memory/data-source';
 import { CredentialStorage } from './../../src/storage/shared/credential-storage';
-import { Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
+import { CircuitStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import { getStatusFromRHS } from '../../src/credentials/revocation';
@@ -20,6 +19,7 @@ import {
 } from '../../src/verifiable';
 import { Proof } from '@iden3/js-merkletree';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
+import { CircuitData } from '../../src/storage/entities/circuitData';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
 /// integration tests!!!
@@ -120,7 +120,8 @@ describe.skip('rhs', () => {
       states: ethStorage
     };
 
-    const circuitStorage = new InMemoryCircuitStorage();
+    
+    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
 
     // todo: change this loader
     const loader = new FSKeyLoader(

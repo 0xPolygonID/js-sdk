@@ -23,7 +23,7 @@ import { strMTHex } from '../circuits';
  * Also contains the current state of identity
  * @export
  * @beta
- * @interface   TreesModel
+ * @interface TreesModel
  */
 export interface TreesModel {
   claimsTree: Merkletree;
@@ -60,7 +60,7 @@ export class ProofNode {
    * Determination of Node type
    * Can be: Leaf, Middle or State node
    *
-   * @returns {*}  {NodeType}
+   * @returns NodeType
    */
   nodeType(): NodeType {
     if (this.children.length === 2) {
@@ -83,7 +83,7 @@ export class ProofNode {
   /**
    * JSON Representation of ProofNode with a hex values
    *
-   * @returns {*}
+   * @returns {*} - ProofNode with hexes
    */
   toJSON() {
     return {
@@ -96,7 +96,7 @@ export class ProofNode {
    *
    * @static
    * @param {ProofNodeHex} hexNode
-   * @returns {*}  {ProofNode}
+   * @returns ProofNode
    */
   static fromHex(hexNode: ProofNodeHex): ProofNode {
     return new ProofNode(
@@ -125,7 +125,7 @@ interface NodeHexResponse {
  * @param {DID} issuer - issuer identity
  * @param {(CredentialStatus | RHSCredentialStatus)} credStatus - credentialStatus field from the W3C verifiable credential
  * @param {IStateStorage} stateStorage - storage to fetch current issuer status
- * @returns {*}  {Promise<RevocationStatus>}
+ * @returns Promise<RevocationStatus>
  */
 export async function getStatusFromRHS(
   issuer: DID,
@@ -139,12 +139,12 @@ export async function getStatusFromRHS(
 }
 
 /**
- * gets partial revocation status info from rhs service.
+ * Gets partial revocation status info from rhs service.
  *
  * @param {Hash} data - hash to fetch
  * @param {Hash} issuerRoot - issuer root which is a part of url
  * @param {string} rhsURL - base URL for reverse hash service
- * @returns {*}  {Promise<RevocationStatus>}
+ * @returns Promise<RevocationStatus>
  */
 async function getRevocationStatusFromRHS(
   data: Hash,

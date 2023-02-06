@@ -105,7 +105,7 @@ export class IpfsSchemaLoader implements ISchemaLoader {
  * @export
  * @param {string} url - schema url
  * @param {string} [ipfsConfigUrl] - ipfs node host url
- * @returns {*}  {ISchemaLoader}
+ * @returns ISchemaLoader
  */
 export function getLoader(url: string, ipfsConfigUrl?: string): ISchemaLoader {
   const uri = new URL(url);

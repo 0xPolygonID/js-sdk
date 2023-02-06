@@ -24,7 +24,7 @@ export class StateTransitionInputs extends BaseConfig {
   /**
    * CircuitInputMarshal returns Circom private inputs for stateTransition.circom
    *
-   * @returns {*}  {Uint8Array}
+   * @returns Uint8Array
    */
   inputsMarshal(): Uint8Array {
     if (!this.authClaim.incProof.proof) {
@@ -105,9 +105,10 @@ export class StateTransitionPubSignals {
 
   /**
    *
-   * pubSignalsUnmarshal unmarshal stateTransition.circom public signal
+   * 
+   * PubSignalsUnmarshal unmarshal stateTransition.circom public signal
    * @param {Uint8Array} data
-   * @returns {*}  {StateTransitionPubSignals}
+   * @returns StateTransitionPubSignals
    */
   pubSignalsUnmarshal(data: Uint8Array): StateTransitionPubSignals {
     const sVals = JSON.parse(new TextDecoder().decode(data));

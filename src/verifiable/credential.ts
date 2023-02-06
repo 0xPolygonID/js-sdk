@@ -60,7 +60,7 @@ export class W3CCredential {
   /**
    * checks BJJSignatureProof2021 in W3C VC
    *
-   * @returns {*}  {(BJJSignatureProof2021 | undefined)}
+   * @returns BJJSignatureProof2021 | undefined
    */
   getBJJSignature2021Proof(): BJJSignatureProof2021 | undefined {
     const proofType: ProofType = ProofType.BJJSignature;

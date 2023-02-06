@@ -1,11 +1,10 @@
-import { CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
+import { CircuitStorage, CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
-import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
@@ -13,15 +12,16 @@ import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { byteEncoder } from '../../src/iden3comm/utils';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
+import { CircuitData } from '../../src/storage/entities/circuitData';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
-describe.skip('sig proofs', () => {
+describe('sig proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
   let dataStorage: IDataStorage;
   let proofService: ProofService;
-  const rhsUrl = 'http://localhost:8080'; //'http://rhs.com/node'
+  const rhsUrl = 'https://rhs-staging.polygonid.me/'; //'http://rhs.com/node'
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: jest.fn(async () => {
@@ -70,7 +70,7 @@ describe.skip('sig proofs', () => {
       states: mockStateStorage
     };
 
-    const circuitStorage = new InMemoryCircuitStorage();
+    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
 
     const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
 

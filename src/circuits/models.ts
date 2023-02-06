@@ -42,7 +42,7 @@ export class Query {
   valueProof?: ValueProof;
 
   /**
-   * validates Query instance
+   * Validates Query instance
    *
    */
   validate(): void {

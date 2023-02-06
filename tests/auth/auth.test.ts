@@ -2,14 +2,13 @@ import { Identity, Profile } from './../../src/storage/entities/identity';
 import { IdentityStorage } from './../../src/storage/shared/identity-storage';
 import { defaultEthConnectionConfig, EthStateStorage } from './../../src/storage/blockchain/state';
 import { PlainPacker } from './../../src/iden3comm/packers/plain';
-import { AuthHandler, CredentialStorage, IAuthHandler, IdentityWallet } from '../../src';
+import { AuthHandler, CircuitStorage, CredentialStorage, IAuthHandler, IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { ClaimRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
-import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
@@ -127,7 +126,7 @@ describe.skip('auth', () => {
       states: new EthStateStorage(defaultEthConnectionConfig)
     };
 
-    const circuitStorage = new InMemoryCircuitStorage();
+    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
 
     const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
 

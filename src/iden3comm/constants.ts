@@ -2,8 +2,6 @@ const IDEN3_PROTOCOL = 'https://iden3-communication.io/';
 
 /**
  * Constants for Iden3 protocol
- * @type {*}
- *
  */
 export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   // AuthorizationV2RequestMessageType defines auth request type of the communication protocol
