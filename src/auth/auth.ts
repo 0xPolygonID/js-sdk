@@ -22,7 +22,7 @@ import * as uuid from 'uuid';
  *
  * @export
  * @beta
- * @interface   IAuthHandler
+ * @interface IAuthHandler
  */
 export interface IAuthHandler {
   handleAuthorizationRequest(
