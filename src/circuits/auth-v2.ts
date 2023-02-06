@@ -5,7 +5,7 @@ import { BaseConfig, getNodeAuxValue } from './common';
 import { Signature } from '@iden3/js-crypto';
 
 /**
- *  Auth v2 circuit representation
+ * Auth v2 circuit representation
  * Inputs and public signals declaration, marshalling and parsing
  *
  * @export

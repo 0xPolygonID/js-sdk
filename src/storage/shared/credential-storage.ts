@@ -7,6 +7,7 @@ import { IDataSource } from '../interfaces/data-source';
  * Implementation of ICredentialStorage with KV Data source
  *
  * @export
+ * @beta
  * @class CredentialStorage
  * @implements {ICredentialStorage}
  */

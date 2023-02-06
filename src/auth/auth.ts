@@ -25,6 +25,17 @@ import * as uuid from 'uuid';
  * @interface IAuthHandler
  */
 export interface IAuthHandler {
+  /**
+   * Handle authorization request protocol message
+   *
+   * @param {DID} id - identifier that will handle request
+   * @param {Uint8Array} request - request payload
+   * @returns `Promise<{
+   *     token: string;
+   *     authRequest: AuthorizationRequestMessage;
+   *     authResponse: AuthorizationResponseMessage;
+   *   }>`
+   */
   handleAuthorizationRequest(
     id: DID,
     request: Uint8Array

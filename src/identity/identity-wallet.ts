@@ -67,6 +67,7 @@ export interface Iden3ProofCreationResult {
 /**
  * Interface for IdentityWallet
  * @public
+ * @beta
  */
 export interface IIdentityWallet {
   /**
