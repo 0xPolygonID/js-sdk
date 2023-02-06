@@ -1,1 +1,1 @@
-export * from './jsonQuery';
+export * from './jsonQuery' ;

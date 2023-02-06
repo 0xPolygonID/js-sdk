@@ -1,5 +1,5 @@
 import { ProofQuery, W3CCredential } from '../../verifiable';
-import { StandardJSONCredentialsQueryFilter } from '../filters/jsonQuery';
+import { StandardJSONCredentialsQueryFilter } from '../filters';
 import { ICredentialStorage } from '../interfaces/credentials';
 import { IDataSource } from '../interfaces/data-source';
 
