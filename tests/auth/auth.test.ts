@@ -7,7 +7,7 @@ import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { ClaimRequest, CredentialWallet } from '../../src/credentials';
+import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
@@ -34,6 +34,7 @@ import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { byteEncoder } from '../../src/iden3comm/utils';
 import { Token } from '@iden3/js-jwz';
+import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
 describe.skip('auth', () => {
@@ -174,15 +175,25 @@ describe.skip('auth', () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
 
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',

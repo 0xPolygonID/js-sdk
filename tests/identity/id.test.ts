@@ -4,9 +4,10 @@ import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { MerkleTreeType } from '../../src/storage/entities/mt';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { ClaimRequest, CredentialWallet } from '../../src/credentials';
+import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
+import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 describe('identity', () => {
   let wallet: IdentityWallet;
@@ -66,7 +67,12 @@ describe('identity', () => {
     const { did, credential } = await wallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -79,6 +85,7 @@ describe('identity', () => {
       MerkleTreeType.Claims
     );
 
+    console.log(JSON.stringify(credential))
     expect(claimsTree?.root.bigInt()).not.toBe(0);
   });
   it('createProfile', async () => {
@@ -87,7 +94,12 @@ describe('identity', () => {
     const { did, credential } = await wallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -109,7 +121,12 @@ describe('identity', () => {
     const { did, credential } = await wallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -130,7 +147,12 @@ describe('identity', () => {
     const { did, credential } = await wallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -146,7 +168,12 @@ describe('identity', () => {
     const { did, credential } = await wallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -163,7 +190,12 @@ describe('identity', () => {
     const { did, credential } = await wallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
     expect(did.toString()).toBe(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -183,7 +215,12 @@ describe('identity', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
 
     expect(issuerDID.toString()).toBe(
@@ -193,10 +230,15 @@ describe('identity', () => {
     const { did: userDID, credential: userAuthCredential } = await wallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhraseUser
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseUser
+      }
     );
 
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',

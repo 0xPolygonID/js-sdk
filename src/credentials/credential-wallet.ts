@@ -25,9 +25,9 @@ import { Proof } from '@iden3/js-merkletree';
  *
  * @export
  * @beta
- * @interface ClaimRequest
+ * @interface CredentialRequest
  */
-export interface ClaimRequest {
+export interface CredentialRequest {
   /**
    * JSON credential schema
    */
@@ -153,7 +153,7 @@ export interface ICredentialWallet {
    *
    * @param {string} hostUrl - URL that will be used as a prefix for credential identifier
    * @param {DID} issuer - issuer identity
-   * @param {ClaimRequest} request - specification of claim creation parameters
+   * @param {CredentialRequest} request - specification of claim creation parameters
    * @param {JSONSchema} schema - JSON schema for W3C Verifiable Credential
    * @param {string} [rhsUrl] - URL of reverse hash service, if it's not set - host url is used for 'SparseMerkleTreeProof' credential status type
    * @returns W3CCredential
@@ -161,7 +161,7 @@ export interface ICredentialWallet {
   createCredential(
     hostUrl: string,
     issuer: DID,
-    request: ClaimRequest,
+    request: CredentialRequest,
     schema: JSONSchema,
     rhsUrl?: string
   ): W3CCredential;
@@ -276,7 +276,7 @@ export class CredentialWallet implements ICredentialWallet {
   createCredential = (
     hostUrl: string,
     issuer: DID,
-    request: ClaimRequest,
+    request: CredentialRequest,
     schema: JSONSchema,
     rhsUrl?: string
   ): W3CCredential => {

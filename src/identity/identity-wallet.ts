@@ -30,9 +30,10 @@ import {
   W3CCredential,
   MerkleTreeProofWithTreeState,
   Iden3SparseMerkleTreeProof,
-  ProofType
+  ProofType,
+  IssuerData,
 } from '../verifiable';
-import { ClaimRequest, ICredentialWallet } from '../credentials';
+import { CredentialRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/revocation';
 import { TreeState } from '../circuits';
 
@@ -52,6 +53,20 @@ export interface CredentialIssueOptions {
    */
   withRHS: string;
 }
+
+/**
+ * DID creation options
+ *
+ * @export
+ * @interface IdentityCreationOptions
+ */
+export interface IdentityCreationOptions {
+  method: DidMethod;
+  blockchain: Blockchain;
+  networkId :NetworkId;
+  seed?: Uint8Array;
+}
+
 /**
  *  Proof creation result
  *
@@ -78,14 +93,15 @@ export interface IIdentityWallet {
    *
    * @param {string} hostUrl - hostUrl is used as a part of the identifier of Auth BJJ credential
    * @param {string} rhsUrl - rhsUrl is url to reverse hash service, so revocation status can be fetched for Auth BJJ credential
-   * @param {Uint8Array} seed - if present the BJJ private key will be created from the given seed
+   * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:mumbai** with generated key.
    * @returns `Promise<{ did: DID; credential: W3CCredential }>` - returns did and Auth BJJ credential
    * @beta
    */
+ 
   createIdentity(
     hostUrl: string,
     rhsUrl: string,
-    seed?: Uint8Array
+    opts?: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }>;
 
   /**
@@ -110,14 +126,14 @@ export interface IIdentityWallet {
    * Issues new credential from issuer according to the claim request
    *
    * @param {DID} issuerDID - issuer identity
-   * @param {ClaimRequest} req - claim request
+   * @param {CredentialRequest} req - claim request
    * @param {string} hostUrl - url that will be a part of credential id prefix
    * @param {CredentialIssueOptions} [opts] - with / without RHS
    * @returns `Promise<W3CCredential>` - returns created W3CCredential
    */
   issueCredential(
     issuerDID: DID,
-    req: ClaimRequest,
+    req: CredentialRequest,
     hostUrl: string,
     opts?: CredentialIssueOptions
   ): Promise<W3CCredential>;
@@ -264,17 +280,23 @@ export class IdentityWallet implements IIdentityWallet {
   async createIdentity(
     hostUrl: string,
     rhsUrl: string,
-    seed?: Uint8Array
+    opts?:  IdentityCreationOptions,
   ): Promise<{ did: DID; credential: W3CCredential }> {
     const tmpIdentifier = uuid.v4();
 
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
 
-    if (!seed) {
-      seed = getRandomBytes(32);
+    if (!opts) {
+      opts = {
+        method: DidMethod.Iden3,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
+      }
     }
 
-    const keyID = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
+    opts.seed = opts.seed ?? getRandomBytes(32);
+
+    const keyID = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, opts.seed);
 
     const pubKey = await this._kms.publicKey(keyID);
 
@@ -306,7 +328,7 @@ export class IdentityWallet implements IIdentityWallet {
       ZERO_HASH.bigInt()
     ]);
 
-    const didType = buildDIDType(DidMethod.Iden3, Blockchain.Polygon, NetworkId.Mumbai);
+    const didType = buildDIDType(opts.method, opts.blockchain, opts.networkId);
     const identifier = Id.idGenesisFromIdenState(didType, currentState.bigInt());
     const did = DID.parseFromId(identifier);
 
@@ -317,7 +339,7 @@ export class IdentityWallet implements IIdentityWallet {
     const authData = authClaim.getExpirationDate();
     const expiration = authData ? getUnixTimestamp(authData) : 0;
 
-    const request: ClaimRequest = {
+    const request: CredentialRequest = {
       credentialSchema: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSON_URL,
       type: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_TYPE,
       credentialSubject: {
@@ -346,10 +368,10 @@ export class IdentityWallet implements IIdentityWallet {
     const claimsTreeHex = claimsTree.root.hex();
     const stateHex = currentState.hex();
 
-    const mtpProof: Iden3SparseMerkleTreeProof = {
+    const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
       type: ProofType.Iden3SparseMerkleTreeProof,
       mtp: proof,
-      issuerData: {
+      issuerData: new IssuerData({
         id: did.toString(),
         state: {
           rootOfRoots: ZERO_HASH.hex(),
@@ -360,9 +382,9 @@ export class IdentityWallet implements IIdentityWallet {
         authCoreClaim: authClaim.hex(),
         credentialStatus: credential.credentialStatus,
         mtp: proof
-      },
+      }),
       coreClaim: authClaim.hex()
-    };
+    });
 
     credential.proof = [mtpProof];
 
@@ -528,7 +550,7 @@ export class IdentityWallet implements IIdentityWallet {
   /** {@inheritDoc IIdentityWallet.issueCredential} */
   async issueCredential(
     issuerDID: DID,
-    req: ClaimRequest,
+    req: CredentialRequest,
     hostUrl: string,
     opts?: CredentialIssueOptions
   ): Promise<W3CCredential> {
@@ -597,13 +619,13 @@ export class IdentityWallet implements IIdentityWallet {
 
     const sigProof: BJJSignatureProof2021 = {
       type: ProofType.BJJSignature,
-      issuerData: {
+      issuerData: new IssuerData({
         id: issuerDID.toString(),
         state: mtpAuthBJJProof.issuerData.state,
         authCoreClaim: mtpAuthBJJProof.coreClaim,
         mtp: mtpAuthBJJProof.mtp,
         credentialStatus: mtpAuthBJJProof.issuerData.credentialStatus
-      },
+      }),
       coreClaim: coreClaim.hex(),
       signature: Hex.encodeString(signature)
     };
@@ -702,10 +724,10 @@ export class IdentityWallet implements IIdentityWallet {
         throw new Error('credential must have coreClaim representation in the signature proof');
       }
 
-      const mtpProof: Iden3SparseMerkleTreeProof = {
+      const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
         type: ProofType.Iden3SparseMerkleTreeProof,
         mtp: mtpWithProof.proof,
-        issuerData: {
+        issuerData: new IssuerData({
           id: issuerDID.toString(),
           state: {
             claimsTreeRoot: mtpWithProof.treeState.claimsRoot.hex(),
@@ -717,9 +739,9 @@ export class IdentityWallet implements IIdentityWallet {
             blockTimestamp
           },
           mtp: mtpWithProof.proof
-        },
+        }),
         coreClaim: coreClaim.hex()
-      };
+      });
       if (Array.isArray(credentials[index].proof)) {
         (credentials[index].proof as unknown[]).push(mtpProof);
       } else {

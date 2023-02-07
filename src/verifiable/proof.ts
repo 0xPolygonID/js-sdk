@@ -25,14 +25,32 @@ export interface State {
  *
  * @export
  * @beta
- * @interface   IssuerData
+ * @class   IssuerData
  */
-export interface IssuerData {
+export class IssuerData {
   id: string;
   state: State;
   authCoreClaim?: string;
   mtp?: Proof;
   credentialStatus?: object;
+  /**
+   * Creates an instance ofIssuerData .
+   * @param {object} obj
+   */
+  constructor(obj?: object) {
+    Object.assign(this, obj ?? {});
+  }
+  /**
+   *
+   *
+   * @returns `string`
+   */
+  toJSON() {
+    return {
+      ...this,
+      mtp: { existence: this.mtp.existence, siblings: this.mtp.siblings, nodeAux: this.mtp.nodeAux }
+    };
+  }
 }
 
 /**
@@ -47,6 +65,24 @@ export class Iden3SparseMerkleTreeProof {
   issuerData: IssuerData;
   mtp: Proof;
   coreClaim: string;
+  /**
+   * Creates an instance of Iden3SparseMerkleTreeProof.
+   * @param {object} obj
+   */
+  constructor(obj?: object) {
+    Object.assign(this, obj ?? {});
+  }
+  /**
+   *
+   *
+   * @returns `string`
+   */
+  toJSON() {
+    return {
+      ...this,
+      mtp: { existence: this.mtp.existence, siblings: this.mtp.siblings, nodeAux: this.mtp.nodeAux }
+    };
+  }
 }
 
 /**

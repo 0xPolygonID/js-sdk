@@ -5,7 +5,7 @@ import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { ClaimRequest, CredentialWallet } from '../../src/credentials';
+import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { FSKeyLoader } from '../../src/loaders';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import { getStatusFromRHS } from '../../src/credentials/revocation';
@@ -20,6 +20,7 @@ import {
 import { Proof } from '@iden3/js-merkletree';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import { CircuitData } from '../../src/storage/entities/circuitData';
+import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
 /// integration tests!!!
@@ -154,7 +155,12 @@ describe.skip('rhs', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
 
     await credWallet.save(issuerAuthCredential);
@@ -186,7 +192,12 @@ describe.skip('rhs', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
 
     await credWallet.save(issuerAuthCredential);
@@ -194,7 +205,12 @@ describe.skip('rhs', () => {
     const { did: userDID, credential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
 
     const credBasicStatus: CredentialStatus = {
@@ -209,7 +225,7 @@ describe.skip('rhs', () => {
       statusIssuer: credBasicStatus
     };
 
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
@@ -255,7 +271,12 @@ describe.skip('rhs', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
 
     await credWallet.save(issuerAuthCredential);
@@ -263,7 +284,12 @@ describe.skip('rhs', () => {
     const { did: userDID, credential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
 
     const credBasicStatus: CredentialStatus = {
@@ -278,7 +304,7 @@ describe.skip('rhs', () => {
       statusIssuer: credBasicStatus
     };
 
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
@@ -303,7 +329,7 @@ describe.skip('rhs', () => {
 
     // let's add  one more credential
 
-    const claimReq2: ClaimRequest = {
+    const claimReq2: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
