@@ -79,12 +79,12 @@ export class VerificationHandlerFunc {
 /**
  * Packer that can pack message to JWZ token,
  * and unpack and validate JWZ envelope
- *
+ * @exports
  * @beta
  * @class ZKPPacker
  * @implements implements IPacker interface
  */
-class ZKPPacker implements IPacker {
+export class ZKPPacker implements IPacker {
   /**
    * Creates an instance of ZKPPacker.
    * @param {Map<string, ProvingParams>} provingParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
@@ -186,4 +186,3 @@ const checkSender = (from: string, id: Id): boolean => {
   return from === did.toString();
 };
 
-export default ZKPPacker;
