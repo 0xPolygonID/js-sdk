@@ -58,7 +58,7 @@ const TestClaimDocument = `{
 }`;
 
 export function authClaimFromPubKey(x: bigint, y: bigint): Claim {
-  const schemaHash = new SchemaHash(Hex.decodeString('ca938857241db9451ea329256b9c06e5'));
+  const schemaHash = new SchemaHash(Hex.decodeString('cca3371a6cb1b715004407e325bd993c'));
   // NOTE: We take nonce as hash of public key to make it random
   // We don't use random number here because this test vectors will be used for tests
   // and have randomization inside tests is usually a bad idea
@@ -166,7 +166,7 @@ export async function generate(privKeyHex: string): Promise<{
 
   const state = poseidon.hash([claimsTree.root.bigInt(), BigInt(0), BigInt(0)]);
   // create new identity
-  const identity = Id.idGenesisFromIdenState(Constants.ID.TYPE_DEFAULT, state);
+  const identity = Id.idGenesisFromIdenState(buildDIDType("iden3",Blockchain.Polygon,NetworkId.Mumbai), state);
 
   const revTree = new Merkletree(new InMemoryDB(str2Bytes('')), true, 40);
   const rootsTree = new Merkletree(new InMemoryDB(str2Bytes('')), true, 40);
@@ -233,9 +233,9 @@ export class IdentityTest {
   static async newIdentity(privKHex: string): Promise<IdentityTest> {
     const it = new IdentityTest(privKHex);
     // init claims tree
-    it.clt = new Merkletree(new InMemoryDB(str2Bytes('')), true, 32);
-    it.ret = new Merkletree(new InMemoryDB(str2Bytes('')), true, 32);
-    it.rot = new Merkletree(new InMemoryDB(str2Bytes('')), true, 32);
+    it.clt = new Merkletree(new InMemoryDB(str2Bytes('')), true, 40);
+    it.ret = new Merkletree(new InMemoryDB(str2Bytes('')), true, 40);
+    it.rot = new Merkletree(new InMemoryDB(str2Bytes('')), true, 40);
 
     // extract pubKey
     const { key, x, y } = extractPubXY(privKHex);

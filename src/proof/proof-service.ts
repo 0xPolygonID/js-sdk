@@ -186,8 +186,14 @@ export class ProofService implements IProofService {
   ): Promise<string> {
     const authInfo = await this.prepareAuthBJJCredential(did, oldTreeState);
 
-    const newTreeState = await this._identityWallet.getDIDTreeState(did);
+    const newTreeModel = await this._identityWallet.getDIDTreeModel(did);
 
+    const newTreeState: TreeState = {
+      revocationRoot: newTreeModel.revocationTree.root,
+      claimsRoot: newTreeModel.claimsTree.root,
+      state: newTreeModel.state,
+      rootOfRoots: newTreeModel.rootsTree.root
+    };
     const challenge = Poseidon.hash([oldTreeState.state.bigInt(), newTreeState.state.bigInt()]);
 
     const signature = await this._identityWallet.signChallenge(challenge, authInfo.authCredential);
@@ -197,7 +203,13 @@ export class ProofService implements IProofService {
 
     circuitInputs.signature = signature;
     circuitInputs.isOldStateGenesis = isOldStateGenesis;
-    circuitInputs.newState = newTreeState.state;
+
+    const authClaimIncProofNewState = await this._identityWallet.generateCredentialMtp(did,authInfo.authCredential,newTreeState);
+
+
+    circuitInputs.newTreeState = authClaimIncProofNewState.treeState;
+    circuitInputs.authClaimNewStateIncProof = authClaimIncProofNewState.proof;
+
     circuitInputs.oldTreeState = oldTreeState;
     circuitInputs.authClaim = {
       claim: authInfo.authCoreClaim,

@@ -144,7 +144,7 @@ export interface IIdentityWallet {
    * @param {DID} did - did which trees info we need to receive
    * @returns `Promise<TreesModel>`
    * */
-  getDIDTreeState(did: DID): Promise<TreesModel>;
+  getDIDTreeModel(did: DID): Promise<TreesModel>;
 
   /**
    * Generates proof of credential inclusion / non-inclusion to the given claims tree
@@ -436,8 +436,8 @@ export class IdentityWallet implements IIdentityWallet {
     return key;
   }
 
-  /** {@inheritDoc IIdentityWallet.getDIDTreeState} */
-  async getDIDTreeState(did: DID): Promise<TreesModel> {
+  /** {@inheritDoc IIdentityWallet.getDIDTreeModel} */
+  async getDIDTreeModel(did: DID): Promise<TreesModel> {
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       did.toString(),
       MerkleTreeType.Claims
@@ -472,7 +472,7 @@ export class IdentityWallet implements IIdentityWallet {
   ): Promise<MerkleTreeProofWithTreeState> {
     const coreClaim = await this.getCoreClaimFromCredential(credential);
 
-    const treesModel = await this.getDIDTreeState(did);
+    const treesModel = await this.getDIDTreeModel(did);
 
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       did.toString(),
@@ -505,7 +505,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const revNonce = coreClaim.getRevocationNonce();
 
-    const treesModel = await this.getDIDTreeState(did);
+    const treesModel = await this.getDIDTreeModel(did);
 
     const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       did.toString(),
@@ -636,7 +636,7 @@ export class IdentityWallet implements IIdentityWallet {
 
   /** {@inheritDoc IIdentityWallet.revokeCredential} */
   async revokeCredential(issuerDID: DID, credential: W3CCredential): Promise<number> {
-    const issuerTree = await this.getDIDTreeState(issuerDID);
+    const issuerTree = await this.getDIDTreeModel(issuerDID);
 
     const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
 
@@ -655,7 +655,7 @@ export class IdentityWallet implements IIdentityWallet {
     credentials: W3CCredential[],
     issuerDID: DID
   ): Promise<Iden3ProofCreationResult> {
-    const oldIssuerTree = await this.getDIDTreeState(issuerDID);
+    const oldIssuerTree = await this.getDIDTreeModel(issuerDID);
 
     const oldTreeState: TreeState = {
       revocationRoot: oldIssuerTree.revocationTree.root,
@@ -682,7 +682,7 @@ export class IdentityWallet implements IIdentityWallet {
       );
     }
 
-    const newIssuerTreeState = await this.getDIDTreeState(issuerDID);
+    const newIssuerTreeState = await this.getDIDTreeModel(issuerDID);
 
     await this._storage.mt.addToMerkleTree(
       issuerDID.toString(),
@@ -690,7 +690,7 @@ export class IdentityWallet implements IIdentityWallet {
       newIssuerTreeState.claimsTree.root.bigInt(),
       BigInt(0)
     );
-    const newIssuerTreeStateWithROR = await this.getDIDTreeState(issuerDID);
+    const newIssuerTreeStateWithROR = await this.getDIDTreeModel(issuerDID);
 
     return {
       credentials,
@@ -753,7 +753,7 @@ export class IdentityWallet implements IIdentityWallet {
 
   /** {@inheritDoc IIdentityWallet.publishStateToRHS} */
   async publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void> {
-    const treeState = await this.getDIDTreeState(issuerDID);
+    const treeState = await this.getDIDTreeModel(issuerDID);
 
     await pushHashesToRHS(
       treeState.state,

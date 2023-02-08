@@ -2,9 +2,10 @@ import { Hex } from '@iden3/js-crypto';
 import { Hash, ZERO_HASH, Proof, swapEndianness } from '@iden3/js-merkletree';
 import { TreeState } from './models';
 
-export const defaultMTLevels = 32; // max MT levels, default value for identity circuits
+export const defaultMTLevels = 40; // max MT levels, default value for identity circuits
 export const defaultValueArraySize = 64; // max value array size, default value for identity circuits
-export const defaultMTLevelsOnChain = 32; // max MT levels on chain, default value for identity circuits
+export const defaultMTLevelsOnChain = 64; // max MT levels on chain, default value for identity circuits
+export const defaultMTLevelsClaimsMerklization = 32; // max MT levels of JSON-LD merklization on claim
 
 export const ErrorEmptyAuthClaimProof = 'empty auth claim mtp proof';
 export const ErrorEmptyAuthClaimNonRevProof = 'empty auth claim non-revocation mtp proof';
@@ -29,6 +30,8 @@ export class BaseConfig {
   mtLevel: number; // Max levels of MT
   valueArraySize: number; // Size if( value array in identity circuit)s
   mtLevelOnChain: number;
+  mtLevelClaimsMerklization: number; // max levels in the merklization
+
 
   /**
    *  getMTLevel max circuit MT levels
@@ -37,6 +40,14 @@ export class BaseConfig {
    */
   getMTLevel(): number {
     return this.mtLevel ? this.mtLevel : defaultMTLevels;
+  }
+   /**
+   *  getMTLevel max circuit MT levels
+   *
+   * @returns number
+   */
+   getMTLevelsClaimMerklization(): number {
+    return this.mtLevelClaimsMerklization ? this.mtLevelClaimsMerklization : defaultMTLevelsClaimsMerklization;
   }
 
   /**

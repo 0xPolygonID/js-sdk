@@ -157,6 +157,7 @@ export interface GISTProof {
  */
 export enum CircuitError {
   EmptyAuthClaimProof = 'empty auth claim mtp proof',
+  EmptyAuthClaimProofInTheNewState = 'empty auth claim mtp proof in the new state',
   EmptyAuthClaimNonRevProof = 'empty auth claim non-revocation mtp proof',
   EmptyChallengeSignature = 'empty challenge signature',
   EmptyClaimSignature = 'empty claim signature',

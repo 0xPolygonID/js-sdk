@@ -125,7 +125,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
 
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
 
-      claimPathMtp: prepareSiblingsStr(valueProof.mtp.allSiblings(), this.getMTLevel()),
+      claimPathMtp: prepareSiblingsStr(valueProof.mtp.allSiblings(), this.getMTLevelsClaimMerklization()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query.operator,
       timestamp: this.currentTimeStamp,

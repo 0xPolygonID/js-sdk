@@ -357,7 +357,7 @@ describe.skip('rhs', () => {
 
     const nonce: number = await idWallet.revokeCredential(issuerDID, issuerCred2);
 
-    const latestTree = await idWallet.getDIDTreeState(issuerDID);
+    const latestTree = await idWallet.getDIDTreeModel(issuerDID);
 
     await idWallet.publishStateToRHS(issuerDID, rhsUrl, [nonce]);
 
