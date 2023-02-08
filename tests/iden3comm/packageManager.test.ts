@@ -1,9 +1,9 @@
 import {
   DataPrepareHandlerFunc,
   PackageManager,
-  VerificationHandlerFunc
+  VerificationHandlerFunc,
+  ZKPPacker
 } from '../../src/iden3comm/index';
-import ZKPPacker from '../../src/iden3comm/packers/zkp';
 import { mockPrepareAuthInputs, mockVerifyState, ProvingMethodGroth16Authv2 } from './mock/proving';
 import { proving, ProvingMethodAlg, ProvingMethod } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';

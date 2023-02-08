@@ -1,7 +1,6 @@
 import { DID } from '@iden3/js-iden3-core';
 import { Token, ProvingMethodAlg, ProvingMethod, proving } from '@iden3/js-jwz';
-import { DataPrepareHandlerFunc, VerificationHandlerFunc } from '../../src/iden3comm';
-import ZKPPacker from '../../src/iden3comm/packers/zkp';
+import { DataPrepareHandlerFunc, VerificationHandlerFunc, ZKPPacker } from '../../src/iden3comm';
 import { mockPrepareAuthInputs, mockVerifyState, ProvingMethodGroth16Authv2 } from './mock/proving';
 import { ProvingParams, VerificationParams } from '../../src/iden3comm/types';
 import { AuthV2PubSignals } from '../../src/circuits';

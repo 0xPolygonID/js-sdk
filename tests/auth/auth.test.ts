@@ -26,10 +26,10 @@ import {
   StateVerificationFunc,
   VerificationHandlerFunc,
   VerificationParams,
-  ZeroKnowledgeProofRequest
+  ZeroKnowledgeProofRequest,
+  ZKPPacker
 } from '../../src/iden3comm';
 import { proving } from '@iden3/js-jwz';
-import ZKPPacker from '../../src/iden3comm/packers/zkp';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { byteEncoder } from '../../src/iden3comm/utils';
