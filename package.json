@@ -1,6 +1,6 @@
 {
   "name": "@iden3/polygonid-js-sdk",
-  "version": "0.0.8",
+  "version": "0.0.19",
   "description": "SDK to work with Polygon ID",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -62,7 +62,7 @@
   "dependencies": {
     "@iden3/js-crypto": "v1.0.0-beta.0",
     "@iden3/js-iden3-core": "v1.0.0-beta.0",
-    "@iden3/js-jwz": "v1.0.0-beta.0",
+    "@iden3/js-jwz": "v1.0.0-beta.1",
     "@iden3/js-merkletree": "v1.0.0-beta.0",
     "@lumeweb/js-sha3-browser": "^0.8.1",
     "ajv": "^6.12.6",
