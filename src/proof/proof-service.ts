@@ -204,8 +204,11 @@ export class ProofService implements IProofService {
     circuitInputs.signature = signature;
     circuitInputs.isOldStateGenesis = isOldStateGenesis;
 
-    const authClaimIncProofNewState = await this._identityWallet.generateCredentialMtp(did,authInfo.authCredential,newTreeState);
-
+    const authClaimIncProofNewState = await this._identityWallet.generateCredentialMtp(
+      did,
+      authInfo.authCredential,
+      newTreeState
+    );
 
     circuitInputs.newTreeState = authClaimIncProofNewState.treeState;
     circuitInputs.authClaimNewStateIncProof = authClaimIncProofNewState.proof;
@@ -327,6 +330,7 @@ export class ProofService implements IProofService {
         preparedCredential.credentialCoreClaim
       );
       circuitInputs.claim = {
+        issuerID: circuitClaimData.issuerId,
         claim: circuitClaimData.claim,
         incProof: { proof: circuitClaimData.proof, treeState: circuitClaimData.treeState },
         nonRevProof: circuitClaimData.nonRevProof
