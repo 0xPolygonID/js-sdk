@@ -46,15 +46,15 @@ export class StateTransitionInputs extends BaseConfig {
     const s: Partial<StateTransitionInputsInternal> = {
       authClaim: this.authClaim.claim.marshalJson(),
       authClaimMtp: prepareSiblingsStr(
-        this.authClaim.incProof.proof.allSiblings(),
+        this.authClaim.incProof.proof,
         this.getMTLevel()
       ),
       authClaimNonRevMtp: prepareSiblingsStr(
-        this.authClaim.nonRevProof.proof.allSiblings(),
+        this.authClaim.nonRevProof.proof,
         this.getMTLevel()
       ),
       newAuthClaimMtp: prepareSiblingsStr(
-        this.authClaimNewStateIncProof.allSiblings(),
+        this.authClaimNewStateIncProof,
         this.getMTLevel()
       ),
       userID: this.id.bigInt().toString(),

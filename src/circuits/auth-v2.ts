@@ -59,11 +59,11 @@ export class AuthV2Inputs extends BaseConfig {
       profileNonce: this.profileNonce?.toString(),
       authClaim: this.authClaim?.marshalJson(),
       authClaimIncMtp: circomSiblingsFromSiblings(
-        this.authClaimIncMtp.allSiblings(),
+        Object.assign(new Proof(),this.authClaimIncMtp).allSiblings(),
         this.getMTLevel() - 1
       ).map((s) => s.bigInt().toString()),
       authClaimNonRevMtp: circomSiblingsFromSiblings(
-        this.authClaimNonRevMtp?.allSiblings(),
+        Object.assign(new Proof(),this.authClaimNonRevMtp).allSiblings(),
         this.getMTLevel() - 1
       ).map((s) => s.bigInt().toString()),
       challenge: this.challenge?.toString(),
@@ -76,7 +76,7 @@ export class AuthV2Inputs extends BaseConfig {
       state: this.treeState?.state.bigInt().toString(),
       gistRoot: this.gistProof.root.bigInt().toString(),
       gistMtp: circomSiblingsFromSiblings(
-        this.gistProof.proof.allSiblings(),
+        Object.assign(new Proof(),this.gistProof.proof).allSiblings(),
         this.getMTLevelOnChain() - 1
       ).map((s) => s.bigInt().toString())
     };

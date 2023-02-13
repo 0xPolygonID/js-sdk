@@ -97,7 +97,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
         .toString(),
       issuerClaimNonRevState: this.claim.nonRevProof.treeState?.state.bigInt().toString(),
       issuerClaimNonRevMtp: prepareSiblingsStr(
-        this.claim.nonRevProof.proof.allSiblings(),
+        this.claim.nonRevProof.proof,
         this.getMTLevel()
       ),
       issuerClaimSignatureR8x: this.claim.signatureProof.signature.R8[0].toString(),
@@ -105,7 +105,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
       issuerClaimSignatureS: this.claim.signatureProof.signature.S.toString(),
       issuerAuthClaim: this.claim.signatureProof.issuerAuthClaim?.marshalJson(),
       issuerAuthClaimMtp: prepareSiblingsStr(
-        this.claim.signatureProof.issuerAuthIncProof.proof.allSiblings(),
+        this.claim.signatureProof.issuerAuthIncProof.proof,
         this.getMTLevel()
       ),
       issuerAuthClaimsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState?.claimsRoot
@@ -119,14 +119,14 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
         .toString(),
 
       issuerAuthClaimNonRevMtp: prepareSiblingsStr(
-        this.claim.signatureProof.issuerAuthNonRevProof.proof.allSiblings(),
+        this.claim.signatureProof.issuerAuthNonRevProof.proof,
         this.getMTLevel()
       ),
 
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
 
       claimPathMtp: prepareSiblingsStr(
-        valueProof.mtp.allSiblings(),
+        valueProof.mtp,
         this.getMTLevelsClaimMerklization()
       ),
       claimPathValue: valueProof.value.toString(),

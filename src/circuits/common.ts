@@ -113,7 +113,9 @@ export const buildTreeState = (
  * @param {number} levels - levels number
  * @returns string[]
  */
-export const prepareSiblingsStr = (siblings: Hash[], levels: number): string[] => {
+export const prepareSiblingsStr = (proof: Proof, levels: number): string[] => {
+  
+  let siblings = Object.assign(new Proof(),proof).allSiblings();
   // Add the rest of empty levels to the siblings
   for (let i = siblings.length; i < levels; i++) {
     siblings.push(ZERO_HASH);
