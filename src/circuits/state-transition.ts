@@ -2,7 +2,7 @@ import { Signature } from '@iden3/js-crypto';
 import { Id } from '@iden3/js-iden3-core';
 import { Hash, newHashFromString, Proof } from '@iden3/js-merkletree';
 import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
-import { ClaimWithMTPProof, TreeState, CircuitError, MTProof } from './models';
+import { ClaimWithMTPProof, TreeState, CircuitError } from './models';
 
 /**
  * StateTransition circuit representation
@@ -45,18 +45,9 @@ export class StateTransitionInputs extends BaseConfig {
 
     const s: Partial<StateTransitionInputsInternal> = {
       authClaim: this.authClaim.claim.marshalJson(),
-      authClaimMtp: prepareSiblingsStr(
-        this.authClaim.incProof.proof,
-        this.getMTLevel()
-      ),
-      authClaimNonRevMtp: prepareSiblingsStr(
-        this.authClaim.nonRevProof.proof,
-        this.getMTLevel()
-      ),
-      newAuthClaimMtp: prepareSiblingsStr(
-        this.authClaimNewStateIncProof,
-        this.getMTLevel()
-      ),
+      authClaimMtp: prepareSiblingsStr(this.authClaim.incProof.proof, this.getMTLevel()),
+      authClaimNonRevMtp: prepareSiblingsStr(this.authClaim.nonRevProof.proof, this.getMTLevel()),
+      newAuthClaimMtp: prepareSiblingsStr(this.authClaimNewStateIncProof, this.getMTLevel()),
       userID: this.id.bigInt().toString(),
       newUserState: this.newTreeState.state.bigInt().toString(),
       claimsTreeRoot: this.oldTreeState.claimsRoot.bigInt().toString(),

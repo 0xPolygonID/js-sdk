@@ -5,10 +5,10 @@ import { Hash } from '@iden3/js-merkletree';
 import {
   BaseConfig,
   bigIntArrayToStringArray,
-  circomSiblings,
   existenceToInt,
   getNodeAuxValue,
-  prepareCircuitArrayValues
+  prepareCircuitArrayValues,
+  prepareSiblingsStr
 } from './common';
 
 /**
@@ -65,16 +65,12 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
       issuerID: this.claim.issuerID?.bigInt().toString(),
       issuerClaim: this.claim.claim.marshalJson(),
-      issuerClaimMtp: circomSiblings(this.claim.incProof.proof, this.getMTLevel()).map((s) =>
-        s.bigInt().toString()
-      ),
+      issuerClaimMtp: prepareSiblingsStr(this.claim.incProof.proof, this.getMTLevel()),
       issuerClaimClaimsTreeRoot: this.claim.incProof.treeState?.claimsRoot.bigInt().toString(),
       issuerClaimRevTreeRoot: this.claim.incProof.treeState?.revocationRoot.bigInt().toString(),
       issuerClaimRootsTreeRoot: this.claim.incProof.treeState?.rootOfRoots.bigInt().toString(),
       issuerClaimIdenState: this.claim.incProof.treeState?.state.bigInt().toString(),
-      issuerClaimNonRevMtp: circomSiblings(this.claim.nonRevProof.proof, this.getMTLevel()).map(
-        (s) => s.bigInt().toString()
-      ),
+      issuerClaimNonRevMtp: prepareSiblingsStr(this.claim.nonRevProof.proof, this.getMTLevel()),
       issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState?.claimsRoot
         .bigInt()
         .toString(),
@@ -86,9 +82,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
         .toString(),
       issuerClaimNonRevState: this.claim.nonRevProof.treeState?.state.bigInt().toString(),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
-      claimPathMtp: circomSiblings(valueProof.mtp, this.getMTLevelsClaimMerklization()).map((s) =>
-        s.bigInt().toString()
-      ),
+      claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaimMerklization()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query.operator,
       slotIndex: this.query.slotIndex,

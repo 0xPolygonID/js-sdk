@@ -1,7 +1,7 @@
-import { circomSiblingsFromSiblings, Hash, newHashFromString, Proof } from '@iden3/js-merkletree';
+import { Hash, newHashFromString, Proof } from '@iden3/js-merkletree';
 import { Claim, Id } from '@iden3/js-iden3-core';
 import { CircuitError, GISTProof, TreeState } from './models';
-import { BaseConfig, getNodeAuxValue } from './common';
+import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
 import { Signature } from '@iden3/js-crypto';
 
 /**
@@ -58,14 +58,8 @@ export class AuthV2Inputs extends BaseConfig {
       genesisID: this.genesisID?.bigInt().toString(),
       profileNonce: this.profileNonce?.toString(),
       authClaim: this.authClaim?.marshalJson(),
-      authClaimIncMtp: circomSiblingsFromSiblings(
-        Object.assign(new Proof(),this.authClaimIncMtp).allSiblings(),
-        this.getMTLevel() - 1
-      ).map((s) => s.bigInt().toString()),
-      authClaimNonRevMtp: circomSiblingsFromSiblings(
-        Object.assign(new Proof(),this.authClaimNonRevMtp).allSiblings(),
-        this.getMTLevel() - 1
-      ).map((s) => s.bigInt().toString()),
+      authClaimIncMtp: prepareSiblingsStr(this.authClaimIncMtp, this.getMTLevel()),
+      authClaimNonRevMtp: prepareSiblingsStr(this.authClaimNonRevMtp, this.getMTLevel()),
       challenge: this.challenge?.toString(),
       challengeSignatureR8x: this.signature?.R8[0].toString(),
       challengeSignatureR8y: this.signature?.R8[1].toString(),
@@ -75,10 +69,7 @@ export class AuthV2Inputs extends BaseConfig {
       rootsTreeRoot: this.treeState?.rootOfRoots.bigInt().toString(),
       state: this.treeState?.state.bigInt().toString(),
       gistRoot: this.gistProof.root.bigInt().toString(),
-      gistMtp: circomSiblingsFromSiblings(
-        Object.assign(new Proof(),this.gistProof.proof).allSiblings(),
-        this.getMTLevelOnChain() - 1
-      ).map((s) => s.bigInt().toString())
+      gistMtp: prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain()),
     };
 
     const nodeAuxAuth = getNodeAuxValue(this.authClaimNonRevMtp);

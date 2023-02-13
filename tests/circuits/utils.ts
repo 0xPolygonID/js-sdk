@@ -343,4 +343,4 @@ export const JSONSerializer = (key, value) => {
   return value;
 };
 
-export const globalTree = () => new Merkletree(new InMemoryDB(str2Bytes('')), true, 32);
+export const globalTree = () => new Merkletree(new InMemoryDB(str2Bytes('')), true, 64);
