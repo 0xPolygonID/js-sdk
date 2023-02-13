@@ -69,7 +69,7 @@ export class AuthV2Inputs extends BaseConfig {
       rootsTreeRoot: this.treeState?.rootOfRoots.bigInt().toString(),
       state: this.treeState?.state.bigInt().toString(),
       gistRoot: this.gistProof.root.bigInt().toString(),
-      gistMtp: prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain()),
+      gistMtp: prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain())
     };
 
     const nodeAuxAuth = getNodeAuxValue(this.authClaimNonRevMtp);
