@@ -78,7 +78,7 @@ describe('identity', () => {
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
     const dbCred = await dataStorage.credential.findCredentialById(credential.id);
-    expect(credential).toBe(dbCred);
+    expect(credential).toStrictEqual(dbCred);
 
     const claimsTree = await dataStorage.mt.getMerkleTreeByIdentifierAndType(
       did.toString(),

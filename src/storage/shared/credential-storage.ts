@@ -26,7 +26,9 @@ export class CredentialStorage implements ICredentialStorage {
 
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async listCredentials(): Promise<W3CCredential[]> {
-    return this._dataSource.load();
+    let creds = this._dataSource.load();
+    creds = creds.map((cred) => cred ? Object.assign(new W3CCredential(), cred) : undefined);
+    return creds;
   }
 
   /** @inheritdoc */
@@ -48,7 +50,8 @@ export class CredentialStorage implements ICredentialStorage {
 
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async findCredentialById(id: string): Promise<W3CCredential | undefined> {
-    return this._dataSource.get(id);
+    const cred = this._dataSource.get(id);
+    return cred ? Object.assign(new W3CCredential(), cred) : undefined;
   }
 
   /** {@inheritdoc ICredentialStorage.listCredentials }
@@ -56,8 +59,11 @@ export class CredentialStorage implements ICredentialStorage {
    */
   async findCredentialsByQuery(query: ProofQuery): Promise<W3CCredential[]> {
     const filters = StandardJSONCredentialsQueryFilter(query);
-    return this._dataSource
+    let creds = this._dataSource
       .load()
       .filter((credential) => filters.every((filter) => filter.execute(credential)));
+
+    creds = creds.map((cred) => cred ? Object.assign(new W3CCredential(), cred) : undefined);
+    return creds;
   }
 }
