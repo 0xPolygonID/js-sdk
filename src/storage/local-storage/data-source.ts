@@ -62,7 +62,7 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
   get(key: string, keyName = 'id'): Type | undefined {
     const data = localStorage.getItem(this._localStorageKey);
     const parsedData = data && (JSON.parse(data) as Type[]);
-    return parsedData.find((t) => t[keyName] === key);
+    return  parsedData.find((t) => t[keyName] === key);
   }
 
   /**
