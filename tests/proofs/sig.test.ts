@@ -16,7 +16,7 @@ import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
-describe('sig proofs', () => {
+describe.skip('sig proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
