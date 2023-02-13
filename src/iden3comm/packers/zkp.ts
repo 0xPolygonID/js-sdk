@@ -185,4 +185,3 @@ const checkSender = (from: string, id: Id): boolean => {
   const did = DID.parseFromId(id);
   return from === did.toString();
 };
-

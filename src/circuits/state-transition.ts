@@ -68,7 +68,7 @@ export class StateTransitionInputs extends BaseConfig {
       signatureS: this.signature.S.toString(),
       newClaimsTreeRoot: this.newTreeState.claimsRoot.bigInt().toString(),
       newRootsTreeRoot: this.newTreeState.rootOfRoots.bigInt().toString(),
-      newRevTreeRoot: this.newTreeState.revocationRoot.bigInt().toString(),
+      newRevTreeRoot: this.newTreeState.revocationRoot.bigInt().toString()
     };
 
     if (this.isOldStateGenesis) {
@@ -103,11 +103,10 @@ interface StateTransitionInputsInternal {
   signatureR8x: string;
   signatureR8y: string;
   signatureS: string;
-  newAuthClaimMtp :string[];
+  newAuthClaimMtp: string[];
   newClaimsTreeRoot: string;
-  newRevTreeRoot:string;
-  newRootsTreeRoot:string;
-
+  newRevTreeRoot: string;
+  newRootsTreeRoot: string;
 }
 
 /**
@@ -125,7 +124,7 @@ export class StateTransitionPubSignals {
 
   /**
    *
-   * 
+   *
    * PubSignalsUnmarshal unmarshal stateTransition.circom public signal
    * @param {Uint8Array} data
    * @returns StateTransitionPubSignals

@@ -14,7 +14,6 @@ export enum Operators {
   NE = 6
 }
 
-
 /** QueryOperators represents operators for atomic circuits */
 export const QueryOperators = {
   $noop: Operators.NOOP,

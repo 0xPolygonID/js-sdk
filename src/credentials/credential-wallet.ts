@@ -353,7 +353,7 @@ export class CredentialWallet implements ICredentialWallet {
   /**
    * {@inheritDoc ICredentialWallet.remove}
    */
-  async remove(id:string): Promise<void> {
+  async remove(id: string): Promise<void> {
     return this._storage.credential.removeCredential(id);
   }
   /**

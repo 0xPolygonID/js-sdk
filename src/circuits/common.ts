@@ -32,7 +32,6 @@ export class BaseConfig {
   mtLevelOnChain: number;
   mtLevelClaimsMerklization: number; // max levels in the merklization
 
-
   /**
    *  getMTLevel max circuit MT levels
    *
@@ -41,13 +40,15 @@ export class BaseConfig {
   getMTLevel(): number {
     return this.mtLevel ? this.mtLevel : defaultMTLevels;
   }
-   /**
+  /**
    *  getMTLevel max circuit MT levels
    *
    * @returns number
    */
-   getMTLevelsClaimMerklization(): number {
-    return this.mtLevelClaimsMerklization ? this.mtLevelClaimsMerklization : defaultMTLevelsClaimsMerklization;
+  getMTLevelsClaimMerklization(): number {
+    return this.mtLevelClaimsMerklization
+      ? this.mtLevelClaimsMerklization
+      : defaultMTLevelsClaimsMerklization;
   }
 
   /**

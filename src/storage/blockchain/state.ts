@@ -6,7 +6,6 @@ import { StateInfo } from '../entities/state';
 import abi from './state-abi.json';
 import { StateTransitionPubSignals } from '../../circuits';
 
-
 /**
  * Configuration of ethereum based blockchain connection
  *

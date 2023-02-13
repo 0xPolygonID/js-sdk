@@ -7,12 +7,9 @@ export async function witnessBuilder(code, options?) {
   try {
     wasmModule = await WebAssembly.compile(code);
   } catch (err) {
-    console.log(err);
     console.log('\nTry to run circom --c in order to generate c++ code instead\n');
     throw new Error(err);
   }
-
-  let wc;
 
   let errStr = '';
   let msgStr = '';
@@ -73,12 +70,12 @@ export async function witnessBuilder(code, options?) {
   //            options.logFinishComponent
   //        );
 
-  wc = new WitnessCalculator(instance, sanityCheck);
+  const wc = new WitnessCalculator(instance, sanityCheck);
   return wc;
 
   function getMessage() {
-    var message = '';
-    var c = (instance as any).exports.getMessageChar();
+    let message = '';
+    let c = (instance as any).exports.getMessageChar();
     while (c != 0) {
       message += String.fromCharCode(c);
       c = (instance as any).exports.getMessageChar();
@@ -133,13 +130,13 @@ class WitnessCalculator {
     //input is assumed to be a map from signals to arrays of bigints
     (this.instance.exports as any).init(this.sanityCheck || sanityCheck ? 1 : 0);
     const keys = Object.keys(input);
-    var input_counter = 0;
+    let input_counter = 0;
     keys.forEach((k) => {
       const h = fnvHash(k);
       const hMSB = parseInt(h.slice(0, 8), 16);
       const hLSB = parseInt(h.slice(8, 16), 16);
       const fArr = flatArray(input[k]);
-      let signalSize = (this.instance.exports as any).getInputSignalSize(hMSB, hLSB);
+      const signalSize = (this.instance.exports as any).getInputSignalSize(hMSB, hLSB);
       if (signalSize < 0) {
         throw new Error(`Signal ${k} not found\n`);
       }
@@ -238,7 +235,7 @@ class WitnessCalculator {
     //prime number
     this.instance.exports.getRawPrime();
 
-    var pos = 7;
+    let pos = 7;
     for (let j = 0; j < this.n32; j++) {
       buff32[pos + j] = this.instance.exports.readSharedRWMemory(j);
     }
@@ -279,7 +276,7 @@ function toArray32(rem, size) {
     rem = rem / radix;
   }
   if (size) {
-    var i = size - res.length;
+    let i = size - res.length;
     while (i > 0) {
       res.unshift(0);
       i--;
@@ -290,7 +287,7 @@ function toArray32(rem, size) {
 
 function fromArray32(arr) {
   //returns a BigInt
-  var res = BigInt(0);
+  let res = BigInt(0);
   const radix = BigInt(0x100000000);
   for (let i = 0; i < arr.length; i++) {
     res = res * radix + BigInt(arr[i]);
@@ -299,7 +296,7 @@ function fromArray32(arr) {
 }
 
 function flatArray(a) {
-  var res = [];
+  const res = [];
   fillArray(res, a);
   return res;
 
@@ -317,13 +314,13 @@ function flatArray(a) {
 function fnvHash(str) {
   const uint64_max = BigInt(2) ** BigInt(64);
   let hash = BigInt('0xCBF29CE484222325');
-  for (var i = 0; i < str.length; i++) {
+  for (let i = 0; i < str.length; i++) {
     hash ^= BigInt(str[i].charCodeAt());
     hash *= BigInt(0x100000001b3);
     hash %= uint64_max;
   }
   let shash = hash.toString(16);
-  let n = 16 - shash.length;
+  const n = 16 - shash.length;
   shash = '0'.repeat(n).concat(shash);
   return shash;
 }

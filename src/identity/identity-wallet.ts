@@ -31,7 +31,7 @@ import {
   MerkleTreeProofWithTreeState,
   Iden3SparseMerkleTreeProof,
   ProofType,
-  IssuerData,
+  IssuerData
 } from '../verifiable';
 import { CredentialRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/revocation';
@@ -63,7 +63,7 @@ export interface CredentialIssueOptions {
 export interface IdentityCreationOptions {
   method: DidMethod;
   blockchain: Blockchain;
-  networkId :NetworkId;
+  networkId: NetworkId;
   seed?: Uint8Array;
 }
 
@@ -97,7 +97,7 @@ export interface IIdentityWallet {
    * @returns `Promise<{ did: DID; credential: W3CCredential }>` - returns did and Auth BJJ credential
    * @beta
    */
- 
+
   createIdentity(
     hostUrl: string,
     rhsUrl: string,
@@ -280,7 +280,7 @@ export class IdentityWallet implements IIdentityWallet {
   async createIdentity(
     hostUrl: string,
     rhsUrl: string,
-    opts?:  IdentityCreationOptions,
+    opts?: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
     const tmpIdentifier = uuid.v4();
 
@@ -290,8 +290,8 @@ export class IdentityWallet implements IIdentityWallet {
       opts = {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-      }
+        networkId: NetworkId.Mumbai
+      };
     }
 
     opts.seed = opts.seed ?? getRandomBytes(32);
