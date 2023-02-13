@@ -1,11 +1,10 @@
-import { CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
+import { CircuitStorage, CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { ProofService, ZKPRequest } from '../../src/proof';
-import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
+import { CredentialRequest, CredentialWallet } from '../../src/credentials';
+import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 import { ethers, Signer } from 'ethers';
@@ -13,6 +12,9 @@ import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/b
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { W3CCredential } from '../../src/verifiable';
+import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
+import { CircuitData } from '../../src/storage/entities/circuitData';
+import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
@@ -79,7 +81,7 @@ describe.skip('mtp proofs', () => {
       states: mockStateStorage
     };
 
-    const circuitStorage = new InMemoryCircuitStorage();
+    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
 
     // todo: change this loader
     const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
@@ -110,7 +112,7 @@ describe.skip('mtp proofs', () => {
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, kms, circuitStorage, ethStorage);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
   });
 
   it('mtpv2-non-merklized', async () => {
@@ -124,17 +126,27 @@ describe.skip('mtp proofs', () => {
     const { did: userDID } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsURL,
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsURL,
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
     await credWallet.save(issuerAuthCredential);
 
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
@@ -148,7 +160,6 @@ describe.skip('mtp proofs', () => {
     };
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: rhsURL
     });
 
@@ -179,7 +190,7 @@ describe.skip('mtp proofs', () => {
 
     credWallet.saveAll(credsWithIden3MTPProof);
 
-    const proofReq: ZKPRequest = {
+    const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
       circuitId: CircuitId.AtomicQueryMTPV2,
       optional: false,
@@ -211,17 +222,27 @@ describe.skip('mtp proofs', () => {
     const { did: userDID, credential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsURL,
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsURL,
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
     await credWallet.save(issuerAuthCredential);
 
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
       type: 'KYCAgeCredential',
@@ -235,7 +256,6 @@ describe.skip('mtp proofs', () => {
     };
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: rhsURL
     });
 
@@ -267,7 +287,7 @@ describe.skip('mtp proofs', () => {
 
     credWallet.saveAll(credsWithIden3MTPProof);
 
-    const proofReq: ZKPRequest = {
+    const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
       circuitId: CircuitId.AtomicQueryMTPV2,
       optional: false,

@@ -2,7 +2,6 @@ import { newHashFromString } from '@iden3/js-merkletree';
 import { MTProof, TreeState, ValueProof } from './../circuits/models';
 import { RHSCredentialStatus, W3CCredential } from '../verifiable/credential';
 import { ProofType } from '../verifiable/constants';
-import { KMS } from '../kms/kms';
 
 /* eslint-disable no-console */
 import {
@@ -42,6 +41,7 @@ import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { IStateStorage } from '../storage/interfaces';
 import { Signer } from 'ethers';
 import { ZKProof } from '@iden3/js-jwz';
+import { ZeroKnowledgeProofRequest } from '../iden3comm';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -57,13 +57,6 @@ interface PreparedCredential {
   credentialCoreClaim: Claim;
   revStatus: RevocationStatus;
 }
-// ZKPRequest is a request for zkp proof
-export interface ZKPRequest {
-  id: number;
-  circuitId: CircuitId;
-  optional?: boolean;
-  query: ProofQuery;
-}
 
 export interface QueryWithFieldName {
   query: Query;
@@ -71,17 +64,58 @@ export interface QueryWithFieldName {
 }
 
 export interface IProofService {
+  /**
+   * Verification of zkp proof for given circuit id
+   *
+   * @param {ZKProof} zkp  - proof to verify
+   * @param {CircuitId} circuitId - circuit id
+   * @returns `{Promise<boolean>}`
+   */
   verifyProof(zkp: ZKProof, circuitName: CircuitId): Promise<boolean>;
 
+  /**
+   * Generate proof from given identity and credential for protocol proof request
+   *
+   * @param {ZeroKnowledgeProofRequest} proofReq - protocol zkp request
+   * @param {DID} identifier - did that will generate proof
+   * @param {W3CCredential} [credential] - credential that is used for proof generation
+   * @returns `Promise<{ proof: ZKProof; credential: W3CCredential }>`
+   */
   generateProof(
-    proofReq: ZKPRequest,
+    proofReq: ZeroKnowledgeProofRequest,
     identifier: DID
   ): Promise<{ proof: ZKProof; credential: W3CCredential }>;
 
+  /**
+   * generates auth inputs
+   *
+   * @param {Uint8Array} hash - challenge that will be signed
+   * @param {DID} did - identity that will generate a proof
+   * @param {CircuitId} circuitId - circuit id for authentication
+   * @returns `Promise<Uint8Array>`
+   */
   generateAuthV2Inputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
 
+  /**
+   * state verification function
+   *
+   * @param {string} circuitId - id of authentication circuit
+   * @param {Array<string>} pubSignals - public signals of authentication circuit
+   * @returns `Promise<boolean>`
+   */
   verifyState(circuitId: string, pubSignals: Array<string>): Promise<boolean>;
-
+  /**
+   * transitState is done always to the latest state
+   *
+   * Generates a state transition proof and publishes state to the blockchain
+   *
+   * @param {DID} did - identity that will transit state
+   * @param {TreeState} oldTreeState - previous tree state
+   * @param {boolean} isOldStateGenesis - is a transition state is done from genesis state
+   * @param {IStateStorage} stateStorage - storage of identity states (only eth based storage currently)
+   * @param {Signer} ethSigner - signer for transaction
+   * @returns `{Promise<string>}` - transaction hash is returned
+   */
   transitState(
     did: DID,
     oldTreeState: TreeState,
@@ -91,24 +125,41 @@ export interface IProofService {
   ): Promise<string>;
 }
 
+/**
+ * Proof service is an implementation of IProofService
+ * that works with a native groth16 prover
+ *
+ * @export
+ * @beta
+ * @class ProofService
+ * @implements implements IProofService interface
+ */
 export class ProofService implements IProofService {
   private readonly _prover: NativeProver;
+  /**
+   * Creates an instance of ProofService.
+   * @param {IIdentityWallet} _identityWallet - identity wallet
+   * @param {ICredentialWallet} _credentialWallet - credential wallet
+   * @param {ICircuitStorage} _circuitStorage - circuit storage to load proving / verification files
+   * @param {IStateStorage} _stateStorage - state storage to get GIST proof / publish state
+   */
   constructor(
     private readonly _identityWallet: IIdentityWallet,
     private readonly _credentialWallet: ICredentialWallet,
-    private readonly _kms: KMS,
     private readonly _circuitStorage: ICircuitStorage,
     private readonly _stateStorage: IStateStorage
   ) {
     this._prover = new NativeProver(_circuitStorage);
   }
 
+  /** {@inheritdoc IProofService.verifyProof} */
   async verifyProof(zkp: ZKProof, circuitId: CircuitId): Promise<boolean> {
     return this._prover.verify(zkp, circuitId);
   }
 
+  /** {@inheritdoc IProofService.generateProof} */
   async generateProof(
-    proofReq: ZKPRequest,
+    proofReq: ZeroKnowledgeProofRequest,
     identifier: DID,
     credential?: W3CCredential
   ): Promise<{ proof: ZKProof; credential: W3CCredential }> {
@@ -121,10 +172,11 @@ export class ProofService implements IProofService {
     }
     const inputs = await this.generateInputs(preparedCredential, identifier, proofReq);
 
-    const proof = await this._prover.generate(inputs, proofReq.circuitId);
+    const proof = await this._prover.generate(inputs, proofReq.circuitId as CircuitId);
     return { proof, credential: preparedCredential.credential };
   }
-  // transitState is done always to the latest state
+
+  /** {@inheritdoc IProofService.transitState} */
   async transitState(
     did: DID,
     oldTreeState: TreeState,
@@ -134,8 +186,14 @@ export class ProofService implements IProofService {
   ): Promise<string> {
     const authInfo = await this.prepareAuthBJJCredential(did, oldTreeState);
 
-    const newTreeState = await this._identityWallet.getDIDTreeState(did);
+    const newTreeModel = await this._identityWallet.getDIDTreeModel(did);
 
+    const newTreeState: TreeState = {
+      revocationRoot: newTreeModel.revocationTree.root,
+      claimsRoot: newTreeModel.claimsTree.root,
+      state: newTreeModel.state,
+      rootOfRoots: newTreeModel.rootsTree.root
+    };
     const challenge = Poseidon.hash([oldTreeState.state.bigInt(), newTreeState.state.bigInt()]);
 
     const signature = await this._identityWallet.signChallenge(challenge, authInfo.authCredential);
@@ -145,7 +203,16 @@ export class ProofService implements IProofService {
 
     circuitInputs.signature = signature;
     circuitInputs.isOldStateGenesis = isOldStateGenesis;
-    circuitInputs.newState = newTreeState.state;
+
+    const authClaimIncProofNewState = await this._identityWallet.generateCredentialMtp(
+      did,
+      authInfo.authCredential,
+      newTreeState
+    );
+
+    circuitInputs.newTreeState = authClaimIncProofNewState.treeState;
+    circuitInputs.authClaimNewStateIncProof = authClaimIncProofNewState.proof;
+
     circuitInputs.oldTreeState = oldTreeState;
     circuitInputs.authClaim = {
       claim: authInfo.authCoreClaim,
@@ -210,7 +277,7 @@ export class ProofService implements IProofService {
   ): Promise<PreparedAuthBJJCredential> {
     const authCredential = await this._credentialWallet.getAuthBJJCredential(did);
 
-    const incProof = await this._identityWallet.generateClaimMtp(
+    const incProof = await this._identityWallet.generateCredentialMtp(
       did,
       authCredential,
       treeStateInfo
@@ -235,7 +302,7 @@ export class ProofService implements IProofService {
   private async generateInputs(
     preparedCredential: PreparedCredential,
     identifier: DID,
-    proofReq: ZKPRequest
+    proofReq: ZeroKnowledgeProofRequest
   ): Promise<Uint8Array> {
     let inputs: Uint8Array;
     if (proofReq.circuitId === CircuitId.AtomicQueryMTPV2) {
@@ -263,6 +330,7 @@ export class ProofService implements IProofService {
         preparedCredential.credentialCoreClaim
       );
       circuitInputs.claim = {
+        issuerID: circuitClaimData.issuerId,
         claim: circuitClaimData.claim,
         incProof: { proof: circuitClaimData.proof, treeState: circuitClaimData.treeState },
         nonRevProof: circuitClaimData.nonRevProof
@@ -432,7 +500,7 @@ export class ProofService implements IProofService {
     const schema = await loader.load(credential.credentialSchema.id);
 
     if (query.req && Object.keys(query.req).length > 1) {
-      throw new Error('mulptiple requets are not suppored');
+      throw new Error('multiple requests are not supported');
     }
 
     const parsedQuery = await this.parseRequest(query.req);
@@ -491,8 +559,7 @@ export class ProofService implements IProofService {
     return { query, fieldName };
   }
 
-  /*TODO: not sure if this is the right place for this function*/
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  /** {@inheritdoc IProofService.generateAuthV2Inputs} */
   async generateAuthV2Inputs(
     hash: Uint8Array,
     did: DID,

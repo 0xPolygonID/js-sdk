@@ -98,9 +98,9 @@
             "type": "bool"
           },
           {
-            "internalType": "uint256[32]",
+            "internalType": "uint256[64]",
             "name": "siblings",
-            "type": "uint256[32]"
+            "type": "uint256[64]"
           },
           {
             "internalType": "uint256",
@@ -164,9 +164,9 @@
             "type": "bool"
           },
           {
-            "internalType": "uint256[32]",
+            "internalType": "uint256[64]",
             "name": "siblings",
-            "type": "uint256[32]"
+            "type": "uint256[64]"
           },
           {
             "internalType": "uint256",
@@ -230,9 +230,9 @@
             "type": "bool"
           },
           {
-            "internalType": "uint256[32]",
+            "internalType": "uint256[64]",
             "name": "siblings",
-            "type": "uint256[32]"
+            "type": "uint256[64]"
           },
           {
             "internalType": "uint256",
@@ -296,9 +296,9 @@
             "type": "bool"
           },
           {
-            "internalType": "uint256[32]",
+            "internalType": "uint256[64]",
             "name": "siblings",
-            "type": "uint256[32]"
+            "type": "uint256[64]"
           },
           {
             "internalType": "uint256",

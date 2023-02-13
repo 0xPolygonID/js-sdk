@@ -11,7 +11,14 @@ import {
   prepareCircuitArrayValues
 } from './common';
 
-// AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
+/**
+ * AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
+ *
+ * @export
+ * @beta
+ * @class AtomicQueryMTPV2Inputs
+ * @extends {BaseConfig}
+ */
 export class AtomicQueryMTPV2Inputs extends BaseConfig {
   // auth
   id: Id;
@@ -27,12 +34,21 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
   // query
   query: Query;
 
+  /**
+   * Validate AtomicQueryMTPV2 inputs
+   *
+   */
   validate(): void {
     if (!this.requestID) {
       throw new Error(CircuitError.EmptyRequestID);
     }
   }
 
+  /**
+   *
+   * Inputs marshalling
+   * @returns {Uint8Array}
+   */
   inputsMarshal(): Uint8Array {
     this.validate();
     if (this.query.valueProof) {
@@ -70,7 +86,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
         .toString(),
       issuerClaimNonRevState: this.claim.nonRevProof.treeState?.state.bigInt().toString(),
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
-      claimPathMtp: circomSiblings(valueProof.mtp, this.getMTLevel()).map((s) =>
+      claimPathMtp: circomSiblings(valueProof.mtp, this.getMTLevelsClaimMerklization()).map((s) =>
         s.bigInt().toString()
       ),
       claimPathValue: valueProof.value.toString(),
@@ -142,7 +158,14 @@ interface AtomicQueryMTPV2CircuitInputs {
   value: string[];
 }
 
-// AtomicQueryMTPPubSignals public signals
+/**
+ * Public signals
+ *
+ * @export
+ * @beta
+ * @class AtomicQueryMTPV2PubSignals
+ * @extends {BaseConfig}
+ */
 export class AtomicQueryMTPV2PubSignals extends BaseConfig {
   requestID?: bigint;
   userID?: Id;
@@ -161,7 +184,12 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
   // 0 revocation not check, // 1 for check revocation
   isRevocationChecked: number;
 
-  // PubSignalsUnmarshal unmarshal credentialAtomicQueryMTP.circom public signals array to AtomicQueryMTPPubSignals
+  /**
+   * PubSignalsUnmarshal unmarshal credentialAtomicQueryMTP.circom public signals array to AtomicQueryMTPPubSignals
+   *
+   * @param {Uint8Array} data
+   * @returns AtomicQueryMTPV2PubSignals
+   */
   pubSignalsUnmarshal(data: Uint8Array): AtomicQueryMTPV2PubSignals {
     // expected order:
     // merklized

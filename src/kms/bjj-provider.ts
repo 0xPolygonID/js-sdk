@@ -5,19 +5,40 @@ import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from './store';
 
 import * as providerHelpers from './provider-helpers';
 
+/**
+ * Provider for Baby Jub Jub keys
+ * @beta
+ * @export
+ * @beta
+ * @class BjjProvider
+ * @implements implements IKeyProvider interface
+ */
 export class BjjProvider implements IKeyProvider {
+  /**
+   * key type that is handled by BJJ Provider
+   * @type {KmsKeyType}
+   */
   keyType: KmsKeyType;
   private keyStore: AbstractPrivateKeyStore;
+  /**
+   * Creates an instance of BjjProvider.
+   * @param {KmsKeyType} keyType - kms key type
+   * @param {AbstractPrivateKeyStore} keyStore - key store for kms
+   */
   constructor(keyType: KmsKeyType, keyStore: AbstractPrivateKeyStore) {
     this.keyType = keyType;
     this.keyStore = keyStore;
   }
-  async newPrivateKeyFromSeed(key: Uint8Array): Promise<KmsKeyId> {
-    // bjj private key from seed buffer
+  /**
+   * generates a baby jub jub key from a seed phrase
+   * @param {Uint8Array} seed - byte array seed
+   * @returns kms key identifier
+   */
+  async newPrivateKeyFromSeed(seed: Uint8Array): Promise<KmsKeyId> {
     const newKey: Uint8Array = new Uint8Array(32);
-    newKey.set(Uint8Array.from(key), 0);
-    newKey.fill(key.length, 32, 0);
-    const privateKey: PrivateKey = new PrivateKey(key);
+    newKey.set(Uint8Array.from(seed), 0);
+    newKey.fill(seed.length, 32, 0);
+    const privateKey: PrivateKey = new PrivateKey(seed);
 
     const publicKey = privateKey.public();
 
@@ -30,16 +51,24 @@ export class BjjProvider implements IKeyProvider {
     return kmsId;
   }
 
-  private async privateKey(keyId: KmsKeyId): Promise<PrivateKey> {
-    const privateKeyHex = await this.keyStore.get({ alias: keyId.id });
-
-    return new PrivateKey(Hex.decodeString(privateKeyHex));
-  }
+  /**
+   * Gets public key by kmsKeyId
+   *
+   * @param {KmsKeyId} keyId - key identifier
+   */
   async publicKey(keyId: KmsKeyId): Promise<PublicKey> {
     const privateKey: PrivateKey = await this.privateKey(keyId);
     return privateKey.public();
   }
 
+  /**
+   * signs prepared payload of size,
+   * with a key id
+   *
+   * @param {KmsKeyId} keyId  - key identifier
+   * @param {Uint8Array} data - data to sign (32 bytes)
+   * @returns Uint8Array signature
+   */
   async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {
     if (data.length != 32) {
       throw new Error('data to sign is too large');
@@ -54,5 +83,11 @@ export class BjjProvider implements IKeyProvider {
     const signature = privateKey.signPoseidon(i);
 
     return signature.compress();
+  }
+
+  private async privateKey(keyId: KmsKeyId): Promise<PrivateKey> {
+    const privateKeyHex = await this.keyStore.get({ alias: keyId.id });
+
+    return new PrivateKey(Hex.decodeString(privateKeyHex));
   }
 }

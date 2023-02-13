@@ -1,9 +1,8 @@
-// RevocationStatusRequestMessage is struct the represents body for proof generation request
 import { ProtocolMessage } from '../';
 import { RevocationStatus } from '../../../verifiable';
 import { MediaType } from '../../constants';
 
-// RevocationStatusRequestMessage is struct the represents body for proof generation request
+/** RevocationStatusRequestMessage is struct the represents body for proof generation request */
 export type RevocationStatusRequestMessage = {
   id: string;
   typ?: MediaType;
@@ -13,12 +12,12 @@ export type RevocationStatusRequestMessage = {
   to?: string;
 };
 
-// RevocationStatusRequestMessageBody is struct the represents request for revocation status
+/** RevocationStatusRequestMessageBody is struct the represents request for revocation status */
 export type RevocationStatusRequestMessageBody = {
   revocation_nonce: number;
 };
 
-// RevocationStatusResponseMessage is struct the represents body for proof generation request
+/** RevocationStatusResponseMessage is struct the represents body for proof generation request */
 export type RevocationStatusResponseMessage = {
   id: string;
   typ?: MediaType;
@@ -29,5 +28,5 @@ export type RevocationStatusResponseMessage = {
   to?: string;
 };
 
-// RevocationStatusResponseMessageBody is struct the represents request for revocation status
+/** RevocationStatusResponseMessageBody is struct the represents request for revocation status */
 export type RevocationStatusResponseMessageBody = RevocationStatus;

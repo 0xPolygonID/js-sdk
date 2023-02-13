@@ -11,7 +11,15 @@ import {
   prepareSiblingsStr
 } from './common';
 
-// AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
+/**
+ * AtomicQuerySigV2Inputs representation for credentialAtomicQuerySig.circom
+ * Inputs and public signals declaration, marshalling and parsing
+ *
+ * @export
+ * @beta
+ * @class AtomicQuerySigV2Inputs
+ * @extends {BaseConfig}
+ */
 export class AtomicQuerySigV2Inputs extends BaseConfig {
   requestID: bigint;
   // auth
@@ -28,6 +36,10 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
   // query
   query: Query;
 
+  /**
+   *  Validate inputs
+   *
+   */
   validate(): void {
     if (!this.requestID) {
       throw new Error(CircuitError.EmptyRequestID);
@@ -53,6 +65,11 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
     }
   }
 
+  /**
+   * marshal inputs
+   *
+   * @returns Uint8Array
+   */
   inputsMarshal(): Uint8Array {
     this.validate();
     if (this.query.valueProof) {
@@ -108,7 +125,10 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
 
       claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
 
-      claimPathMtp: prepareSiblingsStr(valueProof.mtp.allSiblings(), this.getMTLevel()),
+      claimPathMtp: prepareSiblingsStr(
+        valueProof.mtp.allSiblings(),
+        this.getMTLevelsClaimMerklization()
+      ),
       claimPathValue: valueProof.value.toString(),
       operator: this.query.operator,
       timestamp: this.currentTimeStamp,
@@ -155,7 +175,6 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
   }
 }
 
-// stateTransitionInputsInternal type represents credentialAtomicQueryMTP.circom private inputs required by prover
 interface AtomicQuerySigV2CircuitInputs {
   requestID: string;
   userGenesisID: string;
@@ -198,7 +217,14 @@ interface AtomicQuerySigV2CircuitInputs {
   value: string[];
 }
 
-// AtomicQueryMTPPubSignals public signals
+/**
+ *
+ * public signals
+ * @export
+ * @beta
+ * @class AtomicQuerySigV2PubSignals
+ * @extends {BaseConfig}
+ */
 export class AtomicQuerySigV2PubSignals extends BaseConfig {
   requestID?: bigint;
   userID?: Id;
@@ -217,7 +243,13 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
   // 0 revocation not check, // 1 for check revocation
   isRevocationChecked: number;
 
-  // PubSignalsUnmarshal unmarshal credentialAtomicQueryMTP.circom public signals array to AtomicQueryMTPPubSignals
+  //
+  /**
+   *
+   * PubSignalsUnmarshal unmarshal credentialAtomicQuerySig.circom public signals array to AtomicQuerySugPubSignals
+   * @param {Uint8Array} data
+   * @returns AtomicQuerySigV2PubSignals
+   */
   pubSignalsUnmarshal(data: Uint8Array): AtomicQuerySigV2PubSignals {
     // expected order:
     // merklized

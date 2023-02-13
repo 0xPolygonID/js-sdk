@@ -1,4 +1,4 @@
-// DIDDocumentJSONSchema is a basic schema of did document
+/** DIDDocumentJSONSchema is a basic schema of did document */
 export const DIDDocumentJSONSchema = `{
   "type": "object",
   "$defs": {

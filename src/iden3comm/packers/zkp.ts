@@ -16,37 +16,92 @@ import {
   ErrProofIsInvalid,
   ErrSenderNotUsedTokenCreation,
   ErrStateVerificationFailed,
-  ErrUnkownCircuitID
+  ErrUnknownCircuitID
 } from '../errors';
 import { byteDecoder, byteEncoder } from '../utils';
 import { MediaType } from '../constants';
 
 const { getProvingMethod } = proving;
 
+/**
+ * Handler to
+ *
+ * @export
+ * @beta
+ * @class DataPrepareHandlerFunc
+ */
 export class DataPrepareHandlerFunc {
+  /**
+   * Creates an instance of DataPrepareHandlerFunc.
+   * @param {AuthDataPrepareFunc} dataPrepareFunc - function that produces marshaled inputs for auth circuits
+   */
   constructor(public readonly dataPrepareFunc: AuthDataPrepareFunc) {}
 
+  /**
+   *
+   *
+   * @param {Uint8Array} hash - challenge that will be signed
+   * @param {DID} id - did of identity that will prepare inputs
+   * @param {CircuitId} circuitId - circuit id
+   * @returns `Promise<Uint8Array>`
+   */
   prepare(hash: Uint8Array, id: DID, circuitId: CircuitId): Promise<Uint8Array> {
     return this.dataPrepareFunc(hash, id, circuitId);
   }
 }
 
+/**
+ * Handler to verify public signals of authorization circuits
+ *
+ * @export
+ * @beta
+ * @class VerificationHandlerFunc
+ */
 export class VerificationHandlerFunc {
+  /**
+   * Creates an instance of VerificationHandlerFunc.
+   * @param {StateVerificationFunc} stateVerificationFunc - state verification function
+   */
   constructor(public readonly stateVerificationFunc: StateVerificationFunc) {}
 
+  /**
+   *
+   *
+   * @param {string} id  - id of circuit
+   * @param {Array<string>} pubSignals - signals that must contain user id and state
+   * @returns `Promise<boolean>`
+   */
   verify(id: string, pubSignals: Array<string>): Promise<boolean> {
     return this.stateVerificationFunc(id, pubSignals);
   }
 }
 
-class ZKPPacker implements IPacker {
+/**
+ * Packer that can pack message to JWZ token,
+ * and unpack and validate JWZ envelope
+ * @exports
+ * @beta
+ * @class ZKPPacker
+ * @implements implements IPacker interface
+ */
+export class ZKPPacker implements IPacker {
+  /**
+   * Creates an instance of ZKPPacker.
+   * @param {Map<string, ProvingParams>} provingParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
+   * @param {Map<string, VerificationParams>} verificationParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
+   */
   constructor(
-    // string is derived by JSON.parse(ProvingMethodAlg)
     public provingParamsMap: Map<string, ProvingParams>,
-    // string is derived by JSON.parse(ProvingMethodAlg)
     public verificationParamsMap: Map<string, VerificationParams>
   ) {}
 
+  /**
+   * creates JSON Web Zeroknowledge token
+   *
+   * @param {Uint8Array} payload - serialized message
+   * @param {ZKPPackerParams} params - sender id and proving alg are required
+   * @returns `Promise<Uint8Array>`
+   */
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
     const provingMethod = await getProvingMethod(params.provingMethodAlg);
     const { provingKey, wasm, dataPreparer } = this.provingParamsMap.get(
@@ -65,6 +120,12 @@ class ZKPPacker implements IPacker {
     return byteEncoder.encode(tokenStr);
   }
 
+  /**
+   * validate envelope which is jwz token
+   *
+   * @param {Uint8Array} envelope
+   * @returns `Promise<BasicMessage>`
+   */
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
     const token = await Token.parse(byteDecoder.decode(envelope));
     const provingMethodAlg = new ProvingMethodAlg(token.alg, token.circuitId);
@@ -79,17 +140,20 @@ class ZKPPacker implements IPacker {
       throw new Error(ErrProofIsInvalid);
     }
 
-    const sVerficationRes = await verificationFn.verify(token.circuitId, token.zkProof.pub_signals);
-    if (!sVerficationRes) {
+    const verificationResult = await verificationFn.verify(
+      token.circuitId,
+      token.zkProof.pub_signals
+    );
+    if (!verificationResult) {
       throw new Error(ErrStateVerificationFailed);
     }
 
-    const messg = bytesToProtocolMessage(byteEncoder.encode(token.getPayload()));
+    const message = bytesToProtocolMessage(byteEncoder.encode(token.getPayload()));
 
-    // should throw if errror
-    verifySender(token, messg);
+    // should throw if error
+    verifySender(token, message);
 
-    return messg;
+    return message;
   }
 
   mediaType(): MediaType {
@@ -105,7 +169,7 @@ const verifySender = (token: Token, msg: BasicMessage): void => {
       }
       break;
     default:
-      throw new Error(ErrUnkownCircuitID);
+      throw new Error(ErrUnknownCircuitID);
   }
 };
 
@@ -121,5 +185,3 @@ const checkSender = (from: string, id: Id): boolean => {
   const did = DID.parseFromId(id);
   return from === did.toString();
 };
-
-export default ZKPPacker;

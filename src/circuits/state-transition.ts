@@ -1,21 +1,42 @@
 import { Signature } from '@iden3/js-crypto';
 import { Id } from '@iden3/js-iden3-core';
-import { Hash, newHashFromString } from '@iden3/js-merkletree';
+import { Hash, newHashFromString, Proof } from '@iden3/js-merkletree';
 import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
-import { ClaimWithMTPProof, TreeState, CircuitError } from './models';
+import { ClaimWithMTPProof, TreeState, CircuitError, MTProof } from './models';
 
+/**
+ * StateTransition circuit representation
+ * Inputs and public signals declaration, marshalling and parsing
+ *
+ * @export
+ * @beta
+ * @class StateTransitionInputs
+ * @extends {BaseConfig}
+ */
 export class StateTransitionInputs extends BaseConfig {
   id: Id;
   oldTreeState: TreeState;
-  newState: Hash;
+  newTreeState: TreeState;
+
   isOldStateGenesis: boolean;
   authClaim: ClaimWithMTPProof;
+
+  authClaimNewStateIncProof: Proof;
+
   signature: Signature;
 
-  // CircuitInputMarshal returns Circom private inputs for stateTransition.circom
+  /**
+   * CircuitInputMarshal returns Circom private inputs for stateTransition.circom
+   *
+   * @returns Uint8Array
+   */
   inputsMarshal(): Uint8Array {
     if (!this.authClaim.incProof.proof) {
       throw new Error(CircuitError.EmptyAuthClaimProof);
+    }
+
+    if (!this.authClaimNewStateIncProof) {
+      throw new Error(CircuitError.EmptyAuthClaimProofInTheNewState);
     }
 
     if (!this.authClaim.nonRevProof.proof) {
@@ -32,15 +53,22 @@ export class StateTransitionInputs extends BaseConfig {
         this.authClaim.nonRevProof.proof.allSiblings(),
         this.getMTLevel()
       ),
+      newAuthClaimMtp: prepareSiblingsStr(
+        this.authClaimNewStateIncProof.allSiblings(),
+        this.getMTLevel()
+      ),
       userID: this.id.bigInt().toString(),
-      newUserState: this.newState.bigInt().toString(),
+      newUserState: this.newTreeState.state.bigInt().toString(),
       claimsTreeRoot: this.oldTreeState.claimsRoot.bigInt().toString(),
       oldUserState: this.oldTreeState.state.bigInt().toString(),
       revTreeRoot: this.oldTreeState.revocationRoot.bigInt().toString(),
       rootsTreeRoot: this.oldTreeState.rootOfRoots.bigInt().toString(),
       signatureR8x: this.signature.R8[0].toString(),
       signatureR8y: this.signature.R8[1].toString(),
-      signatureS: this.signature.S.toString()
+      signatureS: this.signature.S.toString(),
+      newClaimsTreeRoot: this.newTreeState.claimsRoot.bigInt().toString(),
+      newRootsTreeRoot: this.newTreeState.rootOfRoots.bigInt().toString(),
+      newRevTreeRoot: this.newTreeState.revocationRoot.bigInt().toString()
     };
 
     if (this.isOldStateGenesis) {
@@ -75,15 +103,32 @@ interface StateTransitionInputsInternal {
   signatureR8x: string;
   signatureR8y: string;
   signatureS: string;
+  newAuthClaimMtp: string[];
+  newClaimsTreeRoot: string;
+  newRevTreeRoot: string;
+  newRootsTreeRoot: string;
 }
 
+/**
+ * Public signals of StateTransition circuit
+ *
+ * @export
+ * @beta
+ * @class StateTransitionPubSignals
+ */
 export class StateTransitionPubSignals {
   userId: Id;
   oldUserState: Hash;
   newUserState: Hash;
   isOldStateGenesis: boolean;
 
-  // PubSignalsUnmarshal unmarshal stateTransition.circom public signals
+  /**
+   *
+   *
+   * PubSignalsUnmarshal unmarshal stateTransition.circom public signal
+   * @param {Uint8Array} data
+   * @returns StateTransitionPubSignals
+   */
   pubSignalsUnmarshal(data: Uint8Array): StateTransitionPubSignals {
     const sVals = JSON.parse(new TextDecoder().decode(data));
 

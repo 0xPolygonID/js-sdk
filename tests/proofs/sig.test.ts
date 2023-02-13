@@ -1,17 +1,19 @@
-import { CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
+import { CircuitStorage, CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { ProofService, ZKPRequest } from '../../src/proof';
-import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
+import { CredentialRequest, CredentialWallet } from '../../src/credentials';
+import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { byteEncoder } from '../../src/iden3comm/utils';
+import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
+import { CircuitData } from '../../src/storage/entities/circuitData';
+import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
 describe.skip('sig proofs', () => {
@@ -20,7 +22,7 @@ describe.skip('sig proofs', () => {
 
   let dataStorage: IDataStorage;
   let proofService: ProofService;
-  const rhsUrl = 'http://localhost:8080'; //'http://rhs.com/node'
+  const rhsUrl = 'https://rhs-staging.polygonid.me/'; //'http://rhs.com/node'
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: jest.fn(async () => {
@@ -69,7 +71,7 @@ describe.skip('sig proofs', () => {
       states: mockStateStorage
     };
 
-    const circuitStorage = new InMemoryCircuitStorage();
+    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
 
     const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
 
@@ -101,7 +103,7 @@ describe.skip('sig proofs', () => {
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, kms, circuitStorage, mockStateStorage);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });
 
   it('sigv2-non-merklized', async () => {
@@ -111,15 +113,25 @@ describe.skip('sig proofs', () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
 
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
@@ -131,13 +143,12 @@ describe.skip('sig proofs', () => {
       expiration: 1693526400
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: rhsUrl
     });
 
     await credWallet.save(issuerCred);
 
-    const proofReq: ZKPRequest = {
+    const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
       circuitId: CircuitId.AtomicQuerySigV2,
       optional: false,
@@ -167,15 +178,25 @@ describe.skip('sig proofs', () => {
     const { did: userDID, credential } = await idWallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
       type: 'KYCAgeCredential',
@@ -187,13 +208,12 @@ describe.skip('sig proofs', () => {
       expiration: 1693526400
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: 'http://rhs.node'
     });
 
     await credWallet.save(issuerCred);
 
-    const proofReq: ZKPRequest = {
+    const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
       circuitId: CircuitId.AtomicQuerySigV2,
       optional: false,

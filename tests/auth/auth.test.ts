@@ -2,14 +2,13 @@ import { Identity, Profile } from './../../src/storage/entities/identity';
 import { IdentityStorage } from './../../src/storage/shared/identity-storage';
 import { defaultEthConnectionConfig, EthStateStorage } from './../../src/storage/blockchain/state';
 import { PlainPacker } from './../../src/iden3comm/packers/plain';
-import { AuthHandler, CredentialStorage, IAuthHandler, IdentityWallet } from '../../src';
+import { AuthHandler, CircuitStorage, CredentialStorage, IAuthHandler, IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { ProofService, ZKPRequest } from '../../src/proof';
-import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
+import { CredentialRequest, CredentialWallet } from '../../src/credentials';
+import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
 import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
@@ -21,20 +20,21 @@ import {
   AuthorizationRequestMessage,
   AuthorizationRequestMessageBody,
   DataPrepareHandlerFunc,
-  IPackageManger,
-  PackageManger,
+  IPackageManager,
+  PackageManager,
   ProvingParams,
   StateVerificationFunc,
   VerificationHandlerFunc,
   VerificationParams,
-  ZeroKnowledgeProofRequest
+  ZeroKnowledgeProofRequest,
+  ZKPPacker
 } from '../../src/iden3comm';
 import { proving } from '@iden3/js-jwz';
-import ZKPPacker from '../../src/iden3comm/packers/zkp';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { byteEncoder } from '../../src/iden3comm/utils';
 import { Token } from '@iden3/js-jwz';
+import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
 describe.skip('auth', () => {
@@ -44,7 +44,7 @@ describe.skip('auth', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
   let authHandler: IAuthHandler;
-  let packageMgr: IPackageManger;
+  let packageMgr: IPackageManager;
   const rhsUrl = 'http://localhost:8080';
 
   const mockStateStorage: IStateStorage = {
@@ -82,7 +82,7 @@ describe.skip('auth', () => {
     circuitData: CircuitData,
     prepareFn: AuthDataPrepareFunc,
     stateVerificationFn: StateVerificationFunc
-  ): Promise<IPackageManger> => {
+  ): Promise<IPackageManager> => {
     const authInputsHandler = new DataPrepareHandlerFunc(prepareFn);
 
     const verificationFn = new VerificationHandlerFunc(stateVerificationFn);
@@ -104,7 +104,7 @@ describe.skip('auth', () => {
       wasm: circuitData.wasm
     });
 
-    const mgr: IPackageManger = new PackageManger();
+    const mgr: IPackageManager = new PackageManager();
     const packer = new ZKPPacker(provingParamMap, verificationParamMap);
     const plainPacker = new PlainPacker();
     mgr.registerPackers([packer, plainPacker]);
@@ -127,7 +127,7 @@ describe.skip('auth', () => {
       states: new EthStateStorage(defaultEthConnectionConfig)
     };
 
-    const circuitStorage = new InMemoryCircuitStorage();
+    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
 
     const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
 
@@ -159,7 +159,7 @@ describe.skip('auth', () => {
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, kms, circuitStorage, mockStateStorage);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
       proofService.generateAuthV2Inputs.bind(proofService),
@@ -175,15 +175,25 @@ describe.skip('auth', () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
 
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
@@ -195,13 +205,12 @@ describe.skip('auth', () => {
       expiration: 1693526400
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: 'http://metamask.com/'
     });
 
     await credWallet.save(issuerCred);
 
-    const proofReq: ZKPRequest = {
+    const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
       circuitId: CircuitId.AtomicQuerySigV2,
       optional: false,

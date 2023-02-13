@@ -1,12 +1,11 @@
 import { InMemoryDataSource } from './../../src/storage/memory/data-source';
 import { CredentialStorage } from './../../src/storage/shared/credential-storage';
-import { Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
+import { CircuitStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { ClaimRequest, CredentialWallet } from '../../src/credentials';
-import { InMemoryCircuitStorage } from '../../src/storage/memory/circuits';
+import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { FSKeyLoader } from '../../src/loaders';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import { getStatusFromRHS } from '../../src/credentials/revocation';
@@ -20,6 +19,8 @@ import {
 } from '../../src/verifiable';
 import { Proof } from '@iden3/js-merkletree';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
+import { CircuitData } from '../../src/storage/entities/circuitData';
+import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 jest.mock('@digitalbazaar/http-client', () => ({}));
 
 /// integration tests!!!
@@ -120,7 +121,8 @@ describe.skip('rhs', () => {
       states: ethStorage
     };
 
-    const circuitStorage = new InMemoryCircuitStorage();
+    
+    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
 
     // todo: change this loader
     const loader = new FSKeyLoader(
@@ -153,7 +155,12 @@ describe.skip('rhs', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       'http://rhs.com/node',
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
 
     await credWallet.save(issuerAuthCredential);
@@ -185,7 +192,12 @@ describe.skip('rhs', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
 
     await credWallet.save(issuerAuthCredential);
@@ -193,7 +205,12 @@ describe.skip('rhs', () => {
     const { did: userDID, credential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
 
     const credBasicStatus: CredentialStatus = {
@@ -208,7 +225,7 @@ describe.skip('rhs', () => {
       statusIssuer: credBasicStatus
     };
 
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
@@ -222,7 +239,6 @@ describe.skip('rhs', () => {
     };
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: rhsUrl
     });
 
@@ -255,7 +271,12 @@ describe.skip('rhs', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhraseIssuer
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhraseIssuer
+      }
     );
 
     await credWallet.save(issuerAuthCredential);
@@ -263,7 +284,12 @@ describe.skip('rhs', () => {
     const { did: userDID, credential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
-      seedPhrase
+      {
+        method: DidMethod.Iden3,
+        blockchain:Blockchain.Polygon,
+        networkId:NetworkId.Mumbai,
+        seed: seedPhrase
+      }
     );
 
     const credBasicStatus: CredentialStatus = {
@@ -278,7 +304,7 @@ describe.skip('rhs', () => {
       statusIssuer: credBasicStatus
     };
 
-    const claimReq: ClaimRequest = {
+    const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
@@ -292,7 +318,6 @@ describe.skip('rhs', () => {
     };
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withPublish: false,
       withRHS: rhsUrl
     });
 
@@ -304,7 +329,7 @@ describe.skip('rhs', () => {
 
     // let's add  one more credential
 
-    const claimReq2: ClaimRequest = {
+    const claimReq2: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
@@ -322,7 +347,6 @@ describe.skip('rhs', () => {
       claimReq2,
       'http://metamask.com/',
       {
-        withPublish: false,
         withRHS: rhsUrl
       }
     );
@@ -333,7 +357,7 @@ describe.skip('rhs', () => {
 
     const nonce: number = await idWallet.revokeCredential(issuerDID, issuerCred2);
 
-    const latestTree = await idWallet.getDIDTreeState(issuerDID);
+    const latestTree = await idWallet.getDIDTreeModel(issuerDID);
 
     await idWallet.publishStateToRHS(issuerDID, rhsUrl, [nonce]);
 

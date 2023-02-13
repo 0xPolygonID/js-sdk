@@ -1,9 +1,29 @@
 import { W3CCredential, MerklizedRootPosition, SubjectPosition } from '../../verifiable';
 
 import { Claim as CoreClaim, ClaimOptions, DID } from '@iden3/js-iden3-core';
-import { ParsedSlots } from '../processor';
 import { createSchemaHash, fillSlot } from '../utils';
 
+/**
+ * Parsed slots of core.Claim
+ *
+ * @export
+ * @beta
+ * @interface   ParsedSlots
+ */
+export interface ParsedSlots {
+  indexA: Uint8Array;
+  indexB: Uint8Array;
+  valueA: Uint8Array;
+  valueB: Uint8Array;
+}
+
+/**
+ * Serialization of data slots for the fields non-merklized claims
+ *
+ * @export
+ * @beta
+ * @interface   SerializationSchema
+ */
 export interface SerializationSchema {
   indexDataSlotA: string;
   indexDataSlotB: string;
@@ -11,17 +31,38 @@ export interface SerializationSchema {
   valueDataSlotB: string;
 }
 
+/**
+ * schema metadata in the json credential schema
+ *
+ * @export
+ * @beta
+ * @interface   SchemaMetadata
+ */
 export interface SchemaMetadata {
   uris: { [key: string]: string };
   serialization?: SerializationSchema;
 }
 
-export interface Schema {
+/**
+ * JSON credential Schema
+ *
+ * @export
+ * @beta
+ * @interface   Schema
+ */
+export interface JSONSchema {
   $metadata: SchemaMetadata;
   $schema: string;
   type: string;
 }
-// CoreClaimOptions is params for core claim parsing
+
+/**
+ * CoreClaimOptions is params for core claim parsing
+ *
+ * @export
+ * @beta
+ * @interface   CoreClaimOptions
+ */
 export interface CoreClaimOptions {
   revNonce: number;
   version: number;
@@ -30,9 +71,23 @@ export interface CoreClaimOptions {
   updatable: boolean;
 }
 
-// Parser can parse claim data according to specification
+/**
+ * Parser can parse claim data according to specification
+ *
+ * @export
+ * @beta
+ * @class Parser
+ */
 export class Parser {
-  // ParseClaim creates Claim object from W3CCredential
+  /**
+   *  ParseClaim creates core.Claim object from W3CCredential
+   *
+   * @param {W3CCredential} credential - Verifiable Credential
+   * @param {string} credentialType  - credential type that will be used as schema hash e.g. https://url-to-ld-schema.com#AuthBJJCredential
+   * @param {Uint8Array} jsonSchemaBytes - json schema bytes
+   * @param {CoreClaimOptions} [opts] - options to parse core claim
+   * @returns `Promise<CoreClaim>`
+   */
   async parseClaim(
     credential: W3CCredential,
     credentialType: string,
@@ -104,9 +159,15 @@ export class Parser {
     return claim;
   }
 
-  // ParseSlots converts payload to claim slots using provided schema
+  /**
+   * ParseSlots converts payload to claim slots using provided schema
+   *
+   * @param {W3CCredential} credential - Verifiable Credential
+   * @param {Uint8Array} schemaBytes - JSON schema bytes
+   * @returns `ParsedSlots`
+   */
   parseSlots(credential: W3CCredential, schemaBytes: Uint8Array): ParsedSlots {
-    const schema: Schema = JSON.parse(new TextDecoder().decode(schemaBytes));
+    const schema: JSONSchema = JSON.parse(new TextDecoder().decode(schemaBytes));
 
     if (schema?.$metadata?.serialization) {
       return this.assignSlots(credential.credentialSubject, schema.$metadata.serialization);
@@ -120,7 +181,7 @@ export class Parser {
     };
   }
   // assignSlots assigns index and value fields to specific slot according array order
-  assignSlots(data: { [key: string]: unknown }, schema: SerializationSchema): ParsedSlots {
+  private assignSlots(data: { [key: string]: unknown }, schema: SerializationSchema): ParsedSlots {
     const result: ParsedSlots = {
       indexA: new Uint8Array(32),
       indexB: new Uint8Array(32),
@@ -136,10 +197,15 @@ export class Parser {
     return result;
   }
 
-  // GetFieldSlotIndex return index of slot from 0 to 7 (each claim has by default 8 slots)
-
+  /**
+   * GetFieldSlotIndex return index of slot from 0 to 7 (each claim has by default 8 slots) for non-merklized claims
+   *
+   * @param {string} field - field name
+   * @param {Uint8Array} schemaBytes -json schema bytes
+   * @returns `number`
+   */
   getFieldSlotIndex(field: string, schemaBytes: Uint8Array): number {
-    const schema: Schema = JSON.parse(new TextDecoder().decode(schemaBytes));
+    const schema: JSONSchema = JSON.parse(new TextDecoder().decode(schemaBytes));
     if (!schema?.$metadata?.serialization) {
       throw new Error('serialization info is not set');
     }

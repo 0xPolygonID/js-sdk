@@ -2,9 +2,10 @@ import { Hex } from '@iden3/js-crypto';
 import { Hash, ZERO_HASH, Proof, swapEndianness } from '@iden3/js-merkletree';
 import { TreeState } from './models';
 
-export const defaultMTLevels = 32; // max MT levels, default value for identity circuits
+export const defaultMTLevels = 40; // max MT levels, default value for identity circuits
 export const defaultValueArraySize = 64; // max value array size, default value for identity circuits
-export const defaultMTLevelsOnChain = 32; // max MT levels on chain, default value for identity circuits
+export const defaultMTLevelsOnChain = 64; // max MT levels on chain, default value for identity circuits
+export const defaultMTLevelsClaimsMerklization = 32; // max MT levels of JSON-LD merklization on claim
 
 export const ErrorEmptyAuthClaimProof = 'empty auth claim mtp proof';
 export const ErrorEmptyAuthClaimNonRevProof = 'empty auth claim non-revocation mtp proof';
@@ -18,28 +19,63 @@ export const ErrorEmptyIssuerAuthClaimProof = 'empty issuer auth claim mtp proof
 export const ErrorEmptyIssuerAuthClaimNonRevProof =
   'empty issuer auth claim non-revocation mtp proof';
 
-// BaseConfig base circuit's config, provides default configuration for default circuits
+/**
+ * base config for circuit inputs
+ *
+ * @export
+ * @beta
+ * @class BaseConfig
+ */
 export class BaseConfig {
   mtLevel: number; // Max levels of MT
   valueArraySize: number; // Size if( value array in identity circuit)s
   mtLevelOnChain: number;
+  mtLevelClaimsMerklization: number; // max levels in the merklization
 
-  // getMTLevel max circuit MT levels
+  /**
+   *  getMTLevel max circuit MT levels
+   *
+   * @returns number
+   */
   getMTLevel(): number {
     return this.mtLevel ? this.mtLevel : defaultMTLevels;
   }
+  /**
+   *  getMTLevel max circuit MT levels
+   *
+   * @returns number
+   */
+  getMTLevelsClaimMerklization(): number {
+    return this.mtLevelClaimsMerklization
+      ? this.mtLevelClaimsMerklization
+      : defaultMTLevelsClaimsMerklization;
+  }
 
-  // GetValueArrSize return size of circuits value array size
+  /**
+   * GetValueArrSize return size of circuits value array size
+   *
+   * @returns number
+   */
   getValueArrSize(): number {
     return this.valueArraySize ? this.valueArraySize : defaultValueArraySize;
   }
 
+  /**
+   * getMTLevelOnChain return level on chain for given circuit
+   *
+   * @returns number
+   */
   getMTLevelOnChain(): number {
     return this.mtLevelOnChain ? this.mtLevelOnChain : defaultMTLevelsOnChain;
   }
 }
 
-// StrMTHex string to merkle tree hash
+/**
+ * converts hex to Hash
+ *
+ * @param {(string | undefined)} s - string hex
+ * @returns Hash
+ */
 export const strMTHex = (s: string | undefined): Hash => {
   if (!s) {
     return ZERO_HASH;
@@ -49,7 +85,15 @@ export const strMTHex = (s: string | undefined): Hash => {
   return h;
 };
 
-// BuildtreeState returns circuits.treeState structure
+/**
+ * converts hexes of tree roots to Hashes
+ *
+ * @param {(string | undefined)} state - state of tree hex
+ * @param {(string | undefined)} claimsTreeRoot - claims tree root hex
+ * @param {(string | undefined)} revocationTreeRoot - revocation tree root hex
+ * @param {(string | undefined)} rootOfRoots - root of roots tree root hex
+ * @returns TreeState
+ */
 export const buildTreeState = (
   state: string | undefined,
   claimsTreeRoot: string | undefined,
@@ -62,6 +106,13 @@ export const buildTreeState = (
   rootOfRoots: strMTHex(rootOfRoots)
 });
 
+/**
+ * siblings as string array
+ *
+ * @param {Hash[]} siblings - siblings array as Hashes
+ * @param {number} levels - levels number
+ * @returns string[]
+ */
 export const prepareSiblingsStr = (siblings: Hash[], levels: number): string[] => {
   // Add the rest of empty levels to the siblings
   for (let i = siblings.length; i < levels; i++) {
@@ -70,7 +121,13 @@ export const prepareSiblingsStr = (siblings: Hash[], levels: number): string[] =
   return siblings.map((s) => s.bigInt().toString());
 };
 
-// CircomSiblingsFromSiblings returns the full siblings compatible with circom
+/**
+ * Constructs siblings from proof
+ *
+ * @param {Proof} proof - mtp
+ * @param {number} levels - siblings max count
+ * @returns Hash[]
+ */
 export const circomSiblings = (proof: Proof, levels: number): Hash[] => {
   const siblings = proof.allSiblings();
   // Add the rest of empty levels to the siblings
@@ -80,9 +137,16 @@ export const circomSiblings = (proof: Proof, levels: number): Hash[] => {
   return siblings;
 };
 
-// PrepareCircuitArrayValues padding values to size. Validate array size and throw an exception if array is bigger
-// than size
-// if array is bigger circuit cannot compile because number of inputs does not match
+/**
+ * PrepareCircuitArrayValues padding values to size.
+ * Validate array size and throw an exception if array is bigger than size
+ * if array is bigger, circuit cannot compile because number of inputs does not match
+ *
+ *
+ * @param {bigint[]} arr - given values
+ * @param {number} size - size to pad
+ * @returns bigint[]
+ */
 export const prepareCircuitArrayValues = (arr: bigint[], size: number): bigint[] => {
   if (arr.length > size) {
     throw new Error(`array size ${arr.length} is bigger max expected size ${size}`);
@@ -96,13 +160,25 @@ export const prepareCircuitArrayValues = (arr: bigint[], size: number): bigint[]
   return arr;
 };
 
+/**
+ * converts each big integer in array to string
+ *
+ * @param {bigint[]} arr -  array of big numbers
+ * @returns string[]
+ */
 export const bigIntArrayToStringArray = (arr: bigint[]): string[] => {
   return arr.map((a) => a.toString());
 };
 
-// PrepareSiblings prepare siblings for zk zk
+// PrepareSiblings prepare siblings for zk
+/**
+ *
+ *
+ * @param {Hash[]} siblings
+ * @param {number} levels
+ * @returns bigint[]
+ */
 export const prepareSiblings = (siblings: Hash[], levels: number): bigint[] => {
-  // siblings := mtproof.AllSiblings()
   // Add the rest of empty levels to the siblings
   for (let i = siblings.length; i < levels; i++) {
     siblings.push(ZERO_HASH);
@@ -111,13 +187,26 @@ export const prepareSiblings = (siblings: Hash[], levels: number): bigint[] => {
   return siblings.map((s) => s.bigInt());
 };
 
+/**
+ * auxiliary node
+ *
+ * @export
+ * @beta
+ * @interface   NodeAuxValue
+ */
 export interface NodeAuxValue {
   key: Hash;
   value: Hash;
   noAux: string;
 }
 
-export const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
+export /**
+ * gets auxiliary node from proof
+ *
+ * @param {(Proof | undefined)} p - mtp
+ * @returns NodeAuxValue
+ */
+const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
   // proof of inclusion
   if (p?.existence) {
     return {
@@ -143,8 +232,22 @@ export const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
   };
 };
 
+/**
+ * converts boolean existence param to integer
+ * if true - 1, else - 0
+ *
+ * @param {boolean} b - existence
+ * @returns number
+ */
 export const existenceToInt = (b: boolean): number => (b ? 0 : 1);
 
+/**
+ * return object properties
+ *
+ * @export
+ * @param {object} obj
+ * @returns object
+ */
 export function getProperties(obj: object): object {
   const result: object = {};
   for (const property in obj) {

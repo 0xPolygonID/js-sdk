@@ -1,6 +1,6 @@
 import { BasicMessage, EnvelopeStub, HeaderStub } from '../types';
-import { basicMessageFactory, envelopeStubFactory, headerStubFactory } from './messg';
-import { ErrNotEnvelopeStub, ErrNotHeaderStub, ErrNotProtocolMesg } from '../errors';
+import { basicMessageFactory, envelopeStubFactory, headerStubFactory } from './message';
+import { ErrNotEnvelopeStub, ErrNotHeaderStub, ErrNotProtocolMessage } from '../errors';
 import { Token } from '@iden3/js-jwz';
 import { byteDecoder, byteEncoder } from './index';
 
@@ -20,16 +20,16 @@ const objectIs = (
 };
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isProtocolMessage = (messg: { [key in string]: any }): boolean => {
-  const basicMessg = basicMessageFactory();
-  Object.keys(basicMessg).forEach((prop) => {
-    if (!messg[prop]) {
+const isProtocolMessage = (message: { [key in string]: any }): boolean => {
+  const basicMessage = basicMessageFactory();
+  Object.keys(basicMessage).forEach((prop) => {
+    if (!message[prop]) {
       return false;
     }
     if (prop !== 'body') {
       const res =
-        typeof basicMessg[prop as keyof typeof basicMessg] ===
-        typeof (messg[prop as keyof typeof messg] as any); //eslint-disable-line @typescript-eslint/no-explicit-any
+        typeof basicMessage[prop as keyof typeof basicMessage] ===
+        typeof (message[prop as keyof typeof message] as any); //eslint-disable-line @typescript-eslint/no-explicit-any
       if (!res) {
         return false;
       }
@@ -39,37 +39,63 @@ const isProtocolMessage = (messg: { [key in string]: any }): boolean => {
   return true;
 };
 
+/**
+ *
+ * @param {Uint8Array} e
+ * @returns Promise<BasicMessage>
+ */
 export const envelopeToProtocolMessage = async (e: Uint8Array): Promise<BasicMessage> => {
   const t = await Token.parse(byteDecoder.decode(e));
   const pBytes = byteEncoder.encode(t.getPayload());
   return bytesToProtocolMessage(pBytes);
 };
 
+/**
+ * helper function to convert serialized JSON bytes to protocol message
+ *
+ * @param {Uint8Array} bytes
+ * @returns  {BasicMessage}
+ */
 export const bytesToProtocolMessage = (bytes: Uint8Array): BasicMessage => {
   const str = byteDecoder.decode(bytes);
-  const messg = JSON.parse(str);
-  if (!isProtocolMessage(messg)) {
-    throw new Error(ErrNotProtocolMesg);
+  const message = JSON.parse(str);
+  if (!isProtocolMessage(message)) {
+    throw new Error(ErrNotProtocolMessage);
   }
-  return messg as BasicMessage;
+  return message as BasicMessage;
 };
 
+/**
+ * helper function to convert serialized JSON bytes to envelop stub
+ * so we can work with protected field of jwt token
+ *
+ *
+ * @param {Uint8Array} envelope
+ * @returns {EnvelopeStub}
+ */
 export const bytesToEnvelopeStub = (envelope: Uint8Array): EnvelopeStub => {
   const tmpObj = envelopeStubFactory();
   const str = byteDecoder.decode(envelope);
-  const messg = JSON.parse(str);
-  if (!objectIs(messg, tmpObj)) {
+  const message = JSON.parse(str);
+  if (!objectIs(message, tmpObj)) {
     throw new Error(ErrNotEnvelopeStub);
   }
-  return messg as EnvelopeStub;
+  return message as EnvelopeStub;
 };
 
+/**
+ * helper function to convert serialized JSON bytes to header stub
+ * so we can work with know the media type of the message
+ *
+ * @param {Uint8Array} envelope
+ * @returns {HeaderStub}
+ */
 export const bytesToHeaderStub = (envelope: Uint8Array): HeaderStub => {
   const tmpObj = headerStubFactory();
   const str = byteDecoder.decode(envelope);
-  const messg = JSON.parse(str);
-  if (!objectIs(messg, tmpObj)) {
+  const message = JSON.parse(str);
+  if (!objectIs(message, tmpObj)) {
     throw new Error(ErrNotHeaderStub);
   }
-  return messg as HeaderStub;
+  return message as HeaderStub;
 };

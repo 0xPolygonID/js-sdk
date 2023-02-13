@@ -1,9 +1,14 @@
-import { buildDIDType, Id, DID } from '@iden3/js-iden3-core';
 import { NodeAux, newHashFromBigInt, Hash, Proof, setBitBigEndian } from '@iden3/js-merkletree';
 import { buildTreeState, ClaimNonRevStatus, GISTProof } from '../circuits';
 import { StateProof } from '../storage/entities/state';
 import { RevocationStatus } from '../verifiable';
 
+/**
+ * converts verifiable RevocationStatus model to circuits structure
+ *
+ * @param {RevocationStatus} - credential.status of the verifiable credential
+ * @returns {ClaimNonRevStatus}
+ */
 export const toClaimNonRevStatus = (s: RevocationStatus): ClaimNonRevStatus => {
   return {
     proof: s.mtp,
@@ -16,12 +21,7 @@ export const toClaimNonRevStatus = (s: RevocationStatus): ClaimNonRevStatus => {
   };
 };
 
-// NewProofFromData reconstructs proof from siblings and auxiliary node
-export const newProofFromData = (
-  existence: boolean,
-  allSiblings: Hash[],
-  nodeAux: NodeAux
-): Proof => {
+const newProofFromData = (existence: boolean, allSiblings: Hash[], nodeAux: NodeAux): Proof => {
   const p = new Proof();
   p.existence = existence;
   p.nodeAux = nodeAux;
@@ -38,6 +38,12 @@ export const newProofFromData = (
   return p;
 };
 
+/**
+ * converts state info from smart contract to gist proof
+ *
+ * @param {StateProof} smtProof  - state proof from smart contract
+ * @returns {GISTProof}
+ */
 export const toGISTProof = (smtProof: StateProof): GISTProof => {
   let existence = false;
   let nodeAux: NodeAux;
@@ -63,12 +69,4 @@ export const toGISTProof = (smtProof: StateProof): GISTProof => {
     root,
     proof
   };
-};
-
-export const isGenesisStateId = (id: bigint, state: bigint): boolean => {
-  const coreId = Id.fromBigInt(id);
-  const userDID = DID.parseFromId(coreId);
-  const didType = buildDIDType(userDID.method, userDID.blockchain, userDID.networkId);
-  const genesisId = Id.idGenesisFromIdenState(didType, state);
-  return id.toString() === genesisId.bigInt().toString();
 };

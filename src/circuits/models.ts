@@ -2,6 +2,13 @@ import { Signature } from '@iden3/js-crypto';
 import { Claim, Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import { Hash, Proof } from '@iden3/js-merkletree';
 
+/**
+ * TreeState is model for merkle tree roots
+ *
+ * @export
+ * @beta
+ * @interface   TreeState
+ */
 export interface TreeState {
   state: Hash;
   claimsRoot: Hash;
@@ -9,24 +16,47 @@ export interface TreeState {
   rootOfRoots: Hash;
 }
 
+/**
+ * claim non revocation status for circuit
+ * TreeState and Proof of inclusion / non-inclusion
+ *
+ * @export
+ * @beta
+ * @interface   ClaimNonRevStatus
+ */
 export interface ClaimNonRevStatus {
   treeState: TreeState;
   proof: Proof;
 }
-// Query represents basic request to claim slot verification
+/**
+ * Query represents basic request to claim slot verification
+ *
+ * @export
+ * @beta
+ * @class Query
+ */
 export class Query {
   slotIndex: number;
   values: bigint[];
   operator: number;
   valueProof?: ValueProof;
 
+  /**
+   * Validates Query instance
+   *
+   */
   validate(): void {
     if (this.values.some((v) => typeof v !== 'bigint'))
       throw new Error(CircuitError.EmptyQueryValue);
   }
 }
 
-// CircuitID is alias for circuit identifier
+/**
+ * CircuitID is alias for circuit identifier
+ *
+ * @export
+ * @enum {number}
+ */
 export enum CircuitId {
   // Auth is a type that must be used for authV2.circom
   AuthV2 = 'authV2',
@@ -38,6 +68,13 @@ export enum CircuitId {
   AtomicQuerySigV2 = 'credentialAtomicQuerySigV2'
 }
 
+/**
+ * Claim structure for circuit inputs
+ *
+ * @export
+ * @beta
+ * @class CircuitClaim
+ */
 export class CircuitClaim {
   issuerId: Id;
   claim: CoreClaim;
@@ -47,6 +84,13 @@ export class CircuitClaim {
   signatureProof: BJJSignatureProof;
 }
 
+/**
+ *
+ * Claim for circuit with non revocation proof and signature proof
+ * @export
+ * @beta
+ * @interface   ClaimWithSigProof
+ */
 export interface ClaimWithSigProof {
   issuerID: Id;
   claim: Claim;
@@ -54,6 +98,13 @@ export interface ClaimWithSigProof {
   signatureProof: BJJSignatureProof;
 }
 
+/**
+ * Claim for circuit with non revocation proof and proof of merkle tree inclusion
+ *
+ * @export
+ * @beta
+ * @interface   ClaimWithMTPProof
+ */
 export interface ClaimWithMTPProof {
   issuerID?: Id;
   claim: Claim;
@@ -61,6 +112,13 @@ export interface ClaimWithMTPProof {
   nonRevProof: MTProof;
 }
 
+/**
+ * prepared bjj signature for circuits with auth bjj claim data
+ *
+ * @export
+ * @beta
+ * @interface   BJJSignatureProof
+ */
 export interface BJJSignatureProof {
   signature: Signature;
   issuerAuthClaim?: Claim;
@@ -68,17 +126,38 @@ export interface BJJSignatureProof {
   issuerAuthNonRevProof: MTProof;
 }
 
+/**
+ * prepared mtp with a tree state
+ *
+ * @export
+ * @beta
+ * @interface   MTProof
+ */
 export interface MTProof {
   proof: Proof;
   treeState?: TreeState;
 }
+/**
+ * global identity state proof
+ *
+ * @export
+ * @beta
+ * @interface   GISTProof
+ */
 export interface GISTProof {
   root: Hash;
   proof: Proof;
 }
 
+/**
+ * List of errors of circuit inputs processing
+ *
+ * @export
+ * @enum {number}
+ */
 export enum CircuitError {
   EmptyAuthClaimProof = 'empty auth claim mtp proof',
+  EmptyAuthClaimProofInTheNewState = 'empty auth claim mtp proof in the new state',
   EmptyAuthClaimNonRevProof = 'empty auth claim non-revocation mtp proof',
   EmptyChallengeSignature = 'empty challenge signature',
   EmptyClaimSignature = 'empty claim signature',
@@ -97,18 +176,31 @@ export enum CircuitError {
   EmptyRequestID = 'empty request ID'
 }
 
-// ValueProof represents a Merkle Proof for a value stored as MT
+/**
+ * ValueProof represents a Merkle Proof for a value stored as MT
+ *
+ * @export
+ * @beta
+ * @class ValueProof
+ */
 export class ValueProof {
   path: bigint;
   value: bigint;
   mtp: Proof;
 
+  /**
+   * Creates an instance of ValueProof.
+   */
   constructor() {
     this.path = BigInt(0);
     this.value = BigInt(0);
     this.mtp = new Proof();
   }
 
+  /**
+   * validates instance of ValueProof
+   *
+   */
   validate(): void {
     if (!this.path) {
       throw new Error(CircuitError.EmptyJsonLDQueryPath);

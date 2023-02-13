@@ -1,9 +1,9 @@
 import {
   DataPrepareHandlerFunc,
-  PackageManger,
-  VerificationHandlerFunc
+  PackageManager,
+  VerificationHandlerFunc,
+  ZKPPacker
 } from '../../src/iden3comm/index';
-import ZKPPacker from '../../src/iden3comm/packers/zkp';
 import { mockPrepareAuthInputs, mockVerifyState, ProvingMethodGroth16Authv2 } from './mock/proving';
 import { proving, ProvingMethodAlg, ProvingMethod } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
@@ -19,7 +19,7 @@ const { registerProvingMethod } = proving;
 
 describe('tests packageManager with ZKP Packer', () => {
   it('tests package manager with zkp  packer', async () => {
-    const pm = new PackageManger();
+    const pm = new PackageManager();
     const mockAuthInputsHandler = new DataPrepareHandlerFunc(mockPrepareAuthInputs);
 
     const mockProvingMethod = new ProvingMethodGroth16Authv2(

@@ -2,7 +2,7 @@ import { ZKProof } from '@iden3/js-jwz';
 import { MediaType } from '../../constants';
 import { JSONObject, ProtocolMessage } from '../index';
 
-// AuthorizationResponseMessage is struct the represents iden3message authorization response
+/** AuthorizationResponseMessage is struct the represents iden3message authorization response */
 export type AuthorizationResponseMessage = {
   id: string;
   typ?: MediaType;
@@ -13,14 +13,14 @@ export type AuthorizationResponseMessage = {
   to?: string;
 };
 
-// AuthorizationMessageResponseBody is struct the represents authorization response data
+/** AuthorizationMessageResponseBody is struct the represents authorization response data */
 export type AuthorizationMessageResponseBody = {
   did_doc?: JSONObject;
   message?: string;
   scope: Array<ZeroKnowledgeProofResponse>;
 };
 
-// AuthorizationRequestMessage is struct the represents iden3message authorization request
+/** AuthorizationRequestMessage is struct the represents iden3message authorization request */
 export type AuthorizationRequestMessage = {
   id: string;
   typ?: MediaType;
@@ -31,7 +31,7 @@ export type AuthorizationRequestMessage = {
   to?: string;
 };
 
-// AuthorizationRequestMessageBody is body for authorization request
+/** AuthorizationRequestMessageBody is body for authorization request */
 export type AuthorizationRequestMessageBody = {
   callbackUrl: string;
   reason?: string;
@@ -40,7 +40,7 @@ export type AuthorizationRequestMessageBody = {
   scope: Array<ZeroKnowledgeProofRequest>;
 };
 
-// ZeroKnowledgeProofRequest represents structure of zkp request object
+/** ZeroKnowledgeProofRequest represents structure of zkp request object */
 export type ZeroKnowledgeProofRequest = {
   id: number;
   circuitId: string;
@@ -48,7 +48,7 @@ export type ZeroKnowledgeProofRequest = {
   query: JSONObject;
 };
 
-// ZeroKnowledgeProofResponse represents structure of zkp response
+/** ZeroKnowledgeProofResponse represents structure of zkp response */
 export type ZeroKnowledgeProofResponse = {
   id: number;
   circuitId: string;

@@ -6,12 +6,35 @@ import { IMerkleTreeStorage } from '../interfaces/merkletree';
 
 const mtTypes = [MerkleTreeType.Claims, MerkleTreeType.Revocations, MerkleTreeType.Roots];
 
+/**
+ * Merkle tree storage that uses browser local storage
+ *
+ * @export
+ * @beta
+ * @class MerkleTreeLocalStorage
+ * @implements implements IMerkleTreeStorage interface
+ */
 export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
+  /**
+   * key for the local storage
+   *
+   * @static
+   */
   static readonly storageKey = 'merkle-tree';
+  /**
+   * key for the storage key metadata
+   *
+   * @static
+   */
   static readonly storageKeyMeta = 'merkle-tree-meta';
 
+  /**
+   * Creates an instance of MerkleTreeLocalStorage.
+   * @param {number} _mtDepth
+   */
   constructor(private readonly _mtDepth: number) {}
 
+  /** creates a tree in the local storage */
   async createIdentityMerkleTrees(
     identifier: string
   ): Promise<IdentityMerkleTreeMetaInformation[]> {
@@ -45,7 +68,12 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
     localStorage.setItem(MerkleTreeLocalStorage.storageKeyMeta, JSON.stringify(treesMeta));
     return treesMeta;
   }
-
+  /**
+   *
+   * getIdentityMerkleTreesInfo from the local storage
+   * @param {string} identifier
+   * @returns `{Promise<IdentityMerkleTreeMetaInformation[]>}`
+   */
   async getIdentityMerkleTreesInfo(
     identifier: string
   ): Promise<IdentityMerkleTreeMetaInformation[]> {
@@ -57,6 +85,7 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
     throw new Error(`Merkle tree meta not found for identifier ${identifier}`);
   }
 
+  /** get merkle tree from the local storage */
   async getMerkleTreeByIdentifierAndType(
     identifier: string,
     mtType: MerkleTreeType
@@ -74,7 +103,7 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
     }
     return new Merkletree(new LocalStorageDB(str2Bytes(resultMeta.treeId)), true, this._mtDepth);
   }
-
+  /** adds to merkle tree in the local storage */
   async addToMerkleTree(
     identifier: string,
     mtType: MerkleTreeType,
@@ -101,6 +130,7 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
     await tree.add(hindex, hvalue);
   }
 
+  /** binds merkle tree in the local storage to the new identifiers */
   async bindMerkleTreeToNewIdentifier(oldIdentifier: string, newIdentifier: string): Promise<void> {
     const meta = localStorage.getItem(MerkleTreeLocalStorage.storageKeyMeta);
     if (!meta) {
