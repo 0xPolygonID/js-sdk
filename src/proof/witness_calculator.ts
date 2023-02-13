@@ -7,7 +7,6 @@ export async function witnessBuilder(code, options?) {
   try {
     wasmModule = await WebAssembly.compile(code);
   } catch (err) {
-    console.log('\nTry to run circom --c in order to generate c++ code instead\n');
     throw new Error(err);
   }
 
@@ -37,13 +36,11 @@ export async function witnessBuilder(code, options?) {
       },
       printErrorMessage: function () {
         errStr += getMessage() + '\n';
-        // console.error(getMessage());
       },
       writeBufferMessage: function () {
         const msg = getMessage();
         // Any calls to `log()` will always end with a `\n`, so that's when we print and reset
         if (msg === '\n') {
-          console.log(msgStr);
           msgStr = '';
         } else {
           // If we've buffered other content, put a space in between the items
@@ -61,14 +58,6 @@ export async function witnessBuilder(code, options?) {
   });
 
   const sanityCheck = options;
-  //        options &&
-  //        (
-  //            options.sanityCheck ||
-  //            options.logGetSignal ||
-  //            options.logSetSignal ||
-  //            options.logStartComponent ||
-  //            options.logFinishComponent
-  //        );
 
   const wc = new WitnessCalculator(instance, sanityCheck);
   return wc;

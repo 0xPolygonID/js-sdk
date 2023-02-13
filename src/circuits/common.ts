@@ -109,32 +109,17 @@ export const buildTreeState = (
 /**
  * siblings as string array
  *
- * @param {Hash[]} siblings - siblings array as Hashes
+ * @param {Proof} proof - proof with siblings
  * @param {number} levels - levels number
  * @returns string[]
  */
-export const prepareSiblingsStr = (siblings: Hash[], levels: number): string[] => {
+export const prepareSiblingsStr = (proof: Proof, levels: number): string[] => {
+  const siblings = Object.assign(new Proof(), proof).allSiblings();
   // Add the rest of empty levels to the siblings
   for (let i = siblings.length; i < levels; i++) {
     siblings.push(ZERO_HASH);
   }
   return siblings.map((s) => s.bigInt().toString());
-};
-
-/**
- * Constructs siblings from proof
- *
- * @param {Proof} proof - mtp
- * @param {number} levels - siblings max count
- * @returns Hash[]
- */
-export const circomSiblings = (proof: Proof, levels: number): Hash[] => {
-  const siblings = proof.allSiblings();
-  // Add the rest of empty levels to the siblings
-  for (let i = siblings.length; i < levels; i++) {
-    siblings.push(ZERO_HASH);
-  }
-  return siblings;
 };
 
 /**
@@ -168,23 +153,6 @@ export const prepareCircuitArrayValues = (arr: bigint[], size: number): bigint[]
  */
 export const bigIntArrayToStringArray = (arr: bigint[]): string[] => {
   return arr.map((a) => a.toString());
-};
-
-// PrepareSiblings prepare siblings for zk
-/**
- *
- *
- * @param {Hash[]} siblings
- * @param {number} levels
- * @returns bigint[]
- */
-export const prepareSiblings = (siblings: Hash[], levels: number): bigint[] => {
-  // Add the rest of empty levels to the siblings
-  for (let i = siblings.length; i < levels; i++) {
-    siblings.push(ZERO_HASH);
-  }
-
-  return siblings.map((s) => s.bigInt());
 };
 
 /**
