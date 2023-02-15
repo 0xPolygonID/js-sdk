@@ -1,4 +1,11 @@
-import { CircuitStorage, CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
+import {
+  CircuitStorage,
+  CredentialStorage,
+  Identity,
+  IdentityStorage,
+  IdentityWallet,
+  Profile
+} from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
@@ -14,7 +21,6 @@ import { byteEncoder } from '../../src/iden3comm/utils';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-jest.mock('@digitalbazaar/http-client', () => ({}));
 
 describe.skip('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -115,8 +121,8 @@ describe.skip('sig proofs', () => {
       rhsUrl,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );
@@ -125,8 +131,8 @@ describe.skip('sig proofs', () => {
       rhsUrl,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhraseIssuer
       }
     );
@@ -180,8 +186,8 @@ describe.skip('sig proofs', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhraseIssuer
       }
     );
@@ -191,8 +197,8 @@ describe.skip('sig proofs', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhraseIssuer
       }
     );

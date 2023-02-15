@@ -2,7 +2,6 @@ import { JsonSchemaValidator } from '../../src/schema-processor';
 import { DIDDocumentJSONSchema } from '../../src/verifiable';
 
 jest.setTimeout(50 * 60_00);
-jest.mock('@digitalbazaar/http-client', () => ({}));
 
 describe('json validator', () => {
   it('test validator validate', async () => {

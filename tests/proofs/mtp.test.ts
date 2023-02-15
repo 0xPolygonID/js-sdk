@@ -1,4 +1,11 @@
-import { CircuitStorage, CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
+import {
+  CircuitStorage,
+  CredentialStorage,
+  Identity,
+  IdentityStorage,
+  IdentityWallet,
+  Profile
+} from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
@@ -15,8 +22,6 @@ import { W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-
-jest.mock('@digitalbazaar/http-client', () => ({}));
 
 describe.skip('mtp proofs', () => {
   jest.setTimeout(1000000);
@@ -123,24 +128,20 @@ describe.skip('mtp proofs', () => {
     );
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID } = await idWallet.createIdentity(
-      'http://metamask.com/',
-      rhsURL,
-      {
-        method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did: userDID } = await idWallet.createIdentity('http://metamask.com/', rhsURL, {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase
+    });
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsURL,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhraseIssuer
       }
     );
@@ -224,8 +225,8 @@ describe.skip('mtp proofs', () => {
       rhsURL,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );
@@ -235,8 +236,8 @@ describe.skip('mtp proofs', () => {
       rhsURL,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhraseIssuer
       }
     );

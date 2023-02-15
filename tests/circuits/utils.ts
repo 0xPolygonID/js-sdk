@@ -1,11 +1,9 @@
-import { merkelizeJSONLD, Merkelizer } from './../../src/schema-processor/merklize/merklizer';
 import {
   Claim,
   Id,
   SchemaHash,
   ClaimOptions,
   ElemBytes,
-  Constants,
   NetworkId,
   DidMethod,
   Blockchain,
@@ -26,6 +24,7 @@ import {
 } from '@iden3/js-merkletree';
 import { Hex, poseidon, PrivateKey, Signature } from '@iden3/js-crypto';
 import { TreeState } from '../../src/circuits';
+import { Merkelizer } from '@iden3/js-jsonld-merklization';
 
 const TestClaimDocument = `{
   "@context": [
@@ -166,7 +165,10 @@ export async function generate(privKeyHex: string): Promise<{
 
   const state = poseidon.hash([claimsTree.root.bigInt(), BigInt(0), BigInt(0)]);
   // create new identity
-  const identity = Id.idGenesisFromIdenState(buildDIDType("iden3",Blockchain.Polygon,NetworkId.Mumbai), state);
+  const identity = Id.idGenesisFromIdenState(
+    buildDIDType('iden3', Blockchain.Polygon, NetworkId.Mumbai),
+    state
+  );
 
   const revTree = new Merkletree(new InMemoryDB(str2Bytes('')), true, 40);
   const rootsTree = new Merkletree(new InMemoryDB(str2Bytes('')), true, 40);
@@ -276,7 +278,7 @@ export function idFromState(state: bigint): Id {
 }
 
 export async function defaultJSONUserClaim(subject: Id): Promise<{ mz: Merkelizer; claim: Claim }> {
-  const mz = await merkelizeJSONLD(TestClaimDocument);
+  const mz = await Merkelizer.merkelizeJSONLD(TestClaimDocument);
 
   const schemaHash = new SchemaHash(Hex.decodeString('ce6bb12c96bfd1544c02c289c6b4b987'));
   const nonce = BigInt(10);

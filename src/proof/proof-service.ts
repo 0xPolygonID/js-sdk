@@ -36,12 +36,12 @@ import {
 
 import { UniversalSchemaLoader } from '../loaders';
 import { Parser } from '../schema-processor';
-import { getContextPathKey } from '../schema-processor/merklize/merklizer';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { IStateStorage } from '../storage/interfaces';
 import { Signer } from 'ethers';
 import { ZKProof } from '@iden3/js-jwz';
 import { ZeroKnowledgeProofRequest } from '../iden3comm';
+import { Path } from '@iden3/js-jsonld-merklization';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -467,7 +467,7 @@ export class ProofService implements IProofService {
     const loader = new UniversalSchemaLoader('ipfs.io');
     const schema = await loader.load(credential['@context'][2]);
 
-    const path = await getContextPathKey(
+    const path = await Path.getContextPathKey(
       new TextDecoder().decode(schema),
       credential.type[1],
       parsedQuery.fieldName
