@@ -2,7 +2,13 @@ import { Identity, Profile } from './../../src/storage/entities/identity';
 import { IdentityStorage } from './../../src/storage/shared/identity-storage';
 import { defaultEthConnectionConfig, EthStateStorage } from './../../src/storage/blockchain/state';
 import { PlainPacker } from './../../src/iden3comm/packers/plain';
-import { AuthHandler, CircuitStorage, CredentialStorage, IAuthHandler, IdentityWallet } from '../../src';
+import {
+  AuthHandler,
+  CircuitStorage,
+  CredentialStorage,
+  IAuthHandler,
+  IdentityWallet
+} from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
@@ -35,7 +41,6 @@ import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants'
 import { byteEncoder } from '../../src/iden3comm/utils';
 import { Token } from '@iden3/js-jwz';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-jest.mock('@digitalbazaar/http-client', () => ({}));
 
 describe.skip('auth', () => {
   let idWallet: IdentityWallet;
@@ -177,8 +182,8 @@ describe.skip('auth', () => {
       rhsUrl,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );
@@ -187,8 +192,8 @@ describe.skip('auth', () => {
       rhsUrl,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );

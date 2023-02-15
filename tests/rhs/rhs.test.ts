@@ -21,7 +21,6 @@ import { Proof } from '@iden3/js-merkletree';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-jest.mock('@digitalbazaar/http-client', () => ({}));
 
 /// integration tests!!!
 describe.skip('rhs', () => {
@@ -121,7 +120,6 @@ describe.skip('rhs', () => {
       states: ethStorage
     };
 
-    
     const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
 
     // todo: change this loader
@@ -157,8 +155,8 @@ describe.skip('rhs', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhraseIssuer
       }
     );
@@ -194,8 +192,8 @@ describe.skip('rhs', () => {
       rhsUrl,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhraseIssuer
       }
     );
@@ -207,8 +205,8 @@ describe.skip('rhs', () => {
       rhsUrl,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );
@@ -273,8 +271,8 @@ describe.skip('rhs', () => {
       rhsUrl,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhraseIssuer
       }
     );
@@ -286,8 +284,8 @@ describe.skip('rhs', () => {
       rhsUrl,
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );

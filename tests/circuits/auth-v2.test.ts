@@ -3,9 +3,7 @@ import { Id } from '@iden3/js-iden3-core';
 import { newHashFromBigInt } from '@iden3/js-merkletree';
 import { AuthV2Inputs } from '../../src/circuits';
 import { IdentityTest, userPK, issuerPK, globalTree } from './utils';
-
 import expectedJson from './data/auth-v2-inputs.json';
-jest.mock('@digitalbazaar/http-client', () => ({}));
 describe('auth-v2', () => {
   it('TestAuthV2Inputs_InputsMarshal', async () => {
     const challenge = BigInt(10);

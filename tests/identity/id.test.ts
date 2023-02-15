@@ -8,7 +8,7 @@ import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-jest.mock('@digitalbazaar/http-client', () => ({}));
+
 describe('identity', () => {
   let wallet: IdentityWallet;
   let dataStorage: IDataStorage;
@@ -69,8 +69,8 @@ describe('identity', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );
@@ -85,7 +85,7 @@ describe('identity', () => {
       MerkleTreeType.Claims
     );
 
-    console.log(JSON.stringify(credential))
+    console.log(JSON.stringify(credential));
     expect(claimsTree?.root.bigInt()).not.toBe(0);
   });
   it('createProfile', async () => {
@@ -96,8 +96,8 @@ describe('identity', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );
@@ -123,8 +123,8 @@ describe('identity', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );
@@ -149,8 +149,8 @@ describe('identity', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );
@@ -170,8 +170,8 @@ describe('identity', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );
@@ -192,8 +192,8 @@ describe('identity', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhrase
       }
     );
@@ -217,8 +217,8 @@ describe('identity', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhraseIssuer
       }
     );
@@ -232,8 +232,8 @@ describe('identity', () => {
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
-        blockchain:Blockchain.Polygon,
-        networkId:NetworkId.Mumbai,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
         seed: seedPhraseUser
       }
     );
