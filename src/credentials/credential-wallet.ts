@@ -129,10 +129,7 @@ export interface ICredentialWallet {
    * @param {DID} subject - credential subject id
    * @returns `Promise<W3CCredential[]>`
    */
-  filterByCredentialSubject(
-    credentials: W3CCredential[],
-    subject: DID
-  ): Promise<W3CCredential[]>
+  filterByCredentialSubject(credentials: W3CCredential[], subject: DID): Promise<W3CCredential[]>;
   /**
    * Finds Auth BJJ credential for given user
    *

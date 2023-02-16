@@ -7,7 +7,8 @@ import {
   CircuitStorage,
   CredentialStorage,
   IAuthHandler,
-  IdentityWallet
+  IdentityWallet,
+  ZKPRequestWithCredential
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -170,10 +171,10 @@ describe.skip('auth', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    authHandler = new AuthHandler(packageMgr, proofService);
+    authHandler = new AuthHandler(packageMgr, proofService,credWallet);
   });
 
-  it('request-response flow', async () => {
+  it('request-response flow genesis', async () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
@@ -251,7 +252,7 @@ describe.skip('auth', () => {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    const authRes = await authHandler.handleAuthorizationRequestForGenesisDID(userDID, msgBytes);
 
     const tokenStr = authRes.token;
     console.log(tokenStr);
@@ -259,4 +260,139 @@ describe.skip('auth', () => {
     const token = await Token.parse(tokenStr);
     expect(token).toBeDefined();
   });
+
+
+  it('request-response flow profiles', async () => {
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
+
+    const { did: userDID, credential: cred } = await idWallet.createIdentity(
+      'http://metamask.com/',
+      rhsUrl,
+      {
+        method: DidMethod.Iden3,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
+        seed: seedPhrase
+      }
+    );
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
+      'http://metamask.com/',
+      rhsUrl,
+      {
+        method: DidMethod.Iden3,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
+        seed: seedPhrase
+      }
+    );
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.toString(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 1693526400
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+      withRHS: 'http://metamask.com/'
+    });
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+        req: {
+          documentType: {
+            $eq: 99
+          }
+        }
+      }
+    };
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'mesage',
+      did_doc: {},
+      scope: [proofReq as ZeroKnowledgeProofRequest]
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: MediaType.PlainMessage,
+      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.id.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+
+
+
+
+  const authR = await authHandler.parseAuthorizationRequest(msgBytes);
+
+  const reqCreds: ZKPRequestWithCredential[] = [];
+
+  for (let index = 0; index < authR.body!.scope.length; index++) {
+    const zkpReq = authR.body!.scope[index];
+
+    const credsToChooseForZKPReq = await credWallet.findByQuery(zkpReq.query);
+    // you can show user credential that can be used for request
+
+    // filter credentials for subjects that are profiles of identity
+
+    const profiles = await dataStorage.identity.getProfilesByGenesisIdentifier(userDID.toString());
+
+    // finds all credentials that belongs to genesis identity or profiles derived from it
+    const credsThatBelongToGenesisId = credsToChooseForZKPReq.filter((cred) => {
+      const subject = cred.credentialSubject['id'] as string; // credential subject
+      return (
+        subject == userDID.toString() ||
+        profiles.find((p) => {
+          p.genesisIdentifier == userDID.toString();
+        })
+      );
+    });
+
+    const chosenCredByUser = credsThatBelongToGenesisId[0];
+
+    // you can create new profile here for auth
+    const credentialSubjectProfileNonce =
+      chosenCredByUser.credentialSubject['id'] === userDID.toString()
+        ? 0
+        : profiles.find((p) => {
+            p.id === chosenCredByUser.credentialSubject['id'];
+          })!.nonce;
+    reqCreds.push({ req: zkpReq, credential: chosenCredByUser, credentialSubjectProfileNonce });
+  }
+  const authProfileNonce = 100;
+
+  const resp = await authHandler.generateAuthorizationResponse(userDID, authProfileNonce, authR, reqCreds);
+
+  console.log(resp)
+
+
+
+   
+  });
+
+
+
+
+
 });

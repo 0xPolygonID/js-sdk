@@ -63,7 +63,7 @@ export interface QueryWithFieldName {
 export interface ProofGenerationOptions {
   authProfileNonce: number;
   credentialSubjectProfileNonce: number;
-  skipRevocationOptions: boolean;
+  skipRevocation: boolean;
 }
 
 export interface IProofService {
@@ -181,7 +181,7 @@ export class ProofService implements IProofService {
       opts = {
         authProfileNonce: 0,
         credentialSubjectProfileNonce: 0,
-        skipRevocationOptions: false
+        skipRevocation: false
       };
     }
     const preparedCredential: PreparedCredential = await this.getPreparedCredential(credential);
@@ -321,7 +321,7 @@ export class ProofService implements IProofService {
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
       circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
       circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
-      circuitInputs.skipClaimRevocationCheck = opts.skipRevocationOptions;
+      circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
 
       inputs = circuitInputs.inputsMarshal();
     } else if (proofReq.circuitId === CircuitId.AtomicQuerySigV2) {
@@ -345,7 +345,7 @@ export class ProofService implements IProofService {
       circuitInputs.requestID = BigInt(proofReq.id);
       circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
       circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
-      circuitInputs.skipClaimRevocationCheck = opts.skipRevocationOptions;
+      circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
       circuitInputs.query = await this.toCircuitsQuery(
         proofReq.query,
         preparedCredential.credential,
