@@ -22,6 +22,7 @@ describe('zkp packer tests', () => {
 
     const b = await p.pack(msgBytes, {
       senderID: senderDID,
+      profileNonce: 0, // if it's genesis identity
       provingMethodAlg: new ProvingMethodAlg('groth16-mock', 'authV2')
     });
     const t = await Token.parse(byteDecoder.decode(b));

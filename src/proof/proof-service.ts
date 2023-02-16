@@ -43,9 +43,6 @@ import { ZKProof } from '@iden3/js-jwz';
 import { ZeroKnowledgeProofRequest } from '../iden3comm';
 import { Path } from '@iden3/js-jsonld-merklization';
 
-// ErrAllClaimsRevoked all claims are revoked.
-const ErrAllClaimsRevoked = 'all claims are revoked';
-
 interface PreparedAuthBJJCredential {
   authCredential: W3CCredential;
   incProof: MerkleTreeProofWithTreeState;
@@ -63,6 +60,12 @@ export interface QueryWithFieldName {
   fieldName: string;
 }
 
+export interface ProofGenerationOptions {
+  authProfileNonce: number;
+  credentialSubjectProfileNonce: number;
+  skipRevocationOptions: boolean;
+}
+
 export interface IProofService {
   /**
    * Verification of zkp proof for given circuit id
@@ -78,12 +81,16 @@ export interface IProofService {
    *
    * @param {ZeroKnowledgeProofRequest} proofReq - protocol zkp request
    * @param {DID} identifier - did that will generate proof
-   * @param {W3CCredential} [credential] - credential that is used for proof generation
+   * @param {W3CCredential} credential - credential that will be used for proof generation
+   * @param {ProofGenerationOptions} opts - options that will be used for proof generation
+   *
    * @returns `Promise<{ proof: ZKProof; credential: W3CCredential }>`
    */
   generateProof(
     proofReq: ZeroKnowledgeProofRequest,
-    identifier: DID
+    identifier: DID,
+    credential: W3CCredential,
+    opts?: ProofGenerationOptions
   ): Promise<{ proof: ZKProof; credential: W3CCredential }>;
 
   /**
@@ -91,10 +98,16 @@ export interface IProofService {
    *
    * @param {Uint8Array} hash - challenge that will be signed
    * @param {DID} did - identity that will generate a proof
+   * @param {Number} profileNonce - identity that will generate a proof
    * @param {CircuitId} circuitId - circuit id for authentication
    * @returns `Promise<Uint8Array>`
    */
-  generateAuthV2Inputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
+  generateAuthV2Inputs(
+    hash: Uint8Array,
+    did: DID,
+    profileNonce: number,
+    circuitId: CircuitId
+  ): Promise<Uint8Array>;
 
   /**
    * state verification function
@@ -161,16 +174,19 @@ export class ProofService implements IProofService {
   async generateProof(
     proofReq: ZeroKnowledgeProofRequest,
     identifier: DID,
-    credential?: W3CCredential
+    credential: W3CCredential,
+    opts?: ProofGenerationOptions
   ): Promise<{ proof: ZKProof; credential: W3CCredential }> {
-    let preparedCredential: PreparedCredential;
-    if (credential) {
-      preparedCredential = await this.getPreparedCredential([credential]);
-    } else {
-      const credentials = await this.findCredentialsByQuery(identifier, proofReq.query);
-      preparedCredential = await this.getPreparedCredential(credentials);
+    if (!opts) {
+      opts = {
+        authProfileNonce: 0,
+        credentialSubjectProfileNonce: 0,
+        skipRevocationOptions: false
+      };
     }
-    const inputs = await this.generateInputs(preparedCredential, identifier, proofReq);
+    const preparedCredential: PreparedCredential = await this.getPreparedCredential(credential);
+
+    const inputs = await this.generateInputs(preparedCredential, identifier, proofReq, opts);
 
     const proof = await this._prover.generate(inputs, proofReq.circuitId as CircuitId);
     return { proof, credential: preparedCredential.credential };
@@ -228,47 +244,13 @@ export class ProofService implements IProofService {
     return txId;
   }
 
-  private async findCredentialsByQuery(did: DID, query: ProofQuery): Promise<W3CCredential[]> {
-    let credentials: W3CCredential[] = [];
+  private async getPreparedCredential(credential: W3CCredential): Promise<PreparedCredential> {
+    const { cred: nonRevokedCred, revStatus } =
+      await this._credentialWallet.findNonRevokedCredential([credential]);
 
-    if (query.claimId) {
-      const credential = await this._credentialWallet.findById(query.claimId);
-      if (!credential) {
-        throw new Error("claim doesn't exist");
-      }
-      credentials.push(credential);
-    } else {
-      query.credentialSubjectId = did.toString();
-      credentials = await this._credentialWallet.findByQuery(query);
-    }
-    if (credentials.length === 0) {
-      throw new Error('could not find claims for query');
-    }
-    return credentials;
-  }
+    const credCoreClaim = await this._identityWallet.getCoreClaimFromCredential(nonRevokedCred);
 
-  private async getPreparedCredential(creds: W3CCredential[]): Promise<PreparedCredential> {
-    const { cred, revStatus } = await this.findNonRevokedClaim(creds);
-
-    const credCoreClaim = cred.getCoreClaimFromProof(ProofType.BJJSignature);
-    if (!credCoreClaim) {
-      throw new Error('credential must have coreClaim representation in the signature proof');
-    }
-    return { credential: cred, revStatus, credentialCoreClaim: credCoreClaim };
-  }
-
-  private async findNonRevokedClaim(creds: W3CCredential[]): Promise<{
-    cred: W3CCredential;
-    revStatus: RevocationStatus;
-  }> {
-    for (const cred of creds) {
-      const revStatus = await this._credentialWallet.getRevocationStatusFromCredential(cred);
-      if (revStatus.mtp.existence) {
-        continue;
-      }
-      return { cred, revStatus };
-    }
-    throw new Error(ErrAllClaimsRevoked);
+    return { credential: nonRevokedCred, revStatus, credentialCoreClaim: credCoreClaim };
   }
 
   private async prepareAuthBJJCredential(
@@ -302,7 +284,8 @@ export class ProofService implements IProofService {
   private async generateInputs(
     preparedCredential: PreparedCredential,
     identifier: DID,
-    proofReq: ZeroKnowledgeProofRequest
+    proofReq: ZeroKnowledgeProofRequest,
+    opts: ProofGenerationOptions
   ): Promise<Uint8Array> {
     let inputs: Uint8Array;
     if (proofReq.circuitId === CircuitId.AtomicQueryMTPV2) {
@@ -336,9 +319,9 @@ export class ProofService implements IProofService {
         nonRevProof: circuitClaimData.nonRevProof
       };
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-      circuitInputs.claimSubjectProfileNonce = BigInt(0);
-      circuitInputs.profileNonce = BigInt(0);
-      circuitInputs.skipClaimRevocationCheck = false;
+      circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
+      circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
+      circuitInputs.skipClaimRevocationCheck = opts.skipRevocationOptions;
 
       inputs = circuitInputs.inputsMarshal();
     } else if (proofReq.circuitId === CircuitId.AtomicQuerySigV2) {
@@ -360,10 +343,9 @@ export class ProofService implements IProofService {
         nonRevProof: issuerAuthClaimNonRevProof
       };
       circuitInputs.requestID = BigInt(proofReq.id);
-      circuitInputs.claimSubjectProfileNonce = BigInt(0);
-      circuitInputs.profileNonce = BigInt(0);
-      circuitInputs.skipClaimRevocationCheck = false;
-
+      circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
+      circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
+      circuitInputs.skipClaimRevocationCheck = opts.skipRevocationOptions;
       circuitInputs.query = await this.toCircuitsQuery(
         proofReq.query,
         preparedCredential.credential,
@@ -462,7 +444,7 @@ export class ProofService implements IProofService {
     credential: W3CCredential,
     merklizedPosition: MerklizedRootPosition
   ): Promise<Query> {
-    const parsedQuery = await this.parseRequest(query.req);
+    const parsedQuery = await this.parseRequest(query.credentialSubject);
 
     const loader = new UniversalSchemaLoader('ipfs.io');
     const schema = await loader.load(credential['@context'][2]);
@@ -499,11 +481,11 @@ export class ProofService implements IProofService {
     const loader = new UniversalSchemaLoader('ipfs.io');
     const schema = await loader.load(credential.credentialSchema.id);
 
-    if (query.req && Object.keys(query.req).length > 1) {
+    if (query.credentialSubject && Object.keys(query.credentialSubject).length > 1) {
       throw new Error('multiple requests are not supported');
     }
 
-    const parsedQuery = await this.parseRequest(query.req);
+    const parsedQuery = await this.parseRequest(query.credentialSubject);
 
     parsedQuery.query.slotIndex = new Parser().getFieldSlotIndex(parsedQuery.fieldName, schema);
 
@@ -563,6 +545,7 @@ export class ProofService implements IProofService {
   async generateAuthV2Inputs(
     hash: Uint8Array,
     did: DID,
+    profileNonce: number,
     circuitId: CircuitId
   ): Promise<Uint8Array> {
     if (circuitId !== CircuitId.AuthV2) {
@@ -589,7 +572,7 @@ export class ProofService implements IProofService {
     const authInputs = new AuthV2Inputs();
 
     authInputs.genesisID = id;
-    authInputs.profileNonce = 0n;
+    authInputs.profileNonce = BigInt(profileNonce);
     authInputs.authClaim = authClaimData.claim;
     authInputs.authClaimIncMtp = authClaimData.proof;
     authInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;

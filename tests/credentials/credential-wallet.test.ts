@@ -88,7 +88,7 @@ const credentialFlow = async (storage: IDataStorage) => {
         context: 'context2_2',
         type: 'type2_3',
         schema: 'credentialSchemaId',
-        req: {
+        credentialSubject: {
           birthday: {
             $gt: 20000100
           }
@@ -99,7 +99,7 @@ const credentialFlow = async (storage: IDataStorage) => {
     {
       query: {
         allowedIssuers: ['*'],
-        req: {
+        credentialSubject: {
           birthday: {
             $lt: 20000102
           }
@@ -110,7 +110,7 @@ const credentialFlow = async (storage: IDataStorage) => {
     {
       query: {
         allowedIssuers: ['*'],
-        req: {
+        credentialSubject: {
           countryCode: {
             $eq: 120
           }
@@ -121,7 +121,7 @@ const credentialFlow = async (storage: IDataStorage) => {
     {
       query: {
         allowedIssuers: ['*'],
-        req: {
+        credentialSubject: {
           countryCode: {
             $in: [11, 120]
           }
@@ -132,7 +132,7 @@ const credentialFlow = async (storage: IDataStorage) => {
     {
       query: {
         allowedIssuers: ['*'],
-        req: {
+        credentialSubject: {
           countryCode: {
             $nin: [11, 111]
           }

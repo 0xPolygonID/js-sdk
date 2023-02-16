@@ -171,7 +171,13 @@ describe.skip('sig proofs', () => {
       }
     };
 
-    const { proof, credential } = await proofService.generateProof(proofReq, userDID);
+    const creds = await credWallet.findByQuery(proofReq.query);
+    expect(creds).not.toHaveLength(0);
+
+    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
+    expect(creds).toHaveLength(1);
+
+    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
   });
 
@@ -235,7 +241,15 @@ describe.skip('sig proofs', () => {
         }
       }
     };
-    const { proof, credential: cred } = await proofService.generateProof(proofReq, userDID);
+
+    const creds = await credWallet.findByQuery(proofReq.query);
+    expect(creds).not.toHaveLength(0);
+
+    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
+    expect(creds).toHaveLength(1);
+
+    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
+
   });
 });
