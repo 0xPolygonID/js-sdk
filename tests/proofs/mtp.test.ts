@@ -200,7 +200,7 @@ describe.skip('mtp proofs', () => {
         type: claimReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
+        credentialSubject: {
           documentType: {
             $eq: 99
           }
@@ -303,7 +303,7 @@ describe.skip('mtp proofs', () => {
         type: claimReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
+        credentialSubject: {
           documentType: {
             $eq: 99
           }

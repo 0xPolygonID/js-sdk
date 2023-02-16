@@ -152,7 +152,7 @@ const credentialFlow = async (storage: IDataStorage) => {
   // operator error
   const query = {
     allowedIssuers: ['*'],
-    req: {
+    credentialSubject: {
       countryCode: {
         $custom: [11, 111]
       }

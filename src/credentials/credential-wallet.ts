@@ -401,7 +401,9 @@ export class CredentialWallet implements ICredentialWallet {
     credentials: W3CCredential[],
     subject: DID
   ): Promise<W3CCredential[]> {
-    return credentials.filter((cred: W3CCredential) => cred.credentialSubject['id'] === subject);
+    return credentials.filter((cred: W3CCredential) => {
+      return cred.credentialSubject['id'] === subject.toString();
+    });
   }
   async findNonRevokedCredential(creds: W3CCredential[]): Promise<{
     cred: W3CCredential;

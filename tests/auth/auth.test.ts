@@ -9,6 +9,8 @@ import {
   IAuthHandler,
   IdentityWallet,
   ZKPRequestWithCredential
+  IdentityWallet,
+  ZKPRequestWithCredential
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -43,7 +45,7 @@ import { byteEncoder } from '../../src/iden3comm/utils';
 import { Token } from '@iden3/js-jwz';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 
-describe.skip('auth', () => {
+describe('auth', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -51,7 +53,7 @@ describe.skip('auth', () => {
   let proofService: ProofService;
   let authHandler: IAuthHandler;
   let packageMgr: IPackageManager;
-  const rhsUrl = 'http://localhost:8080';
+  const rhsUrl = '<url>';
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: jest.fn(async () => {
@@ -130,7 +132,7 @@ describe.skip('auth', () => {
         new InMemoryDataSource<Profile>()
       ),
       mt: new InMemoryMerkleTreeStorage(40),
-      states: new EthStateStorage(defaultEthConnectionConfig)
+      states: mockStateStorage // new EthStateStorage(defaultEthConnectionConfig)
     };
 
     const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
@@ -171,7 +173,7 @@ describe.skip('auth', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    authHandler = new AuthHandler(packageMgr, proofService,credWallet);
+    authHandler = new AuthHandler(packageMgr, proofService, credWallet,credWallet);
   });
 
   it('request-response flow genesis', async () => {
@@ -225,7 +227,7 @@ describe.skip('auth', () => {
         type: claimReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
+        credentialSubject: {
           documentType: {
             $eq: 99
           }
@@ -261,7 +263,6 @@ describe.skip('auth', () => {
     expect(token).toBeDefined();
   });
 
-
   it('request-response flow profiles', async () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -276,6 +277,8 @@ describe.skip('auth', () => {
         seed: seedPhrase
       }
     );
+    const profileDID = await idWallet.createProfile(userDID, 50, 'test verifier');
+
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
       rhsUrl,
@@ -283,7 +286,7 @@ describe.skip('auth', () => {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhrase
+        seed: seedPhraseIssuer
       }
     );
 
@@ -292,14 +295,14 @@ describe.skip('auth', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: profileDID.toString(),
         birthday: 19960424,
         documentType: 99
       },
       expiration: 1693526400
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withRHS: 'http://metamask.com/'
+      withRHS: rhsUrl
     });
 
     await credWallet.save(issuerCred);
@@ -313,7 +316,7 @@ describe.skip('auth', () => {
         type: claimReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
+        credentialSubject: {
           documentType: {
             $eq: 99
           }
@@ -341,58 +344,61 @@ describe.skip('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
 
+    const authR = await authHandler.parseAuthorizationRequest(msgBytes);
 
+    // let's find cred for each request.
+    const reqCreds: ZKPRequestWithCredential[] = [];
 
+    for (let index = 0; index < authR.body!.scope.length; index++) {
+      const zkpReq = authR.body!.scope[index];
 
-  const authR = await authHandler.parseAuthorizationRequest(msgBytes);
+      const credsToChooseForZKPReq = await credWallet.findByQuery(zkpReq.query);
 
-  const reqCreds: ZKPRequestWithCredential[] = [];
+      // filter credentials for subjects that are profiles of identity
 
-  for (let index = 0; index < authR.body!.scope.length; index++) {
-    const zkpReq = authR.body!.scope[index];
+      //    1g                      2g
+      // 1.1p Pas 1.2p Age   2.1p Pas 2.2p Age
 
-    const credsToChooseForZKPReq = await credWallet.findByQuery(zkpReq.query);
-    // you can show user credential that can be used for request
-
-    // filter credentials for subjects that are profiles of identity
-
-    const profiles = await dataStorage.identity.getProfilesByGenesisIdentifier(userDID.toString());
-
-    // finds all credentials that belongs to genesis identity or profiles derived from it
-    const credsThatBelongToGenesisId = credsToChooseForZKPReq.filter((cred) => {
-      const subject = cred.credentialSubject['id'] as string; // credential subject
-      return (
-        subject == userDID.toString() ||
-        profiles.find((p) => {
-          p.genesisIdentifier == userDID.toString();
-        })
+      const profiles = await dataStorage.identity.getProfilesByGenesisIdentifier(
+        userDID.toString()
       );
-    });
+      // 1.1p Pas 1.2p Age
 
-    const chosenCredByUser = credsThatBelongToGenesisId[0];
+      // finds all credentials that belongs to genesis identity or profiles derived from it
+      const credsThatBelongToGenesisIdOrItsProfiles = credsToChooseForZKPReq.filter((cred) => {
+        const credentialSubjectId = cred.credentialSubject['id'] as string; // credential subject
+        return (
+          credentialSubjectId == userDID.toString() ||
+          profiles.some((p) => {
+            return p.id === credentialSubjectId;
+          })
+        );
+      });
 
-    // you can create new profile here for auth
-    const credentialSubjectProfileNonce =
-      chosenCredByUser.credentialSubject['id'] === userDID.toString()
-        ? 0
-        : profiles.find((p) => {
-            p.id === chosenCredByUser.credentialSubject['id'];
-          })!.nonce;
-    reqCreds.push({ req: zkpReq, credential: chosenCredByUser, credentialSubjectProfileNonce });
-  }
-  const authProfileNonce = 100;
+      // you can show user credential that can be used for request
+      const chosenCredByUser = credsThatBelongToGenesisIdOrItsProfiles[0];
 
-  const resp = await authHandler.generateAuthorizationResponse(userDID, authProfileNonce, authR, reqCreds);
+      // get profile nonce that was used as a part of subject in the credential
+      const credentialSubjectProfileNonce =
+        chosenCredByUser.credentialSubject['id'] === userDID.toString()
+          ? 0
+          : profiles.find((p) => {
+             return  p.id === chosenCredByUser.credentialSubject['id'];
+            })!.nonce;
+      reqCreds.push({ req: zkpReq, credential: chosenCredByUser, credentialSubjectProfileNonce });
+    }
 
-  console.log(resp)
+    // you can create new profile here for auth or if you want to login with genesis set to 0.
 
+    const authProfileNonce = 100;
 
+    const resp = await authHandler.generateAuthorizationResponse(
+      userDID,
+      authProfileNonce,
+      authR,
+      reqCreds
+    );
 
-   
+    console.log(resp);
   });
-
-
-
-
-
 });

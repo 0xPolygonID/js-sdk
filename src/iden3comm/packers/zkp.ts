@@ -118,7 +118,7 @@ export class ZKPPacker implements IPacker {
       provingMethod,
       byteDecoder.decode(payload),
       (hash: Uint8Array, circuitID: CircuitId) => {
-        return dataPreparer.prepare(hash, params.senderID, params.profileNonce, circuitID);
+        return dataPreparer.prepare(hash, params.senderDID, params.profileNonce, circuitID);
       }
     );
     token.setHeader(Header.Type, MediaType.ZKPMessage);

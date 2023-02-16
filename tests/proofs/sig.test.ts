@@ -21,7 +21,6 @@ import { byteEncoder } from '../../src/iden3comm/utils';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-
 describe.skip('sig proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
@@ -163,7 +162,7 @@ describe.skip('sig proofs', () => {
         type: claimReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
+        credentialSubject: {
           documentType: {
             $eq: 99
           }
@@ -234,7 +233,7 @@ describe.skip('sig proofs', () => {
         type: claimReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
+        credentialSubject: {
           documentType: {
             $eq: 99
           }
