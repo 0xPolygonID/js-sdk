@@ -22,11 +22,14 @@ import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-/// integration tests!!!
+import path from 'path';
+
 describe.skip('rhs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
   let dataStorage: IDataStorage;
+  const rhsUrl = process.env.RHS_URL as string;
+  const infuraUrl = process.env.RPC_URL as string;
 
   const mockStateStorageForGenesisState: IStateStorage = {
     getLatestStateById: async () => {
@@ -105,7 +108,7 @@ describe.skip('rhs', () => {
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
 
     const conf = defaultEthConnectionConfig;
-    conf.url = '';
+    conf.url = infuraUrl;
     conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
     const ethStorage = new EthStateStorage(conf);
     ethStorage.publishState = mockStateStorageForGenesisState.publishState;
@@ -122,10 +125,7 @@ describe.skip('rhs', () => {
 
     const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
 
-    // todo: change this loader
-    const loader = new FSKeyLoader(
-      '/Users/vladyslavmunin/Projects/js/polygonid-js-sdk/tests/proofs/testdata'
-    );
+    const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
 
     credWallet = new CredentialWallet(dataStorage);
     credWallet.getRevocationStatusFromCredential = async (cred: W3CCredential) => {
@@ -142,9 +142,7 @@ describe.skip('rhs', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
 
-  it('genesis', async () => {
-    const rhsUrl = ''; // TODO: ARL
-
+  it('genesis reject', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
@@ -175,13 +173,17 @@ describe.skip('rhs', () => {
       statusIssuer: credBasicStatus
     };
 
-    await expect(
-      getStatusFromRHS(issuerDID, credRHSStatus, mockStateStorageForGenesisState)
-    ).to.be.rejectedWith(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
+    // await expect(
+
+    return getStatusFromRHS(issuerDID, credRHSStatus, mockStateStorageForGenesisState)
+      .then(function (m) {
+        throw new Error('was not supposed to succeed');
+      })
+      .catch(function (m) {
+        expect((m as Error).message).to.equal(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
+      });
   });
   it('mocked issuer state', async () => {
-    const rhsUrl = ''; // TODO: add url
-
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
@@ -259,8 +261,6 @@ describe.skip('rhs', () => {
     expect(rhsStatus.mtp.existence).to.equal(false);
   });
   it('two creds. one revoked', async () => {
-    const rhsUrl = ''; // TODO :add url
-
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(

@@ -23,6 +23,7 @@ import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
+
 describe.skip('mtp proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
@@ -31,6 +32,11 @@ describe.skip('mtp proofs', () => {
   let proofService: ProofService;
 
   let ethStorage: EthStateStorage;
+
+  const rhsURL = process.env.RHS_URL as string;
+  const infuraUrl = process.env.RPC_URL as string;
+  const walletKey = process.env.WALLET_KEY as string;
+
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
       return {
@@ -108,19 +114,23 @@ describe.skip('mtp proofs', () => {
       )
     });
 
+    /*
+    To use ethereum storage 
+
     const conf = defaultEthConnectionConfig;
-    conf.url = ''; // TODO: add url here
+    conf.url = infuraUrl; 
     conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
     ethStorage = new EthStateStorage(conf);
     dataStorage.states = ethStorage;
+
+    */
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });
 
   it('mtpv2-non-merklized', async () => {
-    const rhsURL = ''; //TODO:add
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
@@ -173,7 +183,7 @@ describe.skip('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet('', undefined); //TODO:add
+    const ethSigner = new ethers.Wallet(walletKey, (dataStorage.states as EthStateStorage).provider); 
     const txId = await proofService.transitState(
       issuerDID,
       res.oldTreeState,
@@ -218,8 +228,6 @@ describe.skip('mtp proofs', () => {
   });
 
   it('mtpv2-merklized', async () => {
-    const rhsURL = 'http://ec2-34-247-165-109.eu-west-1.compute.amazonaws.com:9999'; //TODO:add
-
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedsnew'
     );
@@ -275,7 +283,7 @@ describe.skip('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet('', ethStorage.provider);
+    const ethSigner = new ethers.Wallet(walletKey,  (dataStorage.states as EthStateStorage).provider);
 
     const txId = await proofService.transitState(
       issuerDID,

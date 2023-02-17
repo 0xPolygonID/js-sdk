@@ -29,7 +29,7 @@ describe.skip('sig proofs', () => {
 
   let dataStorage: IDataStorage;
   let proofService: ProofService;
-  const rhsUrl = 'https://rhs-staging.polygonid.me/'; //'http://rhs.com/node'
+  const rhsUrl = process.env.RHS_URL as string;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {

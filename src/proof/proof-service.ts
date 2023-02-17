@@ -457,14 +457,14 @@ export class ProofService implements IProofService {
     path.prepend(['https://www.w3.org/2018/credentials#credentialSubject']);
 
     const mk = await credential.merklize();
-    const { proof, value } = await mk.proof(path);
+    const { proof, value: mtValue } = await mk.proof(path);
 
     const pathKey = await path.mtEntry();
     parsedQuery.query.valueProof = new ValueProof();
     parsedQuery.query.valueProof.mtp = proof;
     parsedQuery.query.valueProof.path = pathKey;
     parsedQuery.query.valueProof.mtp = proof;
-    parsedQuery.query.valueProof.value = BigInt(value.toString());
+    parsedQuery.query.valueProof.value = BigInt(mtValue.value.toString());
 
     if (merklizedPosition == MerklizedRootPosition.Index) {
       parsedQuery.query.slotIndex = 2; // value data slot a

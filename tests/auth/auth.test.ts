@@ -51,7 +51,9 @@ describe.skip('auth', () => {
   let proofService: ProofService;
   let authHandler: IAuthHandler;
   let packageMgr: IPackageManager;
-  const rhsUrl = '<url>';
+  const rhsURL = process.env.RHS_URL as string;
+  const infuraUrl = process.env.RPC_URL as string;
+  const walletKey = process.env.WALLET_KEY as string;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -180,7 +182,7 @@ describe.skip('auth', () => {
 
     const { did: userDID, credential: cred } = await idWallet.createIdentity(
       'http://metamask.com/',
-      rhsUrl,
+      rhsURL,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
@@ -190,7 +192,7 @@ describe.skip('auth', () => {
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
-      rhsUrl,
+      rhsURL,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
@@ -267,7 +269,7 @@ describe.skip('auth', () => {
 
     const { did: userDID, credential: cred } = await idWallet.createIdentity(
       'http://metamask.com/',
-      rhsUrl,
+      rhsURL,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
@@ -279,7 +281,7 @@ describe.skip('auth', () => {
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
-      rhsUrl,
+      rhsURL,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
@@ -300,7 +302,7 @@ describe.skip('auth', () => {
       expiration: 1693526400
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withRHS: rhsUrl
+      withRHS: rhsURL
     });
 
     await credWallet.save(issuerCred);
