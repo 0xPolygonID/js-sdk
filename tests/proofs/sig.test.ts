@@ -21,6 +21,7 @@ import { byteEncoder } from '../../src/iden3comm/utils';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { expect } from 'chai';
 
 describe.skip('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -28,16 +29,16 @@ describe.skip('sig proofs', () => {
 
   let dataStorage: IDataStorage;
   let proofService: ProofService;
-  const rhsUrl = 'https://rhs-staging.polygonid.me/'; //'http://rhs.com/node'
+  const rhsUrl = process.env.RHS_URL as string;
 
   const mockStateStorage: IStateStorage = {
-    getLatestStateById: jest.fn(async () => {
+    getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
-    }),
-    publishState: jest.fn(async () => {
+    },
+    publishState: async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
-    }),
-    getGISTProof: jest.fn((): Promise<StateProof> => {
+    },
+    getGISTProof: (): Promise<StateProof> => {
       return Promise.resolve({
         root: 0n,
         existence: false,
@@ -48,8 +49,8 @@ describe.skip('sig proofs', () => {
         auxIndex: 0n,
         auxValue: 0n
       });
-    }),
-    getGISTRootInfo: jest.fn((): Promise<RootInfo> => {
+    },
+    getGISTRootInfo: (): Promise<RootInfo> => {
       return Promise.resolve({
         root: 0n,
         replacedByRoot: 0n,
@@ -58,7 +59,7 @@ describe.skip('sig proofs', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
-    })
+    }
   };
 
   beforeEach(async () => {
@@ -163,7 +164,7 @@ describe.skip('sig proofs', () => {
         type: claimReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
+        credentialSubject: {
           documentType: {
             $eq: 99
           }
@@ -171,7 +172,13 @@ describe.skip('sig proofs', () => {
       }
     };
 
-    const { proof, credential } = await proofService.generateProof(proofReq, userDID);
+    const creds = await credWallet.findByQuery(proofReq.query);
+    expect(creds.length).to.not.equal(0);
+
+    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
+    expect(creds.length).to.equal(1);
+
+    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
   });
 
@@ -228,14 +235,21 @@ describe.skip('sig proofs', () => {
         type: claimReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
+        credentialSubject: {
           documentType: {
             $eq: 99
           }
         }
       }
     };
-    const { proof, credential: cred } = await proofService.generateProof(proofReq, userDID);
+
+    const creds = await credWallet.findByQuery(proofReq.query);
+    expect(creds.length).to.not.equal(0);
+
+    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
+    expect(creds.length).to.equal(1);
+
+    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
   });
 });

@@ -16,7 +16,7 @@ import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants'
 import { byteDecoder, byteEncoder } from '../../src/iden3comm/utils';
 
 const { registerProvingMethod } = proving;
-
+import { expect } from 'chai';
 describe('tests packageManager with ZKP Packer', () => {
   it('tests package manager with zkp  packer', async () => {
     const pm = new PackageManager();
@@ -66,9 +66,9 @@ describe('tests packageManager with ZKP Packer', () => {
     });
 
     const { unpackedMessage, unpackedMediaType } = await pm.unpack(e);
-    expect(unpackedMediaType).toEqual(MediaType.ZKPMessage);
-    expect(senderDID.toString()).toEqual(unpackedMessage.from);
-    expect(byteDecoder.decode(msgBytes)).toEqual(JSON.stringify(unpackedMessage));
+    expect(unpackedMediaType).to.deep.equal(MediaType.ZKPMessage);
+    expect(senderDID.toString()).to.deep.equal(unpackedMessage.from);
+    expect(byteDecoder.decode(msgBytes)).to.deep.equal(JSON.stringify(unpackedMessage));
   });
 });
 

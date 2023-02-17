@@ -149,7 +149,7 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
         return acc.concat(
           new FilterQuery('credentialSchema.id', comparatorOptions.$eq, queryValue)
         );
-      case 'req': {
+      case 'credentialSubject': {
         const reqFilters = Object.keys(queryValue).reduce((acc: FilterQuery[], fieldKey) => {
           const fieldParams = queryValue[fieldKey];
           const res = Object.keys(fieldParams).map((comparator) => {

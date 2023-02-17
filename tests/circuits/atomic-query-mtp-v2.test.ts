@@ -17,6 +17,7 @@ import {
 } from './utils';
 
 import expectedJson from './data/mtp-v2-inputs.json';
+import { expect } from 'chai';
 
 describe('atomic-query-mtp-v2', () => {
   it('TestAttrQueryMTPV2_PrepareInputs', async () => {
@@ -76,7 +77,7 @@ describe('atomic-query-mtp-v2', () => {
 
     const actualJson = JSON.parse(new TextDecoder().decode(bytesInputs));
 
-    expect(actualJson).toEqual(expectedJson);
+    expect(actualJson).to.deep.equal(expectedJson);
   });
 
   it('TestAtomicQueryMTPV2Outputs_CircuitUnmarshal', () => {
@@ -193,6 +194,6 @@ describe('atomic-query-mtp-v2', () => {
     exp.claimPathKey = BigInt(0);
     exp.claimPathNotExists = 0;
     exp.isRevocationChecked = 1;
-    expect(exp).toEqual(out);
+    expect(exp).to.deep.equal(out);
   });
 });

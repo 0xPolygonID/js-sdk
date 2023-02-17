@@ -6,6 +6,10 @@ import { SearchError } from '../../src/storage/filters/jsonQuery';
 import { cred1, cred2, cred3 } from './mock';
 import { ProofQuery, W3CCredential } from '../../src/verifiable';
 import { BrowserDataSource } from '../../src/storage/local-storage/data-source';
+import chaiAsPromised from 'chai-as-promised';
+import chai from 'chai';
+chai.use(chaiAsPromised);
+const { expect } = chai;
 
 class LocalStorageMock {
   store: object;
@@ -38,23 +42,23 @@ const credentialFlow = async (storage: IDataStorage) => {
   await credentialWallet.saveAll([cred1, cred2]);
 
   const credentials = await credentialWallet.list();
-  expect(credentials.length).toBe(2);
+  expect(credentials.length).to.equal(2);
 
   await credentialWallet.save(cred3);
   const credentialAll = await credentialWallet.list();
-  expect(credentialAll.length).toBe(3);
+  expect(credentialAll.length).to.equal(3);
 
   // present id
   const credById = await credentialWallet.findById(cred2.id);
-  expect(credById).toEqual(cred2);
+  expect(credById).to.deep.equal(cred2);
 
   // not present id
   const emptyCredById = await credentialWallet.findById('otherId');
-  expect(emptyCredById).toBeUndefined();
+  expect(!!emptyCredById).to.be.false;
 
   // findByContextType
   const [credByContextType] = await credentialWallet.findByContextType('context1', 'type1_2');
-  expect(credByContextType.id).toEqual(cred1.id);
+  expect(credByContextType.id).to.deep.equal(cred1.id);
 
   const queries: {
     query: ProofQuery;
@@ -88,7 +92,7 @@ const credentialFlow = async (storage: IDataStorage) => {
         context: 'context2_2',
         type: 'type2_3',
         schema: 'credentialSchemaId',
-        req: {
+        credentialSubject: {
           birthday: {
             $gt: 20000100
           }
@@ -99,7 +103,7 @@ const credentialFlow = async (storage: IDataStorage) => {
     {
       query: {
         allowedIssuers: ['*'],
-        req: {
+        credentialSubject: {
           birthday: {
             $lt: 20000102
           }
@@ -110,7 +114,7 @@ const credentialFlow = async (storage: IDataStorage) => {
     {
       query: {
         allowedIssuers: ['*'],
-        req: {
+        credentialSubject: {
           countryCode: {
             $eq: 120
           }
@@ -121,7 +125,7 @@ const credentialFlow = async (storage: IDataStorage) => {
     {
       query: {
         allowedIssuers: ['*'],
-        req: {
+        credentialSubject: {
           countryCode: {
             $in: [11, 120]
           }
@@ -132,7 +136,7 @@ const credentialFlow = async (storage: IDataStorage) => {
     {
       query: {
         allowedIssuers: ['*'],
-        req: {
+        credentialSubject: {
           countryCode: {
             $nin: [11, 111]
           }
@@ -146,20 +150,20 @@ const credentialFlow = async (storage: IDataStorage) => {
     const creds = await credentialWallet.findByQuery(item.query);
     const expectedIds = item.expected.map(({ id }) => id);
     const credsIds = creds.map(({ id }) => id);
-    expect(credsIds).toEqual(expect.arrayContaining(expectedIds));
+    expect(credsIds).to.have.members(expectedIds);
   }
 
   // operator error
   const query = {
     allowedIssuers: ['*'],
-    req: {
+    credentialSubject: {
       countryCode: {
         $custom: [11, 111]
       }
     }
   };
-  await expect(credentialWallet.findByQuery(query)).rejects.toThrow(
-    new Error(SearchError.NotDefinedComparator)
+  await expect(credentialWallet.findByQuery(query)).to.be.rejectedWith(
+    SearchError.NotDefinedComparator
   );
 
   // invalid query
@@ -167,18 +171,18 @@ const credentialFlow = async (storage: IDataStorage) => {
     allowedIssuers: ['*'],
     someProp: ''
   };
-  await expect(credentialWallet.findByQuery(query2)).rejects.toThrow(
-    new Error(SearchError.NotDefinedQueryKey)
+  await expect(credentialWallet.findByQuery(query2)).to.be.rejectedWith(
+    SearchError.NotDefinedQueryKey
   );
 
   // remove credential error
-  await expect(credentialWallet.remove('unknowId')).rejects.toThrow(
-    new Error('item not found to delete: unknowId')
+  await expect(credentialWallet.remove('unknowId')).to.be.rejectedWith(
+    'item not found to delete: unknowId'
   );
 
   await credentialWallet.remove('test1');
   const finalList = await credentialWallet.list();
-  expect(finalList.length).toBe(2);
+  expect(finalList.length).to.equal(2);
 };
 
 describe('credential-wallet', () => {

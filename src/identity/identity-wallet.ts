@@ -243,6 +243,16 @@ export interface IIdentityWallet {
    * @returns `Promise<void>`
    */
   publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void>;
+
+  /**
+   * Extracts core claim from signature or merkle tree proof. If both proof persists core claim must be the same
+   *
+   * @exports
+   * @beta
+   * @param {W3CCredential} credential - credential to extract core claim
+   * @returns `{Promise<Claim>}`
+   */
+  getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim>;
 }
 
 /**
@@ -790,7 +800,7 @@ export class IdentityWallet implements IIdentityWallet {
     return MerklizedRootPosition.Index;
   }
 
-  private async getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim> {
+  public async getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim> {
     const coreClaimFromSigProof = credential.getCoreClaimFromProof(ProofType.BJJSignature);
 
     const coreClaimFromMtpProof = credential.getCoreClaimFromProof(

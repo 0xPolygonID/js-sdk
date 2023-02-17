@@ -1,15 +1,25 @@
 # polygonid-js-sdk
+
 SDK to work with Polygon ID
 
-# unit tests
 
-`npm run test`
+# usage 
 
-# how to run sig tests
+`npm install @iden3/polygonid-js-sdk`
 
-1. download the latest circuits  and put to proofs folder.
-2. loader path - change to yours (now it's hardcoded)
-    const loader = new FSKeyLoader(
-      '' // TODO: change path here
-    );
-4.  
+# tests
+
+`npm run test` to run unit tests
+
+note: mtp / sig / auth / rhs files contain integration tests!
+
+to run them, please setup next variables:
+export WALLET_KEY=`...key in hex format`
+export RPC_URL=`...url to polygon network`
+export RHS_URL=`..reverse hash url`
+
+place actual circuits to `test/proofs/testdata`
+
+# documentation
+
+Documentation can be found here: https://iden3.github.io/polygonid-js-sdk-website/

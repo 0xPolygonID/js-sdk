@@ -17,6 +17,7 @@ import {
 } from './utils';
 
 import expectedJson from './data/sig-v2-inputs.json';
+import { expect } from 'chai';
 
 describe('atomic-query-sig-v2', () => {
   it('TestAttrQuerySigV2_PrepareInputs', async () => {
@@ -90,7 +91,7 @@ describe('atomic-query-sig-v2', () => {
 
     const actualJson = JSON.parse(new TextDecoder().decode(bytesInputs));
 
-    expect(actualJson).toEqual(expectedJson);
+    expect(actualJson).to.deep.equal(expectedJson);
   });
 
   it('TestAtomicQuerySigOutputs_CircuitUnmarshal', () => {
@@ -207,6 +208,6 @@ describe('atomic-query-sig-v2', () => {
     exp.claimPathKey = BigInt(0);
     exp.claimPathNotExists = 0;
     exp.isRevocationChecked = 1;
-    expect(exp).toEqual(out);
+    expect(exp).to.deep.equal(out);
   });
 });

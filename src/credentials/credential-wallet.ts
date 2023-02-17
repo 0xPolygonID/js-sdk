@@ -20,6 +20,9 @@ import * as uuid from 'uuid';
 import { getStatusFromRHS } from './revocation';
 import { Proof } from '@iden3/js-merkletree';
 
+// ErrAllClaimsRevoked all claims are revoked.
+const ErrAllClaimsRevoked = 'all claims are revoked';
+
 /**
  * Request to core library to create Core Claim from W3C Verifiable Credential
  *
@@ -120,6 +123,14 @@ export interface ICredentialWallet {
   findByContextType(context: string, type: string): Promise<W3CCredential[]>;
 
   /**
+   * Filters given credentials with given credential subject
+   *
+   * @param {W3CCredential[]} credentials - credentials to filter
+   * @param {DID} subject - credential subject id
+   * @returns `Promise<W3CCredential[]>`
+   */
+  filterByCredentialSubject(credentials: W3CCredential[], subject: DID): Promise<W3CCredential[]>;
+  /**
    * Finds Auth BJJ credential for given user
    *
    * @param {DID} did - the issuer of Auth BJJ credential
@@ -165,6 +176,20 @@ export interface ICredentialWallet {
     schema: JSONSchema,
     rhsUrl?: string
   ): W3CCredential;
+
+  /**
+   * Finds non-revoked credential from a given list by resolving their credential status
+   *
+   * @param {W3CCredential[]} creds
+   * @returns `{Promise<{
+   *     cred: W3CCredential;
+   *     revStatus: RevocationStatus;
+   *   }>` not revoked credential and it's revocation status
+   */
+  findNonRevokedCredential(creds: W3CCredential[]): Promise<{
+    cred: W3CCredential;
+    revStatus: RevocationStatus;
+  }>;
 }
 
 /**
@@ -367,6 +392,31 @@ export class CredentialWallet implements ICredentialWallet {
    */
   async findByQuery(query: ProofQuery): Promise<W3CCredential[]> {
     return this._storage.credential.findCredentialsByQuery(query);
+  }
+
+  /**
+   * {@inheritDoc ICredentialWallet.filterByCredentialSubject}
+   */
+  async filterByCredentialSubject(
+    credentials: W3CCredential[],
+    subject: DID
+  ): Promise<W3CCredential[]> {
+    return credentials.filter((cred: W3CCredential) => {
+      return cred.credentialSubject['id'] === subject.toString();
+    });
+  }
+  async findNonRevokedCredential(creds: W3CCredential[]): Promise<{
+    cred: W3CCredential;
+    revStatus: RevocationStatus;
+  }> {
+    for (const cred of creds) {
+      const revStatus = await this.getRevocationStatusFromCredential(cred);
+      if (revStatus.mtp.existence) {
+        continue;
+      }
+      return { cred, revStatus };
+    }
+    throw new Error(ErrAllClaimsRevoked);
   }
 }
 

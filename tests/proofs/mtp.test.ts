@@ -22,9 +22,9 @@ import { W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { expect } from 'chai';
 
 describe.skip('mtp proofs', () => {
-  jest.setTimeout(1000000);
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -32,8 +32,13 @@ describe.skip('mtp proofs', () => {
   let proofService: ProofService;
 
   let ethStorage: EthStateStorage;
+
+  const rhsURL = process.env.RHS_URL as string;
+  const infuraUrl = process.env.RPC_URL as string;
+  const walletKey = process.env.WALLET_KEY as string;
+
   const mockStateStorage: IStateStorage = {
-    getLatestStateById: jest.fn(async () => {
+    getLatestStateById: async () => {
       return {
         id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
         state: 15316103435703269893947162180693935798669021972402205481551466808302934202991n,
@@ -43,11 +48,11 @@ describe.skip('mtp proofs', () => {
         createdAtBlock: 30258020n,
         replacedAtBlock: 0n
       };
-    }),
-    publishState: jest.fn(async () => {
+    },
+    publishState: async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
-    }),
-    getGISTProof: jest.fn((): Promise<StateProof> => {
+    },
+    getGISTProof: (): Promise<StateProof> => {
       return Promise.resolve({
         root: 0n,
         existence: false,
@@ -58,8 +63,8 @@ describe.skip('mtp proofs', () => {
         auxIndex: 0n,
         auxValue: 0n
       });
-    }),
-    getGISTRootInfo: jest.fn((): Promise<RootInfo> => {
+    },
+    getGISTRootInfo: (): Promise<RootInfo> => {
       return Promise.resolve({
         root: 0n,
         replacedByRoot: 0n,
@@ -68,7 +73,7 @@ describe.skip('mtp proofs', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
-    })
+    }
   };
   beforeEach(async () => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
@@ -109,20 +114,23 @@ describe.skip('mtp proofs', () => {
       )
     });
 
+    /*
+    To use ethereum storage 
+
     const conf = defaultEthConnectionConfig;
-    conf.url = ''; // TODO: add url here
+    conf.url = infuraUrl; 
     conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
     ethStorage = new EthStateStorage(conf);
     dataStorage.states = ethStorage;
+
+    */
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });
 
   it('mtpv2-non-merklized', async () => {
-    const rhsURL = ''; //TODO:add
-
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
@@ -174,7 +182,10 @@ describe.skip('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet('', undefined); //TODO:add
+    const ethSigner = new ethers.Wallet(
+      walletKey,
+      (dataStorage.states as EthStateStorage).provider
+    );
     const txId = await proofService.transitState(
       issuerDID,
       res.oldTreeState,
@@ -200,7 +211,7 @@ describe.skip('mtp proofs', () => {
         type: claimReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
+        credentialSubject: {
           documentType: {
             $eq: 99
           }
@@ -208,13 +219,17 @@ describe.skip('mtp proofs', () => {
       }
     };
 
-    const { proof } = await proofService.generateProof(proofReq, userDID);
+    const creds = await credWallet.findByQuery(proofReq.query);
+    expect(creds.length).to.not.equal(0);
+
+    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
+    expect(creds.length).to.equal(1);
+
+    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
   });
 
   it('mtpv2-merklized', async () => {
-    const rhsURL = 'http://ec2-34-247-165-109.eu-west-1.compute.amazonaws.com:9999'; //TODO:add
-
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedsnew'
     );
@@ -270,7 +285,10 @@ describe.skip('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet('', ethStorage.provider);
+    const ethSigner = new ethers.Wallet(
+      walletKey,
+      (dataStorage.states as EthStateStorage).provider
+    );
 
     const txId = await proofService.transitState(
       issuerDID,
@@ -297,7 +315,7 @@ describe.skip('mtp proofs', () => {
         type: claimReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        req: {
+        credentialSubject: {
           documentType: {
             $eq: 99
           }
@@ -305,7 +323,13 @@ describe.skip('mtp proofs', () => {
       }
     };
 
-    const { proof } = await proofService.generateProof(proofReq, userDID);
+    const creds = await credWallet.findByQuery(proofReq.query);
+    expect(creds.length).to.not.equal(0);
+
+    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
+    expect(creds.length).to.equal(1);
+
+    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
   });
 });

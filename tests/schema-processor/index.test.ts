@@ -1,7 +1,9 @@
 import { JsonSchemaValidator } from '../../src/schema-processor';
 import { DIDDocumentJSONSchema } from '../../src/verifiable';
-
-jest.setTimeout(50 * 60_00);
+import chaiAsPromised from 'chai-as-promised';
+import chai from 'chai';
+chai.use(chaiAsPromised);
+const { expect } = chai;
 
 describe('json validator', () => {
   it('test validator validate', async () => {
@@ -10,7 +12,7 @@ describe('json validator', () => {
     const jsonDIDDocumentBytes = new TextEncoder().encode(jsonDIDDocument);
     const dataBytes = new TextEncoder().encode(DIDDocumentJSONSchema);
     const result = await v.validate(jsonDIDDocumentBytes, dataBytes);
-    expect(result).toBeTruthy();
+    expect(!!result).to.be.true;
   });
 
   it('test validator validateNoTypeInService', () => {
@@ -20,7 +22,7 @@ describe('json validator', () => {
     const v = new JsonSchemaValidator();
     const jsonDIDDocumentBytes = new TextEncoder().encode(jsonDIDDocument);
     const dataBytes = new TextEncoder().encode(DIDDocumentJSONSchema);
-    expect(v.validate(jsonDIDDocumentBytes, dataBytes)).rejects.toThrow(
+    expect(v.validate(jsonDIDDocumentBytes, dataBytes)).to.be.rejectedWith(
       "should have required property 'type'"
     );
   });
@@ -31,7 +33,7 @@ describe('json validator', () => {
     const v = new JsonSchemaValidator();
     const jsonDIDDocumentBytes = new TextEncoder().encode(jsonDIDDocument);
     const dataBytes = new TextEncoder().encode(DIDDocumentJSONSchema);
-    expect(v.validate(jsonDIDDocumentBytes, dataBytes)).rejects.toThrow(
+    expect(v.validate(jsonDIDDocumentBytes, dataBytes)).to.be.rejectedWith(
       "should have required property 'id'"
     );
   });
