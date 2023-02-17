@@ -18,6 +18,8 @@ export WALLET_KEY=`...key in hex format`
 export RPC_URL=`...url to polygon network`
 export RHS_URL=`..reverse hash url`
 
+place actual circuits to `test/proofs/testdata`
+
 # documentation
 
 Documentation can be found here: https://iden3.github.io/polygonid-js-sdk-website/

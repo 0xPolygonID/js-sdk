@@ -131,7 +131,6 @@ describe.skip('mtp proofs', () => {
   });
 
   it('mtpv2-non-merklized', async () => {
-
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
@@ -183,7 +182,10 @@ describe.skip('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet(walletKey, (dataStorage.states as EthStateStorage).provider); 
+    const ethSigner = new ethers.Wallet(
+      walletKey,
+      (dataStorage.states as EthStateStorage).provider
+    );
     const txId = await proofService.transitState(
       issuerDID,
       res.oldTreeState,
@@ -283,7 +285,10 @@ describe.skip('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet(walletKey,  (dataStorage.states as EthStateStorage).provider);
+    const ethSigner = new ethers.Wallet(
+      walletKey,
+      (dataStorage.states as EthStateStorage).provider
+    );
 
     const txId = await proofService.transitState(
       issuerDID,

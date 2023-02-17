@@ -1,4 +1,5 @@
 export * from './packageManager';
 export * from './packers';
 export * from './types';
-export * as constants from './constants';
+import * as constants from './constants';
+export { constants };

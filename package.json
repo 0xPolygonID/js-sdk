@@ -1,6 +1,6 @@
 {
   "name": "@iden3/polygonid-js-sdk",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "description": "SDK to work with Polygon ID",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -41,7 +41,7 @@
     "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
     "@esbuild-plugins/node-modules-polyfill": "^0.1.4",
     "@microsoft/api-documenter": "^7.20.1",
-    "@microsoft/api-extractor": "^7.34.0",
+    "@microsoft/api-extractor": "^7.34.4",
     "@types/chai": "^4.3.4",
     "@types/chai-as-promised": "^7.1.5",
     "@types/mocha": "^10.0.1",
@@ -63,7 +63,7 @@
   "dependencies": {
     "@iden3/js-crypto": "1.0.0-beta.0",
     "@iden3/js-iden3-core": "1.0.0-beta.0",
-    "@iden3/js-jsonld-merklization": "1.0.0-beta.0",
+    "@iden3/js-jsonld-merklization": "1.0.0-beta.1",
     "@iden3/js-jwz": "1.0.0-beta.1",
     "@iden3/js-merkletree": "1.0.0-beta.0",
     "@lumeweb/js-sha3-browser": "^0.8.1",

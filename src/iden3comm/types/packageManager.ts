@@ -41,7 +41,7 @@ export interface IPackageManager {
    * @param {MediaType} mediaType
    * @param {Uint8Array} payload
    * @param {PackerParams} params
-   * @returns Promise<Uint8Array>
+   * @returns `Promise<Uint8Array>`
    */
   pack(mediaType: MediaType, payload: Uint8Array, params: PackerParams): Promise<Uint8Array>;
 
