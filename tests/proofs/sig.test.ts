@@ -21,6 +21,8 @@ import { byteEncoder } from '../../src/iden3comm/utils';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { expect } from 'chai';
+
 describe.skip('sig proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
@@ -30,13 +32,13 @@ describe.skip('sig proofs', () => {
   const rhsUrl = 'https://rhs-staging.polygonid.me/'; //'http://rhs.com/node'
 
   const mockStateStorage: IStateStorage = {
-    getLatestStateById: jest.fn(async () => {
+    getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
-    }),
-    publishState: jest.fn(async () => {
+    },
+    publishState: async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
-    }),
-    getGISTProof: jest.fn((): Promise<StateProof> => {
+    },
+    getGISTProof: (): Promise<StateProof> => {
       return Promise.resolve({
         root: 0n,
         existence: false,
@@ -47,8 +49,8 @@ describe.skip('sig proofs', () => {
         auxIndex: 0n,
         auxValue: 0n
       });
-    }),
-    getGISTRootInfo: jest.fn((): Promise<RootInfo> => {
+    },
+    getGISTRootInfo: (): Promise<RootInfo> => {
       return Promise.resolve({
         root: 0n,
         replacedByRoot: 0n,
@@ -57,7 +59,7 @@ describe.skip('sig proofs', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
-    })
+    }
   };
 
   beforeEach(async () => {
@@ -171,10 +173,10 @@ describe.skip('sig proofs', () => {
     };
 
     const creds = await credWallet.findByQuery(proofReq.query);
-    expect(creds).not.toHaveLength(0);
+    expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds).toHaveLength(1);
+    expect(creds.length).to.equal(1);
 
     const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
@@ -242,13 +244,12 @@ describe.skip('sig proofs', () => {
     };
 
     const creds = await credWallet.findByQuery(proofReq.query);
-    expect(creds).not.toHaveLength(0);
+    expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds).toHaveLength(1);
+    expect(creds.length).to.equal(1);
 
     const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
-
   });
 });

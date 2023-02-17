@@ -47,7 +47,7 @@ export class ProvingMethodGroth16Authv2 implements ProvingMethod {
 export const mockPrepareAuthInputs = (
   hash: Uint8Array, //eslint-disable-line @typescript-eslint/no-unused-vars
   did: DID, //eslint-disable-line @typescript-eslint/no-unused-vars
-  profileNonce: Number,  //eslint-disable-line @typescript-eslint/no-unused-vars
+  profileNonce: Number, //eslint-disable-line @typescript-eslint/no-unused-vars
   circuitID: CircuitId //eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<Uint8Array> => {
   const bytesEncoder = new TextEncoder();

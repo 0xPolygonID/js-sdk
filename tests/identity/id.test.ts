@@ -8,19 +8,20 @@ import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { expect } from 'chai';
 
 describe('identity', () => {
   let wallet: IdentityWallet;
   let dataStorage: IDataStorage;
 
   const mockStateStorage: IStateStorage = {
-    getLatestStateById: jest.fn(async (t) => {
+    getLatestStateById: async (t) => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
-    }),
-    publishState: jest.fn(async () => {
+    },
+    publishState: async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
-    }),
-    getGISTProof: jest.fn((): Promise<StateProof> => {
+    },
+    getGISTProof: (): Promise<StateProof> => {
       return Promise.resolve({
         root: 0n,
         existence: false,
@@ -31,8 +32,8 @@ describe('identity', () => {
         auxIndex: 0n,
         auxValue: 0n
       });
-    }),
-    getGISTRootInfo: jest.fn((): Promise<RootInfo> => {
+    },
+    getGISTRootInfo: (): Promise<RootInfo> => {
       return Promise.resolve({
         root: 0n,
         replacedByRoot: 0n,
@@ -41,7 +42,7 @@ describe('identity', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
-    })
+    }
   };
   beforeEach(async () => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
@@ -74,11 +75,11 @@ describe('identity', () => {
         seed: seedPhrase
       }
     );
-    expect(did.toString()).toBe(
+    expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
     const dbCred = await dataStorage.credential.findCredentialById(credential.id);
-    expect(credential).toStrictEqual(dbCred);
+    expect(credential).to.deep.equal(dbCred);
 
     const claimsTree = await dataStorage.mt.getMerkleTreeByIdentifierAndType(
       did.toString(),
@@ -86,7 +87,7 @@ describe('identity', () => {
     );
 
     console.log(JSON.stringify(credential));
-    expect(claimsTree?.root.bigInt()).not.toBe(0);
+    expect(claimsTree?.root.bigInt()).not.to.equal(0);
   });
   it('createProfile', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
@@ -101,19 +102,19 @@ describe('identity', () => {
         seed: seedPhrase
       }
     );
-    expect(did.toString()).toBe(
+    expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const profileDID = await wallet.createProfile(did, 10, 'http://polygonissuer.com/');
-    expect(profileDID.toString()).toBe(
+    expect(profileDID.toString()).to.equal(
       'did:iden3:polygon:mumbai:x2Ld4XmxEo6oGCSr3MsqBa5PmJie6WJ6pFbetzYuq'
     );
 
     const dbProfile = await dataStorage.identity.getProfileByVerifier('http://polygonissuer.com/');
-    expect(dbProfile.id).toBe(profileDID.toString());
-    expect(dbProfile.genesisIdentifier).toBe(did.toString());
-    expect(dbProfile.nonce).toBe(10);
+    expect(dbProfile.id).to.equal(profileDID.toString());
+    expect(dbProfile.genesisIdentifier).to.equal(did.toString());
+    expect(dbProfile.nonce).to.equal(10);
   });
   it('sign', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
@@ -128,7 +129,7 @@ describe('identity', () => {
         seed: seedPhrase
       }
     );
-    expect(did.toString()).toBe(
+    expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
@@ -137,7 +138,7 @@ describe('identity', () => {
     const message = enc.encode('payload');
     const sig = await wallet.sign(message, credential);
 
-    expect(sig.hex()).toBe(
+    expect(sig.hex()).to.equal(
       '5fdb4fc15898ee2eeed2ed13c5369a4f28870e51ac1aae8ad1f2108d2d39f38969881d7553344c658e63344e4ddc151fabfed5bf8fcf8663c183248b714d8b03'
     );
   });
@@ -154,13 +155,13 @@ describe('identity', () => {
         seed: seedPhrase
       }
     );
-    expect(did.toString()).toBe(
+    expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const proof = await wallet.generateCredentialMtp(did, credential);
 
-    expect(proof.proof.existence).toBe(true);
+    expect(proof.proof.existence).to.equal(true);
   });
   it('generateNonRevProof', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
@@ -175,13 +176,13 @@ describe('identity', () => {
         seed: seedPhrase
       }
     );
-    expect(did.toString()).toBe(
+    expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const proof = await wallet.generateNonRevocationMtp(did, credential);
 
-    expect(proof.proof.existence).toBe(false);
+    expect(proof.proof.existence).to.equal(false);
   });
 
   it('generateNonRevProof', async () => {
@@ -197,13 +198,13 @@ describe('identity', () => {
         seed: seedPhrase
       }
     );
-    expect(did.toString()).toBe(
+    expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const proof = await wallet.generateNonRevocationMtp(did, credential);
 
-    expect(proof.proof.existence).toBe(false);
+    expect(proof.proof.existence).to.equal(false);
   });
 
   it('issueCredential', async () => {
@@ -223,7 +224,7 @@ describe('identity', () => {
       }
     );
 
-    expect(issuerDID.toString()).toBe(
+    expect(issuerDID.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 

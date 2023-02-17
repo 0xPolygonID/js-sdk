@@ -2,13 +2,12 @@ import { DID } from '@iden3/js-iden3-core';
 import { Token, ProvingMethodAlg, ProvingMethod, proving } from '@iden3/js-jwz';
 import { DataPrepareHandlerFunc, VerificationHandlerFunc, ZKPPacker } from '../../src/iden3comm';
 import { mockPrepareAuthInputs, mockVerifyState, ProvingMethodGroth16Authv2 } from './mock/proving';
-import { ProvingParams, VerificationParams } from '../../src/iden3comm/types';
+import { ProvingParams, VerificationParams, ZKPPackerParams } from '../../src/iden3comm/types';
 import { AuthV2PubSignals } from '../../src/circuits';
 import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { byteDecoder, byteEncoder } from '../../src/iden3comm/utils';
-
+import { expect } from 'chai';
 const { registerProvingMethod } = proving;
-
 describe('zkp packer tests', () => {
   it('test zkp packer pack', async () => {
     const p = await initZKPPacker();
@@ -24,14 +23,14 @@ describe('zkp packer tests', () => {
       senderID: senderDID,
       profileNonce: 0, // if it's genesis identity
       provingMethodAlg: new ProvingMethodAlg('groth16-mock', 'authV2')
-    });
+    } as unknown as ZKPPackerParams);
     const t = await Token.parse(byteDecoder.decode(b));
     const outs = new AuthV2PubSignals().pubSignalsUnmarshal(
       byteEncoder.encode(JSON.stringify(t.zkProof.pub_signals))
     );
 
     const didFromToken = DID.parseFromId(outs.userID);
-    expect(senderDID.toString()).toEqual(didFromToken.toString());
+    expect(senderDID.toString()).to.deep.equal(didFromToken.toString());
   });
 
   it('test plain message packer', async () => {
@@ -42,7 +41,7 @@ describe('zkp packer tests', () => {
     );
     const iden3msg = await p.unpack(msgZKP);
 
-    expect(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE).toEqual(iden3msg.type);
+    expect(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE).to.deep.equal(iden3msg.type);
   });
 });
 

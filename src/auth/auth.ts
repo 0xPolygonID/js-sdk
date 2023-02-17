@@ -92,40 +92,6 @@ export interface IAuthHandler {
     authRequest: AuthorizationRequestMessage;
     authResponse: AuthorizationResponseMessage;
   }>;
-
-  /**
-   * unpacks authorization request
-   * @export
-   * @beta
-   * @param {Uint8Array} request - raw byte message
-   * @returns `Promise<AuthorizationRequestMessage>`
-   */
-  parseAuthorizationRequest(request: Uint8Array): Promise<AuthorizationRequestMessage>;
-
-  /**
-   * Generates zero-knowledge proofs for given requests and credentials
-   * @export
-   * @beta
-   * @param {DID} userGenesisDID      - user genesis identifier for which user holds key pair.
-   * @param {number} authProfileNonce - profile nonce that will be used for authorization.
-   * @param {AuthorizationRequestMessage} authRequest - authorization request, protocol message.
-   * @param {ZKPRequestWithCredential[]} zkpRequestsWithCreds - zero knowledge proof request with chosen credential to use.
-   * @returns `Promise<{
-   *     token: string;
-   *     authRequest: AuthorizationRequestMessage;
-   *     authResponse: AuthorizationResponseMessage;
-   *   }>}`
-   */
-  generateAuthorizationResponse(
-    userGenesisDID: DID,
-    authProfileNonce: number,
-    authRequest: AuthorizationRequestMessage,
-    zkpRequestsWithCreds: ZKPRequestWithCredential[]
-  ): Promise<{
-    token: string;
-    authRequest: AuthorizationRequestMessage;
-    authResponse: AuthorizationResponseMessage;
-  }>;
 }
 /**
  *
@@ -188,7 +154,6 @@ export class AuthHandler implements IAuthHandler {
       from: did.toString(),
       to: message.from
     };
-
 
     for (const proofReq of authRequestBody.scope) {
       const zkpReq: ZeroKnowledgeProofRequest = {
@@ -306,92 +271,6 @@ export class AuthHandler implements IAuthHandler {
       await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
         senderDID: userGenesisDID,
         profileNonce: authProfileNonce,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-      } as ZKPPackerParams)
-    );
-    return { authRequest, authResponse, token };
-  }
-
-  /**
-   * unpacks authorization request
-   * @export
-   * @beta
-   * @param {Uint8Array} request - raw byte message
-   * @returns `Promise<AuthorizationRequestMessage>`
-   */
-  async parseAuthorizationRequest(request: Uint8Array): Promise<AuthorizationRequestMessage> {
-    const { unpackedMessage: message } = await this._packerMgr.unpack(request);
-    const authRequest = message as unknown as AuthorizationRequestMessage;
-    if (message.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
-      throw new Error('Invalid media type');
-    }
-    return authRequest;
-  }
-
-  /**
-   * Generates zero-knowledge proofs for given requests and credentials
-   * @export
-   * @beta
-   * @param {DID} userGenesisDID      - user genesis identifier for which user holds key pair.
-   * @param {number} authProfileNonce - profile nonce that will be used for authorization.
-   * @param {AuthorizationRequestMessage} authRequest - authorization request, protocol message.
-   * @param {ZKPRequestWithCredential[]} zkpRequestsWithCreds - zero knowledge proof request with chosen credential to use.
-   * @returns `Promise<{
-   *     token: string;
-   *     authRequest: AuthorizationRequestMessage;
-   *     authResponse: AuthorizationResponseMessage;
-   *   }>}`
-   */
-  async generateAuthorizationResponse(
-    userGenesisDID: DID,
-    authProfileNonce: number,
-    authRequest: AuthorizationRequestMessage,
-    zkpRequestsWithCreds: ZKPRequestWithCredential[]
-  ): Promise<{
-    token: string;
-    authRequest: AuthorizationRequestMessage;
-    authResponse: AuthorizationResponseMessage;
-  }> {
-    const guid = uuid.v4();
-    const authResponse: AuthorizationResponseMessage = {
-      id: guid,
-      typ: MediaType.ZKPMessage,
-      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
-      thid: authRequest.thid ?? guid,
-      body: {
-        message: authRequest.body.message,
-        scope: []
-      },
-      from: userGenesisDID.toString(),
-      to: authRequest.from
-    };
-
-    for (const r of zkpRequestsWithCreds) {
-      const { proof } = await this._proofService.generateProof(
-        r.req,
-        userGenesisDID,
-        r.credential,
-        {
-          authProfileNonce: authProfileNonce,
-          credentialSubjectProfileNonce: r.credentialSubjectProfileNonce,
-          skipRevocation: false
-        }
-      );
-
-      const zkpRes: ZeroKnowledgeProofResponse = {
-        id: r.req.id,
-        circuitId: r.req.circuitId,
-        proof: proof.proof,
-        pub_signals: proof.pub_signals
-      };
-
-      authResponse.body.scope.push(zkpRes);
-    }
-    const msgBytes = new TextEncoder().encode(JSON.stringify(authResponse));
-    const token = byteDecoder.decode(
-      await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
-        senderID: userGenesisDID,
-        authProfileNonce: authProfileNonce,
         provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
       })
     );

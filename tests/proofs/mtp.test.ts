@@ -22,9 +22,8 @@ import { W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-
+import { expect } from 'chai';
 describe.skip('mtp proofs', () => {
-  jest.setTimeout(1000000);
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -33,7 +32,7 @@ describe.skip('mtp proofs', () => {
 
   let ethStorage: EthStateStorage;
   const mockStateStorage: IStateStorage = {
-    getLatestStateById: jest.fn(async () => {
+    getLatestStateById: async () => {
       return {
         id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
         state: 15316103435703269893947162180693935798669021972402205481551466808302934202991n,
@@ -43,11 +42,11 @@ describe.skip('mtp proofs', () => {
         createdAtBlock: 30258020n,
         replacedAtBlock: 0n
       };
-    }),
-    publishState: jest.fn(async () => {
+    },
+    publishState: async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
-    }),
-    getGISTProof: jest.fn((): Promise<StateProof> => {
+    },
+    getGISTProof: (): Promise<StateProof> => {
       return Promise.resolve({
         root: 0n,
         existence: false,
@@ -58,8 +57,8 @@ describe.skip('mtp proofs', () => {
         auxIndex: 0n,
         auxValue: 0n
       });
-    }),
-    getGISTRootInfo: jest.fn((): Promise<RootInfo> => {
+    },
+    getGISTRootInfo: (): Promise<RootInfo> => {
       return Promise.resolve({
         root: 0n,
         replacedByRoot: 0n,
@@ -68,7 +67,7 @@ describe.skip('mtp proofs', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
-    })
+    }
   };
   beforeEach(async () => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
@@ -209,10 +208,10 @@ describe.skip('mtp proofs', () => {
     };
 
     const creds = await credWallet.findByQuery(proofReq.query);
-    expect(creds).not.toHaveLength(0);
+    expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds).toHaveLength(1);
+    expect(creds.length).to.equal(1);
 
     const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
@@ -312,10 +311,10 @@ describe.skip('mtp proofs', () => {
     };
 
     const creds = await credWallet.findByQuery(proofReq.query);
-    expect(creds).not.toHaveLength(0);
+    expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds).toHaveLength(1);
+    expect(creds.length).to.equal(1);
 
     const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
