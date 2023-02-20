@@ -1,11 +1,11 @@
-# polygonid-js-sdk
+# @0xpolygonid/js-sdk
 
 SDK to work with Polygon ID
 
 
 # usage 
 
-`npm install @iden3/polygonid-js-sdk`
+`npm install @0xpolygonid/js-sdk`
 
 # tests
 
@@ -22,4 +22,4 @@ place actual circuits to `test/proofs/testdata`
 
 # documentation
 
-Documentation can be found here: https://iden3.github.io/polygonid-js-sdk-website/
+Documentation can be found here: https://0xpolygonid.github.io/polygonid-js-sdk-website/
