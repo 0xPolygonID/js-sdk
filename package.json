@@ -22,7 +22,7 @@
     "doc:build": "npm run doc:extract && npm run doc:documenter",
     "doc:watch:website": "ts-node ./scripts/doc-watch.ts",
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
-    "test": "mocha -p --require ts-node/register tests/**/*.ts -t 30000",
+    "test": "mocha --require ts-node/register tests/**/*.ts -t 30000",
     "test:watch": "mocha -p --require ts-node/register tests/**/*.ts -t 30000 --watch",
     "lint": "eslint --fix --ext .js,.ts src/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
@@ -74,6 +74,7 @@
     "cross-sha256": "^1.2.0",
     "crypto-browserify": "^3.12.0",
     "ethers": "^5.7.2",
+    "ffjavascript": "^0.2.57",
     "ipfs-http-client": "56.0.3",
     "rfc4648": "^1.5.2",
     "snarkjs": "^0.5.0",

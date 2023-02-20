@@ -3,11 +3,13 @@ import * as snarkjs from 'snarkjs';
 import { CircuitId } from '../circuits';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { witnessBuilder } from './witness_calculator';
+import { getCurveFromName } from 'ffjavascript';
 
 /* eslint-disable no-console */
 
-// NativeProver service responsible for zk generation
+// NativeProver service responsible for zk generation groth16 algorithm with bn128 curve
 export class NativeProver {
+  private static readonly curveName = 'bn128';
   constructor(private readonly _circuitStorage: ICircuitStorage) {}
 
   async verify(zkp: ZKProof, circuitName: CircuitId): Promise<boolean> {
@@ -20,6 +22,9 @@ export class NativeProver {
         zkp.pub_signals,
         zkp.proof
       );
+
+      // we need to terminate curve manually
+      await this.terminateCurve();
       return true;
     } catch (e) {
       console.log(e);
@@ -43,6 +48,9 @@ export class NativeProver {
 
       const { proof, publicSignals } = await snarkjs.groth16.prove(provingKey, wtnsBytes);
 
+      // we need to terminate curve manually
+      await this.terminateCurve();
+
       return {
         proof: proof,
         pub_signals: publicSignals
@@ -51,5 +59,10 @@ export class NativeProver {
       console.log(e);
       throw e;
     }
+  }
+
+  private async terminateCurve(): Promise<void> {
+    const curve = await getCurveFromName(NativeProver.curveName);
+    curve.terminate();
   }
 }

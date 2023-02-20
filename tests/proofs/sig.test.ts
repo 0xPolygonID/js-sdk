@@ -221,8 +221,8 @@ describe.skip('sig proofs', () => {
       expiration: 1693526400
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withRHS: rhsUrl,
-    }); 
+      withRHS: rhsUrl
+    });
 
     await credWallet.save(issuerCred);
 
