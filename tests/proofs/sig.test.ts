@@ -182,7 +182,7 @@ describe.skip('sig proofs', () => {
     console.log(proof);
   });
 
-  it.skip('sigv2-merklized', async () => {
+  it('sigv2-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
@@ -190,18 +190,18 @@ describe.skip('sig proofs', () => {
 
     const { did: userDID, credential } = await idWallet.createIdentity(
       'http://metamask.com/',
-      'http://rhs.com/node',
+      rhsUrl,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer
+        seed: seedPhrase
       }
     );
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://metamask.com/',
-      'http://rhs.com/node',
+      rhsUrl,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
@@ -221,8 +221,8 @@ describe.skip('sig proofs', () => {
       expiration: 1693526400
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withRHS: 'http://rhs.node'
-    });
+      withRHS: rhsUrl,
+    }); 
 
     await credWallet.save(issuerCred);
 
