@@ -149,7 +149,7 @@ describe.skip('rhs', () => {
       'seedseedseedseedseedseedseedseed'
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
@@ -190,7 +190,7 @@ describe.skip('rhs', () => {
       'seedseedseedseedseedseedseedseed'
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsUrl,
       {
         method: DidMethod.Iden3,
@@ -203,7 +203,7 @@ describe.skip('rhs', () => {
     await credWallet.save(issuerAuthCredential);
 
     const { did: userDID, credential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsUrl,
       {
         method: DidMethod.Iden3,
@@ -238,7 +238,7 @@ describe.skip('rhs', () => {
       revNonce: 1000
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
       withRHS: rhsUrl
     });
 
@@ -267,7 +267,7 @@ describe.skip('rhs', () => {
       'seedseedseedseedseedseedseedseed'
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsUrl,
       {
         method: DidMethod.Iden3,
@@ -280,7 +280,7 @@ describe.skip('rhs', () => {
     await credWallet.save(issuerAuthCredential);
 
     const { did: userDID, credential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsUrl,
       {
         method: DidMethod.Iden3,
@@ -315,7 +315,7 @@ describe.skip('rhs', () => {
       revNonce: 1000
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
       withRHS: rhsUrl
     });
 
@@ -343,7 +343,7 @@ describe.skip('rhs', () => {
     const issuerCred2 = await idWallet.issueCredential(
       issuerDID,
       claimReq2,
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       {
         withRHS: rhsUrl
       }

@@ -136,7 +136,7 @@ describe.skip('mtp proofs', () => {
     );
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID } = await idWallet.createIdentity('http://metamask.com/', rhsURL, {
+    const { did: userDID } = await idWallet.createIdentity('http://mytestwallet.com/', rhsURL, {
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
@@ -144,7 +144,7 @@ describe.skip('mtp proofs', () => {
     });
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsURL,
       {
         method: DidMethod.Iden3,
@@ -168,7 +168,7 @@ describe.skip('mtp proofs', () => {
       revNonce: 1000
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
       withRHS: rhsURL
     });
 
@@ -236,7 +236,7 @@ describe.skip('mtp proofs', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
     const { did: userDID, credential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsURL,
       {
         method: DidMethod.Iden3,
@@ -247,7 +247,7 @@ describe.skip('mtp proofs', () => {
     );
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsURL,
       {
         method: DidMethod.Iden3,
@@ -271,7 +271,7 @@ describe.skip('mtp proofs', () => {
       revNonce: 1000
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
       withRHS: rhsURL
     });
 

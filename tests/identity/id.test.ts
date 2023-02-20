@@ -66,7 +66,7 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
@@ -93,7 +93,7 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
@@ -120,7 +120,7 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
@@ -146,7 +146,7 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
@@ -167,7 +167,7 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
@@ -189,7 +189,7 @@ describe('identity', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
@@ -214,7 +214,7 @@ describe('identity', () => {
     const seedPhraseUser: Uint8Array = new TextEncoder().encode('userseedseedseedseedseedseeduser');
 
     const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
@@ -229,7 +229,7 @@ describe('identity', () => {
     );
 
     const { did: userDID, credential: userAuthCredential } = await wallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
@@ -250,7 +250,7 @@ describe('identity', () => {
       },
       expiration: 12345678888
     };
-    const issuerCred = await wallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+    const issuerCred = await wallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
       withRHS: 'http://rhs.node'
     });
   });

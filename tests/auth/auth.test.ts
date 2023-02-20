@@ -181,7 +181,7 @@ describe.skip('auth', () => {
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
     const { did: userDID, credential: cred } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsURL,
       {
         method: DidMethod.Iden3,
@@ -191,7 +191,7 @@ describe.skip('auth', () => {
       }
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsURL,
       {
         method: DidMethod.Iden3,
@@ -212,8 +212,8 @@ describe.skip('auth', () => {
       },
       expiration: 1693526400
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withRHS: 'http://metamask.com/'
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
+      withRHS: 'http://mytestwallet.com/'
     });
 
     await credWallet.save(issuerCred);
@@ -268,7 +268,7 @@ describe.skip('auth', () => {
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
     const { did: userDID, credential: cred } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsURL,
       {
         method: DidMethod.Iden3,
@@ -280,7 +280,7 @@ describe.skip('auth', () => {
     const profileDID = await idWallet.createProfile(userDID, 50, 'test verifier');
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsURL,
       {
         method: DidMethod.Iden3,
@@ -301,7 +301,7 @@ describe.skip('auth', () => {
       },
       expiration: 1693526400
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
       withRHS: rhsURL
     });
 

@@ -118,7 +118,7 @@ describe.skip('sig proofs', () => {
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
     const { did: userDID, credential: cred } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsUrl,
       {
         method: DidMethod.Iden3,
@@ -128,7 +128,7 @@ describe.skip('sig proofs', () => {
       }
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsUrl,
       {
         method: DidMethod.Iden3,
@@ -149,7 +149,7 @@ describe.skip('sig proofs', () => {
       },
       expiration: 1693526400
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
       withRHS: rhsUrl
     });
 
@@ -189,7 +189,7 @@ describe.skip('sig proofs', () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
     const { did: userDID, credential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsUrl,
       {
         method: DidMethod.Iden3,
@@ -200,7 +200,7 @@ describe.skip('sig proofs', () => {
     );
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
+      'http://mytestwallet.com/',
       rhsUrl,
       {
         method: DidMethod.Iden3,
@@ -220,7 +220,7 @@ describe.skip('sig proofs', () => {
       },
       expiration: 1693526400
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
       withRHS: rhsUrl
     });
 
