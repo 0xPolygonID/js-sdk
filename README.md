@@ -33,4 +33,4 @@ And place actual circuits to `test/proofs/testdata`
 
 # Documentation
 
-Documentation can be found here: https://0xpolygonid.github.io/polygonid-js-sdk-website/
+Documentation can be found here: https://0xpolygonid.github.io/js-sdk-tutorials/
