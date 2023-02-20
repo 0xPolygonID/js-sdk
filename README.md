@@ -3,23 +3,34 @@
 SDK to work with Polygon ID
 
 
-# usage 
+# Usage 
 
-`npm install @0xpolygonid/js-sdk`
+Installation:
 
-# tests
+```
+npm install @0xpolygonid/js-sdk
+```
 
-`npm run test` to run unit tests
+See [tests](/tests) for examples on how to use SDK.
 
-note: mtp / sig / auth / rhs files contain integration tests!
+# Tests
 
-to run them, please setup next variables:
-export WALLET_KEY=`...key in hex format`
-export RPC_URL=`...url to polygon network`
-export RHS_URL=`..reverse hash url`
+Run unit tests:
+```
+npm run test
+```
 
-place actual circuits to `test/proofs/testdata`
+Note: mtp / sig / auth / rhs files contain integration tests!
 
-# documentation
+To run them, please set following variables:
+```
+export WALLET_KEY="...key in hex format"
+export RPC_URL="...url to polygon network rpc node"
+export RHS_URL="..reverse hash service url"
+```
+
+And place actual circuits to `test/proofs/testdata`
+
+# Documentation
 
 Documentation can be found here: https://0xpolygonid.github.io/polygonid-js-sdk-website/
