@@ -33,7 +33,7 @@ describe.skip('mtp proofs', () => {
 
   let ethStorage: EthStateStorage;
 
-  const rhsURL = process.env.RHS_URL as string;
+  const rhsUrl = process.env.RHS_URL as string;
   const infuraUrl = process.env.RPC_URL as string;
   const walletKey = process.env.WALLET_KEY as string;
 
@@ -136,21 +136,22 @@ describe.skip('mtp proofs', () => {
     );
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID } = await idWallet.createIdentity('http://metamask.com/', rhsURL, {
+    const { did: userDID } = await idWallet.createIdentity('http://mytestwallet.com/', {
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
-      seed: seedPhrase
+      seed: seedPhrase,
+      rhsUrl
     });
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
-      rhsURL,
+      'http://mytestwallet.com/',
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer
+        seed: seedPhraseIssuer,
+        rhsUrl
       }
     );
     await credWallet.save(issuerAuthCredential);
@@ -168,9 +169,14 @@ describe.skip('mtp proofs', () => {
       revNonce: 1000
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withRHS: rhsURL
-    });
+    const issuerCred = await idWallet.issueCredential(
+      issuerDID,
+      claimReq,
+      'http://mytestwallet.com/',
+      {
+        withRHS: rhsUrl
+      }
+    );
 
     await credWallet.save(issuerCred);
 
@@ -178,7 +184,7 @@ describe.skip('mtp proofs', () => {
 
     // publish to rhs
 
-    await idWallet.publishStateToRHS(issuerDID, rhsURL);
+    await idWallet.publishStateToRHS(issuerDID, rhsUrl);
 
     // you must store stat info (e.g. state and it's roots)
 
@@ -235,25 +241,22 @@ describe.skip('mtp proofs', () => {
     );
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential } = await idWallet.createIdentity(
-      'http://metamask.com/',
-      rhsURL,
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did: userDID, credential } = await idWallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      rhsUrl
+    });
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://metamask.com/',
-      rhsURL,
+      'http://mytestwallet.com/',
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer
+        seed: seedPhraseIssuer,
+        rhsUrl
       }
     );
     await credWallet.save(issuerAuthCredential);
@@ -271,9 +274,14 @@ describe.skip('mtp proofs', () => {
       revNonce: 1000
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withRHS: rhsURL
-    });
+    const issuerCred = await idWallet.issueCredential(
+      issuerDID,
+      claimReq,
+      'http://mytestwallet.com/',
+      {
+        withRHS: rhsUrl
+      }
+    );
 
     await credWallet.save(issuerCred);
 
@@ -281,7 +289,7 @@ describe.skip('mtp proofs', () => {
 
     // publish to rhs
 
-    await idWallet.publishStateToRHS(issuerDID, rhsURL);
+    await idWallet.publishStateToRHS(issuerDID, rhsUrl);
 
     // you must store stat info (e.g. state and it's roots)
 

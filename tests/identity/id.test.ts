@@ -65,16 +65,13 @@ describe('identity', () => {
   it('createIdentity', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
-      'http://rhs.com/node',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      rhsUrl: 'http://rhs.com/node'
+    });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
@@ -92,16 +89,13 @@ describe('identity', () => {
   it('createProfile', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
-      'http://rhs.com/node',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      rhsUrl: 'http://rhs.com/node'
+    });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
@@ -119,16 +113,13 @@ describe('identity', () => {
   it('sign', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
-      'http://rhs.com/node',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      rhsUrl: 'http://rhs.com/node'
+    });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
@@ -145,16 +136,13 @@ describe('identity', () => {
   it('generateMtp', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
-      'http://rhs.com/node',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      rhsUrl: 'http://rhs.com/node'
+    });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
@@ -166,16 +154,13 @@ describe('identity', () => {
   it('generateNonRevProof', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
-      'http://rhs.com/node',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      rhsUrl: 'http://rhs.com/node'
+    });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
@@ -188,16 +173,13 @@ describe('identity', () => {
   it('generateNonRevProof', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity(
-      'http://metamask.com/',
-      'http://rhs.com/node',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      rhsUrl: 'http://rhs.com/node'
+    });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
@@ -214,13 +196,13 @@ describe('identity', () => {
     const seedPhraseUser: Uint8Array = new TextEncoder().encode('userseedseedseedseedseedseeduser');
 
     const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity(
-      'http://metamask.com/',
-      'http://rhs.com/node',
+      'http://mytestwallet.com/',
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer
+        seed: seedPhraseIssuer,
+        rhsUrl: 'http://rhs.com/node'
       }
     );
 
@@ -229,13 +211,14 @@ describe('identity', () => {
     );
 
     const { did: userDID, credential: userAuthCredential } = await wallet.createIdentity(
-      'http://metamask.com/',
-      'http://rhs.com/node',
+      'http://mytestwallet.com/',
+
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhraseUser
+        seed: seedPhraseUser,
+        rhsUrl: 'http://rhs.com/node'
       }
     );
 
@@ -250,8 +233,13 @@ describe('identity', () => {
       },
       expiration: 12345678888
     };
-    const issuerCred = await wallet.issueCredential(issuerDID, claimReq, 'http://metamask.com/', {
-      withRHS: 'http://rhs.node'
-    });
+    const issuerCred = await wallet.issueCredential(
+      issuerDID,
+      claimReq,
+      'http://mytestwallet.com/',
+      {
+        withRHS: 'http://rhs.node'
+      }
+    );
   });
 });
