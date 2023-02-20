@@ -56,7 +56,8 @@ export interface CredentialIssueOptions {
 
 /**
  * DID creation options
- *
+ * seed - seed to generate BJJ keypair
+ * rhsUrl - rhsUrl is url to reverse hash service, so revocation status can be fetched for Auth BJJ credential
  * @export
  * @interface IdentityCreationOptions
  */
@@ -65,6 +66,7 @@ export interface IdentityCreationOptions {
   blockchain: Blockchain;
   networkId: NetworkId;
   seed?: Uint8Array;
+  rhsUrl?: string;
 }
 
 /**
@@ -92,7 +94,6 @@ export interface IIdentityWallet {
    * based on the resulting state it provides an identifier in DID form.
    *
    * @param {string} hostUrl - hostUrl is used as a part of the identifier of Auth BJJ credential
-   * @param {string} rhsUrl - rhsUrl is url to reverse hash service, so revocation status can be fetched for Auth BJJ credential
    * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:mumbai** with generated key.
    * @returns `Promise<{ did: DID; credential: W3CCredential }>` - returns did and Auth BJJ credential
    * @beta
@@ -100,7 +101,6 @@ export interface IIdentityWallet {
 
   createIdentity(
     hostUrl: string,
-    rhsUrl: string,
     opts?: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }>;
 
@@ -289,7 +289,6 @@ export class IdentityWallet implements IIdentityWallet {
    */
   async createIdentity(
     hostUrl: string,
-    rhsUrl: string,
     opts?: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
     const tmpIdentifier = uuid.v4();
@@ -366,7 +365,13 @@ export class IdentityWallet implements IIdentityWallet {
 
     let credential: W3CCredential = new W3CCredential();
     try {
-      credential = this._credentialWallet.createCredential(hostUrl, did, request, schema, rhsUrl);
+      credential = this._credentialWallet.createCredential(
+        hostUrl,
+        did,
+        request,
+        schema,
+        opts.rhsUrl
+      );
     } catch (e) {
       throw new Error('Error create Iden3Credential');
     }

@@ -119,22 +119,22 @@ describe.skip('sig proofs', () => {
 
     const { did: userDID, credential: cred } = await idWallet.createIdentity(
       'http://mytestwallet.com/',
-      rhsUrl,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhrase
+        seed: seedPhrase,
+        rhsUrl
       }
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://mytestwallet.com/',
-      rhsUrl,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer
+        seed: seedPhraseIssuer,
+        rhsUrl
       }
     );
 
@@ -149,9 +149,14 @@ describe.skip('sig proofs', () => {
       },
       expiration: 1693526400
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
-      withRHS: rhsUrl
-    });
+    const issuerCred = await idWallet.issueCredential(
+      issuerDID,
+      claimReq,
+      'http://mytestwallet.com/',
+      {
+        withRHS: rhsUrl
+      }
+    );
 
     await credWallet.save(issuerCred);
 
@@ -188,25 +193,22 @@ describe.skip('sig proofs', () => {
     );
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential } = await idWallet.createIdentity(
-      'http://mytestwallet.com/',
-      rhsUrl,
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did: userDID, credential } = await idWallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      rhsUrl
+    });
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://mytestwallet.com/',
-      rhsUrl,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer
+        seed: seedPhraseIssuer,
+        rhsUrl
       }
     );
     const claimReq: CredentialRequest = {
@@ -220,9 +222,14 @@ describe.skip('sig proofs', () => {
       },
       expiration: 1693526400
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
-      withRHS: rhsUrl
-    });
+    const issuerCred = await idWallet.issueCredential(
+      issuerDID,
+      claimReq,
+      'http://mytestwallet.com/',
+      {
+        withRHS: rhsUrl
+      }
+    );
 
     await credWallet.save(issuerCred);
 

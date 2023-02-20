@@ -150,12 +150,12 @@ describe.skip('rhs', () => {
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://mytestwallet.com/',
-      'http://rhs.com/node',
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer
+        seed: seedPhraseIssuer,
+        rhsUrl
       }
     );
 
@@ -191,27 +191,24 @@ describe.skip('rhs', () => {
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://mytestwallet.com/',
-      rhsUrl,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer
+        seed: seedPhraseIssuer,
+        rhsUrl
       }
     );
 
     await credWallet.save(issuerAuthCredential);
 
-    const { did: userDID, credential } = await idWallet.createIdentity(
-      'http://mytestwallet.com/',
-      rhsUrl,
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did: userDID, credential } = await idWallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      rhsUrl
+    });
 
     const credBasicStatus: CredentialStatus = {
       id: 'issuerurl',
@@ -238,9 +235,14 @@ describe.skip('rhs', () => {
       revNonce: 1000
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
-      withRHS: rhsUrl
-    });
+    const issuerCred = await idWallet.issueCredential(
+      issuerDID,
+      claimReq,
+      'http://mytestwallet.com/',
+      {
+        withRHS: rhsUrl
+      }
+    );
 
     await credWallet.save(issuerCred);
 
@@ -268,27 +270,24 @@ describe.skip('rhs', () => {
     );
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
       'http://mytestwallet.com/',
-      rhsUrl,
       {
         method: DidMethod.Iden3,
         blockchain: Blockchain.Polygon,
         networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer
+        seed: seedPhraseIssuer,
+        rhsUrl
       }
     );
 
     await credWallet.save(issuerAuthCredential);
 
-    const { did: userDID, credential } = await idWallet.createIdentity(
-      'http://mytestwallet.com/',
-      rhsUrl,
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase
-      }
-    );
+    const { did: userDID, credential } = await idWallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      rhsUrl
+    });
 
     const credBasicStatus: CredentialStatus = {
       id: 'issuerurl',
@@ -315,9 +314,14 @@ describe.skip('rhs', () => {
       revNonce: 1000
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, 'http://mytestwallet.com/', {
-      withRHS: rhsUrl
-    });
+    const issuerCred = await idWallet.issueCredential(
+      issuerDID,
+      claimReq,
+      'http://mytestwallet.com/',
+      {
+        withRHS: rhsUrl
+      }
+    );
 
     await credWallet.save(issuerCred);
 
