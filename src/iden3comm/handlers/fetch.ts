@@ -81,7 +81,7 @@ export class FetchHandler implements IFetchHandler {
       const fetchRequest: MessageFetchRequestMessage = {
         id: guid,
         typ: MediaType.ZKPMessage,
-        type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
+        type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE,
         thid: offerMessage.thid ?? guid,
         body: {
           id: credentialInfo.id
