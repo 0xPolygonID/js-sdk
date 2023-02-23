@@ -1,4 +1,4 @@
-import { byteDecoder } from '../utils/index';
+import { byteDecoder, byteEncoder } from '../utils/index';
 import { MediaType } from '../constants';
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
@@ -12,7 +12,7 @@ import {
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse,
   ZKPPackerParams
-} from '..';
+} from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
@@ -180,7 +180,7 @@ export class AuthHandler implements IAuthHandler {
 
       authResponse.body.scope.push(zkpRes);
     }
-    const msgBytes = new TextEncoder().encode(JSON.stringify(authResponse));
+    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
     const token = byteDecoder.decode(
       await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
         senderDID: did,
@@ -266,7 +266,7 @@ export class AuthHandler implements IAuthHandler {
 
       authResponse.body.scope.push(zkpRes);
     }
-    const msgBytes = new TextEncoder().encode(JSON.stringify(authResponse));
+    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
     const token = byteDecoder.decode(
       await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
         senderDID: userGenesisDID,

@@ -1,4 +1,4 @@
-import { byteDecoder } from '../utils/index';
+import { byteDecoder, byteEncoder } from '../utils/index';
 import { MediaType } from '../constants';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
@@ -6,8 +6,7 @@ import {
   CredentialIssuanceMessage,
   CredentialsOfferMessage,
   IPackageManager,
-  MessageFetchRequestMessage,
-  ZKPPackerParams
+  MessageFetchRequestMessage
 } from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
@@ -29,9 +28,14 @@ export interface IFetchHandler {
    *
    * @param {DID} id - identifier that will handle offer
    * @param {CredentialsOfferMessage} offer - raw offer message
+   * @param {number} profileNonce -  nonce of the did to which credential has been offered
    * @returns `Promise<W3CCredential>`
    */
-  handleCredentialOffer(did: DID, offer: Uint8Array): Promise<W3CCredential[]>;
+  handleCredentialOffer(
+    did: DID,
+    offer: Uint8Array,
+    profileNonce?: number
+  ): Promise<W3CCredential[]>;
 }
 /**
  *
@@ -52,12 +56,15 @@ export class FetchHandler implements IFetchHandler {
 
   /**
    * Handles only messages with credentials/1.0/offer type
-   * Generates all requested proofs and wraps authorization response message to JWZ token
-   * works when profiles are not supported
    * @param {DID} did - an identity that will process the request
    * @param {Uint8Array} offer - raw offer message
+   * @param {number} profileNonce - nonce of the did to which credential has been offered
    * @returns `Promise<W3CCredential[]` */
-  async handleCredentialOffer(did: DID, offer: Uint8Array): Promise<W3CCredential[]> {
+  async handleCredentialOffer(
+    did: DID,
+    offer: Uint8Array,
+    profileNonce = 0
+  ): Promise<W3CCredential[]> {
     // each credential info in the offer we need to fetch
 
     const { unpackedMessage: message } = await this._packerMgr.unpack(offer);
@@ -80,20 +87,20 @@ export class FetchHandler implements IFetchHandler {
           id: credentialInfo.id
         },
         from: did.toString(),
-        to: did.toString()
+        to: offerMessage.from
       };
 
-      const msgBytes = new TextEncoder().encode(JSON.stringify(fetchRequest));
+      const msgBytes = byteEncoder.encode(JSON.stringify(fetchRequest));
       const token = byteDecoder.decode(
         await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
           senderDID: did,
-          profileNonce: 0,
+          profileNonce,
           provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-        } as ZKPPackerParams)
+        })
       );
 
       const resp = await axios.post<CredentialIssuanceMessage>(offerMessage.body.url, token);
-      if (resp.status != 200) {
+      if (resp.status !== 200) {
         throw new Error(`could not fetch W3C credential, ${credentialInfo.id}`);
       }
       credentials.push(resp.data.body.credential);

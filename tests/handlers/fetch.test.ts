@@ -48,18 +48,17 @@ import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { byteEncoder } from '../../src/iden3comm/utils';
-import { Token } from '@iden3/js-jwz';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
+import { after } from 'mocha';
 
 describe('fetch', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
   let dataStorage: IDataStorage;
-  let proofService: ProofService;
   let fetchHandler: IFetchHandler;
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
@@ -199,14 +198,17 @@ describe('fetch', () => {
       return new TextEncoder().encode(mockedToken);
     };
     fetchHandler = new FetchHandler(packageMgr);
+
+    //mock axios
+
+    agentStub = new MockAdapter(axios);
+    agentStub.onAny(agentUrl).replyOnce(200, mockedCredResponse);
+  });
+  after(() => {
+    agentStub.restore();
   });
 
-  //mock axios
-
-  agentStub = new MockAdapter(axios);
-  agentStub.onAny(agentUrl).replyOnce(200, mockedCredResponse);
-
-  it.only('fetch credential unit', async () => {
+  it('fetch credential', async () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
@@ -247,6 +249,8 @@ describe('fetch', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
 
     const res = await fetchHandler.handleCredentialOffer(userDID, msgBytes);
+
+    credWallet.saveAll(res);
 
     expect(res).to.be.a('array');
     expect(res).to.have.length(1);
