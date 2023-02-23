@@ -1,6 +1,6 @@
-import { Identity, Profile } from './../../src/storage/entities/identity';
-import { IdentityStorage } from './../../src/storage/shared/identity-storage';
-import { PlainPacker } from './../../src/iden3comm/packers/plain';
+import { Identity, Profile } from '../../src/storage/entities/identity';
+import { IdentityStorage } from '../../src/storage/shared/identity-storage';
+import { PlainPacker } from '../../src/iden3comm/packers/plain';
 import {
   AuthHandler,
   CircuitStorage,
@@ -408,7 +408,7 @@ describe.skip('auth', () => {
       authR,
       reqCreds
     );
-    
+
     console.log(resp);
   });
 });

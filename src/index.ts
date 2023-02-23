@@ -8,6 +8,6 @@ export * from './proof';
 export * from './iden3comm';
 export * from './circuits';
 export * from './loaders';
-export * from './handlers';
+export * from './iden3comm/handlers';
 import * as core from '@iden3/js-iden3-core';
 export { core };
