@@ -1,8 +1,8 @@
-import { byteDecoder } from './../iden3comm/utils/index';
-import { MediaType } from './../iden3comm/constants';
-import { CircuitId } from '../circuits/models';
-import { IProofService } from '../proof/proof-service';
-import { PROTOCOL_MESSAGE_TYPE } from '../iden3comm/constants';
+import { byteDecoder, byteEncoder } from '../utils/index';
+import { MediaType } from '../constants';
+import { CircuitId } from '../../circuits/models';
+import { IProofService } from '../../proof/proof-service';
+import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
 import {
   AuthorizationRequestMessage,
@@ -12,13 +12,13 @@ import {
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse,
   ZKPPackerParams
-} from '../iden3comm';
+} from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
-import { ICredentialWallet } from '../credentials';
-import { W3CCredential } from '../verifiable';
+import { ICredentialWallet } from '../../credentials';
+import { W3CCredential } from '../../verifiable';
 
 /**
  * ZKP request and credential that satisfies the zkp query conditions
@@ -180,7 +180,7 @@ export class AuthHandler implements IAuthHandler {
 
       authResponse.body.scope.push(zkpRes);
     }
-    const msgBytes = new TextEncoder().encode(JSON.stringify(authResponse));
+    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
     const token = byteDecoder.decode(
       await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
         senderDID: did,
@@ -266,7 +266,7 @@ export class AuthHandler implements IAuthHandler {
 
       authResponse.body.scope.push(zkpRes);
     }
-    const msgBytes = new TextEncoder().encode(JSON.stringify(authResponse));
+    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
     const token = byteDecoder.decode(
       await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
         senderDID: userGenesisDID,
