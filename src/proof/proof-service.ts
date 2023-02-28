@@ -294,15 +294,7 @@ export class ProofService implements IProofService {
         preparedCredential.credentialCoreClaim
       );
 
-      circuitClaimData.nonRevProof = {
-        treeState: {
-          state: strMTHex(preparedCredential.revStatus.issuer.state),
-          claimsRoot: strMTHex(preparedCredential.revStatus.issuer.claimsTreeRoot),
-          revocationRoot: strMTHex(preparedCredential.revStatus.issuer.revocationTreeRoot),
-          rootOfRoots: strMTHex(preparedCredential.revStatus.issuer.rootOfRoots)
-        },
-        proof: preparedCredential.revStatus.mtp
-      };
+      circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
       const circuitInputs = new AtomicQueryMTPV2Inputs();
       circuitInputs.id = identifier.id;
@@ -330,9 +322,7 @@ export class ProofService implements IProofService {
         preparedCredential.credentialCoreClaim
       );
 
-      const issuerAuthClaimNonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
-
-      circuitClaimData.signatureProof.issuerAuthNonRevProof = issuerAuthClaimNonRevProof;
+      circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
       const circuitInputs = new AtomicQuerySigV2Inputs();
       circuitInputs.id = identifier.id;
@@ -340,7 +330,7 @@ export class ProofService implements IProofService {
         issuerID: circuitClaimData.issuerId,
         signatureProof: circuitClaimData.signatureProof,
         claim: circuitClaimData.claim,
-        nonRevProof: issuerAuthClaimNonRevProof
+        nonRevProof: circuitClaimData.nonRevProof
       };
       circuitInputs.requestID = BigInt(proofReq.id);
       circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
@@ -449,11 +439,14 @@ export class ProofService implements IProofService {
     const loader = new UniversalSchemaLoader('ipfs.io');
     const schema = await loader.load(credential['@context'][2]);
 
-    const path = await Path.getContextPathKey(
-      new TextDecoder().decode(schema),
-      credential.type[1],
-      parsedQuery.fieldName
-    );
+    let path: Path = new Path();
+    if (parsedQuery.query.operator !== QueryOperators.$noop) {
+      path = await Path.getContextPathKey(
+        new TextDecoder().decode(schema),
+        credential.type[1],
+        parsedQuery.fieldName
+      );
+    }
     path.prepend(['https://www.w3.org/2018/credentials#credentialSubject']);
 
     const mk = await credential.merklize();
@@ -464,7 +457,7 @@ export class ProofService implements IProofService {
     parsedQuery.query.valueProof.mtp = proof;
     parsedQuery.query.valueProof.path = pathKey;
     parsedQuery.query.valueProof.mtp = proof;
-    parsedQuery.query.valueProof.value = BigInt(mtValue.value.toString());
+    parsedQuery.query.valueProof.value = BigInt(await mtValue.mtEntry());
 
     if (merklizedPosition == MerklizedRootPosition.Index) {
       parsedQuery.query.slotIndex = 2; // value data slot a

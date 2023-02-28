@@ -2,7 +2,7 @@ import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof } from './proof';
 import { Claim } from '@iden3/js-iden3-core';
 import { CredentialStatusType, ProofType } from './constants';
 import { Proof } from '@iden3/js-merkletree';
-import { Merkelizer } from '@iden3/js-jsonld-merklization';
+import { Merklizer } from '@iden3/js-jsonld-merklization';
 
 /**
  * W3C Verifiable credential
@@ -27,12 +27,12 @@ export class W3CCredential {
   /**
    * merklization of the verifiable credential
    *
-   * @returns `Promise<Merkelizer>`
+   * @returns `Promise<Merklizer>`
    */
-  async merklize(): Promise<Merkelizer> {
+  async merklize(): Promise<Merklizer> {
     const credential = { ...this };
     delete credential.proof;
-    return await Merkelizer.merkelizeJSONLD(JSON.stringify(credential));
+    return await Merklizer.merklizeJSONLD(JSON.stringify(credential));
   }
 
   /**

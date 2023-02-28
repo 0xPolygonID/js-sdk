@@ -1,6 +1,7 @@
 import { Signature } from '@iden3/js-crypto';
 import { Claim, Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import { Hash, Proof } from '@iden3/js-merkletree';
+import { QueryOperators } from './comparer';
 
 /**
  * TreeState is model for merkle tree roots
@@ -46,7 +47,7 @@ export class Query {
    *
    */
   validate(): void {
-    if (this.values.some((v) => typeof v !== 'bigint'))
+    if (this.operator !== QueryOperators.$noop && this.values.some((v) => typeof v !== 'bigint'))
       throw new Error(CircuitError.EmptyQueryValue);
   }
 }
