@@ -15,12 +15,7 @@ import axios from 'axios';
 import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
 import { DID } from '@iden3/js-iden3-core';
-import {
-  CredentialStatus,
-  Issuer,
-  RevocationStatus,
-  RHSCredentialStatus
-} from '../verifiable';
+import { CredentialStatus, Issuer, RevocationStatus, RHSCredentialStatus } from '../verifiable';
 import { strMTHex } from '../circuits';
 
 /**
@@ -400,7 +395,7 @@ export class ProofDTO {
 
 /**
  * RevocationStatusDTO is a result of fetching credential status with type SparseMerkleTreeProof
- * 
+ *
  * @beta
  * @export
  * @class RevocationStatusDTO
@@ -412,10 +407,12 @@ export class RevocationStatusDTO {
   toRevocationStatus(): RevocationStatus {
     const p = new Proof();
     p.existence = this.mtp.existence;
-    p.nodeAux = this.mtp.node_aux ? {
-      key: newHashFromBigInt(BigInt(this.mtp.node_aux.key)),
-      value: newHashFromBigInt(BigInt(this.mtp.node_aux.value))
-    } as NodeAux : undefined;
+    p.nodeAux = this.mtp.node_aux
+      ? ({
+          key: newHashFromBigInt(BigInt(this.mtp.node_aux.key)),
+          value: newHashFromBigInt(BigInt(this.mtp.node_aux.value))
+        } as NodeAux)
+      : undefined;
 
     const s = this.mtp.siblings.map((s) => newHashFromBigInt(BigInt(s)));
 

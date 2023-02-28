@@ -114,7 +114,6 @@ export const buildTreeState = (
  * @returns string[]
  */
 export const prepareSiblingsStr = (proof: Proof, levels: number): string[] => {
-
   const siblings = proof.allSiblings ? proof.allSiblings() : proof.siblings;
 
   // Add the rest of empty levels to the siblings

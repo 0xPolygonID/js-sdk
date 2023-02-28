@@ -296,7 +296,6 @@ export class ProofService implements IProofService {
 
       circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
-
       const circuitInputs = new AtomicQueryMTPV2Inputs();
       circuitInputs.id = identifier.id;
       circuitInputs.requestID = BigInt(proofReq.id);
@@ -440,8 +439,8 @@ export class ProofService implements IProofService {
     const loader = new UniversalSchemaLoader('ipfs.io');
     const schema = await loader.load(credential['@context'][2]);
 
-    let path :Path =  new Path();
-    if (parsedQuery.query.operator !== QueryOperators.$noop){
+    let path: Path = new Path();
+    if (parsedQuery.query.operator !== QueryOperators.$noop) {
       path = await Path.getContextPathKey(
         new TextDecoder().decode(schema),
         credential.type[1],
