@@ -24,7 +24,7 @@ import {
 } from '@iden3/js-merkletree';
 import { Hex, poseidon, PrivateKey, Signature } from '@iden3/js-crypto';
 import { TreeState } from '../../src/circuits';
-import { Merkelizer } from '@iden3/js-jsonld-merklization';
+import { Merklizer } from '@iden3/js-jsonld-merklization';
 
 const TestClaimDocument = `{
   "@context": [
@@ -277,8 +277,8 @@ export function idFromState(state: bigint): Id {
   return Id.idGenesisFromIdenState(typ, state);
 }
 
-export async function defaultJSONUserClaim(subject: Id): Promise<{ mz: Merkelizer; claim: Claim }> {
-  const mz = await Merkelizer.merkelizeJSONLD(TestClaimDocument);
+export async function defaultJSONUserClaim(subject: Id): Promise<{ mz: Merklizer; claim: Claim }> {
+  const mz = await Merklizer.merklizeJSONLD(TestClaimDocument);
 
   const schemaHash = new SchemaHash(Hex.decodeString('ce6bb12c96bfd1544c02c289c6b4b987'));
   const nonce = BigInt(10);
