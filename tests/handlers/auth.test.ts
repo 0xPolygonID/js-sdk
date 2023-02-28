@@ -217,7 +217,7 @@ describe.skip('auth', () => {
       claimReq,
       'http://mytestwallet.com/',
       {
-        withRHS: 'http://mytestwallet.com/'
+        withRHS: rhsUrl
       }
     );
 
@@ -408,7 +408,7 @@ describe.skip('auth', () => {
       authR,
       reqCreds
     );
-
+    
     console.log(resp);
   });
 });
