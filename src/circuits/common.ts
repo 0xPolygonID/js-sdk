@@ -114,12 +114,14 @@ export const buildTreeState = (
  * @returns string[]
  */
 export const prepareSiblingsStr = (proof: Proof, levels: number): string[] => {
-  const siblings = Object.assign(new Proof(), proof).allSiblings();
+
+  const siblings = proof.allSiblings ? proof.allSiblings() : proof.siblings;
+
   // Add the rest of empty levels to the siblings
   for (let i = siblings.length; i < levels; i++) {
     siblings.push(ZERO_HASH);
   }
-  return siblings.map((s) => s.bigInt().toString());
+  return siblings.map((s) => (typeof s === 'string' ? s : s.bigInt().toString()));
 };
 
 /**
@@ -133,6 +135,9 @@ export const prepareSiblingsStr = (proof: Proof, levels: number): string[] => {
  * @returns bigint[]
  */
 export const prepareCircuitArrayValues = (arr: bigint[], size: number): bigint[] => {
+  if (!arr) {
+    arr = [];
+  }
   if (arr.length > size) {
     throw new Error(`array size ${arr.length} is bigger max expected size ${size}`);
   }
@@ -185,7 +190,7 @@ const getNodeAuxValue = (p: Proof | undefined): NodeAuxValue => {
   }
 
   // proof of non-inclusion (NodeAux exists)
-  if (p?.nodeAux?.value && p?.nodeAux?.key) {
+  if (p?.nodeAux?.value !== undefined && p?.nodeAux?.key !== undefined) {
     return {
       key: p.nodeAux.key,
       value: p.nodeAux.value,
