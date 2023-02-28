@@ -17,7 +17,7 @@ import {
 
 import { JSONSchema } from '../schema-processor';
 import * as uuid from 'uuid';
-import { getStatusFromRHS } from './revocation';
+import { getStatusFromRHS, RevocationStatusDTO } from './revocation';
 import { Proof } from '@iden3/js-merkletree';
 
 // ErrAllClaimsRevoked all claims are revoked.
@@ -263,7 +263,9 @@ export class CredentialWallet implements ICredentialWallet {
     issuerData: IssuerData
   ): Promise<RevocationStatus> {
     if (credStatus.type === CredentialStatusType.SparseMerkleTreeProof) {
-      return (await axios.get<RevocationStatus>(credStatus.id)).data;
+      const revStatusDTO = (await axios.get<RevocationStatusDTO>(credStatus.id)).data;
+
+      return Object.assign(new RevocationStatusDTO(), revStatusDTO).toRevocationStatus();
     }
 
     if (credStatus.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
