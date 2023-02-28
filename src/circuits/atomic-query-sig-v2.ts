@@ -10,6 +10,7 @@ import {
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
+import { QueryOperators } from './comparer';
 
 /**
  * AtomicQuerySigV2Inputs representation for credentialAtomicQuerySig.circom
@@ -60,7 +61,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
       throw new Error(CircuitError.EmptyClaimSignature);
     }
 
-    if (!this.query.values) {
+    if (!this.query.values && this.query.operator !== QueryOperators.$noop) {
       throw new Error(CircuitError.EmptyQueryValue);
     }
   }
