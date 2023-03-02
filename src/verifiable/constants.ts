@@ -43,10 +43,10 @@ export const VerifiableConstants = Object.freeze({
  * @enum {number}
  */
 export enum ProofType {
-  // BJJSignatureProofType  type
+  // BJJSignatureProofType
   BJJSignature = 'BJJSignature2021',
-  // Iden3SparseMerkleProofType
-  Iden3SparseMerkleTreeProof = 'Iden3SparseMerkleProof'
+  // Iden3SparseMerkleTreeProofType
+  Iden3SparseMerkleTreeProof = 'Iden3SparseMerkleTreeProof'
 }
 
 /**
