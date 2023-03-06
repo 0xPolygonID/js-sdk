@@ -119,7 +119,7 @@ describe.skip('mtp proofs', () => {
 
     const conf = defaultEthConnectionConfig;
     conf.url = infuraUrl; 
-    conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
+    conf.contractAddress = '0x134B1BE34911E39A8397ec6289782989729807a4';
     ethStorage = new EthStateStorage(conf);
     dataStorage.states = ethStorage;
 
