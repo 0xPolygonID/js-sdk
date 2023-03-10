@@ -22,18 +22,16 @@ export class InMemoryDataSource<Type> implements IDataSource<Type> {
     }
   }
 
-  /** updates in the memory */
-  async patchData(value: Type[]): Promise<void> {
-    this._data = value;
-  }
   /** gets value from from the memory */
   async get(key: string, keyName = 'id'): Promise<Type | undefined> {
     return this._data.find((t) => t[keyName] === key);
   }
+
   /** loads from value from the memory */
   async load(): Promise<Type[]> {
     return this._data;
   }
+
   /** deletes from value from the memory */
   async delete(key: string, keyName = 'id'): Promise<void> {
     const newData = this._data.filter((i) => i[keyName] !== key);

@@ -43,17 +43,6 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
   }
 
   /**
-   * updates data with a total reset
-   *
-   * @param {Type[]} value - value array to update
-   */
-  async patchData(value: Type[]): Promise<void> {
-    if (localStorage) {
-      localStorage.setItem(this._localStorageKey, JSON.stringify(value));
-    }
-  }
-
-  /**
    * gets value from the local storage by given key
    * @param {string} key - key value
    * @param {string}  [keyName='id'] -  key name
