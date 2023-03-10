@@ -12,7 +12,7 @@ export interface IDataSource<Type> {
    *
    * @returns `{Type[]}`
    */
-  load(): Type[];
+  load(): Promise<Type[]>;
 
   /**
    * Save value under the key with optional key name
@@ -21,7 +21,7 @@ export interface IDataSource<Type> {
    * @param {Type} value - value to store
    * @param {string} [keyName] - key name
    */
-  save(key: string, value: Type, keyName?: string): void;
+  save(key: string, value: Type, keyName?: string): Promise<void>;
 
   /**
    * returns data value for key value and optional key name
@@ -30,7 +30,7 @@ export interface IDataSource<Type> {
    * @param {string} [keyName] -  key name
    * @returns ` {(Type | undefined)}`
    */
-  get(key: string, keyName?: string): Type | undefined;
+  get(key: string, keyName?: string): Promise<Type | undefined>;
 
   /**
    * deletes data value for given key with an optional key name
@@ -38,5 +38,5 @@ export interface IDataSource<Type> {
    * @param {string} key - key value
    * @param {string} [keyName] -  key name
    */
-  delete(key: string, keyName?: string): void;
+  delete(key: string, keyName?: string): Promise<void>;
 }

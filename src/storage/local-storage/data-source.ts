@@ -28,7 +28,7 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
    * @param {Type} value - value to store
    * @param {string} [keyName='id'] -  key name
    */
-  save(key: string, value: Type, keyName = 'id'): void {
+  async save(key: string, value: Type, keyName = 'id'): Promise<void> {
     if (localStorage) {
       const data = localStorage.getItem(this._localStorageKey);
       const items = JSON.parse(data) as Type[];
@@ -47,7 +47,7 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
    *
    * @param {Type[]} value - value array to update
    */
-  patchData(value: Type[]): void {
+  async patchData(value: Type[]): Promise<void> {
     if (localStorage) {
       localStorage.setItem(this._localStorageKey, JSON.stringify(value));
     }
@@ -59,7 +59,7 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
    * @param {string}  [keyName='id'] -  key name
    */
 
-  get(key: string, keyName = 'id'): Type | undefined {
+  async get(key: string, keyName = 'id'): Promise<Type | undefined> {
     const data = localStorage.getItem(this._localStorageKey);
     const parsedData = data && (JSON.parse(data) as Type[]);
     return parsedData.find((t) => t[keyName] === key);
@@ -68,7 +68,7 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
   /**
    * loads all from the local storage
    */
-  load(): Type[] {
+  async load(): Promise<Type[]> {
     const data = localStorage.getItem(this._localStorageKey);
     return data && JSON.parse(data);
   }
@@ -77,7 +77,7 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
    * @param {string} key - key value
    * @param {string}  [keyName='id'] -  key name
    */
-  delete(key: string, keyName = 'id'): void {
+  async delete(key: string, keyName = 'id'): Promise<void> {
     const dataStr = localStorage.getItem(this._localStorageKey);
     const data = JSON.parse(dataStr) as Type[];
     const items = data.filter((i) => i[keyName] !== key);
