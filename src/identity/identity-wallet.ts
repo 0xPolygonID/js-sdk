@@ -332,7 +332,7 @@ export class IdentityWallet implements IIdentityWallet {
     );
 
     const currentState = await hashElems([
-      claimsTree.root.bigInt(),
+      (await claimsTree.root()).bigInt(),
       ZERO_HASH.bigInt(),
       ZERO_HASH.bigInt()
     ]);
@@ -377,10 +377,11 @@ export class IdentityWallet implements IIdentityWallet {
     }
 
     const index = authClaim.hIndex();
+    const ctr = await claimsTree.root();
 
-    const { proof } = await claimsTree.generateProof(index, claimsTree.root);
+    const { proof } = await claimsTree.generateProof(index, ctr);
 
-    const claimsTreeHex = claimsTree.root.hex();
+    const claimsTreeHex = ctr.hex();
     const stateHex = currentState.hex();
 
     const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
@@ -466,9 +467,9 @@ export class IdentityWallet implements IIdentityWallet {
       MerkleTreeType.Roots
     );
     const state = await hashElems([
-      claimsTree.root.bigInt(),
-      revocationTree.root.bigInt(),
-      rootsTree.root.bigInt()
+      (await claimsTree.root()).bigInt(),
+      (await revocationTree.root()).bigInt(),
+      (await rootsTree.root()).bigInt()
     ]);
 
     return {
@@ -494,18 +495,21 @@ export class IdentityWallet implements IIdentityWallet {
       MerkleTreeType.Claims
     );
 
+    const claimsRoot = await treesModel.claimsTree.root();
+    const rootOfRoots = await treesModel.rootsTree.root();
+    const revocationRoot = await treesModel.revocationTree.root();
     const { proof } = await claimsTree.generateProof(
       coreClaim.hIndex(),
-      treeState ? treeState.claimsRoot : treesModel.claimsTree.root
+      treeState ? treeState.claimsRoot : claimsRoot
     );
 
     return {
       proof,
       treeState: treeState ?? {
         state: treesModel.state,
-        claimsRoot: treesModel.claimsTree.root,
-        rootOfRoots: treesModel.rootsTree.root,
-        revocationRoot: treesModel.revocationTree.root
+        claimsRoot,
+        rootOfRoots,
+        revocationRoot
       }
     };
   }
@@ -527,18 +531,21 @@ export class IdentityWallet implements IIdentityWallet {
       MerkleTreeType.Revocations
     );
 
+    const claimsRoot = await treesModel.claimsTree.root();
+    const rootOfRoots = await treesModel.rootsTree.root();
+    const revocationRoot = await treesModel.revocationTree.root();
     const { proof } = await revocationTree.generateProof(
       revNonce,
-      treeState ? treeState.revocationRoot : treesModel.revocationTree.root
+      treeState ? treeState.revocationRoot : revocationRoot
     );
 
     return {
       proof,
       treeState: treeState ?? {
         state: treesModel.state,
-        claimsRoot: treesModel.claimsTree.root,
-        rootOfRoots: treesModel.rootsTree.root,
-        revocationRoot: treesModel.revocationTree.root
+        claimsRoot,
+        rootOfRoots,
+        revocationRoot
       }
     };
   }
@@ -671,12 +678,14 @@ export class IdentityWallet implements IIdentityWallet {
     issuerDID: DID
   ): Promise<Iden3ProofCreationResult> {
     const oldIssuerTree = await this.getDIDTreeModel(issuerDID);
-
+    let claimsRoot = await oldIssuerTree.claimsTree.root();
+    let rootOfRoots = await oldIssuerTree.rootsTree.root();
+    let revocationRoot = await oldIssuerTree.revocationTree.root();
     const oldTreeState: TreeState = {
-      revocationRoot: oldIssuerTree.revocationTree.root,
-      claimsRoot: oldIssuerTree.claimsTree.root,
       state: oldIssuerTree.state,
-      rootOfRoots: oldIssuerTree.rootsTree.root
+      claimsRoot,
+      revocationRoot,
+      rootOfRoots
     };
 
     for (let index = 0; index < credentials.length; index++) {
@@ -698,22 +707,25 @@ export class IdentityWallet implements IIdentityWallet {
     }
 
     const newIssuerTreeState = await this.getDIDTreeModel(issuerDID);
-
+    const claimTreeRoot = await newIssuerTreeState.claimsTree.root();
     await this._storage.mt.addToMerkleTree(
       issuerDID.toString(),
       MerkleTreeType.Roots,
-      newIssuerTreeState.claimsTree.root.bigInt(),
+      claimTreeRoot.bigInt(),
       BigInt(0)
     );
     const newIssuerTreeStateWithROR = await this.getDIDTreeModel(issuerDID);
 
+    claimsRoot = await newIssuerTreeStateWithROR.claimsTree.root();
+    rootOfRoots = await newIssuerTreeStateWithROR.rootsTree.root();
+    revocationRoot = await newIssuerTreeStateWithROR.revocationTree.root();
     return {
       credentials,
       newTreeState: {
-        revocationRoot: newIssuerTreeStateWithROR.revocationTree.root,
-        claimsRoot: newIssuerTreeStateWithROR.claimsTree.root,
         state: newIssuerTreeStateWithROR.state,
-        rootOfRoots: newIssuerTreeStateWithROR.rootsTree.root
+        claimsRoot,
+        rootOfRoots,
+        revocationRoot
       },
       oldTreeState: oldTreeState
     };

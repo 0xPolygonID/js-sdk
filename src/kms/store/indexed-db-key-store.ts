@@ -1,0 +1,46 @@
+import { UseStore, createStore, get, set } from 'idb-keyval';
+import { AbstractPrivateKeyStore } from './abstract-key-store';
+
+/**
+ * Allows storing keys in the local storage of the browser
+ * (NOT ENCRYPTED: DO NOT USE IN THE PRODUCTION)
+ *
+ * @export
+ * @beta
+ * @class IndexedDBPrivateKeyStore
+ * @implements implements AbstractPrivateKeyStore interface
+ */
+export class IndexedDBPrivateKeyStore implements AbstractPrivateKeyStore {
+  static readonly storageKey = 'keystore';
+  private readonly _store: UseStore;
+
+  constructor() {
+    this._store = createStore(
+      `${IndexedDBPrivateKeyStore.storageKey}-db`,
+      IndexedDBPrivateKeyStore.storageKey
+    );
+  }
+  /**
+   * Gets key from the local storage
+   *
+   * @param {{ alias: string }} args
+   * @returns hex string
+   */
+  async get(args: { alias: string }): Promise<string> {
+    const key = await get(args.alias, this._store);
+    if (!key) {
+      throw new Error('no key under given alias');
+    }
+    return key.value;
+  }
+
+  /**
+   * Import key to the local storage
+   *
+   * @param {{ alias: string; key: string }} args - alias and private key in the hex
+   * @returns void
+   */
+  async import(args: { alias: string; key: string }): Promise<void> {
+    await set(args.alias, { value: args.key }, this._store);
+  }
+}

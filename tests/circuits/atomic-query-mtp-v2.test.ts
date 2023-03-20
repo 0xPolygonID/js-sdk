@@ -48,20 +48,20 @@ describe('atomic-query-mtp-v2', () => {
       claim: claim,
       nonRevProof: {
         treeState: {
-          state: issuer.state(),
-          claimsRoot: issuer.clt.root,
-          revocationRoot: issuer.ret.root,
-          rootOfRoots: issuer.rot.root
+          state: await issuer.state(),
+          claimsRoot: await issuer.clt.root(),
+          revocationRoot: await issuer.ret.root(),
+          rootOfRoots: await issuer.rot.root()
         },
         proof: issuerClaimNonRevMtp.proof
       },
       incProof: {
         proof: issuerClaimMtp.proof,
         treeState: {
-          state: issuer.state(),
-          claimsRoot: issuer.clt.root,
-          revocationRoot: issuer.ret.root,
-          rootOfRoots: issuer.rot.root
+          state: await issuer.state(),
+          claimsRoot: await issuer.clt.root(),
+          revocationRoot: await issuer.ret.root(),
+          rootOfRoots: await issuer.rot.root()
         }
       }
     };

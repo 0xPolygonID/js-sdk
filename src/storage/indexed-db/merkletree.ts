@@ -1,5 +1,5 @@
-import { createStore, UseStore, get, set } from 'idb-keyval';
-import { LocalStorageDB, Merkletree, str2Bytes } from '@iden3/js-merkletree';
+import { createStore, UseStore, get, set, del } from 'idb-keyval';
+import { IndexedDBStorage, Merkletree, str2Bytes } from '@iden3/js-merkletree';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/mt';
 import * as uuid from 'uuid';
 
@@ -17,15 +17,6 @@ const mtTypes = [MerkleTreeType.Claims, MerkleTreeType.Revocations, MerkleTreeTy
  */
 export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
   /**
-   * key for the local storage
-   *
-   * @static
-   */
-  static readonly storageKey = 'merkle-tree';
-
-  private readonly _merkleTreeStore: UseStore;
-
-  /**
    * key for the storage key metadata
    *
    * @static
@@ -39,8 +30,10 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
    * @param {number} _mtDepth
    */
   constructor(private readonly _mtDepth: number) {
-    this._merkleTreeMetaStore = createStore('db', MerkleTreeIndexedDBStorage.storageKey);
-    this._merkleTreeMetaStore = createStore('db', MerkleTreeIndexedDBStorage.storageKeyMeta);
+    this._merkleTreeMetaStore = createStore(
+      `${MerkleTreeIndexedDBStorage.storageKeyMeta}-db`,
+      MerkleTreeIndexedDBStorage.storageKeyMeta
+    );
   }
 
   /** creates a tree in the local storage */
@@ -95,11 +88,11 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
       throw err;
     }
 
-    const resultMeta = meta.filter((m) => m.identifier === identifier && m.type === mtType)[0];
+    const resultMeta = meta.find((m) => m.identifier === identifier && m.type === mtType);
     if (!resultMeta) {
       throw err;
     }
-    return new Merkletree(new LocalStorageDB(str2Bytes(resultMeta.treeId)), true, this._mtDepth);
+    return new Merkletree(new IndexedDBStorage(str2Bytes(resultMeta.treeId)), true, this._mtDepth);
   }
   /** adds to merkle tree in the local storage */
   async addToMerkleTree(
@@ -108,19 +101,17 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     hindex: bigint,
     hvalue: bigint
   ): Promise<void> {
-    const meta = localStorage.getItem(MerkleTreeIndexedDBStorage.storageKeyMeta);
+    const meta = await get(identifier, this._merkleTreeMetaStore);
     if (!meta) {
       throw new Error(`Merkle tree meta not found for identifier ${identifier}`);
     }
-
-    const metaInfo: IdentityMerkleTreeMetaInformation[] = JSON.parse(meta);
-    const resultMeta = metaInfo.filter((m) => m.identifier === identifier && m.type === mtType)[0];
+    const resultMeta = meta.find((m) => m.identifier === identifier && m.type === mtType);
     if (!resultMeta) {
       throw new Error(`Merkle tree not found for identifier ${identifier} and type ${mtType}`);
     }
 
     const tree = new Merkletree(
-      new LocalStorageDB(str2Bytes(resultMeta.treeId)),
+      new IndexedDBStorage(str2Bytes(resultMeta.treeId)),
       true,
       this._mtDepth
     );
@@ -130,19 +121,14 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
 
   /** binds merkle tree in the local storage to the new identifiers */
   async bindMerkleTreeToNewIdentifier(oldIdentifier: string, newIdentifier: string): Promise<void> {
-    const meta = localStorage.getItem(MerkleTreeIndexedDBStorage.storageKeyMeta);
-    if (!meta) {
-      throw new Error(`Merkle tree meta not found for identifier ${oldIdentifier}`);
-    }
-    const metaInfo: IdentityMerkleTreeMetaInformation[] = JSON.parse(meta);
-    const treesMeta = metaInfo
-      .filter((m) => m.identifier === oldIdentifier)
-      .map((m) => ({ ...m, identifier: newIdentifier }));
-    if (treesMeta.length === 0) {
+    const meta = await get(oldIdentifier, this._merkleTreeMetaStore);
+    if (!meta || !meta?.length) {
       throw new Error(`Merkle tree meta not found for identifier ${oldIdentifier}`);
     }
 
-    const newMetaInfo = [...metaInfo.filter((m) => m.identifier !== oldIdentifier), ...treesMeta];
-    localStorage.setItem(MerkleTreeIndexedDBStorage.storageKeyMeta, JSON.stringify(newMetaInfo));
+    const treesMeta = meta.map((m) => ({ ...m, identifier: newIdentifier }));
+
+    await set(newIdentifier, treesMeta, this._merkleTreeMetaStore);
+    await del(oldIdentifier, this._merkleTreeMetaStore);
   }
 }

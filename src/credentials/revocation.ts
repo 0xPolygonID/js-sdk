@@ -272,7 +272,11 @@ export async function pushHashesToRHS(
   // add new state node
   if (!state.bytes.every((b) => b === 0)) {
     nb.addProofNode(
-      new ProofNode(state, [trees.claimsTree.root, trees.revocationTree.root, trees.rootsTree.root])
+      new ProofNode(state, [
+        await trees.claimsTree.root(),
+        await trees.revocationTree.root(),
+        await trees.rootsTree.root()
+      ])
     );
   }
 
@@ -290,7 +294,7 @@ async function addRoRNode(nb: NodesBuilder, trees: TreesModel): Promise<void> {
   const currentRootsTree = trees.rootsTree;
   const claimsTree = trees.claimsTree;
 
-  return nb.addKey(currentRootsTree, claimsTree.root.bigInt());
+  return nb.addKey(currentRootsTree, (await claimsTree.root()).bigInt());
 }
 async function addRevocationNode(
   nb: NodesBuilder,

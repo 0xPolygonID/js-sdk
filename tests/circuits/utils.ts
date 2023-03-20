@@ -114,12 +114,16 @@ export async function authClaimFullInfo(
 
   //Proof claim exists
   const { indexHash } = await claimsIndexValueHashes(data.authClaim);
-  const claimEntryMTP = await data.claimsTree.generateProof(indexHash, data.claimsTree.root);
+  const claimEntryMTP = await data.claimsTree.generateProof(
+    indexHash,
+    await data.claimsTree.root()
+  );
 
   //Proof claim not revoked
   const revNonce = data.authClaim.getRevocationNonce();
   const revNonceInt = BigInt(revNonce);
-  const claimNonRevMTP = await data.revTree.generateProof(revNonceInt, data.revTree.root);
+  const root = await data.revTree.root()
+  const claimNonRevMTP = await data.revTree.generateProof(revNonceInt, root);
 
   //Calculate state
   const state = await calcStateFromRoots(data.claimsTree, data.revTree, data.rootsTree);
@@ -162,8 +166,8 @@ export async function generate(privKeyHex: string): Promise<{
   // add auth claim to claimsMT
   const { indexHash, valueHash } = claimsIndexValueHashes(authClaim);
   await claimsTree.add(indexHash, valueHash);
-
-  const state = poseidon.hash([claimsTree.root.bigInt(), BigInt(0), BigInt(0)]);
+  const ctr = await claimsTree.root();
+  const state = poseidon.hash([ctr.bigInt(), BigInt(0), BigInt(0)]);
   // create new identity
   const identity = Id.idGenesisFromIdenState(
     buildDIDType('iden3', Blockchain.Polygon, NetworkId.Mumbai),
@@ -180,12 +184,15 @@ async function calcStateFromRoots(claimsTree: Merkletree, ...args: Merkletree[])
   let revTreeRoot = ZERO_HASH.bigInt();
   let rootsTreeRoot = ZERO_HASH.bigInt();
   if (args.length > 0) {
-    revTreeRoot = args[0].root.bigInt();
+    const root = await args[0].root();
+    revTreeRoot = root.bigInt();
   }
-  if (args.length > 0) {
-    rootsTreeRoot = args[1].root.bigInt();
+  if (args.length > 1) {
+    const root = await args[1].root();
+    rootsTreeRoot = root.bigInt();
   }
-  const state = await hashElems([claimsTree.root.bigInt(), revTreeRoot, rootsTreeRoot]);
+  const root = await claimsTree.root();
+  const state = await hashElems([root.bigInt(), revTreeRoot, rootsTreeRoot]);
   return state;
 }
 
@@ -251,15 +258,19 @@ export class IdentityTest {
 
     await it.clt.add(hi, hv);
 
-    const state = it.state();
+    const state = await it.state();
 
     it.id = idFromState(state.bigInt());
 
     return it;
   }
 
-  state(): Hash {
-    const state = idenState(this.clt.root.bigInt(), this.ret.root.bigInt(), this.rot.root.bigInt());
+  async state(): Promise<Hash> {
+    const clt = await this.clt.root();
+    const ret = await this.ret.root();
+    const rot = await this.rot.root();
+
+    const state = idenState(clt.bigInt(), ret.bigInt(), rot.bigInt());
     const hash = newHashFromBigInt(state);
     return hash;
   }
@@ -288,17 +299,17 @@ export async function defaultJSONUserClaim(subject: Id): Promise<{ mz: Merklizer
     ClaimOptions.withIndexId(subject),
     ClaimOptions.withExpirationDate(getDateFromUnixTimestamp(1669884010)), //Thu Dec 01 2022 08:40:10 GMT+0000
     ClaimOptions.withRevocationNonce(nonce),
-    ClaimOptions.withIndexMerklizedRoot(mz.root().bigInt())
+    ClaimOptions.withIndexMerklizedRoot((await mz.root()).bigInt())
   );
 
   return { mz, claim };
 }
 
-export const getTreeState = (it: IdentityTest): TreeState => ({
-  state: it.state(),
-  claimsRoot: it.clt.root,
-  revocationRoot: it.ret.root,
-  rootOfRoots: it.rot.root
+export const getTreeState = async (it: IdentityTest): Promise<TreeState> => ({
+  state: await it.state(),
+  claimsRoot: await it.clt.root(),
+  revocationRoot: await it.ret.root(),
+  rootOfRoots: await it.rot.root()
 });
 
 export const userPK = '28156abe7fe2fd433dc9df969286b96666489bac508612d0e16593e944c4f69f';

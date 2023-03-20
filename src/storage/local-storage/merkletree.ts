@@ -16,12 +16,6 @@ const mtTypes = [MerkleTreeType.Claims, MerkleTreeType.Revocations, MerkleTreeTy
  */
 export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
   /**
-   * key for the local storage
-   *
-   * @static
-   */
-  static readonly storageKey = 'merkle-tree';
-  /**
    * key for the storage key metadata
    *
    * @static
