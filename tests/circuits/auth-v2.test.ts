@@ -16,7 +16,7 @@ describe('auth-v2', () => {
 
     const gTree = globalTree();
 
-    await gTree.add(user2.id.bigInt(), user2.state().bigInt());
+    await gTree.add(user2.id.bigInt(), (await user2.state()).bigInt());
     const globalProof = await gTree.generateProof(user.id.bigInt());
 
     const authClaimIncMTP = await user.claimMTPRaw(user.authClaim);
@@ -31,15 +31,15 @@ describe('auth-v2', () => {
     inputs.authClaimIncMtp = authClaimIncMTP.proof;
     inputs.authClaimNonRevMtp = authClaimNonRevMTP.proof;
     inputs.treeState = {
-      state: user.state(),
-      claimsRoot: user.clt.root,
-      revocationRoot: user.ret.root,
-      rootOfRoots: user.rot.root
+      state:  await user.state(),
+      claimsRoot:  await user.clt.root(),
+      revocationRoot:  await user.ret.root(),
+      rootOfRoots:  await user.rot.root()
     };
     inputs.signature = signature;
     inputs.challenge = challenge;
     inputs.gistProof = {
-      root: gTree.root,
+      root: await gTree.root(),
       proof: globalProof.proof
     };
 

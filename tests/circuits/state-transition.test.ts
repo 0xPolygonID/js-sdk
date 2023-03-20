@@ -38,41 +38,41 @@ describe('state-transition', () => {
     const { identity, claimsTree, revTree, authClaim, privateKey } = await generate(userPK);
 
     const genesisState = await hashElems([
-      claimsTree.root.bigInt(),
-      revTree.root.bigInt(),
+      (await claimsTree.root()).bigInt(),
+      (await revTree.root()).bigInt(),
       ZERO_HASH.bigInt()
     ]);
 
     const genesisTreeState: TreeState = {
       state: genesisState,
-      claimsRoot: claimsTree.root,
-      revocationRoot: revTree.root,
+      claimsRoot: await claimsTree.root(),
+      revocationRoot: await revTree.root(),
       rootOfRoots: ZERO_HASH
     };
 
     const index = authClaim.hIndex();
-    const authMTPProof = await claimsTree.generateProof(index, claimsTree.root);
+    const authMTPProof = await claimsTree.generateProof(index, await claimsTree.root());
 
     const nonce = authClaim.getRevocationNonce();
-    const authNonRevMTPProof = await revTree.generateProof(nonce, revTree.root);
+    const authNonRevMTPProof = await revTree.generateProof(nonce, await revTree.root());
 
     // update rev tree
     await revTree.add(BigInt(1), BigInt(0));
 
     const newState = await hashElems([
-      claimsTree.root.bigInt(),
-      revTree.root.bigInt(),
+      (await claimsTree.root()).bigInt(),
+      (await revTree.root()).bigInt(),
       ZERO_HASH.bigInt()
     ]);
 
     const newTreeState: TreeState = {
       state: newState,
-      claimsRoot: claimsTree.root,
-      revocationRoot: revTree.root,
+      claimsRoot: await claimsTree.root(),
+      revocationRoot: await revTree.root(),
       rootOfRoots: ZERO_HASH
     };
 
-    const authMTPNewStateIncProof = await claimsTree.generateProof(index, claimsTree.root);
+    const authMTPNewStateIncProof = await claimsTree.generateProof(index, await claimsTree.root());
 
     // signature
     const hashOldAndNewStates = poseidon.hash([genesisState.bigInt(), newState.bigInt()]);

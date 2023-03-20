@@ -14,6 +14,10 @@ import { IDataSource } from '../interfaces/data-source';
  */
 export class CircuitStorage implements ICircuitStorage {
   /**
+   * storage key for circuits
+   */
+  static readonly storageKey = 'circuits';
+  /**
    * Creates an instance of CircuitStorage.
    * @param {IDataSource<CircuitData>} _dataSource - data source to store circuit keys
    */
@@ -26,7 +30,7 @@ export class CircuitStorage implements ICircuitStorage {
    * @returns `Promise<CircuitData>`
    */
   async loadCircuitData(circuitId: CircuitId): Promise<CircuitData> {
-    const circuitData = this._dataSource.get(circuitId.toString(), 'circuitId');
+    const circuitData = await this._dataSource.get(circuitId.toString(), 'circuitId');
     if (!circuitData) {
       throw new Error(`${StorageErrors.ItemNotFound}: ${circuitId}`);
     }
@@ -41,6 +45,6 @@ export class CircuitStorage implements ICircuitStorage {
    * @returns `Promise<void>`
    */
   async saveCircuitData(circuitId: CircuitId, circuitData: CircuitData): Promise<void> {
-    this._dataSource.save(circuitId.toString(), circuitData, 'circuitId');
+    await this._dataSource.save(circuitId.toString(), circuitData, 'circuitId');
   }
 }

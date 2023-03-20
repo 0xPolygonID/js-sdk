@@ -84,7 +84,7 @@ describe('identity', () => {
     );
 
     console.log(JSON.stringify(credential));
-    expect(claimsTree?.root.bigInt()).not.to.equal(0);
+    expect((await claimsTree?.root()).bigInt()).not.to.equal(0);
   });
   it('createProfile', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');

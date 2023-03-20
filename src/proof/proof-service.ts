@@ -203,12 +203,15 @@ export class ProofService implements IProofService {
     const authInfo = await this.prepareAuthBJJCredential(did, oldTreeState);
 
     const newTreeModel = await this._identityWallet.getDIDTreeModel(did);
+    const claimsRoot = await newTreeModel.claimsTree.root();
+    const rootOfRoots = await newTreeModel.rootsTree.root();
+    const revocationRoot = await newTreeModel.revocationTree.root();
 
     const newTreeState: TreeState = {
-      revocationRoot: newTreeModel.revocationTree.root,
-      claimsRoot: newTreeModel.claimsTree.root,
+      revocationRoot,
+      claimsRoot,
       state: newTreeModel.state,
-      rootOfRoots: newTreeModel.rootsTree.root
+      rootOfRoots
     };
     const challenge = Poseidon.hash([oldTreeState.state.bigInt(), newTreeState.state.bigInt()]);
 

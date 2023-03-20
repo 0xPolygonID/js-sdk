@@ -368,9 +368,11 @@ describe.skip('rhs', () => {
     const rhsStatus = await getStatusFromRHS(issuerDID, credRHSStatus, dataStorage.states);
 
     expect(rhsStatus.issuer.state).to.equal(latestTree.state.hex());
-    expect(rhsStatus.issuer.claimsTreeRoot).to.equal(latestTree.claimsTree.root.hex());
-    expect(rhsStatus.issuer.revocationTreeRoot).to.equal(latestTree.revocationTree.root.hex());
-    expect(rhsStatus.issuer.rootOfRoots).to.equal(latestTree.rootsTree.root.hex());
+    expect(rhsStatus.issuer.claimsTreeRoot).to.equal((await latestTree.claimsTree.root()).hex());
+    expect(rhsStatus.issuer.revocationTreeRoot).to.equal(
+      (await latestTree.revocationTree.root()).hex()
+    );
+    expect(rhsStatus.issuer.rootOfRoots).to.equal((await latestTree.rootsTree.root()).hex());
     expect(rhsStatus.mtp.existence).to.equal(false);
   });
 });

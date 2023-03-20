@@ -35,19 +35,19 @@ export class IdentityStorage implements IIdentityStorage {
   ) {}
 
   async saveProfile(profile: Profile): Promise<void> {
-    const profiles = this._profileDataSource.load();
+    const profiles = await this._profileDataSource.load();
     const identityProfiles = profiles.filter(
       (p) => p.genesisIdentifier === profile.genesisIdentifier
     );
     const toSave = identityProfiles.length ? [...identityProfiles, profile] : [profile];
     for (let index = 0; index < toSave.length; index++) {
       const element = toSave[index];
-      this._profileDataSource.save(element.id, element);
+      await this._profileDataSource.save(element.id, element);
     }
   }
 
   async getProfileByVerifier(verifier: string): Promise<Profile> {
-    const profile = this._profileDataSource.get(verifier, 'verifier');
+    const profile = await this._profileDataSource.get(verifier, 'verifier');
     if (!profile) {
       throw new Error('profile not found');
     }
@@ -55,7 +55,7 @@ export class IdentityStorage implements IIdentityStorage {
   }
 
   async getProfileById(profileId: string): Promise<Profile> {
-    const profile = this._profileDataSource.get(profileId);
+    const profile = await this._profileDataSource.get(profileId);
     if (!profile) {
       throw new Error('profile not found');
     }
@@ -63,7 +63,9 @@ export class IdentityStorage implements IIdentityStorage {
   }
 
   async getProfilesByGenesisIdentifier(genesisIdentifier: string): Promise<Profile[]> {
-    return this._profileDataSource.load().filter((p) => p.genesisIdentifier === genesisIdentifier);
+    return (await this._profileDataSource.load()).filter(
+      (p) => p.genesisIdentifier === genesisIdentifier
+    );
   }
 
   async getAllIdentities(): Promise<Identity[]> {
@@ -71,7 +73,7 @@ export class IdentityStorage implements IIdentityStorage {
   }
 
   async saveIdentity(identity: Identity): Promise<void> {
-    this._identityDataSource.save(identity.identifier, identity, 'identifier');
+    return this._identityDataSource.save(identity.identifier, identity, 'identifier');
   }
 
   async getIdentity(identifier: string): Promise<Identity> {

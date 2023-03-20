@@ -49,10 +49,10 @@ describe('atomic-query-sig-v2', () => {
       claim: claim,
       nonRevProof: {
         treeState: {
-          state: issuer.state(),
-          claimsRoot: issuer.clt.root,
-          revocationRoot: issuer.ret.root,
-          rootOfRoots: issuer.rot.root
+          state: await issuer.state(),
+          claimsRoot: await issuer.clt.root(),
+          revocationRoot: await issuer.ret.root(),
+          rootOfRoots: await issuer.rot.root()
         },
         proof: issuerClaimNonRevMtp.proof
       },
@@ -61,19 +61,19 @@ describe('atomic-query-sig-v2', () => {
         issuerAuthClaim: issuer.authClaim,
         issuerAuthIncProof: {
           treeState: {
-            state: issuer.state(),
-            claimsRoot: issuer.clt.root,
-            revocationRoot: issuer.ret.root,
-            rootOfRoots: issuer.rot.root
+            state: await issuer.state(),
+            claimsRoot: await issuer.clt.root(),
+            revocationRoot: await issuer.ret.root(),
+            rootOfRoots: await issuer.rot.root()
           },
           proof: issuerAuthClaimMtp.proof
         },
         issuerAuthNonRevProof: {
           treeState: {
-            state: issuer.state(),
-            claimsRoot: issuer.clt.root,
-            revocationRoot: issuer.ret.root,
-            rootOfRoots: issuer.rot.root
+            state: await issuer.state(),
+            claimsRoot: await issuer.clt.root(),
+            revocationRoot: await issuer.ret.root(),
+            rootOfRoots: await issuer.rot.root()
           },
           proof: issuerAuthClaimNonRevMtp.proof
         }

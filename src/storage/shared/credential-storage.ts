@@ -26,31 +26,31 @@ export class CredentialStorage implements ICredentialStorage {
 
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async listCredentials(): Promise<W3CCredential[]> {
-    let creds = this._dataSource.load();
+    let creds = await this._dataSource.load();
     creds = creds.map((cred) => (cred ? Object.assign(new W3CCredential(), cred) : undefined));
     return creds;
   }
 
   /** @inheritdoc */
   async saveCredential(credential: W3CCredential): Promise<void> {
-    this._dataSource.save(credential.id, credential);
+    return this._dataSource.save(credential.id, credential);
   }
 
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async saveAllCredentials(credentials: W3CCredential[]): Promise<void> {
     for (const credential of credentials) {
-      this._dataSource.save(credential.id, credential);
+      await this._dataSource.save(credential.id, credential);
     }
   }
 
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async removeCredential(id: string): Promise<void> {
-    this._dataSource.delete(id);
+    return this._dataSource.delete(id);
   }
 
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async findCredentialById(id: string): Promise<W3CCredential | undefined> {
-    const cred = this._dataSource.get(id);
+    const cred = await this._dataSource.get(id);
     return cred ? Object.assign(new W3CCredential(), cred) : undefined;
   }
 
@@ -59,9 +59,9 @@ export class CredentialStorage implements ICredentialStorage {
    */
   async findCredentialsByQuery(query: ProofQuery): Promise<W3CCredential[]> {
     const filters = StandardJSONCredentialsQueryFilter(query);
-    let creds = this._dataSource
-      .load()
-      .filter((credential) => filters.every((filter) => filter.execute(credential)));
+    let creds = (await this._dataSource.load()).filter((credential) =>
+      filters.every((filter) => filter.execute(credential))
+    );
 
     creds = creds.map((cred) => (cred ? Object.assign(new W3CCredential(), cred) : undefined));
     return creds;
