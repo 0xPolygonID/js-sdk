@@ -3,16 +3,16 @@ import { IDataSource } from '../interfaces/data-source';
 import { set, get, del, values, createStore, UseStore } from 'idb-keyval';
 
 /**
- * Storage in the browser, uses local storage
+ * Storage in the browser, uses indexed db storage
  *
  * @export
  * @beta
- * @class BrowserDataSource
+ * @class IndexedDBDataSource
  * @template Type
  */
 export class IndexedDBDataSource<Type> implements IDataSource<Type> {
   /**
-   * Creates an instance of BrowserDataSource.
+   * Creates an instance of IndexedDBDataSource.
    *
    * @param {string} _storageKey - key string to put storage name
    */
@@ -22,7 +22,7 @@ export class IndexedDBDataSource<Type> implements IDataSource<Type> {
   }
 
   /**
-   * Saves value to the local storage
+   * Saves value to the indexed db storage
    *
    * @param {string} key - key value
    * @param {Type} value - value to store
@@ -33,7 +33,7 @@ export class IndexedDBDataSource<Type> implements IDataSource<Type> {
   }
 
   /**
-   * Gets value from the local storage by given key
+   * Gets value from the indexed db storage by given key
    *
    * @param {string} key - key value
    * @param {string}  [keyName='id'] -  key name
@@ -44,13 +44,13 @@ export class IndexedDBDataSource<Type> implements IDataSource<Type> {
   }
 
   /**
-   * loads all from the local storage
+   * loads all from the indexed db storage
    */
   async load(): Promise<Type[]> {
     return values(this._store);
   }
   /**
-   * deletes item from the local storage
+   * deletes item from the indexed db storage
    * @param {string} key - key value
    * @param {string}  [keyName='id'] -  key name
    */

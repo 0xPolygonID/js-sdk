@@ -8,11 +8,11 @@ import { IMerkleTreeStorage } from '../interfaces/merkletree';
 const mtTypes = [MerkleTreeType.Claims, MerkleTreeType.Revocations, MerkleTreeType.Roots];
 
 /**
- * Merkle tree storage that uses browser local storage
+ * Merkle tree storage that uses browser indexed db storage
  *
  * @export
  * @beta
- * @class MerkleTreeLocalStorage
+ * @class MerkleTreeIndexedDBStorage
  * @implements implements IMerkleTreeStorage interface
  */
 export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
@@ -26,7 +26,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
   private readonly _merkleTreeMetaStore: UseStore;
 
   /**
-   * Creates an instance of MerkleTreeLocalStorage.
+   * Creates an instance of MerkleTreeIndexedDBStorage.
    * @param {number} _mtDepth
    */
   constructor(private readonly _mtDepth: number) {
@@ -36,7 +36,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     );
   }
 
-  /** creates a tree in the local storage */
+  /** creates a tree in the indexed db storage */
   async createIdentityMerkleTrees(
     identifier: string
   ): Promise<IdentityMerkleTreeMetaInformation[]> {
@@ -63,7 +63,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
   }
   /**
    *
-   * getIdentityMerkleTreesInfo from the local storage
+   * getIdentityMerkleTreesInfo from the indexed db storage
    * @param {string} identifier
    * @returns `{Promise<IdentityMerkleTreeMetaInformation[]>}`
    */
@@ -77,7 +77,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     throw new Error(`Merkle tree meta not found for identifier ${identifier}`);
   }
 
-  /** get merkle tree from the local storage */
+  /** get merkle tree from the indexed db storage */
   async getMerkleTreeByIdentifierAndType(
     identifier: string,
     mtType: MerkleTreeType
@@ -94,7 +94,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     }
     return new Merkletree(new IndexedDBStorage(str2Bytes(resultMeta.treeId)), true, this._mtDepth);
   }
-  /** adds to merkle tree in the local storage */
+  /** adds to merkle tree in the indexed db storage */
   async addToMerkleTree(
     identifier: string,
     mtType: MerkleTreeType,
@@ -119,7 +119,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     await tree.add(hindex, hvalue);
   }
 
-  /** binds merkle tree in the local storage to the new identifiers */
+  /** binds merkle tree in the indexed db storage to the new identifiers */
   async bindMerkleTreeToNewIdentifier(oldIdentifier: string, newIdentifier: string): Promise<void> {
     const meta = await get(oldIdentifier, this._merkleTreeMetaStore);
     if (!meta || !meta?.length) {
