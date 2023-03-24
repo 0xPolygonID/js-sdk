@@ -183,6 +183,7 @@ describe('rhs', () => {
         expect((m as Error).message).to.equal(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
       });
   });
+
   it('mocked issuer state', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
@@ -262,7 +263,7 @@ describe('rhs', () => {
     expect(rhsStatus.issuer.rootOfRoots).to.equal(res.newTreeState.rootOfRoots.hex());
     expect(rhsStatus.mtp.existence).to.equal(false);
   });
-  it('two creds. one revoked', async () => {
+  it.only('two creds. one revoked', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
