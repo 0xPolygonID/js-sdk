@@ -65,36 +65,22 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
   async getLatestStateById(id: bigint): Promise<StateInfo> {
-    try {
-      console.log('getLatestStateById', id, this.ethConfig.url);
+    const rawData = await this.stateContract.getStateInfoById(id);
+    const stateInfo: StateInfo = {
+      id: BigNumber.from(rawData[0]).toBigInt(),
+      state: BigNumber.from(rawData[1]).toBigInt(),
+      replacedByState: BigNumber.from(rawData[2]).toBigInt(),
+      createdAtTimestamp: BigNumber.from(rawData[3]).toBigInt(),
+      replacedAtTimestamp: BigNumber.from(rawData[4]).toBigInt(),
+      createdAtBlock: BigNumber.from(rawData[5]).toBigInt(),
+      replacedAtBlock: BigNumber.from(rawData[6]).toBigInt()
+    };
 
-      console.log('provider', this.provider);
-      console.log('stateContract', this.stateContract);
-
-      const rawData = await this.stateContract.getStateInfoById(id);
-      const stateInfo: StateInfo = {
-        id: BigNumber.from(rawData[0]).toBigInt(),
-        state: BigNumber.from(rawData[1]).toBigInt(),
-        replacedByState: BigNumber.from(rawData[2]).toBigInt(),
-        createdAtTimestamp: BigNumber.from(rawData[3]).toBigInt(),
-        replacedAtTimestamp: BigNumber.from(rawData[4]).toBigInt(),
-        createdAtBlock: BigNumber.from(rawData[5]).toBigInt(),
-        replacedAtBlock: BigNumber.from(rawData[6]).toBigInt()
-      };
-
-      return stateInfo;
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+    return stateInfo;
   }
 
   /** {@inheritdoc IStateStorage.publishState} */
   async publishState(proof: ZKProof, signer: Signer): Promise<string> {
-    console.log('publishState');
-
-    console.log('provider', this.provider);
-    console.log('stateContract', this.stateContract);
     const byteEncoder = new TextEncoder();
     const contract = this.stateContract.connect(signer);
 
@@ -134,10 +120,6 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getGISTProof} */
   async getGISTProof(id: bigint): Promise<StateProof> {
-    console.log('getGISTProof');
-
-    console.log('provider', this.provider);
-    console.log('stateContract', this.stateContract);
     const data = await this.stateContract.getGISTProof(id);
 
     return {
@@ -154,10 +136,6 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getGISTRootInfo} */
   async getGISTRootInfo(id: bigint): Promise<RootInfo> {
-    console.log('getGISTRootInfo');
-
-    console.log('provider', this.provider);
-    console.log('stateContract', this.stateContract);
     const data = await this.stateContract.getGISTRootInfo(id);
 
     return {

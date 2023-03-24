@@ -14,8 +14,8 @@ import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
-import { ethers, Signer } from 'ethers';
-import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
+import { ethers } from 'ethers';
+import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { W3CCredential } from '../../src/verifiable';
@@ -32,10 +32,7 @@ describe('mtp proofs', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
 
-  let ethStorage: EthStateStorage;
-
   const rhsUrl = process.env.RHS_URL as string;
-  const infuraUrl = process.env.RPC_URL as string;
   const walletKey = process.env.WALLET_KEY as string;
 
   const mockStateStorage: IStateStorage = {

@@ -263,7 +263,7 @@ describe('rhs', () => {
     expect(rhsStatus.issuer.rootOfRoots).to.equal(res.newTreeState.rootOfRoots.hex());
     expect(rhsStatus.mtp.existence).to.equal(false);
   });
-  it.only('two creds. one revoked', async () => {
+  it('two creds. one revoked', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(

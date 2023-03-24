@@ -2,49 +2,26 @@ import { Identity, Profile } from '../../src/storage/entities/identity';
 import { IdentityStorage } from '../../src/storage/shared/identity-storage';
 import { PlainPacker } from '../../src/iden3comm/packers/plain';
 import {
-  AuthHandler,
-  CircuitStorage,
   CredentialStorage,
-  IAuthHandler,
-  IdentityWallet,
-  ZKPRequestWithCredential
-} from '../../src';
+  IdentityWallet} from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { ProofService } from '../../src/proof';
-import { CircuitId } from '../../src/circuits';
-import { FSKeyLoader } from '../../src/loaders';
+import { CredentialWallet } from '../../src/credentials';
 import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
-import path from 'path';
-import { CircuitData } from '../../src/storage/entities/circuitData';
 import {
-  AuthDataPrepareFunc,
-  AuthorizationRequestMessage,
-  AuthorizationRequestMessageBody,
   BasicMessage,
   CredentialIssuanceMessage,
-  CredentialOffer,
   CredentialsOfferMessage,
   CredentialsOfferMessageBody,
-  DataPrepareHandlerFunc,
   FetchHandler,
   IFetchHandler,
   IPackageManager,
   PackageManager,
-  PackerParams,
-  ProvingParams,
-  StateVerificationFunc,
-  VerificationHandlerFunc,
-  VerificationParams,
-  ZeroKnowledgeProofRequest,
-  ZKPPacker,
   ZKPPackerParams
 } from '../../src/iden3comm';
-import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { byteEncoder } from '../../src/iden3comm/utils';

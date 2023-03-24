@@ -52,8 +52,6 @@ describe('auth', () => {
   let authHandler: IAuthHandler;
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
-  const infuraUrl = process.env.RPC_URL as string;
-  const walletKey = process.env.WALLET_KEY as string;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
