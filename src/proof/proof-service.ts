@@ -1,47 +1,50 @@
-import { newHashFromString } from '@iden3/js-merkletree';
-import { MTProof, TreeState, ValueProof } from './../circuits/models';
-import { RHSCredentialStatus, W3CCredential } from '../verifiable/credential';
-import { ProofType } from '../verifiable/constants';
-
 /* eslint-disable no-console */
-import {
-  DID,
-  getUnixTimestamp,
-  Claim,
-  MerklizedRootPosition,
-  BytesHelper
-} from '@iden3/js-iden3-core';
-import {
-  CircuitClaim,
-  CircuitId,
-  strMTHex,
-  Query,
-  AtomicQueryMTPV2Inputs,
-  AtomicQuerySigV2Inputs,
-  QueryOperators,
-  StateTransitionInputs,
-  AuthV2Inputs
-} from '../circuits';
-import { RevocationStatus } from '../verifiable/credential';
-import { toClaimNonRevStatus, toGISTProof } from './common';
-import { NativeProver } from './prover';
-import { IIdentityWallet } from '../identity';
-import { ICredentialWallet } from '../credentials';
 import { Hex, Poseidon, Signature } from '@iden3/js-crypto';
 import {
+  BytesHelper,
+  Claim,
+  DID,
+  getUnixTimestamp,
+  MerklizedRootPosition
+} from '@iden3/js-iden3-core';
+import { newHashFromString } from '@iden3/js-merkletree';
+import {
+  AtomicQueryMTPV2Inputs,
+  AtomicQuerySigV2Inputs,
+  AuthV2Inputs,
+  CircuitClaim,
+  CircuitId,
+  MTProof,
+  Query,
+  QueryOperators,
+  StateTransitionInputs,
+  strMTHex,
+  TreeState,
+  ValueProof
+} from '../circuits';
+import { ICredentialWallet } from '../credentials';
+import { IIdentityWallet } from '../identity';
+import {
+  fmtVerifiablePresentation,
   Iden3SparseMerkleTreeProof,
   MerkleTreeProofWithTreeState,
-  ProofQuery
+  ProofQuery,
+  ProofType,
+  RevocationStatus,
+  RHSCredentialStatus,
+  verifiablePresentationFromCred,
+  W3CCredential
 } from '../verifiable';
+import { toClaimNonRevStatus, toGISTProof } from './common';
+import { NativeProver } from './prover';
 
+import { Path } from '@iden3/js-jsonld-merklization';
+import { ZKProof } from '@iden3/js-jwz';
+import { Signer } from 'ethers';
+import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
 import { UniversalSchemaLoader } from '../loaders';
 import { Parser } from '../schema-processor';
-import { ICircuitStorage } from '../storage/interfaces/circuits';
-import { IStateStorage } from '../storage/interfaces';
-import { Signer } from 'ethers';
-import { ZKProof } from '@iden3/js-jwz';
-import { ZeroKnowledgeProofRequest } from '../iden3comm';
-import { Path } from '@iden3/js-jsonld-merklization';
+import { ICircuitStorage, IStateStorage } from '../storage';
 
 interface PreparedAuthBJJCredential {
   authCredential: W3CCredential;
@@ -58,6 +61,7 @@ interface PreparedCredential {
 export interface QueryWithFieldName {
   query: Query;
   fieldName: string;
+  isSelectiveDisclosure?: boolean;
 }
 
 export interface ProofGenerationOptions {
@@ -84,14 +88,14 @@ export interface IProofService {
    * @param {W3CCredential} credential - credential that will be used for proof generation
    * @param {ProofGenerationOptions} opts - options that will be used for proof generation
    *
-   * @returns `Promise<{ proof: ZKProof; credential: W3CCredential }>`
+   * @returns `Promise<ZeroKnowledgeProofResponse>`
    */
   generateProof(
     proofReq: ZeroKnowledgeProofRequest,
     identifier: DID,
     credential: W3CCredential,
     opts?: ProofGenerationOptions
-  ): Promise<{ proof: ZKProof; credential: W3CCredential }>;
+  ): Promise<ZeroKnowledgeProofResponse>;
 
   /**
    * generates auth inputs
@@ -137,7 +141,6 @@ export interface IProofService {
     ethSigner: Signer
   ): Promise<string>;
 }
-
 /**
  * Proof service is an implementation of IProofService
  * that works with a native groth16 prover
@@ -176,7 +179,7 @@ export class ProofService implements IProofService {
     identifier: DID,
     credential: W3CCredential,
     opts?: ProofGenerationOptions
-  ): Promise<{ proof: ZKProof; credential: W3CCredential }> {
+  ): Promise<ZeroKnowledgeProofResponse> {
     if (!opts) {
       opts = {
         authProfileNonce: 0,
@@ -186,10 +189,25 @@ export class ProofService implements IProofService {
     }
     const preparedCredential: PreparedCredential = await this.getPreparedCredential(credential);
 
-    const inputs = await this.generateInputs(preparedCredential, identifier, proofReq, opts);
+    const { inputs, vp } = await this.generateInputs(
+      preparedCredential,
+      identifier,
+      proofReq,
+      opts
+    );
 
-    const proof = await this._prover.generate(inputs, proofReq.circuitId as CircuitId);
-    return { proof, credential: preparedCredential.credential };
+    const { proof, pub_signals } = await this._prover.generate(
+      inputs,
+      proofReq.circuitId as CircuitId
+    );
+
+    return {
+      id: proofReq.id,
+      circuitId: proofReq.circuitId,
+      vp,
+      proof,
+      pub_signals
+    };
   }
 
   /** {@inheritdoc IProofService.transitState} */
@@ -289,8 +307,7 @@ export class ProofService implements IProofService {
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
     opts: ProofGenerationOptions
-  ): Promise<Uint8Array> {
-    let inputs: Uint8Array;
+  ): Promise<{ inputs: Uint8Array; vp?: object }> {
     if (proofReq.circuitId === CircuitId.AtomicQueryMTPV2) {
       const circuitClaimData = await this.newCircuitClaimData(
         preparedCredential.credential,
@@ -302,11 +319,12 @@ export class ProofService implements IProofService {
       const circuitInputs = new AtomicQueryMTPV2Inputs();
       circuitInputs.id = identifier.id;
       circuitInputs.requestID = BigInt(proofReq.id);
-      circuitInputs.query = await this.toCircuitsQuery(
+      const { query, vp } = await this.toCircuitsQuery(
         proofReq.query,
         preparedCredential.credential,
         preparedCredential.credentialCoreClaim
       );
+      circuitInputs.query = query;
       circuitInputs.claim = {
         issuerID: circuitClaimData.issuerId,
         claim: circuitClaimData.claim,
@@ -318,8 +336,9 @@ export class ProofService implements IProofService {
       circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
       circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
 
-      inputs = circuitInputs.inputsMarshal();
-    } else if (proofReq.circuitId === CircuitId.AtomicQuerySigV2) {
+      return { inputs: circuitInputs.inputsMarshal(), vp };
+    }
+    if (proofReq.circuitId === CircuitId.AtomicQuerySigV2) {
       const circuitClaimData = await this.newCircuitClaimData(
         preparedCredential.credential,
         preparedCredential.credentialCoreClaim
@@ -339,17 +358,16 @@ export class ProofService implements IProofService {
       circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
       circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
       circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
-      circuitInputs.query = await this.toCircuitsQuery(
+      const { query, vp } = await this.toCircuitsQuery(
         proofReq.query,
         preparedCredential.credential,
         preparedCredential.credentialCoreClaim
       );
+      circuitInputs.query = query;
       circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-      inputs = circuitInputs.inputsMarshal();
-    } else {
-      throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
+      return { inputs: circuitInputs.inputsMarshal(), vp };
     }
-    return inputs;
+    throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
   }
 
   // NewCircuitClaimData generates circuits claim structure
@@ -423,20 +441,18 @@ export class ProofService implements IProofService {
     query: ProofQuery,
     credential: W3CCredential,
     coreClaim: Claim
-  ): Promise<Query> {
+  ): Promise<{ query: Query; vp?: object }> {
     const mtPosition = coreClaim.getMerklizedPosition();
 
-    if (mtPosition === MerklizedRootPosition.None) {
-      return this.prepareNonMerklizedQuery(query, credential);
-    }
-
-    return this.prepareMerklizedQuery(query, credential, mtPosition);
+    return mtPosition === MerklizedRootPosition.None
+      ? this.prepareNonMerklizedQuery(query, credential)
+      : this.prepareMerklizedQuery(query, credential, mtPosition);
   }
   private async prepareMerklizedQuery(
     query: ProofQuery,
     credential: W3CCredential,
     merklizedPosition: MerklizedRootPosition
-  ): Promise<Query> {
+  ): Promise<{ query: Query; vp?: object }> {
     const parsedQuery = await this.parseRequest(query.credentialSubject);
 
     const loader = new UniversalSchemaLoader('ipfs.io');
@@ -460,20 +476,35 @@ export class ProofService implements IProofService {
     parsedQuery.query.valueProof.mtp = proof;
     parsedQuery.query.valueProof.path = pathKey;
     parsedQuery.query.valueProof.mtp = proof;
-    parsedQuery.query.valueProof.value = BigInt(await mtValue.mtEntry());
+    const mtEntry = await mtValue.mtEntry();
+    parsedQuery.query.valueProof.value = mtEntry;
 
     if (merklizedPosition == MerklizedRootPosition.Index) {
       parsedQuery.query.slotIndex = 2; // value data slot a
     } else {
       parsedQuery.query.slotIndex = 5; // value data slot b
     }
-    return parsedQuery.query;
+    if (parsedQuery.isSelectiveDisclosure) {
+      const rawValue = mk.rawValue(path);
+      const vp = fmtVerifiablePresentation(
+        query.context,
+        query.type,
+        parsedQuery.fieldName,
+        rawValue
+      );
+      const resultQuery = parsedQuery.query;
+      resultQuery.operator = QueryOperators.$eq;
+      resultQuery.values = [mtEntry];
+      return { query: resultQuery, vp };
+    }
+
+    return { query: parsedQuery.query };
   }
 
   private async prepareNonMerklizedQuery(
     query: ProofQuery,
     credential: W3CCredential
-  ): Promise<Query> {
+  ): Promise<{ query: Query; vp?: object }> {
     const loader = new UniversalSchemaLoader('ipfs.io');
     const schema = await loader.load(credential.credentialSchema.id);
 
@@ -482,55 +513,65 @@ export class ProofService implements IProofService {
     }
 
     const parsedQuery = await this.parseRequest(query.credentialSubject);
-
     parsedQuery.query.slotIndex = new Parser().getFieldSlotIndex(parsedQuery.fieldName, schema);
 
-    return parsedQuery.query;
+    if (parsedQuery.isSelectiveDisclosure) {
+      const { vp, mzValue } = await verifiablePresentationFromCred(
+        credential,
+        query,
+        parsedQuery.fieldName
+      );
+      const resultQuery = parsedQuery.query;
+      resultQuery.operator = QueryOperators.$eq;
+      resultQuery.values = [await mzValue.mtEntry()];
+      return { query: resultQuery, vp };
+    }
+
+    return { query: parsedQuery.query };
   }
 
-  private async parseRequest(req?: { [key: string]: unknown }): Promise<QueryWithFieldName> {
+  private async parseRequest(req?: { [key: string]: object | null }): Promise<QueryWithFieldName> {
     if (!req) {
       const query = new Query();
       query.operator = QueryOperators.$noop;
       return { query, fieldName: '' };
     }
 
-    let fieldName = '';
-    let fieldReq = new Map<string, unknown>();
-    if (Object.keys(req).length > 1) {
+    const entries = Object.entries(req);
+    if (entries.length > 1) {
       throw new Error(`multiple requests  not supported`);
     }
 
-    for (const [key, value] of Object.entries(req)) {
-      fieldName = key;
+    const [fieldName, fieldReq] = entries[0];
 
-      fieldReq = value as Map<string, unknown>;
+    const fieldReqEntries = Object.entries(fieldReq);
 
-      if (Object.keys(fieldReq).length > 1) {
-        throw new Error(`multiple predicates for one field not supported`);
-      }
-      break;
+    if (fieldReqEntries.length > 1) {
+      throw new Error(`multiple predicates for one field not supported`);
+    }
+
+    const isSelectiveDisclosure = fieldReqEntries.length === 0;
+    const query = new Query();
+
+    if (isSelectiveDisclosure) {
+      return { query, fieldName, isSelectiveDisclosure };
     }
 
     let operator = 0;
     const values: bigint[] = new Array<bigint>(64).fill(BigInt(0));
-    for (const [key, value] of Object.entries(fieldReq)) {
-      if (!QueryOperators[key]) {
-        throw new Error(`operator is not supported by lib`);
+    const [key, value] = fieldReqEntries[0];
+    if (!QueryOperators[key]) {
+      throw new Error(`operator is not supported by lib`);
+    }
+    operator = QueryOperators[key];
+    if (Array.isArray(value)) {
+      for (let index = 0; index < value.length; index++) {
+        values[index] = BigInt(value[index]);
       }
-      operator = QueryOperators[key];
-
-      if (Array.isArray(value)) {
-        for (let index = 0; index < value.length; index++) {
-          values[index] = BigInt(value[index]);
-        }
-      } else {
-        values[0] = BigInt(value as string);
-      }
-      break;
+    } else {
+      values[0] = BigInt(value);
     }
 
-    const query = new Query();
     query.operator = operator;
     query.values = values;
 

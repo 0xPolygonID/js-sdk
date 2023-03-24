@@ -122,7 +122,7 @@ export async function authClaimFullInfo(
   //Proof claim not revoked
   const revNonce = data.authClaim.getRevocationNonce();
   const revNonceInt = BigInt(revNonce);
-  const root = await data.revTree.root()
+  const root = await data.revTree.root();
   const claimNonRevMTP = await data.revTree.generateProof(revNonceInt, root);
 
   //Calculate state

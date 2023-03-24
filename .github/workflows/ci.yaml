@@ -40,8 +40,21 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      # - name: Circular dependency check
+      #   run: npm run deps:check
+
       - name: Run Build
         run: npm run build
 
+      - name: Download regular circuits for CI 'latest.zip' from S3
+        run: mkdir ./tests/proofs/testdata wget https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/latest.zip -P ./tests/proofs/testdata
+
+      - name: Unzip circuits to folder
+        run: cd ./tests/proofs/testdata && unzip latest.zip && cd - && pwd
+
       - name: Run Tests
+        env:
+          WALLET_KEY: ${{ secrets.WALLET_KEY }}
+          RPC_URL: ${{ secrets.RPC_URL }}
+          RHS_URL: ${{ secrets.RHS_URL }}
         run: npm run test

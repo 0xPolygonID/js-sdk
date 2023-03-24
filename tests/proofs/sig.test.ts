@@ -22,8 +22,9 @@ import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
+import { checkVerifiablePresentation } from './common';
 
-describe.skip('sig proofs', () => {
+describe('sig proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -183,8 +184,18 @@ describe.skip('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(creds.length).to.equal(1);
 
-    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
+
+    expect(vp).to.be.undefined;
+
+    await checkVerifiablePresentation(
+      claimReq.type,
+      userDID,
+      credsForMyUserDID[0],
+      proofService,
+      CircuitId.AtomicQuerySigV2
+    );
   });
 
   it('sigv2-merklized', async () => {
@@ -193,7 +204,7 @@ describe.skip('sig proofs', () => {
     );
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential } = await idWallet.createIdentity('http://mytestwallet.com/', {
+    const { did: userDID } = await idWallet.createIdentity('http://mytestwallet.com/', {
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
@@ -201,16 +212,13 @@ describe.skip('sig proofs', () => {
       rhsUrl
     });
 
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://mytestwallet.com/',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer,
-        rhsUrl
-      }
-    );
+    const { did: issuerDID } = await idWallet.createIdentity('http://mytestwallet.com/', {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      rhsUrl
+    });
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
@@ -256,7 +264,17 @@ describe.skip('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(creds.length).to.equal(1);
 
-    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
+
+    expect(vp).to.be.undefined;
+
+    await checkVerifiablePresentation(
+      claimReq.type,
+      userDID,
+      credsForMyUserDID[0],
+      proofService,
+      CircuitId.AtomicQuerySigV2
+    );
   });
 });

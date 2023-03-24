@@ -169,14 +169,11 @@ export class AuthHandler implements IAuthHandler {
         throw new Error(`no credential were issued on the given id ${did.toString()}`);
       }
 
-      const { proof } = await this._proofService.generateProof(zkpReq, did, credsForGenesisDID[0]);
-
-      const zkpRes: ZeroKnowledgeProofResponse = {
-        id: zkpReq.id,
-        circuitId: zkpReq.circuitId,
-        proof: proof.proof,
-        pub_signals: proof.pub_signals
-      };
+      const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
+        zkpReq,
+        did,
+        credsForGenesisDID[0]
+      );
 
       authResponse.body.scope.push(zkpRes);
     }
@@ -246,7 +243,7 @@ export class AuthHandler implements IAuthHandler {
     };
 
     for (const r of zkpRequestsWithCreds) {
-      const { proof } = await this._proofService.generateProof(
+      const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
         r.req,
         userGenesisDID,
         r.credential,
@@ -256,13 +253,6 @@ export class AuthHandler implements IAuthHandler {
           skipRevocation: false
         }
       );
-
-      const zkpRes: ZeroKnowledgeProofResponse = {
-        id: r.req.id,
-        circuitId: r.req.circuitId,
-        proof: proof.proof,
-        pub_signals: proof.pub_signals
-      };
 
       authResponse.body.scope.push(zkpRes);
     }

@@ -23,8 +23,9 @@ import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
+import { checkVerifiablePresentation } from './common';
 
-describe.skip('mtp proofs', () => {
+describe('mtp proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -231,8 +232,16 @@ describe.skip('mtp proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(creds.length).to.equal(1);
 
-    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
+    expect(vp).to.be.undefined;
+    await checkVerifiablePresentation(
+      claimReq.type,
+      userDID,
+      credsForMyUserDID[0],
+      proofService,
+      CircuitId.AtomicQueryMTPV2
+    );
   });
 
   it('mtpv2-merklized', async () => {
@@ -337,7 +346,15 @@ describe.skip('mtp proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(creds.length).to.equal(1);
 
-    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
+    expect(vp).to.be.undefined;
+    await checkVerifiablePresentation(
+      claimReq.type,
+      userDID,
+      credsForMyUserDID[0],
+      proofService,
+      CircuitId.AtomicQueryMTPV2
+    );
   });
 });

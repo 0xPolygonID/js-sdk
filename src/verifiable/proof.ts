@@ -107,7 +107,7 @@ export class BJJSignatureProof2021 {
  */
 export interface ProofQuery {
   allowedIssuers?: string[];
-  credentialSubject?: { [key: string]: unknown };
+  credentialSubject?: { [key: string]: object | null };
   schema?: string; // string url
   claimId?: string;
   credentialSubjectId?: string;
