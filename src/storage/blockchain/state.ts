@@ -65,24 +65,28 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
   async getLatestStateById(id: bigint): Promise<StateInfo> {
-    console.log('getLatestStateById', id);
+    try {
+      console.log('getLatestStateById', id, this.ethConfig.url);
 
-    console.log('getLatestStateById', id);
-    console.log('provider', this.provider);
-    console.log('stateContract', this.stateContract);
+      console.log('provider', this.provider);
+      console.log('stateContract', this.stateContract);
 
-    const rawData = await this.stateContract.getStateInfoById(id);
-    const stateInfo: StateInfo = {
-      id: BigNumber.from(rawData[0]).toBigInt(),
-      state: BigNumber.from(rawData[1]).toBigInt(),
-      replacedByState: BigNumber.from(rawData[2]).toBigInt(),
-      createdAtTimestamp: BigNumber.from(rawData[3]).toBigInt(),
-      replacedAtTimestamp: BigNumber.from(rawData[4]).toBigInt(),
-      createdAtBlock: BigNumber.from(rawData[5]).toBigInt(),
-      replacedAtBlock: BigNumber.from(rawData[6]).toBigInt()
-    };
+      const rawData = await this.stateContract.getStateInfoById(id);
+      const stateInfo: StateInfo = {
+        id: BigNumber.from(rawData[0]).toBigInt(),
+        state: BigNumber.from(rawData[1]).toBigInt(),
+        replacedByState: BigNumber.from(rawData[2]).toBigInt(),
+        createdAtTimestamp: BigNumber.from(rawData[3]).toBigInt(),
+        replacedAtTimestamp: BigNumber.from(rawData[4]).toBigInt(),
+        createdAtBlock: BigNumber.from(rawData[5]).toBigInt(),
+        replacedAtBlock: BigNumber.from(rawData[6]).toBigInt()
+      };
 
-    return stateInfo;
+      return stateInfo;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 
   /** {@inheritdoc IStateStorage.publishState} */
