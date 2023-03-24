@@ -4,7 +4,7 @@ jobs:
   build:
     strategy:
       matrix:
-        version: [16.15, 18.14.0]
+        version: [18.15.0]
     timeout-minutes: 7
     runs-on: ubuntu-latest
     steps:
@@ -47,7 +47,7 @@ jobs:
         run: npm run build
 
       - name: Download regular circuits for CI 'latest.zip' from S3
-        run: mkdir ./tests/proofs/testdata wget https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/latest.zip -P ./tests/proofs/testdata
+        run: mkdir ./tests/proofs/testdata && wget https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/latest.zip -P ./tests/proofs/testdata
 
       - name: Unzip circuits to folder
         run: cd ./tests/proofs/testdata && unzip latest.zip && cd - && pwd
