@@ -25,7 +25,7 @@ import {
 import { ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
 import {
-  fmtVerifiablePresentation,
+  createVerifiablePresentation,
   Iden3SparseMerkleTreeProof,
   MerkleTreeProofWithTreeState,
   ProofQuery,
@@ -486,7 +486,7 @@ export class ProofService implements IProofService {
     }
     if (parsedQuery.isSelectiveDisclosure) {
       const rawValue = mk.rawValue(path);
-      const vp = fmtVerifiablePresentation(
+      const vp = createVerifiablePresentation(
         query.context,
         query.type,
         parsedQuery.fieldName,
@@ -530,7 +530,7 @@ export class ProofService implements IProofService {
     return { query: parsedQuery.query };
   }
 
-  private async parseRequest(req?: { [key: string]: object | null }): Promise<QueryWithFieldName> {
+  private async parseRequest(req?: { [key: string]: unknown }): Promise<QueryWithFieldName> {
     if (!req) {
       const query = new Query();
       query.operator = QueryOperators.$noop;

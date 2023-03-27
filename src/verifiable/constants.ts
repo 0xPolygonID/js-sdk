@@ -8,8 +8,10 @@ export const VerifiableConstants = Object.freeze({
   },
   CREDENTIAL_TYPE: {
     // VerifiableCredential is a W3C verifiable credential type
-    W3C_VERIFIABLE: 'VerifiableCredential'
+    W3C_VERIFIABLE_CREDENTIAL: 'VerifiableCredential',
+    W3C_VERIFIABLE_PRESENTATION: 'VerifiablePresentation'
   },
+  CREDENTIAL_SUBJECT_PATH: 'https://www.w3.org/2018/credentials#credentialSubject',
   JSONLD_SCHEMA: {
     // JSONLDSchemaIden3Credential is a schema for context with Iden3Credential type
     IDEN3_CREDENTIAL: 'https://schema.iden3.io/core/jsonld/iden3proofs.jsonld',

@@ -315,7 +315,10 @@ export class CredentialWallet implements ICredentialWallet {
       VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
       schema.$metadata.uris['jsonLdContext']
     ];
-    const credentialType = [VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE, request.type];
+    const credentialType = [
+      VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
+      request.type
+    ];
 
     const expirationDate =
       !request.expiration || request.expiration == 0 ? null : request.expiration;

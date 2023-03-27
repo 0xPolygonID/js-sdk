@@ -1,3 +1,4 @@
+import { VerifiableConstants } from './constants';
 import { Hasher, MtValue, Path } from '@iden3/js-jsonld-merklization';
 import axios, { AxiosResponse } from 'axios';
 import { W3CCredential } from './credential';
@@ -33,20 +34,20 @@ export const buildQueryPath = async (
   }
 
   const path = await Path.getContextPathKey(JSON.stringify(resp.data), contextType, field);
-  path.prepend(['https://www.w3.org/2018/credentials#credentialSubject']);
+  path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   return path;
 };
 
-export const fmtVerifiablePresentation = (
+export const createVerifiablePresentation = (
   context: string,
   tp: string,
   field: string,
   value: unknown
 ): object => {
-  const baseContext = ['https://www.w3.org/2018/credentials/v1'];
+  const baseContext = [VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018];
   const ldContext = baseContext[0] === context ? baseContext : [...baseContext, context];
 
-  const vc = 'VerifiableCredential';
+  const vc = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
   const vcTypes = [vc];
   if (tp !== vc) {
     vcTypes.push(tp);
@@ -54,7 +55,7 @@ export const fmtVerifiablePresentation = (
 
   return {
     '@context': baseContext,
-    '@type': 'VerifiablePresentation',
+    '@type': VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_PRESENTATION,
     verifiableCredential: {
       '@context': ldContext,
       '@type': vcTypes,
@@ -92,7 +93,7 @@ export const verifiablePresentationFromCred = async (
 
   const { value } = await mz.proof(path);
 
-  const vp = fmtVerifiablePresentation(contextURL, contextType, field, rawValue);
+  const vp = createVerifiablePresentation(contextURL, contextType, field, rawValue);
 
   return { vp, mzValue: value, dataType, hasher };
 };
