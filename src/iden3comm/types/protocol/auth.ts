@@ -52,4 +52,5 @@ export type ZeroKnowledgeProofRequest = {
 export type ZeroKnowledgeProofResponse = {
   id: number;
   circuitId: string;
+  vp?: object;
 } & ZKProof;

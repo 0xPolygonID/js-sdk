@@ -14,8 +14,8 @@ import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { FSKeyLoader } from '../../src/loaders';
-import { ethers, Signer } from 'ethers';
-import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
+import { ethers } from 'ethers';
+import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { W3CCredential } from '../../src/verifiable';
@@ -23,18 +23,16 @@ import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
+import { checkVerifiablePresentation } from './common';
 
-describe.skip('mtp proofs', () => {
+describe('mtp proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
   let dataStorage: IDataStorage;
   let proofService: ProofService;
 
-  let ethStorage: EthStateStorage;
-
   const rhsUrl = process.env.RHS_URL as string;
-  const infuraUrl = process.env.RPC_URL as string;
   const walletKey = process.env.WALLET_KEY as string;
 
   const mockStateStorage: IStateStorage = {
@@ -231,8 +229,16 @@ describe.skip('mtp proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(creds.length).to.equal(1);
 
-    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
+    expect(vp).to.be.undefined;
+    await checkVerifiablePresentation(
+      claimReq.type,
+      userDID,
+      credsForMyUserDID[0],
+      proofService,
+      CircuitId.AtomicQueryMTPV2
+    );
   });
 
   it('mtpv2-merklized', async () => {
@@ -337,7 +343,15 @@ describe.skip('mtp proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(creds.length).to.equal(1);
 
-    const { proof } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
+    expect(vp).to.be.undefined;
+    await checkVerifiablePresentation(
+      claimReq.type,
+      userDID,
+      credsForMyUserDID[0],
+      proofService,
+      CircuitId.AtomicQueryMTPV2
+    );
   });
 });

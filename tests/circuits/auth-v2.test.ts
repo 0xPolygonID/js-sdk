@@ -31,10 +31,10 @@ describe('auth-v2', () => {
     inputs.authClaimIncMtp = authClaimIncMTP.proof;
     inputs.authClaimNonRevMtp = authClaimNonRevMTP.proof;
     inputs.treeState = {
-      state:  await user.state(),
-      claimsRoot:  await user.clt.root(),
-      revocationRoot:  await user.ret.root(),
-      rootOfRoots:  await user.rot.root()
+      state: await user.state(),
+      claimsRoot: await user.clt.root(),
+      revocationRoot: await user.ret.root(),
+      rootOfRoots: await user.rot.root()
     };
     inputs.signature = signature;
     inputs.challenge = challenge;

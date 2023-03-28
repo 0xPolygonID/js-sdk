@@ -24,7 +24,7 @@ import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import path from 'path';
 
-describe.skip('rhs', () => {
+describe('rhs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
   let dataStorage: IDataStorage;
@@ -183,6 +183,7 @@ describe.skip('rhs', () => {
         expect((m as Error).message).to.equal(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
       });
   });
+
   it('mocked issuer state', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 

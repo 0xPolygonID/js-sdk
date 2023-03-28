@@ -43,7 +43,7 @@ import { Token } from '@iden3/js-jwz';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 
-describe.skip('auth', () => {
+describe('auth', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -52,8 +52,6 @@ describe.skip('auth', () => {
   let authHandler: IAuthHandler;
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
-  const infuraUrl = process.env.RPC_URL as string;
-  const walletKey = process.env.WALLET_KEY as string;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
