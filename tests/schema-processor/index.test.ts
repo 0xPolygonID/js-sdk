@@ -102,16 +102,7 @@ describe('get types from jsonld schema', () => {
 describe('extract jsonld types by json schema', () => {
   it('with list of ld contexts', async () => {
     const data: string = JSON.stringify(kyc);
-    const metadata = Parser.extractMetadata(data);
-    const ldURL = metadata.uris['jsonLdContext']
-  
-    const response = await fetch(ldURL)
-    const ldContext = await response.json()
-    const ldStr = JSON.stringify(ldContext)
-  
-    const res = await LDParser.extractTerms(ldStr)
-    const types = LDParser.getPrefixes(res, false)
-  
+    const types = await Parser.getPossibleCredenitalTypesForJsonSchema(data);
     const e: Map<string, string> = new Map([
       ['KYCAgeCredential', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCAgeCredential'],
       ['KYCCountryOfResidenceCredential', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCCountryOfResidenceCredential'],

@@ -1,5 +1,5 @@
 import { W3CCredential, MerklizedRootPosition, SubjectPosition } from '../../verifiable';
-
+import { LDParser } from '../jsonld';
 import { Claim as CoreClaim, ClaimOptions, DID } from '@iden3/js-iden3-core';
 import { createSchemaHash, fillSlot } from '../utils';
 
@@ -233,5 +233,34 @@ export class Parser {
   public static extractMetadata(schema: string): SchemaMetadata {
     const parsedSchema = JSON.parse(schema);
     return parsedSchema.$metadata;
+  }
+
+  public static async getPossibleCredenitalTypesForJsonSchema(
+    schema: string
+  ): Promise<Map<string, string>> {
+    const metadata = Parser.extractMetadata(schema);
+    const ldURL = metadata.uris['jsonLdContext'];
+    if (!ldURL) {
+      throw new Error('jsonLdContext is not set');
+    }
+
+    let jsonLdContext;
+    try {
+      const response = await fetch(ldURL);
+      const rawdata = await response.json();
+      jsonLdContext = JSON.stringify(rawdata);
+    } catch (e) {
+      throw new Error(`failed to fetch jsonLdContext ${e}`);
+    }
+
+    let terms;
+    try {
+      terms = await LDParser.extractTerms(jsonLdContext);
+    } catch (e) {
+      throw new Error(`failed to extract terms from jsonLdContext ${e}`);
+    }
+
+    const types = LDParser.getPrefixes(terms, false);
+    return types;
   }
 }

@@ -15,7 +15,7 @@ export class LDParser {
    * @param {string} context - JSONLD context
    * @returns Promise<Map<string, string>>
    */
-  public static async extractTerms(context: string): Promise<Map<string, any>> {
+  public static async extractTerms(context: string): Promise<Map<string, unknown>> {
     let data;
     let res;
     try {
@@ -25,7 +25,7 @@ export class LDParser {
       throw new Error(`Failed process LD context. Error ${e}`);
     }
 
-    const terms = res.mappings as Map<string, any>;
+    const terms = res.mappings as Map<string, unknown>;
     return terms;
   }
 
@@ -40,7 +40,7 @@ export class LDParser {
    * @returns Promise<Map<string, string>>
    */
   public static getPrefixes(
-    data: Map<string, any>,
+    data: Map<string, unknown>,
     onlyCommonPrefixes: boolean
   ): Map<string, string> {
     const prefixes: Map<string, string> = new Map();
