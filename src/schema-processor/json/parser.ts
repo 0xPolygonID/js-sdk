@@ -72,7 +72,7 @@ export interface CoreClaimOptions {
 }
 
 /**
- * Parser can parse claim data according to specification
+ * Parser can parse claim and schema data according to specification
  *
  * @export
  * @beta
@@ -222,5 +222,16 @@ export class Parser {
       default:
         throw new Error(`field ${field} not specified in serialization info`);
     }
+  }
+
+  /**
+   * ExtractMetadata return metadata from JSON schema
+   *
+   * @param {string} schema - JSON schema
+   * @returns SchemaMetadata
+   */
+  public static extractMetadata(schema: string): SchemaMetadata {
+    const parsedSchema = JSON.parse(schema);
+    return parsedSchema.$metadata;
   }
 }
