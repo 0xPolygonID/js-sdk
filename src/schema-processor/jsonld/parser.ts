@@ -15,15 +15,16 @@ export class LDParser {
    * @param {string} context - JSONLD context
    * @returns Promise<Map<string, string>>
    */
-  public static async extractTerms(context: string): Promise<Map<string, string>> {
+  public static async extractTerms(context: string): Promise<Map<string, any>> {
     let data;
+    let res;
     try {
       data = JSON.parse(context);
+      res = await jsonld.processContext(ldcontext.getInitialContext({}), data, {});
     } catch (e) {
-      throw new Error(`Invalid JSON-LD context. Error ${e}`);
+      throw new Error(`Failed process LD context. Error ${e}`);
     }
 
-    const res = await jsonld.processContext(ldcontext.getInitialContext({}), data, {});
     const terms = res.mappings as Map<string, any>;
     return terms;
   }
@@ -51,9 +52,9 @@ export class LDParser {
       if (!termDefinition) {
         continue;
       }
-      const termDefinitionMap = termDefinition as Map<string, unknown>;
+      const termDefinitionMap = termDefinition as Record<string, unknown>;
       const id = termDefinitionMap['@id'] as string;
-      if (id === '') {
+      if (!id) {
         continue;
       }
       if (term.startsWith('@') || id.startsWith('@')) {
