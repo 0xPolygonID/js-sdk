@@ -257,14 +257,12 @@ export class Parser {
   }
 
   /**
-   * GetPossibleCredenitalTypesForJsonSchema return possible credential types for JSON schema
+   * GetLdPrefixesByJSONSchema return possible credential types for JSON schema
    *
    * @param {string} schema  - JSON schema
    * @returns `Promise<Map<string, string>>`
    */
-  public static async getPossibleCredenitalTypesForJsonSchema(
-    schema: string
-  ): Promise<Map<string, string>> {
+  public static async getLdPrefixesByJSONSchema(schema: string): Promise<Map<string, string>> {
     const metadata = Parser.extractMetadata(schema);
     const ldURL = metadata.uris['jsonLdContext'];
     if (!ldURL) {

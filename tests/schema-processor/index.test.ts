@@ -102,7 +102,7 @@ describe('get types from jsonld schema', () => {
 describe('extract jsonld types by json schema', () => {
   it('with list of ld contexts', async () => {
     const data: string = JSON.stringify(kyc);
-    const types = await Parser.getPossibleCredenitalTypesForJsonSchema(data);
+    const types = await Parser.getLdPrefixesByJSONSchema(data);
     const e: Map<string, string> = new Map([
       ['KYCEmployee', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee']
     ]);
