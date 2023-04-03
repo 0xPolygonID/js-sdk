@@ -227,14 +227,41 @@ export class Parser {
   /**
    * ExtractMetadata return metadata from JSON schema
    *
-   * @param {string} schema - JSON schema
+   * @param {string | JSON} schema - JSON schema
    * @returns SchemaMetadata
    */
-  public static extractMetadata(schema: string): SchemaMetadata {
-    const parsedSchema = JSON.parse(schema);
-    return parsedSchema.$metadata;
+  public static extractMetadata(schema: string | JSON): SchemaMetadata {
+    const parsedSchema = typeof schema === 'string' ? JSON.parse(schema) : schema;
+    const md = parsedSchema.$metadata;
+    if (!md) {
+      throw new Error('$metadata is not set');
+    }
+    return md;
   }
 
+  /**
+   * ExtractCredentialSubjectTypes return credential subject types from JSON schema
+   *
+   * @param {string | JSON} schema - JSON schema
+   * @returns `Promise<Array<string>>`
+   */
+  public static async extractCredentialSubjectTypes(schema: string): Promise<Array<string>> {
+    const parsedSchema = typeof schema === 'string' ? JSON.parse(schema) : schema;
+    const props = parsedSchema.properties?.credentialSubject?.properties;
+    if (!props) {
+      throw new Error('properties.credentialSubject.properties is not set');
+    }
+    // drop @id field
+    delete props['id'];
+    return Object.keys(props);
+  }
+
+  /**
+   * GetPossibleCredenitalTypesForJsonSchema return possible credential types for JSON schema
+   *
+   * @param {string} schema  - JSON schema
+   * @returns `Promise<Map<string, string>>`
+   */
   public static async getPossibleCredenitalTypesForJsonSchema(
     schema: string
   ): Promise<Map<string, string>> {
@@ -244,23 +271,23 @@ export class Parser {
       throw new Error('jsonLdContext is not set');
     }
 
+    const types = await Parser.extractCredentialSubjectTypes(schema);
+
     let jsonLdContext;
     try {
       const response = await fetch(ldURL);
-      const rawdata = await response.json();
-      jsonLdContext = JSON.stringify(rawdata);
+      jsonLdContext = await response.json();
     } catch (e) {
       throw new Error(`failed to fetch jsonLdContext ${e}`);
     }
 
-    let terms;
+    let prefixes;
     try {
-      terms = await LDParser.extractTerms(jsonLdContext);
+      prefixes = await LDParser.getPrefixesByTypes(jsonLdContext, types);
     } catch (e) {
       throw new Error(`failed to extract terms from jsonLdContext ${e}`);
     }
 
-    const types = LDParser.getPrefixes(terms, false);
-    return types;
+    return prefixes;
   }
 }

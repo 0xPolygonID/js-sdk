@@ -104,11 +104,83 @@ describe('extract jsonld types by json schema', () => {
     const data: string = JSON.stringify(kyc);
     const types = await Parser.getPossibleCredenitalTypesForJsonSchema(data);
     const e: Map<string, string> = new Map([
+      ['KYCEmployee', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee']
+    ]);
+    console.log(types);
+    expect(types).deep.eq(e)
+  })
+});
+
+describe('extract types with issued field', () => {
+  it('should be VerifiableCredential', async () => {
+    const data: string = JSON.stringify(singleLDContextV2);
+    const resp = await LDParser.getPrefixesByTypes(data, ['issued']);
+    
+    const e: Map<string, string> = new Map([
+      ['VerifiableCredential', 'https://www.w3.org/2018/credentials#VerifiableCredential'],
+    ]);
+
+    expect(resp).deep.eq(e)
+  })
+});
+
+describe('extract types with documentType field', () => {
+  it('list of contexts', async () => {
+    const data: string = JSON.stringify(listOfLDContexts);
+    const resp = await LDParser.getPrefixesByTypes(data, ['documentType']);
+
+    const e: Map<string, string> = new Map([
       ['KYCAgeCredential', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCAgeCredential'],
       ['KYCCountryOfResidenceCredential', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCCountryOfResidenceCredential'],
       ['KYCEmployee', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee']
     ]);
-  
-    expect(types).deep.eq(e)
+
+    expect(resp).deep.eq(e)
+  })
+  it('single context', async () => {
+    const data: string = JSON.stringify(singleLDContext);
+    const resp = await LDParser.getPrefixesByTypes(data, ['documentType']);
+
+    const e: Map<string, string> = new Map([
+      ['KYCAgeCredential', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCAgeCredential'],
+    ]);
+
+    expect(resp).deep.eq(e)
+  });
+});
+
+describe('extract types with salary field', () => {
+  it('list of contexts', async () => {
+    const data: string = JSON.stringify(listOfLDContexts);
+    const resp = await LDParser.getPrefixesByTypes(data, ['salary']);
+
+    const e: Map<string, string> = new Map([
+      ['KYCEmployee', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee']
+    ]);
+
+    expect(resp).deep.eq(e)
+  })
+  it('single context', async () => {
+    const data: string = JSON.stringify(singleLDContext);
+    const resp = await LDParser.getPrefixesByTypes(data, ['salary']);
+
+    const e: Map<string, string> = new Map([]);
+
+    expect(resp).deep.eq(e)
+  });
+});
+
+describe('extract types with [ZKPexperiance, hireDate, position, salary, documentType] field', () => {
+  it('list of contexts', async () => {
+    const data: string = JSON.stringify(listOfLDContexts);
+    const resp = await LDParser.getPrefixesByTypes(data, 
+      ['ZKPexperiance', 'hireDate', 'position', 'salary', 'documentType'],
+    );
+
+    const e: Map<string, string> = new Map([
+      ['KYCEmployee', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee']
+    ]);
+
+    expect(resp).deep.eq(e)
   })
 });
