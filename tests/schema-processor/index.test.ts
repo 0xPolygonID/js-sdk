@@ -46,9 +46,8 @@ describe('json validator', () => {
 
 describe('get types from jsonld schema', () => {
   it('with list of ld contexts', async () => {
-    const data: string = JSON.stringify(listOfLDContexts);
-    const res = await LDParser.extractTerms(data) 
-    const types = LDParser.getPrefixes(res, false)
+    const context: string = JSON.stringify(listOfLDContexts); 
+    const prefixes = await LDParser.getPrefixes(context, false)
 
     const e: Map<string, string> = new Map([
       ['KYCAgeCredential', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCAgeCredential'],
@@ -56,23 +55,21 @@ describe('get types from jsonld schema', () => {
       ['KYCEmployee', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee']
     ]);
 
-    expect(types).deep.eq(e)
+    expect(prefixes).deep.eq(e)
   })
   it('with list with single ld contexts', async () => {
-    const data: string = JSON.stringify(listWithSingleLDContext);
-    const res = await LDParser.extractTerms(data) 
-    const types = LDParser.getPrefixes(res, false)
+    const context: string = JSON.stringify(listWithSingleLDContext);
+    const prefixes = await LDParser.getPrefixes(context, false)
 
     const e: Map<string, string> = new Map([
       ['KYCAgeCredential', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCAgeCredential'],
     ]);
 
-    expect(types).deep.eq(e)
+    expect(prefixes).deep.eq(e)
   })
   it('single ld contexts v2', async () => {
-    const data: string = JSON.stringify(singleLDContextV2);
-    const res = await LDParser.extractTerms(data) 
-    const types = LDParser.getPrefixes(res, false)
+    const context: string = JSON.stringify(singleLDContextV2); 
+    const prefixes = await LDParser.getPrefixes(context, false)
 
     const e: Map<string, string> = new Map([
       ['VerifiableCredential', 'https://www.w3.org/2018/credentials#VerifiableCredential'],
@@ -84,50 +81,49 @@ describe('get types from jsonld schema', () => {
       ['proof', 'https://w3id.org/security#proof'],
     ]);
 
-    expect(types).deep.eq(e)
+    expect(prefixes).deep.eq(e)
   })
   it('single ld contexts', async () => {
-    const data: string = JSON.stringify(singleLDContext);
-    const res = await LDParser.extractTerms(data) 
-    const types = LDParser.getPrefixes(res, false)
+    const data: string = JSON.stringify(singleLDContext); 
+    const prefixes = await LDParser.getPrefixes(data, false)
 
     const e: Map<string, string> = new Map([
       ['KYCAgeCredential', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCAgeCredential'],
     ]);
 
-    expect(types).deep.eq(e)
+    expect(prefixes).deep.eq(e)
   });
 });
 
 describe('extract jsonld types by json schema', () => {
   it('with list of ld contexts', async () => {
     const data: string = JSON.stringify(kyc);
-    const types = await Parser.getLdPrefixesByJSONSchema(data);
+    const prefixes = await Parser.getLdPrefixesByJSONSchema(data);
     const e: Map<string, string> = new Map([
       ['KYCEmployee', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee']
     ]);
-    console.log(types);
-    expect(types).deep.eq(e)
+
+    expect(prefixes).deep.eq(e)
   })
 });
 
 describe('extract types with issued field', () => {
   it('should be VerifiableCredential', async () => {
     const data: string = JSON.stringify(singleLDContextV2);
-    const resp = await LDParser.getPrefixesByTypes(data, ['issued']);
+    const prefixes = await LDParser.getPrefixes(data, false, ['issued']);
     
     const e: Map<string, string> = new Map([
       ['VerifiableCredential', 'https://www.w3.org/2018/credentials#VerifiableCredential'],
     ]);
 
-    expect(resp).deep.eq(e)
+    expect(prefixes).deep.eq(e)
   })
 });
 
 describe('extract types with documentType field', () => {
   it('list of contexts', async () => {
     const data: string = JSON.stringify(listOfLDContexts);
-    const resp = await LDParser.getPrefixesByTypes(data, ['documentType']);
+    const prefixes = await LDParser.getPrefixes(data, false, ['documentType']);
 
     const e: Map<string, string> = new Map([
       ['KYCAgeCredential', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCAgeCredential'],
@@ -135,45 +131,45 @@ describe('extract types with documentType field', () => {
       ['KYCEmployee', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee']
     ]);
 
-    expect(resp).deep.eq(e)
+    expect(prefixes).deep.eq(e)
   })
   it('single context', async () => {
     const data: string = JSON.stringify(singleLDContext);
-    const resp = await LDParser.getPrefixesByTypes(data, ['documentType']);
+    const prefixes = await LDParser.getPrefixes(data, false, ['documentType']);
 
     const e: Map<string, string> = new Map([
       ['KYCAgeCredential', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCAgeCredential'],
     ]);
 
-    expect(resp).deep.eq(e)
+    expect(prefixes).deep.eq(e)
   });
 });
 
 describe('extract types with salary field', () => {
   it('list of contexts', async () => {
     const data: string = JSON.stringify(listOfLDContexts);
-    const resp = await LDParser.getPrefixesByTypes(data, ['salary']);
+    const prefixes = await LDParser.getPrefixes(data, false, ['salary']);
 
     const e: Map<string, string> = new Map([
       ['KYCEmployee', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee']
     ]);
 
-    expect(resp).deep.eq(e)
+    expect(prefixes).deep.eq(e)
   })
   it('single context', async () => {
     const data: string = JSON.stringify(singleLDContext);
-    const resp = await LDParser.getPrefixesByTypes(data, ['salary']);
+    const prefixes = await LDParser.getPrefixes(data, false, ['salary']);
 
     const e: Map<string, string> = new Map([]);
 
-    expect(resp).deep.eq(e)
+    expect(prefixes).deep.eq(e)
   });
 });
 
 describe('extract types with [ZKPexperiance, hireDate, position, salary, documentType] field', () => {
   it('list of contexts', async () => {
     const data: string = JSON.stringify(listOfLDContexts);
-    const resp = await LDParser.getPrefixesByTypes(data, 
+    const prefixes = await LDParser.getPrefixes(data, false, 
       ['ZKPexperiance', 'hireDate', 'position', 'salary', 'documentType'],
     );
 
@@ -181,6 +177,6 @@ describe('extract types with [ZKPexperiance, hireDate, position, salary, documen
       ['KYCEmployee', 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee']
     ]);
 
-    expect(resp).deep.eq(e)
+    expect(prefixes).deep.eq(e)
   })
 });

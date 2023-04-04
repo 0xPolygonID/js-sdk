@@ -240,12 +240,12 @@ export class Parser {
   }
 
   /**
-   * ExtractCredentialSubjectTypes return credential subject types from JSON schema
+   * ExtractCredentialSubjectProperties return credential subject types from JSON schema
    *
    * @param {string | JSON} schema - JSON schema
    * @returns `Promise<Array<string>>`
    */
-  public static async extractCredentialSubjectTypes(schema: string): Promise<Array<string>> {
+  public static async extractCredentialSubjectProperties(schema: string): Promise<Array<string>> {
     const parsedSchema = typeof schema === 'string' ? JSON.parse(schema) : schema;
     const props = parsedSchema.properties?.credentialSubject?.properties;
     if (!props) {
@@ -269,7 +269,7 @@ export class Parser {
       throw new Error('jsonLdContext is not set');
     }
 
-    const types = await Parser.extractCredentialSubjectTypes(schema);
+    const props = await Parser.extractCredentialSubjectProperties(schema);
 
     let jsonLdContext;
     try {
@@ -281,7 +281,7 @@ export class Parser {
 
     let prefixes;
     try {
-      prefixes = await LDParser.getPrefixesByTypes(jsonLdContext, types);
+      prefixes = await LDParser.getPrefixes(jsonLdContext, false, props);
     } catch (e) {
       throw new Error(`failed to extract terms from jsonLdContext ${e}`);
     }

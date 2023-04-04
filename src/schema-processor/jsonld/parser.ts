@@ -36,14 +36,18 @@ export class LDParser {
    * onlyCommonPrefixes: If true, the result will not include "not so useful" prefixes, such as
    * "term1": "http://example.com/term1", e.g. all IRIs will end with "/" or "#".
    * If false, all potential prefixes are returned.
-   * @param {string} context - JSONLD context
-   * @returns <Map<string, string>
+   * @param {string | JSON} context - JSONLD context
+   * @param {boolean} onlyCommonPrefixes - only common prefixes
+   * @param {Array<string>} properties - available properties in type definition
+   * @returns Promise<<Map<string, string>>
    */
-  public static getPrefixes(
-    data: Map<string, unknown>,
-    onlyCommonPrefixes: boolean
-  ): Map<string, string> {
+  public static async getPrefixes(
+    context: string | JSON,
+    onlyCommonPrefixes: boolean,
+    properties?: Array<string>
+  ): Promise<Map<string, string>> {
     const prefixes: Map<string, string> = new Map();
+    const data = await this.extractTerms(context);
 
     for (const [term, termDefinition] of data) {
       if (term.includes(':')) {
@@ -63,46 +67,26 @@ export class LDParser {
       if (!onlyCommonPrefixes || id.endsWith('/') || id.endsWith('#')) {
         prefixes.set(term, id);
       }
+
+      if (properties) {
+        const c = termDefinitionMap['@context'] as Record<string, undefined>;
+        if (!c) {
+          prefixes.delete(term);
+          continue;
+        }
+        if (!this.isKeysInMap(properties, c)) {
+          prefixes.delete(term);
+          continue;
+        }
+      }
     }
 
     return prefixes;
   }
 
-  /**
-   * GetPrefixesByTypes returns a map of potential RDF prefixes based on the JSON-LD Term Definitions.
-   *
-   * @param {string | JSON} context - JSONLD context
-   * @param {Array<string>} types - Array of available types
-   * @returns Promise<Map<string, string>>
-   */
-  public static async getPrefixesByTypes(
-    context: string | JSON,
-    types: Array<string>
-  ): Promise<Map<string, string>> {
-    const res: Map<string, string> = new Map();
-
-    const terms = await this.extractTerms(context);
-    const allPrefixes = this.getPrefixes(terms, false);
-
-    for (const key of allPrefixes.keys()) {
-      const typeDefinition = terms.get(key);
-      const c = typeDefinition['@context'];
-      if (!c) {
-        continue;
-      }
-      const t = await this.extractTerms(c);
-      const p = this.getPrefixes(t, false);
-      if (this.isKeysInMap(types, p)) {
-        res.set(key, allPrefixes.get(key));
-      }
-    }
-
-    return res;
-  }
-
-  private static isKeysInMap(keys: string[], map: Map<string, string>): boolean {
+  private static isKeysInMap(keys: string[], rec: Record<string, undefined>): boolean {
     for (const key of keys) {
-      if (!map.has(key)) {
+      if (!rec[key]) {
         return false;
       }
     }
