@@ -1,5 +1,4 @@
 const IDEN3_PROTOCOL = 'https://iden3-communication.io/';
-
 /**
  * Constants for Iden3 protocol
  */
@@ -38,5 +37,73 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
  */
 export enum MediaType {
   ZKPMessage = 'application/iden3-zkp-json',
-  PlainMessage = 'application/iden3comm-plain-json'
+  PlainMessage = 'application/iden3comm-plain-json',
+  SignedMessage = 'application/iden3comm-signed+json'
 }
+
+/**
+ * Universal resolver url
+ */
+export const UNIVERSAL_RESOLVER_URL = 'https://dev.uniresolver.io/1.0/identifiers';
+
+export const SUPPORTED_PUBLIC_KEY_TYPES = {
+  ES256: ['JsonWebKey2020'],
+  ES256K: [
+    'EcdsaSecp256k1VerificationKey2019',
+    /**
+     * Equivalent to EcdsaSecp256k1VerificationKey2019 when key is an ethereumAddress
+     */
+    'EcdsaSecp256k1RecoveryMethod2020',
+    /**
+     * @deprecated, supported for backward compatibility. Equivalent to EcdsaSecp256k1VerificationKey2019 when key is
+     *   not an ethereumAddress
+     */
+    'Secp256k1VerificationKey2018',
+    /**
+     * @deprecated, supported for backward compatibility. Equivalent to EcdsaSecp256k1VerificationKey2019 when key is
+     *   not an ethereumAddress
+     */
+    'Secp256k1SignatureVerificationKey2018',
+    /**
+     * @deprecated, supported for backward compatibility. Equivalent to EcdsaSecp256k1VerificationKey2019 when key is
+     *   not an ethereumAddress
+     */
+    'EcdsaPublicKeySecp256k1',
+    'JsonWebKey2020'
+  ],
+  'ES256K-R': [
+    'EcdsaSecp256k1VerificationKey2019',
+    /**
+     * Equivalent to EcdsaSecp256k1VerificationKey2019 when key is an ethereumAddress
+     */
+    'EcdsaSecp256k1RecoveryMethod2020',
+    /**
+     * @deprecated, supported for backward compatibility. Equivalent to EcdsaSecp256k1VerificationKey2019 when key is
+     *   not an ethereumAddress
+     */
+    'Secp256k1VerificationKey2018',
+    /**
+     * @deprecated, supported for backward compatibility. Equivalent to EcdsaSecp256k1VerificationKey2019 when key is
+     *   not an ethereumAddress
+     */
+    'Secp256k1SignatureVerificationKey2018',
+    /**
+     * @deprecated, supported for backward compatibility. Equivalent to EcdsaSecp256k1VerificationKey2019 when key is
+     *   not an ethereumAddress
+     */
+    'EcdsaPublicKeySecp256k1',
+    'JsonWebKey2020'
+  ],
+  Ed25519: [
+    'ED25519SignatureVerification',
+    'Ed25519VerificationKey2018',
+    'Ed25519VerificationKey2020',
+    'JsonWebKey2020'
+  ],
+  EdDSA: [
+    'ED25519SignatureVerification',
+    'Ed25519VerificationKey2018',
+    'Ed25519VerificationKey2020',
+    'JsonWebKey2020'
+  ]
+};

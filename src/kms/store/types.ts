@@ -6,7 +6,8 @@
  */
 export enum KmsKeyType {
   BabyJubJub = 'BJJ',
-  Ethereum = 'ETH'
+  Ethereum = 'ETH',
+  Secp256k1 = 'Secp256k1'
 }
 
 /**

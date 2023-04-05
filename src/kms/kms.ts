@@ -50,7 +50,8 @@ export class KMS {
     [keyType in KmsKeyType]: IKeyProvider;
   } = {
     BJJ: null,
-    ETH: null
+    ETH: null,
+    Secp256k1: null
   };
 
   /**
