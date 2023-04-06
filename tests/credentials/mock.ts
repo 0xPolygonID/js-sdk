@@ -59,3 +59,21 @@ export const cred3 = createTestCredential({
   expirationDate: '2023-11-11',
   issuanceDate: '2022-11-11'
 });
+
+export const cred4 = createTestCredential({
+  id: 'test4',
+  '@context': ['context4'],
+  credentialSchema: {
+    id: 'credentialSchemaId',
+    type: 'credentialSchemaType'
+  },
+  proof: ['some proof4'],
+  type: ['type4'],
+  credentialStatus: {},
+  issuer: 'issuer4',
+  credentialSubject: {
+    countOfFines: 0
+  },
+  expirationDate: '2023-11-11',
+  issuanceDate: '2022-11-11'
+});
