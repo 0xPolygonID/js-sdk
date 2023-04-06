@@ -194,7 +194,6 @@ const credentialFlow = async (storage: IDataStorage) => {
   for (const item of queries) {
     const creds = await credentialWallet.findByQuery(item.query);
     const expectedIds = item.expected.map(({ id }) => id);
-    console.log('expectedIds', expectedIds);
     const credsIds = creds.map(({ id }) => id);
     expect(credsIds).to.have.members(expectedIds);
   }
