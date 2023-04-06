@@ -3,22 +3,22 @@ import { JSONObject } from '../index';
 import { W3CCredential } from '../../../verifiable';
 import { MediaType } from '../../constants';
 
+/** CredentialIssuanceRequestMessageBody represents data for credential issuance request */
+export type CredentialIssuanceRequestMessageBody = {
+  schema: Schema;
+  data: JSONObject;
+  expiration: number;
+};
+
 /** CredentialIssuanceRequestMessage represent Iden3message for credential request */
 export type CredentialIssuanceRequestMessage = {
   id: string;
   typ?: MediaType;
   type: ProtocolMessage;
   thid?: string;
-  body?: CredentialIssuanceRequestMessage;
+  body?: CredentialIssuanceRequestMessageBody;
   from?: string;
   to?: string;
-};
-
-/** CredentialIssuanceRequestMessageBody represents data for credential issuance request */
-export type CredentialIssuanceRequestMessageBody = {
-  schema: Schema;
-  data: JSONObject;
-  expiration: number;
 };
 
 /** CredentialsOfferMessage represent Iden3message for credential offer */
