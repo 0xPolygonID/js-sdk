@@ -13,7 +13,7 @@ import {
   VerificationParams
 } from '../../src/iden3comm/types';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { byteDecoder, byteEncoder } from '../../src/iden3comm/utils';
+import { byteDecoder, byteEncoder } from '../../src';
 
 const { registerProvingMethod } = proving;
 import { expect } from 'chai';

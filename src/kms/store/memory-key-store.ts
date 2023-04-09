@@ -14,7 +14,6 @@ export class InMemoryPrivateKeyStore implements AbstractPrivateKeyStore {
     this._data = new Map<string, string>();
   }
   async get(args: { alias: string }): Promise<string> {
-    console.log('get', args.alias);
     const privateKey = this._data.get(args.alias);
     if (!privateKey) {
       throw new Error('no key under given alias');
@@ -23,7 +22,6 @@ export class InMemoryPrivateKeyStore implements AbstractPrivateKeyStore {
   }
 
   async import(args: { alias: string; key: string }): Promise<void> {
-    console.log('import', args.alias, args.key);
     this._data.set(args.alias, args.key);
   }
 }

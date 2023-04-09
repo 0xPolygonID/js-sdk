@@ -1,27 +1,11 @@
 import { BasicMessage, IPacker, PackerParams } from '../types';
-import { byteDecoder, byteEncoder } from '../utils';
 import { MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
-import {
-  bytesToHex,
-  encodeBase64url,
-  extractPublicKeyBytes,
-  getDIDComponentById,
-  hexToBytes,
-  resolveDIDDocument
-} from '../utils/did';
-import { AbstractPrivateKeyStore, keyPath, KmsKeyType } from '../../kms/';
+import { extractPublicKeyBytes, getDIDComponentById, resolveDIDDocument } from '../utils/did';
+import { keyPath, KMS } from '../../kms/';
 
-import {
-  ES256KSigner,
-  ES256Signer,
-  EdDSASigner,
-  JWTHeader,
-  Signer,
-  createJWT,
-  decodeJWT,
-  verifyJWT
-} from 'did-jwt';
+import { Signer, decodeJWT, verifyJWT } from 'did-jwt';
 import { Resolvable, VerificationMethod } from 'did-resolver';
+import { byteDecoder, byteEncoder, bytesToHex, encodeBase64url } from '../../utils';
 export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
 
 /**
@@ -33,18 +17,6 @@ export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
  * @implements implements IPacker interface
  */
 export class JWSPacker implements IPacker {
-  readonly signerAlgs: { [k: string]: (sk: Uint8Array) => Signer } = {
-    ES256: (sk: Uint8Array) => ES256Signer(sk),
-    ES256K: (sk: Uint8Array) => ES256KSigner(sk),
-    'ES256K-R': (sk: Uint8Array) => ES256KSigner(sk, true),
-    Ed25519: (sk: Uint8Array) => EdDSASigner(sk),
-    EdDSA: (sk: Uint8Array) => EdDSASigner(sk)
-  };
-  readonly algToProviderKeyType = {
-    ES256K: KmsKeyType.Secp256k1,
-    'ES256-R': KmsKeyType.Secp256k1
-  };
-
   // readonly vmPubkeyExtractorHandlerMap = {
   //   ES256K: getPubKeyHexFromVm,
   //   'ES256K-R': getPubKeyHexFromVm
@@ -56,7 +28,7 @@ export class JWSPacker implements IPacker {
   // };
 
   constructor(
-    private readonly _keyStore: AbstractPrivateKeyStore,
+    private readonly _kms: KMS,
     private readonly _documentResolver: Resolvable = { resolve: resolveDIDDocument }
   ) {}
   /**
@@ -75,6 +47,9 @@ export class JWSPacker implements IPacker {
       signer?: SignerFn;
     }
   ): Promise<Uint8Array> {
+    if (!params.alg) {
+      throw new Error('Missing algorithm');
+    }
     const message = JSON.parse(byteDecoder.decode(payload));
 
     const from = message.from ?? '';
@@ -125,53 +100,38 @@ export class JWSPacker implements IPacker {
 
     const kid = vm.id;
 
-    let signer: Signer;
+    const headerObj = { alg: params.alg, kid, typ: MediaType.SignedMessage };
+    const header = encodeBase64url(JSON.stringify(headerObj));
+    const msg = encodeBase64url(JSON.stringify(message));
+    // construct signing input and obtain signature
+    const signingInput = header + '.' + msg;
+    const signingInputBytes = byteEncoder.encode(signingInput);
+    let signatureHex: string;
     if (params.signer) {
-      const headerObj = { alg: params.alg, kid, typ: MediaType.SignedMessage };
-      const header = encodeBase64url(JSON.stringify(headerObj));
-      const msg = encodeBase64url(JSON.stringify(message));
-      // construct signing input and obtain signature
-      const signingInput = byteEncoder.encode(`${header}.${msg}`);
-      signer = params.signer(vm, signingInput);
+      const signerFn = params.signer(vm, signingInputBytes);
+      signatureHex = (await signerFn(signingInput)).toString();
     } else {
-      const keyType = this.algToProviderKeyType[params.alg];
-      if (!keyType) {
-        throw new Error(`Unsupported algorithm ${params.alg}`);
-      }
-      // console.log('pk', bytesToHex(extractPublicKeyBytes(vm)));
+      const { publicKeyBytes, kmsKeyType } = extractPublicKeyBytes(vm);
 
-      const sk = await this._keyStore.get({
-        alias: keyPath(keyType, bytesToHex(extractPublicKeyBytes(vm)))
-      });
-
-      const signerAlg = this.signerAlgs[params.alg];
-
-      if (!signerAlg) {
-        throw new Error(`Unsupported algorithm ${params.alg}`);
+      if (!publicKeyBytes) {
+        throw new Error('No public key found');
       }
 
-      signer = signerAlg(hexToBytes(sk));
+      if (!kmsKeyType) {
+        throw new Error('No KMS key type found');
+      }
 
-      // const type = this.algToProviderKeyType[params.alg];
-      // if (!type) {
-      //   throw new Error(`Unsupported algorithm ${params.alg}`);
-      // }
-      // const pkFn = this.vmPubkeyExtractorHandlerMap[params.alg];
-      // if (!pkFn) {
-      //   throw new Error(`Unsupported detect public key fetcher ${params.alg}`);
-      // }
-      // signature = await this._kms.sign({ type, id: keyPath(type, pkFn(vm)) }, signingInput);
+      const signatureBytes = await this._kms.sign(
+        { type: kmsKeyType, id: keyPath(kmsKeyType, bytesToHex(publicKeyBytes)) },
+        signingInputBytes
+      );
+
+      signatureHex = byteDecoder.decode(signatureBytes);
     }
-    // const signatureBase64 = toBase64(BytesHelper.bytesToHex(signature));
-    // const tokenStr = `${header}.${msg}.${signatureBase64}`;
-    // console.log('tokenStr', tokenStr);
-    const jwt = await createJWT(message, { issuer: params.issuer, signer }, {
-      alg: params.alg,
-      kid,
-      typ: MediaType.SignedMessage
-    } as unknown as JWTHeader);
 
-    return byteEncoder.encode(jwt);
+    // const signature = encodeBase64url(signatureHex);
+
+    return byteEncoder.encode(signingInput + '.' + signatureHex);
   }
 
   /**
@@ -183,7 +143,6 @@ export class JWSPacker implements IPacker {
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
     const jwt = byteDecoder.decode(envelope);
     const decoded = decodeJWT(jwt);
-    console.log('decoded', decoded);
 
     const verificationResponse = await verifyJWT(jwt, {
       resolver: this._documentResolver
@@ -218,7 +177,6 @@ export class JWSPacker implements IPacker {
     //   byteEncoder.encode(`${headerStr}.${msgStr}`),
     //   fromBase64(signature64)
     // );
-    console.log(verificationResponse);
     return {
       id: decoded.payload.id,
       typ: MediaType.SignedMessage

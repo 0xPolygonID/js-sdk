@@ -8,50 +8,9 @@ import {
   VerificationMethod
 } from 'did-resolver';
 
-import * as u8a from 'uint8arrays';
 import { bases } from 'multiformats/basics';
-
-export function bytesToBase64url(b: Uint8Array): string {
-  return u8a.toString(b, 'base64url');
-}
-
-export function base64ToBytes(s: string): Uint8Array {
-  const inputBase64Url = s.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  return u8a.fromString(inputBase64Url, 'base64url');
-}
-
-export function bytesToBase64(b: Uint8Array): string {
-  return u8a.toString(b, 'base64pad');
-}
-
-export function base58ToBytes(s: string): Uint8Array {
-  return u8a.fromString(s, 'base58btc');
-}
-
-export function bytesToBase58(b: Uint8Array): string {
-  return u8a.toString(b, 'base58btc');
-}
-
-export function hexToBytes(s: string): Uint8Array {
-  const input = s.startsWith('0x') ? s.substring(2) : s;
-  return u8a.fromString(input.toLowerCase(), 'base16');
-}
-
-export function encodeBase64url(s: string): string {
-  return bytesToBase64url(u8a.fromString(s));
-}
-
-export function decodeBase64url(s: string): string {
-  return u8a.toString(base64ToBytes(s));
-}
-
-export function bytesToHex(b: Uint8Array): string {
-  return u8a.toString(b, 'base16');
-}
-
-export function stringToBytes(s: string): Uint8Array {
-  return u8a.fromString(s);
-}
+import { KmsKeyType } from '../../kms';
+import { base58ToBytes, base64ToBytes, bytesToHex, hexToBytes } from '../../utils';
 
 export const resolveDIDDocument = async (
   didUrl: string,
@@ -104,58 +63,62 @@ export const getDIDComponentById = (
 const secp256k1 = new elliptic.ec('secp256k1');
 const secp256r1 = new elliptic.ec('p256');
 
-export const extractPublicKeyBytes = (vm: VerificationMethod): Uint8Array => {
+export const extractPublicKeyBytes = (
+  vm: VerificationMethod
+): { publicKeyBytes: Uint8Array; kmsKeyType?: KmsKeyType } => {
   if (vm.publicKeyBase58) {
-    return base58ToBytes(vm.publicKeyBase58);
+    return { publicKeyBytes: base58ToBytes(vm.publicKeyBase58) };
   } else if (vm.publicKeyBase64) {
-    return base64ToBytes(vm.publicKeyBase64);
+    return { publicKeyBytes: base64ToBytes(vm.publicKeyBase64) };
   } else if (vm.publicKeyHex) {
-    return hexToBytes(vm.publicKeyHex);
+    return { publicKeyBytes: hexToBytes(vm.publicKeyHex) };
   } else if (
     vm.publicKeyJwk &&
     vm.publicKeyJwk.crv === 'secp256k1' &&
     vm.publicKeyJwk.x &&
     vm.publicKeyJwk.y
   ) {
-    const x = bytesToHex(base64ToBytes(vm.publicKeyJwk.x));
-    const y = bytesToHex(base64ToBytes(vm.publicKeyJwk.y));
-    console.log('x', x);
-    console.log('y', y);
-    return hexToBytes(
-      secp256k1
-        .keyFromPublic({
-          x: bytesToHex(base64ToBytes(vm.publicKeyJwk.x)),
-          y: bytesToHex(base64ToBytes(vm.publicKeyJwk.y))
-        })
-        .getPublic('hex')
-    );
+    return {
+      publicKeyBytes: hexToBytes(
+        secp256k1
+          .keyFromPublic({
+            x: bytesToHex(base64ToBytes(vm.publicKeyJwk.x)),
+            y: bytesToHex(base64ToBytes(vm.publicKeyJwk.y))
+          })
+          .getPublic('hex')
+      ),
+      kmsKeyType: KmsKeyType.Secp256k1
+    };
   } else if (
     vm.publicKeyJwk &&
     vm.publicKeyJwk.crv === 'P-256' &&
     vm.publicKeyJwk.x &&
     vm.publicKeyJwk.y
   ) {
-    return hexToBytes(
-      secp256r1
-        .keyFromPublic({
-          x: bytesToHex(base64ToBytes(vm.publicKeyJwk.x)),
-          y: bytesToHex(base64ToBytes(vm.publicKeyJwk.y))
-        })
-        .getPublic('hex')
-    );
+    return {
+      publicKeyBytes: hexToBytes(
+        secp256r1
+          .keyFromPublic({
+            x: bytesToHex(base64ToBytes(vm.publicKeyJwk.x)),
+            y: bytesToHex(base64ToBytes(vm.publicKeyJwk.y))
+          })
+          .getPublic('hex')
+      ),
+      kmsKeyType: KmsKeyType.Secp256r1
+    };
   } else if (
     vm.publicKeyJwk &&
     vm.publicKeyJwk.kty === 'OKP' &&
     vm.publicKeyJwk.crv === 'Ed25519' &&
     vm.publicKeyJwk.x
   ) {
-    return base64ToBytes(vm.publicKeyJwk.x);
+    return { publicKeyBytes: base64ToBytes(vm.publicKeyJwk.x), kmsKeyType: KmsKeyType.Ed25519 };
   } else if (vm.publicKeyMultibase) {
     const { base16, base58btc, base64, base64url } = bases;
     const baseDecoder = base16.decoder.or(
       base58btc.decoder.or(base64.decoder.or(base64url.decoder))
     );
-    return baseDecoder.decode(vm.publicKeyMultibase);
+    return { publicKeyBytes: baseDecoder.decode(vm.publicKeyMultibase) };
   }
-  return new Uint8Array();
+  return { publicKeyBytes: null };
 };

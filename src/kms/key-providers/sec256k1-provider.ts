@@ -1,9 +1,10 @@
-import { IKeyProvider } from './kms';
-import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from './store';
+import { IKeyProvider } from '../kms';
+import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 import Elliptic from 'elliptic';
-import { sha256 } from 'cross-sha256';
-import * as providerHelpers from './provider-helpers';
+import * as providerHelpers from '../provider-helpers';
 import { PublicKey } from '@iden3/js-crypto';
+import { ES256KSigner } from 'did-jwt';
+import { base64ToBytes, byteEncoder, bytesToHex, hexToBytes } from '../../utils';
 
 /**
  * Provider for Sec256p1 keys256p1
@@ -66,12 +67,26 @@ export class Sec256k1Provider implements IKeyProvider {
    * @param {Uint8Array} data - data to sign (32 bytes)
    * @returns Uint8Array signature
    */
-  async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {
-    const msgHash = new sha256().update(data).digest('hex');
+  async sign(
+    keyId: KmsKeyId,
+    data: Uint8Array,
+    opts: { [key: string]: unknown } = { alg: 'ES256K' }
+  ): Promise<Uint8Array> {
     const privateKeyHex = await this.privateKey(keyId);
-    const pk = this._ec.keyFromPrivate(privateKeyHex, 'hex');
-    const signature = pk.sign(msgHash).toDER();
-    return Uint8Array.from(signature);
+    if (!privateKeyHex) {
+      throw new Error('Private key not found for keyId: ' + keyId.id);
+    }
+    const signatureBase64 = await ES256KSigner(
+      hexToBytes(privateKeyHex),
+      opts.alg === 'ES256K-R'
+    )(data);
+
+    const signatureHex = bytesToHex(base64ToBytes(signatureBase64.toString()));
+    if (typeof signatureHex !== 'string') {
+      throw new Error('Signature is not a string');
+    }
+
+    return byteEncoder.encode(signatureBase64.toString());
   }
 
   private async privateKey(keyId: KmsKeyId): Promise<string> {

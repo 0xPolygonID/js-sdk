@@ -1,9 +1,9 @@
 import { Hex, PrivateKey, PublicKey } from '@iden3/js-crypto';
 import { BytesHelper, checkBigIntInField } from '@iden3/js-iden3-core';
-import { IKeyProvider } from './kms';
-import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from './store';
+import { IKeyProvider } from '../kms';
+import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 
-import * as providerHelpers from './provider-helpers';
+import * as providerHelpers from '../provider-helpers';
 
 /**
  * Provider for Baby Jub Jub keys
@@ -56,7 +56,7 @@ export class BjjProvider implements IKeyProvider {
    *
    * @param {KmsKeyId} keyId - key identifier
    */
-  async publicKey(keyId: KmsKeyId): Promise<PublicKey> {
+  async publicKey(keyId: KmsKeyId): Promise<PublicKey | string> {
     const privateKey: PrivateKey = await this.privateKey(keyId);
     return privateKey.public();
   }
