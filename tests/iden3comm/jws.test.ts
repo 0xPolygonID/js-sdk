@@ -78,7 +78,7 @@ describe('jws packer tests', () => {
     packer = new JWSPacker(kms, resolveDIDDocument);
   });
 
-  it.only('test did document resolves with publicKeyJwk pack/upack', async () => {
+  it('test did document resolves with publicKeyJwk pack/upack', async () => {
     const msgBytes = byteEncoder.encode(bodyMsgStr);
 
     const tokenBytes = await packer.pack(msgBytes, {
