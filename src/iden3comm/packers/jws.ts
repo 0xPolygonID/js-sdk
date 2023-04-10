@@ -3,9 +3,15 @@ import { MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
 import { extractPublicKeyBytes, getDIDComponentById, resolveDIDDocument } from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
 
-import { Signer, decodeJWT, verifyJWS, verifyJWT } from 'did-jwt';
+import { Signer, verifyJWS } from 'did-jwt';
 import { Resolvable, VerificationMethod, parse } from 'did-resolver';
-import { byteDecoder, byteEncoder, bytesToHex, decodeBase64url, encodeBase64url } from '../../utils';
+import {
+  byteDecoder,
+  byteEncoder,
+  bytesToHex,
+  decodeBase64url,
+  encodeBase64url
+} from '../../utils';
 export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
 
 /**
