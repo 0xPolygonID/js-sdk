@@ -3,9 +3,9 @@ import { MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
 import { extractPublicKeyBytes, getDIDComponentById, resolveDIDDocument } from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
 
-import { Signer, decodeJWT, verifyJWT } from 'did-jwt';
-import { Resolvable, VerificationMethod } from 'did-resolver';
-import { byteDecoder, byteEncoder, bytesToHex, encodeBase64url } from '../../utils';
+import { Signer, decodeJWT, verifyJWS, verifyJWT } from 'did-jwt';
+import { Resolvable, VerificationMethod, parse } from 'did-resolver';
+import { byteDecoder, byteEncoder, bytesToHex, decodeBase64url, encodeBase64url } from '../../utils';
 export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
 
 /**
@@ -141,46 +141,25 @@ export class JWSPacker implements IPacker {
    * @returns `Promise<BasicMessage>`
    */
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
-    const jwt = byteDecoder.decode(envelope);
-    const decoded = decodeJWT(jwt);
+    const jws = byteDecoder.decode(envelope);
 
-    const verificationResponse = await verifyJWT(jwt, {
-      resolver: this._documentResolver
-    });
+    const [headerStr, msgStr] = jws.split('.');
 
-    if (!verificationResponse.verified) {
+    const header = JSON.parse(decodeBase64url(headerStr));
+    const message = JSON.parse(decodeBase64url(msgStr));
+    const sender = parse(header.kid)?.did;
+    if (sender !== message.from) {
+      throw new Error(`Sender does not match DID in message with kid ${header?.kid}`);
+    }
+    const resolvedDoc = await this._documentResolver.resolve(sender);
+    const pubKey = getDIDComponentById(resolvedDoc.didDocument, header.kid, 'authentication');
+
+    const verificationResponse = verifyJWS(jws, pubKey);
+
+    if (!verificationResponse) {
       throw new Error('JWS verification failed');
     }
-    // const tokenStr = byteDecoder.decode(envelope);
-    // const [headerStr, msgStr, signature64] = tokenStr.split('.');
-    // const header = JSON.parse(fromBase64(headerStr));
-    // console.log('header', header);
-    // const didDocument = await this.documentResolverFn(header.kid);
-    // const vm = getDIDComponentById(didDocument, header.kid, 'authentication');
-    // if (!vm) {
-    //   throw new Error(
-    //     `No key found with id ${header.kid} in authentication section of DID document`
-    //   );
-    // }
-
-    // const type = this.algToProviderKeyType[header.alg];
-    // if (!type) {
-    //   throw new Error(`Unsupported algorithm ${header.alg}`);
-    // }
-    // const signatureCheckFn = this.verifySignatureHandlerMap[header.alg];
-    // if (!signatureCheckFn) {
-    //   throw new Error(`Unsupported detect public key fetcher ${header.alg}`);
-    // }
-
-    // const isVerified = await signatureCheckFn(
-    //   vm,
-    //   byteEncoder.encode(`${headerStr}.${msgStr}`),
-    //   fromBase64(signature64)
-    // );
-    return {
-      id: decoded.payload.id,
-      typ: MediaType.SignedMessage
-    } as BasicMessage;
+    return message as BasicMessage;
   }
 
   mediaType(): MediaType {
