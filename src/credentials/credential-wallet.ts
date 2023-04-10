@@ -345,7 +345,7 @@ export class CredentialWallet implements ICredentialWallet {
     };
 
     const id =
-      request.revocationOpts.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof
+      request.revocationOpts.type == CredentialStatusType.SparseMerkleTreeProof
         ? `${request.revocationOpts.baseUrl}/revocation/${request.revocationOpts.nonce}`
         : request.revocationOpts.baseUrl;
 
@@ -354,20 +354,6 @@ export class CredentialWallet implements ICredentialWallet {
       revocationNonce: request.revocationOpts.nonce,
       type: request.revocationOpts.type
     };
-
-    // if (rhsUrl) {
-    //   cr.credentialStatus = {
-    //     id: `${rhsUrl}`,
-    //     revocationNonce: request.revNonce,
-    //     type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof
-    //   };
-    // } else {
-    //   cr.credentialStatus = {
-    //     id: `${hostUrl}/revocation/${request.revNonce}`,
-    //     revocationNonce: request.revNonce,
-    //     type: CredentialStatusType.SparseMerkleTreeProof
-    //   };
-    // }
 
     return cr;
   };

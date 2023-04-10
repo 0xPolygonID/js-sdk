@@ -299,7 +299,7 @@ export class IdentityWallet implements IIdentityWallet {
       MerkleTreeType.Claims
     );
 
-    const currentState = await hashElems([
+    const currentState = hashElems([
       (await claimsTree.root()).bigInt(),
       ZERO_HASH.bigInt(),
       ZERO_HASH.bigInt()

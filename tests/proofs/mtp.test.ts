@@ -128,7 +128,7 @@ describe('mtp proofs', () => {
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });
 
-  it.only('mtpv2-non-merklized', async () => {
+  it('mtpv2-non-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
