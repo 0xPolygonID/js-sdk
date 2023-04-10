@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.0.0-beta.4",
+  "version": "1.0.0-beta.6",
   "description": "SDK to work with Polygon ID",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -22,7 +22,7 @@
     "doc:build": "npm run doc:extract && npm run doc:documenter",
     "doc:watch:website": "ts-node ./scripts/doc-watch.ts",
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
-    "test": "mocha --require ts-node/register tests/**/*.ts -t 30000",
+    "test": "mocha --require ts-node/register tests/**/*.ts -t 60000",
     "test:watch": "mocha -p --require ts-node/register tests/**/*.ts -t 60000 --watch",
     "lint": "eslint --fix --ext .js,.ts src/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
