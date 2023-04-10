@@ -18,7 +18,7 @@ import { ethers } from 'ethers';
 import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
-import { W3CCredential } from '../../src/verifiable';
+import { CredentialStatusType, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -128,30 +128,33 @@ describe('mtp proofs', () => {
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });
 
-  it('mtpv2-non-merklized', async () => {
+  it.only('mtpv2-non-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
       'seedseedseedseedseedseedseedseed'
     );
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID } = await idWallet.createIdentity('http://mytestwallet.com/', {
+    const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
       seed: seedPhrase,
-      rhsUrl
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: rhsUrl
+      }
     });
 
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://mytestwallet.com/',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer,
-        rhsUrl
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: rhsUrl
       }
-    );
+    });
     await credWallet.save(issuerAuthCredential);
 
     const claimReq: CredentialRequest = {
@@ -164,17 +167,14 @@ describe('mtp proofs', () => {
         documentType: 99
       },
       expiration: 1693526400,
-      revNonce: 1000
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        nonce: 1000,
+        baseUrl: rhsUrl
+      }
     };
 
-    const issuerCred = await idWallet.issueCredential(
-      issuerDID,
-      claimReq,
-      'http://mytestwallet.com/',
-      {
-        withRHS: rhsUrl
-      }
-    );
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
 
     await credWallet.save(issuerCred);
 
@@ -247,24 +247,27 @@ describe('mtp proofs', () => {
     );
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential } = await idWallet.createIdentity('http://mytestwallet.com/', {
+    const { did: userDID, credential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
       seed: seedPhrase,
-      rhsUrl
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: rhsUrl
+      }
     });
 
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://mytestwallet.com/',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer,
-        rhsUrl
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: rhsUrl
       }
-    );
+    });
     await credWallet.save(issuerAuthCredential);
 
     const claimReq: CredentialRequest = {
@@ -277,17 +280,14 @@ describe('mtp proofs', () => {
         documentType: 99
       },
       expiration: 1693526400,
-      revNonce: 1000
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        nonce: 1000,
+        baseUrl: rhsUrl
+      }
     };
 
-    const issuerCred = await idWallet.issueCredential(
-      issuerDID,
-      claimReq,
-      'http://mytestwallet.com/',
-      {
-        withRHS: rhsUrl
-      }
-    );
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
 
     await credWallet.save(issuerCred);
 

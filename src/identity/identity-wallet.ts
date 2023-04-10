@@ -31,28 +31,12 @@ import {
   MerkleTreeProofWithTreeState,
   Iden3SparseMerkleTreeProof,
   ProofType,
-  IssuerData
+  IssuerData,
+  CredentialStatusType
 } from '../verifiable';
 import { CredentialRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/revocation';
 import { TreeState } from '../circuits';
-
-// CredentialIssueOptions
-/**
- * Credential issue options
- * with publishing to chain and to reverse hash service
- *
- * @export
- * @beta
- * @interface   CredentialIssueOptions
- */
-export interface CredentialIssueOptions {
-  /**
-   * option to show if reverse hash service is used to check the Credential Status
-   *
-   */
-  withRHS: string;
-}
 
 /**
  * DID creation options
@@ -65,8 +49,12 @@ export interface IdentityCreationOptions {
   method: DidMethod;
   blockchain: Blockchain;
   networkId: NetworkId;
+  revocationOpts: {
+    baseUrl: string;
+    type: CredentialStatusType;
+    nonce?: number;
+  };
   seed?: Uint8Array;
-  rhsUrl?: string;
 }
 
 /**
@@ -93,16 +81,12 @@ export interface IIdentityWallet {
    * adds auth BJJ credential to claims tree and generates mtp of inclusion
    * based on the resulting state it provides an identifier in DID form.
    *
-   * @param {string} hostUrl - hostUrl is used as a part of the identifier of Auth BJJ credential
    * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:mumbai** with generated key.
    * @returns `Promise<{ did: DID; credential: W3CCredential }>` - returns did and Auth BJJ credential
    * @beta
    */
 
-  createIdentity(
-    hostUrl: string,
-    opts?: IdentityCreationOptions
-  ): Promise<{ did: DID; credential: W3CCredential }>;
+  createIdentity(opts?: IdentityCreationOptions): Promise<{ did: DID; credential: W3CCredential }>;
 
   /**
    * Creates profile based on genesis identifier
@@ -127,16 +111,9 @@ export interface IIdentityWallet {
    *
    * @param {DID} issuerDID - issuer identity
    * @param {CredentialRequest} req - claim request
-   * @param {string} hostUrl - url that will be a part of credential id prefix
-   * @param {CredentialIssueOptions} [opts] - with / without RHS
    * @returns `Promise<W3CCredential>` - returns created W3CCredential
    */
-  issueCredential(
-    issuerDID: DID,
-    req: CredentialRequest,
-    hostUrl: string,
-    opts?: CredentialIssueOptions
-  ): Promise<W3CCredential>;
+  issueCredential(issuerDID: DID, req: CredentialRequest): Promise<W3CCredential>;
 
   /**
    * Gets a tree model for given did that includes claims tree, revocation tree, the root of roots tree and calculated state hash
@@ -288,20 +265,11 @@ export class IdentityWallet implements IIdentityWallet {
    * {@inheritDoc IIdentityWallet.createIdentity}
    */
   async createIdentity(
-    hostUrl: string,
-    opts?: IdentityCreationOptions
+    opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
     const tmpIdentifier = uuid.v4();
 
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
-
-    if (!opts) {
-      opts = {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai
-      };
-    }
 
     opts.seed = opts.seed ?? getRandomBytes(32);
 
@@ -316,7 +284,7 @@ export class IdentityWallet implements IIdentityWallet {
       ClaimOptions.withIndexDataInts(pubKey.p[0], pubKey.p[1]),
       ClaimOptions.withRevocationNonce(BigInt(0))
     );
-    const revNonce = 0;
+    const revNonce = opts.revocationOpts.nonce ?? 0;
     authClaim.setRevocationNonce(BigInt(revNonce));
 
     await this._storage.mt.addToMerkleTree(
@@ -358,20 +326,16 @@ export class IdentityWallet implements IIdentityWallet {
       subjectPosition: subjectPositionIndex(authClaim.getIdPosition()),
       version: 0,
       expiration,
-      revNonce: revNonce
+      revocationOpts: {
+        nonce: revNonce,
+        baseUrl: opts.revocationOpts.baseUrl.replace(/\/$/, ''),
+        type: opts.revocationOpts.type
+      }
     };
-
-    hostUrl = hostUrl.replace(/\/$/, '');
 
     let credential: W3CCredential = new W3CCredential();
     try {
-      credential = this._credentialWallet.createCredential(
-        hostUrl,
-        did,
-        request,
-        schema,
-        opts.rhsUrl
-      );
+      credential = this._credentialWallet.createCredential(did, request, schema);
     } catch (e) {
       throw new Error('Error create Iden3Credential');
     }
@@ -570,18 +534,8 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   /** {@inheritDoc IIdentityWallet.issueCredential} */
-  async issueCredential(
-    issuerDID: DID,
-    req: CredentialRequest,
-    hostUrl: string,
-    opts?: CredentialIssueOptions
-  ): Promise<W3CCredential> {
-    if (!opts) {
-      opts = {
-        withRHS: ''
-      };
-    }
-    hostUrl = hostUrl.replace(/\/$/, '');
+  async issueCredential(issuerDID: DID, req: CredentialRequest): Promise<W3CCredential> {
+    req.revocationOpts.baseUrl = req.revocationOpts.baseUrl.replace(/\/$/, '');
 
     const schema = await new UniversalSchemaLoader('ipfs.io').load(req.credentialSchema);
 
@@ -589,22 +543,15 @@ export class IdentityWallet implements IIdentityWallet {
 
     let credential: W3CCredential = new W3CCredential();
 
-    let revNonce = 0;
-    if (!req.revNonce) {
-      req.revNonce = Math.round(Math.random() * 10000);
-    }
+    req.revocationOpts.nonce =
+      typeof req.revocationOpts.nonce === 'number'
+        ? req.revocationOpts.nonce
+        : Math.round(Math.random() * 10000);
+
     req.subjectPosition = req.subjectPosition ?? SubjectPosition.Index;
 
-    revNonce = req.revNonce;
-
     try {
-      credential = this._credentialWallet.createCredential(
-        hostUrl,
-        issuerDID,
-        req,
-        jsonSchema,
-        opts.withRHS
-      );
+      credential = this._credentialWallet.createCredential(issuerDID, req, jsonSchema);
     } catch (e) {
       throw new Error('Error create Iden3Credential');
     }
@@ -612,7 +559,7 @@ export class IdentityWallet implements IIdentityWallet {
     const issuerAuthBJJCredential = await this._credentialWallet.getAuthBJJCredential(issuerDID);
 
     const coreClaimOpts: CoreClaimOptions = {
-      revNonce: revNonce,
+      revNonce: req.revocationOpts.nonce,
       subjectPosition: req.subjectPosition,
       merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition),
       updatable: false,
