@@ -46,9 +46,9 @@ import { TreeState } from '../circuits';
  * @interface IdentityCreationOptions
  */
 export interface IdentityCreationOptions {
-  method: DidMethod;
-  blockchain: Blockchain;
-  networkId: NetworkId;
+  method?: DidMethod;
+  blockchain?: Blockchain;
+  networkId?: NetworkId;
   revocationOpts: {
     baseUrl: string;
     type: CredentialStatusType;
@@ -268,6 +268,10 @@ export class IdentityWallet implements IIdentityWallet {
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
     const tmpIdentifier = uuid.v4();
+
+    opts.method = opts.method ?? DidMethod.Iden3;
+    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
+    opts.networkId = opts.networkId ?? NetworkId.Mumbai;
 
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
 
