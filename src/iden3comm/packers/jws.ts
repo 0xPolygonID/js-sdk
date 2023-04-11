@@ -23,16 +23,13 @@ export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
  * @implements implements IPacker interface
  */
 export class JWSPacker implements IPacker {
-  // readonly vmPubkeyExtractorHandlerMap = {
-  //   ES256K: getPubKeyHexFromVm,
-  //   'ES256K-R': getPubKeyHexFromVm
-  // };
-
-  // readonly verifySignatureHandlerMap = {
-  //   ES256K: verifySignatureSecp256K1,
-  //   'ES256K-R': getPubKeyHexFromVm
-  // };
-
+  /**
+   * Creates an instance of JWSPacker.
+   *
+   * @param {KMS} _kms
+   * @param {Resolvable} [_documentResolver={ resolve: resolveDIDDocument }]
+   * @memberof JWSPacker
+   */
   constructor(
     private readonly _kms: KMS,
     private readonly _documentResolver: Resolvable = { resolve: resolveDIDDocument }
@@ -69,7 +66,7 @@ export class JWSPacker implements IPacker {
 
     const vmTypes: string[] = SUPPORTED_PUBLIC_KEY_TYPES[params.alg];
     if (!vmTypes?.length) {
-      throw new Error(`No supported signature types for algorithm ${params.alg}`);
+      throw new Error(`No supported verification methods for algorithm ${params.alg}`);
     }
 
     const { didDocument } = await this._documentResolver.resolve(from);
@@ -92,16 +89,18 @@ export class JWSPacker implements IPacker {
     // try to find a managed signing key that matches keyRef
     const vm = params.kid ? vms.find((vm) => vm.id === params.kid) : vms[0];
 
-    // || vm.blockchainAccountId === params.kid
-
     if (!vm) {
       throw new Error(
         `No key found with id ${params.kid} in ${section} section of DID document ${didDocument.id}`
       );
     }
 
-    if (vm.blockchainAccountId && !params.signer) {
-      throw new Error(`No signer provided for ${vm.blockchainAccountId}`);
+    const { publicKeyBytes, kmsKeyType } = extractPublicKeyBytes(vm);
+
+    if (!publicKeyBytes && !kmsKeyType) {
+      if ((vm.blockchainAccountId || vm.ethereumAddress) && !params.signer) {
+        throw new Error(`No signer provided for ${vm.blockchainAccountId || vm.ethereumAddress}`);
+      }
     }
 
     const kid = vm.id;
@@ -109,16 +108,13 @@ export class JWSPacker implements IPacker {
     const headerObj = { alg: params.alg, kid, typ: MediaType.SignedMessage };
     const header = encodeBase64url(JSON.stringify(headerObj));
     const msg = encodeBase64url(JSON.stringify(message));
-    // construct signing input and obtain signature
-    const signingInput = header + '.' + msg;
+    const signingInput = `${header}.${msg}`;
     const signingInputBytes = byteEncoder.encode(signingInput);
-    let signatureHex: string;
+    let signatureBase64: string;
     if (params.signer) {
       const signerFn = params.signer(vm, signingInputBytes);
-      signatureHex = (await signerFn(signingInput)).toString();
+      signatureBase64 = (await signerFn(signingInput)).toString();
     } else {
-      const { publicKeyBytes, kmsKeyType } = extractPublicKeyBytes(vm);
-
       if (!publicKeyBytes) {
         throw new Error('No public key found');
       }
@@ -132,12 +128,10 @@ export class JWSPacker implements IPacker {
         signingInputBytes
       );
 
-      signatureHex = byteDecoder.decode(signatureBytes);
+      signatureBase64 = byteDecoder.decode(signatureBytes);
     }
 
-    // const signature = encodeBase64url(signatureHex);
-
-    return byteEncoder.encode(signingInput + '.' + signatureHex);
+    return byteEncoder.encode(`${signingInput}.${signatureBase64}`);
   }
 
   /**

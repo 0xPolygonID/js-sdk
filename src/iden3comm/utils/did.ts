@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { UNIVERSAL_RESOLVER_URL } from '../constants';
+import { SUPPORTED_PUBLIC_KEY_TYPES, UNIVERSAL_RESOLVER_URL } from '../constants';
 import elliptic from 'elliptic';
 import {
   DIDDocument,
@@ -8,7 +8,6 @@ import {
   VerificationMethod
 } from 'did-resolver';
 
-import { bases } from 'multiformats/basics';
 import { KmsKeyType } from '../../kms';
 import { base58ToBytes, base64ToBytes, bytesToHex, hexToBytes } from '../../utils';
 
@@ -61,18 +60,23 @@ export const getDIDComponentById = (
 };
 
 const secp256k1 = new elliptic.ec('secp256k1');
-const secp256r1 = new elliptic.ec('p256');
 
 export const extractPublicKeyBytes = (
   vm: VerificationMethod
 ): { publicKeyBytes: Uint8Array; kmsKeyType?: KmsKeyType } => {
-  if (vm.publicKeyBase58) {
-    return { publicKeyBytes: base58ToBytes(vm.publicKeyBase58) };
-  } else if (vm.publicKeyBase64) {
-    return { publicKeyBytes: base64ToBytes(vm.publicKeyBase64) };
-  } else if (vm.publicKeyHex) {
-    return { publicKeyBytes: hexToBytes(vm.publicKeyHex) };
-  } else if (
+  const isSupportedVmType = Object.keys(SUPPORTED_PUBLIC_KEY_TYPES).some((key) =>
+    SUPPORTED_PUBLIC_KEY_TYPES[key].includes(vm.type)
+  );
+  if (vm.publicKeyBase58 && isSupportedVmType) {
+    return { publicKeyBytes: base58ToBytes(vm.publicKeyBase58), kmsKeyType: KmsKeyType.Secp256k1 };
+  }
+  if (vm.publicKeyBase64 && isSupportedVmType) {
+    return { publicKeyBytes: base64ToBytes(vm.publicKeyBase64), kmsKeyType: KmsKeyType.Secp256k1 };
+  }
+  if (vm.publicKeyHex && isSupportedVmType) {
+    return { publicKeyBytes: hexToBytes(vm.publicKeyHex), kmsKeyType: KmsKeyType.Secp256k1 };
+  }
+  if (
     vm.publicKeyJwk &&
     vm.publicKeyJwk.crv === 'secp256k1' &&
     vm.publicKeyJwk.x &&
@@ -89,36 +93,6 @@ export const extractPublicKeyBytes = (
       ),
       kmsKeyType: KmsKeyType.Secp256k1
     };
-  } else if (
-    vm.publicKeyJwk &&
-    vm.publicKeyJwk.crv === 'P-256' &&
-    vm.publicKeyJwk.x &&
-    vm.publicKeyJwk.y
-  ) {
-    return {
-      publicKeyBytes: hexToBytes(
-        secp256r1
-          .keyFromPublic({
-            x: bytesToHex(base64ToBytes(vm.publicKeyJwk.x)),
-            y: bytesToHex(base64ToBytes(vm.publicKeyJwk.y))
-          })
-          .getPublic('hex')
-      ),
-      kmsKeyType: KmsKeyType.Secp256r1
-    };
-  } else if (
-    vm.publicKeyJwk &&
-    vm.publicKeyJwk.kty === 'OKP' &&
-    vm.publicKeyJwk.crv === 'Ed25519' &&
-    vm.publicKeyJwk.x
-  ) {
-    return { publicKeyBytes: base64ToBytes(vm.publicKeyJwk.x), kmsKeyType: KmsKeyType.Ed25519 };
-  } else if (vm.publicKeyMultibase) {
-    const { base16, base58btc, base64, base64url } = bases;
-    const baseDecoder = base16.decoder.or(
-      base58btc.decoder.or(base64.decoder.or(base64url.decoder))
-    );
-    return { publicKeyBytes: baseDecoder.decode(vm.publicKeyMultibase) };
   }
   return { publicKeyBytes: null };
 };
