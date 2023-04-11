@@ -86,7 +86,7 @@ export interface IIdentityWallet {
    * @beta
    */
 
-  createIdentity(opts?: IdentityCreationOptions): Promise<{ did: DID; credential: W3CCredential }>;
+  createIdentity(opts: IdentityCreationOptions): Promise<{ did: DID; credential: W3CCredential }>;
 
   /**
    * Creates profile based on genesis identifier

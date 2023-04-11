@@ -345,8 +345,8 @@ export class CredentialWallet implements ICredentialWallet {
     };
 
     const id =
-      request.revocationOpts.type == CredentialStatusType.SparseMerkleTreeProof
-        ? `${request.revocationOpts.baseUrl}/revocation/${request.revocationOpts.nonce}`
+      request.revocationOpts.type === CredentialStatusType.SparseMerkleTreeProof
+        ? `${request.revocationOpts.baseUrl.replace(/\/$/, '')}/${request.revocationOpts.nonce}`
         : request.revocationOpts.baseUrl;
 
     cr.credentialStatus = {
