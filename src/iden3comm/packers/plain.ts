@@ -1,8 +1,7 @@
 import { PlainPackerParams } from './../types/packer';
-import { byteEncoder } from './../utils/index';
 import { BasicMessage, IPacker } from '../types';
-import { byteDecoder } from '../utils';
 import { MediaType } from '../constants';
+import { byteDecoder, byteEncoder } from '../../utils';
 
 /**
  * Plain packer just serializes bytes to JSON and adds media type

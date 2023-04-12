@@ -1,9 +1,7 @@
 import { Identity, Profile } from '../../src/storage/entities/identity';
 import { IdentityStorage } from '../../src/storage/shared/identity-storage';
 import { PlainPacker } from '../../src/iden3comm/packers/plain';
-import {
-  CredentialStorage,
-  IdentityWallet} from '../../src';
+import { CredentialStorage, IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
@@ -24,7 +22,7 @@ import {
 } from '../../src/iden3comm';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { byteEncoder } from '../../src/iden3comm/utils';
+import { byteEncoder } from '../../src/';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
 import axios from 'axios';
@@ -227,7 +225,7 @@ describe('fetch', () => {
 
     const res = await fetchHandler.handleCredentialOffer(userDID, msgBytes);
 
-    credWallet.saveAll(res);
+    await credWallet.saveAll(res);
 
     expect(res).to.be.a('array');
     expect(res).to.have.length(1);

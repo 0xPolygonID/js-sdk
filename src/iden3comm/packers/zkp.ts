@@ -18,8 +18,8 @@ import {
   ErrStateVerificationFailed,
   ErrUnknownCircuitID
 } from '../errors';
-import { byteDecoder, byteEncoder } from '../utils';
 import { MediaType } from '../constants';
+import { byteDecoder, byteEncoder } from '../../utils';
 
 const { getProvingMethod } = proving;
 
@@ -180,7 +180,6 @@ const verifySender = (token: Token, msg: BasicMessage): void => {
 };
 
 const verifyAuthV2Sender = (from: string, pubSignals: Array<string>): boolean => {
-  const byteEncoder = new TextEncoder();
   const authSignals = new AuthV2PubSignals();
 
   const pubSig = authSignals.pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(pubSignals)));

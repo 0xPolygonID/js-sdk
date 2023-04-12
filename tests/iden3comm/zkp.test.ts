@@ -5,7 +5,7 @@ import { mockPrepareAuthInputs, mockVerifyState, ProvingMethodGroth16Authv2 } fr
 import { ProvingParams, VerificationParams, ZKPPackerParams } from '../../src/iden3comm/types';
 import { AuthV2PubSignals } from '../../src/circuits';
 import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { byteDecoder, byteEncoder } from '../../src/iden3comm/utils';
+import { byteDecoder, byteEncoder } from '../../src';
 import { expect } from 'chai';
 const { registerProvingMethod } = proving;
 describe('zkp packer tests', () => {

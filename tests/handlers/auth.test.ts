@@ -7,7 +7,8 @@ import {
   CredentialStorage,
   IAuthHandler,
   IdentityWallet,
-  ZKPRequestWithCredential
+  ZKPRequestWithCredential,
+  byteEncoder
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -38,7 +39,6 @@ import {
 import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { byteEncoder } from '../../src/iden3comm/utils';
 import { Token } from '@iden3/js-jwz';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';

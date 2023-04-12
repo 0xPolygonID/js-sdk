@@ -1,8 +1,8 @@
 import { BasicMessage, IPackageManager, IPacker, PackerParams } from './types';
 import { bytesToHeaderStub } from './utils/envelope';
 import { base64 } from 'rfc4648';
-import { byteEncoder, byteDecoder } from './utils';
 import { MediaType } from './constants';
+import { byteDecoder, byteEncoder } from '../utils';
 
 /**
  * Basic package manager for iden3 communication protocol

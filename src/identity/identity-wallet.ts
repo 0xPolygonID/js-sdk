@@ -307,7 +307,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const keyID = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, opts.seed);
 
-    const pubKey = await this._kms.publicKey(keyID);
+    const pubKey = (await this._kms.publicKey(keyID)) as PublicKey;
 
     const schemaHash = SchemaHash.authSchemaHash;
 
