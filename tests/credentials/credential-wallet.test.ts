@@ -3,7 +3,7 @@ import { CredentialStorage } from './../../src/storage/shared/credential-storage
 import { IDataStorage } from './../../src/storage/interfaces/data-storage';
 import { CredentialWallet } from '../../src/credentials';
 import { SearchError } from '../../src/storage/filters/jsonQuery';
-import { cred1, cred2, cred3 } from './mock';
+import { cred1, cred2, cred3, cred4 } from './mock';
 import { ProofQuery, W3CCredential } from '../../src/verifiable';
 import { BrowserDataSource } from '../../src/storage/local-storage/data-source';
 import chaiAsPromised from 'chai-as-promised';
@@ -45,8 +45,9 @@ const credentialFlow = async (storage: IDataStorage) => {
   expect(credentials.length).to.equal(2);
 
   await credentialWallet.save(cred3);
+  await credentialWallet.save(cred4);
   const credentialAll = await credentialWallet.list();
-  expect(credentialAll.length).to.equal(3);
+  expect(credentialAll.length).to.equal(4);
 
   // present id
   const credById = await credentialWallet.findById(cred2.id);
@@ -143,6 +144,50 @@ const credentialFlow = async (storage: IDataStorage) => {
         }
       },
       expected: [cred3]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countOfFines: {
+            $nin: [1, 2]
+          }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countOfFines: {
+            $in: [0]
+          }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countOfFines: {
+            $eq: 0
+          }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countOfFines: {
+            $eq: 1
+          }
+        }
+      },
+      expected: []
     }
   ];
 
@@ -182,7 +227,7 @@ const credentialFlow = async (storage: IDataStorage) => {
 
   await credentialWallet.remove('test1');
   const finalList = await credentialWallet.list();
-  expect(finalList.length).to.equal(2);
+  expect(finalList.length).to.equal(3);
 };
 
 describe('credential-wallet', () => {
@@ -192,7 +237,7 @@ describe('credential-wallet', () => {
     } as unknown as IDataStorage;
     await credentialFlow(storage);
   });
-  it('run in local storage with 3 credential', async () => {
+  it('run in local storage with 4 credential', async () => {
     const storage = {
       credential: new CredentialStorage(
         new BrowserDataSource<W3CCredential>(CredentialStorage.storageKey)

@@ -1,4 +1,3 @@
-import { byteDecoder, byteEncoder } from '../utils/index';
 import { MediaType } from '../constants';
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
@@ -19,6 +18,7 @@ import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { ICredentialWallet } from '../../credentials';
 import { W3CCredential } from '../../verifiable';
+import { byteDecoder, byteEncoder } from '../../utils';
 
 /**
  * ZKP request and credential that satisfies the zkp query conditions

@@ -1,4 +1,3 @@
-import { byteDecoder, byteEncoder } from '../utils/index';
 import { MediaType } from '../constants';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
@@ -14,6 +13,7 @@ import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { W3CCredential } from '../../verifiable';
 import axios from 'axios';
+import { byteDecoder, byteEncoder } from '../../utils';
 
 /**
  * Interface that allows the processing of the credential offer in the raw format for given identifier

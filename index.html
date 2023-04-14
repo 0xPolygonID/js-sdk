@@ -26,7 +26,9 @@
         KmsKeyType,
         IdentityWallet,
         CredentialWallet,
-        KMS
+        KMS,
+        core,
+        CredentialStatusType
     } = IdenPolygonIdSdk;
 
     const run = async () => {
@@ -56,10 +58,16 @@
 
         const seedPhrase = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-        const { did, credential } = await wallet.createIdentity(
-            'http://mytestwallet.com/',
-            'http://rhs.com/node',
-            seedPhrase
+        const { did, credential } = await wallet.createIdentity({
+            method: core.DidMethod.Iden3,
+            blockchain: core.Blockchain.Polygon,
+            networkId: core.NetworkId.Mumbai,
+            seed: seedPhrase,
+            revocationOpts: {
+                type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+                baseUrl: 'http://rhs.com/node'
+            }
+        }
         );
         console.log(did.toString());
         console.assert(did.toString() === 'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth');

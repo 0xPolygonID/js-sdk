@@ -109,7 +109,7 @@ export class FilterQuery implements IFilterQuery {
       throw new Error(SearchError.NotDefinedComparator);
     }
     const credentialPathValue = resolvePath(credential, this.path);
-    if (!credentialPathValue) {
+    if (credentialPathValue === null || credentialPathValue === undefined) {
       return false;
     }
     if (this.isReverseParams) {

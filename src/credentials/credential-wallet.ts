@@ -51,10 +51,7 @@ export interface CredentialRequest {
    * claim version
    */
   version?: number;
-  /**
-   * revocation nonce
-   */
-  revNonce?: number;
+
   /**
    * subject position (index / value / none)
    */
@@ -63,6 +60,22 @@ export interface CredentialRequest {
    * merklizedRootPosition (index / value / none)
    */
   merklizedRootPosition?: MerklizedRootPosition;
+
+  /**
+   * Revocation options
+   *
+   * @type {{
+   *     baseUrl: string;
+   *     nonce?: number;
+   *     type: CredentialStatusType;
+   *   }}
+   * @memberof CredentialRequest
+   */
+  revocationOpts: {
+    baseUrl: string;
+    nonce?: number;
+    type: CredentialStatusType;
+  };
 }
 
 /**
@@ -166,16 +179,9 @@ export interface ICredentialWallet {
    * @param {DID} issuer - issuer identity
    * @param {CredentialRequest} request - specification of claim creation parameters
    * @param {JSONSchema} schema - JSON schema for W3C Verifiable Credential
-   * @param {string} [rhsUrl] - URL of reverse hash service, if it's not set - host url is used for 'SparseMerkleTreeProof' credential status type
    * @returns W3CCredential
    */
-  createCredential(
-    hostUrl: string,
-    issuer: DID,
-    request: CredentialRequest,
-    schema: JSONSchema,
-    rhsUrl?: string
-  ): W3CCredential;
+  createCredential(issuer: DID, request: CredentialRequest, schema: JSONSchema): W3CCredential;
 
   /**
    * Finds non-revoked credential from a given list by resolving their credential status
@@ -301,11 +307,9 @@ export class CredentialWallet implements ICredentialWallet {
    * {@inheritDoc ICredentialWallet.createCredential}
    */
   createCredential = (
-    hostUrl: string,
     issuer: DID,
     request: CredentialRequest,
-    schema: JSONSchema,
-    rhsUrl?: string
+    schema: JSONSchema
   ): W3CCredential => {
     if (!schema.$metadata.uris['jsonLdContext']) {
       throw new Error('jsonLdContext is missing is the schema');
@@ -328,7 +332,7 @@ export class CredentialWallet implements ICredentialWallet {
     credentialSubject['type'] = request.type;
 
     const cr = new W3CCredential();
-    cr.id = `${hostUrl}/${uuid.v4()}`;
+    cr.id = `urn:${uuid.v4()}`;
     cr['@context'] = context;
     cr.type = credentialType;
     cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
@@ -340,19 +344,16 @@ export class CredentialWallet implements ICredentialWallet {
       type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
     };
 
-    if (rhsUrl) {
-      cr.credentialStatus = {
-        id: `${rhsUrl}`,
-        revocationNonce: request.revNonce,
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof
-      };
-    } else {
-      cr.credentialStatus = {
-        id: `${hostUrl}/revocation/${request.revNonce}`,
-        revocationNonce: request.revNonce,
-        type: CredentialStatusType.SparseMerkleTreeProof
-      };
-    }
+    const id =
+      request.revocationOpts.type === CredentialStatusType.SparseMerkleTreeProof
+        ? `${request.revocationOpts.baseUrl.replace(/\/$/, '')}/${request.revocationOpts.nonce}`
+        : request.revocationOpts.baseUrl;
+
+    cr.credentialStatus = {
+      id,
+      revocationNonce: request.revocationOpts.nonce,
+      type: request.revocationOpts.type
+    };
 
     return cr;
   };

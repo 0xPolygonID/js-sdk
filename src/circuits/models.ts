@@ -203,10 +203,10 @@ export class ValueProof {
    *
    */
   validate(): void {
-    if (!this.path) {
+    if (typeof this.path !== 'bigint') {
       throw new Error(CircuitError.EmptyJsonLDQueryPath);
     }
-    if (!this.value) {
+    if (typeof this.value !== 'bigint') {
       throw new Error(CircuitError.EmptyJsonLDQueryValue);
     }
     if (!this.mtp) {

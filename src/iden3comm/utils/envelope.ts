@@ -2,7 +2,7 @@ import { BasicMessage, EnvelopeStub, HeaderStub } from '../types';
 import { basicMessageFactory, envelopeStubFactory, headerStubFactory } from './message';
 import { ErrNotEnvelopeStub, ErrNotHeaderStub, ErrNotProtocolMessage } from '../errors';
 import { Token } from '@iden3/js-jwz';
-import { byteDecoder, byteEncoder } from './index';
+import { byteDecoder, byteEncoder } from '../../utils';
 
 const objectIs = (
   obj: { [key in string]: any }, //eslint-disable-line @typescript-eslint/no-explicit-any

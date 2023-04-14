@@ -1,15 +1,13 @@
 import { Identity, Profile } from '../../src/storage/entities/identity';
 import { IdentityStorage } from '../../src/storage/shared/identity-storage';
 import { PlainPacker } from '../../src/iden3comm/packers/plain';
-import {
-  CredentialStorage,
-  IdentityWallet} from '../../src';
+import { CredentialStorage, IdentityWallet } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialWallet } from '../../src/credentials';
-import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
+import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import {
   BasicMessage,
@@ -24,7 +22,7 @@ import {
 } from '../../src/iden3comm';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { byteEncoder } from '../../src/iden3comm/utils';
+import { byteEncoder } from '../../src/';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
 import axios from 'axios';
@@ -189,26 +187,26 @@ describe('fetch', () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential: cred } = await idWallet.createIdentity(
-      'http://mytestwallet.com/',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase,
-        rhsUrl
+    const { did: userDID, credential: cred } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: rhsUrl
       }
-    );
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://mytestwallet.com/',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer,
-        rhsUrl
+    });
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: rhsUrl
       }
-    );
+    });
 
     const id = uuid.v4();
     const authReq: CredentialsOfferMessage = {
@@ -227,7 +225,7 @@ describe('fetch', () => {
 
     const res = await fetchHandler.handleCredentialOffer(userDID, msgBytes);
 
-    credWallet.saveAll(res);
+    await credWallet.saveAll(res);
 
     expect(res).to.be.a('array');
     expect(res).to.have.length(1);

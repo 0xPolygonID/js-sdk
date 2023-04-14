@@ -1,5 +1,6 @@
 import { PublicKey } from '@iden3/js-crypto';
 import { KmsKeyId, KmsKeyType } from './store';
+
 /**
  * KeyProvider is responsible for signing and creation of the keys
  *
@@ -20,15 +21,17 @@ export interface IKeyProvider {
    * @param {KmsKeyId} keyID - kms key identifier
    * @returns `Promise<PublicKey>`
    */
-  publicKey(keyID: KmsKeyId): Promise<PublicKey>;
+  publicKey(keyID: KmsKeyId): Promise<PublicKey | string>;
   /**
    * sign data with kms key
    *
    * @param {KmsKeyId} keyId - key identifier
    * @param {Uint8Array} data  - bytes payload
+   * @param {{ [key: string]: unknown }} opts  - additional options for signing
    * @returns `Promise<Uint8Array>`
    */
-  sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array>;
+  sign(keyId: KmsKeyId, data: Uint8Array, opts?: { [key: string]: unknown }): Promise<Uint8Array>;
+
   /**
    * creates new key pair from given seed
    *
@@ -50,7 +53,7 @@ export class KMS {
     [keyType in KmsKeyType]: IKeyProvider;
   } = {
     BJJ: null,
-    ETH: null
+    Secp256k1: null
   };
 
   /**
@@ -87,7 +90,7 @@ export class KMS {
    * @param {KmsKeyId} keyId -- key id
    * @returns public key
    */
-  async publicKey(keyId: KmsKeyId): Promise<PublicKey> {
+  async publicKey(keyId: KmsKeyId): Promise<PublicKey | string> {
     const keyProvider = this.registry[keyId.type];
     if (!keyProvider) {
       throw new Error(`keyProvider not found for: ${keyId.type}`);
@@ -103,12 +106,18 @@ export class KMS {
    * @param {Uint8Array} data - prepared data bytes
    * @returns `Promise<Uint8Array>` - return signature
    */
-  async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {
+  async sign(
+    keyId: KmsKeyId,
+    data: Uint8Array,
+    opts?: {
+      [key: string]: unknown;
+    }
+  ): Promise<Uint8Array> {
     const keyProvider = this.registry[keyId.type];
     if (!keyProvider) {
       throw new Error(`keyProvider not found for: ${keyId.type}`);
     }
 
-    return keyProvider.sign(keyId, data);
+    return keyProvider.sign(keyId, data, opts);
   }
 }
