@@ -5,7 +5,7 @@ import { MerkleTreeType } from '../../src/storage/entities/mt';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
+import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
@@ -65,12 +65,15 @@ describe('identity', () => {
   it('createIdentity', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+    const { did, credential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
       seed: seedPhrase,
-      rhsUrl: 'http://rhs.com/node'
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: 'http://rhs.com/node'
+      }
     });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -89,12 +92,15 @@ describe('identity', () => {
   it('createProfile', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+    const { did } = await wallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
       seed: seedPhrase,
-      rhsUrl: 'http://rhs.com/node'
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: 'http://rhs.com/node'
+      }
     });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -113,12 +119,15 @@ describe('identity', () => {
   it('sign', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+    const { did, credential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
       seed: seedPhrase,
-      rhsUrl: 'http://rhs.com/node'
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: 'http://rhs.com/node'
+      }
     });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -136,12 +145,15 @@ describe('identity', () => {
   it('generateMtp', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+    const { did, credential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
       seed: seedPhrase,
-      rhsUrl: 'http://rhs.com/node'
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: 'http://rhs.com/node'
+      }
     });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -154,12 +166,15 @@ describe('identity', () => {
   it('generateNonRevProof', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+    const { did, credential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
       seed: seedPhrase,
-      rhsUrl: 'http://rhs.com/node'
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: 'http://rhs.com/node'
+      }
     });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -173,12 +188,15 @@ describe('identity', () => {
   it('generateNonRevProof', async () => {
     const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
 
-    const { did, credential } = await wallet.createIdentity('http://mytestwallet.com/', {
+    const { did, credential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
       seed: seedPhrase,
-      rhsUrl: 'http://rhs.com/node'
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: 'http://rhs.com/node'
+      }
     });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
@@ -195,32 +213,31 @@ describe('identity', () => {
     );
     const seedPhraseUser: Uint8Array = new TextEncoder().encode('userseedseedseedseedseedseeduser');
 
-    const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity(
-      'http://mytestwallet.com/',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer,
-        rhsUrl: 'http://rhs.com/node'
+    const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: 'http://rhs.com/node'
       }
-    );
+    });
 
     expect(issuerDID.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
-    const { did: userDID, credential: userAuthCredential } = await wallet.createIdentity(
-      'http://mytestwallet.com/',
-
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhraseUser,
-        rhsUrl: 'http://rhs.com/node'
+    const { did: userDID, credential: userAuthCredential } = await wallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseUser,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: 'http://rhs.com/node'
       }
-    );
+    });
 
     const claimReq: CredentialRequest = {
       credentialSchema:
@@ -231,15 +248,14 @@ describe('identity', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 12345678888
-    };
-    const issuerCred = await wallet.issueCredential(
-      issuerDID,
-      claimReq,
-      'http://mytestwallet.com/',
-      {
-        withRHS: 'http://rhs.node'
+      expiration: 12345678888,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: 'http://rhs.com/node'
       }
-    );
+    };
+    const issuerCred = await wallet.issueCredential(issuerDID, claimReq);
+
+    expect(issuerCred.credentialSubject.id).to.equal(userDID.toString());
   });
 });

@@ -7,7 +7,7 @@ import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialWallet } from '../../src/credentials';
-import { VerifiableConstants, W3CCredential } from '../../src/verifiable';
+import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import {
   BasicMessage,
@@ -187,26 +187,26 @@ describe('fetch', () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential: cred } = await idWallet.createIdentity(
-      'http://mytestwallet.com/',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhrase,
-        rhsUrl
+    const { did: userDID, credential: cred } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: rhsUrl
       }
-    );
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity(
-      'http://mytestwallet.com/',
-      {
-        method: DidMethod.Iden3,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai,
-        seed: seedPhraseIssuer,
-        rhsUrl
+    });
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: rhsUrl
       }
-    );
+    });
 
     const id = uuid.v4();
     const authReq: CredentialsOfferMessage = {
