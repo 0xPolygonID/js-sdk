@@ -1,5 +1,6 @@
 // or ESM/TypeScript import
 import Ajv from 'ajv';
+import { byteDecoder } from '../../utils';
 
 /**
  * JSON Schema Validator
@@ -24,8 +25,8 @@ export class JsonSchemaValidator {
    * @returns `Promise<boolean>`
    */
   async validate(dataB: Uint8Array, schemaB: Uint8Array): Promise<boolean> {
-    const schema = JSON.parse(new TextDecoder().decode(schemaB));
-    const data = JSON.parse(new TextDecoder().decode(dataB));
+    const schema = JSON.parse(byteDecoder.decode(schemaB));
+    const data = JSON.parse(byteDecoder.decode(dataB));
     const validate = this._ajv.compile(schema);
     const valid = await validate(data);
     if (!valid) {

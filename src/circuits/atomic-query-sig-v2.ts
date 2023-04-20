@@ -11,6 +11,7 @@ import {
   prepareSiblingsStr
 } from './common';
 import { QueryOperators } from './comparer';
+import { byteDecoder, byteEncoder } from '../utils';
 
 /**
  * AtomicQuerySigV2Inputs representation for credentialAtomicQuerySig.circom
@@ -166,7 +167,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
     s.value = bigIntArrayToStringArray(values);
 
-    return new TextEncoder().encode(JSON.stringify(s));
+    return byteEncoder.encode(JSON.stringify(s));
   }
 }
 
@@ -266,7 +267,7 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
     // in ValueArraySize
     const fieldLength = 13;
 
-    const sVals: string[] = JSON.parse(new TextDecoder().decode(data));
+    const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
     if (sVals.length !== fieldLength + this.getValueArrSize()) {
       throw new Error(

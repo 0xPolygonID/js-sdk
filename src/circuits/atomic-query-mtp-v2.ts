@@ -10,6 +10,7 @@ import {
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
+import { byteDecoder, byteEncoder } from '../utils';
 
 /**
  * AtomicQueryMTPInputs ZK private inputs for credentialAtomicQueryMTP.circom
@@ -112,7 +113,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
 
     s.value = bigIntArrayToStringArray(values);
 
-    return new TextEncoder().encode(JSON.stringify(s));
+    return byteEncoder.encode(JSON.stringify(s));
   }
 }
 
@@ -205,7 +206,7 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
     // in ValueArraySize
     const fieldLength = 13;
 
-    const sVals: string[] = JSON.parse(new TextDecoder().decode(data));
+    const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
     if (sVals.length !== fieldLength + this.getValueArrSize()) {
       throw new Error(

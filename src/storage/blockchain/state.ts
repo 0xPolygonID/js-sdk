@@ -5,6 +5,7 @@ import { BigNumber, ethers, Signer } from 'ethers';
 import { StateInfo } from '../entities/state';
 import abi from './state-abi.json';
 import { StateTransitionPubSignals } from '../../circuits';
+import { byteEncoder } from '../../utils';
 
 /**
  * Configuration of ethereum based blockchain connection
@@ -81,7 +82,6 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.publishState} */
   async publishState(proof: ZKProof, signer: Signer): Promise<string> {
-    const byteEncoder = new TextEncoder();
     const contract = this.stateContract.connect(signer);
 
     const stateTransitionPubSig = new StateTransitionPubSignals();

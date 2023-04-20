@@ -37,6 +37,7 @@ import {
 import { CredentialRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/revocation';
 import { TreeState } from '../circuits';
+import { byteDecoder } from '../utils';
 
 /**
  * DID creation options
@@ -543,7 +544,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const schema = await new UniversalSchemaLoader('ipfs.io').load(req.credentialSchema);
 
-    const jsonSchema: JSONSchema = JSON.parse(new TextDecoder().decode(schema));
+    const jsonSchema: JSONSchema = JSON.parse(byteDecoder.decode(schema));
 
     let credential: W3CCredential = new W3CCredential();
 

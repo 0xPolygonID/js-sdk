@@ -2,6 +2,7 @@ import { W3CCredential, MerklizedRootPosition, SubjectPosition } from '../../ver
 import { LDParser } from '../jsonld';
 import { Claim as CoreClaim, ClaimOptions, DID } from '@iden3/js-iden3-core';
 import { createSchemaHash, fillSlot } from '../utils';
+import { byteDecoder, byteEncoder } from '../../utils';
 
 /**
  * Parsed slots of core.Claim
@@ -108,7 +109,7 @@ export class Parser {
 
     const slots = this.parseSlots(credential, jsonSchemaBytes);
 
-    const schemaHash = createSchemaHash(new TextEncoder().encode(credentialType));
+    const schemaHash = createSchemaHash(byteEncoder.encode(credentialType));
     const claim = CoreClaim.newClaim(
       schemaHash,
       ClaimOptions.withIndexDataBytes(slots.indexA, slots.indexB),
@@ -167,7 +168,7 @@ export class Parser {
    * @returns `ParsedSlots`
    */
   parseSlots(credential: W3CCredential, schemaBytes: Uint8Array): ParsedSlots {
-    const schema: JSONSchema = JSON.parse(new TextDecoder().decode(schemaBytes));
+    const schema: JSONSchema = JSON.parse(byteDecoder.decode(schemaBytes));
 
     if (schema?.$metadata?.serialization) {
       return this.assignSlots(credential.credentialSubject, schema.$metadata.serialization);
@@ -205,7 +206,7 @@ export class Parser {
    * @returns `number`
    */
   getFieldSlotIndex(field: string, schemaBytes: Uint8Array): number {
-    const schema: JSONSchema = JSON.parse(new TextDecoder().decode(schemaBytes));
+    const schema: JSONSchema = JSON.parse(byteDecoder.decode(schemaBytes));
     if (!schema?.$metadata?.serialization) {
       throw new Error('serialization info is not set');
     }

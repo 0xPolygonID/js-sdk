@@ -3,6 +3,7 @@ import { Claim, Id } from '@iden3/js-iden3-core';
 import { CircuitError, GISTProof, TreeState } from './models';
 import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
 import { Signature } from '@iden3/js-crypto';
+import { byteDecoder, byteEncoder } from '../utils';
 
 /**
  * Auth v2 circuit representation
@@ -82,7 +83,7 @@ export class AuthV2Inputs extends BaseConfig {
     s.gistMtpAuxHv = globalNodeAux.value.bigInt().toString();
     s.gistMtpNoAux = globalNodeAux.noAux;
 
-    return new TextEncoder().encode(JSON.stringify(s));
+    return byteEncoder.encode(JSON.stringify(s));
   }
 }
 
@@ -132,7 +133,7 @@ export class AuthV2PubSignals {
    */
   pubSignalsUnmarshal(data: Uint8Array): AuthV2PubSignals {
     const len = 3;
-    const sVals: string[] = JSON.parse(new TextDecoder().decode(data));
+    const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
     if (sVals.length !== len) {
       throw new Error(`invalid number of Output values expected ${len} got ${sVals.length}`);

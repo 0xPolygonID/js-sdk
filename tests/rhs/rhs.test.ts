@@ -1,6 +1,13 @@
 import { InMemoryDataSource } from './../../src/storage/memory/data-source';
 import { CredentialStorage } from './../../src/storage/shared/credential-storage';
-import { CircuitStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
+import {
+  CircuitStorage,
+  Identity,
+  IdentityStorage,
+  IdentityWallet,
+  Profile,
+  byteEncoder
+} from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
@@ -143,11 +150,9 @@ describe('rhs', () => {
   });
 
   it('genesis reject', async () => {
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
-      'seedseedseedseedseedseedseedseed'
-    );
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -185,11 +190,9 @@ describe('rhs', () => {
   });
 
   it('mocked issuer state', async () => {
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
-      'seedseedseedseedseedseedseedseed'
-    );
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
@@ -265,11 +268,9 @@ describe('rhs', () => {
     expect(rhsStatus.mtp.existence).to.equal(false);
   });
   it('two creds. one revoked', async () => {
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
-      'seedseedseedseedseedseedseedseed'
-    );
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -350,10 +351,7 @@ describe('rhs', () => {
       }
     };
 
-    const issuerCred2 = await idWallet.issueCredential(
-      issuerDID,
-      claimReq2
-    );
+    const issuerCred2 = await idWallet.issueCredential(issuerDID, claimReq2);
 
     await credWallet.save(issuerCred2);
 

@@ -50,7 +50,6 @@ export const mockPrepareAuthInputs = (
   profileNonce: Number, //eslint-disable-line @typescript-eslint/no-unused-vars
   circuitID: CircuitId //eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<Uint8Array> => {
-  const bytesEncoder = new TextEncoder();
   const challenge = newBigIntFromBytes(hash);
 
   const userMockedPK = bytesEncoder.encode(

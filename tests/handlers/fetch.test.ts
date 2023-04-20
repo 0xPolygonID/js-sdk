@@ -170,7 +170,7 @@ describe('fetch', () => {
       payload: Uint8Array,
       params: ZKPPackerParams
     ): Promise<Uint8Array> {
-      return new TextEncoder().encode(mockedToken);
+      return byteEncoder.encode(mockedToken);
     };
     fetchHandler = new FetchHandler(packageMgr);
 
