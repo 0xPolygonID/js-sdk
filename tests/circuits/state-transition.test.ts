@@ -9,6 +9,7 @@ import {
 } from '../../src/circuits/state-transition';
 import { generate } from './utils';
 import { expect } from 'chai';
+import { byteDecoder } from '../../src';
 
 describe('state-transition', () => {
   it('TestStateTransitionOutput_GetJSONObj', () => {

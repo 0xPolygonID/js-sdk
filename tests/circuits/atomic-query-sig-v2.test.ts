@@ -18,7 +18,7 @@ import {
 
 import expectedJson from './data/sig-v2-inputs.json';
 import { expect } from 'chai';
-import { byteEncoder } from '../../src';
+import { byteDecoder, byteEncoder } from '../../src';
 
 describe('atomic-query-sig-v2', () => {
   it('TestAttrQuerySigV2_PrepareInputs', async () => {

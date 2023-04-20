@@ -5,7 +5,7 @@ import { AuthV2Inputs } from '../../src/circuits';
 import { IdentityTest, userPK, issuerPK, globalTree } from './utils';
 import expectedJson from './data/auth-v2-inputs.json';
 import { expect } from 'chai';
-import { byteEncoder } from '../../src';
+import { byteDecoder, byteEncoder } from '../../src';
 
 describe('auth-v2', () => {
   it('TestAuthV2Inputs_InputsMarshal', async () => {

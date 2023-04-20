@@ -18,7 +18,7 @@ import {
 
 import expectedJson from './data/mtp-v2-inputs.json';
 import { expect } from 'chai';
-import { byteEncoder } from '../../src';
+import { byteDecoder, byteEncoder } from '../../src';
 
 describe('atomic-query-mtp-v2', () => {
   it('TestAttrQueryMTPV2_PrepareInputs', async () => {
