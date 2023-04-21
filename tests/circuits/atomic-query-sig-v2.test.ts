@@ -18,6 +18,7 @@ import {
 
 import expectedJson from './data/sig-v2-inputs.json';
 import { expect } from 'chai';
+import { byteDecoder, byteEncoder } from '../../src';
 
 describe('atomic-query-sig-v2', () => {
   it('TestAttrQuerySigV2_PrepareInputs', async () => {
@@ -89,7 +90,7 @@ describe('atomic-query-sig-v2', () => {
 
     const bytesInputs = inputs.inputsMarshal();
 
-    const actualJson = JSON.parse(new TextDecoder().decode(bytesInputs));
+    const actualJson = JSON.parse(byteDecoder.decode(bytesInputs));
 
     expect(actualJson).to.deep.equal(expectedJson);
   });
@@ -97,7 +98,7 @@ describe('atomic-query-sig-v2', () => {
   it('TestAtomicQuerySigOutputs_CircuitUnmarshal', () => {
     const out = new AtomicQuerySigV2PubSignals();
     out.pubSignalsUnmarshal(
-      new TextEncoder().encode(
+      byteEncoder.encode(
         `[
           "0",
           "23148936466334350744548790012294489365207440754509988986684797708370051073",

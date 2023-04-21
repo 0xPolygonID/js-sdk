@@ -45,6 +45,7 @@ import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3c
 import { UniversalSchemaLoader } from '../loaders';
 import { Parser } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
+import { byteDecoder } from '../utils';
 
 interface PreparedAuthBJJCredential {
   authCredential: W3CCredential;
@@ -461,7 +462,7 @@ export class ProofService implements IProofService {
     let path: Path = new Path();
     if (parsedQuery.query.operator !== QueryOperators.$noop) {
       path = await Path.getContextPathKey(
-        new TextDecoder().decode(schema),
+        byteDecoder.decode(schema),
         credential.type[1],
         parsedQuery.fieldName
       );

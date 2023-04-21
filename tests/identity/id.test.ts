@@ -1,4 +1,11 @@
-import { CredentialStorage, Identity, IdentityStorage, IdentityWallet, Profile } from '../../src';
+import {
+  CredentialStorage,
+  Identity,
+  IdentityStorage,
+  IdentityWallet,
+  Profile,
+  byteEncoder
+} from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { MerkleTreeType } from '../../src/storage/entities/mt';
@@ -63,7 +70,7 @@ describe('identity', () => {
     wallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
   it('createIdentity', async () => {
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
@@ -90,7 +97,7 @@ describe('identity', () => {
     expect((await claimsTree?.root()).bigInt()).not.to.equal(0);
   });
   it('createProfile', async () => {
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 
     const { did } = await wallet.createIdentity({
       method: DidMethod.Iden3,
@@ -117,7 +124,7 @@ describe('identity', () => {
     expect(dbProfile.nonce).to.equal(10);
   });
   it('sign', async () => {
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
@@ -133,7 +140,7 @@ describe('identity', () => {
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
-    const enc = new TextEncoder(); // always utf-8
+    const enc = byteEncoder; // always utf-8
 
     const message = enc.encode('payload');
     const sig = await wallet.sign(message, credential);
@@ -143,7 +150,7 @@ describe('identity', () => {
     );
   });
   it('generateMtp', async () => {
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
@@ -164,7 +171,7 @@ describe('identity', () => {
     expect(proof.proof.existence).to.equal(true);
   });
   it('generateNonRevProof', async () => {
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
@@ -186,7 +193,7 @@ describe('identity', () => {
   });
 
   it('generateNonRevProof', async () => {
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 
     const { did, credential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
@@ -208,10 +215,8 @@ describe('identity', () => {
   });
 
   it('issueCredential', async () => {
-    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
-      'seedseedseedseedseedseedseedseed'
-    );
-    const seedPhraseUser: Uint8Array = new TextEncoder().encode('userseedseedseedseedseedseeduser');
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+    const seedPhraseUser: Uint8Array = byteEncoder.encode('userseedseedseedseedseedseeduser');
 
     const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity({
       method: DidMethod.Iden3,

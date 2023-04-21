@@ -3,6 +3,7 @@ import { Id } from '@iden3/js-iden3-core';
 import { Hash, newHashFromString, Proof } from '@iden3/js-merkletree';
 import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
 import { ClaimWithMTPProof, TreeState, CircuitError } from './models';
+import { byteDecoder, byteEncoder } from '../utils';
 
 /**
  * StateTransition circuit representation
@@ -73,7 +74,7 @@ export class StateTransitionInputs extends BaseConfig {
     s.authClaimNonRevMtpAuxHv = nodeAuxAuth.value.bigInt().toString();
     s.authClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
 
-    return new TextEncoder().encode(JSON.stringify(s));
+    return byteEncoder.encode(JSON.stringify(s));
   }
 }
 
@@ -121,7 +122,7 @@ export class StateTransitionPubSignals {
    * @returns StateTransitionPubSignals
    */
   pubSignalsUnmarshal(data: Uint8Array): StateTransitionPubSignals {
-    const sVals = JSON.parse(new TextDecoder().decode(data));
+    const sVals = JSON.parse(byteDecoder.decode(data));
 
     const fieldLength = 4;
 

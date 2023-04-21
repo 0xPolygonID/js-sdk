@@ -4,6 +4,7 @@ import { CircuitId } from '../circuits';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { witnessBuilder } from './witness_calculator';
 import { getCurveFromName } from 'ffjavascript';
+import { byteDecoder } from '../utils';
 
 /* eslint-disable no-console */
 
@@ -18,7 +19,7 @@ export class NativeProver {
         .verificationKey;
 
       await snarkjs.groth16.verify(
-        JSON.parse(new TextDecoder().decode(verKey)),
+        JSON.parse(byteDecoder.decode(verKey)),
         zkp.pub_signals,
         zkp.proof
       );
@@ -40,7 +41,7 @@ export class NativeProver {
 
       const witnessCalculator = await witnessBuilder(wasm);
 
-      const parsedData = JSON.parse(new TextDecoder().decode(inputs));
+      const parsedData = JSON.parse(byteDecoder.decode(inputs));
 
       const wtnsBytes: Uint8Array = await witnessCalculator.calculateWTNSBin(parsedData, 0);
 

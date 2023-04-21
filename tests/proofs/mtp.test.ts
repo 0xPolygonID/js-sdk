@@ -4,7 +4,8 @@ import {
   Identity,
   IdentityStorage,
   IdentityWallet,
-  Profile
+  Profile,
+  byteEncoder
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -129,10 +130,8 @@ describe('mtp proofs', () => {
   });
 
   it('mtpv2-non-merklized', async () => {
-    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
-      'seedseedseedseedseedseedseedseed'
-    );
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
     const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
@@ -242,10 +241,8 @@ describe('mtp proofs', () => {
   });
 
   it('mtpv2-merklized', async () => {
-    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
-      'seedseedseedseedseedseedseedsnew'
-    );
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedsnew');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
     const { did: userDID, credential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
@@ -318,7 +315,7 @@ describe('mtp proofs', () => {
       txId
     );
 
-    credWallet.saveAll(credsWithIden3MTPProof);
+    await credWallet.saveAll(credsWithIden3MTPProof);
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,

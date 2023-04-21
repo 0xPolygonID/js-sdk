@@ -5,6 +5,7 @@ import { AuthV2Inputs } from '../../src/circuits';
 import { IdentityTest, userPK, issuerPK, globalTree } from './utils';
 import expectedJson from './data/auth-v2-inputs.json';
 import { expect } from 'chai';
+import { byteDecoder, byteEncoder } from '../../src';
 
 describe('auth-v2', () => {
   it('TestAuthV2Inputs_InputsMarshal', async () => {
@@ -45,7 +46,7 @@ describe('auth-v2', () => {
 
     const bytesInputs = inputs.inputsMarshal();
 
-    const actualJson = JSON.parse(new TextDecoder().decode(bytesInputs));
+    const actualJson = JSON.parse(byteDecoder.decode(bytesInputs));
 
     expect(actualJson).to.deep.equal(expectedJson);
   });
@@ -64,7 +65,7 @@ describe('auth-v2', () => {
     );
     const state = newHashFromBigInt(stateInt);
 
-    const out = new TextEncoder().encode(
+    const out = byteEncoder.encode(
       JSON.stringify([
         identifier.bigInt().toString(),
         challenge.toString(),

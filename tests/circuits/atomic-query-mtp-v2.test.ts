@@ -18,6 +18,7 @@ import {
 
 import expectedJson from './data/mtp-v2-inputs.json';
 import { expect } from 'chai';
+import { byteDecoder, byteEncoder } from '../../src';
 
 describe('atomic-query-mtp-v2', () => {
   it('TestAttrQueryMTPV2_PrepareInputs', async () => {
@@ -75,7 +76,7 @@ describe('atomic-query-mtp-v2', () => {
 
     const bytesInputs = inputs.inputsMarshal();
 
-    const actualJson = JSON.parse(new TextDecoder().decode(bytesInputs));
+    const actualJson = JSON.parse(byteDecoder.decode(bytesInputs));
 
     expect(actualJson).to.deep.equal(expectedJson);
   });
@@ -83,7 +84,7 @@ describe('atomic-query-mtp-v2', () => {
   it('TestAtomicQueryMTPV2Outputs_CircuitUnmarshal', () => {
     const out = new AtomicQueryMTPV2PubSignals();
     out.pubSignalsUnmarshal(
-      new TextEncoder().encode(
+      byteEncoder.encode(
         `[
           "0",
           "19104853439462320209059061537253618984153217267677512271018416655565783041",

@@ -196,10 +196,8 @@ describe('sig proofs', () => {
   });
 
   it('sigv2-merklized', async () => {
-    const seedPhraseIssuer: Uint8Array = new TextEncoder().encode(
-      'seedseedseedseedseedseedseedseed'
-    );
-    const seedPhrase: Uint8Array = new TextEncoder().encode('seedseedseedseedseedseedseeduser');
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
     const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
