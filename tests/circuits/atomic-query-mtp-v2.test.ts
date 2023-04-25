@@ -7,14 +7,7 @@ import {
   prepareCircuitArrayValues,
   Query
 } from '../../src/circuits';
-import {
-  IdentityTest,
-  userPK,
-  issuerPK,
-  defaultUserClaim,
-  timestamp,
-  prepareIntArray
-} from './utils';
+import { IdentityTest, userPK, issuerPK, defaultUserClaim, timestamp } from './utils';
 
 import expectedJson from './data/mtp-v2-inputs.json';
 import { expect } from 'chai';
@@ -70,7 +63,67 @@ describe('atomic-query-mtp-v2', () => {
     const query = new Query();
     query.operator = Operators.EQ;
     query.slotIndex = 2;
-    query.values = prepareIntArray([BigInt(10)], 64);
+    query.values = prepareCircuitArrayValues(Operators.EQ, [BigInt(10)], 64);
+    inputs.query = query;
+    inputs.currentTimeStamp = timestamp;
+
+    const bytesInputs = inputs.inputsMarshal();
+
+    const actualJson = JSON.parse(byteDecoder.decode(bytesInputs));
+
+    expect(actualJson).to.deep.equal(expectedJson);
+  });
+
+  it('TestAttrQueryMTPV2_PrepareInputs NIN operator', async () => {
+    const user = await IdentityTest.newIdentity(userPK);
+    const issuer = await IdentityTest.newIdentity(issuerPK);
+
+    const nonce = BigInt(0);
+
+    const subjectID = user.id;
+    const nonceSubject = BigInt(0);
+
+    const claim = defaultUserClaim(subjectID);
+
+    await issuer.addClaim(claim);
+
+    const issuerClaimMtp = await issuer.claimMTPRaw(claim);
+
+    const issuerClaimNonRevMtp = await issuer.claimRevMTPRaw(claim);
+
+    const inputs = new AtomicQueryMTPV2Inputs();
+
+    inputs.requestID = BigInt(23);
+    inputs.id = user.id;
+    inputs.profileNonce = nonce;
+    inputs.claimSubjectProfileNonce = nonceSubject;
+    inputs.claim = {
+      issuerID: issuer.id,
+      claim: claim,
+      nonRevProof: {
+        treeState: {
+          state: await issuer.state(),
+          claimsRoot: await issuer.clt.root(),
+          revocationRoot: await issuer.ret.root(),
+          rootOfRoots: await issuer.rot.root()
+        },
+        proof: issuerClaimNonRevMtp.proof
+      },
+      incProof: {
+        proof: issuerClaimMtp.proof,
+        treeState: {
+          state: await issuer.state(),
+          claimsRoot: await issuer.clt.root(),
+          revocationRoot: await issuer.ret.root(),
+          rootOfRoots: await issuer.rot.root()
+        }
+      }
+    };
+
+    const query = new Query();
+    query.operator = Operators.EQ;
+    query.slotIndex = 2;
+    query.values = prepareCircuitArrayValues(Operators.EQ, [BigInt(10)], 64);
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
 
@@ -167,7 +220,7 @@ describe('atomic-query-mtp-v2', () => {
       )
     );
 
-    const expValue = prepareCircuitArrayValues([BigInt(10)], 64);
+    const expValue = prepareCircuitArrayValues(Operators.EQ, [BigInt(10)], 64);
 
     const exp = new AtomicQueryMTPV2PubSignals();
     exp.requestID = BigInt(23);

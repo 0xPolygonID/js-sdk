@@ -7,21 +7,15 @@ import {
   prepareCircuitArrayValues,
   Query
 } from '../../src/circuits';
-import {
-  IdentityTest,
-  userPK,
-  issuerPK,
-  defaultUserClaim,
-  timestamp,
-  prepareIntArray
-} from './utils';
+import { IdentityTest, userPK, issuerPK, defaultUserClaim, timestamp } from './utils';
 
-import expectedJson from './data/sig-v2-inputs.json';
+import expectedJsonEQ from './data/sig-v2-eq-inputs.json';
+import expectedJsonNIN from './data/sig-v2-nin-inputs.json';
 import { expect } from 'chai';
 import { byteDecoder, byteEncoder } from '../../src';
 
 describe('atomic-query-sig-v2', () => {
-  it('TestAttrQuerySigV2_PrepareInputs', async () => {
+  async function prepareInputs(operator: Operators): Promise<string> {
     const user = await IdentityTest.newIdentity(userPK);
     const issuer = await IdentityTest.newIdentity(issuerPK);
 
@@ -82,9 +76,9 @@ describe('atomic-query-sig-v2', () => {
     };
 
     const query = new Query();
-    query.operator = Operators.EQ;
+    query.operator = operator;
     query.slotIndex = 2;
-    query.values = prepareIntArray([BigInt(10)], 64);
+    query.values = prepareCircuitArrayValues(query.operator, [BigInt(10)], 64);
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
 
@@ -92,10 +86,19 @@ describe('atomic-query-sig-v2', () => {
 
     const actualJson = JSON.parse(byteDecoder.decode(bytesInputs));
 
-    expect(actualJson).to.deep.equal(expectedJson);
+    return actualJson;
+  }
+  it(`TestAttrQuerySigV2_PrepareInputs EQ operator`, async () => {
+    const actual = await prepareInputs(Operators.EQ);
+    expect(actual).to.deep.equal(expectedJsonEQ);
   });
 
-  it('TestAtomicQuerySigOutputs_CircuitUnmarshal', () => {
+  it(`TestAttrQuerySigV2_PrepareInputs NIN operator`, async () => {
+    const actual = await prepareInputs(Operators.NIN);
+    expect(actual).to.deep.equal(expectedJsonNIN);
+  });
+
+  it('TestAtomicQuerySigOutputs_CircuitUnmarshal EQ operator', () => {
     const out = new AtomicQuerySigV2PubSignals();
     out.pubSignalsUnmarshal(
       byteEncoder.encode(
@@ -181,7 +184,7 @@ describe('atomic-query-sig-v2', () => {
       )
     );
 
-    const expValue = prepareCircuitArrayValues([BigInt(10)], 64);
+    const expValue = prepareCircuitArrayValues(Operators.EQ, [BigInt(10)], 64);
 
     const exp = new AtomicQuerySigV2PubSignals();
     exp.requestID = BigInt(23);
@@ -203,6 +206,123 @@ describe('atomic-query-sig-v2', () => {
 
     exp.slotIndex = 2;
     exp.operator = 1;
+    exp.value = expValue;
+    exp.timestamp = timestamp;
+    exp.merklized = 0;
+    exp.claimPathKey = BigInt(0);
+    exp.claimPathNotExists = 0;
+    exp.isRevocationChecked = 1;
+    expect(exp).to.deep.equal(out);
+  });
+
+  it('TestAtomicQuerySigOutputs_CircuitUnmarshal NIN operator', () => {
+    const out = new AtomicQuerySigV2PubSignals();
+    out.pubSignalsUnmarshal(
+      byteEncoder.encode(
+        `[
+          "0",
+          "23148936466334350744548790012294489365207440754509988986684797708370051073",
+          "2943483356559152311923412925436024635269538717812859789851139200242297094",
+          "23",
+          "21933750065545691586450392143787330185992517860945727248803138245838110721",
+          "1",
+          "2943483356559152311923412925436024635269538717812859789851139200242297094",
+          "1642074362",
+          "180410020913331409885634153623124536270",
+          "0",
+          "0",
+          "2",
+          "5",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10",
+          "10"
+         ]`
+      )
+    );
+
+    const expValue = prepareCircuitArrayValues(Operators.NIN, [BigInt(10)], 64);
+
+    const exp = new AtomicQuerySigV2PubSignals();
+    exp.requestID = BigInt(23);
+    exp.userID = Id.fromBigInt(
+      BigInt('23148936466334350744548790012294489365207440754509988986684797708370051073')
+    );
+    exp.issuerID = Id.fromBigInt(
+      BigInt('21933750065545691586450392143787330185992517860945727248803138245838110721')
+    );
+    exp.issuerAuthState = newHashFromString(
+      '2943483356559152311923412925436024635269538717812859789851139200242297094'
+    );
+    exp.issuerClaimNonRevState = newHashFromString(
+      '2943483356559152311923412925436024635269538717812859789851139200242297094'
+    );
+    exp.claimSchema = SchemaHash.newSchemaHashFromInt(
+      BigInt('180410020913331409885634153623124536270')
+    );
+
+    exp.slotIndex = 2;
+    exp.operator = 5;
     exp.value = expValue;
     exp.timestamp = timestamp;
     exp.merklized = 0;

@@ -164,7 +164,11 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
       s.isRevocationChecked = 1;
     }
 
-    const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
+    const values = prepareCircuitArrayValues(
+      this.query.operator,
+      this.query.values,
+      this.getValueArrSize()
+    );
     s.value = bigIntArrayToStringArray(values);
 
     return byteEncoder.encode(JSON.stringify(s));

@@ -1,6 +1,7 @@
 import { Hex } from '@iden3/js-crypto';
 import { Hash, ZERO_HASH, Proof, swapEndianness } from '@iden3/js-merkletree';
 import { TreeState } from './models';
+import { Operators } from './comparer';
 
 export const defaultMTLevels = 40; // max MT levels, default value for identity circuits
 export const defaultValueArraySize = 64; // max value array size, default value for identity circuits
@@ -133,17 +134,20 @@ export const prepareSiblingsStr = (proof: Proof, levels: number): string[] => {
  * @param {number} size - size to pad
  * @returns bigint[]
  */
-export const prepareCircuitArrayValues = (arr: bigint[], size: number): bigint[] => {
-  if (!arr) {
-    arr = [];
-  }
+export const prepareCircuitArrayValues = (
+  operator: Operators,
+  arr: bigint[],
+  size: number
+): bigint[] => {
   if (arr.length > size) {
     throw new Error(`array size ${arr.length} is bigger max expected size ${size}`);
   }
 
-  // Add the empty values
-  for (let i = arr.length; i < size; i++) {
-    arr.push(BigInt(0));
+  // Add the empty values or populate with last value depending on the query operator
+  const startLength = arr.length;
+  for (let i = startLength; i < size; i++) {
+    const elem = operator === Operators.NIN ? BigInt(arr[startLength - 1]) : BigInt(0);
+    arr.push(elem);
   }
 
   return arr;

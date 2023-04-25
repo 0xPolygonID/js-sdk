@@ -331,14 +331,6 @@ export function defaultUserClaim(subject: Id): Claim {
   return claim;
 }
 
-export function prepareIntArray(arr: bigint[], length: number): bigint[] {
-  // Add the rest of empty levels to the array
-  for (let i = arr.length; i < length; i++) {
-    arr.push(BigInt(0));
-  }
-  return arr;
-}
-
 export function mtHashFromStr(hashStr: string): Hash {
   return newHashFromString(hashStr);
 }
