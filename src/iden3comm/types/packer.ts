@@ -1,9 +1,35 @@
 import { DID } from '@iden3/js-iden3-core';
 import { DataPrepareHandlerFunc, VerificationHandlerFunc } from '../packers';
-import { BasicMessage } from './index';
 import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
 import { MediaType } from '../constants';
+
+/**
+ *  Protocol message type
+ */
+export type ProtocolMessage = string;
+
+/**
+ * JSONValue
+ */
+type JSONValue = string | number | boolean | object | Array<object>;
+
+/**
+ * JSON object
+ */
+export type JSONObject = {
+  [x: string]: JSONValue;
+};
+
+export type BasicMessage = {
+  id: string;
+  typ?: MediaType;
+  type: ProtocolMessage;
+  thid?: string;
+  body?: unknown;
+  from?: string;
+  to?: string;
+};
 
 /**
  *  parameters for any packer

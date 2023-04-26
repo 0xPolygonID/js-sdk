@@ -1,7 +1,6 @@
-import { ProtocolMessage } from '../index';
-import { JSONObject } from '../index';
 import { W3CCredential } from '../../../verifiable';
 import { MediaType } from '../../constants';
+import { JSONObject, ProtocolMessage } from '../packer';
 
 /** CredentialIssuanceRequestMessageBody represents data for credential issuance request */
 export type CredentialIssuanceRequestMessageBody = {

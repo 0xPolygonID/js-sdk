@@ -1,16 +1,5 @@
-import { IPacker, PackerParams } from './packer';
+import { BasicMessage, IPacker, PackerParams } from './packer';
 import { MediaType } from '../constants';
-import { ProtocolMessage } from '.';
-
-export type BasicMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
-  body?: unknown;
-  from?: string;
-  to?: string;
-};
 
 /**
  * Interface for defining the registry of packers
