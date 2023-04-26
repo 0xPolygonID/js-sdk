@@ -15,6 +15,7 @@ import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Hex, PrivateKey, PublicKey } from '@iden3/js-crypto'
 import { expect } from 'chai';
 
 describe('identity', () => {
@@ -84,6 +85,34 @@ describe('identity', () => {
     });
     expect(did.toString()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
+    );
+    const dbCred = await dataStorage.credential.findCredentialById(credential.id);
+    expect(credential).to.deep.equal(dbCred);
+
+    const claimsTree = await dataStorage.mt.getMerkleTreeByIdentifierAndType(
+      did.toString(),
+      MerkleTreeType.Claims
+    );
+
+    console.log(JSON.stringify(credential));
+    expect((await claimsTree?.root()).bigInt()).not.to.equal(0);
+  });
+  it('createIdentity from pre-existing key', async () => {
+    const keyBytes = Hex.decodeString(
+      '2d45d0cb81682bde9883a326ba1344208193b76f36091274f45b4c4940faed5b'
+    );
+    const { did, credential } = await wallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      privKey: keyBytes,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        baseUrl: 'http://rhs.com/node'
+      }
+    });
+    expect(did.toString()).to.equal(
+      'did:iden3:polygon:mumbai:x12AN5uojf9eqLThvCgtP97zuQGNkMYSqcTEGcqWv'
     );
     const dbCred = await dataStorage.credential.findCredentialById(credential.id);
     expect(credential).to.deep.equal(dbCred);

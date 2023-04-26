@@ -55,6 +55,7 @@ export interface IdentityCreationOptions {
     type: CredentialStatusType;
     nonce?: number;
   };
+  privKey?: Uint8Array;
   seed?: Uint8Array;
 }
 
@@ -285,9 +286,9 @@ export class IdentityWallet implements IIdentityWallet {
 
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
 
-    opts.seed = opts.seed ?? getRandomBytes(32);
-
-    const keyID = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, opts.seed);
+    const keyID = opts.privKey ?
+      await this._kms.importKeyFromBytes(KmsKeyType.BabyJubJub, opts.privKey) :
+      await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, opts.seed ?? getRandomBytes(32));
 
     const pubKey = (await this._kms.publicKey(keyID)) as PublicKey;
 
