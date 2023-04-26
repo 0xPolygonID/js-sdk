@@ -50,6 +50,15 @@ export class Sec256k1Provider implements IKeyProvider {
   }
 
   /**
+   * imports a pre-existing baby jub jub key
+   * @param {Uint8Array} buffer - byte array private key
+   * @returns kms key identifier
+   */
+  async importPrivateKey(bytes: Uint8Array): Promise<KmsKeyId> {
+    throw new Error("Not Implemented")
+  }
+
+  /**
    * Gets public key by kmsKeyId
    *
    * @param {KmsKeyId} keyId - key identifier

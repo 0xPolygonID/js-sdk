@@ -52,6 +52,29 @@ export class BjjProvider implements IKeyProvider {
   }
 
   /**
+   * imports a pre-existing baby jub jub key
+   * @param {Uint8Array} bytes - byte array private key
+   * @returns kms key identifier
+   */
+  async importPrivateKey(bytes: Uint8Array): Promise<KmsKeyId> {
+    if (bytes.length != 32) {
+      throw new Error('invalid key length')
+    }
+
+    const privateKey: PrivateKey = new PrivateKey(bytes);
+
+    const publicKey = privateKey.public();
+
+    const kmsId = {
+      type: this.keyType,
+      id: providerHelpers.keyPath(this.keyType, publicKey.hex())
+    };
+    await this.keyStore.import({ alias: kmsId.id, key: privateKey.hex() });
+
+    return kmsId;
+  }
+
+  /**
    * Gets public key by kmsKeyId
    *
    * @param {KmsKeyId} keyId - key identifier

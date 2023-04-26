@@ -108,6 +108,15 @@ export interface IIdentityWallet {
   generateKey(keyType: KmsKeyType): Promise<KmsKeyId>;
 
   /**
+   * Imports a pre-existing key
+   *
+   * @param {KmsKeyType} keyType - supported key type by KMS
+   * @param {Uint8Array} bytes - byte array private key
+   * @returns `Promise<KmsKeyId>` - imports a pre-existing key BJJ or ECDSA
+   */
+  importKey(keyType: KmsKeyType, bytes: Uint8Array): Promise<KmsKeyId>;
+
+  /**
    * Issues new credential from issuer according to the claim request
    *
    * @param {DID} issuerDID - issuer identity
@@ -418,6 +427,12 @@ export class IdentityWallet implements IIdentityWallet {
   /** {@inheritDoc IIdentityWallet.generateKey} */
   async generateKey(keyType: KmsKeyType): Promise<KmsKeyId> {
     const key = await this._kms.createKeyFromSeed(keyType, getRandomBytes(32));
+    return key;
+  }
+
+  /** {@inheritDoc IIdentityWallet.importKey} */
+  async importKey(keyType: KmsKeyType, bytes: Uint8Array): Promise<KmsKeyId> {
+    const key = await this._kms.importKeyFromBytes(keyType, bytes);
     return key;
   }
 

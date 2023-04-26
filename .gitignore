@@ -7,3 +7,4 @@ temp
 .idea
 .vscode
 /tests/proofs/testdata
+*.sw?

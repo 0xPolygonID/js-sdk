@@ -39,6 +39,14 @@ export interface IKeyProvider {
    * @returns `Promise<KmsKeyId>`
    */
   newPrivateKeyFromSeed(seed: Uint8Array): Promise<KmsKeyId>;
+
+  /**
+   * imports a pre-existing key
+   *
+   * @param {Uint8Array} bytes - private key
+   * @returns `Promise<KmsKeyId>`
+   */
+  importPrivateKey(bytes: Uint8Array): Promise<KmsKeyId>;
 }
 /**
  * Key management system class contains different key providers.
@@ -82,6 +90,21 @@ export class KMS {
       throw new Error(`keyProvider not found for: ${keyType}`);
     }
     return keyProvider.newPrivateKeyFromSeed(bytes);
+  }
+
+  /**
+   * imports a pre-existing key and returns it kms key id
+   *
+   * @param {KmsKeyType} keyType
+   * @param {Uint8Array} bytes
+   * @returns kms key id
+   */
+  async importKeyFromBytes(keyType: KmsKeyType, bytes: Uint8Array): Promise<KmsKeyId> {
+    const keyProvider = this.registry[keyType];
+    if (!keyProvider) {
+      throw new Error(`keyProvider not found for: ${keyType}`);
+    }
+    return keyProvider.importPrivateKey(bytes);
   }
 
   /**
