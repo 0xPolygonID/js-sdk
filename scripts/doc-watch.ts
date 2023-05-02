@@ -11,7 +11,7 @@ import {
 	ExtractorResult
 } from '@microsoft/api-extractor';
 
-const DOCS_DIR = '../js-sdk-tutorial/docs/api';
+const DOCS_DIR = '../js-sdk-tutorials/docs/api';
 
 async function main() {
 	const apiExtractorJsonPath: string = path.join(__dirname, '../config/api-extractor.json');
