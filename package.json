@@ -1,9 +1,9 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.0.0-beta.7",
+  "version": "1.0.0-beta.8",
   "description": "SDK to work with Polygon ID",
   "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
+  "module": "dist/esm_esbuild/index.js",
   "source": "./src/index.ts",
   "esm:esbuild": "dist/esm_esbuild/index.js",
   "typings": "dist/types/index.d.ts",
