@@ -35,7 +35,7 @@ describe('fetch', () => {
   let dataStorage: IDataStorage;
   let fetchHandler: IFetchHandler;
   let packageMgr: IPackageManager;
-  const rhsUrl = 'https://rhs-staging.polygonid.me';
+  const rhsUrl = process.env.RHS_URL as string;
   const agentUrl = 'https://testagent.com/';
   const mockedToken = 'jwz token to fetch credential';
 
