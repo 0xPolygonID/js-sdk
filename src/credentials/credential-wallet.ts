@@ -1,6 +1,5 @@
 import { buildDIDType, BytesHelper, DID, Id } from '@iden3/js-iden3-core';
 
-import axios from 'axios';
 import { IDataStorage } from '../storage/interfaces';
 import {
   W3CCredential,
@@ -269,7 +268,7 @@ export class CredentialWallet implements ICredentialWallet {
     issuerData: IssuerData
   ): Promise<RevocationStatus> {
     if (credStatus.type === CredentialStatusType.SparseMerkleTreeProof) {
-      const revStatusDTO = (await axios.get<RevocationStatusDTO>(credStatus.id)).data;
+      const revStatusDTO = await (await fetch(credStatus.id)).json();
 
       return Object.assign(new RevocationStatusDTO(), revStatusDTO).toRevocationStatus();
     }
@@ -296,7 +295,7 @@ export class CredentialWallet implements ICredentialWallet {
 
         const status = credStatus as RHSCredentialStatus;
         if (status?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
-          return (await axios.get<RevocationStatus>(credStatus.id)).data;
+          return await (await fetch(credStatus.id)).json();
         }
         throw new Error(`can't fetch revocation status`);
       }

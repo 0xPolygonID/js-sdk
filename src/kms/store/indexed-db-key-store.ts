@@ -40,7 +40,7 @@ export class IndexedDBPrivateKeyStore implements AbstractPrivateKeyStore {
    * @param {{ alias: string; key: string }} args - alias and private key in the hex
    * @returns void
    */
-  async import(args: { alias: string; key: string }): Promise<void> {
+  async importKey(args: { alias: string; key: string }): Promise<void> {
     await set(args.alias, { value: args.key }, this._store);
   }
 }

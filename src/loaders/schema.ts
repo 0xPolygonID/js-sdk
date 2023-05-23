@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { create, IPFSHTTPClient } from 'ipfs-http-client';
 
 /**
@@ -58,8 +57,8 @@ export class HttpSchemaLoader implements ISchemaLoader {
    * @returns `Promise<Uint8Array>`
    */
   public async load(url: string): Promise<Uint8Array> {
-    const resp = await axios.get(url, { responseType: 'arraybuffer' });
-    return resp.data as Uint8Array;
+    const resp = await fetch(url);
+    return new Uint8Array(await resp.arrayBuffer());
   }
 }
 /**

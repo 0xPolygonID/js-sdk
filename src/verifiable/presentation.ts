@@ -1,6 +1,5 @@
 import { VerifiableConstants } from './constants';
 import { Hasher, MtValue, Path } from '@iden3/js-jsonld-merklization';
-import axios, { AxiosResponse } from 'axios';
 import { W3CCredential } from './credential';
 import { ProofQuery } from './proof';
 
@@ -26,14 +25,14 @@ export const buildQueryPath = async (
   contextType: string,
   field: string
 ): Promise<Path> => {
-  let resp: AxiosResponse;
+  let resp;
   try {
-    resp = await axios.get(contextURL);
+    resp = await (await fetch(contextURL)).json();
   } catch (error) {
     throw new Error(`context not found: ${error.message}`);
   }
 
-  const path = await Path.getContextPathKey(JSON.stringify(resp.data), contextType, field);
+  const path = await Path.getContextPathKey(JSON.stringify(resp), contextType, field);
   path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   return path;
 };

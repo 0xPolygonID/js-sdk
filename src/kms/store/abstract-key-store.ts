@@ -14,7 +14,7 @@ export abstract class AbstractPrivateKeyStore {
    * @param {{ alias: string; key: string }} args - key alias and hex representation
    * @returns `Promise<void>`
    */
-  abstract import(args: { alias: string; key: string }): Promise<void>;
+  abstract importKey(args: { alias: string; key: string }): Promise<void>;
 
   /**
    * get key by alias
