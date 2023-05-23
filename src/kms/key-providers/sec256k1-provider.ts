@@ -44,7 +44,7 @@ export class Sec256k1Provider implements IKeyProvider {
       type: this.keyType,
       id: providerHelpers.keyPath(this.keyType, keyPair.getPublic().encode('hex'))
     };
-    await this._keyStore.import({ alias: kmsId.id, key: keyPair.getPrivate().toString('hex') });
+    await this._keyStore.importKey({ alias: kmsId.id, key: keyPair.getPrivate().toString('hex') });
 
     return kmsId;
   }

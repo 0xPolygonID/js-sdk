@@ -46,7 +46,7 @@ export class BjjProvider implements IKeyProvider {
       type: this.keyType,
       id: providerHelpers.keyPath(this.keyType, publicKey.hex())
     };
-    await this.keyStore.import({ alias: kmsId.id, key: privateKey.hex() });
+    await this.keyStore.importKey({ alias: kmsId.id, key: privateKey.hex() });
 
     return kmsId;
   }

@@ -25,8 +25,7 @@ import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants'
 import { byteEncoder } from '../../src/';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
-import axios from 'axios';
-import MockAdapter from 'axios-mock-adapter';
+import fetchMock from 'fetch-mock';
 import { after } from 'mocha';
 
 describe('fetch', () => {
@@ -39,8 +38,6 @@ describe('fetch', () => {
   const rhsUrl = process.env.RHS_URL as string;
   const agentUrl = 'https://testagent.com/';
   const mockedToken = 'jwz token to fetch credential';
-
-  let agentStub: MockAdapter;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -173,14 +170,11 @@ describe('fetch', () => {
       return byteEncoder.encode(mockedToken);
     };
     fetchHandler = new FetchHandler(packageMgr);
+    fetchMock.post(agentUrl, JSON.parse(mockedCredResponse));
 
-    //mock axios
-
-    agentStub = new MockAdapter(axios);
-    agentStub.onAny(agentUrl).replyOnce(200, mockedCredResponse);
   });
   after(() => {
-    agentStub.restore();
+    fetchMock.restore();
   });
 
   it('fetch credential', async () => {

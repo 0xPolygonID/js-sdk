@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import axios from 'axios';
 import { SUPPORTED_PUBLIC_KEY_TYPES, UNIVERSAL_RESOLVER_URL } from '../constants';
 import elliptic from 'elliptic';
 import {
@@ -30,8 +29,9 @@ export const resolveDIDDocument = async (
   options?: DIDResolutionOptions
 ): Promise<DIDResolutionResult> => {
   try {
-    const response = await axios.get<DIDDocument>(`${UNIVERSAL_RESOLVER_URL}/${didUrl}`);
-    return { didDocument: response.data } as DIDResolutionResult;
+    const response = await fetch(`${UNIVERSAL_RESOLVER_URL}/${didUrl}`);
+    const data = await response.json();
+    return { didDocument: data } as DIDResolutionResult;
   } catch (error) {
     throw new Error(`Can't resolve did document: ${error.message}`);
   }

@@ -1,18 +1,12 @@
 import { MediaType } from '../constants';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
-import {
-  CredentialIssuanceMessage,
-  CredentialsOfferMessage,
-  IPackageManager,
-  MessageFetchRequestMessage
-} from '../types';
+import { CredentialsOfferMessage, IPackageManager, MessageFetchRequestMessage } from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
 import { W3CCredential } from '../../verifiable';
-import axios from 'axios';
 import { byteDecoder, byteEncoder } from '../../utils';
 
 /**
@@ -99,11 +93,15 @@ export class FetchHandler implements IFetchHandler {
         })
       );
 
-      const resp = await axios.post<CredentialIssuanceMessage>(offerMessage.body.url, token);
+      const resp = await fetch(offerMessage.body.url, {
+        method: 'post',
+        body: token
+      });
       if (resp.status !== 200) {
         throw new Error(`could not fetch W3C credential, ${credentialInfo.id}`);
       }
-      credentials.push(resp.data.body.credential);
+      const data = await resp.json();
+      credentials.push(data.body.credential);
     }
 
     return credentials;
