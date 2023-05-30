@@ -170,7 +170,7 @@ export async function generate(privKeyHex: string): Promise<{
   const state = poseidon.hash([ctr.bigInt(), BigInt(0), BigInt(0)]);
   // create new identity
   const identity = Id.idGenesisFromIdenState(
-    buildDIDType('iden3', Blockchain.Polygon, NetworkId.Mumbai),
+    buildDIDType(DidMethod.Iden3, Blockchain.Polygon, NetworkId.Mumbai),
     state
   );
 
@@ -283,7 +283,7 @@ export function extractPubXY(privKHex: string): { key: PrivateKey; x: bigint; y:
 }
 
 export function idFromState(state: bigint): Id {
-  const typ = buildDIDType(DidMethod.Iden3, Blockchain.NoChain, NetworkId.NoNetwork);
+  const typ = buildDIDType(DidMethod.Iden3, Blockchain.ReadOnly, NetworkId.NoNetwork);
   // create new identity
   return Id.idGenesisFromIdenState(typ, state);
 }

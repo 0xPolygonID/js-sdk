@@ -40,7 +40,7 @@ import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { Token } from '@iden3/js-jwz';
-import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 
 describe('auth', () => {
@@ -205,7 +205,7 @@ describe('auth', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -244,6 +244,8 @@ describe('auth', () => {
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
+    const issuerId = DID.idFromDID(issuerDID);
+
     const id = uuid.v4();
     const authReq: AuthorizationRequestMessage = {
       id,
@@ -251,7 +253,7 @@ describe('auth', () => {
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
       thid: id,
       body: authReqBody,
-      from: issuerDID.id.string()
+      from: issuerId.string()
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
@@ -296,7 +298,7 @@ describe('auth', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: profileDID.toString(),
+        id: profileDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -342,7 +344,7 @@ describe('auth', () => {
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
       thid: id,
       body: authReqBody,
-      from: issuerDID.id.string()
+      from: DID.idFromDID(issuerDID).string()
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
@@ -362,16 +364,14 @@ describe('auth', () => {
       //    1g                      2g
       // 1.1p Pas 1.2p Age   2.1p Pas 2.2p Age
 
-      const profiles = await dataStorage.identity.getProfilesByGenesisIdentifier(
-        userDID.toString()
-      );
+      const profiles = await dataStorage.identity.getProfilesByGenesisIdentifier(userDID.string());
       // 1.1p Pas 1.2p Age
 
       // finds all credentials that belongs to genesis identity or profiles derived from it
       const credsThatBelongToGenesisIdOrItsProfiles = credsToChooseForZKPReq.filter((cred) => {
         const credentialSubjectId = cred.credentialSubject['id'] as string; // credential subject
         return (
-          credentialSubjectId == userDID.toString() ||
+          credentialSubjectId == userDID.string() ||
           profiles.some((p) => {
             return p.id === credentialSubjectId;
           })
@@ -383,7 +383,7 @@ describe('auth', () => {
 
       // get profile nonce that was used as a part of subject in the credential
       const credentialSubjectProfileNonce =
-        chosenCredByUser.credentialSubject['id'] === userDID.toString()
+        chosenCredByUser.credentialSubject['id'] === userDID.string()
           ? 0
           : profiles.find((p) => {
               return p.id === chosenCredByUser.credentialSubject['id'];

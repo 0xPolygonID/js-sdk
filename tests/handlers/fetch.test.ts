@@ -23,7 +23,7 @@ import {
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { byteEncoder } from '../../src/';
-import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
 import fetchMock from 'fetch-mock';
 import { after } from 'mocha';
@@ -171,8 +171,8 @@ describe('fetch', () => {
     };
     fetchHandler = new FetchHandler(packageMgr);
     fetchMock.post(agentUrl, JSON.parse(mockedCredResponse));
-
   });
+
   after(() => {
     fetchMock.restore();
   });
@@ -212,7 +212,7 @@ describe('fetch', () => {
         url: agentUrl,
         credentials: [{ id: 'https://credentialId', description: 'kyc age credentials' }]
       } as CredentialsOfferMessageBody,
-      from: issuerDID.id.string()
+      from: DID.idFromDID(issuerDID).string()
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));

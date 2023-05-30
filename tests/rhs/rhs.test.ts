@@ -235,7 +235,7 @@ describe('rhs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -312,7 +312,7 @@ describe('rhs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -339,7 +339,7 @@ describe('rhs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960523,
         documentType: 1
       },

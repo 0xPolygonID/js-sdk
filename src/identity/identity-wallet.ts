@@ -314,7 +314,7 @@ export class IdentityWallet implements IIdentityWallet {
     const identifier = Id.idGenesisFromIdenState(didType, currentState.bigInt());
     const did = DID.parseFromId(identifier);
 
-    await this._storage.mt.bindMerkleTreeToNewIdentifier(tmpIdentifier, did.toString());
+    await this._storage.mt.bindMerkleTreeToNewIdentifier(tmpIdentifier, did.string());
 
     const schema = JSON.parse(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSON);
 
@@ -357,7 +357,7 @@ export class IdentityWallet implements IIdentityWallet {
       type: ProofType.Iden3SparseMerkleTreeProof,
       mtp: proof,
       issuerData: new IssuerData({
-        id: did.toString(),
+        id: did.string(),
         state: {
           rootOfRoots: ZERO_HASH.hex(),
           revocationTreeRoot: ZERO_HASH.hex(),
@@ -374,7 +374,7 @@ export class IdentityWallet implements IIdentityWallet {
     credential.proof = [mtpProof];
 
     await this._storage.identity.saveIdentity({
-      identifier: did.toString(),
+      identifier: did.string(),
       state: currentState,
       published: false,
       genesis: true
@@ -390,10 +390,10 @@ export class IdentityWallet implements IIdentityWallet {
 
   /** {@inheritDoc IIdentityWallet.createProfile} */
   async createProfile(did: DID, nonce: number, verifier: string): Promise<DID> {
-    const id = did.id;
+    const id = DID.idFromDID(did);
 
     const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
-      did.toString()
+      did.string()
     );
 
     const existingProfile = identityProfiles.find(
@@ -407,9 +407,9 @@ export class IdentityWallet implements IIdentityWallet {
     const profileDID = DID.parseFromId(profile);
 
     await this._storage.identity.saveProfile({
-      id: profileDID.toString(),
+      id: profileDID.string(),
       nonce,
-      genesisIdentifier: did.toString(),
+      genesisIdentifier: did.string(),
       verifier
     });
     return profileDID;
@@ -424,15 +424,15 @@ export class IdentityWallet implements IIdentityWallet {
   /** {@inheritDoc IIdentityWallet.getDIDTreeModel} */
   async getDIDTreeModel(did: DID): Promise<TreesModel> {
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Claims
     );
     const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Revocations
     );
     const rootsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Roots
     );
     const state = await hashElems([
@@ -460,7 +460,7 @@ export class IdentityWallet implements IIdentityWallet {
     const treesModel = await this.getDIDTreeModel(did);
 
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Claims
     );
 
@@ -496,7 +496,7 @@ export class IdentityWallet implements IIdentityWallet {
     const treesModel = await this.getDIDTreeModel(did);
 
     const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Revocations
     );
 
@@ -594,7 +594,7 @@ export class IdentityWallet implements IIdentityWallet {
     const sigProof: BJJSignatureProof2021 = {
       type: ProofType.BJJSignature,
       issuerData: new IssuerData({
-        id: issuerDID.toString(),
+        id: issuerDID.string(),
         state: mtpAuthBJJProof.issuerData.state,
         authCoreClaim: mtpAuthBJJProof.coreClaim,
         mtp: mtpAuthBJJProof.mtp,
@@ -651,7 +651,7 @@ export class IdentityWallet implements IIdentityWallet {
       }
 
       await this._storage.mt.addToMerkleTree(
-        issuerDID.toString(),
+        issuerDID.string(),
         MerkleTreeType.Claims,
         coreClaim.hIndex(),
         coreClaim.hValue()
@@ -661,7 +661,7 @@ export class IdentityWallet implements IIdentityWallet {
     const newIssuerTreeState = await this.getDIDTreeModel(issuerDID);
     const claimTreeRoot = await newIssuerTreeState.claimsTree.root();
     await this._storage.mt.addToMerkleTree(
-      issuerDID.toString(),
+      issuerDID.string(),
       MerkleTreeType.Roots,
       claimTreeRoot.bigInt(),
       BigInt(0)
@@ -707,7 +707,7 @@ export class IdentityWallet implements IIdentityWallet {
         type: ProofType.Iden3SparseMerkleTreeProof,
         mtp: mtpWithProof.proof,
         issuerData: new IssuerData({
-          id: issuerDID.toString(),
+          id: issuerDID.string(),
           state: {
             claimsTreeRoot: mtpWithProof.treeState.claimsRoot.hex(),
             revocationTreeRoot: mtpWithProof.treeState.revocationRoot.hex(),

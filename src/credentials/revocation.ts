@@ -131,7 +131,8 @@ export async function getStatusFromRHS(
   credStatus: CredentialStatus | RHSCredentialStatus,
   stateStorage: IStateStorage
 ): Promise<RevocationStatus> {
-  const latestStateInfo = await stateStorage.getLatestStateById(issuer.id.bigInt());
+  const id = DID.idFromDID(issuer);
+  const latestStateInfo = await stateStorage.getLatestStateById(id.bigInt());
   const hashedRevNonce = newHashFromBigInt(BigInt(credStatus.revocationNonce ?? 0));
   const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
   return getRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, credStatus.id);

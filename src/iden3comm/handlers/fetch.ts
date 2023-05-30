@@ -80,7 +80,7 @@ export class FetchHandler implements IFetchHandler {
         body: {
           id: credentialInfo.id
         },
-        from: did.toString(),
+        from: did.string(),
         to: offerMessage.from
       };
 

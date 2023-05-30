@@ -237,7 +237,7 @@ export class ProofService implements IProofService {
     const signature = await this._identityWallet.signChallenge(challenge, authInfo.authCredential);
 
     const circuitInputs = new StateTransitionInputs();
-    circuitInputs.id = did.id;
+    circuitInputs.id = DID.idFromDID(did);
 
     circuitInputs.signature = signature;
     circuitInputs.isOldStateGenesis = isOldStateGenesis;
@@ -318,7 +318,7 @@ export class ProofService implements IProofService {
       circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
       const circuitInputs = new AtomicQueryMTPV2Inputs();
-      circuitInputs.id = identifier.id;
+      circuitInputs.id = DID.idFromDID(identifier);
       circuitInputs.requestID = BigInt(proofReq.id);
       const { query, vp } = await this.toCircuitsQuery(
         proofReq.query,
@@ -348,7 +348,7 @@ export class ProofService implements IProofService {
       circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
       const circuitInputs = new AtomicQuerySigV2Inputs();
-      circuitInputs.id = identifier.id;
+      circuitInputs.id = DID.idFromDID(identifier);
       circuitInputs.claim = {
         issuerID: circuitClaimData.issuerId,
         signatureProof: circuitClaimData.signatureProof,
@@ -381,7 +381,7 @@ export class ProofService implements IProofService {
 
     const circuitClaim = new CircuitClaim();
     circuitClaim.claim = coreClaim;
-    circuitClaim.issuerId = DID.parse(credential.issuer).id;
+    circuitClaim.issuerId = DID.idFromDID(DID.parse(credential.issuer));
 
     if (smtProof) {
       circuitClaim.proof = smtProof.mtp;
@@ -602,7 +602,7 @@ export class ProofService implements IProofService {
       challenge,
       authPrepared.authCredential
     );
-    const id = did.id;
+    const id = DID.idFromDID(did);
     const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
 
     const gistProof = toGISTProof(stateProof);

@@ -82,14 +82,14 @@ describe('identity', () => {
         baseUrl: 'http://rhs.com/node'
       }
     });
-    expect(did.toString()).to.equal(
+    expect(did.string()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
     const dbCred = await dataStorage.credential.findCredentialById(credential.id);
     expect(credential).to.deep.equal(dbCred);
 
     const claimsTree = await dataStorage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Claims
     );
 
@@ -109,18 +109,18 @@ describe('identity', () => {
         baseUrl: 'http://rhs.com/node'
       }
     });
-    expect(did.toString()).to.equal(
+    expect(did.string()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
     const profileDID = await wallet.createProfile(did, 10, 'http://polygonissuer.com/');
-    expect(profileDID.toString()).to.equal(
+    expect(profileDID.string()).to.equal(
       'did:iden3:polygon:mumbai:x2Ld4XmxEo6oGCSr3MsqBa5PmJie6WJ6pFbetzYuq'
     );
 
     const dbProfile = await dataStorage.identity.getProfileByVerifier('http://polygonissuer.com/');
-    expect(dbProfile.id).to.equal(profileDID.toString());
-    expect(dbProfile.genesisIdentifier).to.equal(did.toString());
+    expect(dbProfile.id).to.equal(profileDID.string());
+    expect(dbProfile.genesisIdentifier).to.equal(did.string());
     expect(dbProfile.nonce).to.equal(10);
   });
   it('sign', async () => {
@@ -136,7 +136,7 @@ describe('identity', () => {
         baseUrl: 'http://rhs.com/node'
       }
     });
-    expect(did.toString()).to.equal(
+    expect(did.string()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
@@ -162,7 +162,7 @@ describe('identity', () => {
         baseUrl: 'http://rhs.com/node'
       }
     });
-    expect(did.toString()).to.equal(
+    expect(did.string()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
@@ -183,7 +183,7 @@ describe('identity', () => {
         baseUrl: 'http://rhs.com/node'
       }
     });
-    expect(did.toString()).to.equal(
+    expect(did.string()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
@@ -205,7 +205,7 @@ describe('identity', () => {
         baseUrl: 'http://rhs.com/node'
       }
     });
-    expect(did.toString()).to.equal(
+    expect(did.string()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
@@ -229,7 +229,7 @@ describe('identity', () => {
       }
     });
 
-    expect(issuerDID.toString()).to.equal(
+    expect(issuerDID.string()).to.equal(
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
@@ -249,7 +249,7 @@ describe('identity', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -261,6 +261,6 @@ describe('identity', () => {
     };
     const issuerCred = await wallet.issueCredential(issuerDID, claimReq);
 
-    expect(issuerCred.credentialSubject.id).to.equal(userDID.toString());
+    expect(issuerCred.credentialSubject.id).to.equal(userDID.string());
   });
 });

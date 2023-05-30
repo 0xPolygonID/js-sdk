@@ -151,7 +151,7 @@ export class AuthHandler implements IAuthHandler {
         message: authRequestBody.message,
         scope: []
       },
-      from: did.toString(),
+      from: did.string(),
       to: message.from
     };
 
@@ -166,7 +166,7 @@ export class AuthHandler implements IAuthHandler {
 
       const credsForGenesisDID = await this._credentialWallet.filterByCredentialSubject(creds, did);
       if (credsForGenesisDID.length == 0) {
-        throw new Error(`no credential were issued on the given id ${did.toString()}`);
+        throw new Error(`no credential were issued on the given id ${did.string()}`);
       }
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
@@ -238,7 +238,7 @@ export class AuthHandler implements IAuthHandler {
         message: authRequest.body.message,
         scope: []
       },
-      from: userGenesisDID.toString(),
+      from: userGenesisDID.string(),
       to: authRequest.from
     };
 

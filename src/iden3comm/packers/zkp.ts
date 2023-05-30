@@ -188,5 +188,5 @@ const verifyAuthV2Sender = (from: string, pubSignals: Array<string>): boolean =>
 
 const checkSender = (from: string, id: Id): boolean => {
   const did = DID.parseFromId(id);
-  return from === did.toString();
+  return from === did.string();
 };

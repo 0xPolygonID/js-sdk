@@ -223,7 +223,7 @@ export class CredentialWallet implements ICredentialWallet {
     const authBJJCredsOfIssuer = await this._storage.credential.findCredentialsByQuery({
       context: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD_URL,
       type: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_TYPE,
-      allowedIssuers: [did.toString()]
+      allowedIssuers: [did.string()]
     });
 
     if (!authBJJCredsOfIssuer.length) {
@@ -280,7 +280,7 @@ export class CredentialWallet implements ICredentialWallet {
         const errMsg = e['reason'] ?? e.message;
         if (
           errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
-          isIssuerGenesis(issuerDID.toString(), issuerData.state.value)
+          isIssuerGenesis(issuerDID.string(), issuerData.state.value)
         ) {
           return {
             mtp: new Proof(),
@@ -326,7 +326,6 @@ export class CredentialWallet implements ICredentialWallet {
     const expirationDate =
       !request.expiration || request.expiration == 0 ? null : request.expiration;
 
-    const issuerDID = issuer.toString();
     const credentialSubject = request.credentialSubject;
     credentialSubject['type'] = request.type;
 
@@ -337,7 +336,7 @@ export class CredentialWallet implements ICredentialWallet {
     cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
     cr.issuanceDate = new Date().toISOString();
     cr.credentialSubject = credentialSubject;
-    cr.issuer = issuerDID.toString();
+    cr.issuer = issuer.string();
     cr.credentialSchema = {
       id: request.credentialSchema,
       type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
@@ -407,7 +406,7 @@ export class CredentialWallet implements ICredentialWallet {
     subject: DID
   ): Promise<W3CCredential[]> {
     return credentials.filter((cred: W3CCredential) => {
-      return cred.credentialSubject['id'] === subject.toString();
+      return cred.credentialSubject['id'] === subject.string();
     });
   }
   async findNonRevokedCredential(creds: W3CCredential[]): Promise<{
@@ -435,10 +434,12 @@ export class CredentialWallet implements ICredentialWallet {
  */
 export function isIssuerGenesis(issuer: string, state: string): boolean {
   const did = DID.parse(issuer);
+  const id = DID.idFromDID(did);
+  const { method, blockchain, networkId } = DID.decodePartsFromId(id);
   const arr = BytesHelper.hexToBytes(state);
   const stateBigInt = BytesHelper.bytesToInt(arr);
-  const type = buildDIDType(did.method, did.blockchain, did.networkId);
-  return isGenesisStateId(did.id.bigInt(), stateBigInt, type);
+  const type = buildDIDType(method, blockchain, networkId);
+  return isGenesisStateId(id.bigInt(), stateBigInt, type);
 }
 
 /**

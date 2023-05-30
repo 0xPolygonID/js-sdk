@@ -161,7 +161,7 @@ describe('mtp proofs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -203,7 +203,7 @@ describe('mtp proofs', () => {
       txId
     );
 
-    credWallet.saveAll(credsWithIden3MTPProof);
+    await credWallet.saveAll(credsWithIden3MTPProof);
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
@@ -272,7 +272,7 @@ describe('mtp proofs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },

@@ -126,14 +126,15 @@ export class Parser {
     }
     if (subjectId) {
       const did = DID.parse(subjectId.toString());
+      const id = DID.idFromDID(did);
 
       switch (opts.subjectPosition) {
         case '':
         case SubjectPosition.Index:
-          claim.setIndexId(did.id);
+          claim.setIndexId(id);
           break;
         case SubjectPosition.Value:
-          claim.setValueId(did.id);
+          claim.setValueId(id);
           break;
         default:
           throw new Error('unknown subject position');
