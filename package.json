@@ -8,11 +8,7 @@
   "esm:esbuild": "dist/esm_esbuild/index.js",
   "typings": "dist/types/index.d.ts",
   "files": [
-    "dist",
-    "src",
-    "tsconfig.json",
-    "scripts",
-    "config"
+    "dist"
   ],
   "scripts": {
     "build": "npm run clean && npm run build:esm && npm run build:umd && npm run build:esm:esbuild && npm run build:tsc",
@@ -21,7 +17,6 @@
     "build:tsc": "tsc --module commonjs",
     "build:esm": "tsc -p config/tsconfig.esm.json",
     "clean": "rimraf ./dist",
-    "postinstall": "npm run build",
     "doc:extract": "ts-node ./scripts/doc-extract.ts",
     "doc:documenter": "ts-node ./scripts/doc-documenter.ts",
     "doc:build": "npm run doc:extract && npm run doc:documenter",
@@ -93,7 +88,31 @@
     "rfc4648": "^1.5.2",
     "snarkjs": "^0.5.0",
     "uint8arrays": "^3.0.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
+    "@esbuild-plugins/node-modules-polyfill": "^0.1.4",
+    "@microsoft/api-documenter": "^7.20.1",
+    "@microsoft/api-extractor": "^7.34.4",
+    "@types/chai": "^4.3.4",
+    "@types/chai-as-promised": "^7.1.5",
+    "@types/jsonld": "^1.4.8",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^18.11.17",
+    "@typescript-eslint/eslint-plugin": "^5.41.0",
+    "chai": "^4.3.7",
+    "chai-as-promised": "^7.1.1",
+    "chokidar": "^3.5.3",
+    "esbuild": "^0.15.15",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "fetch-mock": "^9.11.0",
+    "madge": "^6.0.0",
+    "mocha": "10.2.0",
+    "prettier": "^2.7.1",
+    "rimraf": "^2.7.1",
+    "ts-loader": "^9.4.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.4"
   },
   "browserslist": {
     "production": [
