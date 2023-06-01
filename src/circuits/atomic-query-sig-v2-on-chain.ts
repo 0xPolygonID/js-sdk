@@ -1,5 +1,5 @@
 import { newHashFromString, Proof, circomSiblingsFromSiblings} from '@iden3/js-merkletree';
-import { Id, SchemaHash, Claim} from '@iden3/js-iden3-core';
+import { Id, Claim} from '@iden3/js-iden3-core';
 import { Signature } from '@iden3/js-crypto';
 import { Query, ValueProof, CircuitError, ClaimWithSigProof, TreeState, GISTProof } from './models';
 import { Hash } from '@iden3/js-merkletree';
@@ -11,7 +11,6 @@ import {
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
-import { QueryOperators } from './comparer';
 import { byteDecoder, byteEncoder } from '../utils';
 
 /**
@@ -396,8 +395,6 @@ export class AtomicQuerySigV2OnChainPubSignals extends BaseConfig {
     fieldIdx++;
 
     return this;
-
-
   }
 
 }
