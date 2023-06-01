@@ -21,7 +21,7 @@
     "build:tsc": "tsc --module commonjs",
     "build:esm": "tsc -p config/tsconfig.esm.json",
     "clean": "rimraf ./dist",
-    "postinstall": "npm run build",
+    "prepare": "npm run build",
     "doc:extract": "ts-node ./scripts/doc-extract.ts",
     "doc:documenter": "ts-node ./scripts/doc-documenter.ts",
     "doc:build": "npm run doc:extract && npm run doc:documenter",
