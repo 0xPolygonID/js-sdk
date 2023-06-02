@@ -162,19 +162,19 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
             // value in this path in merklized json-ld document
             slotIndex: this.query.slotIndex,
             isRevocationChecked: 1,
-            authClaim: this.authClaim,
-            authClaimIncMtp: circomSiblingsFromSiblings(this.authClaimIncMtp.allSiblings(), this.getMTLevel() - 1),
-            authClaimNonRevMtp: circomSiblingsFromSiblings(this.authClaimNonRevMtp.allSiblings(), this.getMTLevel() - 1),
+            authClaim: this.authClaim?.marshalJson(),
+            authClaimIncMtp: prepareSiblingsStr(this.authClaimIncMtp, this.getMTLevel()),
+            authClaimNonRevMtp: prepareSiblingsStr(this.authClaimNonRevMtp, this.getMTLevel()),
             challenge: this.challenge.toString(),
             challengeSignatureR8x: this.signature.R8[0].toString(),
             challengeSignatureR8y: this.signature.R8[1].toString(),
             challengeSignatureS: this.signature.S.toString(),
-            userClaimsTreeRoot: this.treeState.claimsRoot,
-            userRevTreeRoot: this.treeState.revocationRoot,
-            userRootsTreeRoot: this.treeState.rootOfRoots,
-            userState: this.treeState.state,
-            gistRoot: this.gistProof.root,
-            gistMtp: circomSiblingsFromSiblings(this.gistProof.proof.allSiblings(), this.getMTLevelOnChain() - 1)
+            userClaimsTreeRoot: this.treeState.claimsRoot.string(),
+            userRevTreeRoot: this.treeState.revocationRoot.string(),
+            userRootsTreeRoot: this.treeState.rootOfRoots.string(),
+            userState: this.treeState.state.string(),
+            gistRoot: this.gistProof.root.string(),
+            gistMtp: prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain())
         };
 
         if (this.skipClaimRevocationCheck) {
@@ -203,13 +203,13 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
         s.value = bigIntArrayToStringArray(values);
 
         const nodeAuxAuth = getNodeAuxValue(this.authClaimNonRevMtp)
-        s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key
-        s.authClaimNonRevMtpAuxHv = nodeAuxAuth.value
+        s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key.string()
+        s.authClaimNonRevMtpAuxHv = nodeAuxAuth.value.string()
         s.authClaimNonRevMtpNoAux = nodeAuxAuth.noAux
 
         const globalNodeAux = getNodeAuxValue(this.gistProof.proof)
-        s.gistMtpAuxHi = globalNodeAux.key
-        s.gistMtpAuxHv = globalNodeAux.value
+        s.gistMtpAuxHi = globalNodeAux.key.string()
+        s.gistMtpAuxHv = globalNodeAux.value.string()
         s.gistMtpNoAux = globalNodeAux.noAux
 
         return byteEncoder.encode(JSON.stringify(s));
@@ -274,13 +274,13 @@ export class AtomicQuerySigV2OnChainCircuitInputs {
     value: string[];
 
     // AuthClaim proof of inclusion
-    authClaim: Claim;
-    authClaimIncMtp: Hash[];
+    authClaim: string[];
+    authClaimIncMtp: string[];
     
     // AuthClaim non revocation proof
-    authClaimNonRevMtp: Hash[];
-    authClaimNonRevMtpAuxHi: Hash;
-    authClaimNonRevMtpAuxHv: Hash;
+    authClaimNonRevMtp: string[];
+    authClaimNonRevMtpAuxHi: string;
+    authClaimNonRevMtpAuxHv: string;
     authClaimNonRevMtpNoAux: string;
 
     challenge: string;
@@ -289,16 +289,16 @@ export class AtomicQuerySigV2OnChainCircuitInputs {
     challengeSignatureS: string;
 
     // User State
-    userClaimsTreeRoot: Hash;
-    userRevTreeRoot: Hash;
-    userRootsTreeRoot: Hash;
-    userState: Hash;
+    userClaimsTreeRoot: string;
+    userRevTreeRoot: string;
+    userRootsTreeRoot: string;
+    userState: string;
 
     // Global on-cain state
-    gistRoot: Hash;
-    gistMtp: Hash[];
-    gistMtpAuxHi: Hash;
-    gistMtpAuxHv: Hash;
+    gistRoot: string;
+    gistMtp: string[];
+    gistMtpAuxHi: string;
+    gistMtpAuxHv: string;
     gistMtpNoAux: string;
 }
 

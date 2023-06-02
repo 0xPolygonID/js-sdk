@@ -357,3 +357,60 @@ export const JSONSerializer = (key, value) => {
 };
 
 export const globalTree = () => new Merkletree(new InMemoryDB(str2Bytes('')), true, 64);
+
+export const coreSchemaFromStr = (schemaIntString: string) => {
+  const schemaInt = BigInt(schemaIntString);
+  return SchemaHash.newSchemaHashFromInt(schemaInt);
+}
+
+// BatchSize defined by poseidon hash implementation in Solidity
+const BatchSize = 5
+
+export const poseidonHashValue = (values: bigint[]) => {
+  if (!values) {
+    throw new Error('values not provided')
+  }
+  
+  if (!values.length) {
+    throw new Error('empty values')
+  }
+  
+  let internalCount = 0;
+  const getValueByIndex = (arr: bigint[], idx: number, length: number): bigint => 
+    (idx < length) ? arr[idx] : BigInt(0); 
+
+  const l = values.length;
+  const hashFnBatchSize = 6;
+  let fullHash = poseidon.hash([
+    getValueByIndex(values, 0, l),
+    getValueByIndex(values, 1, l),
+    getValueByIndex(values, 2, l),
+    getValueByIndex(values, 3, l),
+    getValueByIndex(values, 4, l),
+    getValueByIndex(values, 5, l),
+  ]);
+
+  const restLength = l - hashFnBatchSize;
+  if (restLength > BatchSize) {
+    const r = restLength % hashFnBatchSize;
+    let diff = 0;
+    if (r != 0) {
+      diff = BatchSize - r;
+    }
+    internalCount = (restLength + diff) / BatchSize;
+  }
+
+  for (let i = 0; i < internalCount; i++) {
+    let elemIdx = i * BatchSize + hashFnBatchSize;
+    fullHash = poseidon.hash([fullHash,
+      getValueByIndex(values, elemIdx, l),
+      getValueByIndex(values, elemIdx+1, l),
+      getValueByIndex(values, elemIdx+2, l),
+      getValueByIndex(values, elemIdx+3, l),
+      getValueByIndex(values, elemIdx+4, l),
+    ]);
+  }
+
+  return fullHash;
+
+}
