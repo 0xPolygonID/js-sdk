@@ -19,7 +19,7 @@ import {
   poseidonHashValue,
 } from './utils';
 
-import expectedJson from './data/sig-v2-on-chaon-inputs.json';
+import expectedJson from './data/sig-v2-on-chain-inputs.json';
 import { expect } from 'chai';
 import { byteDecoder, byteEncoder } from '../../src';
 import { poseidon } from '@iden3/js-crypto';

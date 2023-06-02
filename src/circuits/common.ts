@@ -77,7 +77,7 @@ export class BaseConfig {
   circomSiblings(proof: Proof, levels: number): Hash[] {
     const siblings = proof.allSiblings();
     // Add the rest of empty levels to the siblings
-    for(let i = 0; i < siblings.length; i++) {
+    for (let i = 0; i < levels; i++) {
       siblings.push(ZERO_HASH);
     }
     return siblings;

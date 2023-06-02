@@ -174,7 +174,7 @@ export enum CircuitError {
   EmptyId = 'empty Id',
   EmptyChallenge = 'empty challenge',
   EmptyGlobalProof = 'empty global identity mtp proof',
-  EmptyGISTProof = "empty GIST identity mtp proof",
+  EmptyGISTProof = 'empty GIST identity mtp proof',
   EmptyRequestID = 'empty request ID'
 }
 
