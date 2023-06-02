@@ -16,7 +16,6 @@ import {
   prepareIntArray,
   globalTree,
   coreSchemaFromStr,
-  poseidonHashValue,
 } from './utils';
 
 import expectedJson from './data/sig-v2-on-chain-inputs.json';
@@ -147,7 +146,7 @@ describe('atomic-query-sig-v2-on-chain', () => {
     );
 
     const expValue = prepareCircuitArrayValues([BigInt(10)], 64);
-    const valueHash = poseidonHashValue(expValue);
+    const valueHash = poseidon.spongeHashX(expValue, 6);
     const schema = coreSchemaFromStr('180410020913331409885634153623124536270');
     const slotIndex = 2;
     const operator = 1;
