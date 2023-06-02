@@ -8,9 +8,9 @@ import {
   AuthorizationRequestMessageBody,
   AuthorizationResponseMessage,
   IPackageManager,
+  PackerParams,
   ZeroKnowledgeProofRequest,
-  ZeroKnowledgeProofResponse,
-  ZKPPackerParams
+  ZeroKnowledgeProofResponse
 } from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
@@ -127,7 +127,15 @@ export class AuthHandler implements IAuthHandler {
    */
   async handleAuthorizationRequestForGenesisDID(
     did: DID,
-    request: Uint8Array
+    request: Uint8Array,
+    packerOpts: {
+      MediaType: MediaType;
+    } & PackerParams = {
+      senderDID: did,
+      MediaType: MediaType.ZKPMessage,
+      profileNonce: 0,
+      provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+    }
   ): Promise<{
     token: string;
     authRequest: AuthorizationRequestMessage;
@@ -143,7 +151,7 @@ export class AuthHandler implements IAuthHandler {
     const guid = uuid.v4();
     const authResponse: AuthorizationResponseMessage = {
       id: guid,
-      typ: MediaType.ZKPMessage,
+      typ: packerOpts.MediaType,
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
       thid: message.thid ?? guid,
       body: {
@@ -179,11 +187,7 @@ export class AuthHandler implements IAuthHandler {
     }
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
     const token = byteDecoder.decode(
-      await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
-        senderDID: did,
-        profileNonce: 0,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-      } as ZKPPackerParams)
+      await this._packerMgr.pack(packerOpts.MediaType, msgBytes, packerOpts)
     );
     return { authRequest, authResponse, token };
   }
