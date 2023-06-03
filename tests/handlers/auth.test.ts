@@ -257,7 +257,12 @@ describe('auth', () => {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-    const authRes = await authHandler.handleAuthorizationRequestForGenesisDID(userDID, msgBytes);
+    const authRes = await authHandler.handleAuthorizationRequestForGenesisDID(userDID, msgBytes, {
+      senderDID: issuerDID,
+      mediaType: MediaType.ZKPMessage,
+      profileNonce: 0,
+      provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg.toString()
+    });
 
     const tokenStr = authRes.token;
     console.log(tokenStr);

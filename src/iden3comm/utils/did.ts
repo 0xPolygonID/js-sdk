@@ -31,7 +31,7 @@ export const resolveDIDDocument = async (
   try {
     const response = await fetch(`${UNIVERSAL_RESOLVER_URL}/${didUrl}`);
     const data = await response.json();
-    return { didDocument: data } as DIDResolutionResult;
+    return data as DIDResolutionResult;
   } catch (error) {
     throw new Error(`Can't resolve did document: ${error.message}`);
   }

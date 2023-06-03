@@ -52,7 +52,10 @@ export interface IAuthHandler {
    */
   handleAuthorizationRequestForGenesisDID(
     did: DID,
-    request: Uint8Array
+    request: Uint8Array,
+    packerOpts: {
+      mediaType: MediaType;
+    } & PackerParams
   ): Promise<{
     token: string;
     authRequest: AuthorizationRequestMessage;
@@ -129,10 +132,11 @@ export class AuthHandler implements IAuthHandler {
     did: DID,
     request: Uint8Array,
     packerOpts: {
-      MediaType: MediaType;
+      mediaType: MediaType;
     } & PackerParams = {
       senderDID: did,
-      MediaType: MediaType.ZKPMessage,
+      //todo: rename to mediaType
+      mediaType: MediaType.ZKPMessage,
       profileNonce: 0,
       provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
     }
@@ -151,7 +155,7 @@ export class AuthHandler implements IAuthHandler {
     const guid = uuid.v4();
     const authResponse: AuthorizationResponseMessage = {
       id: guid,
-      typ: packerOpts.MediaType,
+      typ: packerOpts.mediaType,
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
       thid: message.thid ?? guid,
       body: {
@@ -187,7 +191,7 @@ export class AuthHandler implements IAuthHandler {
     }
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
     const token = byteDecoder.decode(
-      await this._packerMgr.pack(packerOpts.MediaType, msgBytes, packerOpts)
+      await this._packerMgr.pack(packerOpts.mediaType, msgBytes, packerOpts)
     );
     return { authRequest, authResponse, token };
   }
