@@ -388,7 +388,6 @@ export class ProofService implements IProofService {
         preparedCredential.credential,
         preparedCredential.credentialCoreClaim
       );
-      query.slotIndex = 2;
       circuitInputs.query = query;
       circuitInputs.claim = {
         issuerID: circuitClaimData.issuerId,
