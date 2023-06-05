@@ -65,8 +65,12 @@ export enum CircuitId {
   StateTransition = 'stateTransition',
   // AtomicQueryMTPV2 is a type for credentialAtomicQueryMTPV2.circom
   AtomicQueryMTPV2 = 'credentialAtomicQueryMTPV2',
+  // AtomicQueryMTPV2OnChain is a type for credentialAtomicQueryMTPV2OnChain.circom
+  AtomicQueryMTPV2OnChain = 'credentialAtomicQueryMTPV2OnChain',
   // AtomicQuerySig is a type for credentialAttrQuerySig.circom
-  AtomicQuerySigV2 = 'credentialAtomicQuerySigV2'
+  AtomicQuerySigV2 = 'credentialAtomicQuerySigV2',
+  // AtomicQuerySigOnChain is a type for credentialAttrQuerySig.circom
+  AtomicQuerySigV2OnChain = 'credentialAtomicQuerySigV2OnChain'
 }
 
 /**

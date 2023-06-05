@@ -60,7 +60,7 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
     if (!this.authClaimNonRevMtp) {
       throw new Error(CircuitError.EmptyAuthClaimNonRevProof);
     }
-    if (!this.gistProof.proof) {
+    if (!this.gistProof?.proof) {
       throw new Error(CircuitError.EmptyGISTProof);
     }
     if (!this.signature) {
