@@ -311,187 +311,228 @@ export class ProofService implements IProofService {
     proofReq: ZeroKnowledgeProofRequest,
     opts: ProofGenerationOptions
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
-    if (proofReq.circuitId === CircuitId.AtomicQueryMTPV2) {
-      const circuitClaimData = await this.newCircuitClaimData(
-        preparedCredential.credential,
-        preparedCredential.credentialCoreClaim
-      );
-
-      circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
-
-      const circuitInputs = new AtomicQueryMTPV2Inputs();
-      circuitInputs.id = identifier.id;
-      circuitInputs.requestID = BigInt(proofReq.id);
-      const { query, vp } = await this.toCircuitsQuery(
-        proofReq.query,
-        preparedCredential.credential,
-        preparedCredential.credentialCoreClaim
-      );
-      circuitInputs.query = query;
-      circuitInputs.claim = {
-        issuerID: circuitClaimData.issuerId,
-        claim: circuitClaimData.claim,
-        incProof: { proof: circuitClaimData.proof, treeState: circuitClaimData.treeState },
-        nonRevProof: circuitClaimData.nonRevProof
-      };
-      circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-      circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
-      circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
-      circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
-
-      return { inputs: circuitInputs.inputsMarshal(), vp };
+    let generateInputFn;
+    switch(proofReq.circuitId) {
+      case CircuitId.AtomicQueryMTPV2:
+        generateInputFn = this.generateMTPV2Inputs.bind(this);
+        break;
+      case CircuitId.AtomicQueryMTPV2OnChain:
+        generateInputFn = this.generateMTPV2OnChainInputs.bind(this);
+        break;
+      case CircuitId.AtomicQuerySigV2:
+        generateInputFn = this.generateQuerySigV2Inputs.bind(this);
+        break;
+      case CircuitId.AtomicQuerySigV2OnChain:
+        generateInputFn = this.generateQuerySigV2OnChainInputs.bind(this);
+        break;
+      default:
+        throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
-    if (proofReq.circuitId === CircuitId.AtomicQueryMTPV2OnChain) {
-      const circuitClaimData = await this.newCircuitClaimData(
-        preparedCredential.credential,
-        preparedCredential.credentialCoreClaim
-      );
-      const authPrepared = await this.prepareAuthBJJCredential(identifier);
-      const authClaimData = await this.newCircuitClaimData(
-        authPrepared.authCredential,
-        authPrepared.authCoreClaim
-      );
+    
+    return generateInputFn(preparedCredential, identifier, proofReq, opts);
+   
+  }
 
-      circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
+  private async generateMTPV2Inputs(
+    preparedCredential: PreparedCredential,
+    identifier: DID,
+    proofReq: ZeroKnowledgeProofRequest,
+    opts: ProofGenerationOptions
+  ): Promise<{ inputs: Uint8Array; vp?: object }>{
+    const circuitClaimData = await this.newCircuitClaimData(
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
+    circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
+    const circuitInputs = new AtomicQueryMTPV2Inputs();
+    circuitInputs.id = identifier.id;
+    circuitInputs.requestID = BigInt(proofReq.id);
+    const { query, vp } = await this.toCircuitsQuery(
+      proofReq.query,
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
+    circuitInputs.query = query;
+    circuitInputs.claim = {
+      issuerID: circuitClaimData.issuerId,
+      claim: circuitClaimData.claim,
+      incProof: { proof: circuitClaimData.proof, treeState: circuitClaimData.treeState },
+      nonRevProof: circuitClaimData.nonRevProof
+    };
+    circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
+    circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
+    circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
+    circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
 
-      const circuitInputs = new AtomicQueryMTPV2OnChainInputs();
-      circuitInputs.id = identifier.id;
-      circuitInputs.requestID = BigInt(proofReq.id);
+    return { inputs: circuitInputs.inputsMarshal(), vp };
+  }
 
-      const stateProof = await this._stateStorage.getGISTProof(identifier.id.bigInt());
+  private async generateMTPV2OnChainInputs(
+    preparedCredential: PreparedCredential,
+    identifier: DID,
+    proofReq: ZeroKnowledgeProofRequest,
+    opts: ProofGenerationOptions
+  ): Promise<{ inputs: Uint8Array; vp?: object }> {
+    const circuitClaimData = await this.newCircuitClaimData(
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
+    const authPrepared = await this.prepareAuthBJJCredential(identifier);
+    const authClaimData = await this.newCircuitClaimData(
+      authPrepared.authCredential,
+      authPrepared.authCoreClaim
+    );
 
-      const gistProof = toGISTProof(stateProof);
-      circuitInputs.gistProof = gistProof;
+    circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
-      circuitInputs.treeState = {
-        state: authClaimData.treeState.state,
-        claimsRoot: authClaimData.treeState.claimsRoot,
-        revocationRoot: authClaimData.treeState.revocationRoot,
-        rootOfRoots: authClaimData.treeState.rootOfRoots
-      };
+    const circuitInputs = new AtomicQueryMTPV2OnChainInputs();
+    circuitInputs.id = identifier.id;
+    circuitInputs.requestID = BigInt(proofReq.id);
 
-      const challenge = Poseidon.hash([circuitInputs.treeState.state.bigInt()]);
-      circuitInputs.authClaim = authClaimData.claim;
-      circuitInputs.authClaimIncMtp = authClaimData.proof;
-      circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
+    const stateProof = await this._stateStorage.getGISTProof(identifier.id.bigInt());
 
-      const signature = await this._identityWallet.signChallenge(
-        challenge,
-        authPrepared.authCredential
-      );
+    const gistProof = toGISTProof(stateProof);
+    circuitInputs.gistProof = gistProof;
 
-      circuitInputs.signature = signature;
-      circuitInputs.challenge = challenge;
+    circuitInputs.treeState = {
+      state: authClaimData.treeState.state,
+      claimsRoot: authClaimData.treeState.claimsRoot,
+      revocationRoot: authClaimData.treeState.revocationRoot,
+      rootOfRoots: authClaimData.treeState.rootOfRoots
+    };
 
-      const { query, vp } = await this.toCircuitsQuery(
-        proofReq.query,
-        preparedCredential.credential,
-        preparedCredential.credentialCoreClaim
-      );
-      circuitInputs.query = query;
-      circuitInputs.claim = {
-        issuerID: circuitClaimData.issuerId,
-        claim: circuitClaimData.claim,
-        incProof: { proof: circuitClaimData.proof, treeState: circuitClaimData.treeState },
-        nonRevProof: circuitClaimData.nonRevProof
-      };
-      circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-      circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
-      circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
-      circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
+    const challenge = Poseidon.hash([circuitInputs.treeState.state.bigInt()]);
+    circuitInputs.authClaim = authClaimData.claim;
+    circuitInputs.authClaimIncMtp = authClaimData.proof;
+    circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
 
-      return { inputs: circuitInputs.inputsMarshal(), vp };
-    }
-    if (proofReq.circuitId === CircuitId.AtomicQuerySigV2) {
-      const circuitClaimData = await this.newCircuitClaimData(
-        preparedCredential.credential,
-        preparedCredential.credentialCoreClaim
-      );
+    const signature = await this._identityWallet.signChallenge(
+      challenge,
+      authPrepared.authCredential
+    );
 
-      circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
+    circuitInputs.signature = signature;
+    circuitInputs.challenge = challenge;
 
-      const circuitInputs = new AtomicQuerySigV2Inputs();
-      circuitInputs.id = identifier.id;
-      circuitInputs.claim = {
-        issuerID: circuitClaimData.issuerId,
-        signatureProof: circuitClaimData.signatureProof,
-        claim: circuitClaimData.claim,
-        nonRevProof: circuitClaimData.nonRevProof
-      };
-      circuitInputs.requestID = BigInt(proofReq.id);
-      circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
-      circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
-      circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
-      const { query, vp } = await this.toCircuitsQuery(
-        proofReq.query,
-        preparedCredential.credential,
-        preparedCredential.credentialCoreClaim
-      );
-      circuitInputs.query = query;
-      circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-      return { inputs: circuitInputs.inputsMarshal(), vp };
-    }
-    if (proofReq.circuitId === CircuitId.AtomicQuerySigV2OnChain) {
-      const circuitClaimData = await this.newCircuitClaimData(
-        preparedCredential.credential,
-        preparedCredential.credentialCoreClaim
-      );
+    const { query, vp } = await this.toCircuitsQuery(
+      proofReq.query,
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
+    circuitInputs.query = query;
+    circuitInputs.claim = {
+      issuerID: circuitClaimData.issuerId,
+      claim: circuitClaimData.claim,
+      incProof: { proof: circuitClaimData.proof, treeState: circuitClaimData.treeState },
+      nonRevProof: circuitClaimData.nonRevProof
+    };
+    circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
+    circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
+    circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
+    circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
 
-      const authPrepared = await this.prepareAuthBJJCredential(identifier);
-      const authClaimData = await this.newCircuitClaimData(
-        authPrepared.authCredential,
-        authPrepared.authCoreClaim
-      );
+    return { inputs: circuitInputs.inputsMarshal(), vp };
+  }
 
-      circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
+  private async generateQuerySigV2Inputs(
+    preparedCredential: PreparedCredential,
+    identifier: DID,
+    proofReq: ZeroKnowledgeProofRequest,
+    opts: ProofGenerationOptions
+  ): Promise<{ inputs: Uint8Array; vp?: object }> {
+    const circuitClaimData = await this.newCircuitClaimData(
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
 
-      const circuitInputs = new AtomicQuerySigV2OnChainInputs();
-      circuitInputs.id = identifier.id;
-      circuitInputs.claim = {
-        issuerID: circuitClaimData.issuerId,
-        signatureProof: circuitClaimData.signatureProof,
-        claim: circuitClaimData.claim,
-        nonRevProof: circuitClaimData.nonRevProof
-      };
-      circuitInputs.requestID = BigInt(proofReq.id);
-      circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
-      circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
-      circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
-      const { query, vp } = await this.toCircuitsQuery(
-        proofReq.query,
-        preparedCredential.credential,
-        preparedCredential.credentialCoreClaim
-      );
-      circuitInputs.query = query;
-      circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
+    circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
-      circuitInputs.treeState = {
-        state: authClaimData.treeState.state,
-        claimsRoot: authClaimData.treeState.claimsRoot,
-        revocationRoot: authClaimData.treeState.revocationRoot,
-        rootOfRoots: authClaimData.treeState.rootOfRoots
-      };
+    const circuitInputs = new AtomicQuerySigV2Inputs();
+    circuitInputs.id = identifier.id;
+    circuitInputs.claim = {
+      issuerID: circuitClaimData.issuerId,
+      signatureProof: circuitClaimData.signatureProof,
+      claim: circuitClaimData.claim,
+      nonRevProof: circuitClaimData.nonRevProof
+    };
+    circuitInputs.requestID = BigInt(proofReq.id);
+    circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
+    circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
+    circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
+    const { query, vp } = await this.toCircuitsQuery(
+      proofReq.query,
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
+    circuitInputs.query = query;
+    circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
+    return { inputs: circuitInputs.inputsMarshal(), vp };
+  }
 
-      const stateProof = await this._stateStorage.getGISTProof(identifier.id.bigInt());
-      const gistProof = toGISTProof(stateProof);
-      circuitInputs.gistProof = gistProof;
+  private async generateQuerySigV2OnChainInputs(
+    preparedCredential: PreparedCredential,
+    identifier: DID,
+    proofReq: ZeroKnowledgeProofRequest,
+    opts: ProofGenerationOptions
+  ): Promise<{ inputs: Uint8Array; vp?: object }> {
+    const circuitClaimData = await this.newCircuitClaimData(
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
 
-      const challenge = Poseidon.hash([circuitInputs.treeState.state.bigInt()]);
-      circuitInputs.authClaim = authClaimData.claim;
-      circuitInputs.authClaimIncMtp = authClaimData.proof;
-      circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
+    const authPrepared = await this.prepareAuthBJJCredential(identifier);
+    const authClaimData = await this.newCircuitClaimData(
+      authPrepared.authCredential,
+      authPrepared.authCoreClaim
+    );
 
-      const signature = await this._identityWallet.signChallenge(
-        challenge,
-        authPrepared.authCredential
-      );
+    circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
-      circuitInputs.signature = signature;
-      circuitInputs.challenge = challenge;
+    const circuitInputs = new AtomicQuerySigV2OnChainInputs();
+    circuitInputs.id = identifier.id;
+    circuitInputs.claim = {
+      issuerID: circuitClaimData.issuerId,
+      signatureProof: circuitClaimData.signatureProof,
+      claim: circuitClaimData.claim,
+      nonRevProof: circuitClaimData.nonRevProof
+    };
+    circuitInputs.requestID = BigInt(proofReq.id);
+    circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
+    circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
+    circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
+    const { query, vp } = await this.toCircuitsQuery(
+      proofReq.query,
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
+    circuitInputs.query = query;
+    circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
-      return { inputs: circuitInputs.inputsMarshal(), vp };
-    }
-    throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
+    circuitInputs.treeState = {
+      state: authClaimData.treeState.state,
+      claimsRoot: authClaimData.treeState.claimsRoot,
+      revocationRoot: authClaimData.treeState.revocationRoot,
+      rootOfRoots: authClaimData.treeState.rootOfRoots
+    };
+
+    const stateProof = await this._stateStorage.getGISTProof(identifier.id.bigInt());
+    const gistProof = toGISTProof(stateProof);
+    circuitInputs.gistProof = gistProof;
+
+    const challenge = Poseidon.hash([circuitInputs.treeState.state.bigInt()]);
+    circuitInputs.authClaim = authClaimData.claim;
+    circuitInputs.authClaimIncMtp = authClaimData.proof;
+    circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
+
+    const signature = await this._identityWallet.signChallenge(
+      challenge,
+      authPrepared.authCredential
+    );
+
+    circuitInputs.signature = signature;
+    circuitInputs.challenge = challenge;
+
+    return { inputs: circuitInputs.inputsMarshal(), vp };
   }
 
   // NewCircuitClaimData generates circuits claim structure
