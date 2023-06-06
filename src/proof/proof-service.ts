@@ -71,7 +71,7 @@ export interface ProofGenerationOptions {
   authProfileNonce: number;
   credentialSubjectProfileNonce: number;
   skipRevocation: boolean;
-  challange: bigint;
+  challenge: bigint;
 }
 
 export interface IProofService {
@@ -189,7 +189,7 @@ export class ProofService implements IProofService {
         authProfileNonce: 0,
         credentialSubjectProfileNonce: 0,
         skipRevocation: false,
-        challange: 0n
+        challenge: 0n
       };
     }
     const preparedCredential: PreparedCredential = await this.getPreparedCredential(credential);
@@ -408,12 +408,12 @@ export class ProofService implements IProofService {
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
 
     const signature = await this._identityWallet.signChallenge(
-      opts.challange,
+      opts.challenge,
       authPrepared.authCredential
     );
 
     circuitInputs.signature = signature;
-    circuitInputs.challenge = opts.challange;
+    circuitInputs.challenge = opts.challenge;
 
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
@@ -525,12 +525,12 @@ export class ProofService implements IProofService {
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
 
     const signature = await this._identityWallet.signChallenge(
-      opts.challange,
+      opts.challenge,
       authPrepared.authCredential
     );
 
     circuitInputs.signature = signature;
-    circuitInputs.challenge = opts.challange;
+    circuitInputs.challenge = opts.challenge;
 
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
