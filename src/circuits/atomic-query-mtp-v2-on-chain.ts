@@ -66,7 +66,7 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
     if (!this.signature) {
       throw new Error(CircuitError.EmptyChallengeSignature);
     }
-    if (!this.challenge) {
+    if (this.challenge === null || this.challenge === undefined) {
       throw new Error(CircuitError.EmptyChallenge);
     }
   }

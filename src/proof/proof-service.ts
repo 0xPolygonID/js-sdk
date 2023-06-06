@@ -71,6 +71,7 @@ export interface ProofGenerationOptions {
   authProfileNonce: number;
   credentialSubjectProfileNonce: number;
   skipRevocation: boolean;
+  challange: bigint;
 }
 
 export interface IProofService {
@@ -187,7 +188,8 @@ export class ProofService implements IProofService {
       opts = {
         authProfileNonce: 0,
         credentialSubjectProfileNonce: 0,
-        skipRevocation: false
+        skipRevocation: false,
+        challange: 0n
       };
     }
     const preparedCredential: PreparedCredential = await this.getPreparedCredential(credential);
@@ -401,18 +403,17 @@ export class ProofService implements IProofService {
       rootOfRoots: authClaimData.treeState.rootOfRoots
     };
 
-    const challenge = Poseidon.hash([circuitInputs.treeState.state.bigInt()]);
     circuitInputs.authClaim = authClaimData.claim;
     circuitInputs.authClaimIncMtp = authClaimData.proof;
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
 
     const signature = await this._identityWallet.signChallenge(
-      challenge,
+      opts.challange,
       authPrepared.authCredential
     );
 
     circuitInputs.signature = signature;
-    circuitInputs.challenge = challenge;
+    circuitInputs.challenge = opts.challange;
 
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
@@ -519,18 +520,17 @@ export class ProofService implements IProofService {
     const gistProof = toGISTProof(stateProof);
     circuitInputs.gistProof = gistProof;
 
-    const challenge = Poseidon.hash([circuitInputs.treeState.state.bigInt()]);
     circuitInputs.authClaim = authClaimData.claim;
     circuitInputs.authClaimIncMtp = authClaimData.proof;
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
 
     const signature = await this._identityWallet.signChallenge(
-      challenge,
+      opts.challange,
       authPrepared.authCredential
     );
 
     circuitInputs.signature = signature;
-    circuitInputs.challenge = challenge;
+    circuitInputs.challenge = opts.challange;
 
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
