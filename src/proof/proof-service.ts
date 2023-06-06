@@ -26,12 +26,12 @@ import { ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
 import {
   createVerifiablePresentation,
+  CredentialStatus,
   Iden3SparseMerkleTreeProof,
   MerkleTreeProofWithTreeState,
   ProofQuery,
   ProofType,
   RevocationStatus,
-  RHSCredentialStatus,
   verifiablePresentationFromCred,
   W3CCredential
 } from '../verifiable';
@@ -399,7 +399,7 @@ export class ProofService implements IProofService {
       const signature = await bJJSignatureFromHexString(sigProof.signature);
 
       const rs: RevocationStatus = await this._credentialWallet.getRevocationStatus(
-        sigProof.issuerData.credentialStatus as RHSCredentialStatus,
+        sigProof.issuerData.credentialStatus as CredentialStatus,
         DID.parse(sigProof.issuerData.id),
         sigProof.issuerData
       );

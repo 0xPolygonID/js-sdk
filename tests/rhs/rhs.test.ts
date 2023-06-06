@@ -20,7 +20,6 @@ import {
   CredentialStatus,
   CredentialStatusType,
   RevocationStatus,
-  RHSCredentialStatus,
   VerifiableConstants,
   W3CCredential
 } from '../../src/verifiable';
@@ -171,7 +170,7 @@ describe('rhs', () => {
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };
-    const credRHSStatus: RHSCredentialStatus = {
+    const credRHSStatus: CredentialStatus = {
       id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       revocationNonce: 0,
@@ -223,7 +222,7 @@ describe('rhs', () => {
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };
-    const credRHSStatus: RHSCredentialStatus = {
+    const credRHSStatus: CredentialStatus = {
       id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       revocationNonce: 0,
@@ -300,7 +299,7 @@ describe('rhs', () => {
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };
-    const credRHSStatus: RHSCredentialStatus = {
+    const credRHSStatus: CredentialStatus = {
       id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       revocationNonce: 1000,

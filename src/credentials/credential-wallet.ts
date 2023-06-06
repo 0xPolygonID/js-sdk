@@ -8,7 +8,6 @@ import {
   SubjectPosition,
   MerklizedRootPosition,
   CredentialStatus,
-  RHSCredentialStatus,
   RevocationStatus,
   CredentialStatusType,
   IssuerData
@@ -161,13 +160,13 @@ export interface ICredentialWallet {
   /**
    * Fetches Revocation status depended on type
    *
-   * @param {(CredentialStatus | RHSCredentialStatus)} credStatus - credentialStatus field of the Verifiable Credential.  Supported types for credentialStatus field: SparseMerkleTreeProof, Iden3ReverseSparseMerkleTreeProof
+   * @param {(CredentialStatus )} credStatus - credentialStatus field of the Verifiable Credential.  Supported types for credentialStatus field: SparseMerkleTreeProof, Iden3ReverseSparseMerkleTreeProof
    * @param {DID} issuerDID  - credential issuer identity
    * @param {IssuerData} issuerData - metadata of the issuer, usually contained in the BjjSignature / Iden3SparseMerkleTreeProof
    * @returns `Promise<RevocationStatus>`
    */
   getRevocationStatus(
-    credStatus: CredentialStatus | RHSCredentialStatus,
+    credStatus: CredentialStatus,
     issuerDID: DID,
     issuerData: IssuerData
   ): Promise<RevocationStatus>;
@@ -263,43 +262,43 @@ export class CredentialWallet implements ICredentialWallet {
    * {@inheritDoc ICredentialWallet.getRevocationStatus}
    */
   async getRevocationStatus(
-    credStatus: CredentialStatus | RHSCredentialStatus,
+    credStatus: CredentialStatus,
     issuerDID: DID,
     issuerData: IssuerData
   ): Promise<RevocationStatus> {
-    if (credStatus.type === CredentialStatusType.SparseMerkleTreeProof) {
-      const revStatusDTO = await (await fetch(credStatus.id)).json();
+    switch (credStatus.type) {
+      case CredentialStatusType.SparseMerkleTreeProof: {
+        const revStatusDTO = await (await fetch(credStatus.id)).json();
+        return Object.assign(new RevocationStatusDTO(), revStatusDTO).toRevocationStatus();
+      }
+      case CredentialStatusType.Iden3ReverseSparseMerkleTreeProof: {
+        try {
+          return await getStatusFromRHS(issuerDID, credStatus, this._storage.states);
+        } catch (e) {
+          const errMsg = e['reason'] ?? e.message;
+          if (
+            errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
+            isIssuerGenesis(issuerDID.toString(), issuerData.state.value)
+          ) {
+            return {
+              mtp: new Proof(),
+              issuer: {
+                state: issuerData.state.value,
+                revocationTreeRoot: issuerData.state.revocationTreeRoot,
+                rootOfRoots: issuerData.state.rootOfRoots,
+                claimsTreeRoot: issuerData.state.claimsTreeRoot
+              }
+            };
+          }
 
-      return Object.assign(new RevocationStatusDTO(), revStatusDTO).toRevocationStatus();
-    }
-
-    if (credStatus.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
-      try {
-        return await getStatusFromRHS(issuerDID, credStatus, this._storage.states);
-      } catch (e) {
-        const errMsg = e['reason'] ?? e.message;
-        if (
-          errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
-          isIssuerGenesis(issuerDID.toString(), issuerData.state.value)
-        ) {
-          return {
-            mtp: new Proof(),
-            issuer: {
-              state: issuerData.state.value,
-              revocationTreeRoot: issuerData.state.revocationTreeRoot,
-              rootOfRoots: issuerData.state.rootOfRoots,
-              claimsTreeRoot: issuerData.state.claimsTreeRoot
-            }
-          };
+          if (credStatus?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
+            return await (await fetch(credStatus.id)).json();
+          }
+          throw new Error(`can't fetch revocation status`);
         }
-
-        const status = credStatus as RHSCredentialStatus;
-        if (status?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
-          return await (await fetch(credStatus.id)).json();
-        }
-        throw new Error(`can't fetch revocation status`);
       }
     }
+
     throw new Error('revocation status unknown');
   }
   /**

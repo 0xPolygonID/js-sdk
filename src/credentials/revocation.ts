@@ -14,7 +14,7 @@ import { IStateStorage } from '../storage/interfaces';
 import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
 import { DID } from '@iden3/js-iden3-core';
-import { CredentialStatus, Issuer, RevocationStatus, RHSCredentialStatus } from '../verifiable';
+import { CredentialStatus, Issuer, RevocationStatus } from '../verifiable';
 import { strMTHex } from '../circuits';
 
 /**
@@ -122,13 +122,13 @@ interface NodeHexResponse {
  *
  * @export
  * @param {DID} issuer - issuer identity
- * @param {(CredentialStatus | RHSCredentialStatus)} credStatus - credentialStatus field from the W3C verifiable credential
+ * @param {(CredentialStatus)} credStatus - credentialStatus field from the W3C verifiable credential
  * @param {IStateStorage} stateStorage - storage to fetch current issuer status
  * @returns Promise<RevocationStatus>
  */
 export async function getStatusFromRHS(
   issuer: DID,
-  credStatus: CredentialStatus | RHSCredentialStatus,
+  credStatus: CredentialStatus,
   stateStorage: IStateStorage
 ): Promise<RevocationStatus> {
   const latestStateInfo = await stateStorage.getLatestStateById(issuer.id.bigInt());

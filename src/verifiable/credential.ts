@@ -19,7 +19,7 @@ export class W3CCredential {
   expirationDate?: string;
   issuanceDate?: string;
   credentialSubject: { [key: string]: object | string | number };
-  credentialStatus: CredentialStatus | RHSCredentialStatus;
+  credentialStatus: CredentialStatus;
   issuer: string;
   credentialSchema: CredentialSchema;
   proof?: object;
@@ -149,20 +149,6 @@ export interface CredentialSchema {
 }
 
 /**
- * RHSCredentialStatus contains type, url to fetch RHS info, issuer ID and revocation nonce and backup option to fetch credential status
- *
- * @export
- * @beta
- * @interface   RHSCredentialStatus
- */
-export interface RHSCredentialStatus {
-  id: string;
-  type: CredentialStatusType;
-  revocationNonce: number;
-  statusIssuer?: CredentialStatus;
-}
-
-/**
  *
  * CredentialStatus contains type and revocation Url
  * @export
@@ -173,6 +159,7 @@ export interface CredentialStatus {
   id: string;
   type: CredentialStatusType;
   revocationNonce?: number;
+  statusIssuer?: CredentialStatus;
 }
 
 /**
