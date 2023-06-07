@@ -48,3 +48,9 @@ export interface RootInfo {
   createdAtBlock: bigint;
   replacedAtBlock: bigint;
 }
+
+export interface HistoricalRoots {
+  claimsRoot: bigint;
+  revocationsRoot: bigint;
+  rootsRoot: bigint;
+}

@@ -11,11 +11,13 @@ import {
 } from '@iden3/js-merkletree';
 import { IStateStorage } from '../storage/interfaces';
 
+import { OnChainIssuer } from '../storage/blockchain/onchain';
 import { NODE_TYPE_LEAF, Proof } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
 import { DID } from '@iden3/js-iden3-core';
 import { CredentialStatus, Issuer, RevocationStatus } from '../verifiable';
 import { strMTHex } from '../circuits';
+import { StateProof } from '../storage';
 
 /**
  * Interface to unite contains three trees: claim, revocation and rootOfRoots
@@ -436,4 +438,81 @@ export class RevocationStatusDTO {
       issuer: this.issuer
     };
   }
+}
+
+export async function getRevocationOnChain(
+  credentialStatus: CredentialStatus,
+  stateStorage: IStateStorage,
+  issuer: DID
+): Promise<RevocationStatus> {
+  const { contractAddress, revocationNonce } = parseOnChainID(credentialStatus.id);
+  const chainID = extractChainIDFromAddress(contractAddress);
+
+  if (revocationNonce !== credentialStatus.revocationNonce) {
+    throw new Error('revocationNonce does not match');
+  }
+
+  const latestStateInfo = await stateStorage.getLatestStateById(issuer.id.bigInt());
+  const onChainCaller = new OnChainIssuer(contractAddress, chainID);
+  const roots = await onChainCaller.getRootsByState(latestStateInfo.state);
+  const smtProof = await onChainCaller.getRevocationProofByRoot(
+    revocationNonce,
+    roots.revocationsRoot
+  );
+
+  return {
+    mtp: convertSmtProofToProof(smtProof),
+    issuer: {
+      state: latestStateInfo.state.toString(),
+      claimsTreeRoot: roots.claimsRoot.toString(),
+      revocationTreeRoot: roots.revocationsRoot.toString(),
+      rootOfRoots: roots.rootsRoot.toString()
+    }
+  };
+}
+
+function parseOnChainID(id: string): { contractAddress: string; revocationNonce: number } {
+  const url = new URL(id);
+  if (!url.searchParams.has('contractAddress')) {
+    throw new Error('contractAddress not found');
+  }
+  if (!url.searchParams.has('revocationNonce')) {
+    throw new Error('revocationNonce not found');
+  }
+  // TODO (illia-korotia): after merging core v2 need to parse contract address from did if `contractAddress` is not present in id as param
+  const contractAddress = url.searchParams.get('contractAddress');
+  const revocationNonce = parseInt(url.searchParams.get('revocationNonce'), 10);
+
+  return { contractAddress, revocationNonce };
+}
+
+function extractChainIDFromAddress(address: string): number {
+  const chainID = address.split(':');
+  if (chainID.length !== 2) {
+    throw new Error('invalid contract address');
+  }
+  return parseInt(chainID[0], 10);
+}
+
+function convertSmtProofToProof(smtProof: StateProof): Proof {
+  const p = new Proof();
+  p.existence = smtProof.existence;
+  p.nodeAux = {
+    key: newHashFromBigInt(smtProof.auxIndex),
+    value: newHashFromBigInt(smtProof.auxValue)
+  } as NodeAux;
+
+  const s = smtProof.siblings.map((s) => newHashFromBigInt(BigInt(s)));
+
+  p.siblings = [];
+  p.depth = s.length;
+
+  for (let lvl = 0; lvl < s.length; lvl++) {
+    if (s[lvl].bigInt() !== BigInt(0)) {
+      setBitBigEndian(p.notEmpties, lvl);
+      p.siblings.push(s[lvl]);
+    }
+  }
+
+  return p;
 }

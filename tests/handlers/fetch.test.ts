@@ -188,7 +188,7 @@ describe('fetch', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
@@ -198,7 +198,7 @@ describe('fetch', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 

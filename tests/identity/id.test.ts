@@ -79,7 +79,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: 'http://rhs.com/node'
+        id: 'http://rhs.com/node'
       }
     });
     expect(did.toString()).to.equal(
@@ -106,7 +106,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: 'http://rhs.com/node'
+        id: 'http://rhs.com/node'
       }
     });
     expect(did.toString()).to.equal(
@@ -133,7 +133,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: 'http://rhs.com/node'
+        id: 'http://rhs.com/node'
       }
     });
     expect(did.toString()).to.equal(
@@ -159,7 +159,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: 'http://rhs.com/node'
+        id: 'http://rhs.com/node'
       }
     });
     expect(did.toString()).to.equal(
@@ -180,7 +180,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: 'http://rhs.com/node'
+        id: 'http://rhs.com/node'
       }
     });
     expect(did.toString()).to.equal(
@@ -202,7 +202,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: 'http://rhs.com/node'
+        id: 'http://rhs.com/node'
       }
     });
     expect(did.toString()).to.equal(
@@ -225,7 +225,7 @@ describe('identity', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: 'http://rhs.com/node'
+        id: 'http://rhs.com/node'
       }
     });
 
@@ -240,7 +240,7 @@ describe('identity', () => {
       seed: seedPhraseUser,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: 'http://rhs.com/node'
+        id: 'http://rhs.com/node'
       }
     });
 
@@ -256,7 +256,7 @@ describe('identity', () => {
       expiration: 12345678888,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: 'http://rhs.com/node'
+        id: 'http://rhs.com/node'
       }
     };
     const issuerCred = await wallet.issueCredential(issuerDID, claimReq);

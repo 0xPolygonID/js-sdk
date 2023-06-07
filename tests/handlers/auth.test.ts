@@ -185,7 +185,7 @@ describe('auth', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -196,7 +196,7 @@ describe('auth', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -212,7 +212,7 @@ describe('auth', () => {
       expiration: 1693526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
@@ -275,7 +275,7 @@ describe('auth', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
     const profileDID = await idWallet.createProfile(userDID, 50, 'test verifier');
@@ -287,7 +287,7 @@ describe('auth', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -303,7 +303,7 @@ describe('auth', () => {
       expiration: 1693526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);

@@ -15,7 +15,7 @@ import {
 
 import { JSONSchema } from '../schema-processor';
 import * as uuid from 'uuid';
-import { getStatusFromRHS, RevocationStatusDTO } from './revocation';
+import { getStatusFromRHS, RevocationStatusDTO, getRevocationOnChain } from './revocation';
 import { Proof } from '@iden3/js-merkletree';
 
 // ErrAllClaimsRevoked all claims are revoked.
@@ -63,14 +63,14 @@ export interface CredentialRequest {
    * Revocation options
    *
    * @type {{
-   *     baseUrl: string;
+   *     id: string;
    *     nonce?: number;
    *     type: CredentialStatusType;
    *   }}
    * @memberof CredentialRequest
    */
   revocationOpts: {
-    baseUrl: string;
+    id: string;
     nonce?: number;
     type: CredentialStatusType;
   };
@@ -297,6 +297,9 @@ export class CredentialWallet implements ICredentialWallet {
           throw new Error(`can't fetch revocation status`);
         }
       }
+      case CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023: {
+        return await getRevocationOnChain(credStatus, this._storage.states, issuerDID);
+      }
     }
 
     throw new Error('revocation status unknown');
@@ -344,8 +347,8 @@ export class CredentialWallet implements ICredentialWallet {
 
     const id =
       request.revocationOpts.type === CredentialStatusType.SparseMerkleTreeProof
-        ? `${request.revocationOpts.baseUrl.replace(/\/$/, '')}/${request.revocationOpts.nonce}`
-        : request.revocationOpts.baseUrl;
+        ? `${request.revocationOpts.id.replace(/\/$/, '')}/${request.revocationOpts.nonce}`
+        : request.revocationOpts.id;
 
     cr.credentialStatus = {
       id,
