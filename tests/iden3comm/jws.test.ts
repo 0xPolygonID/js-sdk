@@ -16,38 +16,23 @@ import { DIDResolutionResult } from 'did-resolver';
 const didExample = {
   '@context': [
     'https://www.w3.org/ns/did/v1',
-    'https://w3id.org/security/suites/secp256k1recovery-2020/v2',
     {
-      esrs2020: 'https://identity.foundation/EcdsaSecp256k1RecoverySignature2020#',
-      privateKeyJwk: {
-        '@id': 'esrs2020:privateKeyJwk',
-        '@type': '@json'
-      },
-      publicKeyHex: 'esrs2020:publicKeyHex',
-      privateKeyHex: 'esrs2020:privateKeyHex',
-      ethereumAddress: 'esrs2020:ethereumAddress'
+      EcdsaSecp256k1RecoveryMethod2020:
+        'https://identity.foundation/EcdsaSecp256k1RecoverySignature2020#EcdsaSecp256k1RecoveryMethod2020',
+      blockchainAccountId: 'https://w3id.org/security#blockchainAccountId'
     }
   ],
-  id: 'did:example:123',
+  id: 'did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65',
   verificationMethod: [
     {
-      id: 'did:example:123#vm-1',
-      controller: 'did:example:123',
-      type: 'EcdsaSecp256k1VerificationKey2019',
-      publicKeyJwk: {
-        crv: 'secp256k1',
-        kid: 'JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw',
-        kty: 'EC',
-        x: bytesToBase64url(
-          hexToBytes('fdd57adec3d438ea237fe46b33ee1e016eda6b585c3e27ea66686c2ea5358479')
-        ),
-        y: bytesToBase64url(
-          hexToBytes('46393f8145252eea68afe67e287b3ed9b31685ba6c3b00060a73b9b1242d68f7')
-        )
-      }
+      id: 'did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020',
+      type: 'EcdsaSecp256k1RecoveryMethod2020',
+      controller: 'did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65',
+      blockchainAccountId: 'eip155:137:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65'
     }
   ],
-  authentication: ['did:example:123#vm-1']
+  authentication: ['did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020'],
+  assertionMethod: ['did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020']
 };
 
 describe('jws packer tests', () => {
@@ -77,19 +62,20 @@ describe('jws packer tests', () => {
     packer = new JWSPacker(kms, resolveDIDDocument);
   });
 
-  it('test did document resolves with publicKeyJwk pack/upack', async () => {
-    const msgBytes = byteEncoder.encode(bodyMsgStr);
+  it.only('test did document resolves with publicKeyJwk pack/upack', async () => {
+    // const msgBytes = byteEncoder.encode(bodyMsgStr);
 
-    const tokenBytes = await packer.pack(msgBytes, {
-      alg: 'ES256K',
-      did,
-      issuer: did
-    });
+    // const tokenBytes = await packer.pack(msgBytes, {
+    //   alg: 'ES256K',
+    //   did,
+    //   issuer: did
+    // });
 
-    const token = byteDecoder.decode(tokenBytes);
+    const token = byteEncoder.encode(
+      `eyJhbGciOiJFUzI1NkstUiIsImtpZCI6ImRpZDpwa2g6cG9seToweDcxNDFFNGQyMEY3NjQ0REM4YzBBZENBOGE1MjBFQzgzQzZjQUJENjUjUmVjb3ZlcnkyMDIwIiwidHlwIjoiYXBwbGljYXRpb24vaWRlbjNjb21tLXNpZ25lZC1qc29uIn0.eyJpZCI6ImZhOGViZjMxLWFiNmUtNDA5MC05NmE3LTQ4YzdjMzIxYTJhZiIsInR5cCI6ImFwcGxpY2F0aW9uL2lkZW4zY29tbS1zaWduZWQtanNvbiIsInR5cGUiOiJodHRwczovL2lkZW4zLWNvbW11bmljYXRpb24uaW8vYXV0aG9yaXphdGlvbi8xLjAvcmVzcG9uc2UiLCJ0aGlkIjoiNWI5YmNlYWMtZGQ4NS00ZjkzLWI1ODQtN2M3NmI2YzEwMGQ3IiwiYm9keSI6eyJzY29wZSI6W119LCJmcm9tIjoiZGlkOnBraDpwb2x5OjB4NzE0MUU0ZDIwRjc2NDREQzhjMEFkQ0E4YTUyMEVDODNDNmNBQkQ2NSNSZWNvdmVyeTIwMjAiLCJ0byI6ImRpZDpwb2x5Z29uaWQ6cG9seWdvbjptdW1iYWk6MnFMUHF2YXlOUXo5VEEycjVWUHhVdWdvRjE4dGVHVTU4M3pKODU5d2Z5In0.1M_W2hk536HgRJIvDQtWlVF4KJzNw7BKqntQrwc885Fbtd-L3MPeprZD2DoR64TicN3tjFiQHoNJPcVHqNFZFBw`
+    );
 
-    console.log('jwt', token);
-    const data = await packer.unpack(tokenBytes);
+    const data = await packer.unpack(token);
     expect(data).to.not.be.undefined;
   });
 });

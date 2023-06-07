@@ -147,15 +147,15 @@ export class JWSPacker implements IPacker {
 
     const header = JSON.parse(decodeBase64url(headerStr));
     const message = JSON.parse(decodeBase64url(msgStr));
-    const sender = parse(header.kid)?.did;
-    if (sender !== message.from) {
+    const sender = header.kid ?? '';
+    if (header.kid !== message.from) {
       throw new Error(`Sender does not match DID in message with kid ${header?.kid}`);
     }
     const resolvedDoc = await this._documentResolver.resolve(sender);
     const pubKey = getDIDComponentById(resolvedDoc.didDocument, header.kid, 'authentication');
 
     const verificationResponse = verifyJWS(jws, pubKey);
-
+    console.log('verificationResponse', verificationResponse);
     if (!verificationResponse) {
       throw new Error('JWS verification failed');
     }
