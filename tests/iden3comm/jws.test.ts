@@ -6,12 +6,17 @@ import {
   Sec256k1Provider,
   byteDecoder,
   byteEncoder,
-  bytesToBase64url,
+  bytesToHex,
   hexToBytes,
   keyPath
 } from '../../src';
 import { expect } from 'chai';
 import { DIDResolutionResult } from 'did-resolver';
+import { sha256 } from 'cross-sha256';
+import { ec as EC } from 'elliptic';
+import * as secp from '@noble/secp256k1';
+import { log } from 'console';
+import { ES256KSigner } from 'did-jwt';
 
 const didExample = {
   '@context': [
@@ -36,12 +41,22 @@ const didExample = {
 };
 
 describe('jws packer tests', () => {
-  const did = 'did:example:123';
+  const did = 'did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020';
   let kms: KMS;
   let resolveDIDDocument: { resolve: (did: string) => Promise<DIDResolutionResult> };
   let packer: JWSPacker;
 
-  const bodyMsgStr = `{"type":"https://iden3-communication.io/authorization/1.0/response","from": "${did}", "body":{"scope":[{"type":"zeroknowledge","circuit_id":"auth","pub_signals":["1","18311560525383319719311394957064820091354976310599818797157189568621466950811","323416925264666217617288569742564703632850816035761084002720090377353297920"],"proof_data":{"pi_a":["11130843150540789299458990586020000719280246153797882843214290541980522375072","1300841912943781723022032355836893831132920783788455531838254465784605762713","1"],"pi_b":[["20615768536988438336537777909042352056392862251785722796637590212160561351656","10371144806107778890538857700855108667622042215096971747203105997454625814080"],["19598541350804478549141207835028671111063915635580679694907635914279928677812","15264553045517065669171584943964322117397645147006909167427809837929458012913"],["1","0"]],"pi_c":["16443309279825508893086251290003936935077348754097470818523558082502364822049","2984180227766048100510120407150752052334571876681304999595544138155611963273","1"],"protocol":""}}]}}`;
+  const bodyMsgStr = `{
+    "id": "f1425f32-b1b2-4f2e-9e12-579b543f2aab",
+    "typ": "application/iden3comm-signed-json",
+    "type": "https://iden3-communication.io/authorization/1.0/response",
+    "thid": "5b9bceac-dd85-4f93-b584-7c76b6c100d7",
+    "body": {
+      "scope": []
+    },
+    "from": "did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020",
+    "to": "did:polygonid:polygon:mumbai:2qLPqvayNQz9TA2r5VPxUugoF18teGU583zJ859wfy"
+  }`;
   beforeEach(async () => {
     const sk = '278a5de700e29faae8e40e366ec5012b5ec63d36ec77e8a2417154cc1d25383f';
     const pub =
@@ -64,18 +79,82 @@ describe('jws packer tests', () => {
 
   it.only('test did document resolves with publicKeyJwk pack/upack', async () => {
     // const msgBytes = byteEncoder.encode(bodyMsgStr);
+    // const ec = new EC('secp256k1');
+    // const pk = '88a79135b9260ade920bf7d9972c4ea81120fabc731b8c99a47d694eaab37de5';
+    // const keyEC = ec.keyFromPrivate(pk);
+
+    // const pubKeyN = secp.getPublicKey(hexToBytes(pk));
+
+    // const pubKey = keyEC.getPublic().encode('hex');
+    // const ethWallet = new Wallet(pk);
+
+    // log('pubKey', pubKey);
+    // log('pubKeyN', secp.utils.bytesToHex(pubKeyN));
+    // log('ethWallet', ethWallet.signingKey.publicKey);
+    // log('ethWallet', ethWallet.address);
 
     // const tokenBytes = await packer.pack(msgBytes, {
-    //   alg: 'ES256K',
-    //   did,
-    //   issuer: did
+    //   did: did,
+    //   kid: did,
+    //   alg: 'ES256K-R',
+
+    //   signer: (_: any, msg: any) => {
+    //     return async () => {
+    //       const msgHash = new sha256().update(msg).digest();
+
+    //       const signatureEthWallet = ethWallet.signingKey.sign(msgHash);
+
+    //       // const signature = secp.sign(msgHash, pk);
+
+    //       const signatureElliptic = ec.sign(msgHash, keyEC.getPrivate());
+    //       const s = await ES256KSigner(hexToBytes(pk), true)(msgHash);
+    //       log('s', s);
+    //       log('signatureElliptic.r', signatureElliptic.r);
+    //       log('signatureEthWallet.r', signatureEthWallet.r);
+    //       log('signatureElliptic.s', signatureElliptic.s);
+    //       log('signatureEthWallet.s', signatureEthWallet.s);
+    //       // verify
+    //       const verifyElliptic = ec.verify(
+    //         msgHash,
+    //         {
+    //           r: hexToBytes(signatureEthWallet.r),
+    //           s: hexToBytes(signatureEthWallet.s),
+    //           recoveryParam:
+    //             signatureEthWallet.v === 27
+    //               ? 0
+    //               : signatureEthWallet.v === 28
+    //               ? 1
+    //               : signatureEthWallet.v
+    //         },
+    //         keyEC.getPublic()
+    //       );
+
+    //       log('verifyElliptic', verifyElliptic);
+
+    //       const verifyEthWallet = ethers.recoverAddress(msgHash, signatureEthWallet);
+
+    //       log('verifyEthWallet', verifyEthWallet);
+
+    //       const recoveryId = ec.getKeyRecoveryParam(msgHash, signatureElliptic, keyEC.getPublic());
+    //       // msgHash must be decimal number
+    //       const recoveredPubKey = ec
+    //         .recoverPubKey(msgHash, signatureElliptic, recoveryId)
+    //         .encode('hex');
+    //       log('recoveredPubKey', recoveredPubKey);
+    //       // const bytes = hexToBytes(signatureEthWallet);
+    //       return '';
+    //     };
+    //   }
     // });
 
-    const token = byteEncoder.encode(
-      `eyJhbGciOiJFUzI1NkstUiIsImtpZCI6ImRpZDpwa2g6cG9seToweDcxNDFFNGQyMEY3NjQ0REM4YzBBZENBOGE1MjBFQzgzQzZjQUJENjUjUmVjb3ZlcnkyMDIwIiwidHlwIjoiYXBwbGljYXRpb24vaWRlbjNjb21tLXNpZ25lZC1qc29uIn0.eyJpZCI6ImZhOGViZjMxLWFiNmUtNDA5MC05NmE3LTQ4YzdjMzIxYTJhZiIsInR5cCI6ImFwcGxpY2F0aW9uL2lkZW4zY29tbS1zaWduZWQtanNvbiIsInR5cGUiOiJodHRwczovL2lkZW4zLWNvbW11bmljYXRpb24uaW8vYXV0aG9yaXphdGlvbi8xLjAvcmVzcG9uc2UiLCJ0aGlkIjoiNWI5YmNlYWMtZGQ4NS00ZjkzLWI1ODQtN2M3NmI2YzEwMGQ3IiwiYm9keSI6eyJzY29wZSI6W119LCJmcm9tIjoiZGlkOnBraDpwb2x5OjB4NzE0MUU0ZDIwRjc2NDREQzhjMEFkQ0E4YTUyMEVDODNDNmNBQkQ2NSNSZWNvdmVyeTIwMjAiLCJ0byI6ImRpZDpwb2x5Z29uaWQ6cG9seWdvbjptdW1iYWk6MnFMUHF2YXlOUXo5VEEycjVWUHhVdWdvRjE4dGVHVTU4M3pKODU5d2Z5In0.1M_W2hk536HgRJIvDQtWlVF4KJzNw7BKqntQrwc885Fbtd-L3MPeprZD2DoR64TicN3tjFiQHoNJPcVHqNFZFBw`
+    // const token = byteDecoder.decode(tokenBytes);
+    // console.log(token);
+
+    const t = byteEncoder.encode(
+      `eyJhbGciOiJFUzI1NkstUiIsImtpZCI6ImRpZDpwa2g6cG9seToweDcxNDFFNGQyMEY3NjQ0REM4YzBBZENBOGE1MjBFQzgzQzZjQUJENjUjUmVjb3ZlcnkyMDIwIiwidHlwIjoiYXBwbGljYXRpb24vaWRlbjNjb21tLXNpZ25lZC1qc29uIn0.eyJpZCI6IjA3ZWRhYzM2LWFlZmYtNGVhMy04ZWY2LWI4Nzk4ODk3NzVhMiIsInR5cCI6ImFwcGxpY2F0aW9uL2lkZW4zY29tbS1zaWduZWQtanNvbiIsInR5cGUiOiJodHRwczovL2lkZW4zLWNvbW11bmljYXRpb24uaW8vYXV0aG9yaXphdGlvbi8xLjAvcmVzcG9uc2UiLCJ0aGlkIjoiZmI3YWQ1ZDItNWI1MC00NWRhLThiODAtNzMxNzFlMjE3Zjc0IiwiYm9keSI6eyJzY29wZSI6W119LCJmcm9tIjoiZGlkOnBraDpwb2x5OjB4NzE0MUU0ZDIwRjc2NDREQzhjMEFkQ0E4YTUyMEVDODNDNmNBQkQ2NSNSZWNvdmVyeTIwMjAiLCJ0byI6ImRpZDpwb2x5Z29uaWQ6cG9seWdvbjptdW1iYWk6MnFKNjg5a3BvSnhjU3pCNXNBRkp0UHNTQlNySEY1ZHE3MjJCSE1xVVJMIn0.uK2bpgdZJV_doN-O49335oi3mzVFY_sji_Ze7-y7soHa_f34HjXhdQF0NbQiJ50Ih2m9MFSkTk8rs2ruXnZ-dgA`
     );
 
-    const data = await packer.unpack(token);
+    const data = await packer.unpack(t);
     expect(data).to.not.be.undefined;
   });
 });

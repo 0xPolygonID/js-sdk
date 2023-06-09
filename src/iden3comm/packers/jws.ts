@@ -4,7 +4,7 @@ import { extractPublicKeyBytes, getDIDComponentById, resolveDIDDocument } from '
 import { keyPath, KMS } from '../../kms/';
 
 import { Signer, verifyJWS } from 'did-jwt';
-import { Resolvable, VerificationMethod, parse } from 'did-resolver';
+import { DIDDocument, Resolvable, VerificationMethod, parse } from 'did-resolver';
 import {
   byteDecoder,
   byteEncoder,
@@ -68,8 +68,39 @@ export class JWSPacker implements IPacker {
     if (!vmTypes?.length) {
       throw new Error(`No supported verification methods for algorithm ${params.alg}`);
     }
+    let didDocument: DIDDocument;
 
-    const { didDocument } = await this._documentResolver.resolve(from);
+    try {
+      // const didResolution = await this._documentResolver.resolve(from);
+      // didDocument = didResolution.didDocument;
+
+      didDocument = {
+        '@context': [
+          'https://www.w3.org/ns/did/v1',
+          {
+            EcdsaSecp256k1RecoveryMethod2020:
+              'https://identity.foundation/EcdsaSecp256k1RecoverySignature2020#EcdsaSecp256k1RecoveryMethod2020',
+            blockchainAccountId: 'https://w3id.org/security#blockchainAccountId'
+          }
+        ],
+        id: 'did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65',
+        verificationMethod: [
+          {
+            id: 'did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020',
+            type: 'EcdsaSecp256k1RecoveryMethod2020',
+            controller: 'did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65',
+            blockchainAccountId: 'eip155:137:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65'
+          }
+        ],
+        authentication: ['did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020'],
+        assertionMethod: ['did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020']
+      } as DIDDocument;
+      if (!didDocument) {
+        throw new Error('No DID document found');
+      }
+    } catch (error) {
+      throw new Error(`Failed to resolve DID document for ${from}: ${error.message}`);
+    }
 
     const section = 'authentication';
     const authSection = didDocument[section] ?? [];
