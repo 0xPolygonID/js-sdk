@@ -17,7 +17,7 @@ import { hashElems } from '@iden3/js-merkletree';
 import { DID } from '@iden3/js-iden3-core';
 import { CredentialStatus, Issuer, RevocationStatus } from '../verifiable';
 import { strMTHex } from '../circuits';
-import { StateProof } from '../storage';
+import { StateInfo, StateProof } from '../storage';
 
 /**
  * Interface to unite contains three trees: claim, revocation and rootOfRoots
@@ -445,14 +445,18 @@ export async function getRevocationOnChain(
   stateStorage: IStateStorage,
   issuer: DID
 ): Promise<RevocationStatus> {
-  const { contractAddress, revocationNonce } = parseOnChainID(credentialStatus.id);
-  const chainID = extractChainIDFromAddress(contractAddress);
-
+  const { contractAddress, chainID, revocationNonce } = parseOnChainID(credentialStatus.id);
   if (revocationNonce !== credentialStatus.revocationNonce) {
     throw new Error('revocationNonce does not match');
   }
 
-  const latestStateInfo = await stateStorage.getLatestStateById(issuer.id.bigInt());
+  let latestStateInfo: StateInfo;
+  try {
+    latestStateInfo = await stateStorage.getLatestStateById(issuer.id.bigInt());
+  } catch (e) {
+    throw new Error('issuer not found');
+  }
+
   const onChainCaller = new OnChainIssuer(contractAddress, chainID);
   const roots = await onChainCaller.getRootsByState(latestStateInfo.state);
   const smtProof = await onChainCaller.getRevocationProofByRoot(
@@ -463,15 +467,19 @@ export async function getRevocationOnChain(
   return {
     mtp: convertSmtProofToProof(smtProof),
     issuer: {
-      state: latestStateInfo.state.toString(),
-      claimsTreeRoot: roots.claimsRoot.toString(),
-      revocationTreeRoot: roots.revocationsRoot.toString(),
-      rootOfRoots: roots.rootsRoot.toString()
+      state: newHashFromBigInt(latestStateInfo.state).hex(),
+      claimsTreeRoot: newHashFromBigInt(roots.claimsRoot).hex(),
+      revocationTreeRoot: newHashFromBigInt(roots.revocationsRoot).hex(),
+      rootOfRoots: newHashFromBigInt(roots.rootsRoot).hex()
     }
   };
 }
 
-function parseOnChainID(id: string): { contractAddress: string; revocationNonce: number } {
+function parseOnChainID(id: string): {
+  contractAddress: string;
+  chainID: number;
+  revocationNonce: number;
+} {
   const url = new URL(id);
   if (!url.searchParams.has('contractAddress')) {
     throw new Error('contractAddress not found');
@@ -480,27 +488,40 @@ function parseOnChainID(id: string): { contractAddress: string; revocationNonce:
     throw new Error('revocationNonce not found');
   }
   // TODO (illia-korotia): after merging core v2 need to parse contract address from did if `contractAddress` is not present in id as param
-  const contractAddress = url.searchParams.get('contractAddress');
+  const contractID = url.searchParams.get('contractAddress');
   const revocationNonce = parseInt(url.searchParams.get('revocationNonce'), 10);
 
-  return { contractAddress, revocationNonce };
-}
-
-function extractChainIDFromAddress(address: string): number {
-  const chainID = address.split(':');
-  if (chainID.length !== 2) {
+  const parts = contractID.split(':');
+  if (parts.length != 2) {
     throw new Error('invalid contract address');
   }
-  return parseInt(chainID[0], 10);
+  const chainID = parseInt(parts[0], 10);
+  const contractAddress = parts[1];
+
+  return { contractAddress, chainID, revocationNonce };
 }
 
 function convertSmtProofToProof(smtProof: StateProof): Proof {
   const p = new Proof();
   p.existence = smtProof.existence;
-  p.nodeAux = {
-    key: newHashFromBigInt(smtProof.auxIndex),
-    value: newHashFromBigInt(smtProof.auxValue)
-  } as NodeAux;
+  if (p.existence) {
+    p.nodeAux = {
+      key: ZERO_HASH,
+      value: ZERO_HASH
+    } as NodeAux;
+  } else {
+    if (smtProof.auxIndex !== 0n && smtProof.auxValue !== 0n) {
+      p.nodeAux = {
+        key: newHashFromBigInt(smtProof.auxIndex),
+        value: newHashFromBigInt(smtProof.auxValue)
+      } as NodeAux;
+    } else {
+      p.nodeAux = {
+        key: undefined,
+        value: undefined
+      } as NodeAux;
+    }
+  }
 
   const s = smtProof.siblings.map((s) => newHashFromBigInt(BigInt(s)));
 
@@ -511,6 +532,8 @@ function convertSmtProofToProof(smtProof: StateProof): Proof {
     if (s[lvl].bigInt() !== BigInt(0)) {
       setBitBigEndian(p.notEmpties, lvl);
       p.siblings.push(s[lvl]);
+    } else {
+      p.siblings.push(ZERO_HASH);
     }
   }
 

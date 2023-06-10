@@ -81,6 +81,7 @@ export const strMTHex = (s: string | undefined): Hash => {
     return ZERO_HASH;
   }
   const h = new Hash();
+  console.log('try to strMTHex', s);
   h.value = swapEndianness(Hex.decodeString(s));
   return h;
 };

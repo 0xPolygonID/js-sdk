@@ -2,11 +2,9 @@ import { HistoricalRoots, StateProof } from './../entities/state';
 import { BigNumber, ethers } from 'ethers';
 import abi from './onchain-abi.json';
 
+// TODO(illia-korotia): make as global map with overrides
 const chainResolvers = {
-  1: 'https://localhost:8545', // ethereum mainnet
-  5: 'https://localhost:8545', // goerli testnet
-  137: 'https://localhost:8545', // polygon mainnet
-  80001: 'https://localhost:8545' // mumbai testnet
+  80001: 'https://polygon-mumbai.g.alchemy.com/v2/6S0RiH55rrmlnrkMiEm0IL2Zy4O-VrnQ' // mumbai testnet
 };
 
 export class OnChainIssuer {
@@ -25,7 +23,9 @@ export class OnChainIssuer {
 
   // getHistroricalStatus
   async getRootsByState(state: bigint): Promise<HistoricalRoots> {
-    const response = this.onchainContract.getRootsByState(state);
+    const response = await this.onchainContract.getRootsByState(state);
+
+    console.log('historical states:', response);
 
     const historicalRoots: HistoricalRoots = {
       claimsRoot: BigNumber.from(response[0]).toBigInt(),
