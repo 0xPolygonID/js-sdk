@@ -255,7 +255,6 @@ export class CredentialWallet implements ICredentialWallet {
     }
     const issuerDID = DID.parse(cred.issuer);
 
-    console.log('getRevocationStatusFromCredential');
     return await this.getRevocationStatus(cred.credentialStatus, issuerDID, issuerData);
   }
 
