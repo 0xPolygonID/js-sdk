@@ -300,8 +300,7 @@ export class CredentialWallet implements ICredentialWallet {
         }
       }
       case CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023: {
-        console.log('process on chain status');
-        return await getRevocationOnChain(credStatus, this._storage.states, issuerDID);
+        return await getRevocationOnChain(credStatus);
       }
     }
 

@@ -1,912 +1,657 @@
 [
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "uint8",
-          "name": "version",
-          "type": "uint8"
-        }
-      ],
-      "name": "Initialized",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "previousOwner",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "OwnershipTransferred",
-      "type": "event"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256[8]",
-          "name": "claim",
-          "type": "uint256[8]"
-        }
-      ],
-      "name": "addClaim",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256[8]",
-          "name": "claim",
-          "type": "uint256[8]"
-        }
-      ],
-      "name": "addClaimAndTransit",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "hashIndex",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "hashValue",
-          "type": "uint256"
-        }
-      ],
-      "name": "addClaimHash",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "hashIndex",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "hashValue",
-          "type": "uint256"
-        }
-      ],
-      "name": "addClaimHashAndTransit",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "schemaHash",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint8",
-              "name": "idPosition",
-              "type": "uint8"
-            },
-            {
-              "internalType": "bool",
-              "name": "expirable",
-              "type": "bool"
-            },
-            {
-              "internalType": "bool",
-              "name": "updatable",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint8",
-              "name": "merklizedRootPosition",
-              "type": "uint8"
-            },
-            {
-              "internalType": "uint32",
-              "name": "version",
-              "type": "uint32"
-            },
-            {
-              "internalType": "uint256",
-              "name": "id",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint64",
-              "name": "revocationNonce",
-              "type": "uint64"
-            },
-            {
-              "internalType": "uint64",
-              "name": "expirationDate",
-              "type": "uint64"
-            },
-            {
-              "internalType": "uint256",
-              "name": "merklizedRoot",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "indexDataSlotA",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "indexDataSlotB",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "valueDataSlotA",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "valueDataSlotB",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct ClaimBuilder.ClaimData",
-          "name": "claimData",
-          "type": "tuple"
-        }
-      ],
-      "name": "buildClaim",
-      "outputs": [
-        {
-          "internalType": "uint256[8]",
-          "name": "",
-          "type": "uint256[8]"
-        }
-      ],
-      "stateMutability": "pure",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "calcIdentityState",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "claimIndexHash",
-          "type": "uint256"
-        }
-      ],
-      "name": "getClaimProof",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "root",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "existence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "siblings",
-              "type": "uint256[]"
-            },
-            {
-              "internalType": "uint256",
-              "name": "index",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "auxExistence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxIndex",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxValue",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct SmtLib.Proof",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "claimIndexHash",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "root",
-          "type": "uint256"
-        }
-      ],
-      "name": "getClaimProofByRoot",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "root",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "existence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "siblings",
-              "type": "uint256[]"
-            },
-            {
-              "internalType": "uint256",
-              "name": "index",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "auxExistence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxIndex",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxValue",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct SmtLib.Proof",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getClaimsTreeRoot",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getId",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getIdentityLatestState",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getIsOldStateGenesis",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getLastClaimsRoot",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getLastRevocationsRoot",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getLastRootsRoot",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint64",
-          "name": "revocationNonce",
-          "type": "uint64"
-        }
-      ],
-      "name": "getRevocationProof",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "root",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "existence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "siblings",
-              "type": "uint256[]"
-            },
-            {
-              "internalType": "uint256",
-              "name": "index",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "auxExistence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxIndex",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxValue",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct SmtLib.Proof",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint64",
-          "name": "revocationNonce",
-          "type": "uint64"
-        },
-        {
-          "internalType": "uint256",
-          "name": "root",
-          "type": "uint256"
-        }
-      ],
-      "name": "getRevocationProofByRoot",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "root",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "existence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "siblings",
-              "type": "uint256[]"
-            },
-            {
-              "internalType": "uint256",
-              "name": "index",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "auxExistence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxIndex",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxValue",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct SmtLib.Proof",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getRevocationsTreeRoot",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "claimsTreeRoot",
-          "type": "uint256"
-        }
-      ],
-      "name": "getRootProof",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "root",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "existence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "siblings",
-              "type": "uint256[]"
-            },
-            {
-              "internalType": "uint256",
-              "name": "index",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "auxExistence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxIndex",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxValue",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct SmtLib.Proof",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "claimsTreeRoot",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "root",
-          "type": "uint256"
-        }
-      ],
-      "name": "getRootProofByRoot",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "root",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "existence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256[]",
-              "name": "siblings",
-              "type": "uint256[]"
-            },
-            {
-              "internalType": "uint256",
-              "name": "index",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "value",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "auxExistence",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxIndex",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "auxValue",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct SmtLib.Proof",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "state",
-          "type": "uint256"
-        }
-      ],
-      "name": "getRootsByState",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "claimsRoot",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "revocationsRoot",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "rootsRoot",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct OnChainIdentity.Roots",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getRootsTreeRoot",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getSmtDepth",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "pure",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_stateContractAddr",
-          "type": "address"
-        }
-      ],
-      "name": "initialize",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "newClaimData",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "schemaHash",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint8",
-              "name": "idPosition",
-              "type": "uint8"
-            },
-            {
-              "internalType": "bool",
-              "name": "expirable",
-              "type": "bool"
-            },
-            {
-              "internalType": "bool",
-              "name": "updatable",
-              "type": "bool"
-            },
-            {
-              "internalType": "uint8",
-              "name": "merklizedRootPosition",
-              "type": "uint8"
-            },
-            {
-              "internalType": "uint32",
-              "name": "version",
-              "type": "uint32"
-            },
-            {
-              "internalType": "uint256",
-              "name": "id",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint64",
-              "name": "revocationNonce",
-              "type": "uint64"
-            },
-            {
-              "internalType": "uint64",
-              "name": "expirationDate",
-              "type": "uint64"
-            },
-            {
-              "internalType": "uint256",
-              "name": "merklizedRoot",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "indexDataSlotA",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "indexDataSlotB",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "valueDataSlotA",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "valueDataSlotB",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct ClaimBuilder.ClaimData",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "pure",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "owner",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "renounceOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint64",
-          "name": "revocationNonce",
-          "type": "uint64"
-        }
-      ],
-      "name": "revokeClaim",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint64",
-          "name": "revocationNonce",
-          "type": "uint64"
-        }
-      ],
-      "name": "revokeClaimAndTransit",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "transferOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "transitState",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-  ]
-  
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "claimIndexHash",
+        "type": "uint256"
+      }
+    ],
+    "name": "getClaimProof",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "root",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "existence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "siblings",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "auxExistence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxIndex",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxValue",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct SmtLib.Proof",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "claimIndexHash",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "root",
+        "type": "uint256"
+      }
+    ],
+    "name": "getClaimProofByRoot",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "root",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "existence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "siblings",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "auxExistence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxIndex",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxValue",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct SmtLib.Proof",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getClaimsTreeRoot",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getIdentityLatestState",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getIsOldStateGenesis",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLastClaimsRoot",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLastRevocationsRoot",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLastRootsRoot",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "revocationNonce",
+        "type": "uint64"
+      }
+    ],
+    "name": "getRevocationProof",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "root",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "existence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "siblings",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "auxExistence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxIndex",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxValue",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct SmtLib.Proof",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "revocationNonce",
+        "type": "uint64"
+      },
+      {
+        "internalType": "uint256",
+        "name": "root",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRevocationProofByRoot",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "root",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "existence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "siblings",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "auxExistence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxIndex",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxValue",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct SmtLib.Proof",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "nonce",
+        "type": "uint64"
+      }
+    ],
+    "name": "getRevocationStatus",
+    "outputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "state",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "claimsTreeRoot",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "revocationTreeRoot",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "rootOfRoots",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct IdentityBase.IdentityStateRoots",
+            "name": "issuer",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "root",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "existence",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256[]",
+                "name": "siblings",
+                "type": "uint256[]"
+              },
+              {
+                "internalType": "uint256",
+                "name": "index",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "auxExistence",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "auxIndex",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "auxValue",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct SmtLib.Proof",
+            "name": "mtp",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct IdentityBase.CredentialStatus",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRevocationsTreeRoot",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "claimsTreeRoot",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRootProof",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "root",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "existence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "siblings",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "auxExistence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxIndex",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxValue",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct SmtLib.Proof",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "claimsTreeRoot",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "root",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRootProofByRoot",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "root",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "existence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "siblings",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "auxExistence",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxIndex",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "auxValue",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct SmtLib.Proof",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "state",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRootsByState",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "claimsRoot",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "revocationsRoot",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rootsRoot",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct OnChainIdentity.Roots",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRootsTreeRoot",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getSmtDepth",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_stateContractAddr",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

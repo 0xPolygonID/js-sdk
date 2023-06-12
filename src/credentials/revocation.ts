@@ -441,36 +441,23 @@ export class RevocationStatusDTO {
 }
 
 export async function getRevocationOnChain(
-  credentialStatus: CredentialStatus,
-  stateStorage: IStateStorage,
-  issuer: DID
+  credentialStatus: CredentialStatus
 ): Promise<RevocationStatus> {
   const { contractAddress, chainID, revocationNonce } = parseOnChainID(credentialStatus.id);
   if (revocationNonce !== credentialStatus.revocationNonce) {
     throw new Error('revocationNonce does not match');
   }
 
-  let latestStateInfo: StateInfo;
-  try {
-    latestStateInfo = await stateStorage.getLatestStateById(issuer.id.bigInt());
-  } catch (e) {
-    throw new Error('issuer not found');
-  }
-
   const onChainCaller = new OnChainIssuer(contractAddress, chainID);
-  const roots = await onChainCaller.getRootsByState(latestStateInfo.state);
-  const smtProof = await onChainCaller.getRevocationProofByRoot(
-    revocationNonce,
-    roots.revocationsRoot
-  );
+  const revocationStatus = await onChainCaller.getRevocationStatus(revocationNonce);
 
   return {
-    mtp: convertSmtProofToProof(smtProof),
+    mtp: convertSmtProofToProof(revocationStatus.mtp),
     issuer: {
-      state: newHashFromBigInt(latestStateInfo.state).hex(),
-      claimsTreeRoot: newHashFromBigInt(roots.claimsRoot).hex(),
-      revocationTreeRoot: newHashFromBigInt(roots.revocationsRoot).hex(),
-      rootOfRoots: newHashFromBigInt(roots.rootsRoot).hex()
+      state: newHashFromBigInt(revocationStatus.issuer.state).hex(),
+      claimsTreeRoot: newHashFromBigInt(revocationStatus.issuer.claimsTreeRoot).hex(),
+      revocationTreeRoot: newHashFromBigInt(revocationStatus.issuer.revocationTreeRoot).hex(),
+      rootOfRoots: newHashFromBigInt(revocationStatus.issuer.rootOfRoots).hex()
     }
   };
 }
