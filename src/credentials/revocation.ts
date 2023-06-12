@@ -491,6 +491,7 @@ function parseOnChainID(id: string): {
 function convertSmtProofToProof(smtProof: StateProof): Proof {
   const p = new Proof();
   p.existence = smtProof.existence;
+  // TODO(illia-korotia): discuss how to process node aux
   if (p.existence) {
     p.nodeAux = {
       key: ZERO_HASH,

@@ -267,7 +267,6 @@ export class CredentialWallet implements ICredentialWallet {
     issuerDID: DID,
     issuerData: IssuerData
   ): Promise<RevocationStatus> {
-    console.log('getRevocationStatus');
     switch (credStatus.type) {
       case CredentialStatusType.SparseMerkleTreeProof: {
         const revStatusDTO = await (await fetch(credStatus.id)).json();
@@ -418,7 +417,6 @@ export class CredentialWallet implements ICredentialWallet {
     cred: W3CCredential;
     revStatus: RevocationStatus;
   }> {
-    console.log('findNonRevokedCredential');
     for (const cred of creds) {
       const revStatus = await this.getRevocationStatusFromCredential(cred);
       if (revStatus.mtp.existence) {

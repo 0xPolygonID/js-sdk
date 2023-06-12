@@ -25,8 +25,6 @@ export class OnChainIssuer {
   async getRootsByState(state: bigint): Promise<HistoricalRoots> {
     const response = await this.onchainContract.getRootsByState(state);
 
-    console.log('historical states:', response);
-
     const historicalRoots: HistoricalRoots = {
       claimsRoot: BigNumber.from(response[0]).toBigInt(),
       revocationsRoot: BigNumber.from(response[1]).toBigInt(),

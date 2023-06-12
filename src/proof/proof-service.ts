@@ -191,8 +191,6 @@ export class ProofService implements IProofService {
     }
     const preparedCredential: PreparedCredential = await this.getPreparedCredential(credential);
 
-    console.log('preparedCredential', preparedCredential);
-
     const { inputs, vp } = await this.generateInputs(
       preparedCredential,
       identifier,
@@ -200,8 +198,6 @@ export class ProofService implements IProofService {
       opts
     );
 
-    console.log('json inputs', JSON.stringify(inputs));
-    console.log('try to generate inputs', inputs);
     const { proof, pub_signals } = await this._prover.generate(
       inputs,
       proofReq.circuitId as CircuitId
@@ -389,7 +385,6 @@ export class ProofService implements IProofService {
     circuitClaim.issuerId = DID.parse(credential.issuer).id;
 
     if (smtProof) {
-      console.log('hex from smt proof');
       circuitClaim.proof = smtProof.mtp;
       circuitClaim.treeState = {
         state: strMTHex(smtProof.issuerData.state?.value),
@@ -402,10 +397,8 @@ export class ProofService implements IProofService {
     const sigProof = credential.getBJJSignature2021Proof();
 
     if (sigProof) {
-      console.log('hex from bjj signature', sigProof);
       const signature = await bJJSignatureFromHexString(sigProof.signature);
 
-      console.log('get issuer data from sig proof');
       let issuer: DID;
       try {
         issuer = DID.parse(sigProof.issuerData.id);
@@ -418,10 +411,8 @@ export class ProofService implements IProofService {
         issuer,
         sigProof.issuerData
       );
+
       //todo: check if this is correct
-
-      console.log('revocation status on chain', rs);
-
       const issuerAuthNonRevProof: MTProof = {
         treeState: {
           state: strMTHex(rs.issuer.state),
