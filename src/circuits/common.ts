@@ -69,19 +69,6 @@ export class BaseConfig {
     return this.mtLevelOnChain ? this.mtLevelOnChain : defaultMTLevelsOnChain;
   }
 
-  /**
-   * circomSiblingsFromSiblings returns the full siblings compatible with circom
-   *
-   * @returns Hash
-   */
-  circomSiblings(proof: Proof, levels: number): Hash[] {
-    const siblings = proof.allSiblings();
-    // Add the rest of empty levels to the siblings
-    for (let i = 0; i < levels; i++) {
-      siblings.push(ZERO_HASH);
-    }
-    return siblings;
-  }
 }
 
 /**

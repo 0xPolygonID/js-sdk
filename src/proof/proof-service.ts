@@ -71,7 +71,7 @@ export interface ProofGenerationOptions {
   authProfileNonce: number;
   credentialSubjectProfileNonce: number;
   skipRevocation: boolean;
-  challenge: bigint;
+  challenge?: bigint;
 }
 
 export interface IProofService {
@@ -408,7 +408,7 @@ export class ProofService implements IProofService {
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
 
     const signature = await this._identityWallet.signChallenge(
-      opts.challenge,
+      opts.challenge ?? BigInt(proofReq.id),
       authPrepared.authCredential
     );
 
@@ -525,7 +525,7 @@ export class ProofService implements IProofService {
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
 
     const signature = await this._identityWallet.signChallenge(
-      opts.challenge,
+      opts.challenge ?? BigInt(proofReq.id),
       authPrepared.authCredential
     );
 

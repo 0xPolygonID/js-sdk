@@ -69,8 +69,8 @@ export enum CircuitId {
   AtomicQueryMTPV2OnChain = 'credentialAtomicQueryMTPV2OnChain',
   // AtomicQuerySig is a type for credentialAttrQuerySig.circom
   AtomicQuerySigV2 = 'credentialAtomicQuerySigV2',
-  // AtomicQuerySigOnChain is a type for credentialAttrQuerySig.circom
-  AtomicQuerySigV2OnChain = 'credentialAtomicQuerySigV2OnChain'
+  // AtomicQuerySigOnChain is a type for credentialAtomicQuerySigOnChain.circom
+  AtomicQuerySigV2OnChain = 'credentialAtomicQuerySigV2OnChain',
 }
 
 /**
@@ -177,8 +177,7 @@ export enum CircuitError {
   EmptyJsonLDQueryValues = 'empty JSON-LD query values',
   EmptyId = 'empty Id',
   EmptyChallenge = 'empty challenge',
-  EmptyGlobalProof = 'empty global identity mtp proof',
-  EmptyGISTProof = 'empty GIST identity mtp proof',
+  EmptyGISTProof = 'empty GIST merkle tree proof',
   EmptyRequestID = 'empty request ID'
 }
 
