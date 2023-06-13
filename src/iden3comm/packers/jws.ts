@@ -151,14 +151,14 @@ export class JWSPacker implements IPacker {
 
     const header = JSON.parse(decodeBase64url(headerStr));
     const message = JSON.parse(decodeBase64url(msgStr));
-    const sender = parse(header.kid)?.did;
-    if (sender !== message.from) {
+    const explicitSender = parse(header.kid)?.did;
+    if (explicitSender && explicitSender !== message.from) {
       throw new Error(`Sender does not match DID in message with kid ${header?.kid}`);
     }
 
     let didDocument: DIDDocument;
     try {
-      const didResolutionResult = await this._documentResolver.resolve(sender);
+      const didResolutionResult = await this._documentResolver.resolve(message.from);
       if (!didResolutionResult?.didDocument?.id) {
         throw new Error(`did document for ${message.from} is not found in resolution result`);
       }
