@@ -1,6 +1,7 @@
 import { Proof } from '@iden3/js-merkletree';
 import { ProofType } from './constants';
 import { TreeState } from '../circuits';
+import { CredentialStatus } from './credential';
 
 /**
  * Represents the published state of the issuer
@@ -32,7 +33,7 @@ export class IssuerData {
   state: State;
   authCoreClaim?: string;
   mtp?: Proof;
-  credentialStatus?: object;
+  credentialStatus?: CredentialStatus;
   /**
    * Creates an instance ofIssuerData .
    * @param {object} obj

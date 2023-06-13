@@ -46,7 +46,6 @@ import { UniversalSchemaLoader } from '../loaders';
 import { Parser } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
 import { byteDecoder } from '../utils';
-import { json } from 'stream/consumers';
 
 interface PreparedAuthBJJCredential {
   authCredential: W3CCredential;
@@ -407,7 +406,7 @@ export class ProofService implements IProofService {
       }
 
       const rs: RevocationStatus = await this._credentialWallet.getRevocationStatus(
-        sigProof.issuerData.credentialStatus as CredentialStatus,
+        sigProof.issuerData.credentialStatus,
         issuer,
         sigProof.issuerData
       );
