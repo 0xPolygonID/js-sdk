@@ -37,39 +37,22 @@ export const resolveDIDDocument = async (
   }
 };
 
-export const getDIDComponentById = (
-  didDocument: DIDDocument,
-  did: string,
-  section: string
-): VerificationMethod => {
-  const doc = didDocument;
-  const mainSections = ['verificationMethod', 'publicKey', 'service']
-    .map((key) => doc[key])
-    .flat()
-    .filter(Boolean);
+export const resolveAuthVerificationMethods = (
+  didResult: DIDResolutionResult
+): VerificationMethod[] => {
+  const vms: VerificationMethod[] = didResult?.didDocument?.verificationMethod || [];
 
-  const subsection = section ? [...(doc[section] || [])] : mainSections;
+  didResult.didDocument = { ...(<DIDDocument>didResult.didDocument) };
 
-  let result = subsection.find((item) => {
-    return typeof item === 'string'
-      ? item === did || `${did}${item}` === did
-      : item.id === did || `${did}${item.id}` === did;
-  });
-
-  if (typeof result === 'string') {
-    result = mainSections.find((item) => item.id === did || `${did}${item.id}` === did);
-  }
-
-  if (!result) {
-    throw new Error('Could not find DID component');
-  }
-
-  if (result.id.startsWith('#')) {
-    // fix did documents that use only the fragment part as key ID
-    result.id = `${did}${result.id}`;
-  }
-
-  return result;
+  return (didResult.didDocument['authentication'] || [])
+    .map((verificationMethod) => {
+      if (typeof verificationMethod === 'string') {
+        return vms.find((i) => i.id == verificationMethod);
+      } else {
+        return <VerificationMethod>verificationMethod;
+      }
+    })
+    .filter((key) => key !== undefined) as VerificationMethod[];
 };
 
 const secp256k1 = new elliptic.ec('secp256k1');

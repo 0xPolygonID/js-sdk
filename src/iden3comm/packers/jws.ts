@@ -1,6 +1,10 @@
 import { BasicMessage, IPacker, PackerParams } from '../types';
 import { MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
-import { extractPublicKeyBytes, getDIDComponentById, resolveDIDDocument } from '../utils/did';
+import {
+  extractPublicKeyBytes,
+  resolveAuthVerificationMethods,
+  resolveDIDDocument
+} from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
 
 import { Signer, verifyJWS } from 'did-jwt';
@@ -69,21 +73,15 @@ export class JWSPacker implements IPacker {
       throw new Error(`No supported verification methods for algorithm ${params.alg}`);
     }
 
-    const { didDocument } = await this._documentResolver.resolve(from);
+    const didResolutionResult = await this._documentResolver.resolve(from);
 
     const section = 'authentication';
-    const authSection = didDocument[section] ?? [];
-
-    const vms = authSection
-      .map((key) =>
-        typeof key === 'string'
-          ? getDIDComponentById(didDocument, key ?? didDocument.id, section)
-          : key
-      )
-      .filter(Boolean);
+    const vms = resolveAuthVerificationMethods(didResolutionResult);
 
     if (!vms.length) {
-      throw new Error(`No keys found in ${section} section of DID document ${didDocument.id}`);
+      throw new Error(
+        `No keys found in ${section} section of DID document ${didResolutionResult.didDocument.id}`
+      );
     }
 
     // try to find a managed signing key that matches keyRef
@@ -91,7 +89,7 @@ export class JWSPacker implements IPacker {
 
     if (!vm) {
       throw new Error(
-        `No key found with id ${params.kid} in ${section} section of DID document ${didDocument.id}`
+        `No key found with id ${params.kid} in ${section} section of DID document ${didResolutionResult.didDocument.id}`
       );
     }
 
@@ -152,9 +150,13 @@ export class JWSPacker implements IPacker {
       throw new Error(`Sender does not match DID in message with kid ${header?.kid}`);
     }
     const resolvedDoc = await this._documentResolver.resolve(sender);
-    const pubKey = getDIDComponentById(resolvedDoc.didDocument, header.kid, 'authentication');
 
-    const verificationResponse = verifyJWS(jws, pubKey);
+    const vms = await resolveAuthVerificationMethods(resolvedDoc);
+
+    if (!vms || !vms.length) {
+      throw new Error('No autentication keys defined in the DID Document');
+    }
+    const verificationResponse = verifyJWS(jws, vms);
 
     if (!verificationResponse) {
       throw new Error('JWS verification failed');
