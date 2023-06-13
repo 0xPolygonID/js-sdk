@@ -31,7 +31,7 @@ const didExample = {
   id: 'did:example:123',
   verificationMethod: [
     {
-      id: 'did:example:123#vm-1',
+      id: 'did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw',
       controller: 'did:example:123',
       type: 'EcdsaSecp256k1VerificationKey2019',
       publicKeyJwk: {
@@ -47,7 +47,7 @@ const didExample = {
       }
     }
   ],
-  authentication: ['did:example:123#vm-1']
+  authentication: ['did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw']
 };
 
 describe('jws packer tests', () => {
@@ -77,7 +77,24 @@ describe('jws packer tests', () => {
     packer = new JWSPacker(kms, resolveDIDDocument);
   });
 
-  it('test did document resolves with publicKeyJwk pack/upack', async () => {
+  it('pack / unpack: kid', async () => {
+    const msgBytes = byteEncoder.encode(bodyMsgStr);
+
+    const tokenBytes = await packer.pack(msgBytes, {
+      alg: 'ES256K',
+      did,
+      kid: 'did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw',
+      issuer: did
+    });
+
+    const token = byteDecoder.decode(tokenBytes);
+
+    console.log('jwt', token);
+    const data = await packer.unpack(tokenBytes);
+    expect(data).to.not.be.undefined;
+  });
+
+  it('pack / unpack: no kid', async () => {
     const msgBytes = byteEncoder.encode(bodyMsgStr);
 
     const tokenBytes = await packer.pack(msgBytes, {
@@ -92,4 +109,5 @@ describe('jws packer tests', () => {
     const data = await packer.unpack(tokenBytes);
     expect(data).to.not.be.undefined;
   });
+
 });

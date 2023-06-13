@@ -8,7 +8,7 @@ import {
 import { keyPath, KMS } from '../../kms/';
 
 import { Signer, verifyJWS } from 'did-jwt';
-import { Resolvable, VerificationMethod, parse } from 'did-resolver';
+import { DIDDocument, Resolvable, VerificationMethod, parse } from 'did-resolver';
 import {
   byteDecoder,
   byteEncoder,
@@ -72,16 +72,22 @@ export class JWSPacker implements IPacker {
     if (!vmTypes?.length) {
       throw new Error(`No supported verification methods for algorithm ${params.alg}`);
     }
-
-    const didResolutionResult = await this._documentResolver.resolve(from);
+    let didDocument;
+    try {
+      const didResolutionResult = await this._documentResolver.resolve(from);
+      if (!didResolutionResult?.didDocument?.id) {
+        throw new Error(`did document for ${from} is not found in resolution result`);
+      }
+      didDocument = didResolutionResult.didDocument;
+    } catch (err: unknown) {
+      throw new Error(`did document for ${from} is not resolved: ${(err as Error).message}`);
+    }
 
     const section = 'authentication';
-    const vms = resolveAuthVerificationMethods(didResolutionResult);
+    const vms = resolveAuthVerificationMethods(didDocument);
 
     if (!vms.length) {
-      throw new Error(
-        `No keys found in ${section} section of DID document ${didResolutionResult.didDocument.id}`
-      );
+      throw new Error(`No keys found in ${section} section of DID document ${didDocument.id}`);
     }
 
     // try to find a managed signing key that matches keyRef
@@ -89,7 +95,7 @@ export class JWSPacker implements IPacker {
 
     if (!vm) {
       throw new Error(
-        `No key found with id ${params.kid} in ${section} section of DID document ${didResolutionResult.didDocument.id}`
+        `No key found with id ${params.kid} in ${section} section of DID document ${didDocument.id}`
       );
     }
 
@@ -149,13 +155,37 @@ export class JWSPacker implements IPacker {
     if (sender !== message.from) {
       throw new Error(`Sender does not match DID in message with kid ${header?.kid}`);
     }
-    const resolvedDoc = await this._documentResolver.resolve(sender);
 
-    const vms = await resolveAuthVerificationMethods(resolvedDoc);
+    let didDocument: DIDDocument;
+    try {
+      const didResolutionResult = await this._documentResolver.resolve(sender);
+      if (!didResolutionResult?.didDocument?.id) {
+        throw new Error(`did document for ${message.from} is not found in resolution result`);
+      }
+      didDocument = didResolutionResult.didDocument;
+    } catch (err: unknown) {
+      throw new Error(
+        `did document for ${message.from} is not resolved: ${(err as Error).message}`
+      );
+    }
+
+    let vms = resolveAuthVerificationMethods(didDocument);
 
     if (!vms || !vms.length) {
-      throw new Error('No autentication keys defined in the DID Document');
+      throw new Error('No authentication keys defined in the DID Document');
     }
+    if (header.kid) {
+      const vm = vms.find((v) => {
+      return  v.id === header.kid;
+      });
+      if (!vm) {
+        throw new Error(
+          `verification method with specified kid ${header.kid} is not found in the DID Document`
+        );
+      }
+      vms = [vm];
+    }
+
     const verificationResponse = verifyJWS(jws, vms);
 
     if (!verificationResponse) {

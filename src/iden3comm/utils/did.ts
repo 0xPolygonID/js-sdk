@@ -1,16 +1,3 @@
-// Copyright 2023 Veramo.io.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 import { SUPPORTED_PUBLIC_KEY_TYPES, UNIVERSAL_RESOLVER_URL } from '../constants';
 import elliptic from 'elliptic';
 import {
@@ -37,22 +24,17 @@ export const resolveDIDDocument = async (
   }
 };
 
-export const resolveAuthVerificationMethods = (
-  didResult: DIDResolutionResult
-): VerificationMethod[] => {
-  const vms: VerificationMethod[] = didResult?.didDocument?.verificationMethod || [];
+export const resolveAuthVerificationMethods = (didDocument: DIDDocument): VerificationMethod[] => {
+  const vms: VerificationMethod[] = didDocument.verificationMethod || [];
 
-  didResult.didDocument = { ...(<DIDDocument>didResult.didDocument) };
-
-  return (didResult.didDocument['authentication'] || [])
+  return (didDocument['authentication'] || [])
     .map((verificationMethod) => {
       if (typeof verificationMethod === 'string') {
-        return vms.find((i) => i.id == verificationMethod);
-      } else {
-        return <VerificationMethod>verificationMethod;
+        return vms.find((i) => i.id === verificationMethod);
       }
+      return verificationMethod as VerificationMethod;
     })
-    .filter((key) => key !== undefined) as VerificationMethod[];
+    .filter((key) => key) as VerificationMethod[];
 };
 
 const secp256k1 = new elliptic.ec('secp256k1');
