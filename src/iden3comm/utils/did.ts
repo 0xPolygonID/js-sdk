@@ -24,10 +24,11 @@ export const resolveDIDDocument = async (
   }
 };
 
-export const resolveAuthVerificationMethods = (didDocument: DIDDocument): VerificationMethod[] => {
+export const resolveVerificationMethods = (didDocument: DIDDocument): VerificationMethod[] => {
   const vms: VerificationMethod[] = didDocument.verificationMethod || [];
 
-  return (didDocument['authentication'] || [])
+  // prioritize: first verification methods to be chosen are from `authentication` section.
+  const sortedVerificationMethods = (didDocument['authentication'] || [])
     .map((verificationMethod) => {
       if (typeof verificationMethod === 'string') {
         return vms.find((i) => i.id === verificationMethod);
@@ -35,6 +36,14 @@ export const resolveAuthVerificationMethods = (didDocument: DIDDocument): Verifi
       return verificationMethod as VerificationMethod;
     })
     .filter((key) => key) as VerificationMethod[];
+
+  for (let index = 0; index < vms.length; index++) {
+    const id = vms[index].id;
+    if (sortedVerificationMethods.findIndex((vm) => vm.id === id) === -1) {
+      sortedVerificationMethods.push(vms[index]);
+    }
+  }
+  return sortedVerificationMethods;
 };
 
 const secp256k1 = new elliptic.ec('secp256k1');

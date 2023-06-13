@@ -2,7 +2,7 @@ import { BasicMessage, IPacker, PackerParams } from '../types';
 import { MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
 import {
   extractPublicKeyBytes,
-  resolveAuthVerificationMethods,
+  resolveVerificationMethods,
   resolveDIDDocument
 } from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
@@ -49,7 +49,6 @@ export class JWSPacker implements IPacker {
     payload: Uint8Array,
     params: PackerParams & {
       alg: string;
-      did: string;
       kid?: string;
       signer?: SignerFn;
     }
@@ -60,12 +59,8 @@ export class JWSPacker implements IPacker {
     const message = JSON.parse(byteDecoder.decode(payload));
 
     const from = message.from ?? '';
-    if (params.did !== message.from) {
-      throw new Error('DID in params does not match DID in message');
-    }
-
     if (!from) {
-      throw new Error('Missing DID');
+      throw new Error('Missing sender DID');
     }
 
     const vmTypes: string[] = SUPPORTED_PUBLIC_KEY_TYPES[params.alg];
@@ -84,7 +79,7 @@ export class JWSPacker implements IPacker {
     }
 
     const section = 'authentication';
-    const vms = resolveAuthVerificationMethods(didDocument);
+    const vms = resolveVerificationMethods(didDocument);
 
     if (!vms.length) {
       throw new Error(`No keys found in ${section} section of DID document ${didDocument.id}`);
@@ -169,14 +164,14 @@ export class JWSPacker implements IPacker {
       );
     }
 
-    let vms = resolveAuthVerificationMethods(didDocument);
+    let vms = resolveVerificationMethods(didDocument);
 
     if (!vms || !vms.length) {
       throw new Error('No authentication keys defined in the DID Document');
     }
     if (header.kid) {
       const vm = vms.find((v) => {
-      return  v.id === header.kid;
+        return v.id === header.kid;
       });
       if (!vm) {
         throw new Error(
