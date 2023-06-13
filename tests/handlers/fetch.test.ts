@@ -151,7 +151,8 @@ describe('fetch', () => {
       states: mockStateStorage
     };
 
-    credWallet = new CredentialWallet(dataStorage);
+    const networks: Map<number, string> = new Map();
+    credWallet = new CredentialWallet(dataStorage, { networks });
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     // proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
@@ -171,7 +172,6 @@ describe('fetch', () => {
     };
     fetchHandler = new FetchHandler(packageMgr);
     fetchMock.post(agentUrl, JSON.parse(mockedCredResponse));
-
   });
   after(() => {
     fetchMock.restore();

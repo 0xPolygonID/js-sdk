@@ -133,7 +133,8 @@ describe('rhs', () => {
 
     const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
 
-    credWallet = new CredentialWallet(dataStorage);
+    const networks: Map<number, string> = new Map();
+    credWallet = new CredentialWallet(dataStorage, { networks });
     credWallet.getRevocationStatusFromCredential = async (cred: W3CCredential) => {
       const r: RevocationStatus = {
         mtp: {

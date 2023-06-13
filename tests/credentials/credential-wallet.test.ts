@@ -1,7 +1,7 @@
 import { InMemoryDataSource } from './../../src/storage/memory/data-source';
 import { CredentialStorage } from './../../src/storage/shared/credential-storage';
 import { IDataStorage } from './../../src/storage/interfaces/data-storage';
-import { CredentialWallet } from '../../src/credentials';
+import { CredentialWallet, CredentialWalletOptions } from '../../src/credentials';
 import { SearchError } from '../../src/storage/filters/jsonQuery';
 import { cred1, cred2, cred3, cred4 } from './mock';
 import { ProofQuery, W3CCredential } from '../../src/verifiable';
@@ -37,7 +37,8 @@ class LocalStorageMock {
 global.localStorage = new LocalStorageMock() as unknown as Storage;
 
 const credentialFlow = async (storage: IDataStorage) => {
-  const credentialWallet = new CredentialWallet(storage);
+  const networks: Map<number, string> = new Map();
+  const credentialWallet = new CredentialWallet(storage, { networks });
 
   await credentialWallet.saveAll([cred1, cred2]);
 

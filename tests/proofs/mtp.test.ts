@@ -123,7 +123,8 @@ describe('mtp proofs', () => {
     dataStorage.states = ethStorage;
 
     */
-    credWallet = new CredentialWallet(dataStorage);
+    const networks: Map<number, string> = new Map();
+    credWallet = new CredentialWallet(dataStorage, { networks });
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);

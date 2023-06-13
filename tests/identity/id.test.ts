@@ -66,7 +66,9 @@ describe('identity', () => {
       mt: new InMemoryMerkleTreeStorage(40),
       states: mockStateStorage
     };
-    const credWallet = new CredentialWallet(dataStorage);
+
+    const networks: Map<number, string> = new Map();
+    const credWallet = new CredentialWallet(dataStorage, { networks });
     wallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
   it('createIdentity', async () => {
