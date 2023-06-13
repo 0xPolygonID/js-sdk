@@ -439,6 +439,13 @@ export class RevocationStatusDTO {
   }
 }
 
+/**
+ * Gets partial revocation status info from onchain issuer contract.
+ *
+ * @param {CredentialStatus} credentialStatus - credential status section of credential
+ * @param {Map<number, string>} listofNetworks - list of supported networks. ChainID: RPC URL
+ * @returns Promise<RevocationStatus>
+ */
 export async function getRevocationOnChain(
   credentialStatus: CredentialStatus,
   listofNetworks: Map<number, string>
@@ -457,6 +464,12 @@ export async function getRevocationOnChain(
   return revocationStatus;
 }
 
+/**
+ * Parse credentialStatus id to get contractAddress, chainID and revocationNonce
+ *
+ * @param {string} id - credential status id
+ * @returns {{contractAddress: string, chainID: number, revocationNonce: number}}
+ */
 function parseOnChainID(id: string): {
   contractAddress: string;
   chainID: number;

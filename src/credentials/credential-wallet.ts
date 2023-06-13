@@ -222,6 +222,7 @@ export class CredentialWallet implements ICredentialWallet {
   /**
    * Creates an instance of CredentialWallet.
    * @param {IDataStorage} _storage - - data storage to access credential / identity / Merkle tree data
+   * @param {CredentialWalletOptions} _opts - settings for CredentialWallet
    */
   constructor(
     private readonly _storage: IDataStorage,
