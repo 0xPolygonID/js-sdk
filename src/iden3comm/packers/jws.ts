@@ -71,30 +71,8 @@ export class JWSPacker implements IPacker {
     let didDocument: DIDDocument;
 
     try {
-      // const didResolution = await this._documentResolver.resolve(from);
-      // didDocument = didResolution.didDocument;
-
-      didDocument = {
-        '@context': [
-          'https://www.w3.org/ns/did/v1',
-          {
-            EcdsaSecp256k1RecoveryMethod2020:
-              'https://identity.foundation/EcdsaSecp256k1RecoverySignature2020#EcdsaSecp256k1RecoveryMethod2020',
-            blockchainAccountId: 'https://w3id.org/security#blockchainAccountId'
-          }
-        ],
-        id: 'did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65',
-        verificationMethod: [
-          {
-            id: 'did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020',
-            type: 'EcdsaSecp256k1RecoveryMethod2020',
-            controller: 'did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65',
-            blockchainAccountId: 'eip155:137:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65'
-          }
-        ],
-        authentication: ['did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020'],
-        assertionMethod: ['did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020']
-      } as DIDDocument;
+      const didResolution = await this._documentResolver.resolve(from);
+      didDocument = didResolution.didDocument;
       if (!didDocument) {
         throw new Error('No DID document found');
       }
