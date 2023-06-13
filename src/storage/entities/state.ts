@@ -48,32 +48,3 @@ export interface RootInfo {
   createdAtBlock: bigint;
   replacedAtBlock: bigint;
 }
-
-export interface HistoricalRoots {
-  claimsRoot: bigint;
-  revocationsRoot: bigint;
-  rootsRoot: bigint;
-}
-
-export interface IdentityStateRoots {
-  state: bigint;
-  claimsTreeRoot: bigint;
-  revocationTreeRoot: bigint;
-  rootOfRoots: bigint;
-}
-
-export interface SmtProof {
-  root: bigint;
-  existence: boolean;
-  siblings: bigint[];
-  index: bigint;
-  value: bigint;
-  auxExistence: boolean;
-  auxIndex: bigint;
-  auxValue: bigint;
-}
-
-export interface RevocationStatus {
-  issuer: IdentityStateRoots;
-  mtp: SmtProof;
-}

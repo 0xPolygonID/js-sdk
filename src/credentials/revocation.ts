@@ -17,7 +17,6 @@ import { hashElems } from '@iden3/js-merkletree';
 import { DID } from '@iden3/js-iden3-core';
 import { CredentialStatus, Issuer, RevocationStatus } from '../verifiable';
 import { strMTHex } from '../circuits';
-import { StateInfo, StateProof } from '../storage';
 
 /**
  * Interface to unite contains three trees: claim, revocation and rootOfRoots
@@ -441,25 +440,21 @@ export class RevocationStatusDTO {
 }
 
 export async function getRevocationOnChain(
-  credentialStatus: CredentialStatus
+  credentialStatus: CredentialStatus,
+  listofNetworks: Map<number, string>
 ): Promise<RevocationStatus> {
   const { contractAddress, chainID, revocationNonce } = parseOnChainID(credentialStatus.id);
   if (revocationNonce !== credentialStatus.revocationNonce) {
     throw new Error('revocationNonce does not match');
   }
 
-  const onChainCaller = new OnChainIssuer(contractAddress, chainID);
+  const rpcURL = listofNetworks.get(chainID);
+  if (!rpcURL) {
+    throw new Error(`chainID "${chainID}" not supported`);
+  }
+  const onChainCaller = new OnChainIssuer(contractAddress, rpcURL);
   const revocationStatus = await onChainCaller.getRevocationStatus(revocationNonce);
-
-  return {
-    mtp: convertSmtProofToProof(revocationStatus.mtp),
-    issuer: {
-      state: newHashFromBigInt(revocationStatus.issuer.state).hex(),
-      claimsTreeRoot: newHashFromBigInt(revocationStatus.issuer.claimsTreeRoot).hex(),
-      revocationTreeRoot: newHashFromBigInt(revocationStatus.issuer.revocationTreeRoot).hex(),
-      rootOfRoots: newHashFromBigInt(revocationStatus.issuer.rootOfRoots).hex()
-    }
-  };
+  return revocationStatus;
 }
 
 function parseOnChainID(id: string): {
@@ -486,44 +481,4 @@ function parseOnChainID(id: string): {
   const contractAddress = parts[1];
 
   return { contractAddress, chainID, revocationNonce };
-}
-
-function convertSmtProofToProof(smtProof: StateProof): Proof {
-  const p = new Proof();
-  p.existence = smtProof.existence;
-  // TODO(illia-korotia): discuss how to process node aux
-  if (p.existence) {
-    p.nodeAux = {
-      key: ZERO_HASH,
-      value: ZERO_HASH
-    } as NodeAux;
-  } else {
-    if (smtProof.auxIndex !== 0n && smtProof.auxValue !== 0n) {
-      p.nodeAux = {
-        key: newHashFromBigInt(smtProof.auxIndex),
-        value: newHashFromBigInt(smtProof.auxValue)
-      } as NodeAux;
-    } else {
-      p.nodeAux = {
-        key: undefined,
-        value: undefined
-      } as NodeAux;
-    }
-  }
-
-  const s = smtProof.siblings.map((s) => newHashFromBigInt(BigInt(s)));
-
-  p.siblings = [];
-  p.depth = s.length;
-
-  for (let lvl = 0; lvl < s.length; lvl++) {
-    if (s[lvl].bigInt() !== BigInt(0)) {
-      setBitBigEndian(p.notEmpties, lvl);
-      p.siblings.push(s[lvl]);
-    } else {
-      p.siblings.push(ZERO_HASH);
-    }
-  }
-
-  return p;
 }

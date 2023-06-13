@@ -197,6 +197,18 @@ export interface ICredentialWallet {
 }
 
 /**
+ * Settings for CredentialWallet
+ * networks - list chainID to network url mappings
+ *
+ * @export
+ * @beta
+ * @interface CredentialWalletOptions
+ */
+export interface CredentialWalletOptions {
+  networks: Map<number, string>;
+}
+
+/**
  *
  * Wallet instance is a wrapper of CRUD logic for W3C credentials,
  * also it allows to fetch revocation statuses.
@@ -211,7 +223,10 @@ export class CredentialWallet implements ICredentialWallet {
    * Creates an instance of CredentialWallet.
    * @param {IDataStorage} _storage - - data storage to access credential / identity / Merkle tree data
    */
-  constructor(private readonly _storage: IDataStorage) {}
+  constructor(
+    private readonly _storage: IDataStorage,
+    private readonly _opts: CredentialWalletOptions
+  ) {}
 
   /**
    * {@inheritDoc ICredentialWallet.getAuthBJJCredential}
@@ -298,7 +313,7 @@ export class CredentialWallet implements ICredentialWallet {
         }
       }
       case CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023: {
-        return await getRevocationOnChain(credStatus);
+        return await getRevocationOnChain(credStatus, this._opts.networks);
       }
     }
 

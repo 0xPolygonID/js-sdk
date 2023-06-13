@@ -1,79 +1,82 @@
-import { HistoricalRoots, StateProof, RevocationStatus } from './../entities/state';
+import { RevocationStatus, Issuer } from './../../../src/verifiable';
 import { BigNumber, ethers } from 'ethers';
 import abi from './onchain-abi.json';
-
-// TODO(illia-korotia): make as global map with overrides
-const chainResolvers = {
-  80001: 'https://polygon-mumbai.g.alchemy.com/v2/6S0RiH55rrmlnrkMiEm0IL2Zy4O-VrnQ' // mumbai testnet
-};
+import {
+  newHashFromBigInt,
+  Proof,
+  NodeAux,
+  setBitBigEndian,
+  ZERO_HASH
+} from '@iden3/js-merkletree';
 
 export class OnChainIssuer {
   public readonly onchainContract: ethers.Contract;
   public readonly provider: ethers.providers.JsonRpcProvider;
 
-  constructor(contractAddress: string, chainID: number) {
-    const rpcURL = chainResolvers[chainID];
-    if (!rpcURL) {
-      throw new Error(`ChainID ${chainID} is not supported`);
-    }
-
+  constructor(contractAddress: string, rpcURL: string) {
     this.provider = new ethers.providers.JsonRpcProvider(rpcURL);
     this.onchainContract = new ethers.Contract(contractAddress, abi, this.provider);
-  }
-
-  // getHistroricalStatus
-  async getRootsByState(state: bigint): Promise<HistoricalRoots> {
-    const response = await this.onchainContract.getRootsByState(state);
-
-    const historicalRoots: HistoricalRoots = {
-      claimsRoot: BigNumber.from(response[0]).toBigInt(),
-      revocationsRoot: BigNumber.from(response[1]).toBigInt(),
-      rootsRoot: BigNumber.from(response[2]).toBigInt()
-    };
-
-    return historicalRoots;
-  }
-
-  // getRevocationProof
-  async getRevocationProofByRoot(revocationNonce: number, state: bigint): Promise<StateProof> {
-    const data = await this.onchainContract.getRevocationProofByRoot(revocationNonce, state);
-
-    return {
-      root: BigInt(data.root.toString()),
-      existence: data.existence,
-      siblings: data.siblings?.map((sibling) => BigInt(sibling.toString())),
-      index: BigInt(data.index.toString()),
-      value: BigInt(data.value.toString()),
-      auxExistence: data.auxExistence,
-      auxIndex: BigInt(data.auxIndex.toString()),
-      auxValue: BigInt(data.auxValue.toString())
-    };
   }
 
   async getRevocationStatus(nonce: number): Promise<RevocationStatus> {
     const response = await this.onchainContract.getRevocationStatus(nonce);
 
-    const issuer = {
-      state: BigNumber.from(response.issuer[0]).toBigInt(),
-      claimsTreeRoot: BigNumber.from(response.issuer[1]).toBigInt(),
-      revocationTreeRoot: BigNumber.from(response.issuer[2]).toBigInt(),
-      rootOfRoots: BigNumber.from(response.issuer[3]).toBigInt()
-    };
-
-    const mtp = {
-      root: BigInt(response.mtp.root.toString()),
-      existence: response.mtp.existence,
-      siblings: response.mtp.siblings?.map((sibling) => BigInt(sibling.toString())),
-      index: BigInt(response.mtp.index.toString()),
-      value: BigInt(response.mtp.value.toString()),
-      auxExistence: response.mtp.auxExistence,
-      auxIndex: BigInt(response.mtp.auxIndex.toString()),
-      auxValue: BigInt(response.mtp.auxValue.toString())
-    };
+    const issuer = this.convertIssuerInfo(response.issuer);
+    const mtp = this.convertSmtProofToProof(response.mtp);
 
     return {
       issuer,
       mtp
     };
+  }
+
+  private convertIssuerInfo(issuer: unknown): Issuer {
+    return {
+      state: newHashFromBigInt(BigNumber.from(issuer[0]).toBigInt()).hex(),
+      claimsTreeRoot: newHashFromBigInt(BigNumber.from(issuer[1]).toBigInt()).hex(),
+      revocationTreeRoot: newHashFromBigInt(BigNumber.from(issuer[2]).toBigInt()).hex(),
+      rootOfRoots: newHashFromBigInt(BigNumber.from(issuer[3]).toBigInt()).hex()
+    };
+  }
+
+  private convertSmtProofToProof(mtp: any): Proof {
+    const p = new Proof();
+    p.existence = mtp.existence;
+    if (p.existence) {
+      p.nodeAux = {
+        key: undefined,
+        value: undefined
+      } as NodeAux;
+    } else {
+      const auxIndex = BigInt(mtp.auxIndex.toString());
+      const auxValue = BigInt(mtp.auxValue.toString());
+      if (auxIndex !== 0n && auxValue !== 0n) {
+        p.nodeAux = {
+          key: newHashFromBigInt(auxIndex),
+          value: newHashFromBigInt(auxValue)
+        } as NodeAux;
+      } else {
+        p.nodeAux = {
+          key: undefined,
+          value: undefined
+        } as NodeAux;
+      }
+    }
+
+    const s = mtp.siblings?.map((s) => newHashFromBigInt(BigInt(s.toString())));
+
+    p.siblings = [];
+    p.depth = s.length;
+
+    for (let lvl = 0; lvl < s.length; lvl++) {
+      if (s[lvl].bigInt() !== BigInt(0)) {
+        setBitBigEndian(p.notEmpties, lvl);
+        p.siblings.push(s[lvl]);
+      } else {
+        p.siblings.push(ZERO_HASH);
+      }
+    }
+
+    return p;
   }
 }
