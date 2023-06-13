@@ -26,7 +26,6 @@ import { ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
 import {
   createVerifiablePresentation,
-  CredentialStatus,
   Iden3SparseMerkleTreeProof,
   MerkleTreeProofWithTreeState,
   ProofQuery,

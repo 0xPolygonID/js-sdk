@@ -58,7 +58,12 @@ export class OnChainIssuer {
     };
   }
 
-  private static convertSmtProofToProof(mtp: any): Proof {
+  private static convertSmtProofToProof(mtp: {
+    existence: boolean;
+    auxIndex: bigint;
+    auxValue: bigint;
+    siblings: bigint[];
+  }): Proof {
     const p = new Proof();
     p.existence = mtp.existence;
     if (p.existence) {

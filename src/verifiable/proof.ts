@@ -1,7 +1,6 @@
 import { Proof } from '@iden3/js-merkletree';
-import { ProofType } from './constants';
+import { ProofType, CredentialStatusType } from './constants';
 import { TreeState } from '../circuits';
-import { CredentialStatus } from './credential';
 
 /**
  * Represents the published state of the issuer
@@ -126,4 +125,18 @@ export interface ProofQuery {
 export interface MerkleTreeProofWithTreeState {
   proof: Proof;
   treeState: TreeState;
+}
+
+/**
+ *
+ * CredentialStatus contains type and revocation Url
+ * @export
+ * @beta
+ * @interface   CredentialStatus
+ */
+export interface CredentialStatus {
+  id: string;
+  type: CredentialStatusType;
+  revocationNonce?: number;
+  statusIssuer?: CredentialStatus;
 }

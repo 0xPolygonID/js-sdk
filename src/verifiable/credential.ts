@@ -1,6 +1,6 @@
-import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof } from './proof';
+import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof, CredentialStatus } from './proof';
 import { Claim } from '@iden3/js-iden3-core';
-import { CredentialStatusType, ProofType } from './constants';
+import { ProofType } from './constants';
 import { Proof } from '@iden3/js-merkletree';
 import { Merklizer } from '@iden3/js-jsonld-merklization';
 
@@ -146,20 +146,6 @@ export function extractProof(proof: object): { claim: Claim; proofType: ProofTyp
 export interface CredentialSchema {
   id: string;
   type: string;
-}
-
-/**
- *
- * CredentialStatus contains type and revocation Url
- * @export
- * @beta
- * @interface   CredentialStatus
- */
-export interface CredentialStatus {
-  id: string;
-  type: CredentialStatusType;
-  revocationNonce?: number;
-  statusIssuer?: CredentialStatus;
 }
 
 /**
