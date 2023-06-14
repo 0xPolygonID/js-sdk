@@ -27,7 +27,6 @@ export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
  * @implements implements IPacker interface
  */
 export class JWSPacker implements IPacker {
-  private static authSection = 'authentication';
 
   /**
    * Creates an instance of JWSPacker.
@@ -52,6 +51,7 @@ export class JWSPacker implements IPacker {
     params: PackerParams & {
       alg: string;
       kid?: string;
+      didDocument?:DIDDocument;
       signer?: SignerFn;
     }
   ): Promise<Uint8Array> {
@@ -70,13 +70,13 @@ export class JWSPacker implements IPacker {
       throw new Error(`No supported verification methods for algorithm ${params.alg}`);
     }
 
-    const didDocument: DIDDocument = await this.resolveDidDoc(from);
+    const didDocument: DIDDocument = params.didDocument ?? await this.resolveDidDoc(from);
 
-    const vms = resolveVerificationMethods(didDocument, JWSPacker.authSection);
+    const vms = resolveVerificationMethods(didDocument);
 
     if (!vms.length) {
       throw new Error(
-        `No keys found in ${JWSPacker.authSection}  of DID document ${didDocument.id}`
+        `No verification methods defined in the DID document of ${didDocument.id}`
       );
     }
 
@@ -85,7 +85,7 @@ export class JWSPacker implements IPacker {
 
     if (!vm) {
       throw new Error(
-        `No key found with id ${params.kid} in ${JWSPacker.authSection} section of DID document ${didDocument.id}`
+        `No key found with id ${params.kid} in DID document of ${didDocument.id}`
       );
     }
 
@@ -148,10 +148,10 @@ export class JWSPacker implements IPacker {
 
     const didDocument: DIDDocument = await this.resolveDidDoc(message.from);
 
-    let vms = resolveVerificationMethods(didDocument, JWSPacker.authSection);
+    let vms = resolveVerificationMethods(didDocument);
 
     if (!vms?.length) {
-      throw new Error('No authentication keys defined in the DID Document');
+      throw new Error(`No verification methods defined in the DID document of ${didDocument.id}`);
     }
     if (header.kid) {
       const vm = vms.find((v) => {

@@ -24,25 +24,29 @@ export const resolveDIDDocument = async (
   }
 };
 
+const DIDAuthenticationSection = "authentication";
 export const resolveVerificationMethods = (
-  didDocument: DIDDocument,
-  sectionName: string
+  didDocument: DIDDocument
 ): VerificationMethod[] => {
   const vms: VerificationMethod[] = didDocument.verificationMethod || [];
 
   // prioritize: first verification methods to be chosen are from `authentication` section.
-  const sectionItems = didDocument[sectionName] ?? [];
-  const sortedVerificationMethods = vms.reduce((acc, vm) => {
-    const resolved = sectionItems.find((section) =>
-      typeof section === 'string' ? section === vm.id : section.id === vm.id
-    );
+  const sortedVerificationMethods = (didDocument[DIDAuthenticationSection] || [])
+    .map((verificationMethod) => {
+      if (typeof verificationMethod === 'string') {
+        return vms.find((i) => i.id === verificationMethod);
+      }
+      return verificationMethod as VerificationMethod;
+    })
+    .filter((key) => key) as VerificationMethod[];
 
-    if (resolved) {
-      return typeof resolved === 'string' ? [vm, ...acc] : [resolved, ...acc];
+ // add all other verification methods
+  for (let index = 0; index < vms.length; index++) {
+    const id = vms[index].id;
+    if (sortedVerificationMethods.findIndex((vm) => vm.id === id) === -1) {
+      sortedVerificationMethods.push(vms[index]);
     }
-
-    return [...acc, vm];
-  }, []);
+  }
   return sortedVerificationMethods;
 };
 
