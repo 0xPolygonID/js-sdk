@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import {
   CredentialStorage,
   Identity,
@@ -22,7 +23,7 @@ describe('identity', () => {
   let dataStorage: IDataStorage;
 
   const mockStateStorage: IStateStorage = {
-    getLatestStateById: async (t) => {
+    getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
     },
     publishState: async () => {
@@ -94,7 +95,7 @@ describe('identity', () => {
     );
 
     console.log(JSON.stringify(credential));
-    expect((await claimsTree?.root()).bigInt()).not.to.equal(0);
+    expect((await claimsTree.root()).bigInt()).not.to.equal(0);
   });
   it('createProfile', async () => {
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
@@ -233,6 +234,8 @@ describe('identity', () => {
       'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
     );
 
+    expect(issuerAuthCredential).not.to.be.undefined;
+
     const { did: userDID, credential: userAuthCredential } = await wallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -243,6 +246,7 @@ describe('identity', () => {
         baseUrl: 'http://rhs.com/node'
       }
     });
+    expect(userAuthCredential).not.to.be.undefined;
 
     const claimReq: CredentialRequest = {
       credentialSchema:

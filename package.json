@@ -29,7 +29,7 @@
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
     "test": "mocha --require ts-node/register tests/**/*.ts -t 60000",
     "test:watch": "mocha -p --require ts-node/register tests/**/*.ts -t 60000 --watch",
-    "lint": "eslint --fix --ext .js,.ts src/**",
+    "lint": "eslint --fix --ext .js,.ts src/** tests/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "deps:check": "madge --circular --extensions ts ./"
   },

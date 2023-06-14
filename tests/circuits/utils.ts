@@ -247,7 +247,7 @@ export class IdentityTest {
     it.rot = new Merkletree(new InMemoryDB(str2Bytes('')), true, 40);
 
     // extract pubKey
-    const { key, x, y } = extractPubXY(privKHex);
+    const { x, y } = extractPubXY(privKHex);
 
     // create auth claim
     const authClaim = authV2ClaimFromPubKey(x, y);

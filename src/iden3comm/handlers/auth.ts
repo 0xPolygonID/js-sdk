@@ -50,13 +50,13 @@ export interface IAuthHandler {
    *     authResponse: AuthorizationResponseMessage;
    *   }>`
    */
-  handleAuthorizationRequestForGenesisDID(
-    did: DID,
-    request: Uint8Array,
-    packerOpts: {
+  handleAuthorizationRequestForGenesisDID(options: {
+    did: DID;
+    request: Uint8Array;
+    packer: {
       mediaType: MediaType;
-    } & PackerParams
-  ): Promise<{
+    } & PackerParams;
+  }): Promise<{
     token: string;
     authRequest: AuthorizationRequestMessage;
     authResponse: AuthorizationResponseMessage;
@@ -128,23 +128,23 @@ export class AuthHandler implements IAuthHandler {
    * @param {Uint8Array} request - raw request
    * @returns `Promise<{token: string; authRequest: AuthorizationRequestMessage; authResponse: AuthorizationResponseMessage;}>` JWZ token, parsed request and response
    */
-  async handleAuthorizationRequestForGenesisDID(
-    did: DID,
-    request: Uint8Array,
-    packerOpts: {
+  async handleAuthorizationRequestForGenesisDID(options: {
+    did: DID;
+    request: Uint8Array;
+    packer: {
       mediaType: MediaType;
-    } & PackerParams = {
-      senderDID: did,
-      //todo: rename to mediaType
-      mediaType: MediaType.ZKPMessage,
-      profileNonce: 0,
-      provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-    }
-  ): Promise<{
+    } & PackerParams;
+  }): Promise<{
     token: string;
     authRequest: AuthorizationRequestMessage;
     authResponse: AuthorizationResponseMessage;
   }> {
+    const {
+      did,
+      request,
+      packer: { mediaType, ...packerParams }
+    } = options;
+
     const { unpackedMessage: message } = await this._packerMgr.unpack(request);
     const authRequest = message as unknown as AuthorizationRequestMessage;
     if (message.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
@@ -155,7 +155,7 @@ export class AuthHandler implements IAuthHandler {
     const guid = uuid.v4();
     const authResponse: AuthorizationResponseMessage = {
       id: guid,
-      typ: packerOpts.mediaType,
+      typ: mediaType,
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
       thid: message.thid ?? guid,
       body: {
@@ -163,7 +163,7 @@ export class AuthHandler implements IAuthHandler {
         message: authRequestBody.message,
         scope: []
       },
-      from: did.string(),
+      from: options.did.string(),
       to: message.from
     };
 
@@ -191,7 +191,10 @@ export class AuthHandler implements IAuthHandler {
     }
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
     const token = byteDecoder.decode(
-      await this._packerMgr.pack(packerOpts.mediaType, msgBytes, packerOpts)
+      await this._packerMgr.pack(mediaType, msgBytes, {
+        senderDID: did,
+        ...packerParams
+      })
     );
     return { authRequest, authResponse, token };
   }

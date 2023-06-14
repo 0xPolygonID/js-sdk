@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* eslint-disable no-console */
 import { Identity, Profile } from '../../src/storage/entities/identity';
 import { IdentityStorage } from '../../src/storage/shared/identity-storage';
 import { PlainPacker } from '../../src/iden3comm/packers/plain';
@@ -175,7 +177,6 @@ describe('auth', () => {
   });
 
   it('request-response flow genesis', async () => {
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
@@ -189,6 +190,8 @@ describe('auth', () => {
       }
     });
 
+    expect(cred).not.to.be.undefined;
+
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -199,6 +202,7 @@ describe('auth', () => {
         baseUrl: rhsUrl
       }
     });
+    expect(issuerAuthCredential).not.to.be.undefined;
 
     const claimReq: CredentialRequest = {
       credentialSchema:
@@ -257,11 +261,14 @@ describe('auth', () => {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-    const authRes = await authHandler.handleAuthorizationRequestForGenesisDID(userDID, msgBytes, {
-      senderDID: issuerDID,
-      mediaType: MediaType.ZKPMessage,
-      profileNonce: 0,
-      provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg.toString()
+    const authRes = await authHandler.handleAuthorizationRequestForGenesisDID({
+      did: userDID,
+      request: msgBytes,
+      packer: {
+        mediaType: MediaType.ZKPMessage,
+        profileNonce: 0,
+        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg.toString()
+      }
     });
 
     const tokenStr = authRes.token;
@@ -275,7 +282,7 @@ describe('auth', () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential: cred } = await idWallet.createIdentity({
+    const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
@@ -287,7 +294,7 @@ describe('auth', () => {
     });
     const profileDID = await idWallet.createProfile(userDID, 50, 'test verifier');
 
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+    const { did: issuerDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,

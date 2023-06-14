@@ -1,9 +1,13 @@
 import { MediaType } from '../constants';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
-import { CredentialsOfferMessage, IPackageManager, MessageFetchRequestMessage } from '../types';
+import {
+  CredentialsOfferMessage,
+  IPackageManager,
+  MessageFetchRequestMessage,
+  PackerParams
+} from '../types';
 import { DID } from '@iden3/js-iden3-core';
-import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
 import { W3CCredential } from '../../verifiable';
@@ -20,16 +24,24 @@ export interface IFetchHandler {
   /**
    * Handle credential offer request protocol message
    *
-   * @param {DID} id - identifier that will handle offer
-   * @param {CredentialsOfferMessage} offer - raw offer message
-   * @param {number} profileNonce -  nonce of the did to which credential has been offered
+   *@param {({
+   *     did: DID;  identifier that will handle offer
+   *     offer: Uint8Array; offer - raw offer message
+   *     profileNonce?: number; nonce of the did to which credential has been offered
+   *     packerOpts: {
+   *       mediaType: MediaType;
+   *     } & PackerParams; packer options how to pack message
+   *   })} options how to fetch credential
    * @returns `Promise<W3CCredential>`
    */
-  handleCredentialOffer(
-    did: DID,
-    offer: Uint8Array,
-    profileNonce?: number
-  ): Promise<W3CCredential[]>;
+  handleCredentialOffer(options: {
+    did: DID;
+    offer: Uint8Array;
+    profileNonce?: number;
+    packer: {
+      mediaType: MediaType;
+    } & PackerParams;
+  }): Promise<W3CCredential[]>;
 }
 /**
  *
@@ -50,17 +62,31 @@ export class FetchHandler implements IFetchHandler {
 
   /**
    * Handles only messages with credentials/1.0/offer type
-   * @param {DID} did - an identity that will process the request
-   * @param {Uint8Array} offer - raw offer message
-   * @param {number} profileNonce - nonce of the did to which credential has been offered
-   * @returns `Promise<W3CCredential[]` */
-  async handleCredentialOffer(
-    did: DID,
-    offer: Uint8Array,
-    profileNonce = 0
-  ): Promise<W3CCredential[]> {
+   *
+   * @param {({
+   *     did: DID; identifier that will handle offer
+   *     offer: Uint8Array; offer - raw offer message
+   *     profileNonce?: number; nonce of the did to which credential has been offered
+   *     packer: {
+   *       mediaType: MediaType;
+   *     } & PackerParams; packer options how to pack message
+   *   })} options how to fetch credential
+   * @returns `Promise<W3CCredential>`
+   */
+  async handleCredentialOffer(options: {
+    did: DID;
+    offer: Uint8Array;
+    profileNonce?: number;
+    packer: {
+      mediaType: MediaType;
+    } & PackerParams;
+  }): Promise<W3CCredential[]> {
     // each credential info in the offer we need to fetch
-
+    const {
+      did,
+      offer,
+      packer: { mediaType, ...packerParams }
+    } = options;
     const { unpackedMessage: message } = await this._packerMgr.unpack(offer);
     const offerMessage = message as unknown as CredentialsOfferMessage;
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE) {
@@ -86,11 +112,7 @@ export class FetchHandler implements IFetchHandler {
 
       const msgBytes = byteEncoder.encode(JSON.stringify(fetchRequest));
       const token = byteDecoder.decode(
-        await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
-          senderDID: did,
-          profileNonce,
-          provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-        })
+        await this._packerMgr.pack(mediaType, msgBytes, { senderDID: did, ...packerParams })
       );
 
       const resp = await fetch(offerMessage.body.url, {

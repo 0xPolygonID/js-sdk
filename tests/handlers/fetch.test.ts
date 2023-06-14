@@ -17,8 +17,7 @@ import {
   FetchHandler,
   IFetchHandler,
   IPackageManager,
-  PackageManager,
-  ZKPPackerParams
+  PackageManager
 } from '../../src/iden3comm';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
@@ -27,6 +26,7 @@ import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
 import fetchMock from 'fetch-mock';
 import { after } from 'mocha';
+import { proving } from '@iden3/js-jwz';
 
 describe('fetch', () => {
   let idWallet: IdentityWallet;
@@ -162,11 +162,7 @@ describe('fetch', () => {
       const msg = await new PlainPacker().unpack(envelope);
       return { unpackedMessage: msg, unpackedMediaType: MediaType.PlainMessage };
     };
-    packageMgr.pack = async function (
-      mediaType: MediaType,
-      payload: Uint8Array,
-      params: ZKPPackerParams
-    ): Promise<Uint8Array> {
+    packageMgr.pack = async (): Promise<Uint8Array> => {
       return byteEncoder.encode(mockedToken);
     };
     fetchHandler = new FetchHandler(packageMgr);
@@ -191,6 +187,8 @@ describe('fetch', () => {
         baseUrl: rhsUrl
       }
     });
+    expect(cred).not.to.be.undefined;
+
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -201,6 +199,8 @@ describe('fetch', () => {
         baseUrl: rhsUrl
       }
     });
+
+    expect(issuerAuthCredential).not.to.be.undefined;
 
     const id = uuid.v4();
     const authReq: CredentialsOfferMessage = {
@@ -217,7 +217,14 @@ describe('fetch', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
 
-    const res = await fetchHandler.handleCredentialOffer(userDID, msgBytes);
+    const res = await fetchHandler.handleCredentialOffer({
+      did: userDID,
+      offer: msgBytes,
+      packer: {
+        mediaType: MediaType.ZKPMessage,
+        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+      }
+    });
 
     await credWallet.saveAll(res);
 

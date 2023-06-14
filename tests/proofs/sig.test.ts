@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import {
   CircuitStorage,
   CredentialStorage,
@@ -118,7 +119,7 @@ describe('sig proofs', () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential: cred } = await idWallet.createIdentity({
+    const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
@@ -128,7 +129,7 @@ describe('sig proofs', () => {
         baseUrl: rhsUrl
       }
     });
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+    const { did: issuerDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
