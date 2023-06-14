@@ -1,16 +1,3 @@
-// Copyright 2023 Veramo.io.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 import { SUPPORTED_PUBLIC_KEY_TYPES, UNIVERSAL_RESOLVER_URL } from '../constants';
 import elliptic from 'elliptic';
 import {
@@ -37,39 +24,28 @@ export const resolveDIDDocument = async (
   }
 };
 
-export const getDIDComponentById = (
-  didDocument: DIDDocument,
-  did: string,
-  section: string
-): VerificationMethod => {
-  const doc = didDocument;
-  const mainSections = ['verificationMethod', 'publicKey', 'service']
-    .map((key) => doc[key])
-    .flat()
-    .filter(Boolean);
+const DIDAuthenticationSection = 'authentication';
+export const resolveVerificationMethods = (didDocument: DIDDocument): VerificationMethod[] => {
+  const vms: VerificationMethod[] = didDocument.verificationMethod || [];
 
-  const subsection = section ? [...(doc[section] || [])] : mainSections;
+  // prioritize: first verification methods to be chosen are from `authentication` section.
+  const sortedVerificationMethods = (didDocument[DIDAuthenticationSection] || [])
+    .map((verificationMethod) => {
+      if (typeof verificationMethod === 'string') {
+        return vms.find((i) => i.id === verificationMethod);
+      }
+      return verificationMethod as VerificationMethod;
+    })
+    .filter((key) => key) as VerificationMethod[];
 
-  let result = subsection.find((item) => {
-    return typeof item === 'string'
-      ? item === did || `${did}${item}` === did
-      : item.id === did || `${did}${item.id}` === did;
-  });
-
-  if (typeof result === 'string') {
-    result = mainSections.find((item) => item.id === did || `${did}${item.id}` === did);
+  // add all other verification methods
+  for (let index = 0; index < vms.length; index++) {
+    const id = vms[index].id;
+    if (sortedVerificationMethods.findIndex((vm) => vm.id === id) === -1) {
+      sortedVerificationMethods.push(vms[index]);
+    }
   }
-
-  if (!result) {
-    throw new Error('Could not find DID component');
-  }
-
-  if (result.id.startsWith('#')) {
-    // fix did documents that use only the fragment part as key ID
-    result.id = `${did}${result.id}`;
-  }
-
-  return result;
+  return sortedVerificationMethods;
 };
 
 const secp256k1 = new elliptic.ec('secp256k1');

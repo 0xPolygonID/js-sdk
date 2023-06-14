@@ -6,6 +6,7 @@ import {
   Sec256k1Provider,
   byteDecoder,
   byteEncoder,
+  bytesToBase64,
   bytesToBase64url,
   hexToBytes,
   keyPath
@@ -31,7 +32,7 @@ const didExample = {
   id: 'did:example:123',
   verificationMethod: [
     {
-      id: 'did:example:123#vm-1',
+      id: 'did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw',
       controller: 'did:example:123',
       type: 'EcdsaSecp256k1VerificationKey2019',
       publicKeyJwk: {
@@ -47,7 +48,7 @@ const didExample = {
       }
     }
   ],
-  authentication: ['did:example:123#vm-1']
+  authentication: ['did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw']
 };
 
 describe('jws packer tests', () => {
@@ -77,7 +78,21 @@ describe('jws packer tests', () => {
     packer = new JWSPacker(kms, resolveDIDDocument);
   });
 
-  it('test did document resolves with publicKeyJwk pack/upack', async () => {
+  it('pack / unpack: kid', async () => {
+    const msgBytes = byteEncoder.encode(bodyMsgStr);
+
+    const tokenBytes = await packer.pack(msgBytes, {
+      alg: 'ES256K',
+      did,
+      kid: 'did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw',
+      issuer: did
+    });
+
+    const data = await packer.unpack(tokenBytes);
+    expect(data).to.not.be.undefined;
+  });
+
+  it('pack / unpack: no kid', async () => {
     const msgBytes = byteEncoder.encode(bodyMsgStr);
 
     const tokenBytes = await packer.pack(msgBytes, {
@@ -86,9 +101,15 @@ describe('jws packer tests', () => {
       issuer: did
     });
 
-    const token = byteDecoder.decode(tokenBytes);
+    const data = await packer.unpack(tokenBytes);
+    expect(data).to.not.be.undefined;
+  });
 
-    console.log('jwt', token);
+  it('unpack: no kid', async () => {
+    const token =
+      'eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJhcHBsaWNhdGlvbi9pZGVuM2NvbW0tc2lnbmVkLWpzb24ifQ.eyJ0eXBlIjoiaHR0cHM6Ly9pZGVuMy1jb21tdW5pY2F0aW9uLmlvL2F1dGhvcml6YXRpb24vMS4wL3Jlc3BvbnNlIiwiZnJvbSI6ImRpZDpleGFtcGxlOjEyMyIsImJvZHkiOnsic2NvcGUiOlt7InR5cGUiOiJ6ZXJva25vd2xlZGdlIiwiY2lyY3VpdF9pZCI6ImF1dGgiLCJwdWJfc2lnbmFscyI6WyIxIiwiMTgzMTE1NjA1MjUzODMzMTk3MTkzMTEzOTQ5NTcwNjQ4MjAwOTEzNTQ5NzYzMTA1OTk4MTg3OTcxNTcxODk1Njg2MjE0NjY5NTA4MTEiLCIzMjM0MTY5MjUyNjQ2NjYyMTc2MTcyODg1Njk3NDI1NjQ3MDM2MzI4NTA4MTYwMzU3NjEwODQwMDI3MjAwOTAzNzczNTMyOTc5MjAiXSwicHJvb2ZfZGF0YSI6eyJwaV9hIjpbIjExMTMwODQzMTUwNTQwNzg5Mjk5NDU4OTkwNTg2MDIwMDAwNzE5MjgwMjQ2MTUzNzk3ODgyODQzMjE0MjkwNTQxOTgwNTIyMzc1MDcyIiwiMTMwMDg0MTkxMjk0Mzc4MTcyMzAyMjAzMjM1NTgzNjg5MzgzMTEzMjkyMDc4Mzc4ODQ1NTUzMTgzODI1NDQ2NTc4NDYwNTc2MjcxMyIsIjEiXSwicGlfYiI6W1siMjA2MTU3Njg1MzY5ODg0MzgzMzY1Mzc3Nzc5MDkwNDIzNTIwNTYzOTI4NjIyNTE3ODU3MjI3OTY2Mzc1OTAyMTIxNjA1NjEzNTE2NTYiLCIxMDM3MTE0NDgwNjEwNzc3ODg5MDUzODg1NzcwMDg1NTEwODY2NzYyMjA0MjIxNTA5Njk3MTc0NzIwMzEwNTk5NzQ1NDYyNTgxNDA4MCJdLFsiMTk1OTg1NDEzNTA4MDQ0Nzg1NDkxNDEyMDc4MzUwMjg2NzExMTEwNjM5MTU2MzU1ODA2Nzk2OTQ5MDc2MzU5MTQyNzk5Mjg2Nzc4MTIiLCIxNTI2NDU1MzA0NTUxNzA2NTY2OTE3MTU4NDk0Mzk2NDMyMjExNzM5NzY0NTE0NzAwNjkwOTE2NzQyNzgwOTgzNzkyOTQ1ODAxMjkxMyJdLFsiMSIsIjAiXV0sInBpX2MiOlsiMTY0NDMzMDkyNzk4MjU1MDg4OTMwODYyNTEyOTAwMDM5MzY5MzUwNzczNDg3NTQwOTc0NzA4MTg1MjM1NTgwODI1MDIzNjQ4MjIwNDkiLCIyOTg0MTgwMjI3NzY2MDQ4MTAwNTEwMTIwNDA3MTUwNzUyMDUyMzM0NTcxODc2NjgxMzA0OTk5NTk1NTQ0MTM4MTU1NjExOTYzMjczIiwiMSJdLCJwcm90b2NvbCI6IiJ9fV19fQ.W6gORh7uC47pv3Sg83meipfBbPoDplhc7aog2CCCausjhvjMJJN1u_N59gdwj5enWD0fworFbqGIv1y4sBvF3A';
+    const tokenBytes = byteEncoder.encode(token);
+
     const data = await packer.unpack(tokenBytes);
     expect(data).to.not.be.undefined;
   });

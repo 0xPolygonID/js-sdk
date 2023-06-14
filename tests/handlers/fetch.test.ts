@@ -171,7 +171,6 @@ describe('fetch', () => {
     };
     fetchHandler = new FetchHandler(packageMgr);
     fetchMock.post(agentUrl, JSON.parse(mockedCredResponse));
-
   });
   after(() => {
     fetchMock.restore();
