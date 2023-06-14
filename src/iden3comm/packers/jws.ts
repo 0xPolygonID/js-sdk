@@ -27,6 +27,8 @@ export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
  * @implements implements IPacker interface
  */
 export class JWSPacker implements IPacker {
+  private static authSection = 'authentication';
+
   /**
    * Creates an instance of JWSPacker.
    *
@@ -67,22 +69,15 @@ export class JWSPacker implements IPacker {
     if (!vmTypes?.length) {
       throw new Error(`No supported verification methods for algorithm ${params.alg}`);
     }
-    let didDocument;
-    try {
-      const didResolutionResult = await this._documentResolver.resolve(from);
-      if (!didResolutionResult?.didDocument?.id) {
-        throw new Error(`did document for ${from} is not found in resolution result`);
-      }
-      didDocument = didResolutionResult.didDocument;
-    } catch (err: unknown) {
-      throw new Error(`did document for ${from} is not resolved: ${(err as Error).message}`);
-    }
 
-    const section = 'authentication';
-    const vms = resolveVerificationMethods(didDocument);
+    const didDocument: DIDDocument = await this.resolveDidDoc(from);
+
+    const vms = resolveVerificationMethods(didDocument, JWSPacker.authSection);
 
     if (!vms.length) {
-      throw new Error(`No keys found in ${section} section of DID document ${didDocument.id}`);
+      throw new Error(
+        `No keys found in ${JWSPacker.authSection}  of DID document ${didDocument.id}`
+      );
     }
 
     // try to find a managed signing key that matches keyRef
@@ -90,7 +85,7 @@ export class JWSPacker implements IPacker {
 
     if (!vm) {
       throw new Error(
-        `No key found with id ${params.kid} in ${section} section of DID document ${didDocument.id}`
+        `No key found with id ${params.kid} in ${JWSPacker.authSection} section of DID document ${didDocument.id}`
       );
     }
 
@@ -151,20 +146,9 @@ export class JWSPacker implements IPacker {
       throw new Error(`Sender does not match DID in message with kid ${header?.kid}`);
     }
 
-    let didDocument: DIDDocument;
-    try {
-      const didResolutionResult = await this._documentResolver.resolve(message.from);
-      if (!didResolutionResult?.didDocument?.id) {
-        throw new Error(`did document for ${message.from} is not found in resolution result`);
-      }
-      didDocument = didResolutionResult.didDocument;
-    } catch (err: unknown) {
-      throw new Error(
-        `did document for ${message.from} is not resolved: ${(err as Error).message}`
-      );
-    }
+    const didDocument: DIDDocument = await this.resolveDidDoc(message.from);
 
-    let vms = resolveVerificationMethods(didDocument);
+    let vms = resolveVerificationMethods(didDocument, JWSPacker.authSection);
 
     if (!vms?.length) {
       throw new Error('No authentication keys defined in the DID Document');
@@ -191,5 +175,19 @@ export class JWSPacker implements IPacker {
 
   mediaType(): MediaType {
     return MediaType.SignedMessage;
+  }
+
+  private async resolveDidDoc(from: string) {
+    let didDocument: DIDDocument;
+    try {
+      const didResolutionResult = await this._documentResolver.resolve(from);
+      if (!didResolutionResult?.didDocument?.id) {
+        throw new Error(`did document for ${from} is not found in resolution result`);
+      }
+      didDocument = didResolutionResult.didDocument;
+    } catch (err: unknown) {
+      throw new Error(`did document for ${from} is not resolved: ${(err as Error).message}`);
+    }
+    return didDocument;
   }
 }
