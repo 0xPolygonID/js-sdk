@@ -166,7 +166,7 @@ export class JWSPacker implements IPacker {
 
     let vms = resolveVerificationMethods(didDocument);
 
-    if (!vms || !vms.length) {
+    if (!vms?.length) {
       throw new Error('No authentication keys defined in the DID Document');
     }
     if (header.kid) {
