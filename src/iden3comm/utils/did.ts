@@ -24,10 +24,8 @@ export const resolveDIDDocument = async (
   }
 };
 
-const DIDAuthenticationSection = "authentication";
-export const resolveVerificationMethods = (
-  didDocument: DIDDocument
-): VerificationMethod[] => {
+const DIDAuthenticationSection = 'authentication';
+export const resolveVerificationMethods = (didDocument: DIDDocument): VerificationMethod[] => {
   const vms: VerificationMethod[] = didDocument.verificationMethod || [];
 
   // prioritize: first verification methods to be chosen are from `authentication` section.
@@ -40,7 +38,7 @@ export const resolveVerificationMethods = (
     })
     .filter((key) => key) as VerificationMethod[];
 
- // add all other verification methods
+  // add all other verification methods
   for (let index = 0; index < vms.length; index++) {
     const id = vms[index].id;
     if (sortedVerificationMethods.findIndex((vm) => vm.id === id) === -1) {
