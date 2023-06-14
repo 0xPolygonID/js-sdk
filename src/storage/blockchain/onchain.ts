@@ -8,6 +8,7 @@ import {
   setBitBigEndian,
   ZERO_HASH
 } from '@iden3/js-merkletree';
+import { EthConnectionConfig } from './state';
 
 /**
  * OnChainIssuer is a class that allows to interact with the onchain contract
@@ -27,7 +28,8 @@ export class OnChainIssuer {
    * @param {string} - onhcain contract address
    * @param {string} - rpc url to connect to the blockchain
    */
-  constructor(contractAddress: string, rpcURL: string) {
+  
+  constructor(config:EthConnectionConfig) {
     this.provider = new ethers.providers.JsonRpcProvider(rpcURL);
     this.onchainContract = new ethers.Contract(contractAddress, abi, this.provider);
   }
