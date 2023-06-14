@@ -17,6 +17,7 @@ import { hashElems } from '@iden3/js-merkletree';
 import { DID } from '@iden3/js-iden3-core';
 import { CredentialStatus, Issuer, RevocationStatus } from '../verifiable';
 import { strMTHex } from '../circuits';
+import { defaultEthConnectionConfig } from '../storage';
 
 /**
  * Interface to unite contains three trees: claim, revocation and rootOfRoots
@@ -449,6 +450,7 @@ export class RevocationStatusDTO {
 export async function getRevocationOnChain(
   credentialStatus: CredentialStatus,
   listofNetworks: Map<number, string>
+
 ): Promise<RevocationStatus> {
   const { contractAddress, chainID, revocationNonce } = parseOnChainID(credentialStatus.id);
   if (revocationNonce !== credentialStatus.revocationNonce) {
@@ -459,6 +461,9 @@ export async function getRevocationOnChain(
   if (!rpcURL) {
     throw new Error(`chainID "${chainID}" not supported`);
   }
+  let conf = defaultEthConnectionConfig;
+  conf.contractAddress = ""
+  conf.url = ""
   const onChainCaller = new OnChainIssuer(contractAddress, rpcURL);
   const revocationStatus = await onChainCaller.getRevocationStatus(revocationNonce);
   return revocationStatus;

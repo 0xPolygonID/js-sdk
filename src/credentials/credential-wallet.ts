@@ -17,6 +17,7 @@ import { JSONSchema } from '../schema-processor';
 import * as uuid from 'uuid';
 import { getStatusFromRHS, RevocationStatusDTO, getRevocationOnChain } from './revocation';
 import { Proof } from '@iden3/js-merkletree';
+import { EthConnectionConfig, EthStateStorage } from '../storage';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -226,8 +227,9 @@ export class CredentialWallet implements ICredentialWallet {
    */
   constructor(
     private readonly _storage: IDataStorage,
-    private readonly _opts: CredentialWalletOptions
-  ) {}
+    private readonly _credentialStatusCheckerRegistry:,
+  ) 
+  }
 
   /**
    * {@inheritDoc ICredentialWallet.getAuthBJJCredential}
@@ -280,7 +282,7 @@ export class CredentialWallet implements ICredentialWallet {
   async getRevocationStatus(
     credStatus: CredentialStatus,
     issuerDID: DID,
-    issuerData: IssuerData
+    issuerData: IssuerData,
   ): Promise<RevocationStatus> {
     switch (credStatus.type) {
       case CredentialStatusType.SparseMerkleTreeProof: {
@@ -314,7 +316,7 @@ export class CredentialWallet implements ICredentialWallet {
         }
       }
       case CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023: {
-        return await getRevocationOnChain(credStatus, this._opts.networks);
+        return await getRevocationOnChain(credStatus, opts);
       }
     }
 
