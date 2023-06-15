@@ -296,7 +296,7 @@ export class CredentialWallet implements ICredentialWallet {
   ): Promise<RevocationStatus> {
     const statusResolver = this._credentialStatusResolverRegistry.get(credStatus.type);
     if (!statusResolver) {
-      throw new Error(`no status checker for ${credStatus.type}`);
+      throw new Error(`credential status resolver does not exist for ${credStatus.type} type`);
     }
 
     const cs = await statusResolver.resolve(credStatus, {

@@ -29,6 +29,7 @@ import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import path from 'path';
 import { RHSResolver } from '../../src/credentials/status/reverse-sparse-merkle-tree';
+import { CredentialStatusResolverRegistry } from '../../src/credentials/status/iresolver';
 
 describe('rhs', () => {
   let idWallet: IdentityWallet;
@@ -133,7 +134,12 @@ describe('rhs', () => {
 
     const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
 
-    credWallet = new CredentialWallet(dataStorage);
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
     credWallet.getRevocationStatusFromCredential = async (cred: W3CCredential) => {
       const r: RevocationStatus = {
         mtp: {

@@ -27,6 +27,8 @@ import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
 import fetchMock from 'fetch-mock';
 import { after } from 'mocha';
+import { CredentialStatusResolverRegistry } from '../../src/credentials/status/iresolver';
+import { RHSResolver } from '../../src/credentials/status/reverse-sparse-merkle-tree';
 
 describe('fetch', () => {
   let idWallet: IdentityWallet;
@@ -151,7 +153,12 @@ describe('fetch', () => {
       states: mockStateStorage
     };
 
-    credWallet = new CredentialWallet(dataStorage);
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     // proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);

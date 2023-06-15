@@ -23,6 +23,8 @@ import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { checkVerifiablePresentation } from './common';
+import { CredentialStatusResolverRegistry } from '../../src/credentials/status/iresolver';
+import { RHSResolver } from '../../src/credentials/status/reverse-sparse-merkle-tree';
 
 describe('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -108,7 +110,12 @@ describe('sig proofs', () => {
       )
     });
 
-    credWallet = new CredentialWallet(dataStorage);
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
