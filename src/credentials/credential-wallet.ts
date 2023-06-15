@@ -15,6 +15,7 @@ import {
 import { JSONSchema } from '../schema-processor';
 import * as uuid from 'uuid';
 import { CredentialStatusResolverRegistry } from './status/iresolver';
+import { IssuerResolver } from './status/sparse-merkle-tree';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -229,8 +230,14 @@ export class CredentialWallet implements ICredentialWallet {
   ) {
     this._storage = _storage;
     this._credentialStatusResolverRegistry = _credentialStatusResolverRegistry;
+    // if no credential status resolvers are provided
+    // register default issuer resolver
     if (!this._credentialStatusResolverRegistry) {
       this._credentialStatusResolverRegistry = new CredentialStatusResolverRegistry();
+      this._credentialStatusResolverRegistry.register(
+        CredentialStatusType.SparseMerkleTreeProof,
+        new IssuerResolver()
+      );
     }
   }
 
