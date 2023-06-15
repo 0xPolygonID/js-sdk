@@ -100,7 +100,7 @@ export class FetchHandler implements IFetchHandler {
       const guid = uuid.v4();
       const fetchRequest: MessageFetchRequestMessage = {
         id: guid,
-        typ: MediaType.ZKPMessage,
+        typ: mediaType,
         type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE,
         thid: offerMessage.thid ?? guid,
         body: {
@@ -117,6 +117,9 @@ export class FetchHandler implements IFetchHandler {
 
       const resp = await fetch(offerMessage.body.url, {
         method: 'post',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
         body: token
       });
       if (resp.status !== 200) {
