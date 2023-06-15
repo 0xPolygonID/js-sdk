@@ -114,19 +114,25 @@ export class FetchHandler implements IFetchHandler {
       const token = byteDecoder.decode(
         await this._packerMgr.pack(mediaType, msgBytes, { senderDID: did, ...packerParams })
       );
-
-      const resp = await fetch(offerMessage.body.url, {
-        method: 'post',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: token
-      });
-      if (resp.status !== 200) {
-        throw new Error(`could not fetch W3C credential, ${credentialInfo.id}`);
+      let message: { body: { credential: W3CCredential } };
+      try {
+        const resp = await fetch(offerMessage.body.url, {
+          method: 'post',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: token
+        });
+        if (resp.status !== 200) {
+          throw new Error(`could not fetch W3C credential, ${credentialInfo.id}`);
+        }
+        message = await resp.json();
+        credentials.push(message.body.credential);
+      } catch (e) {
+        throw new Error(
+          `could not fetch W3C credential, ${credentialInfo.id}, error: ${e.message ?? e}`
+        );
       }
-      const data = await resp.json();
-      credentials.push(data.body.credential);
     }
 
     return credentials;
