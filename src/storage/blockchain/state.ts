@@ -26,6 +26,7 @@ export interface EthConnectionConfig {
   rpcResponseTimeout: number;
   waitReceiptCycleTime: number;
   waitBlockCycleTime: number;
+  chainId: number;
 }
 
 export /** @type {EthConnectionConfig} - default configuration for EthConnectionConfig */
@@ -41,7 +42,7 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
   rpcResponseTimeout: 5000,
   waitReceiptCycleTime: 30000,
   waitBlockCycleTime: 3000,
-  chainId: ''
+  chainId: null
 };
 
 /**

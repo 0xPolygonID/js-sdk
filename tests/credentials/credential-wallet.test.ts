@@ -37,8 +37,7 @@ class LocalStorageMock {
 global.localStorage = new LocalStorageMock() as unknown as Storage;
 
 const credentialFlow = async (storage: IDataStorage) => {
-  const networks: Map<number, string> = new Map();
-  const credentialWallet = new CredentialWallet(storage, { networks });
+  const credentialWallet = new CredentialWallet(storage);
 
   await credentialWallet.saveAll([cred1, cred2]);
 

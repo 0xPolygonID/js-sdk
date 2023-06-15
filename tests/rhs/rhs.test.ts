@@ -15,7 +15,6 @@ import { InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { FSKeyLoader } from '../../src/loaders';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
-import { getStatusFromRHS } from '../../src/credentials/revocation';
 import {
   CredentialStatus,
   CredentialStatusType,
@@ -29,6 +28,7 @@ import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import path from 'path';
+import { RHSResolver } from '../../src/credentials/status/reverse-sparse-merkle-tree';
 
 describe('rhs', () => {
   let idWallet: IdentityWallet;
@@ -133,8 +133,7 @@ describe('rhs', () => {
 
     const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
 
-    const networks: Map<number, string> = new Map();
-    credWallet = new CredentialWallet(dataStorage, { networks });
+    credWallet = new CredentialWallet(dataStorage);
     credWallet.getRevocationStatusFromCredential = async (cred: W3CCredential) => {
       const r: RevocationStatus = {
         mtp: {
@@ -178,9 +177,10 @@ describe('rhs', () => {
       statusIssuer: credBasicStatus
     };
 
-    // await expect(
+    const rhsResolver = new RHSResolver(mockStateStorageForGenesisState);
 
-    return getStatusFromRHS(issuerDID, credRHSStatus, mockStateStorageForGenesisState)
+    return rhsResolver
+      .resolve(credRHSStatus, { issuer: issuerDID })
       .then(function (m) {
         throw new Error('was not supposed to succeed');
       })
@@ -255,11 +255,8 @@ describe('rhs', () => {
 
     await idWallet.publishStateToRHS(issuerDID, rhsUrl);
 
-    const rhsStatus = await getStatusFromRHS(
-      issuerDID,
-      credRHSStatus,
-      mockStateStorageForDefinedState
-    );
+    const rhsResolver = new RHSResolver(mockStateStorageForDefinedState);
+    const rhsStatus = await rhsResolver.resolve(credRHSStatus, { issuer: issuerDID });
 
     expect(rhsStatus.issuer.state).to.equal(res.newTreeState.state.hex());
     expect(rhsStatus.issuer.claimsTreeRoot).to.equal(res.newTreeState.claimsRoot.hex());
@@ -365,7 +362,8 @@ describe('rhs', () => {
 
     // state is published to blockchain (2)
 
-    const rhsStatus = await getStatusFromRHS(issuerDID, credRHSStatus, dataStorage.states);
+    const rhsResolver = new RHSResolver(dataStorage.states);
+    const rhsStatus = await rhsResolver.resolve(credRHSStatus, { issuer: issuerDID });
 
     expect(rhsStatus.issuer.state).to.equal(latestTree.state.hex());
     expect(rhsStatus.issuer.claimsTreeRoot).to.equal((await latestTree.claimsTree.root()).hex());

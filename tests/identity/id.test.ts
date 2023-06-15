@@ -67,8 +67,7 @@ describe('identity', () => {
       states: mockStateStorage
     };
 
-    const networks: Map<number, string> = new Map();
-    const credWallet = new CredentialWallet(dataStorage, { networks });
+    const credWallet = new CredentialWallet(dataStorage);
     wallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
   it('createIdentity', async () => {

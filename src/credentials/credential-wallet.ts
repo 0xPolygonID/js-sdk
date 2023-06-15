@@ -1,5 +1,4 @@
-import { buildDIDType, BytesHelper, DID, Id } from '@iden3/js-iden3-core';
-
+import { DID } from '@iden3/js-iden3-core';
 import { IDataStorage } from '../storage/interfaces';
 import {
   W3CCredential,
@@ -15,9 +14,7 @@ import {
 
 import { JSONSchema } from '../schema-processor';
 import * as uuid from 'uuid';
-import { getStatusFromRHS, RevocationStatusDTO, getRevocationOnChain } from './revocation';
-import { Proof } from '@iden3/js-merkletree';
-import { EthConnectionConfig, EthStateStorage } from '../storage';
+import { CredentialStatusResolverRegistry } from './status/iresolver';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -222,13 +219,19 @@ export interface CredentialWalletOptions {
 export class CredentialWallet implements ICredentialWallet {
   /**
    * Creates an instance of CredentialWallet.
-   * @param {IDataStorage} _storage - - data storage to access credential / identity / Merkle tree data
-   * @param {CredentialWalletOptions} _opts - settings for CredentialWallet
+   * @param {IDataStorage} _storage - data storage to access credential / identity / Merkle tree data
+   * @param {CredentialStatusResolverRegistry} _credentialStatusResolverRegistry - list of credential status resolvers
+   * if _credentialStatusResolverRegistry is not provided, default resolvers will be used
    */
   constructor(
     private readonly _storage: IDataStorage,
-    private readonly _credentialStatusCheckerRegistry:,
-  ) 
+    private readonly _credentialStatusResolverRegistry?: CredentialStatusResolverRegistry
+  ) {
+    this._storage = _storage;
+    this._credentialStatusResolverRegistry = _credentialStatusResolverRegistry;
+    if (!this._credentialStatusResolverRegistry) {
+      this._credentialStatusResolverRegistry = new CredentialStatusResolverRegistry();
+    }
   }
 
   /**
@@ -282,45 +285,19 @@ export class CredentialWallet implements ICredentialWallet {
   async getRevocationStatus(
     credStatus: CredentialStatus,
     issuerDID: DID,
-    issuerData: IssuerData,
+    issuerData: IssuerData
   ): Promise<RevocationStatus> {
-    switch (credStatus.type) {
-      case CredentialStatusType.SparseMerkleTreeProof: {
-        const revStatusDTO = await (await fetch(credStatus.id)).json();
-        return Object.assign(new RevocationStatusDTO(), revStatusDTO).toRevocationStatus();
-      }
-      case CredentialStatusType.Iden3ReverseSparseMerkleTreeProof: {
-        try {
-          return await getStatusFromRHS(issuerDID, credStatus, this._storage.states);
-        } catch (e) {
-          const errMsg = e['reason'] ?? e.message;
-          if (
-            errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
-            isIssuerGenesis(issuerDID.toString(), issuerData.state.value)
-          ) {
-            return {
-              mtp: new Proof(),
-              issuer: {
-                state: issuerData.state.value,
-                revocationTreeRoot: issuerData.state.revocationTreeRoot,
-                rootOfRoots: issuerData.state.rootOfRoots,
-                claimsTreeRoot: issuerData.state.claimsTreeRoot
-              }
-            };
-          }
-
-          if (credStatus?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
-            return await (await fetch(credStatus.id)).json();
-          }
-          throw new Error(`can't fetch revocation status`);
-        }
-      }
-      case CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023: {
-        return await getRevocationOnChain(credStatus, opts);
-      }
+    const statusResolver = this._credentialStatusResolverRegistry.get(credStatus.type);
+    if (!statusResolver) {
+      throw new Error(`no status checker for ${credStatus.type}`);
     }
 
-    throw new Error('revocation status unknown');
+    const cs = await statusResolver.resolve(credStatus, {
+      issuer: issuerDID,
+      issuerissuerData: issuerData
+    });
+
+    return Promise.resolve(cs);
   }
   /**
    * {@inheritDoc ICredentialWallet.createCredential}
@@ -443,34 +420,4 @@ export class CredentialWallet implements ICredentialWallet {
     }
     throw new Error(ErrAllClaimsRevoked);
   }
-}
-
-/**
- * Checks if issuer did is created from given state is genesis
- *
- * @export
- * @param {string} issuer - did (string)
- * @param {string} state  - hex state
- * @returns boolean
- */
-export function isIssuerGenesis(issuer: string, state: string): boolean {
-  const did = DID.parse(issuer);
-  const arr = BytesHelper.hexToBytes(state);
-  const stateBigInt = BytesHelper.bytesToInt(arr);
-  const type = buildDIDType(did.method, did.blockchain, did.networkId);
-  return isGenesisStateId(did.id.bigInt(), stateBigInt, type);
-}
-
-/**
- * Checks if id is created from given state and type is genesis
- *
- * @export
- * @param {bigint} id
- * @param {bigint} state
- * @param {Uint8Array} type
- * @returns boolean - returns if id is genesis
- */
-export function isGenesisStateId(id: bigint, state: bigint, type: Uint8Array): boolean {
-  const idFromState = Id.idGenesisFromIdenState(type, state);
-  return id.toString() === idFromState.bigInt().toString();
 }

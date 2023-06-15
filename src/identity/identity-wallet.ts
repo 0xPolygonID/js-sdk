@@ -35,7 +35,7 @@ import {
   CredentialStatusType
 } from '../verifiable';
 import { CredentialRequest, ICredentialWallet } from '../credentials';
-import { pushHashesToRHS, TreesModel } from '../credentials/revocation';
+import { pushHashesToRHS, TreesModel } from '../credentials/rhs';
 import { TreeState } from '../circuits';
 import { byteDecoder } from '../utils';
 

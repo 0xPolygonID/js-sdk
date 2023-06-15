@@ -1,6 +1,6 @@
-import { RevocationStatus, Issuer } from './../../../src/verifiable';
+import { RevocationStatus, Issuer } from '../../verifiable';
 import { BigNumber, ethers } from 'ethers';
-import abi from './onchain-abi.json';
+import abi from './onchain-revocation-abi.json';
 import {
   newHashFromBigInt,
   Proof,
@@ -11,14 +11,14 @@ import {
 import { EthConnectionConfig } from './state';
 
 /**
- * OnChainIssuer is a class that allows to interact with the onchain contract
+ * OnChainRevocationStore is a class that allows to interact with the onchain contract
  * and build the revocation status.
  *
  * @export
  * @beta
  * @class OnChainIssuer
  */
-export class OnChainIssuer {
+export class OnChainRevocationStorage {
   private readonly onchainContract: ethers.Contract;
   private readonly provider: ethers.providers.JsonRpcProvider;
 
@@ -28,9 +28,9 @@ export class OnChainIssuer {
    * @param {string} - onhcain contract address
    * @param {string} - rpc url to connect to the blockchain
    */
-  
-  constructor(config:EthConnectionConfig) {
-    this.provider = new ethers.providers.JsonRpcProvider(rpcURL);
+
+  constructor(config: EthConnectionConfig, contractAddress: string) {
+    this.provider = new ethers.providers.JsonRpcProvider(config.url);
     this.onchainContract = new ethers.Contract(contractAddress, abi, this.provider);
   }
 
@@ -42,8 +42,8 @@ export class OnChainIssuer {
   public async getRevocationStatus(nonce: number): Promise<RevocationStatus> {
     const response = await this.onchainContract.getRevocationStatus(nonce);
 
-    const issuer = OnChainIssuer.convertIssuerInfo(response.issuer);
-    const mtp = OnChainIssuer.convertSmtProofToProof(response.mtp);
+    const issuer = OnChainRevocationStorage.convertIssuerInfo(response.issuer);
+    const mtp = OnChainRevocationStorage.convertSmtProofToProof(response.mtp);
 
     return {
       issuer,
