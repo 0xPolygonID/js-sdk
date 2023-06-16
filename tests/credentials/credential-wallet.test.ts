@@ -8,8 +8,8 @@ import { ProofQuery, W3CCredential, CredentialStatusType } from '../../src/verif
 import { BrowserDataSource } from '../../src/storage/local-storage/data-source';
 import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
-import { CredentialStatusResolverRegistry } from '../../src/credentials/status/iresolver';
-import { RHSResolver } from '../../src/credentials/status/reverse-sparse-merkle-tree';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
+import { RHSResolver } from '../../src/credentials';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 

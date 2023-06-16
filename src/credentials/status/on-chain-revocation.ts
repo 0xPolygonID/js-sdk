@@ -1,6 +1,6 @@
 import { RevocationStatus, CredentialStatus } from '../../verifiable';
 import { EthConnectionConfig } from '../../storage/blockchain';
-import { CredentialStatusResolver } from './iresolver';
+import { CredentialStatusResolver } from './resolver';
 import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revocation';
 
 /**
@@ -12,18 +12,13 @@ import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revoc
  * @class OnChainIssuer
  */
 export class OnChainResolver implements CredentialStatusResolver {
-  private readonly configs: Array<EthConnectionConfig>;
-  // is possible add cache layer for connections.
-
   /**
    *
    * Creates an instance of OnChainIssuer.
    * @param {Array<EthConnectionConfig>} - onhcain contract address
    * @param {string} - list of EthConnectionConfig
    */
-  constructor(configs: Array<EthConnectionConfig>) {
-    this.configs = configs;
-  }
+  constructor(private readonly _configs: EthConnectionConfig[]) {}
 
   async resolve(credentialStatus: CredentialStatus, opts?: object): Promise<RevocationStatus> {
     return this.getRevocationOnChain(credentialStatus);
@@ -33,29 +28,29 @@ export class OnChainResolver implements CredentialStatusResolver {
    * Gets partial revocation status info from onchain issuer contract.
    *
    * @param {CredentialStatus} credentialStatus - credential status section of credential
-   * @param {Map<number, string>} listofNetworks - list of supported networks. ChainID: RPC URL
+   * @param {Map<number, string>} listofNetworks - list of supported networks. ChainId: RPC URL
    * @returns Promise<RevocationStatus>
    */
   async getRevocationOnChain(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
-    const { contractAddress, chainID, revocationNonce } = this.parseOnChainID(credentialStatus.id);
+    const { contractAddress, chainId, revocationNonce } = this.parseOnChainId(credentialStatus.id);
     if (revocationNonce !== credentialStatus.revocationNonce) {
       throw new Error('revocationNonce does not match');
     }
-    const networkConfig = this.networkByChainID(chainID);
+    const networkConfig = this.networkByChainId(chainId);
     const onChainCaller = new OnChainRevocationStorage(networkConfig, contractAddress);
     const revocationStatus = await onChainCaller.getRevocationStatus(revocationNonce);
     return revocationStatus;
   }
 
   /**
-   * Parse credentialStatus id to get contractAddress, chainID and revocationNonce
+   * Parse credentialStatus id to get contractAddress, chainId and revocationNonce
    *
    * @param {string} id - credential status id
-   * @returns {{contractAddress: string, chainID: number, revocationNonce: number}}
+   * @returns {{contractAddress: string, chainId: number, revocationNonce: number}}
    */
-  parseOnChainID(id: string): {
+  parseOnChainId(id: string): {
     contractAddress: string;
-    chainID: number;
+    chainId: number;
     revocationNonce: number;
   } {
     const url = new URL(id);
@@ -66,23 +61,23 @@ export class OnChainResolver implements CredentialStatusResolver {
       throw new Error('revocationNonce not found');
     }
     // TODO (illia-korotia): after merging core v2 need to parse contract address from did if `contractAddress` is not present in id as param
-    const contractID = url.searchParams.get('contractAddress');
+    const contractId = url.searchParams.get('contractAddress');
     const revocationNonce = parseInt(url.searchParams.get('revocationNonce'), 10);
 
-    const parts = contractID.split(':');
+    const parts = contractId.split(':');
     if (parts.length != 2) {
       throw new Error('invalid contract address');
     }
-    const chainID = parseInt(parts[0], 10);
+    const chainId = parseInt(parts[0], 10);
     const contractAddress = parts[1];
 
-    return { contractAddress, chainID, revocationNonce };
+    return { contractAddress, chainId, revocationNonce };
   }
 
-  networkByChainID(chainID: number): EthConnectionConfig {
-    const network = this.configs.find((c) => c.chainId === chainID);
+  networkByChainId(chainId: number): EthConnectionConfig {
+    const network = this._configs.find((c) => c.chainId === chainId);
     if (!network) {
-      throw new Error(`chainID "${chainID}" not supported`);
+      throw new Error(`chainId "${chainId}" not supported`);
     }
     return network;
   }

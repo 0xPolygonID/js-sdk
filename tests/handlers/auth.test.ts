@@ -42,8 +42,8 @@ import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants'
 import { Token } from '@iden3/js-jwz';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import { CredentialStatusResolverRegistry } from '../../src/credentials/status/iresolver';
-import { RHSResolver } from '../../src/credentials/status/reverse-sparse-merkle-tree';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
+import { RHSResolver } from '../../src/credentials';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;

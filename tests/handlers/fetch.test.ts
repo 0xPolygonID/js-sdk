@@ -27,8 +27,8 @@ import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
 import fetchMock from 'fetch-mock';
 import { after } from 'mocha';
-import { CredentialStatusResolverRegistry } from '../../src/credentials/status/iresolver';
-import { RHSResolver } from '../../src/credentials/status/reverse-sparse-merkle-tree';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
+import { RHSResolver } from '../../src/credentials';
 
 describe('fetch', () => {
   let idWallet: IdentityWallet;

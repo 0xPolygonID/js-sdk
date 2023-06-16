@@ -16,8 +16,8 @@ import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import { CredentialStatusResolverRegistry } from '../../src/credentials/status/iresolver';
-import { RHSResolver } from '../../src/credentials/status/reverse-sparse-merkle-tree';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
+import { RHSResolver } from '../../src/credentials';
 
 describe('identity', () => {
   let wallet: IdentityWallet;

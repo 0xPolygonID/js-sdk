@@ -396,13 +396,7 @@ export class ProofService implements IProofService {
 
     if (sigProof) {
       const signature = await bJJSignatureFromHexString(sigProof.signature);
-
-      let issuer: DID;
-      try {
-        issuer = DID.parse(sigProof.issuerData.id);
-      } catch (e) {
-        throw new Error('issuer id is not a valid did');
-      }
+      const issuer = DID.parse(sigProof.issuerData.id);
 
       const rs: RevocationStatus = await this._credentialWallet.getRevocationStatus(
         sigProof.issuerData.credentialStatus,

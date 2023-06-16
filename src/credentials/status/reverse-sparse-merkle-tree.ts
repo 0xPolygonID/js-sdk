@@ -10,7 +10,7 @@ import {
   testBit
 } from '@iden3/js-merkletree';
 import { IStateStorage } from '../../storage';
-import { CredentialStatusResolver } from './iresolver';
+import { CredentialStatusResolver } from './resolver';
 import { CredentialStatus, IssuerData, RevocationStatus } from '../../verifiable';
 import { strMTHex } from '../../circuits';
 import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
@@ -129,7 +129,7 @@ export class RHSResolver implements CredentialStatusResolver {
     try {
       return await this.getStatus(credentialStatus, opts);
     } catch (e) {
-      const errMsg = e['reason'] ?? e.message;
+      const errMsg = e.reason ?? e.message;
       if (
         !!opts.issuerData &&
         errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
@@ -162,29 +162,27 @@ export class RHSResolver implements CredentialStatusResolver {
    *
    * @param {Hash} data - hash to fetch
    * @param {Hash} issuerRoot - issuer root which is a part of url
-   * @param {string} rhsURL - base URL for reverse hash service
+   * @param {string} rhsUrl - base URL for reverse hash service
    * @returns Promise<RevocationStatus>
    */
   public async getRevocationStatusFromRHS(
     data: Hash,
     issuerRoot: Hash,
-    rhsURL: string
+    rhsUrl: string
   ): Promise<RevocationStatus> {
-    if (!rhsURL) throw new Error('HTTP reverse hash service URL is not specified');
+    if (!rhsUrl) throw new Error('HTTP reverse hash service URL is not specified');
 
-    const resp = await fetch(`${rhsURL}/node/${issuerRoot.hex()}`);
+    const resp = await fetch(`${rhsUrl}/node/${issuerRoot.hex()}`);
     const treeRoots = ((await resp.json()) as NodeHexResponse)?.node;
     if (treeRoots.children.length !== 3) {
       throw new Error('state should has tree children');
     }
 
     const s = issuerRoot.hex();
-    const cTR = treeRoots.children[0];
-    const rTR = treeRoots.children[1];
-    const roTR = treeRoots.children[2];
+    const [cTR, rTR, roTR] = treeRoots.children;
 
     const rtrHashed = strMTHex(rTR);
-    const nonRevProof = await this.rhsGenerateProof(rtrHashed, data, `${rhsURL}/node`);
+    const nonRevProof = await this.rhsGenerateProof(rtrHashed, data, `${rhsUrl}/node`);
 
     return {
       mtp: nonRevProof,
@@ -197,7 +195,7 @@ export class RHSResolver implements CredentialStatusResolver {
     };
   }
 
-  async rhsGenerateProof(treeRoot: Hash, key: Hash, rhsURL: string): Promise<Proof> {
+  async rhsGenerateProof(treeRoot: Hash, key: Hash, rhsUrl: string): Promise<Proof> {
     let exists = false;
     const siblings: Hash[] = [];
     let nodeAux: NodeAux;
@@ -209,7 +207,7 @@ export class RHSResolver implements CredentialStatusResolver {
       if (nextKey.bytes.every((i) => i === 0)) {
         return mkProof();
       }
-      const data = await fetch(`${rhsURL}/${nextKey.hex()}`);
+      const data = await fetch(`${rhsUrl}/${nextKey.hex()}`);
       const resp = ((await data.json()) as NodeHexResponse)?.node;
 
       const n = ProofNode.fromHex(resp);

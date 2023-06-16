@@ -42,7 +42,7 @@ import { byteDecoder } from '../utils';
 /**
  * DID creation options
  * seed - seed to generate BJJ keypair
- * revocationOpts - 
+ * revocationOpts -
  * @export
  * @interface IdentityCreationOptions
  */
@@ -51,7 +51,7 @@ export interface IdentityCreationOptions {
   blockchain?: Blockchain;
   networkId?: NetworkId;
   revocationOpts: {
-    id  : string;
+    id: string;
     type: CredentialStatusType;
     nonce?: number;
   };
@@ -191,7 +191,7 @@ export interface IIdentityWallet {
    * @param {number} [blockNumber] - block number in which state transition has been done
    * @param {number} [blockTimestamp] - block timestamp in which state transition has been done
    * @returns `Promise<W3CCredential[]>` credentials with an Iden3SparseMerkleTreeProof
-   */ 
+   */
   generateIden3SparseMerkleTreeProof(
     issuerDID: DID,
     credentials: W3CCredential[],

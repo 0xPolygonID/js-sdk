@@ -28,8 +28,8 @@ import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import path from 'path';
-import { RHSResolver } from '../../src/credentials/status/reverse-sparse-merkle-tree';
-import { CredentialStatusResolverRegistry } from '../../src/credentials/status/iresolver';
+import { RHSResolver } from '../../src/credentials';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
 
 describe('rhs', () => {
   let idWallet: IdentityWallet;

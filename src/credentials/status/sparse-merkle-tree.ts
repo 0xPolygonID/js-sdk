@@ -1,5 +1,5 @@
 import { CredentialStatus, RevocationStatus, Issuer } from '../../verifiable';
-import { CredentialStatusResolver } from './iresolver';
+import { CredentialStatusResolver } from './resolver';
 import { newHashFromBigInt, Proof, NodeAux, setBitBigEndian } from '@iden3/js-merkletree';
 
 export class IssuerResolver implements CredentialStatusResolver {

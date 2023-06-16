@@ -14,7 +14,7 @@ import {
 
 import { JSONSchema } from '../schema-processor';
 import * as uuid from 'uuid';
-import { CredentialStatusResolverRegistry } from './status/iresolver';
+import { CredentialStatusResolverRegistry } from './status/resolver';
 import { IssuerResolver } from './status/sparse-merkle-tree';
 
 // ErrAllClaimsRevoked all claims are revoked.
@@ -197,7 +197,7 @@ export interface ICredentialWallet {
 
 /**
  * Settings for CredentialWallet
- * networks - list chainID to network url mappings
+ * networks - list chainId to network url mappings
  *
  * @export
  * @beta
@@ -228,8 +228,6 @@ export class CredentialWallet implements ICredentialWallet {
     private readonly _storage: IDataStorage,
     private readonly _credentialStatusResolverRegistry?: CredentialStatusResolverRegistry
   ) {
-    this._storage = _storage;
-    this._credentialStatusResolverRegistry = _credentialStatusResolverRegistry;
     // if no credential status resolvers are provided
     // register default issuer resolver
     if (!this._credentialStatusResolverRegistry) {
@@ -304,7 +302,7 @@ export class CredentialWallet implements ICredentialWallet {
       issuerData: issuerData
     });
 
-    return Promise.resolve(cs);
+    return cs;
   }
   /**
    * {@inheritDoc ICredentialWallet.createCredential}
