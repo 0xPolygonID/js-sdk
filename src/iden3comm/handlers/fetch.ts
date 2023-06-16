@@ -80,6 +80,9 @@ export class FetchHandler implements IFetchHandler {
     packer: {
       mediaType: MediaType;
     } & PackerParams;
+    headers?: {
+      [key: string]: string;
+    };
   }): Promise<W3CCredential[]> {
     // each credential info in the offer we need to fetch
     const {
@@ -121,6 +124,7 @@ export class FetchHandler implements IFetchHandler {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
           },
+          mode: 'cors',
           body: token
         });
         if (resp.status !== 200) {
