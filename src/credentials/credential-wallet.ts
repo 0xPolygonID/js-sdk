@@ -301,7 +301,7 @@ export class CredentialWallet implements ICredentialWallet {
 
     const cs = await statusResolver.resolve(credStatus, {
       issuer: issuerDID,
-      issuerissuerData: issuerData
+      issuerData: issuerData
     });
 
     return Promise.resolve(cs);

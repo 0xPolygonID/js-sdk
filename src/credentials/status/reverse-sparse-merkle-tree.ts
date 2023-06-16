@@ -100,12 +100,9 @@ enum NodeType {
 }
 
 export class RHSResolver implements CredentialStatusResolver {
-  private _state: IStateStorage;
-  constructor(state: IStateStorage) {
-    this._state = state;
-  }
+  constructor(private readonly _state: IStateStorage) {}
 
-  public async resolve(
+  public async getStatus(
     credentialStatus: CredentialStatus,
     opts: {
       issuer: DID;
@@ -115,17 +112,29 @@ export class RHSResolver implements CredentialStatusResolver {
     const latestStateInfo = await this._state.getLatestStateById(opts.issuer.id.bigInt());
     const hashedRevNonce = newHashFromBigInt(BigInt(credentialStatus.revocationNonce ?? 0));
     const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
+    return await this.getRevocationStatusFromRHS(
+      hashedRevNonce,
+      hashedIssuerRoot,
+      credentialStatus.id
+    );
+  }
+
+  public async resolve(
+    credentialStatus: CredentialStatus,
+    opts: {
+      issuer: DID;
+      issuerData?: IssuerData;
+    }
+  ): Promise<RevocationStatus> {
     try {
-      await this.getRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, credentialStatus.id);
+      return await this.getStatus(credentialStatus, opts);
     } catch (e) {
       const errMsg = e['reason'] ?? e.message;
       if (
+        !!opts.issuerData &&
         errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
         isIssuerGenesis(opts.issuer.toString(), opts.issuerData.state.value)
       ) {
-        if (!opts.issuerData) {
-          throw new Error('backup endpoint are not provided');
-        }
         return {
           mtp: new Proof(),
           issuer: {

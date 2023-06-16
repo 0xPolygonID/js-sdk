@@ -186,7 +186,7 @@ describe('rhs', () => {
     const rhsResolver = new RHSResolver(mockStateStorageForGenesisState);
 
     return rhsResolver
-      .resolve(credRHSStatus, { issuer: issuerDID })
+      .getStatus(credRHSStatus, { issuer: issuerDID })
       .then(function (m) {
         throw new Error('was not supposed to succeed');
       })
@@ -369,7 +369,7 @@ describe('rhs', () => {
     // state is published to blockchain (2)
 
     const rhsResolver = new RHSResolver(dataStorage.states);
-    const rhsStatus = await rhsResolver.resolve(credRHSStatus, { issuer: issuerDID });
+    const rhsStatus = await rhsResolver.getStatus(credRHSStatus, { issuer: issuerDID });
 
     expect(rhsStatus.issuer.state).to.equal(latestTree.state.hex());
     expect(rhsStatus.issuer.claimsTreeRoot).to.equal((await latestTree.claimsTree.root()).hex());
