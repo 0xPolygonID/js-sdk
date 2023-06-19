@@ -10,7 +10,7 @@ import {
   import { InMemoryPrivateKeyStore } from '../../src/kms/store';
   import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
   import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-  import { CredentialRequest, CredentialWallet } from '../../src/credentials';
+  import { CredentialRequest, CredentialStatusResolverRegistry, CredentialWallet, RHSResolver } from '../../src/credentials';
   import { ProofService } from '../../src/proof';
   import { CircuitId } from '../../src/circuits';
   import { FSKeyLoader } from '../../src/loaders';
@@ -107,8 +107,12 @@ import {
           `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
         )
       });
-  
-      credWallet = new CredentialWallet(dataStorage);
+      const resolvers = new CredentialStatusResolverRegistry();
+      resolvers.register(
+        CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        new RHSResolver(dataStorage.states)
+      );
+      credWallet = new CredentialWallet(dataStorage,resolvers);
       idWallet = new IdentityWallet(kms, dataStorage, credWallet);
   
       proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
@@ -125,7 +129,7 @@ import {
         seed: seedPhrase,
         revocationOpts: {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-          baseUrl: rhsUrl
+          id: rhsUrl
         }
       });
   
@@ -136,7 +140,7 @@ import {
         seed: seedPhraseIssuer,
         revocationOpts: {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-          baseUrl: rhsUrl
+          id: rhsUrl
         }
       });
       const claimReq: CredentialRequest = {
@@ -151,7 +155,7 @@ import {
         expiration: 1693526400,
         revocationOpts: {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-          baseUrl: rhsUrl
+          id: rhsUrl
         }
       };
       const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
