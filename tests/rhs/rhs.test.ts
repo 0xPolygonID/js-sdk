@@ -15,12 +15,10 @@ import { InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { FSKeyLoader } from '../../src/loaders';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
-import { getStatusFromRHS } from '../../src/credentials/revocation';
 import {
   CredentialStatus,
   CredentialStatusType,
   RevocationStatus,
-  RHSCredentialStatus,
   VerifiableConstants,
   W3CCredential
 } from '../../src/verifiable';
@@ -30,6 +28,8 @@ import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import path from 'path';
+import { RHSResolver } from '../../src/credentials';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
 
 describe('rhs', () => {
   let idWallet: IdentityWallet;
@@ -134,7 +134,12 @@ describe('rhs', () => {
 
     const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
 
-    credWallet = new CredentialWallet(dataStorage);
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
     credWallet.getRevocationStatusFromCredential = async (cred: W3CCredential) => {
       const r: RevocationStatus = {
         mtp: {
@@ -160,7 +165,7 @@ describe('rhs', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -171,16 +176,17 @@ describe('rhs', () => {
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };
-    const credRHSStatus: RHSCredentialStatus = {
+    const credRHSStatus: CredentialStatus = {
       id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       revocationNonce: 0,
       statusIssuer: credBasicStatus
     };
 
-    // await expect(
+    const rhsResolver = new RHSResolver(mockStateStorageForGenesisState);
 
-    return getStatusFromRHS(issuerDID, credRHSStatus, mockStateStorageForGenesisState)
+    return rhsResolver
+      .getStatus(credRHSStatus, { issuer: issuerDID })
       .then(function (m) {
         throw new Error('was not supposed to succeed');
       })
@@ -201,7 +207,7 @@ describe('rhs', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -214,7 +220,7 @@ describe('rhs', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -223,7 +229,7 @@ describe('rhs', () => {
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };
-    const credRHSStatus: RHSCredentialStatus = {
+    const credRHSStatus: CredentialStatus = {
       id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       revocationNonce: 0,
@@ -243,7 +249,7 @@ describe('rhs', () => {
       revocationOpts: {
         nonce: 1000,
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     };
 
@@ -255,11 +261,8 @@ describe('rhs', () => {
 
     await idWallet.publishStateToRHS(issuerDID, rhsUrl);
 
-    const rhsStatus = await getStatusFromRHS(
-      issuerDID,
-      credRHSStatus,
-      mockStateStorageForDefinedState
-    );
+    const rhsResolver = new RHSResolver(mockStateStorageForDefinedState);
+    const rhsStatus = await rhsResolver.resolve(credRHSStatus, { issuer: issuerDID });
 
     expect(rhsStatus.issuer.state).to.equal(res.newTreeState.state.hex());
     expect(rhsStatus.issuer.claimsTreeRoot).to.equal(res.newTreeState.claimsRoot.hex());
@@ -278,7 +281,7 @@ describe('rhs', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -291,7 +294,7 @@ describe('rhs', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -300,7 +303,7 @@ describe('rhs', () => {
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };
-    const credRHSStatus: RHSCredentialStatus = {
+    const credRHSStatus: CredentialStatus = {
       id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       revocationNonce: 1000,
@@ -320,7 +323,7 @@ describe('rhs', () => {
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         nonce: 1000,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     };
 
@@ -346,7 +349,7 @@ describe('rhs', () => {
       expiration: 1693526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl,
+        id: rhsUrl,
         nonce: 1001
       }
     };
@@ -365,7 +368,8 @@ describe('rhs', () => {
 
     // state is published to blockchain (2)
 
-    const rhsStatus = await getStatusFromRHS(issuerDID, credRHSStatus, dataStorage.states);
+    const rhsResolver = new RHSResolver(dataStorage.states);
+    const rhsStatus = await rhsResolver.getStatus(credRHSStatus, { issuer: issuerDID });
 
     expect(rhsStatus.issuer.state).to.equal(latestTree.state.hex());
     expect(rhsStatus.issuer.claimsTreeRoot).to.equal((await latestTree.claimsTree.root()).hex());

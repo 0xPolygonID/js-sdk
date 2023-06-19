@@ -35,14 +35,14 @@ import {
   CredentialStatusType
 } from '../verifiable';
 import { CredentialRequest, ICredentialWallet } from '../credentials';
-import { pushHashesToRHS, TreesModel } from '../credentials/revocation';
+import { pushHashesToRHS, TreesModel } from '../credentials/rhs';
 import { TreeState } from '../circuits';
 import { byteDecoder } from '../utils';
 
 /**
  * DID creation options
  * seed - seed to generate BJJ keypair
- * rhsUrl - rhsUrl is url to reverse hash service, so revocation status can be fetched for Auth BJJ credential
+ * revocationOpts -
  * @export
  * @interface IdentityCreationOptions
  */
@@ -51,7 +51,7 @@ export interface IdentityCreationOptions {
   blockchain?: Blockchain;
   networkId?: NetworkId;
   revocationOpts: {
-    baseUrl: string;
+    id: string;
     type: CredentialStatusType;
     nonce?: number;
   };
@@ -333,7 +333,7 @@ export class IdentityWallet implements IIdentityWallet {
       expiration,
       revocationOpts: {
         nonce: revNonce,
-        baseUrl: opts.revocationOpts.baseUrl.replace(/\/$/, ''),
+        id: opts.revocationOpts.id.replace(/\/$/, ''),
         type: opts.revocationOpts.type
       }
     };
@@ -540,7 +540,7 @@ export class IdentityWallet implements IIdentityWallet {
 
   /** {@inheritDoc IIdentityWallet.issueCredential} */
   async issueCredential(issuerDID: DID, req: CredentialRequest): Promise<W3CCredential> {
-    req.revocationOpts.baseUrl = req.revocationOpts.baseUrl.replace(/\/$/, '');
+    req.revocationOpts.id = req.revocationOpts.id.replace(/\/$/, '');
 
     const schema = await new UniversalSchemaLoader('ipfs.io').load(req.credentialSchema);
 

@@ -33,7 +33,6 @@ import {
   ProofQuery,
   ProofType,
   RevocationStatus,
-  RHSCredentialStatus,
   verifiablePresentationFromCred,
   W3CCredential
 } from '../verifiable';
@@ -561,12 +560,14 @@ export class ProofService implements IProofService {
 
     if (sigProof) {
       const signature = await bJJSignatureFromHexString(sigProof.signature);
+      const issuer = DID.parse(sigProof.issuerData.id);
 
       const rs: RevocationStatus = await this._credentialWallet.getRevocationStatus(
-        sigProof.issuerData.credentialStatus as RHSCredentialStatus,
-        DID.parse(sigProof.issuerData.id),
+        sigProof.issuerData.credentialStatus,
+        issuer,
         sigProof.issuerData
       );
+
       //todo: check if this is correct
       const issuerAuthNonRevProof: MTProof = {
         treeState: {

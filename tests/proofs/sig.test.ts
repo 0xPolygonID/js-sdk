@@ -23,6 +23,8 @@ import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { checkVerifiablePresentation } from './common';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
+import { RHSResolver } from '../../src/credentials';
 
 describe('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -108,7 +110,12 @@ describe('sig proofs', () => {
       )
     });
 
-    credWallet = new CredentialWallet(dataStorage);
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
@@ -125,7 +132,7 @@ describe('sig proofs', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
@@ -135,7 +142,7 @@ describe('sig proofs', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -151,7 +158,7 @@ describe('sig proofs', () => {
       expiration: 1693526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
@@ -206,7 +213,7 @@ describe('sig proofs', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -217,7 +224,7 @@ describe('sig proofs', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
     const claimReq: CredentialRequest = {
@@ -232,7 +239,7 @@ describe('sig proofs', () => {
       expiration: 1693526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);

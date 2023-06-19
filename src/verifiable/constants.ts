@@ -58,7 +58,11 @@ export enum CredentialStatusType {
   // SparseMerkleTreeProof is CredentialStatusType for standard MTP result handlers
   SparseMerkleTreeProof = 'SparseMerkleTreeProof',
   // Iden3ReverseSparseMerkleTreeProof is CredentialStatusType  for reverse iden3 algorithm
-  Iden3ReverseSparseMerkleTreeProof = 'Iden3ReverseSparseMerkleTreeProof'
+  Iden3ReverseSparseMerkleTreeProof = 'Iden3ReverseSparseMerkleTreeProof',
+  // Iden3commRevocationStatusV1 is CredentialStatusType for iden3comm revocation status
+  Iden3commRevocationStatusV1 = 'Iden3commRevocationStatusV1.0',
+  // Iden3OnсhainSparseMerkleTreeProof2023 is a proof type for MTP proofs with iden3 metadata from blockchain
+  Iden3OnchainSparseMerkleTreeProof2023 = 'Iden3OnchainSparseMerkleTreeProof2023'
 }
 
 /**

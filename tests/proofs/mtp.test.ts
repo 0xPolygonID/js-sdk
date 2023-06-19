@@ -25,6 +25,8 @@ import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { checkVerifiablePresentation } from './common';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
+import { RHSResolver } from '../../src/credentials';
 
 describe('mtp proofs', () => {
   let idWallet: IdentityWallet;
@@ -123,7 +125,12 @@ describe('mtp proofs', () => {
     dataStorage.states = ethStorage;
 
     */
-    credWallet = new CredentialWallet(dataStorage);
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
@@ -140,7 +147,7 @@ describe('mtp proofs', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -151,7 +158,7 @@ describe('mtp proofs', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
     await credWallet.save(issuerAuthCredential);
@@ -169,7 +176,7 @@ describe('mtp proofs', () => {
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         nonce: 1000,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     };
 
@@ -203,7 +210,7 @@ describe('mtp proofs', () => {
       txId
     );
 
-    credWallet.saveAll(credsWithIden3MTPProof);
+    await credWallet.saveAll(credsWithIden3MTPProof);
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
@@ -251,7 +258,7 @@ describe('mtp proofs', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -262,7 +269,7 @@ describe('mtp proofs', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
     await credWallet.save(issuerAuthCredential);
@@ -280,7 +287,7 @@ describe('mtp proofs', () => {
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         nonce: 1000,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     };
 
