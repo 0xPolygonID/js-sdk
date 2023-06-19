@@ -357,3 +357,8 @@ export const JSONSerializer = (key, value) => {
 };
 
 export const globalTree = () => new Merkletree(new InMemoryDB(str2Bytes('')), true, 64);
+
+export const coreSchemaFromStr = (schemaIntString: string) => {
+  const schemaInt = BigInt(schemaIntString);
+  return SchemaHash.newSchemaHashFromInt(schemaInt);
+}

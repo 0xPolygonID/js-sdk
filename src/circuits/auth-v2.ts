@@ -39,7 +39,7 @@ export class AuthV2Inputs extends BaseConfig {
     }
 
     if (!this.gistProof?.proof) {
-      throw new Error(CircuitError.EmptyGlobalProof);
+      throw new Error(CircuitError.EmptyGISTProof);
     }
 
     if (!this.signature) {
