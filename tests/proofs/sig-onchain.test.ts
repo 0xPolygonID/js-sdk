@@ -125,7 +125,7 @@ import {
         seed: seedPhrase,
         revocationOpts: {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-          baseUrl: rhsUrl
+          id: rhsUrl
         }
       });
   
@@ -136,7 +136,7 @@ import {
         seed: seedPhraseIssuer,
         revocationOpts: {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-          baseUrl: rhsUrl
+          id: rhsUrl
         }
       });
       const claimReq: CredentialRequest = {
@@ -151,7 +151,7 @@ import {
         expiration: 1693526400,
         revocationOpts: {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-          baseUrl: rhsUrl
+          id: rhsUrl
         }
       };
       const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);

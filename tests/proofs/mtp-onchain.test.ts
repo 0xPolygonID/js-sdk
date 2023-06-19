@@ -140,7 +140,7 @@ import {
         seed: seedPhrase,
         revocationOpts: {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-          baseUrl: rhsUrl
+          id: rhsUrl
         }
       });
   
@@ -151,7 +151,7 @@ import {
         seed: seedPhraseIssuer,
         revocationOpts: {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-          baseUrl: rhsUrl
+          id: rhsUrl
         }
       });
       await credWallet.save(issuerAuthCredential);
@@ -169,7 +169,7 @@ import {
         revocationOpts: {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
           nonce: 1000,
-          baseUrl: rhsUrl
+          id: rhsUrl
         }
       };
   
