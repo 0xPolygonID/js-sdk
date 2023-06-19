@@ -20,7 +20,7 @@ export class OnChainResolver implements CredentialStatusResolver {
    */
   constructor(private readonly _configs: EthConnectionConfig[]) {}
 
-  async resolve(credentialStatus: CredentialStatus, opts?: object): Promise<RevocationStatus> {
+  async resolve(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
     return this.getRevocationOnChain(credentialStatus);
   }
 
