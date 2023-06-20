@@ -5,7 +5,7 @@ import { newHashFromBigInt, Proof, NodeAux, setBitBigEndian } from '@iden3/js-me
 export class IssuerResolver implements CredentialStatusResolver {
   async resolve(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
     const revStatusDTO = await (await fetch(credentialStatus.id)).json();
-    return Object.assign(new IssuerResolver(), revStatusDTO).toRevocationStatus();
+    return Object.assign(new RevocationStatusDTO(), revStatusDTO).toRevocationStatus();
   }
 }
 

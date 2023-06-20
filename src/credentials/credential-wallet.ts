@@ -196,18 +196,6 @@ export interface ICredentialWallet {
 }
 
 /**
- * Settings for CredentialWallet
- * networks - list chainId to network url mappings
- *
- * @export
- * @beta
- * @interface CredentialWalletOptions
- */
-export interface CredentialWalletOptions {
-  networks: Map<number, string>;
-}
-
-/**
  *
  * Wallet instance is a wrapper of CRUD logic for W3C credentials,
  * also it allows to fetch revocation statuses.
