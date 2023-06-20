@@ -76,7 +76,7 @@
     "@iden3/js-jwz": "1.0.0-beta.2",
     "@iden3/js-merkletree": "1.0.0-beta.4",
     "@lumeweb/js-sha3-browser": "^0.8.1",
-    "ajv": "^6.12.6",
+    "ajv": "^8.12.0",
     "base58-js": "^1.0.4",
     "buffer-browserify": "^0.2.5",
     "cross-sha256": "^1.2.0",

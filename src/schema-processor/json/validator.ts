@@ -10,7 +10,7 @@ import { byteDecoder } from '../../utils';
  * @class JsonSchemaValidator
  */
 export class JsonSchemaValidator {
-  private _ajv: Ajv.Ajv;
+  private _ajv: Ajv;
   /**
    * Creates an instance of JsonSchemaValidator.
    */
