@@ -18,8 +18,8 @@ export const VerifiableConstants = Object.freeze({
     // JSONLDSchemaW3CCredential2018 is a schema for context with VerifiableCredential type
     W3C_CREDENTIAL_2018: 'https://www.w3.org/2018/credentials/v1'
   },
-  // JSONSchemaValidator2018 JSON schema for verification of Iden3Credential
-  JSON_SCHEMA_VALIDATOR: 'JsonSchemaValidator2018',
+  // JsonSchema2023 JSON schema for verification of Iden3Credential
+  JSON_SCHEMA_VALIDATOR: 'JsonSchema2023',
   SERVICE_TYPE: {
     // Iden3CommServiceType is service type for iden3comm protocol
     IDEN3_COMM: 'iden3-communication',
