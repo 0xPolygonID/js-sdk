@@ -32,12 +32,12 @@ export class JsonSchemaValidator {
   async validate(dataBytes: Uint8Array, schemaBytes: Uint8Array): Promise<boolean> {
     const schema = JSON.parse(byteDecoder.decode(schemaBytes));
     const data = JSON.parse(byteDecoder.decode(dataBytes));
-    const context = schema['$schema']?.replaceAll('#', '');
+    const draft = schema['$schema']?.replaceAll('#', '');
     let validator: Ajv | Ajv2020;
-    if (!context) {
+    if (!draft) {
       validator = defaultJSONSchemaValidator;
     }
-    const ajv = JSON_SCHEMA_VALIDATORS_REGISTRY[context];
+    const ajv = JSON_SCHEMA_VALIDATORS_REGISTRY[draft];
     validator = ajv ?? defaultJSONSchemaValidator;
     const validate = validator.compile(schema);
     const valid = validate(data);
