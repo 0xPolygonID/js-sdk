@@ -124,7 +124,6 @@ export class FetchHandler implements IFetchHandler {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
           },
-          mode: 'cors',
           body: token
         });
         if (resp.status !== 200) {
