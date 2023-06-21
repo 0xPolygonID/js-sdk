@@ -261,7 +261,7 @@ export class AuthHandler implements IAuthHandler {
         {
           authProfileNonce: authProfileNonce,
           credentialSubjectProfileNonce: r.credentialSubjectProfileNonce,
-          skipRevocation: false
+          skipRevocation: false,
         }
       );
 

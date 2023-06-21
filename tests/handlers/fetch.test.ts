@@ -26,6 +26,8 @@ import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
 import fetchMock from 'fetch-mock';
 import { after } from 'mocha';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
+import { RHSResolver } from '../../src/credentials';
 import { proving } from '@iden3/js-jwz';
 
 describe('fetch', () => {
@@ -151,7 +153,12 @@ describe('fetch', () => {
       states: mockStateStorage
     };
 
-    credWallet = new CredentialWallet(dataStorage);
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     // proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
@@ -184,7 +191,7 @@ describe('fetch', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
     expect(cred).not.to.be.undefined;
@@ -196,7 +203,7 @@ describe('fetch', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 

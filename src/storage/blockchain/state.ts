@@ -26,6 +26,7 @@ export interface EthConnectionConfig {
   rpcResponseTimeout: number;
   waitReceiptCycleTime: number;
   waitBlockCycleTime: number;
+  chainId: number;
 }
 
 export /** @type {EthConnectionConfig} - default configuration for EthConnectionConfig */
@@ -36,11 +37,12 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
   maxGasPrice: '100000000000',
   confirmationBlockCount: 5,
   confirmationTimeout: 600000,
-  contractAddress: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
+  contractAddress: '',
   receiptTimeout: 600000,
   rpcResponseTimeout: 5000,
   waitReceiptCycleTime: 30000,
-  waitBlockCycleTime: 3000
+  waitBlockCycleTime: 3000,
+  chainId: null
 };
 
 /**

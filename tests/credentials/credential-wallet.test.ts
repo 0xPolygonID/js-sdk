@@ -4,10 +4,12 @@ import { IDataStorage } from './../../src/storage/interfaces/data-storage';
 import { CredentialWallet } from '../../src/credentials';
 import { SearchError } from '../../src/storage/filters/jsonQuery';
 import { cred1, cred2, cred3, cred4 } from './mock';
-import { ProofQuery, W3CCredential } from '../../src/verifiable';
+import { ProofQuery, W3CCredential, CredentialStatusType } from '../../src/verifiable';
 import { BrowserDataSource } from '../../src/storage/local-storage/data-source';
 import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
+import { RHSResolver } from '../../src/credentials';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
@@ -37,7 +39,12 @@ class LocalStorageMock {
 global.localStorage = new LocalStorageMock() as unknown as Storage;
 
 const credentialFlow = async (storage: IDataStorage) => {
-  const credentialWallet = new CredentialWallet(storage);
+  const resolvers = new CredentialStatusResolverRegistry();
+  resolvers.register(
+    CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+    new RHSResolver(storage.states)
+  );
+  const credentialWallet = new CredentialWallet(storage, resolvers);
 
   await credentialWallet.saveAll([cred1, cred2]);
 

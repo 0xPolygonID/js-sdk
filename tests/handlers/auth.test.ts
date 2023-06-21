@@ -44,6 +44,8 @@ import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants'
 import { Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
+import { CredentialStatusResolverRegistry } from '../../src/credentials';
+import { RHSResolver } from '../../src/credentials';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -164,7 +166,12 @@ describe('auth', () => {
       )
     });
 
-    credWallet = new CredentialWallet(dataStorage);
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
@@ -186,7 +193,7 @@ describe('auth', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -199,7 +206,7 @@ describe('auth', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
     expect(issuerAuthCredential).not.to.be.undefined;
@@ -216,7 +223,7 @@ describe('auth', () => {
       expiration: 1693526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
@@ -289,7 +296,7 @@ describe('auth', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
     const profileDID = await idWallet.createProfile(userDID, 50, 'test verifier');
@@ -301,7 +308,7 @@ describe('auth', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     });
 
@@ -317,7 +324,7 @@ describe('auth', () => {
       expiration: 1693526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        baseUrl: rhsUrl
+        id: rhsUrl
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
