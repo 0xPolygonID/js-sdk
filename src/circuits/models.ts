@@ -70,7 +70,7 @@ export enum CircuitId {
   // AtomicQuerySig is a type for credentialAttrQuerySig.circom
   AtomicQuerySigV2 = 'credentialAtomicQuerySigV2',
   // AtomicQuerySigOnChain is a type for credentialAtomicQuerySigOnChain.circom
-  AtomicQuerySigV2OnChain = 'credentialAtomicQuerySigV2OnChain',
+  AtomicQuerySigV2OnChain = 'credentialAtomicQuerySigV2OnChain'
 }
 
 /**
