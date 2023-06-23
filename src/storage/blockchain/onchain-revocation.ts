@@ -64,6 +64,7 @@ export class OnChainRevocationStorage {
     existence: boolean;
     auxIndex: bigint;
     auxValue: bigint;
+    auxExistence: boolean;
     siblings: bigint[];
   }): Proof {
     const p = new Proof();
@@ -74,9 +75,9 @@ export class OnChainRevocationStorage {
         value: undefined
       } as NodeAux;
     } else {
-      const auxIndex = BigInt(mtp.auxIndex.toString());
-      const auxValue = BigInt(mtp.auxValue.toString());
-      if (auxIndex !== 0n && auxValue !== 0n) {
+      if (mtp.auxExistence) {
+        const auxIndex = BigInt(mtp.auxIndex.toString());
+        const auxValue = BigInt(mtp.auxValue.toString());
         p.nodeAux = {
           key: newHashFromBigInt(auxIndex),
           value: newHashFromBigInt(auxValue)
