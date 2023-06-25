@@ -2,6 +2,7 @@ import { RevocationStatus, CredentialStatus } from '../../verifiable';
 import { EthConnectionConfig } from '../../storage/blockchain';
 import { CredentialStatusResolver } from './resolver';
 import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revocation';
+import { DID } from '@iden3/js-iden3-core';
 
 /**
  * OnChainIssuer is a class that allows to interact with the onchain contract
@@ -32,13 +33,19 @@ export class OnChainResolver implements CredentialStatusResolver {
    * @returns Promise<RevocationStatus>
    */
   async getRevocationOnChain(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
-    const { contractAddress, chainId, revocationNonce } = this.parseOnChainId(credentialStatus.id);
+    const { contractAddress, chainId, revocationNonce, issuer } = this.parseOnChainId(
+      credentialStatus.id
+    );
     if (revocationNonce !== credentialStatus.revocationNonce) {
       throw new Error('revocationNonce does not match');
     }
+    const issuerDID = DID.parse(issuer);
     const networkConfig = this.networkByChainId(chainId);
     const onChainCaller = new OnChainRevocationStorage(networkConfig, contractAddress);
-    const revocationStatus = await onChainCaller.getRevocationStatus(revocationNonce);
+    const revocationStatus = await onChainCaller.getRevocationStatus(
+      issuerDID.id.bigInt(),
+      revocationNonce
+    );
     return revocationStatus;
   }
 
@@ -52,6 +59,7 @@ export class OnChainResolver implements CredentialStatusResolver {
     contractAddress: string;
     chainId: number;
     revocationNonce: number;
+    issuer: string;
   } {
     const url = new URL(id);
     if (!url.searchParams.has('contractAddress')) {
@@ -59,6 +67,11 @@ export class OnChainResolver implements CredentialStatusResolver {
     }
     if (!url.searchParams.has('revocationNonce')) {
       throw new Error('revocationNonce not found');
+    }
+
+    const issuerDID = id.split('/')[0];
+    if (!issuerDID) {
+      throw new Error('issuer not found in credentialStatus id');
     }
     // TODO (illia-korotia): after merging core v2 need to parse contract address from did if `contractAddress` is not present in id as param
     const contractId = url.searchParams.get('contractAddress');
@@ -71,7 +84,7 @@ export class OnChainResolver implements CredentialStatusResolver {
     const chainId = parseInt(parts[0], 10);
     const contractAddress = parts[1];
 
-    return { contractAddress, chainId, revocationNonce };
+    return { contractAddress, chainId, revocationNonce, issuer: issuerDID };
   }
 
   networkByChainId(chainId: number): EthConnectionConfig {

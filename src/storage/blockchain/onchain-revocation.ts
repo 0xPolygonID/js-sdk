@@ -39,8 +39,8 @@ export class OnChainRevocationStorage {
    *
    * @returns Promise<RevocationStatus>
    */
-  public async getRevocationStatus(nonce: number): Promise<RevocationStatus> {
-    const response = await this.onchainContract.getRevocationStatus(nonce);
+  public async getRevocationStatus(issuerID: bigint, nonce: number): Promise<RevocationStatus> {
+    const response = await this.onchainContract.getRevocationStatus(issuerID, nonce);
 
     const issuer = OnChainRevocationStorage.convertIssuerInfo(response.issuer);
     const mtp = OnChainRevocationStorage.convertSmtProofToProof(response.mtp);
