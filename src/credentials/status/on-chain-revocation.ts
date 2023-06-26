@@ -16,34 +16,35 @@ export class OnChainResolver implements CredentialStatusResolver {
   /**
    *
    * Creates an instance of OnChainIssuer.
-   * @param {Array<EthConnectionConfig>} - onhcain contract address
+   * @param {Array<EthConnectionConfig>} - onchain contract address
    * @param {string} - list of EthConnectionConfig
    */
   constructor(private readonly _configs: EthConnectionConfig[]) {}
 
-  async resolve(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
-    return this.getRevocationOnChain(credentialStatus);
+  async resolve(credentialStatus: CredentialStatus, opts: {
+    issuer: DID;
+  }): Promise<RevocationStatus> {
+    return this.getRevocationOnChain(credentialStatus, opts.issuer);
   }
 
   /**
    * Gets partial revocation status info from onchain issuer contract.
    *
    * @param {CredentialStatus} credentialStatus - credential status section of credential
-   * @param {Map<number, string>} listofNetworks - list of supported networks. ChainId: RPC URL
+   * @param {DID} issuerDid - issuer did
    * @returns Promise<RevocationStatus>
    */
-  async getRevocationOnChain(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
-    const { contractAddress, chainId, revocationNonce, issuer } = this.parseOnChainId(
+  async getRevocationOnChain(credentialStatus: CredentialStatus, issuer: DID): Promise<RevocationStatus> {
+    const { contractAddress, chainId, revocationNonce } = this.parseOnChainId(
       credentialStatus.id
     );
     if (revocationNonce !== credentialStatus.revocationNonce) {
       throw new Error('revocationNonce does not match');
     }
-    const issuerDID = DID.parse(issuer);
     const networkConfig = this.networkByChainId(chainId);
     const onChainCaller = new OnChainRevocationStorage(networkConfig, contractAddress);
     const revocationStatus = await onChainCaller.getRevocationStatus(
-      issuerDID.id.bigInt(),
+      issuer.id.bigInt(),
       revocationNonce
     );
     return revocationStatus;
