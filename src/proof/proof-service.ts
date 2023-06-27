@@ -39,14 +39,17 @@ import {
 import { toClaimNonRevStatus, toGISTProof } from './common';
 import { NativeProver } from './prover';
 
-import { Path } from '@iden3/js-jsonld-merklization';
+import {
+  Options as MerklizerOptions,
+  Path,
+  getDocumentLoader
+} from '@iden3/js-jsonld-merklization';
 import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
-import { UniversalSchemaLoader } from '../loaders';
 import { Parser } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
-import { byteDecoder } from '../utils';
+import { byteEncoder } from '../utils/encoding';
 
 interface PreparedAuthBJJCredential {
   authCredential: W3CCredential;
@@ -165,7 +168,7 @@ export class ProofService implements IProofService {
   constructor(
     private readonly _identityWallet: IIdentityWallet,
     private readonly _credentialWallet: ICredentialWallet,
-    private readonly _circuitStorage: ICircuitStorage,
+    _circuitStorage: ICircuitStorage,
     private readonly _stateStorage: IStateStorage
   ) {
     this._prover = new NativeProver(_circuitStorage);
@@ -313,7 +316,7 @@ export class ProofService implements IProofService {
     opts: ProofGenerationOptions
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     let generateInputFn;
-    switch(proofReq.circuitId) {
+    switch (proofReq.circuitId) {
       case CircuitId.AtomicQueryMTPV2:
         generateInputFn = this.generateMTPV2Inputs.bind(this);
         break;
@@ -329,9 +332,8 @@ export class ProofService implements IProofService {
       default:
         throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
-    
+
     return generateInputFn(preparedCredential, identifier, proofReq, opts);
-   
   }
 
   private async generateMTPV2Inputs(
@@ -339,7 +341,7 @@ export class ProofService implements IProofService {
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
     opts: ProofGenerationOptions
-  ): Promise<{ inputs: Uint8Array; vp?: object }>{
+  ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim
@@ -603,38 +605,47 @@ export class ProofService implements IProofService {
 
     return circuitClaim;
   }
+
   private async toCircuitsQuery(
     query: ProofQuery,
     credential: W3CCredential,
-    coreClaim: Claim
+    coreClaim: Claim,
+    opts?: MerklizerOptions
   ): Promise<{ query: Query; vp?: object }> {
     const mtPosition = coreClaim.getMerklizedPosition();
 
     return mtPosition === MerklizedRootPosition.None
-      ? this.prepareNonMerklizedQuery(query, credential)
-      : this.prepareMerklizedQuery(query, credential, mtPosition);
+      ? this.prepareNonMerklizedQuery(query, credential, opts)
+      : this.prepareMerklizedQuery(query, credential, mtPosition, opts);
   }
+
   private async prepareMerklizedQuery(
     query: ProofQuery,
     credential: W3CCredential,
-    merklizedPosition: MerklizedRootPosition
+    merklizedPosition: MerklizedRootPosition,
+    opts?: MerklizerOptions
   ): Promise<{ query: Query; vp?: object }> {
     const parsedQuery = await this.parseRequest(query.credentialSubject);
 
-    const loader = new UniversalSchemaLoader('ipfs.io');
-    const schema = await loader.load(credential['@context'][2]);
+    const loader = opts?.documentLoader ?? getDocumentLoader();
+    let schema: object;
+    try {
+      schema = (await loader(credential['@context'][2])).document;
+    } catch (e) {
+      throw new Error(`can't load credential schema ${credential['@context'][2]}`);
+    }
 
     let path: Path = new Path();
     if (parsedQuery.query.operator !== QueryOperators.$noop) {
       path = await Path.getContextPathKey(
-        byteDecoder.decode(schema),
+        JSON.stringify(schema),
         credential.type[1],
         parsedQuery.fieldName
       );
     }
     path.prepend(['https://www.w3.org/2018/credentials#credentialSubject']);
 
-    const mk = await credential.merklize();
+    const mk = await credential.merklize(opts);
     const { proof, value: mtValue } = await mk.proof(path);
 
     const pathKey = await path.mtEntry();
@@ -669,17 +680,31 @@ export class ProofService implements IProofService {
 
   private async prepareNonMerklizedQuery(
     query: ProofQuery,
-    credential: W3CCredential
+    credential: W3CCredential,
+    opts?: MerklizerOptions
   ): Promise<{ query: Query; vp?: object }> {
-    const loader = new UniversalSchemaLoader('ipfs.io');
-    const schema = await loader.load(credential.credentialSchema.id);
+    const loader =
+      opts?.documentLoader ??
+      getDocumentLoader({
+        ipfsNodeURL: 'ipfs.io'
+      });
+
+    let schema: object;
+    try {
+      schema = (await loader(credential.credentialSchema.id)).document;
+    } catch (e) {
+      throw new Error(`can't load credential schema ${credential['@context'][2]}`);
+    }
 
     if (query.credentialSubject && Object.keys(query.credentialSubject).length > 1) {
       throw new Error('multiple requests are not supported');
     }
 
     const parsedQuery = await this.parseRequest(query.credentialSubject);
-    parsedQuery.query.slotIndex = new Parser().getFieldSlotIndex(parsedQuery.fieldName, schema);
+    parsedQuery.query.slotIndex = new Parser().getFieldSlotIndex(
+      parsedQuery.fieldName,
+      byteEncoder.encode(JSON.stringify(schema))
+    );
 
     if (parsedQuery.isSelectiveDisclosure) {
       const { vp, mzValue } = await verifiablePresentationFromCred(

@@ -21,9 +21,12 @@ export class OnChainResolver implements CredentialStatusResolver {
    */
   constructor(private readonly _configs: EthConnectionConfig[]) {}
 
-  async resolve(credentialStatus: CredentialStatus, opts: {
-    issuer: DID;
-  }): Promise<RevocationStatus> {
+  async resolve(
+    credentialStatus: CredentialStatus,
+    opts: {
+      issuer: DID;
+    }
+  ): Promise<RevocationStatus> {
     return this.getRevocationOnChain(credentialStatus, opts.issuer);
   }
 
@@ -34,10 +37,11 @@ export class OnChainResolver implements CredentialStatusResolver {
    * @param {DID} issuerDid - issuer did
    * @returns Promise<RevocationStatus>
    */
-  async getRevocationOnChain(credentialStatus: CredentialStatus, issuer: DID): Promise<RevocationStatus> {
-    const { contractAddress, chainId, revocationNonce } = this.parseOnChainId(
-      credentialStatus.id
-    );
+  async getRevocationOnChain(
+    credentialStatus: CredentialStatus,
+    issuer: DID
+  ): Promise<RevocationStatus> {
+    const { contractAddress, chainId, revocationNonce } = this.parseOnChainId(credentialStatus.id);
     if (revocationNonce !== credentialStatus.revocationNonce) {
       throw new Error('revocationNonce does not match');
     }

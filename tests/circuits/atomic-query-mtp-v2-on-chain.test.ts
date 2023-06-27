@@ -28,14 +28,14 @@ describe('atomic-query-mtp-v2-on-chain', () => {
     const user = await IdentityTest.newIdentity(userPK);
     const issuer = await IdentityTest.newIdentity(issuerPK);
 
-     // generate global tree
-     const gTree = globalTree();
-     await gTree.add(issuer.id.bigInt(), (await issuer.state()).bigInt());
+    // generate global tree
+    const gTree = globalTree();
+    await gTree.add(issuer.id.bigInt(), (await issuer.state()).bigInt());
 
-     // prepare inputs
-     const globalProof = await gTree.generateProof(user.id.bigInt());
-     const authClaimIncMTP = await user.claimMTPRaw(user.authClaim);
-     const authClaimNonRevMTP = await user.claimRevMTPRaw(user.authClaim);
+    // prepare inputs
+    const globalProof = await gTree.generateProof(user.id.bigInt());
+    const authClaimIncMTP = await user.claimMTPRaw(user.authClaim);
+    const authClaimNonRevMTP = await user.claimRevMTPRaw(user.authClaim);
 
     const challenge = BigInt(10);
     const signature = user.signBJJ(challenge);
@@ -92,14 +92,14 @@ describe('atomic-query-mtp-v2-on-chain', () => {
     inputs.authClaimIncMtp = authClaimIncMTP.proof;
     inputs.authClaimNonRevMtp = authClaimNonRevMTP.proof;
     inputs.treeState = {
-        state: await user.state(),
-        claimsRoot: await user.clt.root(),
-        revocationRoot: await user.ret.root(),
-        rootOfRoots: await user.rot.root()
+      state: await user.state(),
+      claimsRoot: await user.clt.root(),
+      revocationRoot: await user.ret.root(),
+      rootOfRoots: await user.rot.root()
     };
     inputs.gistProof = {
-        root: await gTree.root(),
-        proof: globalProof.proof
+      root: await gTree.root(),
+      proof: globalProof.proof
     };
     inputs.signature = signature;
     inputs.challenge = challenge;
@@ -136,12 +136,14 @@ describe('atomic-query-mtp-v2-on-chain', () => {
     const schema = coreSchemaFromStr('180410020913331409885634153623124536270');
     const slotIndex = 2;
     const operator = 1;
-    const quaryHash = poseidon.hash([schema.bigInt(),
-        BigInt(slotIndex),
-        BigInt(operator),
-        BigInt(0),
-        BigInt(1),
-        valueHash]);
+    const quaryHash = poseidon.hash([
+      schema.bigInt(),
+      BigInt(slotIndex),
+      BigInt(operator),
+      BigInt(0),
+      BigInt(1),
+      valueHash
+    ]);
 
     const exp = new AtomicQueryMTPV2OnChainPubSignals();
     exp.requestID = BigInt(23);
@@ -161,8 +163,10 @@ describe('atomic-query-mtp-v2-on-chain', () => {
     exp.timestamp = timestamp;
     exp.merklized = 0;
     exp.isRevocationChecked = 1;
-    exp.challenge = BigInt(10),
-    exp.gistRoot = newHashFromString("11098939821764568131087645431296528907277253709936443029379587475821759259406");
+    (exp.challenge = BigInt(10)),
+      (exp.gistRoot = newHashFromString(
+        '11098939821764568131087645431296528907277253709936443029379587475821759259406'
+      ));
     expect(exp).to.deep.equal(out);
   });
 });

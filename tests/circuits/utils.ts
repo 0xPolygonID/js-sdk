@@ -361,4 +361,4 @@ export const globalTree = () => new Merkletree(new InMemoryDB(str2Bytes('')), tr
 export const coreSchemaFromStr = (schemaIntString: string) => {
   const schemaInt = BigInt(schemaIntString);
   return SchemaHash.newSchemaHashFromInt(schemaInt);
-}
+};

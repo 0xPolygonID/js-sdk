@@ -3,6 +3,7 @@ import { LDParser } from '../jsonld';
 import { Claim as CoreClaim, ClaimOptions, DID } from '@iden3/js-iden3-core';
 import { createSchemaHash, fillSlot } from '../utils';
 import { byteDecoder, byteEncoder } from '../../utils';
+import { Options as MerklizerOptions } from '@iden3/js-jsonld-merklization';
 
 /**
  * Parsed slots of core.Claim
@@ -93,7 +94,7 @@ export class Parser {
     credential: W3CCredential,
     credentialType: string,
     jsonSchemaBytes: Uint8Array,
-    opts?: CoreClaimOptions
+    opts?: MerklizerOptions & CoreClaimOptions
   ): Promise<CoreClaim> {
     if (!opts) {
       opts = {
@@ -142,12 +143,12 @@ export class Parser {
 
     switch (opts.merklizedRootPosition) {
       case MerklizedRootPosition.Index: {
-        const mk = await credential.merklize();
+        const mk = await credential.merklize(opts);
         claim.setIndexMerklizedRoot((await mk.root()).bigInt());
         break;
       }
       case MerklizedRootPosition.Value: {
-        const mk = await credential.merklize();
+        const mk = await credential.merklize(opts);
         claim.setValueMerklizedRoot((await mk.root()).bigInt());
         break;
       }

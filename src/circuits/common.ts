@@ -68,7 +68,6 @@ export class BaseConfig {
   getMTLevelOnChain(): number {
     return this.mtLevelOnChain ? this.mtLevelOnChain : defaultMTLevelsOnChain;
   }
-
 }
 
 /**
