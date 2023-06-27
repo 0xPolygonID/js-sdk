@@ -67,7 +67,7 @@
   "dependencies": {
     "@iden3/js-crypto": "1.0.0-beta.1",
     "@iden3/js-iden3-core": "1.0.0-beta.2",
-    "@iden3/js-jsonld-merklization": "1.0.0-beta.13",
+    "@iden3/js-jsonld-merklization": "1.0.0-beta.14",
     "@iden3/js-jwz": "1.0.0-beta.2",
     "@iden3/js-merkletree": "1.0.0-beta.4",
     "@lumeweb/js-sha3-browser": "^0.8.1",

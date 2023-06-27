@@ -3,7 +3,7 @@ import { LDParser } from '../jsonld';
 import { Claim as CoreClaim, ClaimOptions, DID } from '@iden3/js-iden3-core';
 import { createSchemaHash, fillSlot } from '../utils';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { Options as MerklizerOptions } from '@iden3/js-jsonld-merklization';
+import { Options } from '@iden3/js-jsonld-merklization';
 
 /**
  * Parsed slots of core.Claim
@@ -94,7 +94,7 @@ export class Parser {
     credential: W3CCredential,
     credentialType: string,
     jsonSchemaBytes: Uint8Array,
-    opts?: MerklizerOptions & CoreClaimOptions
+    opts?: Options & CoreClaimOptions
   ): Promise<CoreClaim> {
     if (!opts) {
       opts = {

@@ -37,11 +37,7 @@ import { CredentialRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/rhs';
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
-import {
-  Options as MerklizerOptions,
-  Path,
-  getDocumentLoader
-} from '@iden3/js-jsonld-merklization';
+import { Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 
 /**
  * DID creation options
@@ -546,7 +542,7 @@ export class IdentityWallet implements IIdentityWallet {
   async issueCredential(
     issuerDID: DID,
     req: CredentialRequest,
-    opts?: MerklizerOptions
+    opts?: Options
   ): Promise<W3CCredential> {
     req.revocationOpts.id = req.revocationOpts.id.replace(/\/$/, '');
 

@@ -39,11 +39,7 @@ import {
 import { toClaimNonRevStatus, toGISTProof } from './common';
 import { NativeProver } from './prover';
 
-import {
-  Options as MerklizerOptions,
-  Path,
-  getDocumentLoader
-} from '@iden3/js-jsonld-merklization';
+import { Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
@@ -610,7 +606,7 @@ export class ProofService implements IProofService {
     query: ProofQuery,
     credential: W3CCredential,
     coreClaim: Claim,
-    opts?: MerklizerOptions
+    opts?: Options
   ): Promise<{ query: Query; vp?: object }> {
     const mtPosition = coreClaim.getMerklizedPosition();
 
@@ -623,7 +619,7 @@ export class ProofService implements IProofService {
     query: ProofQuery,
     credential: W3CCredential,
     merklizedPosition: MerklizedRootPosition,
-    opts?: MerklizerOptions
+    opts?: Options
   ): Promise<{ query: Query; vp?: object }> {
     const parsedQuery = await this.parseRequest(query.credentialSubject);
 
@@ -640,7 +636,8 @@ export class ProofService implements IProofService {
       path = await Path.getContextPathKey(
         JSON.stringify(schema),
         credential.type[1],
-        parsedQuery.fieldName
+        parsedQuery.fieldName,
+        opts
       );
     }
     path.prepend(['https://www.w3.org/2018/credentials#credentialSubject']);
@@ -681,7 +678,7 @@ export class ProofService implements IProofService {
   private async prepareNonMerklizedQuery(
     query: ProofQuery,
     credential: W3CCredential,
-    opts?: MerklizerOptions
+    opts?: Options
   ): Promise<{ query: Query; vp?: object }> {
     const loader = getDocumentLoader(opts);
 

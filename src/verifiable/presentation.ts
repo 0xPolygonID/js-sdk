@@ -23,7 +23,8 @@ export const stringByPath = (obj: object, path: string): string => {
 export const buildQueryPath = async (
   contextURL: string,
   contextType: string,
-  field: string
+  field: string,
+  opts?: Options
 ): Promise<Path> => {
   let resp;
   try {
@@ -32,7 +33,7 @@ export const buildQueryPath = async (
     throw new Error(`context not found: ${error.message}`);
   }
 
-  const path = await Path.getContextPathKey(JSON.stringify(resp), contextType, field);
+  const path = await Path.getContextPathKey(JSON.stringify(resp), contextType, field, opts);
   path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   return path;
 };
@@ -85,7 +86,7 @@ export const verifiablePresentationFromCred = async (
 
   const contextURL = stringByPath(requestObj, 'context');
 
-  const path = await buildQueryPath(contextURL, contextType, field);
+  const path = await buildQueryPath(contextURL, contextType, field, opts);
 
   const dataType = await mz.jsonLDType(path);
 
