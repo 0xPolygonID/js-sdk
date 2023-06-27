@@ -706,7 +706,8 @@ export class ProofService implements IProofService {
       const { vp, mzValue } = await verifiablePresentationFromCred(
         credential,
         query,
-        parsedQuery.fieldName
+        parsedQuery.fieldName,
+        opts
       );
       const resultQuery = parsedQuery.query;
       resultQuery.operator = QueryOperators.$eq;

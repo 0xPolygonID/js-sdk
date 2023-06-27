@@ -1,5 +1,5 @@
 import { VerifiableConstants } from './constants';
-import { Hasher, MtValue, Path } from '@iden3/js-jsonld-merklization';
+import { Hasher, MtValue, Options, Path } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from './credential';
 import { ProofQuery } from './proof';
 
@@ -69,14 +69,15 @@ export const createVerifiablePresentation = (
 export const verifiablePresentationFromCred = async (
   w3cCred: W3CCredential,
   requestObj: ProofQuery,
-  field: string
+  field: string,
+  opts?: Options
 ): Promise<{
   vp: object;
   mzValue: MtValue;
   dataType: string;
   hasher: Hasher;
 }> => {
-  const mz = await w3cCred.merklize();
+  const mz = await w3cCred.merklize(opts);
 
   const contextType = stringByPath(requestObj, 'type');
 
