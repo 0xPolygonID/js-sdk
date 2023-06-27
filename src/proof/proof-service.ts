@@ -627,7 +627,7 @@ export class ProofService implements IProofService {
   ): Promise<{ query: Query; vp?: object }> {
     const parsedQuery = await this.parseRequest(query.credentialSubject);
 
-    const loader = opts?.documentLoader ?? getDocumentLoader();
+    const loader = getDocumentLoader(opts);
     let schema: object;
     try {
       schema = (await loader(credential['@context'][2])).document;
@@ -683,11 +683,7 @@ export class ProofService implements IProofService {
     credential: W3CCredential,
     opts?: MerklizerOptions
   ): Promise<{ query: Query; vp?: object }> {
-    const loader =
-      opts?.documentLoader ??
-      getDocumentLoader({
-        ipfsNodeURL: 'ipfs.io'
-      });
+    const loader = getDocumentLoader(opts);
 
     let schema: object;
     try {

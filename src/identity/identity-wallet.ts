@@ -551,11 +551,7 @@ export class IdentityWallet implements IIdentityWallet {
     req.revocationOpts.id = req.revocationOpts.id.replace(/\/$/, '');
 
     let schema: object;
-    const loader =
-      opts?.documentLoader ??
-      getDocumentLoader({
-        ipfsNodeURL: 'ipfs.io'
-      });
+    const loader = getDocumentLoader(opts);
     try {
       schema = (await loader(req.credentialSchema)).document;
     } catch (e) {
