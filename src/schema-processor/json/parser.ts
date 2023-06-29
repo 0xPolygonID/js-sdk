@@ -71,6 +71,7 @@ export interface CoreClaimOptions {
   subjectPosition: string;
   merklizedRootPosition: string;
   updatable: boolean;
+  merklizeOpts: Options;
 }
 
 /**
@@ -94,7 +95,7 @@ export class Parser {
     credential: W3CCredential,
     credentialType: string,
     jsonSchemaBytes: Uint8Array,
-    opts?: Options & CoreClaimOptions
+    opts?: CoreClaimOptions
   ): Promise<CoreClaim> {
     if (!opts) {
       opts = {
@@ -102,7 +103,8 @@ export class Parser {
         version: 0,
         subjectPosition: SubjectPosition.Index,
         merklizedRootPosition: MerklizedRootPosition.None,
-        updatable: false
+        updatable: false,
+        merklizeOpts: {}
       };
     }
 
@@ -143,12 +145,12 @@ export class Parser {
 
     switch (opts.merklizedRootPosition) {
       case MerklizedRootPosition.Index: {
-        const mk = await credential.merklize(opts);
+        const mk = await credential.merklize(opts.merklizeOpts);
         claim.setIndexMerklizedRoot((await mk.root()).bigInt());
         break;
       }
       case MerklizedRootPosition.Value: {
-        const mk = await credential.merklize(opts);
+        const mk = await credential.merklize(opts.merklizeOpts);
         claim.setValueMerklizedRoot((await mk.root()).bigInt());
         break;
       }

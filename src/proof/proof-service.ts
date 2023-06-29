@@ -39,7 +39,7 @@ import {
 import { toClaimNonRevStatus, toGISTProof } from './common';
 import { NativeProver } from './prover';
 
-import { Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
+import { DocumentLoader, Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
@@ -154,6 +154,7 @@ export interface IProofService {
  */
 export class ProofService implements IProofService {
   private readonly _prover: NativeProver;
+  private readonly _ldLoader: DocumentLoader;
   /**
    * Creates an instance of ProofService.
    * @param {IIdentityWallet} _identityWallet - identity wallet
@@ -165,9 +166,11 @@ export class ProofService implements IProofService {
     private readonly _identityWallet: IIdentityWallet,
     private readonly _credentialWallet: ICredentialWallet,
     _circuitStorage: ICircuitStorage,
-    private readonly _stateStorage: IStateStorage
+    private readonly _stateStorage: IStateStorage,
+    opts?: Options
   ) {
     this._prover = new NativeProver(_circuitStorage);
+    this._ldLoader = getDocumentLoader(opts);
   }
 
   /** {@inheritdoc IProofService.verifyProof} */
@@ -349,7 +352,8 @@ export class ProofService implements IProofService {
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
       preparedCredential.credential,
-      preparedCredential.credentialCoreClaim
+      preparedCredential.credentialCoreClaim,
+      {documentLoader:this._ldLoader}
     );
     circuitInputs.query = query;
     circuitInputs.claim = {
@@ -415,7 +419,9 @@ export class ProofService implements IProofService {
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
       preparedCredential.credential,
-      preparedCredential.credentialCoreClaim
+      preparedCredential.credentialCoreClaim,
+      {documentLoader:this._ldLoader}
+
     );
     circuitInputs.query = query;
     circuitInputs.claim = {
@@ -460,7 +466,8 @@ export class ProofService implements IProofService {
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
       preparedCredential.credential,
-      preparedCredential.credentialCoreClaim
+      preparedCredential.credentialCoreClaim,
+      {documentLoader:this._ldLoader}
     );
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -501,7 +508,8 @@ export class ProofService implements IProofService {
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
       preparedCredential.credential,
-      preparedCredential.credentialCoreClaim
+      preparedCredential.credentialCoreClaim,
+      {documentLoader:this._ldLoader}
     );
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
