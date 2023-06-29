@@ -118,7 +118,9 @@ describe('sig proofs', () => {
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
+      ipfsGatewayURL: 'ipfs.io'
+    });
   });
 
   it('sigv2-non-merklized', async () => {

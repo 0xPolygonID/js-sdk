@@ -21,7 +21,6 @@ import { JSONSchema, Parser, CoreClaimOptions } from '../schema-processor';
 import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
 import { getRandomBytes, keyPath } from '../kms/provider-helpers';
-import { UniversalSchemaLoader } from '../loaders';
 import {
   VerifiableConstants,
   BJJSignatureProof2021,
@@ -37,7 +36,8 @@ import {
 import { CredentialRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/rhs';
 import { TreeState } from '../circuits';
-import { byteDecoder } from '../utils';
+import { byteEncoder } from '../utils';
+import { Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 
 /**
  * DID creation options
@@ -539,13 +539,22 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   /** {@inheritDoc IIdentityWallet.issueCredential} */
-  async issueCredential(issuerDID: DID, req: CredentialRequest): Promise<W3CCredential> {
+  async issueCredential(
+    issuerDID: DID,
+    req: CredentialRequest,
+    opts?: Options
+  ): Promise<W3CCredential> {
     req.revocationOpts.id = req.revocationOpts.id.replace(/\/$/, '');
 
-    const schema = await new UniversalSchemaLoader('ipfs.io').load(req.credentialSchema);
+    let schema: object;
+    const loader = getDocumentLoader(opts);
+    try {
+      schema = (await loader(req.credentialSchema)).document;
+    } catch (e) {
+      throw new Error(`can't load credential schema ${req.credentialSchema}`);
+    }
 
-    const jsonSchema: JSONSchema = JSON.parse(byteDecoder.decode(schema));
-
+    const jsonSchema = schema as JSONSchema;
     let credential: W3CCredential = new W3CCredential();
 
     req.revocationOpts.nonce =
@@ -568,13 +577,29 @@ export class IdentityWallet implements IIdentityWallet {
       subjectPosition: req.subjectPosition,
       merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition),
       updatable: false,
-      version: 0
+      version: 0,
+      merklizeOpts: opts
     };
+
+    let jsonLDCtx: object;
+    try {
+      jsonLDCtx = (await loader(jsonSchema.$metadata.uris.jsonLdContext)).document;
+    } catch (e) {
+      throw new Error(`can't load json-ld schema ${jsonSchema.$metadata.uris.jsonLdContext}`);
+    }
+
+    const schemaBytes = byteEncoder.encode(JSON.stringify(jsonSchema));
+
+    const credentialType = await Path.getTypeIDFromContext(
+      JSON.stringify(jsonLDCtx),
+      req.type,
+      opts
+    );
 
     const coreClaim = await new Parser().parseClaim(
       credential,
-      `${jsonSchema.$metadata.uris['jsonLdContext']}#${req.type}`,
-      schema,
+      credentialType,
+      schemaBytes,
       coreClaimOpts
     );
 

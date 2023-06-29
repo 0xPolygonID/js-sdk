@@ -3,6 +3,7 @@ import { LDParser } from '../jsonld';
 import { Claim as CoreClaim, ClaimOptions, DID } from '@iden3/js-iden3-core';
 import { createSchemaHash, fillSlot } from '../utils';
 import { byteDecoder, byteEncoder } from '../../utils';
+import { Options } from '@iden3/js-jsonld-merklization';
 
 /**
  * Parsed slots of core.Claim
@@ -70,6 +71,7 @@ export interface CoreClaimOptions {
   subjectPosition: string;
   merklizedRootPosition: string;
   updatable: boolean;
+  merklizeOpts: Options;
 }
 
 /**
@@ -101,7 +103,8 @@ export class Parser {
         version: 0,
         subjectPosition: SubjectPosition.Index,
         merklizedRootPosition: MerklizedRootPosition.None,
-        updatable: false
+        updatable: false,
+        merklizeOpts: {}
       };
     }
 
@@ -142,12 +145,12 @@ export class Parser {
 
     switch (opts.merklizedRootPosition) {
       case MerklizedRootPosition.Index: {
-        const mk = await credential.merklize();
+        const mk = await credential.merklize(opts.merklizeOpts);
         claim.setIndexMerklizedRoot((await mk.root()).bigInt());
         break;
       }
       case MerklizedRootPosition.Value: {
-        const mk = await credential.merklize();
+        const mk = await credential.merklize(opts.merklizeOpts);
         claim.setValueMerklizedRoot((await mk.root()).bigInt());
         break;
       }

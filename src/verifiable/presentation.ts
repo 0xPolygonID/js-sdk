@@ -1,5 +1,5 @@
 import { VerifiableConstants } from './constants';
-import { Hasher, MtValue, Path } from '@iden3/js-jsonld-merklization';
+import { Hasher, MtValue, Options, Path } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from './credential';
 import { ProofQuery } from './proof';
 
@@ -23,7 +23,8 @@ export const stringByPath = (obj: object, path: string): string => {
 export const buildQueryPath = async (
   contextURL: string,
   contextType: string,
-  field: string
+  field: string,
+  opts?: Options
 ): Promise<Path> => {
   let resp;
   try {
@@ -32,7 +33,7 @@ export const buildQueryPath = async (
     throw new Error(`context not found: ${error.message}`);
   }
 
-  const path = await Path.getContextPathKey(JSON.stringify(resp), contextType, field);
+  const path = await Path.getContextPathKey(JSON.stringify(resp), contextType, field, opts);
   path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   return path;
 };
@@ -69,14 +70,15 @@ export const createVerifiablePresentation = (
 export const verifiablePresentationFromCred = async (
   w3cCred: W3CCredential,
   requestObj: ProofQuery,
-  field: string
+  field: string,
+  opts?: Options
 ): Promise<{
   vp: object;
   mzValue: MtValue;
   dataType: string;
   hasher: Hasher;
 }> => {
-  const mz = await w3cCred.merklize();
+  const mz = await w3cCred.merklize(opts);
 
   const contextType = stringByPath(requestObj, 'type');
 
@@ -84,7 +86,7 @@ export const verifiablePresentationFromCred = async (
 
   const contextURL = stringByPath(requestObj, 'context');
 
-  const path = await buildQueryPath(contextURL, contextType, field);
+  const path = await buildQueryPath(contextURL, contextType, field, opts);
 
   const dataType = await mz.jsonLDType(path);
 
