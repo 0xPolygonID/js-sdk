@@ -353,7 +353,7 @@ export class ProofService implements IProofService {
       proofReq.query,
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim,
-      {documentLoader:this._ldLoader}
+      { documentLoader: this._ldLoader }
     );
     circuitInputs.query = query;
     circuitInputs.claim = {
@@ -420,8 +420,7 @@ export class ProofService implements IProofService {
       proofReq.query,
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim,
-      {documentLoader:this._ldLoader}
-
+      { documentLoader: this._ldLoader }
     );
     circuitInputs.query = query;
     circuitInputs.claim = {
@@ -467,7 +466,7 @@ export class ProofService implements IProofService {
       proofReq.query,
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim,
-      {documentLoader:this._ldLoader}
+      { documentLoader: this._ldLoader }
     );
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -509,7 +508,7 @@ export class ProofService implements IProofService {
       proofReq.query,
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim,
-      {documentLoader:this._ldLoader}
+      { documentLoader: this._ldLoader }
     );
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());

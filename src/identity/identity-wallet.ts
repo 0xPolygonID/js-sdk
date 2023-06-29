@@ -578,7 +578,7 @@ export class IdentityWallet implements IIdentityWallet {
       merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition),
       updatable: false,
       version: 0,
-      merklizeOpts:opts
+      merklizeOpts: opts
     };
 
     let jsonLDCtx: object;
