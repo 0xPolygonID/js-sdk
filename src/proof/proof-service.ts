@@ -639,7 +639,7 @@ export class ProofService implements IProofService {
     }
 
     let path: Path = new Path();
-    if (parsedQuery.query.operator !== QueryOperators.$noop) {
+    if (!!parsedQuery.fieldName) {
       path = await Path.getContextPathKey(
         JSON.stringify(schema),
         credential.type[1],
@@ -664,6 +664,12 @@ export class ProofService implements IProofService {
       parsedQuery.query.slotIndex = 2; // value data slot a
     } else {
       parsedQuery.query.slotIndex = 5; // value data slot b
+    }
+    if (!parsedQuery.fieldName){
+      const resultQuery = parsedQuery.query;
+      resultQuery.operator = QueryOperators.$eq;
+      resultQuery.values = [mtEntry];
+      return { query: resultQuery };
     }
     if (parsedQuery.isSelectiveDisclosure) {
       const rawValue = mk.rawValue(path);
@@ -725,7 +731,7 @@ export class ProofService implements IProofService {
   private async parseRequest(req?: { [key: string]: unknown }): Promise<QueryWithFieldName> {
     if (!req) {
       const query = new Query();
-      query.operator = QueryOperators.$noop;
+      query.operator = QueryOperators.$eq;
       return { query, fieldName: '' };
     }
 
