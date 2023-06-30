@@ -55,7 +55,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     };
     const meta = await get(identifier, this._merkleTreeMetaStore);
     if (meta) {
-      return meta;
+      throw new Error(`Present merkle tree meta information in the store for current identifier ${identifier}`);
     }
     const treesMeta = createMetaInfo();
     await set(identifier, treesMeta, this._merkleTreeMetaStore);
@@ -128,7 +128,6 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
 
     const treesMeta = meta.map((m) => ({ ...m, identifier: newIdentifier }));
 
-    await set(newIdentifier, treesMeta, this._merkleTreeMetaStore);
-    await del(oldIdentifier, this._merkleTreeMetaStore);
+    await set(oldIdentifier, treesMeta, this._merkleTreeMetaStore);
   }
 }

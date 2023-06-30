@@ -52,6 +52,9 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
     if (!identifier) {
       identifier = `${uuid.v4()}`;
     }
+    if(this._data[identifier]) {
+      throw new Error(`Present merkle tree meta information in the store for current identifier ${identifier}`);
+    }
     this._data[identifier] = [];
 
     const treesMeta: IdentityMerkleTreeMetaInformation[] = [];
