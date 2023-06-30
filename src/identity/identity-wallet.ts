@@ -38,6 +38,7 @@ import { pushHashesToRHS, TreesModel } from '../credentials/rhs';
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
 import { Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
+import { sha256js } from 'cross-sha256';
 
 /**
  * DID creation options
@@ -268,7 +269,7 @@ export class IdentityWallet implements IIdentityWallet {
   async createIdentity(
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
-    const tmpIdentifier = uuid.v4();
+    const tmpIdentifier = opts.seed ? uuid.v5(new sha256js().update(opts.seed).digest('hex'), uuid.NIL) : uuid.v4();
 
     opts.method = opts.method ?? DidMethod.Iden3;
     opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
