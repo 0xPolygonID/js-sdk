@@ -1,4 +1,4 @@
-import { createStore, UseStore, get, set, del } from 'idb-keyval';
+import { createStore, UseStore, get, set } from 'idb-keyval';
 import { IndexedDBStorage, Merkletree, str2Bytes } from '@iden3/js-merkletree';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/mt';
 import * as uuid from 'uuid';
