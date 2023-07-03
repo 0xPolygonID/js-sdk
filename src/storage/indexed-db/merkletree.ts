@@ -1,4 +1,4 @@
-import { createStore, UseStore, get, set, del } from 'idb-keyval';
+import { createStore, UseStore, get, set } from 'idb-keyval';
 import { IndexedDBStorage, Merkletree, str2Bytes } from '@iden3/js-merkletree';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/mt';
 import * as uuid from 'uuid';
@@ -55,7 +55,9 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     };
     const meta = await get(identifier, this._merkleTreeMetaStore);
     if (meta) {
-      return meta;
+      throw new Error(
+        `Present merkle tree meta information in the store for current identifier ${identifier}`
+      );
     }
     const treesMeta = createMetaInfo();
     await set(identifier, treesMeta, this._merkleTreeMetaStore);
@@ -128,7 +130,6 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
 
     const treesMeta = meta.map((m) => ({ ...m, identifier: newIdentifier }));
 
-    await set(newIdentifier, treesMeta, this._merkleTreeMetaStore);
-    await del(oldIdentifier, this._merkleTreeMetaStore);
+    await set(oldIdentifier, treesMeta, this._merkleTreeMetaStore);
   }
 }

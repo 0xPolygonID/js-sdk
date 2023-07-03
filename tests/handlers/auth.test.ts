@@ -174,7 +174,9 @@ describe('auth', () => {
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
+      ipfsGatewayURL: 'https://ipfs.io'
+    });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
       proofService.generateAuthV2Inputs.bind(proofService),

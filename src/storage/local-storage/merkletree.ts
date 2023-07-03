@@ -48,6 +48,12 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
     const meta = localStorage.getItem(MerkleTreeLocalStorage.storageKeyMeta);
     if (meta) {
       const metaInfo: IdentityMerkleTreeMetaInformation[] = JSON.parse(meta);
+      const presentMetaForIdentifier = metaInfo.find((m) => m.treeId === `${identifier}+${m.type}`);
+      if (presentMetaForIdentifier) {
+        throw new Error(
+          `Present merkle tree meta information in the store for current identifier ${identifier}`
+        );
+      }
       const identityMetaInfo = metaInfo.filter((m) => m.identifier === identifier);
       if (identityMetaInfo.length > 0) {
         return identityMetaInfo;
@@ -57,6 +63,8 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
         MerkleTreeLocalStorage.storageKeyMeta,
         JSON.stringify([...metaInfo, ...treesMeta])
       );
+
+      return [...metaInfo, ...treesMeta];
     }
     const treesMeta = createMetaInfo();
     localStorage.setItem(MerkleTreeLocalStorage.storageKeyMeta, JSON.stringify(treesMeta));
