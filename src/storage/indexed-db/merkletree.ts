@@ -55,7 +55,9 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     };
     const meta = await get(identifier, this._merkleTreeMetaStore);
     if (meta) {
-      throw new Error(`Present merkle tree meta information in the store for current identifier ${identifier}`);
+      throw new Error(
+        `Present merkle tree meta information in the store for current identifier ${identifier}`
+      );
     }
     const treesMeta = createMetaInfo();
     await set(identifier, treesMeta, this._merkleTreeMetaStore);
