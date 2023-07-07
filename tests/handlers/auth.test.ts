@@ -172,7 +172,9 @@ describe('auth', () => {
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage,{ipfsGatewayURL:"https://ipfs.io"});
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
+      ipfsGatewayURL: 'https://ipfs.io'
+    });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
       proofService.generateAuthV2Inputs.bind(proofService),
@@ -200,7 +202,7 @@ describe('auth', () => {
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
+      seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -261,9 +263,11 @@ describe('auth', () => {
       from: issuerDID.id.string()
     };
 
+    console.log(JSON.stringify(issuerCred));
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequestForGenesisDID(userDID, msgBytes);
 
+    
     const tokenStr = authRes.token;
     console.log(tokenStr);
     expect(tokenStr).to.be.a('string');

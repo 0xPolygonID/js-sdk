@@ -119,7 +119,7 @@ describe('sig proofs', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      ipfsGatewayURL: 'ipfs.io'
+      ipfsGatewayURL: 'https://ipfs.io'
     });
   });
 
@@ -283,5 +283,93 @@ describe('sig proofs', () => {
       proofService,
       CircuitId.AtomicQuerySigV2
     );
+  });
+
+  it('sigv2-ipfs-string-eq', async () => {
+    const req = {
+      id: '0d8e91e5-5686-49b5-85e3-2b35538c6a03',
+      typ: 'application/iden3comm-plain-json',
+      type: 'https://iden3-communication.io/authorization/1.0/request',
+      thid: '0d8e91e5-5686-49b5-85e3-2b35538c6a03',
+      body: {
+        callbackUrl: 'https://verifier-v2.polygonid.me/api/callback?sessionId=25269',
+        reason: 'test flow',
+        scope: [
+          {
+            id: 1,
+            circuitId: 'credentialAtomicQuerySigV2',
+            query: {
+              allowedIssuers: ['*'],
+              context: 'ipfs://QmZ1zsLspwnjifxsncqDkB7EHb2pnaRnBPc5kqQcVxW5rV',
+              credentialSubject: {
+                stringTest: {
+                  $eq: 'test'
+                }
+              },
+              type: 'TestString'
+            }
+          }
+        ]
+      },
+      from: 'did:polygonid:polygon:mumbai:2qLPqvayNQz9TA2r5VPxUugoF18teGU583zJ859wfy'
+    };
+
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
+
+    const { did: userDID } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    const { did: issuerDID } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+    const claimReq: CredentialRequest = {
+      credentialSchema: 'ipfs://Qmb1Q5jLETkUkhswCVX52ntTCNQnRm3NyyGf1NZG98u5cv',
+      type: 'TestString',
+      credentialSubject: {
+        id: userDID.toString(),
+        stringTest: 'test'
+      },
+      expiration: 1693526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
+      ipfsGatewayURL: 'https://ipfs.io'
+    });
+
+    await credWallet.save(issuerCred);
+
+    const creds = await credWallet.findByQuery(req.body.scope[0].query);
+    expect(creds.length).to.not.equal(0);
+
+    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
+    expect(creds.length).to.equal(1);
+
+    const { proof, vp } = await proofService.generateProof(
+      req.body.scope[0],
+      userDID,
+      credsForMyUserDID[0]
+    );
+    console.log(proof);
+
+    expect(vp).to.be.undefined;
   });
 });
