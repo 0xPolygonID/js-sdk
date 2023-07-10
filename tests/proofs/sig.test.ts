@@ -285,6 +285,88 @@ describe('sig proofs', () => {
     );
   });
 
+  it.only('sigv2-merklized-query-array', async () => {
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
+
+    const { did: userDID } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    const { did: issuerDID } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.toString(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 1693526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+        credentialSubject: {
+          documentType: {
+            $in: [99]
+          }
+        }
+      }
+    };
+
+    const creds = await credWallet.findByQuery(proofReq.query);
+    expect(creds.length).to.not.equal(0);
+
+    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
+    expect(creds.length).to.equal(1);
+
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    console.log(proof);
+
+    expect(vp).to.be.undefined;
+
+    await checkVerifiablePresentation(
+      claimReq.type,
+      userDID,
+      credsForMyUserDID[0],
+      proofService,
+      CircuitId.AtomicQuerySigV2
+    );
+  });
+
+
   it('sigv2-ipfs-string-eq', async () => {
     const req = {
       id: '0d8e91e5-5686-49b5-85e3-2b35538c6a03',
