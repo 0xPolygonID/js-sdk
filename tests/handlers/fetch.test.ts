@@ -1,14 +1,23 @@
-import { Identity, Profile } from '../../src/storage/entities/identity';
-import { IdentityStorage } from '../../src/storage/shared/identity-storage';
-import { PlainPacker } from '../../src/iden3comm/packers/plain';
-import { CredentialStorage, IdentityWallet } from '../../src';
-import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
-import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
-import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { CredentialWallet } from '../../src/credentials';
+import { IdentityWallet } from '../../src/identity/identity-wallet';
+import {
+  Identity,
+  Profile,
+  IdentityStorage,
+  IDataStorage,
+  IStateStorage,
+  InMemoryDataSource,
+  InMemoryMerkleTreeStorage,
+  RootInfo,
+  StateProof,
+  CredentialStorage
+} from '../../src/storage';
+import { BjjProvider, KMS, KmsKeyType, InMemoryPrivateKeyStore } from '../../src/kms';
+import {
+  CredentialWallet,
+  CredentialStatusResolverRegistry,
+  RHSResolver
+} from '../../src/credentials';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
-import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import {
   BasicMessage,
   CredentialIssuanceMessage,
@@ -18,17 +27,15 @@ import {
   IFetchHandler,
   IPackageManager,
   PackageManager,
-  ZKPPackerParams
+  PlainPacker,
+  PROTOCOL_CONSTANTS
 } from '../../src/iden3comm';
 import * as uuid from 'uuid';
-import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { byteEncoder } from '../../src/';
+import { byteEncoder } from '../../src/utils';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
-import fetchMock from 'fetch-mock';
+import fetchMock from '@4c/fetch-mock';
 import { after } from 'mocha';
-import { CredentialStatusResolverRegistry } from '../../src/credentials';
-import { RHSResolver } from '../../src/credentials';
 
 describe('fetch', () => {
   let idWallet: IdentityWallet;
@@ -165,20 +172,15 @@ describe('fetch', () => {
     packageMgr = {} as PackageManager;
     packageMgr.unpack = async function (
       envelope: Uint8Array
-    ): Promise<{ unpackedMessage: BasicMessage; unpackedMediaType: MediaType }> {
+    ): Promise<{ unpackedMessage: BasicMessage; unpackedMediaType: PROTOCOL_CONSTANTS.MediaType }> {
       const msg = await new PlainPacker().unpack(envelope);
-      return { unpackedMessage: msg, unpackedMediaType: MediaType.PlainMessage };
+      return { unpackedMessage: msg, unpackedMediaType: PROTOCOL_CONSTANTS.MediaType.PlainMessage };
     };
-    packageMgr.pack = async function (
-      mediaType: MediaType,
-      payload: Uint8Array,
-      params: ZKPPackerParams
-    ): Promise<Uint8Array> {
-      return byteEncoder.encode(mockedToken);
-    };
+    packageMgr.pack = async (): Promise<Uint8Array> => byteEncoder.encode(mockedToken);
     fetchHandler = new FetchHandler(packageMgr);
     fetchMock.post(agentUrl, JSON.parse(mockedCredResponse));
   });
+
   after(() => {
     fetchMock.restore();
   });
@@ -211,8 +213,8 @@ describe('fetch', () => {
     const id = uuid.v4();
     const authReq: CredentialsOfferMessage = {
       id,
-      typ: MediaType.PlainMessage,
-      type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE,
       thid: id,
       body: {
         url: agentUrl,
