@@ -1,4 +1,4 @@
-import { createStore, UseStore, get, set } from 'idb-keyval';
+import { createStore, UseStore, get, set, del } from 'idb-keyval';
 import { IndexedDBStorage, Merkletree, str2Bytes } from '@iden3/js-merkletree';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/mt';
 import * as uuid from 'uuid';
@@ -22,8 +22,10 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
    * @static
    */
   static readonly storageKeyMeta = 'merkle-tree-meta';
+  static readonly storageBindingKeyMeta = 'binding-did';
 
   private readonly _merkleTreeMetaStore: UseStore;
+  private readonly _bindingStore: UseStore;
 
   /**
    * Creates an instance of MerkleTreeIndexedDBStorage.
@@ -33,6 +35,10 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     this._merkleTreeMetaStore = createStore(
       `${MerkleTreeIndexedDBStorage.storageKeyMeta}-db`,
       MerkleTreeIndexedDBStorage.storageKeyMeta
+    );
+    this._bindingStore = createStore(
+      `${MerkleTreeIndexedDBStorage.storageBindingKeyMeta}-db`,
+      MerkleTreeIndexedDBStorage.storageBindingKeyMeta
     );
   }
 
@@ -53,8 +59,9 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
       }
       return treesMeta;
     };
-    const meta = await get(identifier, this._merkleTreeMetaStore);
-    if (meta) {
+
+    const existingBinging = await get(identifier, this._bindingStore);
+    if (existingBinging) {
       throw new Error(
         `Present merkle tree meta information in the store for current identifier ${identifier}`
       );
@@ -130,6 +137,8 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
 
     const treesMeta = meta.map((m) => ({ ...m, identifier: newIdentifier }));
 
-    await set(oldIdentifier, treesMeta, this._merkleTreeMetaStore);
+    await del(oldIdentifier, this._merkleTreeMetaStore);
+    await set(newIdentifier, treesMeta, this._merkleTreeMetaStore);
+    await set(oldIdentifier, newIdentifier, this._bindingStore);
   }
 }

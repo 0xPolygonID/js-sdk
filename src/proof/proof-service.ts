@@ -39,7 +39,13 @@ import {
 import { toClaimNonRevStatus, toGISTProof } from './common';
 import { NativeProver } from './prover';
 
-import { DocumentLoader, Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
+import {
+  DocumentLoader,
+  Merklizer,
+  Options,
+  Path,
+  getDocumentLoader
+} from '@iden3/js-jsonld-merklization';
 import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
@@ -62,6 +68,7 @@ interface PreparedCredential {
 export interface QueryWithFieldName {
   query: Query;
   fieldName: string;
+  rawValue?: unknown;
   isSelectiveDisclosure?: boolean;
 }
 
@@ -652,6 +659,7 @@ export class ProofService implements IProofService {
     path.prepend(['https://www.w3.org/2018/credentials#credentialSubject']);
 
     const mk = await credential.merklize(opts);
+
     const { proof, value: mtValue } = await mk.proof(path);
 
     const pathKey = await path.mtEntry();
@@ -686,6 +694,14 @@ export class ProofService implements IProofService {
       resultQuery.values = [mtEntry];
       return { query: resultQuery, vp };
     }
+    if (parsedQuery.rawValue === null || parsedQuery.rawValue === undefined) {
+      throw new Error('value is not presented in the query');
+    }
+    const ldType = await mk.jsonLDType(path);
+    parsedQuery.query.values = await this.transformQueryValueToBigInts(
+      parsedQuery.rawValue,
+      ldType
+    );
 
     return { query: parsedQuery.query };
   }
@@ -713,19 +729,27 @@ export class ProofService implements IProofService {
       parsedQuery.fieldName,
       byteEncoder.encode(JSON.stringify(schema))
     );
+    const { vp, mzValue, dataType } = await verifiablePresentationFromCred(
+      credential,
+      query,
+      parsedQuery.fieldName,
+      opts
+    );
 
     if (parsedQuery.isSelectiveDisclosure) {
-      const { vp, mzValue } = await verifiablePresentationFromCred(
-        credential,
-        query,
-        parsedQuery.fieldName,
-        opts
-      );
       const resultQuery = parsedQuery.query;
       resultQuery.operator = QueryOperators.$eq;
       resultQuery.values = [await mzValue.mtEntry()];
       return { query: resultQuery, vp };
     }
+    if (parsedQuery.rawValue === null || parsedQuery.rawValue === undefined) {
+      throw new Error('value is not presented in the query');
+    }
+
+    parsedQuery.query.values = await this.transformQueryValueToBigInts(
+      parsedQuery.rawValue,
+      dataType
+    );
 
     return { query: parsedQuery.query };
   }
@@ -758,24 +782,28 @@ export class ProofService implements IProofService {
     }
 
     let operator = 0;
-    const values: bigint[] = new Array<bigint>(64).fill(BigInt(0));
     const [key, value] = fieldReqEntries[0];
     if (!QueryOperators[key]) {
       throw new Error(`operator is not supported by lib`);
     }
     operator = QueryOperators[key];
-    if (Array.isArray(value)) {
-      for (let index = 0; index < value.length; index++) {
-        values[index] = BigInt(value[index]);
-      }
-    } else {
-      values[0] = BigInt(value);
-    }
 
     query.operator = operator;
-    query.values = values;
 
-    return { query, fieldName };
+    return { query, fieldName, rawValue: value };
+  }
+
+  async transformQueryValueToBigInts(value: unknown, ldType: string): Promise<bigint[]> {
+    const values: bigint[] = new Array<bigint>(64).fill(BigInt(0));
+
+    if (Array.isArray(value)) {
+      for (let index = 0; index < value.length; index++) {
+        values[index] = await Merklizer.hashValue(ldType, value);
+      }
+    } else {
+      values[0] = await Merklizer.hashValue(ldType, value);
+    }
+    return values;
   }
 
   /** {@inheritdoc IProofService.generateAuthV2Inputs} */

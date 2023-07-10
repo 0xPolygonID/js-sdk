@@ -57,6 +57,9 @@ describe('auth', () => {
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
 
+  const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+  const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
+
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
@@ -186,8 +189,6 @@ describe('auth', () => {
   });
 
   it('request-response flow genesis', async () => {
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
-
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -205,7 +206,7 @@ describe('auth', () => {
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
+      seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -269,6 +270,7 @@ describe('auth', () => {
       from: issuerId.string()
     };
 
+    console.log(JSON.stringify(issuerCred));
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequestForGenesisDID({
       did: userDID,
@@ -288,9 +290,6 @@ describe('auth', () => {
   });
 
   it('request-response flow profiles', async () => {
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
-
     const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,

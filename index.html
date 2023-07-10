@@ -32,8 +32,10 @@
         CredentialStatusResolverRegistry,
         IssuerResolver,
         RHSResolver, 
-        OnChainResolver
-    } = IdenPolygonIdSdk;
+        defaultEthConnectionConfig,
+        OnChainResolver,
+        MerkleTreeIndexedDBStorage
+    } = PolygonIdSdk;
 
     const run = async () => {
         const keyStore = new LocalStoragePrivateKeyStore();
@@ -49,7 +51,7 @@
                 new BrowserDataSource(IdentityStorage.identitiesStorageKey),
                 new BrowserDataSource(IdentityStorage.profilesStorageKey)
             ),
-            mt: new MerkleTreeLocalStorage(40),
+            mt: new MerkleTreeIndexedDBStorage(40),
             states: {
                 getLatestStateById: async (issuerId) => {
                     return { id: BigInt(0), state: BigInt(0) };
