@@ -285,7 +285,7 @@ describe('sig proofs', () => {
     );
   });
 
-  it.only('sigv2-merklized-query-array', async () => {
+  it('sigv2-merklized-query-array', async () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
