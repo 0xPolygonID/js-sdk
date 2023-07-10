@@ -188,7 +188,7 @@ describe('sig proofs', () => {
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds.length).to.equal(1);
+    expect(credsForMyUserDID.length).to.equal(1);
 
     const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
@@ -269,7 +269,7 @@ describe('sig proofs', () => {
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds.length).to.equal(1);
+    expect(credsForMyUserDID.length).to.equal(1);
 
     const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
@@ -350,7 +350,7 @@ describe('sig proofs', () => {
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds.length).to.equal(1);
+    expect(credsForMyUserDID.length).to.equal(1);
 
     const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
@@ -443,7 +443,7 @@ describe('sig proofs', () => {
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds.length).to.equal(1);
+    expect(credsForMyUserDID.length).to.equal(1);
 
     const { proof, vp } = await proofService.generateProof(
       req.body.scope[0],
