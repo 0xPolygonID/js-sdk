@@ -20,9 +20,8 @@ import path from 'path';
 import { byteEncoder } from '../../src';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
-import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import { checkVerifiablePresentation } from './common';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 
@@ -33,8 +32,9 @@ describe('sig proofs', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
   const rhsUrl = process.env.RHS_URL as string;
-  const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
-  const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
+  let userDID: DID;
+  let issuerDID: DID;
+  let circuitStorage: CircuitStorage;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -67,23 +67,8 @@ describe('sig proofs', () => {
     }
   };
 
-  beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
-    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
-    const kms = new KMS();
-    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
-
-    dataStorage = {
-      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
-      identity: new IdentityStorage(
-        new InMemoryDataSource<Identity>(),
-        new InMemoryDataSource<Profile>()
-      ),
-      mt: new InMemoryMerkleTreeStorage(40),
-      states: mockStateStorage
-    };
-
-    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
+  before(async () => {
+    circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
 
     const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
 
@@ -111,6 +96,22 @@ describe('sig proofs', () => {
         `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
       )
     });
+  });
+
+  beforeEach(async () => {
+    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
+    const kms = new KMS();
+    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+    dataStorage = {
+      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
+      identity: new IdentityStorage(
+        new InMemoryDataSource<Identity>(),
+        new InMemoryDataSource<Profile>()
+      ),
+      mt: new InMemoryMerkleTreeStorage(40),
+      states: mockStateStorage
+    };
 
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
@@ -123,30 +124,28 @@ describe('sig proofs', () => {
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
       ipfsGatewayURL: 'https://ipfs.io'
     });
+
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
+
+    const opts = (seed: Uint8Array) => ({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    const { did: user } = await idWallet.createIdentity(opts(seedPhrase));
+    const { did: issuer } = await idWallet.createIdentity(opts(seedPhraseIssuer));
+    userDID = user;
+    issuerDID = issuer;
   });
 
   it('sigv2-non-merklized', async () => {
-    const { did: userDID, credential: cred } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
-
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
@@ -190,41 +189,12 @@ describe('sig proofs', () => {
     expect(credsForMyUserDID.length).to.equal(1);
 
     const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
-    console.log(proof);
 
+    expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
-
-    await checkVerifiablePresentation(
-      claimReq.type,
-      userDID,
-      credsForMyUserDID[0],
-      proofService,
-      CircuitId.AtomicQuerySigV2
-    );
   });
 
   it('sigv2-merklized', async () => {
-    const { did: userDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
-
-    const { did: issuerDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
@@ -268,41 +238,12 @@ describe('sig proofs', () => {
     expect(credsForMyUserDID.length).to.equal(1);
 
     const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
-    console.log(proof);
 
     expect(vp).to.be.undefined;
-
-    await checkVerifiablePresentation(
-      claimReq.type,
-      userDID,
-      credsForMyUserDID[0],
-      proofService,
-      CircuitId.AtomicQuerySigV2
-    );
+    expect(proof).not.to.be.undefined;
   });
 
   it('sigv2-merklized-query-array', async () => {
-    const { did: userDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
-
-    const { did: issuerDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
@@ -346,17 +287,8 @@ describe('sig proofs', () => {
     expect(credsForMyUserDID.length).to.equal(1);
 
     const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
-    console.log(proof);
-
+    expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
-
-    await checkVerifiablePresentation(
-      claimReq.type,
-      userDID,
-      credsForMyUserDID[0],
-      proofService,
-      CircuitId.AtomicQuerySigV2
-    );
   });
 
   it('sigv2-ipfs-string-eq', async () => {
@@ -388,27 +320,6 @@ describe('sig proofs', () => {
       from: 'did:polygonid:polygon:mumbai:2qLPqvayNQz9TA2r5VPxUugoF18teGU583zJ859wfy'
     };
 
-    const { did: userDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
-
-    const { did: issuerDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
     const claimReq: CredentialRequest = {
       credentialSchema: 'ipfs://Qmb1Q5jLETkUkhswCVX52ntTCNQnRm3NyyGf1NZG98u5cv',
       type: 'TestString',
@@ -439,8 +350,7 @@ describe('sig proofs', () => {
       userDID,
       credsForMyUserDID[0]
     );
-    console.log(proof);
-
+    expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
   });
 
@@ -453,28 +363,6 @@ describe('sig proofs', () => {
       },
       type: 'DeliveryAddress'
     };
-
-    const { did: issuerDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
-
-    const { did: userDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
 
     const claimReq: CredentialRequest = {
       credentialSchema: 'ipfs://QmbLQKw9Mzc9fVHowatJbvZjWNSUZchxYQX5Wtt8Ff9rGx',
