@@ -52,32 +52,16 @@ const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFunction }
  * @param {string} path - given path
  * @param {*} [defaultValue=null]
  */
-export const resolvePath = (object: object, path: string, defaultValue = null) =>
-  path.split('.').reduce((o, p) => (o ? o[p] : defaultValue), object);
-
-/**
- * filter creation factory
- *
- * @param {string} path - given query path
- * @param {*} operatorFunc - filter operation
- * @param {*} value - filter value
- * @param {*} [isReverseParams=false] - reversed params
- */
-export const createFilter = (path: string, operatorFunc, value, isReverseParams = false) => {
-  if (!operatorFunc) {
-    throw new Error(SearchError.NotDefinedComparator);
+export const resolvePath = (object: object, path: string, defaultValue = null) => {
+  const pathParts = path.split('.');
+  let o = object;
+  for (const part of pathParts) {
+    if (o === null || o === undefined) {
+      return defaultValue;
+    }
+    o = o[part];
   }
-  return (credential: W3CCredential): boolean => {
-    const credentialPathValue = resolvePath(credential, path);
-    if (!credentialPathValue) {
-      return false;
-      // throw new Error(`Not found path - ${path} to credential`);
-    }
-    if (isReverseParams) {
-      return operatorFunc(value, credentialPathValue);
-    }
-    return operatorFunc(credentialPathValue, value);
-  };
+  return o;
 };
 
 /**
@@ -154,6 +138,11 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
       case 'credentialSubject': {
         const reqFilters = Object.keys(queryValue).reduce((acc: FilterQuery[], fieldKey) => {
           const fieldParams = queryValue[fieldKey];
+          if (typeof fieldParams === 'object' && Object.keys(fieldParams).length === 0) {
+            return acc.concat([
+              new FilterQuery(`credentialSubject.${fieldKey}`, comparatorOptions.$noop, null)
+            ]);
+          }
           const res = Object.keys(fieldParams).map((comparator) => {
             const value = fieldParams[comparator];
             const path = `credentialSubject.${fieldKey}`;

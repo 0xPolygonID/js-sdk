@@ -41,7 +41,7 @@ export const buildQueryPath = async (
 export const createVerifiablePresentation = (
   context: string,
   tp: string,
-  field: string,
+  path: string,
   value: unknown
 ): object => {
   const baseContext = [VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018];
@@ -53,6 +53,9 @@ export const createVerifiablePresentation = (
     vcTypes.push(tp);
   }
 
+  const [first, ...rest] = path.split('.');
+  const obj = rest.reduceRight((acc, key) => ({ [key]: acc }), value);
+
   return {
     '@context': baseContext,
     '@type': VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_PRESENTATION,
@@ -61,7 +64,7 @@ export const createVerifiablePresentation = (
       '@type': vcTypes,
       credentialSubject: {
         '@type': tp,
-        [field]: value
+        [first]: obj
       }
     }
   };
