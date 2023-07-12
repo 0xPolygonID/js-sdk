@@ -499,14 +499,65 @@ describe('sig proofs', () => {
         id: rhsUrl
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
+    const issuedCred = await idWallet.issueCredential(issuerDID, claimReq, {
       ipfsGatewayURL: 'https://ipfs.io'
     });
 
-    await credWallet.save(issuerCred);
+    await credWallet.save(issuedCred);
 
     const creds = await credWallet.findByQuery(query);
     expect(creds.length).to.not.equal(0);
+
+    const deliveryClaimReq: CredentialRequest = {
+      credentialSchema: 'ipfs://QmQKgn6QUHzHXBqPCUbpCnHSyVRLaCVoDqA8fg27DzS79D',
+      type: 'DeliverAddressMultiTest',
+      credentialSubject: {
+        country: 'Ukraine',
+        deliveryTime: '2023-08-12T11:47:50+00:00',
+        homeAddress: {
+          expectedFrom: '2023-08-12T11:47:50+00:00',
+          line1: 'Kyiv, Zdanovskoi Y. 35',
+          line2: 'apt.1'
+        },
+        id: userDID.toString(),
+        isPostalProvider: false,
+        operatorId: 103,
+        postalProviderInformation: {
+          insured: false,
+          name: 'mist',
+          officeNo: 124,
+          weight: 1.2
+        },
+        price: 15.2,
+        type: 'DeliverAddressMultiTest'
+      },
+      expiration: 1693526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+
+    const deliveryCred = await idWallet.issueCredential(issuerDID, deliveryClaimReq, {
+      ipfsGatewayURL: 'https://ipfs.io'
+    });
+
+    await credWallet.save(deliveryCred);
+
+    const deliveryCredQuery = {
+      allowedIssuers: ['*'],
+      context: 'ipfs://QmZreEq1z5tMAuNBNTXjfpYMQbQ8KL7YkkVBt5nG1bUqJT',
+      credentialSubject: {
+        'postalProviderInformation.insured': {
+          $eq: false
+        }
+      },
+      type: 'DeliverAddressMultiTest'
+    };
+
+    const credsFromWallet = await credWallet.findByQuery(deliveryCredQuery);
+
+    expect(credsFromWallet.length).to.equal(1);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
@@ -530,6 +581,36 @@ describe('sig proofs', () => {
         credentialSubject: {
           '@type': 'DeliveryAddress',
           postalProviderInformation: { name: 'ukr posta' }
+        }
+      }
+    });
+    const deliveryVPReq = {
+      id: 1,
+      circuitId: 'credentialAtomicQuerySigV2',
+      query: {
+        ...deliveryCredQuery,
+        credentialSubject: { 'postalProviderInformation.insured': {} }
+      }
+    };
+    const { proof: deliveryProof, vp: deliveryVP } = await proofService.generateProof(
+      deliveryVPReq,
+      userDID,
+      credsFromWallet[0]
+    );
+    expect(deliveryProof).not.to.be.undefined;
+
+    expect(deliveryVP).to.deep.equal({
+      '@context': ['https://www.w3.org/2018/credentials/v1'],
+      '@type': 'VerifiablePresentation',
+      verifiableCredential: {
+        '@context': [
+          'https://www.w3.org/2018/credentials/v1',
+          'ipfs://QmZreEq1z5tMAuNBNTXjfpYMQbQ8KL7YkkVBt5nG1bUqJT'
+        ],
+        '@type': ['VerifiableCredential', 'DeliverAddressMultiTest'],
+        credentialSubject: {
+          '@type': 'DeliverAddressMultiTest',
+          postalProviderInformation: { insured: false }
         }
       }
     });
