@@ -1,11 +1,12 @@
 import { expect } from 'chai';
-import { CircuitId, ZeroKnowledgeProofRequest } from '../../src';
+import { CircuitId, IProofService, W3CCredential, ZeroKnowledgeProofRequest } from '../../src';
+import { DID } from '@iden3/js-iden3-core';
 
 export async function checkVerifiablePresentation(
   type: string,
-  userDID,
-  cred,
-  proofService,
+  userDID: DID,
+  cred: W3CCredential,
+  proofService: IProofService,
   circuitId: CircuitId
 ) {
   const vpProofReq: ZeroKnowledgeProofRequest = {

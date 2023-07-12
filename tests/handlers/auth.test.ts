@@ -267,7 +267,6 @@ describe('auth', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequestForGenesisDID(userDID, msgBytes);
 
-    
     const tokenStr = authRes.token;
     console.log(tokenStr);
     expect(tokenStr).to.be.a('string');

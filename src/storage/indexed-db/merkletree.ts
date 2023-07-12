@@ -33,7 +33,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
    */
   constructor(private readonly _mtDepth: number) {
     this._merkleTreeMetaStore = createStore(
-      `${ MerkleTreeIndexedDBStorage.storageKeyMeta}-db`,
+      `${MerkleTreeIndexedDBStorage.storageKeyMeta}-db`,
       MerkleTreeIndexedDBStorage.storageKeyMeta
     );
     this._bindingStore = createStore(
