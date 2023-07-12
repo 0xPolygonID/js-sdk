@@ -798,7 +798,7 @@ export class ProofService implements IProofService {
 
     if (Array.isArray(value)) {
       for (let index = 0; index < value.length; index++) {
-        values[index] = await Merklizer.hashValue(ldType, value);
+        values[index] = await Merklizer.hashValue(ldType, value[index]);
       }
     } else {
       values[0] = await Merklizer.hashValue(ldType, value);

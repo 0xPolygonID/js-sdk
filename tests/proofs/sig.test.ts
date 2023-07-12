@@ -34,7 +34,6 @@ describe('sig proofs', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
   const rhsUrl = process.env.RHS_URL as string;
-
   const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
   const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
@@ -128,7 +127,7 @@ describe('sig proofs', () => {
   });
 
   it('sigv2-non-merklized', async () => {
-    const { did: userDID } = await idWallet.createIdentity({
+    const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
@@ -189,7 +188,7 @@ describe('sig proofs', () => {
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds.length).to.equal(1);
+    expect(credsForMyUserDID.length).to.equal(1);
 
     const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
@@ -267,7 +266,85 @@ describe('sig proofs', () => {
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds.length).to.equal(1);
+    expect(credsForMyUserDID.length).to.equal(1);
+
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    console.log(proof);
+
+    expect(vp).to.be.undefined;
+
+    await checkVerifiablePresentation(
+      claimReq.type,
+      userDID,
+      credsForMyUserDID[0],
+      proofService,
+      CircuitId.AtomicQuerySigV2
+    );
+  });
+
+  it('sigv2-merklized-query-array', async () => {
+    const { did: userDID } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    const { did: issuerDID } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 1693526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+        credentialSubject: {
+          documentType: {
+            $in: [99]
+          }
+        }
+      }
+    };
+
+    const creds = await credWallet.findByQuery(proofReq.query);
+    expect(creds.length).to.not.equal(0);
+
+    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
+    expect(credsForMyUserDID.length).to.equal(1);
 
     const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
     console.log(proof);
@@ -356,7 +433,7 @@ describe('sig proofs', () => {
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds.length).to.equal(1);
+    expect(credsForMyUserDID.length).to.equal(1);
 
     const { proof, vp } = await proofService.generateProof(
       req.body.scope[0],
@@ -366,5 +443,96 @@ describe('sig proofs', () => {
     console.log(proof);
 
     expect(vp).to.be.undefined;
+  });
+
+  it('sigv2 vp-credential', async () => {
+    const query = {
+      allowedIssuers: ['*'],
+      context: 'ipfs://QmQXQ5gBNfJuc9QXy5pGbaVfLxzFjCDAvPs4Fa43BaU1U4',
+      credentialSubject: {
+        'postalProviderInformation.name': {}
+      },
+      type: 'DeliveryAddress'
+    };
+
+    const { did: issuerDID } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    const { did: userDID } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    const claimReq: CredentialRequest = {
+      credentialSchema: 'ipfs://QmbLQKw9Mzc9fVHowatJbvZjWNSUZchxYQX5Wtt8Ff9rGx',
+      type: 'DeliveryAddress',
+      credentialSubject: {
+        id: userDID.string(),
+        price: 10,
+        deliveryTime: '2023-07-11T16:05:51.140Z',
+        postalProviderInformation: {
+          name: 'ukr posta',
+          officeNo: 1
+        },
+        homeAddress: {
+          line2: 'line 2',
+          line1: 'line 1'
+        },
+        isPostalProvider: true
+      },
+      expiration: 1693526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
+      ipfsGatewayURL: 'https://ipfs.io'
+    });
+
+    await credWallet.save(issuerCred);
+
+    const creds = await credWallet.findByQuery(query);
+    expect(creds.length).to.not.equal(0);
+
+    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
+    expect(credsForMyUserDID.length).to.equal(1);
+    const vpReq = {
+      id: 1,
+      circuitId: 'credentialAtomicQuerySigV2',
+      query
+    };
+    const { proof, vp } = await proofService.generateProof(vpReq, userDID, credsForMyUserDID[0]);
+    expect(proof).not.to.be.undefined;
+
+    expect(vp).to.deep.equal({
+      '@context': ['https://www.w3.org/2018/credentials/v1'],
+      '@type': 'VerifiablePresentation',
+      verifiableCredential: {
+        '@context': [
+          'https://www.w3.org/2018/credentials/v1',
+          'ipfs://QmQXQ5gBNfJuc9QXy5pGbaVfLxzFjCDAvPs4Fa43BaU1U4'
+        ],
+        '@type': ['VerifiableCredential', 'DeliveryAddress'],
+        credentialSubject: {
+          '@type': 'DeliveryAddress',
+          postalProviderInformation: { name: 'ukr posta' }
+        }
+      }
+    });
   });
 });

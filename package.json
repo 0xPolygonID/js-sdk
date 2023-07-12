@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.0.0-beta.15",
+  "version": "2.0.0-beta",
   "description": "SDK to work with Polygon ID",
   "main": "dist/cjs/index.js",
   "module": "dist/esm_esbuild/index.js",
@@ -27,8 +27,8 @@
     "doc:build": "npm run doc:extract && npm run doc:documenter",
     "doc:watch:website": "ts-node ./scripts/doc-watch.ts",
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
-    "lint": "eslint --fix --ext .js,.ts src/** tests/**",
-    "test": "mocha --require ts-node/register tests/**/*.ts -t 120000",
+    "test": "mocha",
+    "lint": "eslint --fix --ext .js,.ts src/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "deps:check": "madge --circular --extensions ts ./"
   },
@@ -43,6 +43,7 @@
   },
   "homepage": "https://github.com/0xPolygonID/js-sdk#readme",
   "devDependencies": {
+    "@4c/fetch-mock": "^8.0.0",
     "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
     "@esbuild-plugins/node-modules-polyfill": "^0.1.4",
     "@microsoft/api-documenter": "^7.20.1",
@@ -51,7 +52,7 @@
     "@types/chai-as-promised": "^7.1.5",
     "@types/jsonld": "^1.4.8",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^18.11.17",
+    "@types/node": "^18.16.19",
     "@typescript-eslint/eslint-plugin": "^5.41.0",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
@@ -59,7 +60,6 @@
     "esbuild": "^0.15.15",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "fetch-mock": "^9.11.0",
     "madge": "^6.0.0",
     "mocha": "10.2.0",
     "prettier": "^2.7.1",
@@ -105,5 +105,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "engines": {
+    "node": ">=18.16.0"
+   }
 }

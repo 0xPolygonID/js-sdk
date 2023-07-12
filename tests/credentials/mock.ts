@@ -72,7 +72,11 @@ export const cred4 = createTestCredential({
   credentialStatus: {},
   issuer: 'issuer4',
   credentialSubject: {
-    countOfFines: 0
+    countOfFines: 0,
+    country: {
+      name: 'Spain',
+      code: 'ES'
+    }
   },
   expirationDate: '2023-11-11',
   issuanceDate: '2022-11-11'

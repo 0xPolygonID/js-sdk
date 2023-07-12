@@ -195,6 +195,24 @@ const credentialFlow = async (storage: IDataStorage) => {
         }
       },
       expected: []
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countOfFines: {}
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.name': { $eq: 'Spain' }
+        }
+      },
+      expected: [cred4]
     }
   ];
 

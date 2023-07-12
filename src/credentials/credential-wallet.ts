@@ -39,7 +39,7 @@ export interface CredentialRequest {
   /**
    * Credential subject, usually contains claims and identifier
    */
-  credentialSubject: { [key: string]: string | object | number };
+  credentialSubject: { [key: string]: string | object | number | boolean };
   /**
    * expiration time
    */
