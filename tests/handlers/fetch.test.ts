@@ -32,7 +32,7 @@ import {
 } from '../../src/iden3comm';
 import * as uuid from 'uuid';
 import { byteEncoder } from '../../src/utils';
-import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
 import fetchMock from '@4c/fetch-mock';
 import { after } from 'mocha';

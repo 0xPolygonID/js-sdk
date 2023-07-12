@@ -28,7 +28,7 @@
     "doc:watch:website": "ts-node ./scripts/doc-watch.ts",
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
     "test": "mocha",
-    "lint": "eslint --fix --ext .js,.ts src/**",
+    "lint": "eslint --fix --ext .js,.ts src/** tests/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "deps:check": "madge --circular --extensions ts ./"
   },
@@ -58,7 +58,7 @@
     "chai-as-promised": "^7.1.1",
     "chokidar": "^3.5.3",
     "esbuild": "^0.15.15",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",
     "madge": "^6.0.0",
     "mocha": "10.2.0",
