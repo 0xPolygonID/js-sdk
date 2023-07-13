@@ -97,7 +97,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
       throw err;
     }
 
-    const resultMeta = meta.find((m) => m.identifier === identifier && m.type === mtType);
+    const resultMeta = meta.find((m: any) => m.identifier === identifier && m.type === mtType);
     if (!resultMeta) {
       throw err;
     }
@@ -114,7 +114,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     if (!meta) {
       throw new Error(`Merkle tree meta not found for identifier ${identifier}`);
     }
-    const resultMeta = meta.find((m) => m.identifier === identifier && m.type === mtType);
+    const resultMeta = meta.find((m: any) => m.identifier === identifier && m.type === mtType);
     if (!resultMeta) {
       throw new Error(`Merkle tree not found for identifier ${identifier} and type ${mtType}`);
     }
@@ -135,7 +135,7 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
       throw new Error(`Merkle tree meta not found for identifier ${oldIdentifier}`);
     }
 
-    const treesMeta = meta.map((m) => ({ ...m, identifier: newIdentifier }));
+    const treesMeta = meta.map((m: any) => ({ ...m, identifier: newIdentifier }));
 
     await del(oldIdentifier, this._merkleTreeMetaStore);
     await set(newIdentifier, treesMeta, this._merkleTreeMetaStore);
