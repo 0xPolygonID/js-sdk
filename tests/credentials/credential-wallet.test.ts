@@ -213,6 +213,87 @@ const credentialFlow = async (storage: IDataStorage) => {
         }
       },
       expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $eq: 'true' }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $eq: 1 }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $eq: true }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $ne: 'false' }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $ne: 0 }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $ne: false }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.hasOwnPackage': { $eq: 'false' }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.hasOwnPackage': { $eq: 0 }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.hasOwnPackage': { $eq: false }
+        }
+      },
+      expected: [cred4]
     }
   ];
 
