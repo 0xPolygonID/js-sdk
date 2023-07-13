@@ -75,7 +75,9 @@ export const cred4 = createTestCredential({
     countOfFines: 0,
     country: {
       name: 'Spain',
-      code: 'ES'
+      code: 'ES',
+      insured: true,
+      hasOwnPackage: 'false'
     }
   },
   expirationDate: '2023-11-11',
