@@ -51,7 +51,7 @@ export class OnChainRevocationStorage {
     };
   }
 
-  private static convertIssuerInfo(issuer: unknown): Issuer {
+  private static convertIssuerInfo(issuer: unknown[]): Issuer {
     return {
       state: newHashFromBigInt(BigNumber.from(issuer[0]).toBigInt()).hex(),
       claimsTreeRoot: newHashFromBigInt(BigNumber.from(issuer[1]).toBigInt()).hex(),

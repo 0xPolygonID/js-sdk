@@ -27,7 +27,8 @@ export class CredentialStorage implements ICredentialStorage {
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async listCredentials(): Promise<W3CCredential[]> {
     let creds = await this._dataSource.load();
-    creds = creds.map((cred) => (cred ? Object.assign(new W3CCredential(), cred) : undefined));
+    let mappedCreds = creds.map((cred) => (cred ? Object.assign(new W3CCredential(), cred) : undefined));
+    creds = mappedCreds.filter(i => i !== undefined) as W3CCredential[];
     return creds;
   }
 
@@ -63,7 +64,8 @@ export class CredentialStorage implements ICredentialStorage {
       filters.every((filter) => filter.execute(credential))
     );
 
-    creds = creds.map((cred) => (cred ? Object.assign(new W3CCredential(), cred) : undefined));
+    const mappedCreds = creds.map((cred) => (cred ? Object.assign(new W3CCredential(), cred) : undefined));
+    creds = mappedCreds.filter(i => i !== undefined) as W3CCredential[];
     return creds;
   }
 }

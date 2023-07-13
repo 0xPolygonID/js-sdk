@@ -31,8 +31,11 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
   async save(key: string, value: Type, keyName = 'id'): Promise<void> {
     if (localStorage) {
       const data = localStorage.getItem(this._localStorageKey);
-      const items = JSON.parse(data) as Type[];
-      const itemIndex = items.findIndex((i) => i[keyName] === key);
+      let items: any;
+      if (data) {
+        items = JSON.parse(data) as Type[];
+      }
+      const itemIndex = items.findIndex((i: any) => i[keyName] === key);
       if (itemIndex === -1) {
         items.push(value);
       } else {
@@ -50,8 +53,11 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
 
   async get(key: string, keyName = 'id'): Promise<Type | undefined> {
     const data = localStorage.getItem(this._localStorageKey);
-    const parsedData = data && (JSON.parse(data) as Type[]);
-    return parsedData.find((t) => t[keyName] === key);
+    let parsedData: any;
+    if (data) {
+      parsedData = JSON.parse(data) as Type[];
+    }
+    return parsedData.find((t: any) => t[keyName] === key);
   }
 
   /**
@@ -68,8 +74,11 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
    */
   async delete(key: string, keyName = 'id'): Promise<void> {
     const dataStr = localStorage.getItem(this._localStorageKey);
-    const data = JSON.parse(dataStr) as Type[];
-    const items = data.filter((i) => i[keyName] !== key);
+    let data: any;
+    if (dataStr) {
+      data = JSON.parse(dataStr) as Type[];
+    }
+    const items = data.filter((i: any) => i[keyName] !== key);
     if (data.length === items.length) {
       throw new Error(`${StorageErrors.ItemNotFound} to delete: ${key}`);
     }
