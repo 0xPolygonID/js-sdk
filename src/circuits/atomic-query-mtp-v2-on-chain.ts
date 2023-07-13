@@ -90,22 +90,22 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
       profileNonce: this.profileNonce?.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce?.toString(),
       issuerID: this.claim?.issuerID?.bigInt().toString(),
-      issuerClaim: this.claim?.claim.marshalJson(),
-      issuerClaimMtp: this.claim
+      issuerClaim: this.claim?.claim?.marshalJson(),
+      issuerClaimMtp: this.claim?.incProof?.proof
         ? prepareSiblingsStr(this.claim.incProof.proof, this.getMTLevel())
         : undefined,
       issuerClaimClaimsTreeRoot: this.claim?.incProof?.treeState?.claimsRoot?.string(),
       issuerClaimRevTreeRoot: this.claim?.incProof?.treeState?.revocationRoot?.string(),
       issuerClaimRootsTreeRoot: this.claim?.incProof?.treeState?.rootOfRoots?.string(),
       issuerClaimIdenState: this.claim?.incProof?.treeState?.state?.string(),
-      issuerClaimNonRevMtp: this.claim
+      issuerClaimNonRevMtp: this.claim?.nonRevProof?.proof
         ? prepareSiblingsStr(this.claim.nonRevProof?.proof, this.getMTLevel())
         : undefined,
       issuerClaimNonRevClaimsTreeRoot: this.claim?.nonRevProof?.treeState?.claimsRoot?.string(),
       issuerClaimNonRevRevTreeRoot: this.claim?.nonRevProof?.treeState?.revocationRoot?.string(),
       issuerClaimNonRevRootsTreeRoot: this.claim?.nonRevProof?.treeState?.rootOfRoots?.string(),
       issuerClaimNonRevState: this.claim?.nonRevProof?.treeState?.state?.string(),
-      claimSchema: this.claim?.claim.getSchemaHash().bigInt().toString(),
+      claimSchema: this.claim?.claim?.getSchemaHash().bigInt().toString(),
       claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaimMerklization()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query?.operator,
@@ -137,7 +137,9 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
       s.isRevocationChecked = 0;
     }
 
-    const nodeAuxNonRev = this.claim ? getNodeAuxValue(this.claim.nonRevProof.proof) : undefined;
+    const nodeAuxNonRev = this.claim?.nonRevProof?.proof ?
+      getNodeAuxValue(this.claim.nonRevProof.proof)
+      : undefined;
     s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev?.key.bigInt().toString();
     s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev?.value.bigInt().toString();
     s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev?.noAux;

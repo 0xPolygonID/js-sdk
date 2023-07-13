@@ -1,5 +1,5 @@
-import * as jsonld from 'jsonld/lib';
-import * as ldcontext from 'jsonld/lib/context';
+const jsonld = require('jsonld/lib');
+const ldcontext = require('jsonld/lib/context');
 
 /**
  * LDParser can parse JSONLD schema according to specification

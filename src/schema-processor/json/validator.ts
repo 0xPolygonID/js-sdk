@@ -37,7 +37,7 @@ export class JsonSchemaValidator {
     if (!draft) {
       validator = defaultJSONSchemaValidator;
     }
-    const ajv = JSON_SCHEMA_VALIDATORS_REGISTRY[draft];
+    const ajv = JSON_SCHEMA_VALIDATORS_REGISTRY[draft as keyof typeof JSON_SCHEMA_VALIDATORS_REGISTRY];
     validator = ajv ?? defaultJSONSchemaValidator;
     const validate = validator.compile(schema);
     const valid = validate(data);

@@ -81,12 +81,12 @@ export enum CircuitId {
  * @class CircuitClaim
  */
 export class CircuitClaim {
-  issuerId: Id | null = null;
-  claim: CoreClaim | null = null;
-  treeState: TreeState | null = null;
-  proof: Proof | null = null;
-  nonRevProof: ClaimNonRevStatus | null = null; // Claim non revocation proof
-  signatureProof: BJJSignatureProof | null = null;
+  issuerId?: Id;
+  claim?: CoreClaim;
+  treeState?: TreeState;
+  proof?: Proof;
+  nonRevProof?: ClaimNonRevStatus; // Claim non revocation proof
+  signatureProof?: BJJSignatureProof;
 }
 
 /**
@@ -97,10 +97,10 @@ export class CircuitClaim {
  * @interface   ClaimWithSigProof
  */
 export interface ClaimWithSigProof {
-  issuerID: Id;
-  claim: Claim;
-  nonRevProof: MTProof;
-  signatureProof: BJJSignatureProof;
+  issuerID?: Id;
+  claim?: Claim;
+  nonRevProof?: MTProof;
+  signatureProof?: BJJSignatureProof;
 }
 
 /**
@@ -112,9 +112,9 @@ export interface ClaimWithSigProof {
  */
 export interface ClaimWithMTPProof {
   issuerID?: Id;
-  claim: Claim;
-  incProof: MTProof;
-  nonRevProof: MTProof;
+  claim?: Claim;
+  incProof?: MTProof;
+  nonRevProof?: MTProof;
 }
 
 /**
@@ -139,7 +139,7 @@ export interface BJJSignatureProof {
  * @interface   MTProof
  */
 export interface MTProof {
-  proof: Proof;
+  proof?: Proof;
   treeState?: TreeState;
 }
 /**

@@ -69,10 +69,10 @@ export class AuthV2Inputs extends BaseConfig {
       challengeSignatureR8x: this.signature?.R8[0].toString(),
       challengeSignatureR8y: this.signature?.R8[1].toString(),
       challengeSignatureS: this.signature?.S.toString(),
-      claimsTreeRoot: this.treeState?.claimsRoot.bigInt().toString(),
-      revTreeRoot: this.treeState?.revocationRoot.bigInt().toString(),
-      rootsTreeRoot: this.treeState?.rootOfRoots.bigInt().toString(),
-      state: this.treeState?.state.bigInt().toString(),
+      claimsTreeRoot: this.treeState?.claimsRoot?.bigInt().toString(),
+      revTreeRoot: this.treeState?.revocationRoot?.bigInt().toString(),
+      rootsTreeRoot: this.treeState?.rootOfRoots?.bigInt().toString(),
+      state: this.treeState?.state?.bigInt().toString(),
       gistRoot: this.gistProof?.root.bigInt().toString(),
       gistMtp: this.gistProof ? 
         prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain()) :

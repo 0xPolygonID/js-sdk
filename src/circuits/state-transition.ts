@@ -32,7 +32,7 @@ export class StateTransitionInputs extends BaseConfig {
    * @returns Uint8Array
    */
   inputsMarshal(): Uint8Array {
-    if (!this.authClaim?.incProof.proof) {
+    if (!this.authClaim?.incProof?.proof) {
       throw new Error(CircuitError.EmptyAuthClaimProof);
     }
 
@@ -40,27 +40,27 @@ export class StateTransitionInputs extends BaseConfig {
       throw new Error(CircuitError.EmptyAuthClaimProofInTheNewState);
     }
 
-    if (!this.authClaim.nonRevProof.proof) {
+    if (!this.authClaim.nonRevProof?.proof) {
       throw new Error(CircuitError.EmptyAuthClaimNonRevProof);
     }
 
     const s: Partial<StateTransitionInputsInternal> = {
-      authClaim: this.authClaim.claim.marshalJson(),
+      authClaim: this.authClaim?.claim?.marshalJson(),
       authClaimMtp: prepareSiblingsStr(this.authClaim.incProof.proof, this.getMTLevel()),
       authClaimNonRevMtp: prepareSiblingsStr(this.authClaim.nonRevProof.proof, this.getMTLevel()),
       newAuthClaimMtp: prepareSiblingsStr(this.authClaimNewStateIncProof, this.getMTLevel()),
       userID: this.id?.bigInt().toString(),
-      newUserState: this.newTreeState?.state.bigInt().toString(),
-      claimsTreeRoot: this.oldTreeState?.claimsRoot.bigInt().toString(),
-      oldUserState: this.oldTreeState?.state.bigInt().toString(),
-      revTreeRoot: this.oldTreeState?.revocationRoot.bigInt().toString(),
-      rootsTreeRoot: this.oldTreeState?.rootOfRoots.bigInt().toString(),
+      newUserState: this.newTreeState?.state?.bigInt().toString(),
+      claimsTreeRoot: this.oldTreeState?.claimsRoot?.bigInt().toString(),
+      oldUserState: this.oldTreeState?.state?.bigInt().toString(),
+      revTreeRoot: this.oldTreeState?.revocationRoot?.bigInt().toString(),
+      rootsTreeRoot: this.oldTreeState?.rootOfRoots?.bigInt().toString(),
       signatureR8x: this.signature?.R8[0].toString(),
       signatureR8y: this.signature?.R8[1].toString(),
       signatureS: this.signature?.S.toString(),
-      newClaimsTreeRoot: this.newTreeState?.claimsRoot.bigInt().toString(),
-      newRootsTreeRoot: this.newTreeState?.rootOfRoots.bigInt().toString(),
-      newRevTreeRoot: this.newTreeState?.revocationRoot.bigInt().toString()
+      newClaimsTreeRoot: this.newTreeState?.claimsRoot?.bigInt().toString(),
+      newRootsTreeRoot: this.newTreeState?.rootOfRoots?.bigInt().toString(),
+      newRevTreeRoot: this.newTreeState?.revocationRoot?.bigInt().toString()
     };
 
     if (this.isOldStateGenesis) {

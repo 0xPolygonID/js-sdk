@@ -57,11 +57,11 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
     if (!this.requestID) {
       throw new Error(CircuitError.EmptyRequestID);
     }
-    if (!this.claim?.nonRevProof.proof) {
+    if (!this.claim?.nonRevProof?.proof) {
       throw new Error(CircuitError.EmptyClaimNonRevProof);
     }
 
-    if (!this.claim.signatureProof.issuerAuthIncProof.proof) {
+    if (!this.claim.signatureProof?.issuerAuthIncProof.proof) {
       throw new Error(CircuitError.EmptyIssuerAuthClaimProof);
     }
 
@@ -118,48 +118,48 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
       userGenesisID: this.id?.bigInt().toString(),
       profileNonce: this.profileNonce?.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce?.toString(),
-      issuerID: this.claim?.issuerID.bigInt().toString(),
-      issuerClaim: this.claim?.claim.marshalJson(),
-      issuerClaimNonRevClaimsTreeRoot: this.claim?.nonRevProof.treeState?.claimsRoot
-        .bigInt()
+      issuerID: this.claim?.issuerID?.bigInt().toString(),
+      issuerClaim: this.claim?.claim?.marshalJson(),
+      issuerClaimNonRevClaimsTreeRoot: this.claim?.nonRevProof?.treeState?.claimsRoot
+        ?.bigInt()
         .toString(),
-      issuerClaimNonRevRevTreeRoot: this.claim?.nonRevProof.treeState?.revocationRoot
-        .bigInt()
+      issuerClaimNonRevRevTreeRoot: this.claim?.nonRevProof?.treeState?.revocationRoot
+        ?.bigInt()
         .toString(),
-      issuerClaimNonRevRootsTreeRoot: this.claim?.nonRevProof.treeState?.rootOfRoots
-        .bigInt()
+      issuerClaimNonRevRootsTreeRoot: this.claim?.nonRevProof?.treeState?.rootOfRoots
+        ?.bigInt()
         .toString(),
-      issuerClaimNonRevState: this.claim?.nonRevProof.treeState?.state.bigInt().toString(),
-      issuerClaimNonRevMtp: this.claim
+      issuerClaimNonRevState: this.claim?.nonRevProof?.treeState?.state?.bigInt().toString(),
+      issuerClaimNonRevMtp: this.claim?.nonRevProof?.proof
         ? prepareSiblingsStr(this.claim.nonRevProof.proof, this.getMTLevel())
         : undefined,
-      issuerClaimSignatureR8x: this.claim
+      issuerClaimSignatureR8x: this.claim?.signatureProof
         ? this.claim.signatureProof.signature.R8[0].toString()
         : undefined,
-      issuerClaimSignatureR8y: this.claim?.signatureProof.signature.R8[1].toString(),
-      issuerClaimSignatureS: this.claim?.signatureProof.signature.S.toString(),
-      issuerAuthClaim: this.claim?.signatureProof.issuerAuthClaim?.marshalJson(),
-      issuerAuthClaimMtp: this.claim
+      issuerClaimSignatureR8y: this.claim?.signatureProof?.signature.R8[1].toString(),
+      issuerClaimSignatureS: this.claim?.signatureProof?.signature.S.toString(),
+      issuerAuthClaim: this.claim?.signatureProof?.issuerAuthClaim?.marshalJson(),
+      issuerAuthClaimMtp: this.claim?.signatureProof?.issuerAuthIncProof?.proof
         ? prepareSiblingsStr(this.claim.signatureProof.issuerAuthIncProof.proof, this.getMTLevel())
         : undefined,
-      issuerAuthClaimsTreeRoot: this.claim?.signatureProof.issuerAuthIncProof.treeState?.claimsRoot
-        .bigInt()
+      issuerAuthClaimsTreeRoot: this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.claimsRoot
+        ?.bigInt()
         .toString(),
-      issuerAuthRevTreeRoot: this.claim?.signatureProof.issuerAuthIncProof.treeState?.revocationRoot
-        .bigInt()
+      issuerAuthRevTreeRoot: this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.revocationRoot
+        ?.bigInt()
         .toString(),
-      issuerAuthRootsTreeRoot: this.claim?.signatureProof.issuerAuthIncProof.treeState?.rootOfRoots
-        .bigInt()
+      issuerAuthRootsTreeRoot: this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.rootOfRoots
+        ?.bigInt()
         .toString(),
 
-      issuerAuthClaimNonRevMtp: this.claim
+      issuerAuthClaimNonRevMtp: this.claim?.signatureProof?.issuerAuthNonRevProof?.proof
         ? prepareSiblingsStr(
             this.claim.signatureProof.issuerAuthNonRevProof.proof,
             this.getMTLevel()
           )
         : undefined,
 
-      claimSchema: this.claim?.claim.getSchemaHash().bigInt().toString(),
+      claimSchema: this.claim?.claim?.getSchemaHash().bigInt().toString(),
       claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaimMerklization()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query?.operator,
@@ -178,10 +178,10 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
       challengeSignatureR8x: this.signature?.R8[0].toString(),
       challengeSignatureR8y: this.signature?.R8[1].toString(),
       challengeSignatureS: this.signature?.S.toString(),
-      userClaimsTreeRoot: this.treeState?.claimsRoot.string(),
-      userRevTreeRoot: this.treeState?.revocationRoot.string(),
-      userRootsTreeRoot: this.treeState?.rootOfRoots.string(),
-      userState: this.treeState?.state.string(),
+      userClaimsTreeRoot: this.treeState?.claimsRoot?.string(),
+      userRevTreeRoot: this.treeState?.revocationRoot?.string(),
+      userRootsTreeRoot: this.treeState?.rootOfRoots?.string(),
+      userState: this.treeState?.state?.string(),
       gistRoot: this.gistProof?.root.string(),
       gistMtp: this.gistProof
         ? prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain())
@@ -191,13 +191,13 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
     if (this.skipClaimRevocationCheck) {
       s.isRevocationChecked = 0;
     }
-    const nodeAuxNonRev = this.claim ? getNodeAuxValue(this.claim.nonRevProof.proof) : undefined;
+    const nodeAuxNonRev = this.claim ? getNodeAuxValue(this.claim.nonRevProof?.proof) : undefined;
     s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev?.key.bigInt().toString();
     s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev?.value.bigInt().toString();
     s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev?.noAux;
 
     const nodeAuxIssuerAuthNonRev = this.claim
-      ? getNodeAuxValue(this.claim.signatureProof.issuerAuthNonRevProof.proof)
+      ? getNodeAuxValue(this.claim.signatureProof?.issuerAuthNonRevProof.proof)
       : undefined;
     s.issuerAuthClaimNonRevMtpAuxHi = nodeAuxIssuerAuthNonRev?.key.bigInt().toString();
     s.issuerAuthClaimNonRevMtpAuxHv = nodeAuxIssuerAuthNonRev?.value.bigInt().toString();
