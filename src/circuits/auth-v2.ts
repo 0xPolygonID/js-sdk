@@ -15,15 +15,15 @@ import { byteDecoder, byteEncoder } from '../utils';
  * @extends {BaseConfig}
  */
 export class AuthV2Inputs extends BaseConfig {
-  genesisID?: Id | null = null;
-  profileNonce: bigint | null = null;
-  authClaim: Claim | null = null;
-  authClaimIncMtp: Proof | null = null;
-  authClaimNonRevMtp: Proof | null = null;
-  treeState: TreeState | null = null;
-  gistProof: GISTProof | null = null;
-  signature: Signature | null = null;
-  challenge: bigint | null = null;
+  genesisID?: Id;
+  profileNonce?: bigint;
+  authClaim?: Claim;
+  authClaimIncMtp?: Proof;
+  authClaimNonRevMtp?: Proof;
+  treeState?: TreeState;
+  gistProof?: GISTProof;
+  signature?: Signature;
+  challenge?: bigint;
 
   validate(): void {
     if (!this.genesisID) {
@@ -130,9 +130,9 @@ interface AuthV2CircuitInputs {
  * @class AuthV2PubSignals
  */
 export class AuthV2PubSignals {
-  userID: Id | null = null;
-  challenge: bigint | null = null;
-  GISTRoot: Hash | null = null;
+  userID?: Id;
+  challenge?: bigint;
+  GISTRoot?: Hash;
   //
 
   /**

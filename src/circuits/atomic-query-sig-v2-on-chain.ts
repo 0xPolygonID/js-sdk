@@ -22,31 +22,31 @@ import { byteDecoder, byteEncoder } from '../utils';
  * @extends {BaseConfig}
  */
 export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
-  requestID: bigint | null = null;
+  requestID?: bigint;
   // auth
-  id: Id | null = null;
-  profileNonce: bigint | null = null;
-  claimSubjectProfileNonce: bigint | null = null;
+  id?: Id;
+  profileNonce?: bigint;
+  claimSubjectProfileNonce?: bigint;
 
   // claim issued for user
-  claim: ClaimWithSigProof | null = null;
-  skipClaimRevocationCheck: boolean | null = null;
+  claim?: ClaimWithSigProof;
+  skipClaimRevocationCheck?: boolean;
 
-  authClaim: Claim | null = null;
+  authClaim?: Claim;
 
-  authClaimIncMtp: Proof | null = null;
-  authClaimNonRevMtp: Proof | null = null;
-  treeState: TreeState | null = null;
+  authClaimIncMtp?: Proof;
+  authClaimNonRevMtp?: Proof;
+  treeState?: TreeState;
 
-  gistProof: GISTProof | null = null;
+  gistProof?: GISTProof;
 
-  signature: Signature | null = null;
-  challenge: bigint | null = null;
+  signature?: Signature;
+  challenge?: bigint;
 
   // query
-  query: Query | null = null;
+  query?: Query;
 
-  currentTimeStamp: number | null = null;
+  currentTimeStamp?: number;
 
   /**
    *  Validate inputs

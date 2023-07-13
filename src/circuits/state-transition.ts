@@ -15,16 +15,16 @@ import { byteDecoder, byteEncoder } from '../utils';
  * @extends {BaseConfig}
  */
 export class StateTransitionInputs extends BaseConfig {
-  id: Id | null = null;
-  oldTreeState: TreeState | null = null;
-  newTreeState: TreeState | null = null;
+  id?: Id;
+  oldTreeState?: TreeState;
+  newTreeState?: TreeState;
 
-  isOldStateGenesis: boolean | null = null;
-  authClaim: ClaimWithMTPProof | null = null;
+  isOldStateGenesis?: boolean;
+  authClaim?: ClaimWithMTPProof;
 
-  authClaimNewStateIncProof: Proof | null = null;
+  authClaimNewStateIncProof?: Proof;
 
-  signature: Signature | null = null;
+  signature?: Signature;
 
   /**
    * CircuitInputMarshal returns Circom private inputs for stateTransition.circom
@@ -109,10 +109,10 @@ interface StateTransitionInputsInternal {
  * @class StateTransitionPubSignals
  */
 export class StateTransitionPubSignals {
-  userId: Id | null = null;
-  oldUserState: Hash | null = null;
-  newUserState: Hash | null = null;
-  isOldStateGenesis: boolean | null = null;
+  userId?: Id;
+  oldUserState?: Hash;
+  newUserState?: Hash;
+  isOldStateGenesis?: boolean;
 
   /**
    *

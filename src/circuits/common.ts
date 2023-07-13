@@ -27,10 +27,10 @@ export const ErrorEmptyIssuerAuthClaimNonRevProof =
  * @class BaseConfig
  */
 export class BaseConfig {
-  mtLevel: number | null = null; // Max levels of MT
-  valueArraySize: number | null = null; // Size if( value array in identity circuit)s
-  mtLevelOnChain: number | null = null;
-  mtLevelClaimsMerklization: number | null = null; // max levels in the merklization
+  mtLevel?: number; // Max levels of MT
+  valueArraySize?: number; // Size if( value array in identity circuit)s
+  mtLevelOnChain?: number;
+  mtLevelClaimsMerklization?: number; // max levels in the merklization
 
   /**
    *  getMTLevel max circuit MT levels

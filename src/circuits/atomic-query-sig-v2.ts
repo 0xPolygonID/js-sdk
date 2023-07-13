@@ -23,20 +23,20 @@ import { byteDecoder, byteEncoder } from '../utils';
  * @extends {BaseConfig}
  */
 export class AtomicQuerySigV2Inputs extends BaseConfig {
-  requestID: bigint | null = null;
+  requestID?: bigint;
   // auth
-  id: Id | null = null;
-  profileNonce: bigint | null = null;
-  claimSubjectProfileNonce: bigint | null = null;
+  id?: Id;
+  profileNonce?: bigint;
+  claimSubjectProfileNonce?: bigint;
 
   // claim issued for user
-  claim: ClaimWithSigProof | null = null;
-  skipClaimRevocationCheck: boolean | null = null;
+  claim?: ClaimWithSigProof;
+  skipClaimRevocationCheck?: boolean;
 
-  currentTimeStamp: number | null = null;
+  currentTimeStamp?: number;
 
   // query
-  query: Query | null = null;
+  query?: Query;
 
   /**
    *  Validate inputs

@@ -23,28 +23,28 @@ import { byteDecoder, byteEncoder } from '../utils';
  */
 export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
   // auth
-  id: Id | null = null;
-  profileNonce: bigint | null = null;
-  claimSubjectProfileNonce: bigint | null = null;
+  id?: Id;
+  profileNonce?: bigint;
+  claimSubjectProfileNonce?: bigint;
   // claim issued for user
-  claim: ClaimWithMTPProof | null = null;
-  skipClaimRevocationCheck: boolean | null = null;
-  requestID: bigint | null = null;
+  claim?: ClaimWithMTPProof;
+  skipClaimRevocationCheck?: boolean;
+  requestID?: bigint;
 
-  currentTimeStamp: number | null = null;
+  currentTimeStamp?: number;
 
-  authClaim: Claim | null = null;
-  authClaimIncMtp: Proof | null = null;
-  authClaimNonRevMtp: Proof | null = null;
-  treeState: TreeState | null = null;
+  authClaim?: Claim;
+  authClaimIncMtp?: Proof;
+  authClaimNonRevMtp?: Proof;
+  treeState?: TreeState;
 
-  gistProof: GISTProof | null = null;
+  gistProof?: GISTProof;
 
-  signature: Signature | null = null;
-  challenge: bigint | null = null;
+  signature?: Signature;
+  challenge?: bigint;
 
   // query
-  query: Query | null = null;
+  query?: Query;
 
   /**
    *  Validate inputs
