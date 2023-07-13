@@ -111,9 +111,7 @@ export class ZKPPacker implements IPacker {
    */
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
     const provingMethod = await getProvingMethod(params.provingMethodAlg);
-    const provingParams = this.provingParamsMap.get(
-      params.provingMethodAlg.toString()
-    );
+    const provingParams = this.provingParamsMap.get(params.provingMethodAlg.toString());
 
     if (!provingParams) {
       throw new Error(ErrNoProvingMethodAlg);
@@ -122,12 +120,12 @@ export class ZKPPacker implements IPacker {
     const token = new Token(
       provingMethod,
       byteDecoder.decode(payload),
-      (hash: Uint8Array, circuitID: string) => {
+      (hash: Uint8Array, circuitId: string) => {
         return provingParams?.dataPreparer?.prepare(
           hash,
-          params.senderDID, 
-          params.profileNonce, 
-          CircuitId[circuitID as keyof typeof CircuitId]
+          params.senderDID,
+          params.profileNonce,
+          circuitId as CircuitId
         );
       }
     );
@@ -145,9 +143,7 @@ export class ZKPPacker implements IPacker {
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
     const token = await Token.parse(byteDecoder.decode(envelope));
     const provingMethodAlg = new ProvingMethodAlg(token.alg, token.circuitId);
-    const verificationParams = this.verificationParamsMap.get(
-      provingMethodAlg.toString()
-    );
+    const verificationParams = this.verificationParamsMap.get(provingMethodAlg.toString());
     if (!verificationParams?.key) {
       throw new Error(ErrPackedWithUnsupportedCircuit);
     }

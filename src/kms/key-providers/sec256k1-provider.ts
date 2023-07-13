@@ -42,7 +42,7 @@ export class Sec256k1Provider implements IKeyProvider {
     const keyPair = this._ec.genKeyPair();
     const kmsId = {
       type: this.keyType,
-      id: providerHelpers.keyPath(this.keyType, keyPair.getPublic().encode('hex'))
+      id: providerHelpers.keyPath(this.keyType, keyPair.getPublic().encode('hex', false))
     };
     await this._keyStore.importKey({ alias: kmsId.id, key: keyPair.getPrivate().toString('hex') });
 
@@ -54,9 +54,9 @@ export class Sec256k1Provider implements IKeyProvider {
    *
    * @param {KmsKeyId} keyId - key identifier
    */
-  async publicKey(keyId: KmsKeyId): Promise<PublicKey> {
+  async publicKey(keyId: KmsKeyId): Promise<string> {
     const privateKeyHex = await this.privateKey(keyId);
-    return this._ec.keyFromPrivate(privateKeyHex, 'hex').getPublic().encode('hex');
+    return this._ec.keyFromPrivate(privateKeyHex, 'hex').getPublic().encode('hex', false);
   }
 
   /**
