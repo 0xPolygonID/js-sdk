@@ -64,7 +64,7 @@ export class JWSPacker implements IPacker {
       throw new Error('Missing sender DID');
     }
 
-    const vmTypes: string[] = SUPPORTED_PUBLIC_KEY_TYPES[params.alg];
+    const vmTypes: string[] = SUPPORTED_PUBLIC_KEY_TYPES[params.alg as keyof typeof SUPPORTED_PUBLIC_KEY_TYPES];
     if (!vmTypes?.length) {
       throw new Error(`No supported verification methods for algorithm ${params.alg}`);
     }

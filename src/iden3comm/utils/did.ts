@@ -19,7 +19,7 @@ export const resolveDIDDocument = async (
     const response = await fetch(`${UNIVERSAL_RESOLVER_URL}/${didUrl}`);
     const data = await response.json();
     return data as DIDResolutionResult;
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Can't resolve did document: ${error.message}`);
   }
 };
@@ -52,9 +52,9 @@ const secp256k1 = new elliptic.ec('secp256k1');
 
 export const extractPublicKeyBytes = (
   vm: VerificationMethod
-): { publicKeyBytes: Uint8Array; kmsKeyType?: KmsKeyType } => {
+): { publicKeyBytes: Uint8Array | null; kmsKeyType?: KmsKeyType } => {
   const isSupportedVmType = Object.keys(SUPPORTED_PUBLIC_KEY_TYPES).some((key) =>
-    SUPPORTED_PUBLIC_KEY_TYPES[key].includes(vm.type)
+    SUPPORTED_PUBLIC_KEY_TYPES[key as keyof typeof SUPPORTED_PUBLIC_KEY_TYPES].includes(vm.type)
   );
   if (vm.publicKeyBase58 && isSupportedVmType) {
     return { publicKeyBytes: base58ToBytes(vm.publicKeyBase58), kmsKeyType: KmsKeyType.Secp256k1 };
