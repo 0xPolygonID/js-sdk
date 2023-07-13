@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import { ZKProof } from '@iden3/js-jwz';
 import { CircuitId } from '../circuits';
 import { ICircuitStorage } from '../storage/interfaces/circuits';

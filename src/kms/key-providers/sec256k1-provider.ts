@@ -2,7 +2,6 @@ import { IKeyProvider } from '../kms';
 import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 import Elliptic from 'elliptic';
 import * as providerHelpers from '../provider-helpers';
-import { PublicKey } from '@iden3/js-crypto';
 import { ES256KSigner } from 'did-jwt';
 import { base64ToBytes, byteEncoder, bytesToHex, hexToBytes } from '../../utils';
 

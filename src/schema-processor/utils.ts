@@ -75,7 +75,7 @@ export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
  * @param {string} fieldName - field name
  * @returns Uint8Array - filled slot
  */
-export const fillSlot = (data: any, fieldName: string): Uint8Array => {
+export const fillSlot = (data: { [key: string]: unknown }, fieldName: string): Uint8Array => {
   let slot = Uint8Array.from([]);
 
   if (!fieldName) {

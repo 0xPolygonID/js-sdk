@@ -109,10 +109,10 @@ interface StateTransitionInputsInternal {
  * @class StateTransitionPubSignals
  */
 export class StateTransitionPubSignals {
-  userId?: Id;
-  oldUserState?: Hash;
-  newUserState?: Hash;
-  isOldStateGenesis?: boolean;
+  userId!: Id;
+  oldUserState!: Hash;
+  newUserState!: Hash;
+  isOldStateGenesis!: boolean;
 
   /**
    *

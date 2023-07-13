@@ -221,7 +221,8 @@ export const existenceToInt = (b: boolean): number => (b ? 0 : 1);
  * @returns object
  */
 export function getProperties(obj: object): object {
-  const result: any = {};
+  const result: { [key: string]: unknown } = {};
+
   for (const property in obj) {
     // eslint-disable-next-line no-prototype-builtins
     if (obj.hasOwnProperty(property) && !property.startsWith('_')) {

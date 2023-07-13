@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { StorageErrors } from '../errors';
 import { IDataSource } from '../interfaces/data-source';
 
@@ -31,11 +32,11 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
   async save(key: string, value: Type, keyName = 'id'): Promise<void> {
     if (localStorage) {
       const data = localStorage.getItem(this._localStorageKey);
-      let items: any;
+      let items: Type[] = [];
       if (data) {
         items = JSON.parse(data) as Type[];
       }
-      const itemIndex = items.findIndex((i: any) => i[keyName] === key);
+      const itemIndex = items.findIndex((i: any): boolean => i[keyName] === key);
       if (itemIndex === -1) {
         items.push(value);
       } else {
@@ -53,7 +54,7 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
 
   async get(key: string, keyName = 'id'): Promise<Type | undefined> {
     const data = localStorage.getItem(this._localStorageKey);
-    let parsedData: any;
+    let parsedData: Type[] = [];
     if (data) {
       parsedData = JSON.parse(data) as Type[];
     }
@@ -74,7 +75,7 @@ export class BrowserDataSource<Type> implements IDataSource<Type> {
    */
   async delete(key: string, keyName = 'id'): Promise<void> {
     const dataStr = localStorage.getItem(this._localStorageKey);
-    let data: any;
+    let data: Type[] = [];
     if (dataStr) {
       data = JSON.parse(dataStr) as Type[];
     }

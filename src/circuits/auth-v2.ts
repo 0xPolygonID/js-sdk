@@ -128,10 +128,9 @@ interface AuthV2CircuitInputs {
  * @class AuthV2PubSignals
  */
 export class AuthV2PubSignals {
-  userID?: Id;
-  challenge?: bigint;
-  GISTRoot?: Hash;
-  //
+  userID!: Id;
+  challenge!: bigint;
+  GISTRoot!: Hash;
 
   /**
    * PubSignalsUnmarshal unmarshal auth.circom public inputs to AuthPubSignals

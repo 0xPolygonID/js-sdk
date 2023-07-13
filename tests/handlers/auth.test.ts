@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable no-console */
 import { Identity, Profile } from '../../src/storage/entities/identity';
 import { IdentityStorage } from '../../src/storage/shared/identity-storage';

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { StorageErrors } from '../errors';
 import { IDataSource } from '../interfaces/data-source';
 

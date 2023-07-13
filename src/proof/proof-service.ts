@@ -778,7 +778,7 @@ export class ProofService implements IProofService {
 
     const [fieldName, fieldReq] = entries[0];
 
-    const fieldReqEntries = Object.entries(fieldReq as any);
+    const fieldReqEntries = Object.entries(fieldReq as { [key: string]: unknown });
 
     if (fieldReqEntries.length > 1) {
       throw new Error(`multiple predicates for one field not supported`);

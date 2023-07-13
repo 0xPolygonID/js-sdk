@@ -76,7 +76,7 @@ export class IdentityStorage implements IIdentityStorage {
     return this._identityDataSource.save(identity.identifier, identity, 'identifier');
   }
 
-  async getIdentity(identifier: string): Promise<Identity> {
+  async getIdentity(identifier: string): Promise<Identity | undefined> {
     return this._identityDataSource.get(identifier, 'identifier');
   }
 }

@@ -127,7 +127,10 @@ export class EthStateStorage implements IStateStorage {
     return {
       root: BigInt(data.root.toString()),
       existence: data.existence,
-      siblings: data.siblings?.map((sibling: any) => BigInt(sibling.toString())),
+      siblings: data.siblings?.map(
+        (sibling: { toString: () => string | number | bigint | boolean }) =>
+          BigInt(sibling.toString())
+      ),
       index: BigInt(data.index.toString()),
       value: BigInt(data.value.toString()),
       auxExistence: data.auxExistence,

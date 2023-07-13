@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { W3CCredential, ProofQuery } from '../../verifiable';
 
 /**
@@ -37,7 +38,7 @@ export interface IFilterQuery {
 const truthyValues = [true, 1, 'true'];
 const falsyValues = [false, 0, 'false'];
 
-const equalsComparator = (a, b) => {
+const equalsComparator = (a: number | string | boolean, b: number | string | boolean) => {
   if (truthyValues.includes(a) && truthyValues.includes(b)) {
     return true;
   }
@@ -124,6 +125,7 @@ export class FilterQuery implements IFilterQuery {
  */
 export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQuery[] => {
   return Object.keys(query).reduce((acc: FilterQuery[], queryKey) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const queryValue: any = query[queryKey as keyof typeof query];
     switch (queryKey) {
       case 'claimId':

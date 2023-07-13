@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const jsonld = require('jsonld/lib');
 const ldcontext = require('jsonld/lib/context');
 

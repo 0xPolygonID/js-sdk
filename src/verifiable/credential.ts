@@ -13,15 +13,15 @@ import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
  * @class W3CCredential
  */
 export class W3CCredential {
-  id: string;
-  '@context': string[];
-  type: string[];
+  id = '';
+  '@context': string[] = [];
+  type: string[] = [];
   expirationDate?: string;
   issuanceDate?: string;
-  credentialSubject: { [key: string]: object | string | number | boolean };
-  credentialStatus: CredentialStatus;
-  issuer: string;
-  credentialSchema: CredentialSchema;
+  credentialSubject: { [key: string]: object | string | number | boolean } = {};
+  credentialStatus!: CredentialStatus;
+  issuer = '';
+  credentialSchema!: CredentialSchema;
   proof?: object | unknown[];
 
   /**
@@ -68,13 +68,13 @@ export class W3CCredential {
       for (const proof of this.proof) {
         const { proofType: extractedProofType } = extractProof(proof);
         if (proofType === extractedProofType) {
-          return proof as BJJSignatureProof2021;
+          return new BJJSignatureProof2021(proof);
         }
       }
     } else if (typeof this.proof === 'object') {
       const { proofType: extractedProofType } = extractProof(this.proof);
       if (extractedProofType == proofType) {
-        return this.proof as BJJSignatureProof2021;
+        return new BJJSignatureProof2021(this.proof);
       }
     }
     return undefined;
@@ -91,13 +91,13 @@ export class W3CCredential {
       for (const proof of this.proof) {
         const { proofType: extractedProofType } = extractProof(proof);
         if (proofType === extractedProofType) {
-          return proof as Iden3SparseMerkleTreeProof;
+          return new Iden3SparseMerkleTreeProof(proof);
         }
       }
     } else if (typeof this.proof === 'object') {
       const { proofType: extractedProofType } = extractProof(this.proof);
       if (extractedProofType == proofType) {
-        return this.proof as Iden3SparseMerkleTreeProof;
+        return new Iden3SparseMerkleTreeProof(this.proof);
       }
     }
     return undefined;
@@ -122,11 +122,12 @@ export function extractProof(proof: object): { claim: Claim; proofType: ProofTyp
     return { claim: new Claim().fromHex(proof.coreClaim), proofType: ProofType.BJJSignature };
   }
   if (typeof proof === 'object') {
-    const defaultProofType = proof['type'];
+    const p = proof as { type: ProofType; coreClaim: string };
+    const defaultProofType: ProofType = p.type;
     if (!defaultProofType) {
       throw new Error('proof type is not specified');
     }
-    const coreClaimHex = proof['coreClaim'];
+    const coreClaimHex = p.coreClaim;
     if (!coreClaimHex) {
       throw new Error(`coreClaim field is not defined in proof type ${defaultProofType}`);
     }

@@ -623,7 +623,7 @@ export class IdentityWallet implements IIdentityWallet {
       issuerAuthBJJCredential.proof as unknown[]
     )[0] as Iden3SparseMerkleTreeProof;
 
-    const sigProof: BJJSignatureProof2021 = {
+    const sigProof = new BJJSignatureProof2021({
       type: ProofType.BJJSignature,
       issuerData: new IssuerData({
         id: issuerDID.string(),
@@ -634,7 +634,7 @@ export class IdentityWallet implements IIdentityWallet {
       }),
       coreClaim: coreClaim.hex(),
       signature: Hex.encodeString(signature)
-    };
+    });
     credential.proof = [sigProof];
 
     return credential;
