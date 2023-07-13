@@ -34,15 +34,29 @@ export interface IFilterQuery {
   execute(credential: W3CCredential): boolean;
 }
 
+const truthyValues = [true, 1, 'true'];
+const falsyValues = [false, 0, 'false'];
+
+const equalsComparator = (a, b) => {
+  if (truthyValues.includes(a) && truthyValues.includes(b)) {
+    return true;
+  }
+  if (falsyValues.includes(a) && falsyValues.includes(b)) {
+    return true;
+  }
+
+  return a === b;
+};
+
 export /** @type {*}  - filter operators and their functions */
 const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFunction } = {
   $noop: () => true,
-  $eq: (a, b) => a === b,
+  $eq: (a, b) => equalsComparator(a, b),
   $in: (a: string, b: string[]) => b.includes(a),
   $nin: (a: string, b: string[]) => !b.includes(a),
   $gt: (a: number, b: number) => a > b,
   $lt: (a: number, b: number) => a < b,
-  $ne: (a, b) => a !== b
+  $ne: (a, b) => !equalsComparator(a, b)
 };
 
 /**
