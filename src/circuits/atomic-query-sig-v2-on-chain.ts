@@ -142,15 +142,14 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
       issuerAuthClaimMtp: this.claim?.signatureProof?.issuerAuthIncProof?.proof
         ? prepareSiblingsStr(this.claim.signatureProof.issuerAuthIncProof.proof, this.getMTLevel())
         : undefined,
-      issuerAuthClaimsTreeRoot: this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.claimsRoot
-        ?.bigInt()
-        .toString(),
-      issuerAuthRevTreeRoot: this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.revocationRoot
-        ?.bigInt()
-        .toString(),
-      issuerAuthRootsTreeRoot: this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.rootOfRoots
-        ?.bigInt()
-        .toString(),
+      issuerAuthClaimsTreeRoot:
+        this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.claimsRoot?.bigInt().toString(),
+      issuerAuthRevTreeRoot:
+        this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.revocationRoot
+          ?.bigInt()
+          .toString(),
+      issuerAuthRootsTreeRoot:
+        this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.rootOfRoots?.bigInt().toString(),
 
       issuerAuthClaimNonRevMtp: this.claim?.signatureProof?.issuerAuthNonRevProof?.proof
         ? prepareSiblingsStr(

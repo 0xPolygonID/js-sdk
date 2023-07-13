@@ -111,12 +111,12 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
       issuerAuthClaimsTreeRoot: this.claim?.signatureProof?.issuerAuthIncProof.treeState?.claimsRoot
         ?.bigInt()
         .toString(),
-      issuerAuthRevTreeRoot: this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.revocationRoot
-        ?.bigInt()
-        .toString(),
-      issuerAuthRootsTreeRoot: this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.rootOfRoots
-        ?.bigInt()
-        .toString(),
+      issuerAuthRevTreeRoot:
+        this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.revocationRoot
+          ?.bigInt()
+          .toString(),
+      issuerAuthRootsTreeRoot:
+        this.claim?.signatureProof?.issuerAuthIncProof?.treeState?.rootOfRoots?.bigInt().toString(),
 
       issuerAuthClaimNonRevMtp: this.claim?.signatureProof?.issuerAuthNonRevProof?.proof
         ? prepareSiblingsStr(

@@ -130,8 +130,8 @@ export class RHSResolver implements CredentialStatusResolver {
   ): Promise<RevocationStatus> {
     try {
       return await this.getStatus(credentialStatus, opts);
-    } catch (e) {
-      const errMsg = e.reason ?? e.message;
+    } catch (e: unknown) {
+      const errMsg = (e as Error).message;
       if (
         !!opts.issuerData &&
         errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&

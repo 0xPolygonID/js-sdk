@@ -137,8 +137,8 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
       s.isRevocationChecked = 0;
     }
 
-    const nodeAuxNonRev = this.claim?.nonRevProof?.proof ?
-      getNodeAuxValue(this.claim.nonRevProof.proof)
+    const nodeAuxNonRev = this.claim?.nonRevProof?.proof
+      ? getNodeAuxValue(this.claim.nonRevProof.proof)
       : undefined;
     s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev?.key.bigInt().toString();
     s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev?.value.bigInt().toString();

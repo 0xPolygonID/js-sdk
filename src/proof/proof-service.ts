@@ -579,7 +579,7 @@ export class ProofService implements IProofService {
     if (sigProof) {
       const signature = await bJJSignatureFromHexString(sigProof.signature);
       const issuer = DID.parse(sigProof.issuerData.id);
-      
+
       let rs: RevocationStatus | undefined;
 
       if (sigProof.issuerData.credentialStatus) {

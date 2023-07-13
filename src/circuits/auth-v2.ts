@@ -59,12 +59,12 @@ export class AuthV2Inputs extends BaseConfig {
       genesisID: this.genesisID?.bigInt().toString(),
       profileNonce: this.profileNonce?.toString(),
       authClaim: this.authClaim?.marshalJson(),
-      authClaimIncMtp: this.authClaimIncMtp ? 
-        prepareSiblingsStr(this.authClaimIncMtp, this.getMTLevel()) :
-        undefined,
-      authClaimNonRevMtp: this.authClaimNonRevMtp ? 
-        prepareSiblingsStr(this.authClaimNonRevMtp, this.getMTLevel()) :
-        undefined,
+      authClaimIncMtp: this.authClaimIncMtp
+        ? prepareSiblingsStr(this.authClaimIncMtp, this.getMTLevel())
+        : undefined,
+      authClaimNonRevMtp: this.authClaimNonRevMtp
+        ? prepareSiblingsStr(this.authClaimNonRevMtp, this.getMTLevel())
+        : undefined,
       challenge: this.challenge?.toString(),
       challengeSignatureR8x: this.signature?.R8[0].toString(),
       challengeSignatureR8y: this.signature?.R8[1].toString(),
@@ -74,21 +74,19 @@ export class AuthV2Inputs extends BaseConfig {
       rootsTreeRoot: this.treeState?.rootOfRoots?.bigInt().toString(),
       state: this.treeState?.state?.bigInt().toString(),
       gistRoot: this.gistProof?.root.bigInt().toString(),
-      gistMtp: this.gistProof ? 
-        prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain()) :
-        undefined
+      gistMtp: this.gistProof
+        ? prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain())
+        : undefined
     };
 
-    const nodeAuxAuth = this.authClaimNonRevMtp ? 
-      getNodeAuxValue(this.authClaimNonRevMtp) :
-      undefined;
+    const nodeAuxAuth = this.authClaimNonRevMtp
+      ? getNodeAuxValue(this.authClaimNonRevMtp)
+      : undefined;
     s.authClaimNonRevMtpAuxHi = nodeAuxAuth?.key.bigInt().toString();
     s.authClaimNonRevMtpAuxHv = nodeAuxAuth?.value.bigInt().toString();
     s.authClaimNonRevMtpNoAux = nodeAuxAuth?.noAux;
 
-    const globalNodeAux = this.gistProof ? 
-      getNodeAuxValue(this.gistProof.proof) :
-      undefined;
+    const globalNodeAux = this.gistProof ? getNodeAuxValue(this.gistProof.proof) : undefined;
     s.gistMtpAuxHi = globalNodeAux?.key.bigInt().toString();
     s.gistMtpAuxHv = globalNodeAux?.value.bigInt().toString();
     s.gistMtpNoAux = globalNodeAux?.noAux;

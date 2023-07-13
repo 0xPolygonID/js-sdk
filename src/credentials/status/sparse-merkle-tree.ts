@@ -4,8 +4,9 @@ import { newHashFromBigInt, Proof, NodeAux, setBitBigEndian } from '@iden3/js-me
 
 export class IssuerResolver implements CredentialStatusResolver {
   async resolve(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
-    const revStatusDTO = await (await fetch(credentialStatus.id)).json();
-    return Object.assign(new RevocationStatusDTO(), revStatusDTO).toRevocationStatus();
+    const revStatusResp = await fetch(credentialStatus.id);
+    const revStatusDTO = await revStatusResp.json();
+    return new RevocationStatusDTO(revStatusDTO).toRevocationStatus();
   }
 }
 
@@ -13,9 +14,9 @@ export class IssuerResolver implements CredentialStatusResolver {
  *  Proof dto as a partial result of fetching credential status with type SparseMerkleTreeProof
  *
  * @export
- * @class ProofDTO
+ * @interface ProofDTO
  */
-export class ProofDTO {
+export interface ProofDTO {
   existence: boolean;
   siblings: string[];
   node_aux: {
@@ -32,8 +33,12 @@ export class ProofDTO {
  * @class RevocationStatusDTO
  */
 export class RevocationStatusDTO {
-  issuer: Issuer;
-  mtp: ProofDTO;
+  issuer!: Issuer;
+  mtp!: ProofDTO;
+
+  constructor(payload: object) {
+    Object.assign(this, payload);
+  }
 
   toRevocationStatus(): RevocationStatus {
     const p = new Proof();
