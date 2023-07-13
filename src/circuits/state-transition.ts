@@ -15,16 +15,16 @@ import { byteDecoder, byteEncoder } from '../utils';
  * @extends {BaseConfig}
  */
 export class StateTransitionInputs extends BaseConfig {
-  id: Id;
-  oldTreeState: TreeState;
-  newTreeState: TreeState;
+  id: Id | null = null;
+  oldTreeState: TreeState | null = null;
+  newTreeState: TreeState | null = null;
 
-  isOldStateGenesis: boolean;
-  authClaim: ClaimWithMTPProof;
+  isOldStateGenesis: boolean | null = null;
+  authClaim: ClaimWithMTPProof | null = null;
 
-  authClaimNewStateIncProof: Proof;
+  authClaimNewStateIncProof: Proof | null = null;
 
-  signature: Signature;
+  signature: Signature | null = null;
 
   /**
    * CircuitInputMarshal returns Circom private inputs for stateTransition.circom
@@ -32,7 +32,7 @@ export class StateTransitionInputs extends BaseConfig {
    * @returns Uint8Array
    */
   inputsMarshal(): Uint8Array {
-    if (!this.authClaim.incProof.proof) {
+    if (!this.authClaim?.incProof.proof) {
       throw new Error(CircuitError.EmptyAuthClaimProof);
     }
 
@@ -49,18 +49,18 @@ export class StateTransitionInputs extends BaseConfig {
       authClaimMtp: prepareSiblingsStr(this.authClaim.incProof.proof, this.getMTLevel()),
       authClaimNonRevMtp: prepareSiblingsStr(this.authClaim.nonRevProof.proof, this.getMTLevel()),
       newAuthClaimMtp: prepareSiblingsStr(this.authClaimNewStateIncProof, this.getMTLevel()),
-      userID: this.id.bigInt().toString(),
-      newUserState: this.newTreeState.state.bigInt().toString(),
-      claimsTreeRoot: this.oldTreeState.claimsRoot.bigInt().toString(),
-      oldUserState: this.oldTreeState.state.bigInt().toString(),
-      revTreeRoot: this.oldTreeState.revocationRoot.bigInt().toString(),
-      rootsTreeRoot: this.oldTreeState.rootOfRoots.bigInt().toString(),
-      signatureR8x: this.signature.R8[0].toString(),
-      signatureR8y: this.signature.R8[1].toString(),
-      signatureS: this.signature.S.toString(),
-      newClaimsTreeRoot: this.newTreeState.claimsRoot.bigInt().toString(),
-      newRootsTreeRoot: this.newTreeState.rootOfRoots.bigInt().toString(),
-      newRevTreeRoot: this.newTreeState.revocationRoot.bigInt().toString()
+      userID: this.id?.bigInt().toString(),
+      newUserState: this.newTreeState?.state.bigInt().toString(),
+      claimsTreeRoot: this.oldTreeState?.claimsRoot.bigInt().toString(),
+      oldUserState: this.oldTreeState?.state.bigInt().toString(),
+      revTreeRoot: this.oldTreeState?.revocationRoot.bigInt().toString(),
+      rootsTreeRoot: this.oldTreeState?.rootOfRoots.bigInt().toString(),
+      signatureR8x: this.signature?.R8[0].toString(),
+      signatureR8y: this.signature?.R8[1].toString(),
+      signatureS: this.signature?.S.toString(),
+      newClaimsTreeRoot: this.newTreeState?.claimsRoot.bigInt().toString(),
+      newRootsTreeRoot: this.newTreeState?.rootOfRoots.bigInt().toString(),
+      newRevTreeRoot: this.newTreeState?.revocationRoot.bigInt().toString()
     };
 
     if (this.isOldStateGenesis) {
@@ -109,10 +109,10 @@ interface StateTransitionInputsInternal {
  * @class StateTransitionPubSignals
  */
 export class StateTransitionPubSignals {
-  userId: Id;
-  oldUserState: Hash;
-  newUserState: Hash;
-  isOldStateGenesis: boolean;
+  userId: Id | null = null;
+  oldUserState: Hash | null = null;
+  newUserState: Hash | null = null;
+  isOldStateGenesis: boolean | null = null;
 
   /**
    *

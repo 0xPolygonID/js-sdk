@@ -53,6 +53,7 @@
     "@types/jsonld": "^1.4.8",
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.16.19",
+    "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.41.0",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
@@ -108,5 +109,5 @@
   },
   "engines": {
     "node": ">=18.16.0"
-   }
+  }
 }

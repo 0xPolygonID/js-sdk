@@ -71,7 +71,7 @@ export interface CoreClaimOptions {
   subjectPosition: string;
   merklizedRootPosition: string;
   updatable: boolean;
-  merklizeOpts: Options;
+  merklizeOpts?: Options;
 }
 
 /**

@@ -617,7 +617,7 @@ export class IdentityWallet implements IIdentityWallet {
     if (!issuerAuthBJJCredential.proof) {
       throw new Error('issuer auth credential must have proof');
     }
-    const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
+    const mtpAuthBJJProof = (issuerAuthBJJCredential.proof as unknown[])[0] as Iden3SparseMerkleTreeProof;
 
     const sigProof: BJJSignatureProof2021 = {
       type: ProofType.BJJSignature,

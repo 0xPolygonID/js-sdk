@@ -27,10 +27,10 @@ export const ErrorEmptyIssuerAuthClaimNonRevProof =
  * @class BaseConfig
  */
 export class BaseConfig {
-  mtLevel: number; // Max levels of MT
-  valueArraySize: number; // Size if( value array in identity circuit)s
-  mtLevelOnChain: number;
-  mtLevelClaimsMerklization: number; // max levels in the merklization
+  mtLevel: number | null = null; // Max levels of MT
+  valueArraySize: number | null = null; // Size if( value array in identity circuit)s
+  mtLevelOnChain: number | null = null;
+  mtLevelClaimsMerklization: number | null = null; // max levels in the merklization
 
   /**
    *  getMTLevel max circuit MT levels
@@ -221,11 +221,11 @@ export const existenceToInt = (b: boolean): number => (b ? 0 : 1);
  * @returns object
  */
 export function getProperties(obj: object): object {
-  const result: object = {};
+  const result: any = {};
   for (const property in obj) {
     // eslint-disable-next-line no-prototype-builtins
     if (obj.hasOwnProperty(property) && !property.startsWith('_')) {
-      result[property] = obj[property];
+      result[property] = obj[property as keyof typeof obj];
     }
   }
   return result;

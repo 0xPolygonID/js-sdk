@@ -22,7 +22,7 @@ export class W3CCredential {
   credentialStatus: CredentialStatus;
   issuer: string;
   credentialSchema: CredentialSchema;
-  proof?: object;
+  proof?: object | unknown[];
 
   /**
    * merklization of the verifiable credential

@@ -37,9 +37,9 @@ export interface ClaimNonRevStatus {
  * @class Query
  */
 export class Query {
-  slotIndex: number;
-  values: bigint[];
-  operator: number;
+  slotIndex?: number;
+  values?: bigint[];
+  operator?: number;
   valueProof?: ValueProof;
 
   /**
@@ -47,7 +47,7 @@ export class Query {
    *
    */
   validate(): void {
-    if (this.operator !== QueryOperators.$noop && this.values.some((v) => typeof v !== 'bigint'))
+    if (this.operator !== QueryOperators.$noop && this.values?.some((v) => typeof v !== 'bigint'))
       throw new Error(CircuitError.EmptyQueryValue);
   }
 }
@@ -81,12 +81,12 @@ export enum CircuitId {
  * @class CircuitClaim
  */
 export class CircuitClaim {
-  issuerId: Id;
-  claim: CoreClaim;
-  treeState: TreeState;
-  proof: Proof;
-  nonRevProof: ClaimNonRevStatus; // Claim non revocation proof
-  signatureProof: BJJSignatureProof;
+  issuerId: Id | null = null;
+  claim: CoreClaim | null = null;
+  treeState: TreeState | null = null;
+  proof: Proof | null = null;
+  nonRevProof: ClaimNonRevStatus | null = null; // Claim non revocation proof
+  signatureProof: BJJSignatureProof | null = null;
 }
 
 /**
