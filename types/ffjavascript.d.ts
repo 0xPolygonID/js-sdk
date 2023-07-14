@@ -1,3 +1,3 @@
 declare module 'ffjavascript' {
-  export function getCurveFromName(name: string): Promise<{ terminate: () => void }>;
+  export function getCurveFromName(name: string): Promise<{ terminate: () => Promise<void> }>;
 }

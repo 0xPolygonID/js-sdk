@@ -6,9 +6,6 @@ import { witnessBuilder } from './witness_calculator';
 import { byteDecoder } from '../utils';
 import * as snarkjs from 'snarkjs';
 import { getCurveFromName } from 'ffjavascript';
-import { log } from 'console';
-
-/* eslint-disable no-console */
 
 // NativeProver service responsible for zk generation groth16 algorithm with bn128 curve
 export class NativeProver {
@@ -30,6 +27,7 @@ export class NativeProver {
       await this.terminateCurve();
       return true;
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.log(e);
       return false;
     }
@@ -37,36 +35,30 @@ export class NativeProver {
 
   // Generate calls prover-server for proof generation
   async generate(inputs: Uint8Array, circuitId: CircuitId): Promise<ZKProof> {
-    try {
-      const circuitData = await this._circuitStorage.loadCircuitData(circuitId);
-      const wasm: Uint8Array = circuitData.wasm;
+    const circuitData = await this._circuitStorage.loadCircuitData(circuitId);
+    const wasm: Uint8Array = circuitData.wasm;
 
-      const witnessCalculator = await witnessBuilder(wasm);
+    const witnessCalculator = await witnessBuilder(wasm);
 
-      const parsedData = JSON.parse(byteDecoder.decode(inputs));
+    const parsedData = JSON.parse(byteDecoder.decode(inputs));
 
-      const wtnsBytes: Uint8Array = await witnessCalculator.calculateWTNSBin(parsedData, 0);
+    const wtnsBytes: Uint8Array = await witnessCalculator.calculateWTNSBin(parsedData, 0);
 
-      const provingKey = circuitData.provingKey;
+    const provingKey = circuitData.provingKey;
 
-      const { proof, publicSignals } = await snarkjs.groth16.prove(provingKey, wtnsBytes);
+    const { proof, publicSignals } = await snarkjs.groth16.prove(provingKey, wtnsBytes);
 
-      // we need to terminate curve manually
-      await this.terminateCurve();
+    // we need to terminate curve manually
+    await this.terminateCurve();
 
-      return {
-        proof,
-        pub_signals: publicSignals
-      };
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
+    return {
+      proof,
+      pub_signals: publicSignals
+    };
   }
 
   private async terminateCurve(): Promise<void> {
     const curve = await getCurveFromName(NativeProver.curveName);
-    console.log(curve);
-    curve.terminate();
+    await curve.terminate();
   }
 }

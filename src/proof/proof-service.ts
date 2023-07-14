@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Hex, Poseidon, Signature } from '@iden3/js-crypto';
 import {
   BytesHelper,
