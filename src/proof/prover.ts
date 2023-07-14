@@ -59,6 +59,6 @@ export class NativeProver {
 
   private async terminateCurve(): Promise<void> {
     const curve = await getCurveFromName(NativeProver.curveName);
-    await curve.terminate();
+    curve.terminate();
   }
 }
