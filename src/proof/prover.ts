@@ -4,8 +4,9 @@ import { CircuitId } from '../circuits';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { witnessBuilder } from './witness_calculator';
 import { byteDecoder } from '../utils';
-const snarkjs = require('snarkjs');
-const getCurveFromName = require('ffjavascript').getCurveFromName;
+import * as snarkjs from 'snarkjs';
+import { getCurveFromName } from 'ffjavascript';
+import { log } from 'console';
 
 /* eslint-disable no-console */
 
@@ -54,7 +55,7 @@ export class NativeProver {
       await this.terminateCurve();
 
       return {
-        proof: proof,
+        proof,
         pub_signals: publicSignals
       };
     } catch (e) {
@@ -65,6 +66,7 @@ export class NativeProver {
 
   private async terminateCurve(): Promise<void> {
     const curve = await getCurveFromName(NativeProver.curveName);
+    console.log(curve);
     curve.terminate();
   }
 }
