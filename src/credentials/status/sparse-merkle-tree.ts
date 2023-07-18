@@ -43,11 +43,12 @@ export class RevocationStatusDTO {
   toRevocationStatus(): RevocationStatus {
     const p = new Proof();
     p.existence = this.mtp.existence;
-    p.nodeAux = {
-      key: newHashFromBigInt(BigInt(this.mtp.node_aux.key)),
-      value: newHashFromBigInt(BigInt(this.mtp.node_aux.value))
-    };
-
+    if (this.mtp.node_aux) {
+      p.nodeAux = {
+        key: newHashFromBigInt(BigInt(this.mtp.node_aux.key)),
+        value: newHashFromBigInt(BigInt(this.mtp.node_aux.value))
+      };
+    }
     const s = this.mtp.siblings.map((s) => newHashFromBigInt(BigInt(s)));
 
     p.siblings = [];
