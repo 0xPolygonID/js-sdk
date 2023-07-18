@@ -28,8 +28,8 @@ export interface State {
  * @class   IssuerData
  */
 export class IssuerData {
-  id: string;
-  state: State;
+  id = '';
+  state!: State;
   authCoreClaim?: string;
   mtp?: Proof;
   credentialStatus?: CredentialStatus;
@@ -48,7 +48,11 @@ export class IssuerData {
   toJSON() {
     return {
       ...this,
-      mtp: { existence: this.mtp.existence, siblings: this.mtp.siblings, nodeAux: this.mtp.nodeAux }
+      mtp: {
+        existence: this.mtp?.existence,
+        siblings: this.mtp?.siblings,
+        nodeAux: this.mtp?.nodeAux
+      }
     };
   }
 }
@@ -61,10 +65,10 @@ export class IssuerData {
  * @class Iden3SparseMerkleTreeProof
  */
 export class Iden3SparseMerkleTreeProof {
-  type: ProofType;
-  issuerData: IssuerData;
-  mtp: Proof;
-  coreClaim: string;
+  type!: ProofType;
+  issuerData!: IssuerData;
+  mtp!: Proof;
+  coreClaim = '';
   /**
    * Creates an instance of Iden3SparseMerkleTreeProof.
    * @param {object} obj
@@ -93,10 +97,14 @@ export class Iden3SparseMerkleTreeProof {
  * @class BJJSignatureProof2021
  */
 export class BJJSignatureProof2021 {
-  type: ProofType;
-  issuerData: IssuerData;
-  signature: string;
-  coreClaim: string;
+  type!: ProofType;
+  issuerData!: IssuerData;
+  signature!: string;
+  coreClaim!: string;
+
+  constructor(obj?: object) {
+    Object.assign(this, obj ?? {});
+  }
 }
 /**
  *  Query represents structure for query to atomic circuit

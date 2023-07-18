@@ -41,11 +41,6 @@ export enum MediaType {
   SignedMessage = 'application/iden3comm-signed-json'
 }
 
-/**
- * Universal resolver url
- */
-export const UNIVERSAL_RESOLVER_URL = 'https://dev.uniresolver.io/1.0/identifiers';
-
 export const SUPPORTED_PUBLIC_KEY_TYPES = {
   ES256K: [
     'EcdsaSecp256k1VerificationKey2019',

@@ -27,7 +27,7 @@
     "doc:build": "npm run doc:extract && npm run doc:documenter",
     "doc:watch:website": "ts-node ./scripts/doc-watch.ts",
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
-    "test": "mocha",
+    "test": "env TS_NODE_COMPILER_OPTIONS='{\"strict\": false}' mocha",
     "lint": "eslint --fix --ext .js,.ts src/** tests/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "deps:check": "madge --circular --extensions ts ./"
@@ -43,16 +43,18 @@
   },
   "homepage": "https://github.com/0xPolygonID/js-sdk#readme",
   "devDependencies": {
-    "@4c/fetch-mock": "^8.0.0",
     "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
     "@esbuild-plugins/node-modules-polyfill": "^0.1.4",
-    "@microsoft/api-documenter": "^7.20.1",
-    "@microsoft/api-extractor": "^7.34.4",
+    "@gr2m/fetch-mock": "^9.11.0-pull-request-644.1",
+    "@microsoft/api-documenter": "^7.8.20",
+    "@microsoft/api-extractor": "^7.9.0",
     "@types/chai": "^4.3.4",
     "@types/chai-as-promised": "^7.1.5",
-    "@types/jsonld": "^1.4.8",
+    "@types/elliptic": "^6.4.14",
+    "@types/jsonld": "^1.5.9",
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.16.19",
+    "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.41.0",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
@@ -86,7 +88,6 @@
     "ethers": "^5.7.2",
     "ffjavascript": "^0.2.57",
     "idb-keyval": "^6.2.0",
-    "ipfs-http-client": "56.0.3",
     "jsonld": "^8.1.1",
     "multiformats": "^9.6.5",
     "rfc4648": "^1.5.2",
@@ -108,5 +109,5 @@
   },
   "engines": {
     "node": ">=18.16.0"
-   }
+  }
 }

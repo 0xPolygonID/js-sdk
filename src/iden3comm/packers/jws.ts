@@ -1,10 +1,6 @@
 import { BasicMessage, IPacker, PackerParams } from '../types';
 import { MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
-import {
-  extractPublicKeyBytes,
-  resolveVerificationMethods,
-  resolveDIDDocument
-} from '../utils/did';
+import { extractPublicKeyBytes, resolveVerificationMethods } from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
 
 import { Signer, verifyJWS } from 'did-jwt';
@@ -31,13 +27,10 @@ export class JWSPacker implements IPacker {
    * Creates an instance of JWSPacker.
    *
    * @param {KMS} _kms
-   * @param {Resolvable} [_documentResolver={ resolve: resolveDIDDocument }]
+   * @param {Resolvable} _documentResolver
    * @memberof JWSPacker
    */
-  constructor(
-    private readonly _kms: KMS,
-    private readonly _documentResolver: Resolvable = { resolve: resolveDIDDocument }
-  ) {}
+  constructor(private readonly _kms: KMS, private readonly _documentResolver: Resolvable) {}
   /**
    * creates JSON Web Signature token
    *
@@ -64,7 +57,8 @@ export class JWSPacker implements IPacker {
       throw new Error('Missing sender DID');
     }
 
-    const vmTypes: string[] = SUPPORTED_PUBLIC_KEY_TYPES[params.alg];
+    const vmTypes: string[] =
+      SUPPORTED_PUBLIC_KEY_TYPES[params.alg as keyof typeof SUPPORTED_PUBLIC_KEY_TYPES];
     if (!vmTypes?.length) {
       throw new Error(`No supported verification methods for algorithm ${params.alg}`);
     }

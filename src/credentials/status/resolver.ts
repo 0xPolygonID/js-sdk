@@ -11,7 +11,7 @@ export class CredentialStatusResolverRegistry {
     this.resolvers.set(type, resolver);
   }
 
-  get(type: CredentialStatusType): CredentialStatusResolver {
+  get(type: CredentialStatusType): CredentialStatusResolver | undefined {
     return this.resolvers.get(type);
   }
 }

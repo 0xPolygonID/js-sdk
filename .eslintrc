@@ -14,7 +14,8 @@
   "rules": {
     "no-console": 1, // Means warning
     "prettier/prettier": 2, // Means error
-    "@typescript-eslint/no-floating-promises": ["error"]
+    "@typescript-eslint/no-floating-promises": ["error"],
+    "@typescript-eslint/no-non-null-assertion": "off"
   },
   "ignorePatterns": ["dist", "node_modules"]
 }

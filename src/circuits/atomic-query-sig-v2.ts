@@ -23,20 +23,20 @@ import { byteDecoder, byteEncoder } from '../utils';
  * @extends {BaseConfig}
  */
 export class AtomicQuerySigV2Inputs extends BaseConfig {
-  requestID: bigint;
+  requestID!: bigint;
   // auth
-  id: Id;
-  profileNonce: bigint;
-  claimSubjectProfileNonce: bigint;
+  id!: Id;
+  profileNonce!: bigint;
+  claimSubjectProfileNonce!: bigint;
 
   // claim issued for user
-  claim: ClaimWithSigProof;
-  skipClaimRevocationCheck: boolean;
+  claim!: ClaimWithSigProof;
+  skipClaimRevocationCheck!: boolean;
 
-  currentTimeStamp: number;
+  currentTimeStamp!: number;
 
   // query
-  query: Query;
+  query!: Query;
 
   /**
    *  Validate inputs
@@ -46,11 +46,11 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
     if (!this.requestID) {
       throw new Error(CircuitError.EmptyRequestID);
     }
-    if (!this.claim.nonRevProof.proof) {
+    if (!this.claim.nonRevProof?.proof) {
       throw new Error(CircuitError.EmptyClaimNonRevProof);
     }
 
-    if (!this.claim.signatureProof.issuerAuthIncProof.proof) {
+    if (!this.claim.signatureProof?.issuerAuthIncProof.proof) {
       throw new Error(CircuitError.EmptyIssuerAuthClaimProof);
     }
 
@@ -85,51 +85,54 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
       requestID: this.requestID.toString(),
       userGenesisID: this.id.bigInt().toString(),
       profileNonce: this.profileNonce.toString(),
-      claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
-      issuerID: this.claim.issuerID.bigInt().toString(),
-      issuerClaim: this.claim.claim.marshalJson(),
-      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof.treeState?.claimsRoot
-        .bigInt()
+      claimSubjectProfileNonce: this.claimSubjectProfileNonce?.toString(),
+      issuerID: this.claim.issuerID?.bigInt().toString(),
+      issuerClaim: this.claim.claim?.marshalJson(),
+      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof?.treeState?.claimsRoot
+        ?.bigInt()
         .toString(),
-      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof.treeState?.revocationRoot
-        .bigInt()
+      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof?.treeState?.revocationRoot
+        ?.bigInt()
         .toString(),
-      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof.treeState?.rootOfRoots
-        .bigInt()
+      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof?.treeState?.rootOfRoots
+        ?.bigInt()
         .toString(),
-      issuerClaimNonRevState: this.claim.nonRevProof.treeState?.state.bigInt().toString(),
-      issuerClaimNonRevMtp: prepareSiblingsStr(this.claim.nonRevProof.proof, this.getMTLevel()),
-      issuerClaimSignatureR8x: this.claim.signatureProof.signature.R8[0].toString(),
-      issuerClaimSignatureR8y: this.claim.signatureProof.signature.R8[1].toString(),
-      issuerClaimSignatureS: this.claim.signatureProof.signature.S.toString(),
-      issuerAuthClaim: this.claim.signatureProof.issuerAuthClaim?.marshalJson(),
-      issuerAuthClaimMtp: prepareSiblingsStr(
-        this.claim.signatureProof.issuerAuthIncProof.proof,
-        this.getMTLevel()
-      ),
-      issuerAuthClaimsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState?.claimsRoot
-        .bigInt()
+      issuerClaimNonRevState: this.claim.nonRevProof?.treeState?.state?.bigInt().toString(),
+      issuerClaimNonRevMtp:
+        this.claim.nonRevProof?.proof &&
+        prepareSiblingsStr(this.claim.nonRevProof.proof, this.getMTLevel()),
+      issuerClaimSignatureR8x: this.claim.signatureProof?.signature.R8[0].toString(),
+      issuerClaimSignatureR8y: this.claim.signatureProof?.signature.R8[1].toString(),
+      issuerClaimSignatureS: this.claim.signatureProof?.signature.S.toString(),
+      issuerAuthClaim: this.claim.signatureProof?.issuerAuthClaim?.marshalJson(),
+      issuerAuthClaimMtp:
+        this.claim.signatureProof?.issuerAuthIncProof?.proof &&
+        prepareSiblingsStr(this.claim.signatureProof.issuerAuthIncProof.proof, this.getMTLevel()),
+      issuerAuthClaimsTreeRoot: this.claim.signatureProof?.issuerAuthIncProof.treeState?.claimsRoot
+        ?.bigInt()
         .toString(),
-      issuerAuthRevTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState?.revocationRoot
-        .bigInt()
-        .toString(),
-      issuerAuthRootsTreeRoot: this.claim.signatureProof.issuerAuthIncProof.treeState?.rootOfRoots
-        .bigInt()
+      issuerAuthRevTreeRoot:
+        this.claim.signatureProof?.issuerAuthIncProof?.treeState?.revocationRoot
+          ?.bigInt()
+          .toString(),
+      issuerAuthRootsTreeRoot: this.claim.signatureProof?.issuerAuthIncProof?.treeState?.rootOfRoots
+        ?.bigInt()
         .toString(),
 
-      issuerAuthClaimNonRevMtp: prepareSiblingsStr(
-        this.claim.signatureProof.issuerAuthNonRevProof.proof,
-        this.getMTLevel()
-      ),
+      issuerAuthClaimNonRevMtp:
+        this.claim.signatureProof?.issuerAuthNonRevProof?.proof &&
+        prepareSiblingsStr(
+          this.claim.signatureProof.issuerAuthNonRevProof.proof,
+          this.getMTLevel()
+        ),
 
-      claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
+      claimSchema: this.claim.claim?.getSchemaHash().bigInt().toString(),
 
       claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaimMerklization()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query.operator,
       timestamp: this.currentTimeStamp,
       // value in this path in merklized json-ld document
-
       slotIndex: this.query.slotIndex
     };
 
@@ -138,17 +141,17 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
     } else {
       s.isRevocationChecked = 1;
     }
-    const nodeAuxNonRev = getNodeAuxValue(this.claim.nonRevProof.proof);
-    s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev.key.bigInt().toString();
-    s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev.value.bigInt().toString();
-    s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev.noAux;
+    const nodeAuxNonRev = getNodeAuxValue(this.claim.nonRevProof?.proof);
+    s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev?.key.bigInt().toString();
+    s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev?.value.bigInt().toString();
+    s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev?.noAux;
 
-    const nodeAuxIssuerAuthNonRev = getNodeAuxValue(
-      this.claim.signatureProof.issuerAuthNonRevProof.proof
-    );
-    s.issuerAuthClaimNonRevMtpAuxHi = nodeAuxIssuerAuthNonRev.key.bigInt().toString();
-    s.issuerAuthClaimNonRevMtpAuxHv = nodeAuxIssuerAuthNonRev.value.bigInt().toString();
-    s.issuerAuthClaimNonRevMtpNoAux = nodeAuxIssuerAuthNonRev.noAux;
+    const nodeAuxIssuerAuthNonRev =
+      this.claim.signatureProof &&
+      getNodeAuxValue(this.claim.signatureProof.issuerAuthNonRevProof.proof);
+    s.issuerAuthClaimNonRevMtpAuxHi = nodeAuxIssuerAuthNonRev?.key.bigInt().toString();
+    s.issuerAuthClaimNonRevMtpAuxHv = nodeAuxIssuerAuthNonRev?.value.bigInt().toString();
+    s.issuerAuthClaimNonRevMtpNoAux = nodeAuxIssuerAuthNonRev?.noAux;
 
     s.claimPathNotExists = existenceToInt(valueProof.mtp.existence);
     const nodAuxJSONLD = getNodeAuxValue(valueProof.mtp);
@@ -222,22 +225,22 @@ interface AtomicQuerySigV2CircuitInputs {
  * @extends {BaseConfig}
  */
 export class AtomicQuerySigV2PubSignals extends BaseConfig {
-  requestID?: bigint;
-  userID?: Id;
-  issuerID?: Id;
-  issuerAuthState?: Hash;
-  issuerClaimNonRevState?: Hash;
-  claimSchema: SchemaHash;
-  slotIndex: number;
-  operator: number;
+  requestID!: bigint;
+  userID!: Id;
+  issuerID!: Id;
+  issuerAuthState!: Hash;
+  issuerClaimNonRevState!: Hash;
+  claimSchema!: SchemaHash;
+  slotIndex!: number;
+  operator!: number;
   value: bigint[] = [];
-  timestamp: number;
-  merklized: number;
-  claimPathKey?: bigint;
+  timestamp!: number;
+  merklized!: number;
+  claimPathKey!: bigint;
   // 0 for inclusion, 1 for non-inclusion
-  claimPathNotExists: number;
+  claimPathNotExists!: number;
   // 0 revocation not check, // 1 for check revocation
-  isRevocationChecked: number;
+  isRevocationChecked!: number;
 
   //
   /**

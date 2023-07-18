@@ -51,7 +51,7 @@ export class OnChainRevocationStorage {
     };
   }
 
-  private static convertIssuerInfo(issuer: unknown): Issuer {
+  private static convertIssuerInfo(issuer: unknown[]): Issuer {
     return {
       state: newHashFromBigInt(BigNumber.from(issuer[0]).toBigInt()).hex(),
       claimsTreeRoot: newHashFromBigInt(BigNumber.from(issuer[1]).toBigInt()).hex(),
@@ -70,10 +70,7 @@ export class OnChainRevocationStorage {
     const p = new Proof();
     p.existence = mtp.existence;
     if (p.existence) {
-      p.nodeAux = {
-        key: undefined,
-        value: undefined
-      } as NodeAux;
+      p.nodeAux = {} as NodeAux;
     } else {
       if (mtp.auxExistence) {
         const auxIndex = BigInt(mtp.auxIndex.toString());
@@ -83,10 +80,7 @@ export class OnChainRevocationStorage {
           value: newHashFromBigInt(auxValue)
         } as NodeAux;
       } else {
-        p.nodeAux = {
-          key: undefined,
-          value: undefined
-        } as NodeAux;
+        p.nodeAux = {} as NodeAux;
       }
     }
 

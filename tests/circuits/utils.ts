@@ -197,12 +197,12 @@ async function calcStateFromRoots(claimsTree: Merkletree, ...args: Merkletree[])
 }
 
 export class IdentityTest {
-  id: Id;
-  clt: Merkletree;
-  ret: Merkletree;
-  rot: Merkletree;
-  authClaim: Claim;
-  pk: PrivateKey;
+  id!: Id;
+  clt!: Merkletree;
+  ret!: Merkletree;
+  rot!: Merkletree;
+  authClaim!: Claim;
+  pk!: PrivateKey;
 
   /**
    *
@@ -342,19 +342,6 @@ export function prepareIntArray(arr: bigint[], length: number): bigint[] {
 export function mtHashFromStr(hashStr: string): Hash {
   return newHashFromString(hashStr);
 }
-
-export const JSONSerializer = (key, value) => {
-  if (typeof value === 'bigint') {
-    return value.toString();
-  }
-  if (value instanceof Id) {
-    return value.bigInt().toString();
-  }
-  if (value instanceof SchemaHash) {
-    return value.bigInt().toString();
-  }
-  return value;
-};
 
 export const globalTree = () => new Merkletree(new InMemoryDB(str2Bytes('')), true, 64);
 

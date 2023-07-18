@@ -1,4 +1,5 @@
 import { AbstractPrivateKeyStore } from './abstract-key-store';
+import { KmsKeyId } from './types';
 
 /**
  * Allows storing keys in the local storage of the browser
@@ -23,7 +24,7 @@ export class LocalStoragePrivateKeyStore implements AbstractPrivateKeyStore {
       throw new Error('no key under given alias');
     }
     const data = JSON.parse(dataStr);
-    const privateKey = data.find((d) => d.id === args.alias);
+    const privateKey = data.find((d: KmsKeyId) => d.id === args.alias);
     if (!privateKey) {
       throw new Error('no key under given alias');
     }
@@ -43,7 +44,7 @@ export class LocalStoragePrivateKeyStore implements AbstractPrivateKeyStore {
       data = JSON.parse(dataStr);
     }
 
-    const index = data.findIndex((d) => d.id === args.alias);
+    const index = data.findIndex((d: KmsKeyId) => d.id === args.alias);
     if (index > -1) {
       data[index].value = args.key;
     } else {

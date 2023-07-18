@@ -281,9 +281,11 @@ export class IdentityWallet implements IIdentityWallet {
 
     opts.seed = opts.seed ?? getRandomBytes(32);
 
-    const keyID = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, opts.seed);
+    const keyId = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, opts.seed);
 
-    const pubKey = (await this._kms.publicKey(keyID)) as PublicKey;
+    const pubKeyHex = await this._kms.publicKey(keyId);
+
+    const pubKey = PublicKey.newFromHex(pubKeyHex);
 
     const schemaHash = SchemaHash.authSchemaHash;
 
@@ -617,9 +619,11 @@ export class IdentityWallet implements IIdentityWallet {
     if (!issuerAuthBJJCredential.proof) {
       throw new Error('issuer auth credential must have proof');
     }
-    const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
+    const mtpAuthBJJProof = (
+      issuerAuthBJJCredential.proof as unknown[]
+    )[0] as Iden3SparseMerkleTreeProof;
 
-    const sigProof: BJJSignatureProof2021 = {
+    const sigProof = new BJJSignatureProof2021({
       type: ProofType.BJJSignature,
       issuerData: new IssuerData({
         id: issuerDID.string(),
@@ -630,7 +634,7 @@ export class IdentityWallet implements IIdentityWallet {
       }),
       coreClaim: coreClaim.hex(),
       signature: Hex.encodeString(signature)
-    };
+    });
     credential.proof = [sigProof];
 
     return credential;

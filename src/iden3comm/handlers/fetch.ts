@@ -97,8 +97,8 @@ export class FetchHandler implements IFetchHandler {
     }
     const credentials: W3CCredential[] = [];
 
-    for (let index = 0; index < offerMessage.body.credentials.length; index++) {
-      const credentialInfo = offerMessage.body.credentials[index];
+    for (let index = 0; index < (offerMessage?.body?.credentials?.length ?? 0); index++) {
+      const credentialInfo = offerMessage?.body?.credentials[index];
 
       const guid = uuid.v4();
       const fetchRequest: MessageFetchRequestMessage = {
@@ -107,7 +107,7 @@ export class FetchHandler implements IFetchHandler {
         type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE,
         thid: offerMessage.thid ?? guid,
         body: {
-          id: credentialInfo.id
+          id: credentialInfo?.id || ''
         },
         from: did.string(),
         to: offerMessage.from
@@ -119,6 +119,9 @@ export class FetchHandler implements IFetchHandler {
       );
       let message: { body: { credential: W3CCredential } };
       try {
+        if (!offerMessage?.body?.url) {
+          throw new Error(`could not fetch W3C credential, body url is missing`);
+        }
         const resp = await fetch(offerMessage.body.url, {
           method: 'post',
           headers: {
@@ -127,13 +130,15 @@ export class FetchHandler implements IFetchHandler {
           body: token
         });
         if (resp.status !== 200) {
-          throw new Error(`could not fetch W3C credential, ${credentialInfo.id}`);
+          throw new Error(`could not fetch W3C credential, ${credentialInfo?.id}`);
         }
         message = await resp.json();
         credentials.push(message.body.credential);
-      } catch (e) {
+      } catch (e: unknown) {
         throw new Error(
-          `could not fetch W3C credential, ${credentialInfo.id}, error: ${e.message ?? e}`
+          `could not fetch W3C credential, ${credentialInfo?.id}, error: ${
+            (e as Error).message ?? e
+          }`
         );
       }
     }

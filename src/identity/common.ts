@@ -30,7 +30,7 @@ export const defineMerklizedRootPosition = (
   metadata?: SchemaMetadata,
   position?: MerklizedRootPosition
 ): MerklizedRootPosition => {
-  if (!metadata && !metadata.serialization) {
+  if (!metadata?.serialization) {
     return MerklizedRootPosition.None;
   }
 

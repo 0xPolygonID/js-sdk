@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Hex, Poseidon, Signature } from '@iden3/js-crypto';
 import {
   BytesHelper,
@@ -405,24 +404,26 @@ export class ProofService implements IProofService {
     const gistProof = toGISTProof(stateProof);
     circuitInputs.gistProof = gistProof;
 
-    circuitInputs.treeState = {
-      state: authClaimData.treeState.state,
-      claimsRoot: authClaimData.treeState.claimsRoot,
-      revocationRoot: authClaimData.treeState.revocationRoot,
-      rootOfRoots: authClaimData.treeState.rootOfRoots
-    };
+    if (authClaimData?.treeState) {
+      circuitInputs.treeState = {
+        state: authClaimData?.treeState?.state,
+        claimsRoot: authClaimData?.treeState?.claimsRoot,
+        revocationRoot: authClaimData?.treeState?.revocationRoot,
+        rootOfRoots: authClaimData?.treeState?.rootOfRoots
+      };
+    }
 
     circuitInputs.authClaim = authClaimData.claim;
     circuitInputs.authClaimIncMtp = authClaimData.proof;
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
-
+    const challenge = opts.challenge!;
     const signature = await this._identityWallet.signChallenge(
-      opts.challenge ?? BigInt(proofReq.id),
+      challenge,
       authPrepared.authCredential
     );
 
     circuitInputs.signature = signature;
-    circuitInputs.challenge = opts.challenge;
+    circuitInputs.challenge = challenge;
 
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
@@ -461,7 +462,7 @@ export class ProofService implements IProofService {
     const circuitInputs = new AtomicQuerySigV2Inputs();
     circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.claim = {
-      issuerID: circuitClaimData.issuerId,
+      issuerID: circuitClaimData?.issuerId,
       signatureProof: circuitClaimData.signatureProof,
       claim: circuitClaimData.claim,
       nonRevProof: circuitClaimData.nonRevProof
@@ -522,12 +523,14 @@ export class ProofService implements IProofService {
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
-    circuitInputs.treeState = {
-      state: authClaimData.treeState.state,
-      claimsRoot: authClaimData.treeState.claimsRoot,
-      revocationRoot: authClaimData.treeState.revocationRoot,
-      rootOfRoots: authClaimData.treeState.rootOfRoots
-    };
+    if (authClaimData.treeState) {
+      circuitInputs.treeState = {
+        state: authClaimData.treeState?.state,
+        claimsRoot: authClaimData.treeState?.claimsRoot,
+        revocationRoot: authClaimData.treeState?.revocationRoot,
+        rootOfRoots: authClaimData.treeState?.rootOfRoots
+      };
+    }
 
     const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
     const gistProof = toGISTProof(stateProof);
@@ -537,13 +540,14 @@ export class ProofService implements IProofService {
     circuitInputs.authClaimIncMtp = authClaimData.proof;
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
 
+    const challenge = opts.challenge!;
     const signature = await this._identityWallet.signChallenge(
-      opts.challenge ?? BigInt(proofReq.id),
+      challenge,
       authPrepared.authCredential
     );
 
     circuitInputs.signature = signature;
-    circuitInputs.challenge = opts.challenge;
+    circuitInputs.challenge = challenge;
 
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
@@ -576,21 +580,25 @@ export class ProofService implements IProofService {
       const signature = await bJJSignatureFromHexString(sigProof.signature);
       const issuer = DID.parse(sigProof.issuerData.id);
 
-      const rs: RevocationStatus = await this._credentialWallet.getRevocationStatus(
-        sigProof.issuerData.credentialStatus,
-        issuer,
-        sigProof.issuerData
-      );
+      let rs: RevocationStatus | undefined;
+
+      if (sigProof.issuerData.credentialStatus) {
+        rs = await this._credentialWallet.getRevocationStatus(
+          sigProof.issuerData.credentialStatus,
+          issuer,
+          sigProof.issuerData
+        );
+      }
 
       //todo: check if this is correct
       const issuerAuthNonRevProof: MTProof = {
         treeState: {
-          state: strMTHex(rs.issuer.state),
-          claimsRoot: strMTHex(rs.issuer.claimsTreeRoot),
-          revocationRoot: strMTHex(rs.issuer.revocationTreeRoot),
-          rootOfRoots: strMTHex(rs.issuer.rootOfRoots)
+          state: strMTHex(rs?.issuer.state),
+          claimsRoot: strMTHex(rs?.issuer.claimsTreeRoot),
+          revocationRoot: strMTHex(rs?.issuer.revocationTreeRoot),
+          rootOfRoots: strMTHex(rs?.issuer.rootOfRoots)
         },
-        proof: rs.mtp
+        proof: rs?.mtp
       };
       if (!sigProof.issuerData.mtp) {
         throw new Error('issuer auth credential must have a mtp proof');
@@ -667,8 +675,10 @@ export class ProofService implements IProofService {
     parsedQuery.query.valueProof.mtp = proof;
     parsedQuery.query.valueProof.path = pathKey;
     parsedQuery.query.valueProof.mtp = proof;
-    const mtEntry = await mtValue.mtEntry();
-    parsedQuery.query.valueProof.value = mtEntry;
+    const mtEntry = await mtValue?.mtEntry();
+    if (mtEntry) {
+      parsedQuery.query.valueProof.value = mtEntry;
+    }
 
     if (merklizedPosition == MerklizedRootPosition.Index) {
       parsedQuery.query.slotIndex = 2; // value data slot a
@@ -678,20 +688,20 @@ export class ProofService implements IProofService {
     if (!parsedQuery.fieldName) {
       const resultQuery = parsedQuery.query;
       resultQuery.operator = QueryOperators.$eq;
-      resultQuery.values = [mtEntry];
+      resultQuery.values = [mtEntry!];
       return { query: resultQuery };
     }
     if (parsedQuery.isSelectiveDisclosure) {
       const rawValue = mk.rawValue(path);
       const vp = createVerifiablePresentation(
-        query.context,
-        query.type,
+        query.context ?? '',
+        query.type ?? '',
         parsedQuery.fieldName,
         rawValue
       );
       const resultQuery = parsedQuery.query;
       resultQuery.operator = QueryOperators.$eq;
-      resultQuery.values = [mtEntry];
+      resultQuery.values = [mtEntry!];
       return { query: resultQuery, vp };
     }
     if (parsedQuery.rawValue === null || parsedQuery.rawValue === undefined) {
@@ -768,7 +778,7 @@ export class ProofService implements IProofService {
 
     const [fieldName, fieldReq] = entries[0];
 
-    const fieldReqEntries = Object.entries(fieldReq);
+    const fieldReqEntries = Object.entries(fieldReq as { [key: string]: unknown });
 
     if (fieldReqEntries.length > 1) {
       throw new Error(`multiple predicates for one field not supported`);
@@ -783,10 +793,10 @@ export class ProofService implements IProofService {
 
     let operator = 0;
     const [key, value] = fieldReqEntries[0];
-    if (!QueryOperators[key]) {
+    if (!QueryOperators[key as keyof typeof QueryOperators]) {
       throw new Error(`operator is not supported by lib`);
     }
-    operator = QueryOperators[key];
+    operator = QueryOperators[key as keyof typeof QueryOperators];
 
     query.operator = operator;
 

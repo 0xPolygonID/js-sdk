@@ -1,4 +1,3 @@
-import { PublicKey } from '@iden3/js-crypto';
 import { KmsKeyId, KmsKeyType } from './store';
 
 /**
@@ -21,7 +20,7 @@ export interface IKeyProvider {
    * @param {KmsKeyId} keyID - kms key identifier
    * @returns `Promise<PublicKey>`
    */
-  publicKey(keyID: KmsKeyId): Promise<PublicKey | string>;
+  publicKey(keyID: KmsKeyId): Promise<string>;
   /**
    * sign data with kms key
    *
@@ -49,12 +48,7 @@ export interface IKeyProvider {
  * @class KMS - class
  */
 export class KMS {
-  private registry: {
-    [keyType in KmsKeyType]: IKeyProvider;
-  } = {
-    BJJ: null,
-    Secp256k1: null
-  };
+  private readonly _registry = new Map<KmsKeyType, IKeyProvider>();
 
   /**
    * register key provider in the KMS
@@ -63,10 +57,10 @@ export class KMS {
    * @param {IKeyProvider} keyProvider - key provider implementation
    */
   registerKeyProvider(keyType: KmsKeyType, keyProvider: IKeyProvider): void {
-    if (this.registry[keyType]) {
+    if (this._registry.get(keyType)) {
       throw new Error('present keyType');
     }
-    this.registry[keyType] = keyProvider;
+    this._registry.set(keyType, keyProvider);
   }
 
   /**
@@ -77,7 +71,7 @@ export class KMS {
    * @returns kms key id
    */
   async createKeyFromSeed(keyType: KmsKeyType, bytes: Uint8Array): Promise<KmsKeyId> {
-    const keyProvider = this.registry[keyType];
+    const keyProvider = this._registry.get(keyType);
     if (!keyProvider) {
       throw new Error(`keyProvider not found for: ${keyType}`);
     }
@@ -90,8 +84,8 @@ export class KMS {
    * @param {KmsKeyId} keyId -- key id
    * @returns public key
    */
-  async publicKey(keyId: KmsKeyId): Promise<PublicKey | string> {
-    const keyProvider = this.registry[keyId.type];
+  async publicKey(keyId: KmsKeyId): Promise<string> {
+    const keyProvider = this._registry.get(keyId.type);
     if (!keyProvider) {
       throw new Error(`keyProvider not found for: ${keyId.type}`);
     }
@@ -113,7 +107,7 @@ export class KMS {
       [key: string]: unknown;
     }
   ): Promise<Uint8Array> {
-    const keyProvider = this.registry[keyId.type];
+    const keyProvider = this._registry.get(keyId.type);
     if (!keyProvider) {
       throw new Error(`keyProvider not found for: ${keyId.type}`);
     }

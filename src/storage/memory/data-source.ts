@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { StorageErrors } from '../errors';
 import { IDataSource } from '../interfaces/data-source';
 
@@ -14,7 +15,7 @@ export class InMemoryDataSource<Type> implements IDataSource<Type> {
 
   /** saves in the memory */
   async save(key: string, value: Type, keyName = 'id'): Promise<void> {
-    const itemIndex = this._data.findIndex((i) => i[keyName] === key);
+    const itemIndex = this._data.findIndex((i: any) => i[keyName] === key);
     if (itemIndex === -1) {
       this._data.push(value);
     } else {
@@ -24,7 +25,7 @@ export class InMemoryDataSource<Type> implements IDataSource<Type> {
 
   /** gets value from from the memory */
   async get(key: string, keyName = 'id'): Promise<Type | undefined> {
-    return this._data.find((t) => t[keyName] === key);
+    return this._data.find((t: any) => t[keyName] === key);
   }
 
   /** loads from value from the memory */
@@ -34,7 +35,7 @@ export class InMemoryDataSource<Type> implements IDataSource<Type> {
 
   /** deletes from value from the memory */
   async delete(key: string, keyName = 'id'): Promise<void> {
-    const newData = this._data.filter((i) => i[keyName] !== key);
+    const newData = this._data.filter((i: any) => i[keyName] !== key);
 
     if (newData.length === this._data.length) {
       throw new Error(`${StorageErrors.ItemNotFound} to delete: ${key}`);

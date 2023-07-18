@@ -246,14 +246,14 @@ export class AuthHandler implements IAuthHandler {
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
       thid: authRequest.thid ?? guid,
       body: {
-        message: authRequest.body.message,
+        message: authRequest?.body?.message,
         scope: []
       },
       from: userGenesisDID.string(),
       to: authRequest.from
     };
 
-    for (const r of zkpRequestsWithCreds) {
+    for (const r of zkpRequestsWithCreds || []) {
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
         r.req,
         userGenesisDID,

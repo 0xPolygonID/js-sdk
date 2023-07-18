@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { W3CCredential, ProofQuery } from '../../verifiable';
 
 /**
@@ -15,7 +16,7 @@ export enum SearchError {
 export type FilterOperatorMethod = '$noop' | '$eq' | '$in' | '$nin' | '$gt' | '$lt' | '$ne';
 
 /** filter function type */
-export type FilterOperatorFunction = (a, b) => boolean;
+export type FilterOperatorFunction = (a: any, b: any) => boolean;
 
 /**
  * query filter interface that allows to query Verifiable Credential
@@ -37,7 +38,7 @@ export interface IFilterQuery {
 const truthyValues = [true, 1, 'true'];
 const falsyValues = [false, 0, 'false'];
 
-const equalsComparator = (a, b) => {
+const equalsComparator = (a: number | string | boolean, b: number | string | boolean) => {
   if (truthyValues.includes(a) && truthyValues.includes(b)) {
     return true;
   }
@@ -73,7 +74,7 @@ export const resolvePath = (object: object, path: string, defaultValue = null) =
     if (o === null || o === undefined) {
       return defaultValue;
     }
-    o = o[part];
+    o = o[part as keyof typeof o];
   }
   return o;
 };
@@ -98,7 +99,7 @@ export class FilterQuery implements IFilterQuery {
   constructor(
     public path: string,
     public operatorFunc: FilterOperatorFunction,
-    public value,
+    public value: any,
     public isReverseParams = false
   ) {}
   /** {@inheritdoc IFilterQuery} */
@@ -124,7 +125,8 @@ export class FilterQuery implements IFilterQuery {
  */
 export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQuery[] => {
   return Object.keys(query).reduce((acc: FilterQuery[], queryKey) => {
-    const queryValue = query[queryKey];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const queryValue: any = query[queryKey as keyof typeof query];
     switch (queryKey) {
       case 'claimId':
         return acc.concat(new FilterQuery('id', comparatorOptions.$eq, queryValue));
@@ -160,7 +162,11 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
           const res = Object.keys(fieldParams).map((comparator) => {
             const value = fieldParams[comparator];
             const path = `credentialSubject.${fieldKey}`;
-            return new FilterQuery(path, comparatorOptions[comparator], value);
+            return new FilterQuery(
+              path,
+              comparatorOptions[comparator as keyof typeof comparatorOptions],
+              value
+            );
           });
           return acc.concat(res);
         }, []);

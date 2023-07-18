@@ -23,28 +23,28 @@ import { byteDecoder, byteEncoder } from '../utils';
  */
 export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
   // auth
-  id: Id;
-  profileNonce: bigint;
-  claimSubjectProfileNonce: bigint;
+  id!: Id;
+  profileNonce!: bigint;
+  claimSubjectProfileNonce!: bigint;
   // claim issued for user
-  claim: ClaimWithMTPProof;
-  skipClaimRevocationCheck: boolean;
-  requestID: bigint;
+  claim!: ClaimWithMTPProof;
+  skipClaimRevocationCheck!: boolean;
+  requestID!: bigint;
 
-  currentTimeStamp: number;
+  currentTimeStamp!: number;
 
-  authClaim: Claim;
-  authClaimIncMtp: Proof;
-  authClaimNonRevMtp: Proof;
-  treeState: TreeState;
+  authClaim!: Claim;
+  authClaimIncMtp!: Proof;
+  authClaimNonRevMtp!: Proof;
+  treeState!: TreeState;
 
-  gistProof: GISTProof;
+  gistProof!: GISTProof;
 
-  signature: Signature;
-  challenge: bigint;
+  signature!: Signature;
+  challenge!: bigint;
 
   // query
-  query: Query;
+  query!: Query;
 
   /**
    *  Validate inputs
@@ -60,7 +60,7 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
     if (!this.authClaimNonRevMtp) {
       throw new Error(CircuitError.EmptyAuthClaimNonRevProof);
     }
-    if (!this.gistProof?.proof) {
+    if (!this.gistProof.proof) {
       throw new Error(CircuitError.EmptyGISTProof);
     }
     if (!this.signature) {
@@ -88,29 +88,35 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
       requestID: this.requestID.toString(),
       userGenesisID: this.id.bigInt().toString(),
       profileNonce: this.profileNonce.toString(),
-      claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
-      issuerID: this.claim.issuerID.bigInt().toString(),
-      issuerClaim: this.claim.claim.marshalJson(),
-      issuerClaimMtp: prepareSiblingsStr(this.claim.incProof.proof, this.getMTLevel()),
+      claimSubjectProfileNonce: this.claimSubjectProfileNonce?.toString(),
+      issuerID: this.claim.issuerID?.bigInt().toString(),
+      issuerClaim: this.claim.claim?.marshalJson(),
+      issuerClaimMtp:
+        this.claim.incProof?.proof &&
+        prepareSiblingsStr(this.claim.incProof.proof, this.getMTLevel()),
       issuerClaimClaimsTreeRoot: this.claim.incProof?.treeState?.claimsRoot?.string(),
       issuerClaimRevTreeRoot: this.claim.incProof?.treeState?.revocationRoot?.string(),
       issuerClaimRootsTreeRoot: this.claim.incProof?.treeState?.rootOfRoots?.string(),
       issuerClaimIdenState: this.claim.incProof?.treeState?.state?.string(),
-      issuerClaimNonRevMtp: prepareSiblingsStr(this.claim.nonRevProof?.proof, this.getMTLevel()),
+      issuerClaimNonRevMtp:
+        this.claim.nonRevProof?.proof &&
+        prepareSiblingsStr(this.claim.nonRevProof?.proof, this.getMTLevel()),
       issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof?.treeState?.claimsRoot?.string(),
       issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof?.treeState?.revocationRoot?.string(),
       issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof?.treeState?.rootOfRoots?.string(),
       issuerClaimNonRevState: this.claim.nonRevProof?.treeState?.state?.string(),
-      claimSchema: this.claim.claim.getSchemaHash().bigInt().toString(),
+      claimSchema: this.claim.claim?.getSchemaHash().bigInt().toString(),
       claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaimMerklization()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query.operator,
       slotIndex: this.query.slotIndex,
-      timestamp: this.currentTimeStamp,
+      timestamp: this.currentTimeStamp ?? undefined,
       isRevocationChecked: 1,
-      authClaim: this.authClaim?.marshalJson(),
-      authClaimIncMtp: prepareSiblingsStr(this.authClaimIncMtp, this.getMTLevel()),
-      authClaimNonRevMtp: prepareSiblingsStr(this.authClaimNonRevMtp, this.getMTLevel()),
+      authClaim: this.authClaim.marshalJson(),
+      authClaimIncMtp:
+        this.authClaimIncMtp && prepareSiblingsStr(this.authClaimIncMtp, this.getMTLevel()),
+      authClaimNonRevMtp:
+        this.authClaimNonRevMtp && prepareSiblingsStr(this.authClaimNonRevMtp, this.getMTLevel()),
       challenge: this.challenge.toString(),
       challengeSignatureR8x: this.signature.R8[0].toString(),
       challengeSignatureR8y: this.signature.R8[1].toString(),
@@ -120,17 +126,18 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
       userRootsTreeRoot: this.treeState.rootOfRoots?.string(),
       userState: this.treeState.state?.string(),
       gistRoot: this.gistProof.root?.string(),
-      gistMtp: prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain())
+      gistMtp: this.gistProof && prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain())
     };
 
     if (this.skipClaimRevocationCheck) {
       s.isRevocationChecked = 0;
     }
 
-    const nodeAuxNonRev = getNodeAuxValue(this.claim.nonRevProof.proof);
-    s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev.key.bigInt().toString();
-    s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev.value.bigInt().toString();
-    s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev.noAux;
+    const nodeAuxNonRev =
+      this.claim.nonRevProof?.proof && getNodeAuxValue(this.claim.nonRevProof.proof);
+    s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev?.key.bigInt().toString();
+    s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev?.value.bigInt().toString();
+    s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev?.noAux;
 
     s.claimPathNotExists = existenceToInt(valueProof.mtp.existence);
     const nodAuxJSONLD = getNodeAuxValue(valueProof.mtp);
@@ -139,15 +146,16 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
     s.claimPathMtpAuxHv = nodAuxJSONLD.value.bigInt().toString();
 
     s.claimPathKey = valueProof.path.toString();
-    const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
-    s.value = bigIntArrayToStringArray(values);
+    const values =
+      this.query.values && prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
+    s.value = values && bigIntArrayToStringArray(values);
 
-    const nodeAuxAuth = getNodeAuxValue(this.authClaimNonRevMtp);
+    const nodeAuxAuth = this.authClaimNonRevMtp && getNodeAuxValue(this.authClaimNonRevMtp);
     s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key.string();
     s.authClaimNonRevMtpAuxHv = nodeAuxAuth.value.string();
     s.authClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
 
-    const globalNodeAux = getNodeAuxValue(this.gistProof.proof);
+    const globalNodeAux = this.gistProof && getNodeAuxValue(this.gistProof.proof);
     s.gistMtpAuxHi = globalNodeAux.key.string();
     s.gistMtpAuxHv = globalNodeAux.value.string();
     s.gistMtpNoAux = globalNodeAux.noAux;
@@ -163,7 +171,7 @@ interface atomicQueryMTPV2OnChainCircuitInputs {
   profileNonce: string;
   claimSubjectProfileNonce: string;
   issuerID: string;
-  issuerClaim?: string[];
+  issuerClaim: string[];
 
   issuerClaimMtp: string[];
   issuerClaimClaimsTreeRoot: string;
@@ -188,8 +196,8 @@ interface atomicQueryMTPV2OnChainCircuitInputs {
   claimPathMtp: string[];
   claimPathMtpNoAux: string; // 1 if aux node is empty,
   // 0 if non-empty or for inclusion proofs
-  claimPathMtpAuxHi?: string; // 0 for inclusion proof
-  claimPathMtpAuxHv?: string; // 0 for inclusion proof
+  claimPathMtpAuxHi: string; // 0 for inclusion proof
+  claimPathMtpAuxHv: string; // 0 for inclusion proof
   claimPathKey: string; // hash of path in merklized json-ld document
   claimPathValue: string; // value in this path in merklized json-ld document
 
@@ -236,17 +244,17 @@ interface atomicQueryMTPV2OnChainCircuitInputs {
  * @extends {BaseConfig}
  */
 export class AtomicQueryMTPV2OnChainPubSignals extends BaseConfig {
-  requestID?: bigint;
-  userID?: Id;
-  issuerID?: Id;
-  issuerClaimIdenState?: Hash;
-  issuerClaimNonRevState?: Hash;
-  timestamp: number;
-  merklized: number;
-  isRevocationChecked: number; // 0 revocation not check, // 1 for check revocation
-  circuitQueryHash: bigint;
-  challenge: bigint;
-  gistRoot: Hash;
+  requestID!: bigint;
+  userID!: Id;
+  issuerID!: Id;
+  issuerClaimIdenState!: Hash;
+  issuerClaimNonRevState!: Hash;
+  timestamp!: number;
+  merklized!: number;
+  isRevocationChecked!: number; // 0 revocation not check, // 1 for check revocation
+  circuitQueryHash!: bigint;
+  challenge!: bigint;
+  gistRoot!: Hash;
 
   /**
    *

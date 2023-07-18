@@ -21,7 +21,7 @@ export const toClaimNonRevStatus = (s: RevocationStatus): ClaimNonRevStatus => {
   };
 };
 
-const newProofFromData = (existence: boolean, allSiblings: Hash[], nodeAux: NodeAux): Proof => {
+const newProofFromData = (existence: boolean, allSiblings: Hash[], nodeAux?: NodeAux): Proof => {
   const p = new Proof();
   p.existence = existence;
   p.nodeAux = nodeAux;
@@ -46,7 +46,7 @@ const newProofFromData = (existence: boolean, allSiblings: Hash[], nodeAux: Node
  */
 export const toGISTProof = (smtProof: StateProof): GISTProof => {
   let existence = false;
-  let nodeAux: NodeAux;
+  let nodeAux: NodeAux | undefined;
 
   if (smtProof.existence) {
     existence = true;
