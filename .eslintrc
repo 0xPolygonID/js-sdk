@@ -1,21 +1,3 @@
 {
-  "parserOptions": {
-    "project": ["tsconfig.json", "tsconfig.test.json"]
-  },
-  "extends": ["@iden3/eslint-config"],
-  "rules": {
-    "@typescript-eslint/no-floating-promises": ["error"],
-    "@typescript-eslint/no-non-null-assertion": "off"
-  },
-   "overrides": [
-      {
-        "files": ["tests/**/*.js"],
-        "rules": {
-          "no-undef": "off",
-          "@typescript-eslint/no-var-requires": "off",
-          "@typescript-eslint/no-floating-promises": "off"
-        }
-      }
-    ],
-  "ignorePatterns": ["dist", "node_modules"]
+  "extends": ["@iden3/eslint-config"]
 }
