@@ -37,10 +37,10 @@ export interface ClaimNonRevStatus {
  * @class Query
  */
 export class Query {
-  slotIndex?: number;
-  values?: bigint[];
-  operator?: number;
-  valueProof?: ValueProof;
+  slotIndex!: number;
+  values!: bigint[];
+  operator!: number;
+  valueProof!: ValueProof;
 
   /**
    * Validates Query instance
@@ -81,12 +81,12 @@ export enum CircuitId {
  * @class CircuitClaim
  */
 export class CircuitClaim {
-  issuerId?: Id;
-  claim?: CoreClaim;
-  treeState?: TreeState;
-  proof?: Proof;
-  nonRevProof?: ClaimNonRevStatus; // Claim non revocation proof
-  signatureProof?: BJJSignatureProof;
+  issuerId!: Id;
+  claim!: CoreClaim;
+  treeState!: TreeState;
+  proof!: Proof;
+  nonRevProof!: ClaimNonRevStatus; // Claim non revocation proof
+  signatureProof!: BJJSignatureProof;
 }
 
 /**

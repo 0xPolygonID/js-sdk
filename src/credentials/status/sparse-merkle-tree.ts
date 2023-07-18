@@ -1,12 +1,12 @@
 import { CredentialStatus, RevocationStatus, Issuer } from '../../verifiable';
 import { CredentialStatusResolver } from './resolver';
-import { newHashFromBigInt, Proof, NodeAux, setBitBigEndian } from '@iden3/js-merkletree';
+import { newHashFromBigInt, Proof, setBitBigEndian } from '@iden3/js-merkletree';
 
 export class IssuerResolver implements CredentialStatusResolver {
   async resolve(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
     const revStatusResp = await fetch(credentialStatus.id);
-    const revStatusDTO = await revStatusResp.json();
-    return new RevocationStatusDTO(revStatusDTO).toRevocationStatus();
+    const revStatus = await revStatusResp.json();
+    return new RevocationStatusDTO(revStatus).toRevocationStatus();
   }
 }
 
@@ -43,12 +43,10 @@ export class RevocationStatusDTO {
   toRevocationStatus(): RevocationStatus {
     const p = new Proof();
     p.existence = this.mtp.existence;
-    p.nodeAux = this.mtp.node_aux
-      ? ({
-          key: newHashFromBigInt(BigInt(this.mtp.node_aux.key)),
-          value: newHashFromBigInt(BigInt(this.mtp.node_aux.value))
-        } as NodeAux)
-      : undefined;
+    p.nodeAux = {
+      key: newHashFromBigInt(BigInt(this.mtp.node_aux.key)),
+      value: newHashFromBigInt(BigInt(this.mtp.node_aux.value))
+    };
 
     const s = this.mtp.siblings.map((s) => newHashFromBigInt(BigInt(s)));
 

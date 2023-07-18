@@ -15,16 +15,16 @@ import { byteDecoder, byteEncoder } from '../utils';
  * @extends {BaseConfig}
  */
 export class StateTransitionInputs extends BaseConfig {
-  id?: Id;
-  oldTreeState?: TreeState;
-  newTreeState?: TreeState;
+  id!: Id;
+  oldTreeState!: TreeState;
+  newTreeState!: TreeState;
 
-  isOldStateGenesis?: boolean;
-  authClaim?: ClaimWithMTPProof;
+  isOldStateGenesis!: boolean;
+  authClaim!: ClaimWithMTPProof;
 
-  authClaimNewStateIncProof?: Proof;
+  authClaimNewStateIncProof!: Proof;
 
-  signature?: Signature;
+  signature!: Signature;
 
   /**
    * CircuitInputMarshal returns Circom private inputs for stateTransition.circom
@@ -55,9 +55,9 @@ export class StateTransitionInputs extends BaseConfig {
       oldUserState: this.oldTreeState?.state?.bigInt().toString(),
       revTreeRoot: this.oldTreeState?.revocationRoot?.bigInt().toString(),
       rootsTreeRoot: this.oldTreeState?.rootOfRoots?.bigInt().toString(),
-      signatureR8x: this.signature?.R8[0].toString(),
-      signatureR8y: this.signature?.R8[1].toString(),
-      signatureS: this.signature?.S.toString(),
+      signatureR8x: this.signature.R8[0].toString(),
+      signatureR8y: this.signature.R8[1].toString(),
+      signatureS: this.signature.S.toString(),
       newClaimsTreeRoot: this.newTreeState?.claimsRoot?.bigInt().toString(),
       newRootsTreeRoot: this.newTreeState?.rootOfRoots?.bigInt().toString(),
       newRevTreeRoot: this.newTreeState?.revocationRoot?.bigInt().toString()

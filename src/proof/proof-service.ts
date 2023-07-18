@@ -416,14 +416,14 @@ export class ProofService implements IProofService {
     circuitInputs.authClaim = authClaimData.claim;
     circuitInputs.authClaimIncMtp = authClaimData.proof;
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
-
+    const challenge = opts.challenge!;
     const signature = await this._identityWallet.signChallenge(
-      opts.challenge ?? BigInt(proofReq.id),
+      challenge,
       authPrepared.authCredential
     );
 
     circuitInputs.signature = signature;
-    circuitInputs.challenge = opts.challenge;
+    circuitInputs.challenge = challenge;
 
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
@@ -540,13 +540,14 @@ export class ProofService implements IProofService {
     circuitInputs.authClaimIncMtp = authClaimData.proof;
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
 
+    const challenge = opts.challenge!;
     const signature = await this._identityWallet.signChallenge(
-      opts.challenge ?? BigInt(proofReq.id),
+      challenge,
       authPrepared.authCredential
     );
 
     circuitInputs.signature = signature;
-    circuitInputs.challenge = opts.challenge;
+    circuitInputs.challenge = challenge;
 
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
@@ -687,7 +688,7 @@ export class ProofService implements IProofService {
     if (!parsedQuery.fieldName) {
       const resultQuery = parsedQuery.query;
       resultQuery.operator = QueryOperators.$eq;
-      resultQuery.values = mtEntry ? [mtEntry] : undefined;
+      resultQuery.values = [mtEntry!];
       return { query: resultQuery };
     }
     if (parsedQuery.isSelectiveDisclosure) {
@@ -700,7 +701,7 @@ export class ProofService implements IProofService {
       );
       const resultQuery = parsedQuery.query;
       resultQuery.operator = QueryOperators.$eq;
-      resultQuery.values = mtEntry ? [mtEntry] : undefined;
+      resultQuery.values = [mtEntry!];
       return { query: resultQuery, vp };
     }
     if (parsedQuery.rawValue === null || parsedQuery.rawValue === undefined) {

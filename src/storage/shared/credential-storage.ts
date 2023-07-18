@@ -26,12 +26,10 @@ export class CredentialStorage implements ICredentialStorage {
 
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async listCredentials(): Promise<W3CCredential[]> {
-    let creds = await this._dataSource.load();
-    const mappedCreds = creds.map((cred) =>
-      cred ? Object.assign(new W3CCredential(), cred) : undefined
-    );
-    creds = mappedCreds.filter((i) => i !== undefined) as W3CCredential[];
-    return creds;
+    const creds = await this._dataSource.load();
+    return creds
+      .filter((i) => i !== undefined)
+      .map((cred) => cred && Object.assign(new W3CCredential(), cred));
   }
 
   /** @inheritdoc */
@@ -54,7 +52,7 @@ export class CredentialStorage implements ICredentialStorage {
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async findCredentialById(id: string): Promise<W3CCredential | undefined> {
     const cred = await this._dataSource.get(id);
-    return cred ? Object.assign(new W3CCredential(), cred) : undefined;
+    return cred && Object.assign(new W3CCredential(), cred);
   }
 
   /** {@inheritdoc ICredentialStorage.listCredentials }
@@ -62,14 +60,14 @@ export class CredentialStorage implements ICredentialStorage {
    */
   async findCredentialsByQuery(query: ProofQuery): Promise<W3CCredential[]> {
     const filters = StandardJSONCredentialsQueryFilter(query);
-    let creds = (await this._dataSource.load()).filter((credential) =>
+    const creds = (await this._dataSource.load()).filter((credential) =>
       filters.every((filter) => filter.execute(credential))
     );
 
-    const mappedCreds = creds.map((cred) =>
-      cred ? Object.assign(new W3CCredential(), cred) : undefined
-    );
-    creds = mappedCreds.filter((i) => i !== undefined) as W3CCredential[];
-    return creds;
+    const mappedCreds = creds
+      .filter((i) => i !== undefined)
+      .map((cred) => Object.assign(new W3CCredential(), cred));
+
+    return mappedCreds;
   }
 }
