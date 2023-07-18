@@ -28,7 +28,7 @@
     "doc:watch:website": "ts-node ./scripts/doc-watch.ts",
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"strict\": false}' mocha",
-    "lint": "eslint --fix --ext .js,.ts src/** tests/**",
+    "lint": "eslint --fix --ext .ts src/** tests/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "deps:check": "madge --circular --extensions ts ./"
   },
@@ -43,6 +43,7 @@
   },
   "homepage": "https://github.com/0xPolygonID/js-sdk#readme",
   "devDependencies": {
+    "@iden3/eslint-config": "https://github.com/iden3/eslint-config",
     "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
     "@esbuild-plugins/node-modules-polyfill": "^0.1.4",
     "@gr2m/fetch-mock": "^9.11.0-pull-request-644.1",
