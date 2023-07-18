@@ -139,64 +139,72 @@ export class AuthHandler implements IAuthHandler {
     authRequest: AuthorizationRequestMessage;
     authResponse: AuthorizationResponseMessage;
   }> {
-    const {
-      did,
-      request,
-      packer: { mediaType, ...packerParams }
-    } = options;
+    try {
+      const {
+        did,
+        request,
+        packer: { mediaType, ...packerParams }
+      } = options;
 
-    const { unpackedMessage: message } = await this._packerMgr.unpack(request);
-    const authRequest = message as unknown as AuthorizationRequestMessage;
-    if (message.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
-      throw new Error('Invalid media type');
-    }
-    const authRequestBody = message.body as unknown as AuthorizationRequestMessageBody;
+      const { unpackedMessage: message } = await this._packerMgr.unpack(request);
+      const authRequest = message as unknown as AuthorizationRequestMessage;
+      if (message.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
+        throw new Error('Invalid media type');
+      }
+      const authRequestBody = message.body as unknown as AuthorizationRequestMessageBody;
 
-    const guid = uuid.v4();
-    const authResponse: AuthorizationResponseMessage = {
-      id: guid,
-      typ: mediaType,
-      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
-      thid: message.thid ?? guid,
-      body: {
-        did_doc: undefined, //  slipped for now, todo: get did doc for id
-        message: authRequestBody.message,
-        scope: []
-      },
-      from: options.did.string(),
-      to: message.from
-    };
-
-    for (const proofReq of authRequestBody.scope) {
-      const zkpReq: ZeroKnowledgeProofRequest = {
-        id: proofReq.id,
-        circuitId: proofReq.circuitId as CircuitId,
-        query: proofReq.query
+      const guid = uuid.v4();
+      const authResponse: AuthorizationResponseMessage = {
+        id: guid,
+        typ: mediaType,
+        type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
+        thid: message.thid ?? guid,
+        body: {
+          did_doc: undefined, //  slipped for now, todo: get did doc for id
+          message: authRequestBody.message,
+          scope: []
+        },
+        from: options.did.string(),
+        to: message.from
       };
 
-      const creds = await this._credentialWallet.findByQuery(proofReq.query);
+      for (const proofReq of authRequestBody.scope) {
+        const zkpReq: ZeroKnowledgeProofRequest = {
+          id: proofReq.id,
+          circuitId: proofReq.circuitId as CircuitId,
+          query: proofReq.query
+        };
 
-      const credsForGenesisDID = await this._credentialWallet.filterByCredentialSubject(creds, did);
-      if (credsForGenesisDID.length == 0) {
-        throw new Error(`no credential were issued on the given id ${did.string()}`);
+        const creds = await this._credentialWallet.findByQuery(proofReq.query);
+
+        const credsForGenesisDID = await this._credentialWallet.filterByCredentialSubject(
+          creds,
+          did
+        );
+        if (credsForGenesisDID.length == 0) {
+          throw new Error(`no credential were issued on the given id ${did.string()}`);
+        }
+
+        const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
+          zkpReq,
+          did,
+          credsForGenesisDID[0]
+        );
+
+        authResponse.body.scope.push(zkpRes);
       }
-
-      const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
-        zkpReq,
-        did,
-        credsForGenesisDID[0]
+      const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
+      const token = byteDecoder.decode(
+        await this._packerMgr.pack(mediaType, msgBytes, {
+          senderDID: did,
+          ...packerParams
+        })
       );
-
-      authResponse.body.scope.push(zkpRes);
+      return { authRequest, authResponse, token };
+    } catch (e) {
+      console.trace(e);
+      throw e;
     }
-    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
-    const token = byteDecoder.decode(
-      await this._packerMgr.pack(mediaType, msgBytes, {
-        senderDID: did,
-        ...packerParams
-      })
-    );
-    return { authRequest, authResponse, token };
   }
 
   /**
