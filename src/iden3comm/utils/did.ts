@@ -1,28 +1,9 @@
-import { SUPPORTED_PUBLIC_KEY_TYPES, UNIVERSAL_RESOLVER_URL } from '../constants';
+import { SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
 import elliptic from 'elliptic';
-import {
-  DIDDocument,
-  DIDResolutionOptions,
-  DIDResolutionResult,
-  VerificationMethod
-} from 'did-resolver';
+import { DIDDocument, VerificationMethod } from 'did-resolver';
 
 import { KmsKeyType } from '../../kms';
 import { base58ToBytes, base64ToBytes, bytesToHex, hexToBytes } from '../../utils';
-
-export const resolveDIDDocument = async (
-  didUrl: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  options?: DIDResolutionOptions
-): Promise<DIDResolutionResult> => {
-  try {
-    const response = await fetch(`${UNIVERSAL_RESOLVER_URL}/${didUrl}`);
-    const data = await response.json();
-    return data as DIDResolutionResult;
-  } catch (error: unknown) {
-    throw new Error(`Can't resolve did document: ${(error as Error).message}`);
-  }
-};
 
 const DIDAuthenticationSection = 'authentication';
 export const resolveVerificationMethods = (didDocument: DIDDocument): VerificationMethod[] => {
