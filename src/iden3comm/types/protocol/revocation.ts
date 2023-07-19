@@ -6,7 +6,8 @@ import { MediaType } from '../../constants';
 export type RevocationStatusRequestMessage = {
   id: string;
   typ?: MediaType;
-  type: RTCIceProtocol;
+  type: ProtocolMessage;
+  thid?: string;
   body?: RevocationStatusRequestMessageBody;
   from?: string;
   to?: string;

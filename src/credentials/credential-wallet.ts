@@ -16,6 +16,8 @@ import { JSONSchema } from '../schema-processor';
 import * as uuid from 'uuid';
 import { CredentialStatusResolverRegistry } from './status/resolver';
 import { IssuerResolver } from './status/sparse-merkle-tree';
+import { AgentResolver } from './status/agent-revocation';
+import { CredentialStatusResolveOptions } from './status/resolver';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -166,8 +168,7 @@ export interface ICredentialWallet {
    */
   getRevocationStatus(
     credStatus: CredentialStatus,
-    issuerDID: DID,
-    issuerData: IssuerData
+    credentialStatusResolveOptions?: CredentialStatusResolveOptions
   ): Promise<RevocationStatus>;
   /**
    * Creates a W3C verifiable Credential object
@@ -224,6 +225,10 @@ export class CredentialWallet implements ICredentialWallet {
         CredentialStatusType.SparseMerkleTreeProof,
         new IssuerResolver()
       );
+      this._credentialStatusResolverRegistry.register(
+        CredentialStatusType.Iden3commRevocationStatusV1,
+        new AgentResolver()
+      );
     }
   }
 
@@ -269,7 +274,26 @@ export class CredentialWallet implements ICredentialWallet {
     }
     const issuerDID = DID.parse(cred.issuer);
 
-    return await this.getRevocationStatus(cred.credentialStatus, issuerDID, issuerData);
+    let userDID: DID;
+    if (!cred.credentialSubject.id) {
+      userDID = issuerDID;
+    } else {
+      try {
+        if (typeof cred.credentialSubject.id !== 'string') {
+          throw new Error('credential status `id` is not a string');
+        }
+        userDID = DID.parse(cred.credentialSubject.id);
+      } catch (e) {
+        throw new Error('credential status `id` is not a valid DID');
+      }
+    }
+
+    const opts: CredentialStatusResolveOptions = {
+      issuerData,
+      issuerDID,
+      userDID
+    };
+    return await this.getRevocationStatus(cred.credentialStatus, opts);
   }
 
   /**
@@ -277,18 +301,14 @@ export class CredentialWallet implements ICredentialWallet {
    */
   async getRevocationStatus(
     credStatus: CredentialStatus,
-    issuerDID: DID,
-    issuerData: IssuerData
+    credentialStatusResolveOptions?: CredentialStatusResolveOptions
   ): Promise<RevocationStatus> {
     const statusResolver = this._credentialStatusResolverRegistry.get(credStatus.type);
     if (!statusResolver) {
       throw new Error(`credential status resolver does not exist for ${credStatus.type} type`);
     }
 
-    const cs = await statusResolver.resolve(credStatus, {
-      issuer: issuerDID,
-      issuerData: issuerData
-    });
+    const cs = await statusResolver.resolve(credStatus, credentialStatusResolveOptions);
 
     return cs;
   }

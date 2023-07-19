@@ -10,8 +10,8 @@ import {
   testBit
 } from '@iden3/js-merkletree';
 import { IStateStorage } from '../../storage';
-import { CredentialStatusResolver } from './resolver';
-import { CredentialStatus, IssuerData, RevocationStatus } from '../../verifiable';
+import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
+import { CredentialStatus, RevocationStatus } from '../../verifiable';
 import { strMTHex } from '../../circuits';
 import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
 
@@ -104,12 +104,9 @@ export class RHSResolver implements CredentialStatusResolver {
 
   public async getStatus(
     credentialStatus: CredentialStatus,
-    opts: {
-      issuer: DID;
-      issuerData?: IssuerData;
-    }
+    issuerDID: DID
   ): Promise<RevocationStatus> {
-    const latestStateInfo = await this._state.getLatestStateById(opts.issuer.id.bigInt());
+    const latestStateInfo = await this._state.getLatestStateById(issuerDID.id.bigInt());
     const hashedRevNonce = newHashFromBigInt(BigInt(credentialStatus.revocationNonce ?? 0));
     const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
     return await this.getRevocationStatusFromRHS(
@@ -119,29 +116,33 @@ export class RHSResolver implements CredentialStatusResolver {
     );
   }
 
-  public async resolve(
+  async resolve(
     credentialStatus: CredentialStatus,
-    opts: {
-      issuer: DID;
-      issuerData?: IssuerData;
-    }
+    credentialStatusResolveOptions?: CredentialStatusResolveOptions
   ): Promise<RevocationStatus> {
+    if (!credentialStatusResolveOptions?.issuerDID) {
+      throw new Error('IssuerDID is not set in options');
+    }
+
     try {
-      return await this.getStatus(credentialStatus, opts);
+      return await this.getStatus(credentialStatus, credentialStatusResolveOptions.issuerDID);
     } catch (e) {
       const errMsg = e.reason ?? e.message;
       if (
-        !!opts.issuerData &&
+        !!credentialStatusResolveOptions.issuerData &&
         errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
-        isIssuerGenesis(opts.issuer.toString(), opts.issuerData.state.value)
+        isIssuerGenesis(
+          credentialStatusResolveOptions.issuerDID.toString(),
+          credentialStatusResolveOptions.issuerData.state.value
+        )
       ) {
         return {
           mtp: new Proof(),
           issuer: {
-            state: opts.issuerData.state.value,
-            revocationTreeRoot: opts.issuerData.state.revocationTreeRoot,
-            rootOfRoots: opts.issuerData.state.rootOfRoots,
-            claimsTreeRoot: opts.issuerData.state.claimsTreeRoot
+            state: credentialStatusResolveOptions.issuerData.state.value,
+            revocationTreeRoot: credentialStatusResolveOptions.issuerData.state.revocationTreeRoot,
+            rootOfRoots: credentialStatusResolveOptions.issuerData.state.rootOfRoots,
+            claimsTreeRoot: credentialStatusResolveOptions.issuerData.state.claimsTreeRoot
           }
         };
       }

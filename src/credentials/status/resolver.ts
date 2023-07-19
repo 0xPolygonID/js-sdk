@@ -1,7 +1,22 @@
-import { CredentialStatusType, CredentialStatus, RevocationStatus } from '../../verifiable';
+import { DID } from '@iden3/js-iden3-core';
+import {
+  IssuerData,
+  RevocationStatus,
+  CredentialStatus,
+  CredentialStatusType
+} from '../../verifiable';
+
+export type CredentialStatusResolveOptions = {
+  issuerData?: IssuerData;
+  issuerDID?: DID;
+  userDID?: DID;
+};
 
 export interface CredentialStatusResolver {
-  resolve(credentialStatus: CredentialStatus, opts?: object): Promise<RevocationStatus>;
+  resolve(
+    credentialStatus: CredentialStatus,
+    opts?: CredentialStatusResolveOptions
+  ): Promise<RevocationStatus>;
 }
 
 export class CredentialStatusResolverRegistry {
