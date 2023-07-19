@@ -577,14 +577,10 @@ export class ProofService implements IProofService {
       if (!credential.credentialSubject.id) {
         userDID = issuerDID;
       } else {
-        try {
-          if (typeof credential.credentialSubject.id !== 'string') {
-            throw new Error('credential status `id` is not a string');
-          }
-          userDID = DID.parse(credential.credentialSubject.id);
-        } catch (e) {
-          throw new Error('credential status `id` is not a valid DID');
+        if (typeof credential.credentialSubject.id !== 'string') {
+          throw new Error('credential status `id` is not a string');
         }
+        userDID = DID.parse(credential.credentialSubject.id);
       }
 
       const opts: CredentialStatusResolveOptions = {

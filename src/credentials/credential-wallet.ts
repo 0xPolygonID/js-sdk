@@ -162,8 +162,7 @@ export interface ICredentialWallet {
    * Fetches Revocation status depended on type
    *
    * @param {(CredentialStatus )} credStatus - credentialStatus field of the Verifiable Credential.  Supported types for credentialStatus field: SparseMerkleTreeProof, Iden3ReverseSparseMerkleTreeProof
-   * @param {DID} issuerDID  - credential issuer identity
-   * @param {IssuerData} issuerData - metadata of the issuer, usually contained in the BjjSignature / Iden3SparseMerkleTreeProof
+   * @param {CredentialStatusResolveOptions} credentialStatusResolveOptions - options to resolve credential status
    * @returns `Promise<RevocationStatus>`
    */
   getRevocationStatus(
@@ -278,14 +277,10 @@ export class CredentialWallet implements ICredentialWallet {
     if (!cred.credentialSubject.id) {
       userDID = issuerDID;
     } else {
-      try {
-        if (typeof cred.credentialSubject.id !== 'string') {
-          throw new Error('credential status `id` is not a string');
-        }
-        userDID = DID.parse(cred.credentialSubject.id);
-      } catch (e) {
-        throw new Error('credential status `id` is not a valid DID');
+      if (typeof cred.credentialSubject.id !== 'string') {
+        throw new Error('credential status `id` is not a string');
       }
+      userDID = DID.parse(cred.credentialSubject.id);
     }
 
     const opts: CredentialStatusResolveOptions = {
@@ -293,7 +288,7 @@ export class CredentialWallet implements ICredentialWallet {
       issuerDID,
       userDID
     };
-    return await this.getRevocationStatus(cred.credentialStatus, opts);
+    return this.getRevocationStatus(cred.credentialStatus, opts);
   }
 
   /**
@@ -308,9 +303,7 @@ export class CredentialWallet implements ICredentialWallet {
       throw new Error(`credential status resolver does not exist for ${credStatus.type} type`);
     }
 
-    const cs = await statusResolver.resolve(credStatus, credentialStatusResolveOptions);
-
-    return cs;
+    return statusResolver.resolve(credStatus, credentialStatusResolveOptions);
   }
   /**
    * {@inheritDoc ICredentialWallet.createCredential}

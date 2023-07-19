@@ -7,6 +7,13 @@ import {
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../iden3comm/constants';
 import * as uuid from 'uuid';
 
+/**
+ * AgentResolver is a class that allows to interact with the issuer's agent to get revocation status.
+ *
+ * @export
+ * @beta
+ * @class AgentResolver
+ */
 export class AgentResolver implements CredentialStatusResolver {
   async resolve(
     credentialStatus: CredentialStatus,
@@ -29,8 +36,8 @@ export class AgentResolver implements CredentialStatusResolver {
         'Content-Type': 'application/json'
       }
     });
-    const agentResponse = await response.json();
-    return Object.assign(new RevocationStatusAgent(), { agentResponse }).toRevocationStatus();
+    const agentResponse: RevocationStatusResponseMessage = await response.json();
+    return toRevocationStatus(agentResponse);
   }
 }
 
@@ -39,7 +46,7 @@ function buildRevocationMessageRequest(
   to: string,
   revocationNonce: number
 ): RevocationStatusRequestMessage {
-  const revocationStatusRequestMessage: RevocationStatusRequestMessage = {
+  return {
     id: uuid.v4(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.REVOCATION_STATUS_REQUEST_MESSAGE_TYPE,
@@ -50,16 +57,11 @@ function buildRevocationMessageRequest(
     from: from,
     to: to
   };
-  return revocationStatusRequestMessage;
 }
 
-class RevocationStatusAgent {
-  agentResponse: RevocationStatusResponseMessage;
-
-  toRevocationStatus(): RevocationStatus {
-    return {
-      mtp: this.agentResponse.body.mtp,
-      issuer: this.agentResponse.body.issuer
-    };
-  }
+function toRevocationStatus(revocationResponse: RevocationStatusResponseMessage): RevocationStatus {
+  return {
+    mtp: revocationResponse.body.mtp,
+    issuer: revocationResponse.body.issuer
+  };
 }

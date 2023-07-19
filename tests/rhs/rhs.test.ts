@@ -262,7 +262,7 @@ describe('rhs', () => {
     await idWallet.publishStateToRHS(issuerDID, rhsUrl);
 
     const rhsResolver = new RHSResolver(mockStateStorageForDefinedState);
-    const rhsStatus = await rhsResolver.resolve(credRHSStatus, { issuerDID: issuerDID });
+    const rhsStatus = await rhsResolver.resolve(credRHSStatus, { issuerDID });
 
     expect(rhsStatus.issuer.state).to.equal(res.newTreeState.state.hex());
     expect(rhsStatus.issuer.claimsTreeRoot).to.equal(res.newTreeState.claimsRoot.hex());

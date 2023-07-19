@@ -99,9 +99,22 @@ enum NodeType {
   State = 3
 }
 
+/**
+ * RHSResolver is a class that allows to interact with the RHS service to get revocation status.
+ *
+ * @export
+ * @beta
+ * @class RHSResolver
+ */
 export class RHSResolver implements CredentialStatusResolver {
   constructor(private readonly _state: IStateStorage) {}
 
+  /**
+   * Gets revocation status from rhs service.
+   * @param {CredentialStatus} credentialStatus
+   * @param {DID} issuerDID
+   * @returns Promise<RevocationStatus>
+   */
   public async getStatus(
     credentialStatus: CredentialStatus,
     issuerDID: DID

@@ -2,6 +2,14 @@ import { CredentialStatus, RevocationStatus, Issuer } from '../../verifiable';
 import { CredentialStatusResolver } from './resolver';
 import { newHashFromBigInt, Proof, NodeAux, setBitBigEndian } from '@iden3/js-merkletree';
 
+/**
+ * IssuerResolver is a class that allows to interact with the issuer's http endpoint to get revocation status.
+ *
+ * @export
+ * @beta
+ * @class IssuerResolver
+ */
+
 export class IssuerResolver implements CredentialStatusResolver {
   async resolve(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
     const revStatusDTO = await (await fetch(credentialStatus.id)).json();
