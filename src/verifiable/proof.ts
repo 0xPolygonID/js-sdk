@@ -121,6 +121,7 @@ export interface ProofQuery {
   credentialSubjectId?: string;
   context?: string;
   type?: string;
+  skipClaimRevocationCheck?: boolean;
 }
 
 /**

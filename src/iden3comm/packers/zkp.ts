@@ -124,7 +124,7 @@ export class ZKPPacker implements IPacker {
         return provingParams?.dataPreparer?.prepare(
           hash,
           params.senderDID,
-          params.profileNonce,
+          params.profileNonce!,
           circuitId as CircuitId
         );
       }

@@ -8,7 +8,6 @@ import {
   CredentialStorage,
   IAuthHandler,
   IdentityWallet,
-  ZKPRequestWithCredential,
   byteEncoder
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
@@ -184,7 +183,7 @@ describe('auth', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    authHandler = new AuthHandler(packageMgr, proofService, credWallet);
+    authHandler = new AuthHandler(packageMgr, proofService, credWallet, idWallet);
   });
 
   it('request-response flow genesis', async () => {
@@ -271,15 +270,7 @@ describe('auth', () => {
 
     console.log(JSON.stringify(issuerCred));
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-    const authRes = await authHandler.handleAuthorizationRequestForGenesisDID({
-      did: userDID,
-      request: msgBytes,
-      packer: {
-        mediaType: MediaType.ZKPMessage,
-        profileNonce: 0,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg.toString()
-      }
-    });
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
 
     const tokenStr = authRes.token;
     console.log(tokenStr);
@@ -288,7 +279,7 @@ describe('auth', () => {
     expect(token).to.be.a('object');
   });
 
-  it('request-response flow profiles', async () => {
+  it('request-response flow profiles explicit credential', async () => {
     const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -370,9 +361,9 @@ describe('auth', () => {
 
     const authR = await authHandler.parseAuthorizationRequest(msgBytes);
 
-    // let's find cred for each request.
-    const reqCreds: ZKPRequestWithCredential[] = [];
+    let cred: W3CCredential;
 
+    // let's find cred for each request.
     for (let index = 0; index < authR.body!.scope.length; index++) {
       const zkpReq = authR.body!.scope[index];
 
@@ -398,28 +389,113 @@ describe('auth', () => {
       });
 
       // you can show user credential that can be used for request
-      const chosenCredByUser = credsThatBelongToGenesisIdOrItsProfiles[0];
-
-      // get profile nonce that was used as a part of subject in the credential
-      const credentialSubjectProfileNonce =
-        chosenCredByUser.credentialSubject['id'] === userDID.string()
-          ? 0
-          : profiles.find((p) => {
-              return p.id === chosenCredByUser.credentialSubject['id'];
-            })!.nonce;
-      reqCreds.push({ req: zkpReq, credential: chosenCredByUser, credentialSubjectProfileNonce });
+      cred = credsThatBelongToGenesisIdOrItsProfiles[0];
     }
 
     // you can create new profile here for auth or if you want to login with genesis set to 0.
 
     const authProfileNonce = 100;
 
-    const resp = await authHandler.generateAuthorizationResponse(
-      userDID,
-      authProfileNonce,
-      authR,
-      reqCreds
-    );
+    const resp = await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
+      mediaType: MediaType.ZKPMessage,
+      packerOptions: {
+        profileNonce: authProfileNonce,
+        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+      },
+      credential: cred!
+    });
+
+    console.log(resp);
+  });
+  it('request-response flow profiles implicit credential', async () => {
+    const { did: userDID } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+    const profileDID = await idWallet.createProfile(userDID, 50, 'test verifier');
+
+    const { did: issuerDID } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: profileDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 1693526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+        credentialSubject: {
+          documentType: {
+            $eq: 99
+          }
+        }
+      }
+    };
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'message',
+      did_doc: {},
+      scope: [proofReq as ZeroKnowledgeProofRequest]
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: MediaType.PlainMessage,
+      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: DID.idFromDID(issuerDID).string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+
+    const authProfileNonce = 100;
+
+    const resp = await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
+      mediaType: MediaType.ZKPMessage,
+      packerOptions: {
+        profileNonce: authProfileNonce,
+        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+      }
+    });
 
     console.log(resp);
   });

@@ -15,7 +15,7 @@ import {
 import { Hex, poseidon, PublicKey, Signature } from '@iden3/js-crypto';
 import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
-import { subjectPositionIndex } from './common';
+import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
 import { JSONSchema, Parser, CoreClaimOptions } from '../schema-processor';
 import { IDataStorage } from '../storage/interfaces/data-storage';
@@ -39,6 +39,7 @@ import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
 import { Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 import { sha256js } from 'cross-sha256';
+import { Profile } from '../storage';
 
 /**
  * DID creation options
@@ -232,6 +233,24 @@ export interface IIdentityWallet {
    * @returns `{Promise<Claim>}`
    */
   getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim>;
+
+  /**
+   *
+   * gets profile identity by genesis identifiers
+   *
+   * @param {string} did - genesis identifier from which profile has been derived
+   * @returns `{Promise<Profile[]>}`
+   */
+  getProfilesByDID(did: DID): Promise<Profile[]>;
+
+  /**
+   *
+   * gets profile nonce by it's id. if profile is genesis identifier - 0 is returned
+   *
+   * @param {string} profile -  profile has been derived
+   * @returns `{Promise<Profile[]>}`
+   */
+  getProfileNonce(profile: DID): Promise<number>;
 }
 
 /**
@@ -392,10 +411,21 @@ export class IdentityWallet implements IIdentityWallet {
       credential
     };
   }
+  /** {@inheritDoc IIdentityWallet.getProfileNonce} */
+  async getProfileNonce(profile: DID): Promise<number> {
+    // check if it is a genesis identity
+
+    const identity = await this._storage.identity.getIdentity(profile.string());
+
+    if (identity) {
+      return 0;
+    }
+    return (await this._storage.identity.getProfileById(profile.string())).nonce;
+  }
 
   /** {@inheritDoc IIdentityWallet.createProfile} */
   async createProfile(did: DID, nonce: number, verifier: string): Promise<DID> {
-    const id = DID.idFromDID(did);
+    const profileDID = generateProfileDID(did, nonce);
 
     const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
       did.string()
@@ -408,9 +438,6 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error('profile with given nonce or verifier already exists');
     }
 
-    const profile = Id.profileId(id, BigInt(nonce));
-    const profileDID = DID.parseFromId(profile);
-
     await this._storage.identity.saveProfile({
       id: profileDID.string(),
       nonce,
@@ -420,6 +447,16 @@ export class IdentityWallet implements IIdentityWallet {
     return profileDID;
   }
 
+  /**
+   *
+   * gets profile identity by genesis identifiers
+   *
+   * @param {string} genesisIdentifier - genesis identifier from which profile has been derived
+   * @returns `{Promise<Profile[]>}`
+   */
+  async getProfilesByDID(did: DID): Promise<Profile[]> {
+    return this._storage.identity.getProfilesByGenesisIdentifier(did.string());
+  }
   /** {@inheritDoc IIdentityWallet.generateKey} */
   async generateKey(keyType: KmsKeyType): Promise<KmsKeyId> {
     const key = await this._kms.createKeyFromSeed(keyType, getRandomBytes(32));

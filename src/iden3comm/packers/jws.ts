@@ -1,10 +1,10 @@
-import { BasicMessage, IPacker, PackerParams } from '../types';
+import { BasicMessage, IPacker, JWSPackerParams } from '../types';
 import { MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
 import { extractPublicKeyBytes, resolveVerificationMethods } from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
 
-import { Signer, verifyJWS } from 'did-jwt';
-import { DIDDocument, Resolvable, VerificationMethod, parse } from 'did-resolver';
+import { verifyJWS } from 'did-jwt';
+import { DIDDocument, Resolvable, parse } from 'did-resolver';
 import {
   byteDecoder,
   byteEncoder,
@@ -12,7 +12,6 @@ import {
   decodeBase64url,
   encodeBase64url
 } from '../../utils';
-export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
 
 /**
  * Packer that can pack message to JWZ token,
@@ -38,15 +37,7 @@ export class JWSPacker implements IPacker {
    * @param {PackerParams} params - sender id and proving alg are required
    * @returns `Promise<Uint8Array>`
    */
-  async pack(
-    payload: Uint8Array,
-    params: PackerParams & {
-      alg: string;
-      kid?: string;
-      didDocument?: DIDDocument;
-      signer?: SignerFn;
-    }
-  ): Promise<Uint8Array> {
+  async pack(payload: Uint8Array, params: JWSPackerParams): Promise<Uint8Array> {
     if (!params.alg) {
       throw new Error('Missing algorithm');
     }

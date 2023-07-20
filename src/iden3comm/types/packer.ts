@@ -3,7 +3,8 @@ import { DataPrepareHandlerFunc, VerificationHandlerFunc } from '../packers';
 import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
 import { MediaType } from '../constants';
-
+import { DIDDocument, VerificationMethod } from 'did-resolver';
+import { Signer } from 'did-jwt';
 /**
  *  Protocol message type
  */
@@ -44,6 +45,21 @@ export type ZKPPackerParams = PackerParams & {
   senderDID: DID;
   profileNonce: number;
   provingMethodAlg: ProvingMethodAlg;
+};
+
+/**
+ *  SignerFn Is function to sign data with a verification method
+ */
+export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
+
+/**
+ *  JWSPackerParams are parameters for JWS packer
+ */
+export type JWSPackerParams = PackerParams & {
+  alg: string;
+  kid?: string;
+  didDocument?: DIDDocument;
+  signer?: SignerFn;
 };
 
 /**

@@ -278,12 +278,11 @@ export class ProofService implements IProofService {
   }
 
   private async getPreparedCredential(credential: W3CCredential): Promise<PreparedCredential> {
-    const { cred: nonRevokedCred, revStatus } =
-      await this._credentialWallet.findNonRevokedCredential([credential]);
+    const revStatus = await this._credentialWallet.getRevocationStatusFromCredential(credential);
 
-    const credCoreClaim = await this._identityWallet.getCoreClaimFromCredential(nonRevokedCred);
+    const credCoreClaim = await this._identityWallet.getCoreClaimFromCredential(credential);
 
-    return { credential: nonRevokedCred, revStatus, credentialCoreClaim: credCoreClaim };
+    return { credential: credential, revStatus, credentialCoreClaim: credCoreClaim };
   }
 
   private async prepareAuthBJJCredential(

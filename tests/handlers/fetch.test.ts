@@ -33,7 +33,7 @@ import {
 import * as uuid from 'uuid';
 import { byteEncoder } from '../../src/utils';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-import { assert, expect } from 'chai';
+import { assert, expect, use } from 'chai';
 import fetchMock from '@gr2m/fetch-mock';
 import { after } from 'mocha';
 import { proving } from '@iden3/js-jwz';
@@ -47,6 +47,8 @@ describe('fetch', () => {
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
   const agentUrl = 'https://testagent.com/';
+  const agentUrlForProfile = 'https://testagentprofile.com/';
+
   const mockedToken = 'jwz token to fetch credential';
 
   const mockStateStorage: IStateStorage = {
@@ -145,6 +147,71 @@ describe('fetch', () => {
     "typ": "application/iden3comm-plain-json",
     "type": "https://iden3-communication.io/credentials/1.0/issuance-response"
 }`;
+  const mockerCredResponseForProfile = `{
+  "body": {
+      "credential": {
+          "@context": [
+              "https://www.w3.org/2018/credentials/v1",
+              "https://schema.iden3.io/core/jsonld/iden3proofs.jsonld",
+              "https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v100.json-ld"
+          ],
+          "credentialSchema": {
+              "id": "https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v100.json",
+              "type": "JsonSchemaValidator2018"
+          },
+          "credentialStatus": {
+              "id": "http://localhost:8001/api/v1/identities/did%3Aiden3%3AtSsTSJY6g9yUc54FFH6yhx2ymZNtsuTAD9p3avWCb/claims/revocation/status/3701011735",
+              "revocationNonce": 3701011735,
+              "type": "SparseMerkleTreeProof"
+          },
+          "credentialSubject": {
+              "birthday": 19960424,
+              "documentType": 99,
+              "id": "did:polygon:mumbai:wwYSEgcJxHAwyjKbBmVbm7w1p33Xb3e1BbDCmHuxh",
+              "type": "KYCAgeCredential"
+          },
+          "expirationDate": "2361-03-21T21:14:48+02:00",
+          "id": "http://localhost:8001/api/v1/identities/did:iden3:tSsTSJY6g9yUc54FFH6yhx2ymZNtsuTAD9p3avWCb/claims/d04fcbf8-b373-11ed-88d2-de17148ce1ce",
+          "issuanceDate": "2023-02-23T14:15:51.58546+02:00",
+          "issuer": "did:iden3:tSsTSJY6g9yUc54FFH6yhx2ymZNtsuTAD9p3avWCb",
+          "proof": [
+              {
+                  "coreClaim": "06ce4f021d1d9fe3b5dd115882f469ce2a000000000000000000000000000000021253a8d5867185af98ef6bb512c021fc5f099e3ac82f9b924b353128e20c005cff21a8096a19e3198035035c815a2c4d2384ea6b9b2c4a6cc3b9aebff2dc1d000000000000000000000000000000000000000000000000000000000000000017f598dc00000000281cdcdf0200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                  "issuerData": {
+                      "authCoreClaim": "cca3371a6cb1b715004407e325bd993c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004ccf39129a7759649ab1a70538602ca651f76abc1e9b7b7b84db2faa48037a0bd55ec8cdd16d2989f0a5c9824b578c914bd0fd10746bec83075773931d6cb1290000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                      "credentialStatus": {
+                          "id": "http://localhost:8001/api/v1/identities/did%3Aiden3%3AtSsTSJY6g9yUc54FFH6yhx2ymZNtsuTAD9p3avWCb/claims/revocation/status/0",
+                          "revocationNonce": 0,
+                          "type": "SparseMerkleTreeProof"
+                      },
+                      "id": "did:iden3:tSsTSJY6g9yUc54FFH6yhx2ymZNtsuTAD9p3avWCb",
+                      "mtp": {
+                          "existence": true,
+                          "siblings": [
+                              "307532286953684850322725598023921449547946667992416711686417617300288340824"
+                          ]
+                      },
+                      "state": {
+                          "claimsTreeRoot": "188a0b752a0add6ab1b4639b2529999de16cffb42a251074b67551b838404330",
+                          "value": "e74265e2e3c054db09bab873642d9675727538a7010f4dbd8250eed06ca54100"
+                      }
+                  },
+                  "signature": "62affc0893c76c1e9e279ea0a5b7a48d0fc186d6133303fcd924ae5d3cc0b39fd6791fe0903a80501707f272724ee889f134c64035e40a956fd0cf1c3e4baa02",
+                  "type": "BJJSignature2021"
+              }
+          ],
+          "type": [
+              "VerifiableCredential",
+              "KYCAgeCredential"
+          ]
+      }
+  },
+  "from": "did:iden3:tSsTSJY6g9yUc54FFH6yhx2ymZNtsuTAD9p3avWCb",
+  "id": "30e37e90-2242-4a36-b475-799047d60481",
+  "to": "did:polygon:mumbai:wwYSEgcJxHAwyjKbBmVbm7w1p33Xb3e1BbDCmHuxh,
+  "typ": "application/iden3comm-plain-json",
+  "type": "https://iden3-communication.io/credentials/1.0/issuance-response"
+}`;
 
   beforeEach(async () => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
@@ -178,15 +245,16 @@ describe('fetch', () => {
       return { unpackedMessage: msg, unpackedMediaType: PROTOCOL_CONSTANTS.MediaType.PlainMessage };
     };
     packageMgr.pack = async (): Promise<Uint8Array> => byteEncoder.encode(mockedToken);
-    fetchHandler = new FetchHandler(packageMgr);
+    fetchHandler = new FetchHandler(packageMgr, idWallet, credWallet);
     fetchMock.post(agentUrl, JSON.parse(mockedCredResponse));
+    fetchMock.post(agentUrlForProfile, JSON.parse(mockedCredResponse));
   });
 
   after(() => {
     fetchMock.restore();
   });
 
-  it('fetch credential', async () => {
+  it('fetch credential issued to genesis did', async () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
@@ -225,16 +293,84 @@ describe('fetch', () => {
         url: agentUrl,
         credentials: [{ id: 'https://credentialId', description: 'kyc age credentials' }]
       } as CredentialsOfferMessageBody,
-      from: issuerDID.string()
+      from: issuerDID.string(),
+      to: userDID.string()
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
 
-    const res = await fetchHandler.handleCredentialOffer({
+    const res = await fetchHandler.handleCredentialOffer(msgBytes, {
       did: userDID,
-      offer: msgBytes,
-      packer: {
-        mediaType: PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
+      mediaType: PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
+      packerOptions: {
+        profileNonce: 0,
+        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+      }
+    });
+
+    await credWallet.saveAll(res);
+
+    expect(res).to.be.a('array');
+    expect(res).to.have.length(1);
+    assert.deepEqual(
+      res[0],
+      (JSON.parse(mockedCredResponse) as CredentialIssuanceMessage).body?.credential
+    );
+  });
+
+  it('fetch credential issued to profile', async () => {
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
+
+    const { did: userDID, credential: cred } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+    expect(cred).not.to.be.undefined;
+    const profileDID = await idWallet.createProfile(userDID, 50, 'test verifier');
+    expect(profileDID).not.to.be.undefined;
+    console.log(profileDID);
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    expect(issuerAuthCredential).not.to.be.undefined;
+
+    const id = uuid.v4();
+    const authReq: CredentialsOfferMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE,
+      thid: id,
+      body: {
+        url: agentUrlForProfile,
+        credentials: [{ id: 'https://credentialId', description: 'kyc age credentials' }]
+      } as CredentialsOfferMessageBody,
+      from: issuerDID.string(),
+      to: profileDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+
+    const res = await fetchHandler.handleCredentialOffer(msgBytes, {
+      did: userDID,
+      mediaType: PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
+      packerOptions: {
+        profileNonce: 0,
         provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
       }
     });

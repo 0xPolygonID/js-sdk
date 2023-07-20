@@ -83,7 +83,7 @@ export const verifiablePresentationFromCred = async (
 }> => {
   const mz = await w3cCred.merklize(opts);
 
-  const request = requestObj as { [key: string]: unknown };
+  const request = requestObj as unknown as { [key: string]: unknown };
 
   const contextType = stringByPath(request, 'type');
 
