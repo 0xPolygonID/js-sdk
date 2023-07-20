@@ -23,7 +23,7 @@ import {
   TreeState,
   ValueProof
 } from '../circuits';
-import { ICredentialWallet } from '../credentials';
+import { CredentialStatusResolveOptions, ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
 import {
   createVerifiablePresentation,
@@ -578,19 +578,31 @@ export class ProofService implements IProofService {
 
     if (sigProof) {
       const signature = await bJJSignatureFromHexString(sigProof.signature);
-      const issuer = DID.parse(sigProof.issuerData.id);
+      const issuerDID = DID.parse(sigProof.issuerData.id);
+      let userDID: DID;
+      if (!credential.credentialSubject.id) {
+        userDID = issuerDID;
+      } else {
+        if (typeof credential.credentialSubject.id !== 'string') {
+          throw new Error('credential status `id` is not a string');
+        }
+        userDID = DID.parse(credential.credentialSubject.id);
+      }
 
       let rs: RevocationStatus | undefined;
 
       if (sigProof.issuerData.credentialStatus) {
+        const opts: CredentialStatusResolveOptions = {
+          issuerData: sigProof.issuerData,
+          issuerDID,
+          userDID
+        };
         rs = await this._credentialWallet.getRevocationStatus(
           sigProof.issuerData.credentialStatus,
-          issuer,
-          sigProof.issuerData
+          opts
         );
       }
 
-      //todo: check if this is correct
       const issuerAuthNonRevProof: MTProof = {
         treeState: {
           state: strMTHex(rs?.issuer.state),

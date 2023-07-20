@@ -1,6 +1,6 @@
 import { RevocationStatus, CredentialStatus } from '../../verifiable';
 import { EthConnectionConfig } from '../../storage/blockchain';
-import { CredentialStatusResolver } from './resolver';
+import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revocation';
 import { DID } from '@iden3/js-iden3-core';
 
@@ -23,11 +23,12 @@ export class OnChainResolver implements CredentialStatusResolver {
 
   async resolve(
     credentialStatus: CredentialStatus,
-    opts: {
-      issuer: DID;
-    }
+    credentialStatusResolveOptions?: CredentialStatusResolveOptions
   ): Promise<RevocationStatus> {
-    return this.getRevocationOnChain(credentialStatus, opts.issuer);
+    if (!credentialStatusResolveOptions?.issuerDID) {
+      throw new Error('IssuerDID is not set in options');
+    }
+    return this.getRevocationOnChain(credentialStatus, credentialStatusResolveOptions.issuerDID);
   }
 
   /**
@@ -72,8 +73,8 @@ export class OnChainResolver implements CredentialStatusResolver {
       throw new Error('revocationNonce not found');
     }
 
-    const issuerDID = id.split('/')[0];
-    if (!issuerDID) {
+    const issuer = id.split('/')[0];
+    if (!issuer) {
       throw new Error('issuer not found in credentialStatus id');
     }
     // TODO (illia-korotia): after merging core v2 need to parse contract address from did if `contractAddress` is not present in id as param
@@ -86,7 +87,7 @@ export class OnChainResolver implements CredentialStatusResolver {
     const chainId = parseInt(parts[0], 10);
     const contractAddress = parts[1];
 
-    return { contractAddress, chainId, revocationNonce, issuer: issuerDID };
+    return { contractAddress, chainId, revocationNonce, issuer };
   }
 
   networkByChainId(chainId: number): EthConnectionConfig {

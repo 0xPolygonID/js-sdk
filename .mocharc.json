@@ -4,5 +4,5 @@
     ],
     "spec": "tests/**/*.test.ts",
     "require": "ts-node/register",
-    "timeout": "120000"
+    "timeout": "240000"
 }

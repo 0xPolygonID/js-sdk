@@ -180,11 +180,12 @@ export class AuthHandler implements IAuthHandler {
       if (credsForGenesisDID.length == 0) {
         throw new Error(`no credential were issued on the given id ${did.string()}`);
       }
+      const { cred } = await this._credentialWallet.findNonRevokedCredential(credsForGenesisDID);
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
         zkpReq,
         did,
-        credsForGenesisDID[0]
+        cred
       );
 
       authResponse.body.scope.push(zkpRes);
