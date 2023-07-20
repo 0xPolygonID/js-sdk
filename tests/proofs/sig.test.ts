@@ -502,5 +502,5 @@ describe('sig proofs', () => {
         }
       }
     });
-  }).timeout(1200000);
+  });
 });
