@@ -101,5 +101,8 @@ export const verifiablePresentationFromCred = async (
 
   const vp = createVerifiablePresentation(contextURL, contextType, field, rawValue);
 
-  return { vp, mzValue: value!, dataType, hasher };
+  if (!value) {
+    throw new Error(`can't merklize verifiable presentation`);
+  }
+  return { vp, mzValue: value, dataType, hasher };
 };

@@ -33,6 +33,8 @@ describe('sig proofs', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
   const rhsUrl = process.env.RHS_URL as string;
+  const ipfsNodeURL = process.env.IPFS_URL as string;
+
   let userDID: DID;
   let issuerDID: DID;
   let circuitStorage: CircuitStorage;
@@ -123,7 +125,7 @@ describe('sig proofs', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      ipfsGatewayURL: 'https://ipfs.io'
+     ipfsNodeURL
     });
 
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
@@ -189,7 +191,7 @@ describe('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID);
 
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
@@ -238,7 +240,10 @@ describe('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+      credential: credsForMyUserDID[0],
+      skipRevocation: false
+    });
 
     expect(vp).to.be.undefined;
     expect(proof).not.to.be.undefined;
@@ -287,7 +292,10 @@ describe('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+      credential: credsForMyUserDID[0],
+      skipRevocation: true
+    });
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
   });
@@ -335,7 +343,7 @@ describe('sig proofs', () => {
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsGatewayURL: 'https://ipfs.io'
+      ipfsNodeURL
     });
 
     await credWallet.save(issuerCred);
@@ -343,14 +351,7 @@ describe('sig proofs', () => {
     const creds = await credWallet.findByQuery(req.body.scope[0].query);
     expect(creds.length).to.not.equal(0);
 
-    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(credsForMyUserDID.length).to.equal(1);
-
-    const { proof, vp } = await proofService.generateProof(
-      req.body.scope[0],
-      userDID,
-      credsForMyUserDID[0]
-    );
+    const { proof, vp } = await proofService.generateProof(req.body.scope[0], userDID);
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
   });
@@ -389,7 +390,7 @@ describe('sig proofs', () => {
       }
     };
     const issuedCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsGatewayURL: 'https://ipfs.io'
+     ipfsNodeURL
     });
 
     await credWallet.save(issuedCred);
@@ -428,7 +429,7 @@ describe('sig proofs', () => {
     };
 
     const deliveryCred = await idWallet.issueCredential(issuerDID, deliveryClaimReq, {
-      ipfsGatewayURL: 'https://ipfs.io'
+     ipfsNodeURL
     });
 
     await credWallet.save(deliveryCred);
@@ -455,7 +456,7 @@ describe('sig proofs', () => {
       circuitId: 'credentialAtomicQuerySigV2',
       query
     };
-    const { proof, vp } = await proofService.generateProof(vpReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(vpReq, userDID);
     expect(proof).not.to.be.undefined;
 
     expect(vp).to.deep.equal({
@@ -483,8 +484,7 @@ describe('sig proofs', () => {
     };
     const { proof: deliveryProof, vp: deliveryVP } = await proofService.generateProof(
       deliveryVPReq,
-      userDID,
-      credsFromWallet[0]
+      userDID
     );
     expect(deliveryProof).not.to.be.undefined;
 

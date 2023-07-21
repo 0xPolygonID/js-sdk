@@ -36,7 +36,6 @@ import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
 import fetchMock from '@gr2m/fetch-mock';
 import { after } from 'mocha';
-import { proving } from '@iden3/js-jwz';
 
 describe('fetch', () => {
   let idWallet: IdentityWallet;
@@ -47,6 +46,7 @@ describe('fetch', () => {
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
   const agentUrl = 'https://testagent.com/';
+
   const mockedToken = 'jwz token to fetch credential';
 
   const mockStateStorage: IStateStorage = {
@@ -186,7 +186,7 @@ describe('fetch', () => {
     fetchMock.restore();
   });
 
-  it('fetch credential', async () => {
+  it('fetch credential issued to genesis did', async () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
@@ -225,19 +225,13 @@ describe('fetch', () => {
         url: agentUrl,
         credentials: [{ id: 'https://credentialId', description: 'kyc age credentials' }]
       } as CredentialsOfferMessageBody,
-      from: issuerDID.string()
+      from: issuerDID.string(),
+      to: userDID.string()
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
 
-    const res = await fetchHandler.handleCredentialOffer({
-      did: userDID,
-      offer: msgBytes,
-      packer: {
-        mediaType: PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-      }
-    });
+    const res = await fetchHandler.handleCredentialOffer(msgBytes);
 
     await credWallet.saveAll(res);
 

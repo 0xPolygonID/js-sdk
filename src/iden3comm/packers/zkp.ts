@@ -43,17 +43,11 @@ export class DataPrepareHandlerFunc {
    *
    * @param {Uint8Array} hash - challenge that will be signed
    * @param {DID} did - did of identity that will prepare inputs
-   * @param {Number} profileNonce - nonce for profile (genesis id must be 0)
    * @param {CircuitId} circuitId - circuit id
    * @returns `Promise<Uint8Array>`
    */
-  prepare(
-    hash: Uint8Array,
-    did: DID,
-    profileNonce: number,
-    circuitId: CircuitId
-  ): Promise<Uint8Array> {
-    return this.dataPrepareFunc(hash, did, profileNonce, circuitId);
+  prepare(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array> {
+    return this.dataPrepareFunc(hash, did, circuitId);
   }
 }
 
@@ -121,12 +115,7 @@ export class ZKPPacker implements IPacker {
       provingMethod,
       byteDecoder.decode(payload),
       (hash: Uint8Array, circuitId: string) => {
-        return provingParams?.dataPreparer?.prepare(
-          hash,
-          params.senderDID,
-          params.profileNonce,
-          circuitId as CircuitId
-        );
+        return provingParams?.dataPreparer?.prepare(hash, params.senderDID, circuitId as CircuitId);
       }
     );
     token.setHeader(Header.Type, MediaType.ZKPMessage);

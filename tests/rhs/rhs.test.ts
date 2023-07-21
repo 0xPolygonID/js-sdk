@@ -171,7 +171,7 @@ describe('rhs', () => {
 
     return rhsResolver
       .getStatus(credRHSStatus, issuerDID)
-      .then(function (m) {
+      .then(function () {
         throw new Error('was not supposed to succeed');
       })
       .catch((m) => {

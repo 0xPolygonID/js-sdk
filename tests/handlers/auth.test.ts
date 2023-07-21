@@ -8,7 +8,6 @@ import {
   CredentialStorage,
   IAuthHandler,
   IdentityWallet,
-  ZKPRequestWithCredential,
   byteEncoder
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
@@ -55,6 +54,8 @@ describe('auth', () => {
   let authHandler: IAuthHandler;
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
+  const ipfsNodeURL = process.env.IPFS_URL as string;
+
 
   const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
   const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -177,17 +178,17 @@ describe('auth', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      ipfsGatewayURL: 'https://ipfs.io'
+      ipfsNodeURL
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    authHandler = new AuthHandler(packageMgr, proofService, credWallet);
+    authHandler = new AuthHandler(packageMgr, proofService);
   });
 
-  it('request-response flow genesis', async () => {
+  it('request-response flow identity (not profile)', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -271,15 +272,7 @@ describe('auth', () => {
 
     console.log(JSON.stringify(issuerCred));
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-    const authRes = await authHandler.handleAuthorizationRequestForGenesisDID({
-      did: userDID,
-      request: msgBytes,
-      packer: {
-        mediaType: MediaType.ZKPMessage,
-        profileNonce: 0,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg.toString()
-      }
-    });
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
 
     const tokenStr = authRes.token;
     console.log(tokenStr);
@@ -368,58 +361,16 @@ describe('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
 
-    const authR = await authHandler.parseAuthorizationRequest(msgBytes);
-
-    // let's find cred for each request.
-    const reqCreds: ZKPRequestWithCredential[] = [];
-
-    for (let index = 0; index < authR.body!.scope.length; index++) {
-      const zkpReq = authR.body!.scope[index];
-
-      const credsToChooseForZKPReq = await credWallet.findByQuery(zkpReq.query);
-
-      // filter credentials for subjects that are profiles of identity
-
-      //    1g                      2g
-      // 1.1p Pas 1.2p Age   2.1p Pas 2.2p Age
-
-      const profiles = await dataStorage.identity.getProfilesByGenesisIdentifier(userDID.string());
-      // 1.1p Pas 1.2p Age
-
-      // finds all credentials that belongs to genesis identity or profiles derived from it
-      const credsThatBelongToGenesisIdOrItsProfiles = credsToChooseForZKPReq.filter((cred) => {
-        const credentialSubjectId = cred.credentialSubject['id'] as string; // credential subject
-        return (
-          credentialSubjectId == userDID.string() ||
-          profiles.some((p) => {
-            return p.id === credentialSubjectId;
-          })
-        );
-      });
-
-      // you can show user credential that can be used for request
-      const chosenCredByUser = credsThatBelongToGenesisIdOrItsProfiles[0];
-
-      // get profile nonce that was used as a part of subject in the credential
-      const credentialSubjectProfileNonce =
-        chosenCredByUser.credentialSubject['id'] === userDID.string()
-          ? 0
-          : profiles.find((p) => {
-              return p.id === chosenCredByUser.credentialSubject['id'];
-            })!.nonce;
-      reqCreds.push({ req: zkpReq, credential: chosenCredByUser, credentialSubjectProfileNonce });
-    }
-
     // you can create new profile here for auth or if you want to login with genesis set to 0.
 
-    const authProfileNonce = 100;
+    const authR = await authHandler.parseAuthorizationRequest(msgBytes);
 
-    const resp = await authHandler.generateAuthorizationResponse(
-      userDID,
-      authProfileNonce,
-      authR,
-      reqCreds
-    );
+    const authProfile = await idWallet.getProfileByVerifier(authR.from);
+    const authProfileDID = authProfile
+      ? DID.parse(authProfile.id)
+      : await idWallet.createProfile(userDID, 100, authR.from);
+
+    const resp = await authHandler.handleAuthorizationRequest(authProfileDID, msgBytes);
 
     console.log(resp);
   });

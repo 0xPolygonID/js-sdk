@@ -5,10 +5,9 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
 import {
   AuthorizationRequestMessage,
-  AuthorizationRequestMessageBody,
   AuthorizationResponseMessage,
   IPackageManager,
-  PackerParams,
+  JWSPackerParams,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
@@ -16,21 +15,9 @@ import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
-import { ICredentialWallet } from '../../credentials';
-import { W3CCredential } from '../../verifiable';
+import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
 
-/**
- * ZKP request and credential that satisfies the zkp query conditions
- *
- * @export
- * @interface ZKPRequestWithCredential
- */
-export interface ZKPRequestWithCredential {
-  req: ZeroKnowledgeProofRequest;
-  credential: W3CCredential;
-  credentialSubjectProfileNonce: number;
-}
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
  *
@@ -39,29 +26,6 @@ export interface ZKPRequestWithCredential {
  * @interface IAuthHandler
  */
 export interface IAuthHandler {
-  /**
-   * Handle authorization request protocol message
-   *
-   * @param {DID} id - identifier that will handle request
-   * @param {Uint8Array} request - request payload
-   * @returns `Promise<{
-   *     token: string;
-   *     authRequest: AuthorizationRequestMessage;
-   *     authResponse: AuthorizationResponseMessage;
-   *   }>`
-   */
-  handleAuthorizationRequestForGenesisDID(options: {
-    did: DID;
-    request: Uint8Array;
-    packer: {
-      mediaType: MediaType;
-    } & PackerParams;
-  }): Promise<{
-    token: string;
-    authRequest: AuthorizationRequestMessage;
-    authResponse: AuthorizationResponseMessage;
-  }>;
-
   /**
    * unpacks authorization request
    * @export
@@ -72,30 +36,40 @@ export interface IAuthHandler {
   parseAuthorizationRequest(request: Uint8Array): Promise<AuthorizationRequestMessage>;
 
   /**
-   * Generates zero-knowledge proofs for given requests and credentials
+   * unpacks authorization request
    * @export
    * @beta
-   * @param {DID} userGenesisDID      - user genesis identifier for which user holds key pair.
-   * @param {number} authProfileNonce - profile nonce that will be used for authorization.
-   * @param {AuthorizationRequestMessage} authRequest - authorization request, protocol message.
-   * @param {ZKPRequestWithCredential[]} zkpRequestsWithCreds - zero knowledge proof request with chosen credential to use.
+   * @param {did} did  - sender DID
+   * @param {Uint8Array} request - raw byte message
    * @returns `Promise<{
-   *     token: string;
-   *     authRequest: AuthorizationRequestMessage;
-   *     authResponse: AuthorizationResponseMessage;
-   *   }>}`
+    token: string;
+    authRequest: AuthorizationRequestMessage;
+    authResponse: AuthorizationResponseMessage;
+  }>`
    */
-  generateAuthorizationResponse(
-    userGenesisDID: DID,
-    authProfileNonce: number,
-    authRequest: AuthorizationRequestMessage,
-    zkpRequestsWithCreds: ZKPRequestWithCredential[]
+  handleAuthorizationRequest(
+    did: DID,
+    request: Uint8Array,
+    opts?: AuthHandlerOptions
   ): Promise<{
     token: string;
     authRequest: AuthorizationRequestMessage;
     authResponse: AuthorizationResponseMessage;
   }>;
 }
+/**
+ *
+ * Options to pass to auth handler
+ *
+ * @export
+ * @beta
+ * @interface AuthHandlerOptions
+ */
+export interface AuthHandlerOptions {
+  mediaType: MediaType;
+  packerOptions?: JWSPackerParams;
+}
+
 /**
  *
  * Allows to process AuthorizationRequest protocol message and produce JWZ response.
@@ -111,94 +85,12 @@ export class AuthHandler implements IAuthHandler {
    * Creates an instance of AuthHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    * @param {IProofService} _proofService -  proof service to verify zk proofs
-   * @param {ICredentialWallet} _credentialWallet -  wallet to search credentials
    *
    */
   constructor(
     private readonly _packerMgr: IPackageManager,
-    private readonly _proofService: IProofService,
-    private readonly _credentialWallet: ICredentialWallet
+    private readonly _proofService: IProofService
   ) {}
-
-  /**
-   * Handles only messages with authorization/v1.0/request type
-   * Generates all requested proofs and wraps authorization response message to JWZ token
-   * works when profiles are not supported
-   * @param {DID} did - an identity that will process the request
-   * @param {Uint8Array} request - raw request
-   * @returns `Promise<{token: string; authRequest: AuthorizationRequestMessage; authResponse: AuthorizationResponseMessage;}>` JWZ token, parsed request and response
-   */
-  async handleAuthorizationRequestForGenesisDID(options: {
-    did: DID;
-    request: Uint8Array;
-    packer: {
-      mediaType: MediaType;
-    } & PackerParams;
-  }): Promise<{
-    token: string;
-    authRequest: AuthorizationRequestMessage;
-    authResponse: AuthorizationResponseMessage;
-  }> {
-    const {
-      did,
-      request,
-      packer: { mediaType, ...packerParams }
-    } = options;
-
-    const { unpackedMessage: message } = await this._packerMgr.unpack(request);
-    const authRequest = message as unknown as AuthorizationRequestMessage;
-    if (message.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
-      throw new Error('Invalid media type');
-    }
-    const authRequestBody = message.body as unknown as AuthorizationRequestMessageBody;
-
-    const guid = uuid.v4();
-    const authResponse: AuthorizationResponseMessage = {
-      id: guid,
-      typ: mediaType,
-      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
-      thid: message.thid ?? guid,
-      body: {
-        did_doc: undefined, //  slipped for now, todo: get did doc for id
-        message: authRequestBody.message,
-        scope: []
-      },
-      from: options.did.string(),
-      to: message.from
-    };
-
-    for (const proofReq of authRequestBody.scope) {
-      const zkpReq: ZeroKnowledgeProofRequest = {
-        id: proofReq.id,
-        circuitId: proofReq.circuitId as CircuitId,
-        query: proofReq.query
-      };
-
-      const creds = await this._credentialWallet.findByQuery(proofReq.query);
-
-      const credsForGenesisDID = await this._credentialWallet.filterByCredentialSubject(creds, did);
-      if (credsForGenesisDID.length == 0) {
-        throw new Error(`no credential were issued on the given id ${did.string()}`);
-      }
-      const { cred } = await this._credentialWallet.findNonRevokedCredential(credsForGenesisDID);
-
-      const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
-        zkpReq,
-        did,
-        cred
-      );
-
-      authResponse.body.scope.push(zkpRes);
-    }
-    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
-    const token = byteDecoder.decode(
-      await this._packerMgr.pack(mediaType, msgBytes, {
-        senderDID: did,
-        ...packerParams
-      })
-    );
-    return { authRequest, authResponse, token };
-  }
 
   /**
    * unpacks authorization request
@@ -217,65 +109,97 @@ export class AuthHandler implements IAuthHandler {
   }
 
   /**
-   * Generates zero-knowledge proofs for given requests and credentials
+   * unpacks authorization request and packs authorization response
    * @export
    * @beta
-   * @param {DID} userGenesisDID      - user genesis identifier for which user holds key pair.
-   * @param {number} authProfileNonce - profile nonce that will be used for authorization.
-   * @param {AuthorizationRequestMessage} authRequest - authorization request, protocol message.
-   * @param {ZKPRequestWithCredential[]} zkpRequestsWithCreds - zero knowledge proof request with chosen credential to use.
+   * @param {did} did  - sender DID
+   * @param {Uint8Array} request - raw byte message
    * @returns `Promise<{
-   *     token: string;
-   *     authRequest: AuthorizationRequestMessage;
-   *     authResponse: AuthorizationResponseMessage;
-   *   }>}`
+    token: string;
+    authRequest: AuthorizationRequestMessage;
+    authResponse: AuthorizationResponseMessage;
+  }>`
    */
-  async generateAuthorizationResponse(
-    userGenesisDID: DID,
-    authProfileNonce: number,
-    authRequest: AuthorizationRequestMessage,
-    zkpRequestsWithCreds?: ZKPRequestWithCredential[]
+  async handleAuthorizationRequest(
+    did: DID,
+    request: Uint8Array,
+    opts?: AuthHandlerOptions
   ): Promise<{
     token: string;
     authRequest: AuthorizationRequestMessage;
     authResponse: AuthorizationResponseMessage;
   }> {
+    const authRequest = await this.parseAuthorizationRequest(request);
+
+    if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
+      throw new Error('Invalid message type for authorization request');
+    }
+
+    if (!opts) {
+      opts = {
+        mediaType: MediaType.ZKPMessage
+      };
+    }
+
+    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
+      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
+    }
+
+    if (authRequest.to) {
+      // override sender did if it's explicitly specified in the auth request
+      did = DID.parse(authRequest.to);
+    }
     const guid = uuid.v4();
+
     const authResponse: AuthorizationResponseMessage = {
       id: guid,
-      typ: MediaType.ZKPMessage,
+      typ: opts.mediaType,
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
       thid: authRequest.thid ?? guid,
       body: {
         message: authRequest?.body?.message,
         scope: []
       },
-      from: userGenesisDID.string(),
+      from: did.string(),
       to: authRequest.from
     };
 
-    for (const r of zkpRequestsWithCreds || []) {
+    for (const proofReq of authRequest.body.scope) {
+      const zkpReq: ZeroKnowledgeProofRequest = {
+        id: proofReq.id,
+        circuitId: proofReq.circuitId as CircuitId,
+        query: proofReq.query
+      };
+
+      const query = proofReq.query as unknown as ProofQuery;
+
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
-        r.req,
-        userGenesisDID,
-        r.credential,
+        zkpReq,
+        did,
         {
-          authProfileNonce: authProfileNonce,
-          credentialSubjectProfileNonce: r.credentialSubjectProfileNonce,
-          skipRevocation: false
+          skipRevocation: query.skipClaimRevocationCheck ?? false
         }
       );
 
       authResponse.body.scope.push(zkpRes);
     }
+
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
+
+    const packerOpts =
+      opts.mediaType === MediaType.SignedMessage
+        ? opts.packerOptions
+        : {
+            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+          };
+
     const token = byteDecoder.decode(
-      await this._packerMgr.pack(MediaType.ZKPMessage, msgBytes, {
-        senderDID: userGenesisDID,
-        profileNonce: authProfileNonce,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+      await this._packerMgr.pack(opts.mediaType, msgBytes, {
+        senderDID: did,
+        ...packerOpts
       })
     );
+
     return { authRequest, authResponse, token };
   }
 }
