@@ -31,7 +31,8 @@ import {
   Iden3SparseMerkleTreeProof,
   ProofType,
   IssuerData,
-  CredentialStatusType
+  CredentialStatusType,
+  ProofQuery
 } from '../verifiable';
 import { CredentialRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/rhs';
@@ -247,10 +248,27 @@ export interface IIdentityWallet {
    *
    * gets profile nonce by it's id. if profile is genesis identifier - 0 is returned
    *
-   * @param {string} profile -  profile has been derived
-   * @returns `{Promise<Profile[]>}`
+   * @param {string} did -  profile that has been derived or genesis identity
+   * @returns `{Promise<{nonce:number, genesisIdentifier: DID}>}`
    */
-  getProfileNonce(profile: DID): Promise<number>;
+  getGenesisDIDMetadata(did: DID): Promise<{ nonce: number; genesisDID: DID }>;
+
+  /**
+   *
+   * find all credentials that belong to any profile or genesis identity for the given did
+   *
+   * @param {string} did -  profile that has been derived or genesis identity
+   * @returns `{Promise<W3CCredential[]>}`
+   */
+  findOwnedCredentialsByDID(did: DID, query: ProofQuery): Promise<W3CCredential[]>;
+  /**
+   *
+   * gets profile identity by verifier
+   *
+   * @param {string} verifier -  identifier of the verifier
+   * @returns `{Promise<Profile>}`
+   */
+  getProfileByVerifier(verifier: string): Promise<Profile | undefined>;
 }
 
 /**
@@ -398,10 +416,10 @@ export class IdentityWallet implements IIdentityWallet {
     credential.proof = [mtpProof];
 
     await this._storage.identity.saveIdentity({
-      identifier: did.string(),
+      did: did.string(),
       state: currentState,
-      published: false,
-      genesis: true
+      isStatePublished: false,
+      isStateGenesis: true
     });
 
     await this._credentialWallet.save(credential);
@@ -411,16 +429,20 @@ export class IdentityWallet implements IIdentityWallet {
       credential
     };
   }
-  /** {@inheritDoc IIdentityWallet.getProfileNonce} */
-  async getProfileNonce(profile: DID): Promise<number> {
+  /** {@inheritDoc IIdentityWallet.getGenesisDIDMetadata} */
+  async getGenesisDIDMetadata(did: DID): Promise<{ nonce: number; genesisDID: DID }> {
     // check if it is a genesis identity
-
-    const identity = await this._storage.identity.getIdentity(profile.string());
+    const identity = await this._storage.identity.getIdentity(did.string());
 
     if (identity) {
-      return 0;
+      return { nonce: 0, genesisDID: DID.parse(identity.did) };
     }
-    return (await this._storage.identity.getProfileById(profile.string())).nonce;
+    const profile = await this._storage.identity.getProfileById(did.string());
+
+    if (!profile) {
+      throw new Error('profile or identity not found');
+    }
+    return { nonce: profile.nonce, genesisDID: DID.parse(profile.genesisIdentifier) };
   }
 
   /** {@inheritDoc IIdentityWallet.createProfile} */
@@ -463,6 +485,9 @@ export class IdentityWallet implements IIdentityWallet {
     return key;
   }
 
+  async getProfileByVerifier(verifier: string): Promise<Profile | undefined> {
+    return this._storage.identity.getProfileByVerifier(verifier);
+  }
   /** {@inheritDoc IIdentityWallet.getDIDTreeModel} */
   async getDIDTreeModel(did: DID): Promise<TreesModel> {
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
@@ -860,5 +885,26 @@ export class IdentityWallet implements IIdentityWallet {
     const coreClaim = coreClaimFromMtpProof ?? coreClaimFromSigProof!;
 
     return coreClaim;
+  }
+
+  async findOwnedCredentialsByDID(did: DID, query: ProofQuery): Promise<W3CCredential[]> {
+    const credentials = await this._credentialWallet.findByQuery(query);
+    if (!credentials.length) {
+      throw new Error(`no credential satisfied query`);
+    }
+
+    const { genesisDID } = await this.getGenesisDIDMetadata(did);
+
+    const profiles = await this.getProfilesByDID(genesisDID);
+
+    return credentials.filter((cred) => {
+      const credentialSubjectId = cred.credentialSubject['id'] as string; // credential subject
+      return (
+        credentialSubjectId == genesisDID.string() ||
+        profiles.some((p) => {
+          return p.id === credentialSubjectId;
+        })
+      );
+    });
   }
 }

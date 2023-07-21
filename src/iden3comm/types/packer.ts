@@ -72,7 +72,6 @@ export type PlainPackerParams = PackerParams;
 export type AuthDataPrepareFunc = (
   hash: Uint8Array,
   did: DID,
-  profileNonce: number,
   circuitId: CircuitId
 ) => Promise<Uint8Array>;
 

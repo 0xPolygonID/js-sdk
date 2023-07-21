@@ -189,7 +189,7 @@ describe('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID);
 
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
@@ -238,7 +238,10 @@ describe('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+      credential: credsForMyUserDID[0],
+      skipRevocation: false
+    });
 
     expect(vp).to.be.undefined;
     expect(proof).not.to.be.undefined;
@@ -287,7 +290,10 @@ describe('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+      credential: credsForMyUserDID[0],
+      skipRevocation: true
+    });
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
   });
@@ -343,14 +349,7 @@ describe('sig proofs', () => {
     const creds = await credWallet.findByQuery(req.body.scope[0].query);
     expect(creds.length).to.not.equal(0);
 
-    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(credsForMyUserDID.length).to.equal(1);
-
-    const { proof, vp } = await proofService.generateProof(
-      req.body.scope[0],
-      userDID,
-      credsForMyUserDID[0]
-    );
+    const { proof, vp } = await proofService.generateProof(req.body.scope[0], userDID);
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
   });
@@ -455,7 +454,7 @@ describe('sig proofs', () => {
       circuitId: 'credentialAtomicQuerySigV2',
       query
     };
-    const { proof, vp } = await proofService.generateProof(vpReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(vpReq, userDID);
     expect(proof).not.to.be.undefined;
 
     expect(vp).to.deep.equal({
@@ -483,8 +482,7 @@ describe('sig proofs', () => {
     };
     const { proof: deliveryProof, vp: deliveryVP } = await proofService.generateProof(
       deliveryVPReq,
-      userDID,
-      credsFromWallet[0]
+      userDID
     );
     expect(deliveryProof).not.to.be.undefined;
 

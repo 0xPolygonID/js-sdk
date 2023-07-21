@@ -12,23 +12,23 @@ export type CredentialIssuanceRequestMessageBody = {
 /** CredentialIssuanceRequestMessage represent Iden3message for credential request */
 export type CredentialIssuanceRequestMessage = {
   id: string;
-  typ?: MediaType;
+  typ: MediaType;
   type: ProtocolMessage;
   thid?: string;
-  body?: CredentialIssuanceRequestMessageBody;
-  from?: string;
-  to?: string;
+  body: CredentialIssuanceRequestMessageBody;
+  from: string;
+  to: string;
 };
 
 /** CredentialsOfferMessage represent Iden3message for credential offer */
 export type CredentialsOfferMessage = {
   id: string;
-  typ?: MediaType;
+  typ: MediaType;
   type: ProtocolMessage;
   thid?: string;
-  body?: CredentialsOfferMessageBody;
-  from?: string;
-  to?: string;
+  body: CredentialsOfferMessageBody;
+  from: string;
+  to: string;
 };
 
 /** CredentialsOfferMessageBody is struct the represents offer message */

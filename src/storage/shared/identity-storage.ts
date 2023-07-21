@@ -46,20 +46,12 @@ export class IdentityStorage implements IIdentityStorage {
     }
   }
 
-  async getProfileByVerifier(verifier: string): Promise<Profile> {
-    const profile = await this._profileDataSource.get(verifier, 'verifier');
-    if (!profile) {
-      throw new Error('profile not found');
-    }
-    return profile;
+  async getProfileByVerifier(verifier: string): Promise<Profile | undefined> {
+    return this._profileDataSource.get(verifier, 'verifier');
   }
 
-  async getProfileById(profileId: string): Promise<Profile> {
-    const profile = await this._profileDataSource.get(profileId);
-    if (!profile) {
-      throw new Error('profile not found');
-    }
-    return profile;
+  async getProfileById(profileId: string): Promise<Profile | undefined> {
+    return this._profileDataSource.get(profileId);
   }
 
   async getProfilesByGenesisIdentifier(genesisIdentifier: string): Promise<Profile[]> {
@@ -73,10 +65,10 @@ export class IdentityStorage implements IIdentityStorage {
   }
 
   async saveIdentity(identity: Identity): Promise<void> {
-    return this._identityDataSource.save(identity.identifier, identity, 'identifier');
+    return this._identityDataSource.save(identity.did, identity, 'did');
   }
 
   async getIdentity(identifier: string): Promise<Identity | undefined> {
-    return this._identityDataSource.get(identifier, 'identifier');
+    return this._identityDataSource.get(identifier, 'did');
   }
 }

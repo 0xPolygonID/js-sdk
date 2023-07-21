@@ -183,10 +183,10 @@ describe('auth', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    authHandler = new AuthHandler(packageMgr, proofService, credWallet, idWallet);
+    authHandler = new AuthHandler(packageMgr, proofService);
   });
 
-  it('request-response flow genesis', async () => {
+  it('request-response flow identity (not profile)', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -279,7 +279,7 @@ describe('auth', () => {
     expect(token).to.be.a('object');
   });
 
-  it('request-response flow profiles explicit credential', async () => {
+  it('request-response flow profiles', async () => {
     const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -359,143 +359,16 @@ describe('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
 
-    const authR = await authHandler.parseAuthorizationRequest(msgBytes);
-
-    let cred: W3CCredential;
-
-    // let's find cred for each request.
-    for (let index = 0; index < authR.body!.scope.length; index++) {
-      const zkpReq = authR.body!.scope[index];
-
-      const credsToChooseForZKPReq = await credWallet.findByQuery(zkpReq.query);
-
-      // filter credentials for subjects that are profiles of identity
-
-      //    1g                      2g
-      // 1.1p Pas 1.2p Age   2.1p Pas 2.2p Age
-
-      const profiles = await dataStorage.identity.getProfilesByGenesisIdentifier(userDID.string());
-      // 1.1p Pas 1.2p Age
-
-      // finds all credentials that belongs to genesis identity or profiles derived from it
-      const credsThatBelongToGenesisIdOrItsProfiles = credsToChooseForZKPReq.filter((cred) => {
-        const credentialSubjectId = cred.credentialSubject['id'] as string; // credential subject
-        return (
-          credentialSubjectId == userDID.string() ||
-          profiles.some((p) => {
-            return p.id === credentialSubjectId;
-          })
-        );
-      });
-
-      // you can show user credential that can be used for request
-      cred = credsThatBelongToGenesisIdOrItsProfiles[0];
-    }
-
     // you can create new profile here for auth or if you want to login with genesis set to 0.
 
-    const authProfileNonce = 100;
+    const authR = await authHandler.parseAuthorizationRequest(msgBytes);
 
-    const resp = await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
-      mediaType: MediaType.ZKPMessage,
-      packerOptions: {
-        profileNonce: authProfileNonce,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-      },
-      credential: cred!
-    });
+    const authProfile = await idWallet.getProfileByVerifier(authR.from);
+    const authProfileDID = authProfile
+      ? DID.parse(authProfile.id)
+      : await idWallet.createProfile(userDID, 100, authR.from);
 
-    console.log(resp);
-  });
-  it('request-response flow profiles implicit credential', async () => {
-    const { did: userDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
-    const profileDID = await idWallet.createProfile(userDID, 50, 'test verifier');
-
-    const { did: issuerDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
-
-    const claimReq: CredentialRequest = {
-      credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
-      type: 'KYCAgeCredential',
-      credentialSubject: {
-        id: profileDID.string(),
-        birthday: 19960424,
-        documentType: 99
-      },
-      expiration: 1693526400,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
-
-    await credWallet.save(issuerCred);
-
-    const proofReq: ZeroKnowledgeProofRequest = {
-      id: 1,
-      circuitId: CircuitId.AtomicQuerySigV2,
-      optional: false,
-      query: {
-        allowedIssuers: ['*'],
-        type: claimReq.type,
-        context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        credentialSubject: {
-          documentType: {
-            $eq: 99
-          }
-        }
-      }
-    };
-
-    const authReqBody: AuthorizationRequestMessageBody = {
-      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
-      reason: 'reason',
-      message: 'message',
-      did_doc: {},
-      scope: [proofReq as ZeroKnowledgeProofRequest]
-    };
-
-    const id = uuid.v4();
-    const authReq: AuthorizationRequestMessage = {
-      id,
-      typ: MediaType.PlainMessage,
-      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
-      thid: id,
-      body: authReqBody,
-      from: DID.idFromDID(issuerDID).string()
-    };
-
-    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-
-    const authProfileNonce = 100;
-
-    const resp = await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
-      mediaType: MediaType.ZKPMessage,
-      packerOptions: {
-        profileNonce: authProfileNonce,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-      }
-    });
+    const resp = await authHandler.handleAuthorizationRequest(authProfileDID, msgBytes);
 
     console.log(resp);
   });

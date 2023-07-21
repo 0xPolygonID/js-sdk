@@ -66,10 +66,13 @@ export class OnChainResolver implements CredentialStatusResolver {
     issuer: string;
   } {
     const url = new URL(id);
-    if (!url.searchParams.has('contractAddress')) {
+    const contractId = url.searchParams.get('contractAddress');
+    const revocationNonceParam = url.searchParams.get('revocationNonce');
+
+    if (!contractId) {
       throw new Error('contractAddress not found');
     }
-    if (!url.searchParams.has('revocationNonce')) {
+    if (!revocationNonceParam) {
       throw new Error('revocationNonce not found');
     }
 
@@ -77,10 +80,10 @@ export class OnChainResolver implements CredentialStatusResolver {
     if (!issuer) {
       throw new Error('issuer not found in credentialStatus id');
     }
+
     // TODO (illia-korotia): after merging core v2 need to parse contract address from did if `contractAddress` is not present in id as param
-    const contractId = url.searchParams.get('contractAddress');
-    const revocationNonce = parseInt(url.searchParams.get('revocationNonce')!, 10);
-    const parts = contractId!.split(':');
+    const revocationNonce = parseInt(revocationNonceParam, 10);
+    const parts = contractId.split(':');
     if (parts.length != 2) {
       throw new Error('invalid contract address');
     }

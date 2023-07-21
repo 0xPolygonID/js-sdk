@@ -5,27 +5,25 @@ import {
   CredentialsOfferMessage,
   IPackageManager,
   JWSPackerParams,
-  MessageFetchRequestMessage,
-  PackerParams
+  MessageFetchRequestMessage
 } from '../types';
-import { DID } from '@iden3/js-iden3-core';
 
 import * as uuid from 'uuid';
 import { W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
-import { ICredentialWallet } from '../../credentials';
-import { IIdentityWallet } from '../../identity';
+import { proving } from '@iden3/js-jwz';
 
-interface FetchHandlerOptions {
+/**
+ *
+ * Options to pass to fetch handler
+ *
+ * @export
+ * @beta
+ * @interface FetchHandlerOptions
+ */
+export interface FetchHandlerOptions {
   mediaType: MediaType;
-  packerOptions:
-    | {
-        profileNonce: number;
-        provingMethodAlg: ProvingMethodAlg;
-      }
-    | JWSPackerParams;
-  did?: DID;
+  packerOptions?: JWSPackerParams;
   headers?: {
     [key: string]: string;
   };
@@ -67,14 +65,8 @@ export class FetchHandler implements IFetchHandler {
   /**
    * Creates an instance of AuthHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
-   * @param {ICredentialWallet} _credentialWallet -  wallet to search credentials
-   * @param {IIdentityWallet} _identityWallet -  wallet to search profiles and identities
    */
-  constructor(
-    private readonly _packerMgr: IPackageManager,
-    private readonly _identityWallet: IIdentityWallet,
-    private readonly _credentialWallet: ICredentialWallet
-  ) {}
+  constructor(private readonly _packerMgr: IPackageManager) {}
 
   /**
    * Handles only messages with credentials/1.0/offer type
@@ -90,16 +82,13 @@ export class FetchHandler implements IFetchHandler {
     opts?: FetchHandlerOptions
   ): Promise<W3CCredential[]> {
     if (!opts) {
-      const zkpPackerOpts = {
-        profileNonce: 0,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg,
-        alg: ''
-      };
-
       opts = {
-        packerOptions: zkpPackerOpts,
         mediaType: MediaType.ZKPMessage
       };
+    }
+
+    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
+      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
     }
 
     const { unpackedMessage: message } = await this._packerMgr.unpack(offer);
@@ -109,8 +98,8 @@ export class FetchHandler implements IFetchHandler {
     }
     const credentials: W3CCredential[] = [];
 
-    for (let index = 0; index < (offerMessage?.body?.credentials?.length ?? 0); index++) {
-      const credentialInfo = offerMessage?.body?.credentials[index];
+    for (let index = 0; index < offerMessage.body.credentials.length; index++) {
+      const credentialInfo = offerMessage.body.credentials[index];
 
       const guid = uuid.v4();
       const fetchRequest: MessageFetchRequestMessage = {
@@ -119,24 +108,25 @@ export class FetchHandler implements IFetchHandler {
         type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE,
         thid: offerMessage.thid ?? guid,
         body: {
-          id: credentialInfo?.id || ''
+          id: credentialInfo.id
         },
-        from: opts.did ? opts.did.string() : offerMessage.to,
+        from: offerMessage.to,
         to: offerMessage.from
       };
 
       const msgBytes = byteEncoder.encode(JSON.stringify(fetchRequest));
 
-      // check if offer is for profile we need to find its nonce
-      // if it opts did is set, then
-      opts.packerOptions.profileNonce = opts.did
-        ? 0
-        : this._identityWallet.getProfileNonce(DID.parse(offerMessage.to!));
+      const packerOpts =
+        opts.mediaType === MediaType.SignedMessage
+          ? opts.packerOptions
+          : {
+              provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+            };
 
       const token = byteDecoder.decode(
         await this._packerMgr.pack(opts.mediaType, msgBytes, {
           senderDID: offerMessage.to,
-          ...opts.packerOptions
+          ...packerOpts
         })
       );
       let message: { body: { credential: W3CCredential } };
@@ -147,7 +137,8 @@ export class FetchHandler implements IFetchHandler {
         const resp = await fetch(offerMessage.body.url, {
           method: 'post',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded',
+            ...(opts.headers ?? {})
           },
           body: token
         });
@@ -164,8 +155,6 @@ export class FetchHandler implements IFetchHandler {
         );
       }
     }
-
-    this._credentialWallet.saveAll(credentials);
     return credentials;
   }
 }

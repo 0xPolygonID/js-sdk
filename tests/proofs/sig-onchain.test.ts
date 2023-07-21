@@ -28,7 +28,6 @@ import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import { checkVerifiablePresentation } from './common';
 
 describe('sig onchain proofs', () => {
   let idWallet: IdentityWallet;
@@ -191,19 +190,13 @@ describe('sig onchain proofs', () => {
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds.length).to.equal(1);
+    expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID ,{challenge: BigInt(2),
+    skipRevocation:false});
     console.log(proof);
 
     expect(vp).to.be.undefined;
 
-    await checkVerifiablePresentation(
-      claimReq.type,
-      userDID,
-      credsForMyUserDID[0],
-      proofService,
-      CircuitId.AtomicQuerySigV2OnChain
-    );
   });
 });

@@ -83,7 +83,7 @@ export const verifiablePresentationFromCred = async (
 }> => {
   const mz = await w3cCred.merklize(opts);
 
-  const request = requestObj as unknown as { [key: string]: unknown };
+  const request = requestObj as { [key: string]: unknown };
 
   const contextType = stringByPath(request, 'type');
 
@@ -101,5 +101,8 @@ export const verifiablePresentationFromCred = async (
 
   const vp = createVerifiablePresentation(contextURL, contextType, field, rawValue);
 
-  return { vp, mzValue: value!, dataType, hasher };
+  if (!value) {
+    throw new Error(`can't merklize verifiable presentation`);
+  }
+  return { vp, mzValue: value, dataType, hasher };
 };

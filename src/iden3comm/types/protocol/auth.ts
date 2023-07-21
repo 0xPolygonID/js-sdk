@@ -23,11 +23,11 @@ export type AuthorizationMessageResponseBody = {
 /** AuthorizationRequestMessage is struct the represents iden3message authorization request */
 export type AuthorizationRequestMessage = {
   id: string;
-  typ?: MediaType;
+  typ: MediaType;
   type: ProtocolMessage;
   thid?: string;
-  body?: AuthorizationRequestMessageBody;
-  from?: string;
+  body: AuthorizationRequestMessageBody;
+  from: string;
   to?: string;
 };
 
