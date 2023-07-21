@@ -54,6 +54,7 @@ jobs:
 
       - name: Run Tests
         env:
+          IPFS_URL: ${{ secrets.IPFS_URL }}
           WALLET_KEY: ${{ secrets.WALLET_KEY }}
           RPC_URL: ${{ secrets.RPC_URL }}
           RHS_URL: ${{ secrets.RHS_URL }}

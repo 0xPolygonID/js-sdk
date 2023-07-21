@@ -33,6 +33,8 @@ describe('sig proofs', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
   const rhsUrl = process.env.RHS_URL as string;
+  const ipfsNodeURL = process.env.IPFS_URL as string;
+
   let userDID: DID;
   let issuerDID: DID;
   let circuitStorage: CircuitStorage;
@@ -123,7 +125,7 @@ describe('sig proofs', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      ipfsGatewayURL: 'https://ipfs.io'
+     ipfsNodeURL
     });
 
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
@@ -341,7 +343,7 @@ describe('sig proofs', () => {
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsGatewayURL: 'https://ipfs.io'
+      ipfsNodeURL
     });
 
     await credWallet.save(issuerCred);
@@ -388,7 +390,7 @@ describe('sig proofs', () => {
       }
     };
     const issuedCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsGatewayURL: 'https://ipfs.io'
+     ipfsNodeURL
     });
 
     await credWallet.save(issuedCred);
@@ -427,7 +429,7 @@ describe('sig proofs', () => {
     };
 
     const deliveryCred = await idWallet.issueCredential(issuerDID, deliveryClaimReq, {
-      ipfsGatewayURL: 'https://ipfs.io'
+     ipfsNodeURL
     });
 
     await credWallet.save(deliveryCred);

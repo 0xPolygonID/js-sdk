@@ -54,6 +54,8 @@ describe('auth', () => {
   let authHandler: IAuthHandler;
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
+  const ipfsNodeURL = process.env.IPFS_URL as string;
+
 
   const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
   const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -176,7 +178,7 @@ describe('auth', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      ipfsGatewayURL: 'https://ipfs.io'
+      ipfsNodeURL
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
