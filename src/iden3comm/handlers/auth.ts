@@ -86,7 +86,6 @@ export class AuthHandler implements IAuthHandler {
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    * @param {IProofService} _proofService -  proof service to verify zk proofs
    *
-   *
    */
   constructor(
     private readonly _packerMgr: IPackageManager,

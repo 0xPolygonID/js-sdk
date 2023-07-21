@@ -200,7 +200,7 @@ export class ProofService implements IProofService {
     // find credential
 
     const credential =
-      opts.credential ?? (await this.findCredentialToProve(identifier, proofReq.query));
+      opts.credential ?? (await this.getNonRevokedCredential(identifier, proofReq.query));
 
     const { nonce: authProfileNonce, genesisDID } =
       await this._identityWallet.getGenesisDIDMetadata(identifier);
@@ -917,7 +917,7 @@ export class ProofService implements IProofService {
     return true;
   }
 
-  async findCredentialToProve(did: DID, query: ProofQuery): Promise<W3CCredential> {
+  async getNonRevokedCredential(did: DID, query: ProofQuery): Promise<W3CCredential> {
     const credentials = await this._identityWallet.findOwnedCredentialsByDID(did, query);
 
     if (!credentials.length) {
