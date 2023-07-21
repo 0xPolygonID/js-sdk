@@ -917,7 +917,7 @@ export class ProofService implements IProofService {
     return true;
   }
 
-  async findCredential(did: DID, query: ProofQuery): Promise<W3CCredential> {
+  private async findCredential(did: DID, query: ProofQuery): Promise<W3CCredential> {
     const credentials = await this._identityWallet.findOwnedCredentialsByDID(did, query);
 
     if (!credentials.length) {
