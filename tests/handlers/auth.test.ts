@@ -292,7 +292,6 @@ describe('auth', () => {
         id: rhsUrl
       }
     });
-    const profileDID = await idWallet.createProfile(userDID, 50, 'test verifier');
 
     const { did: issuerDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
@@ -304,6 +303,9 @@ describe('auth', () => {
         id: rhsUrl
       }
     });
+    // assume that we authorized to the issuer with profile did
+    const profileDID = await idWallet.createProfile(userDID, 50, issuerDID.string());
+
 
     const claimReq: CredentialRequest = {
       credentialSchema:
@@ -349,6 +351,7 @@ describe('auth', () => {
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
+    const verifierDID = "did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw"
     const id = uuid.v4();
     const authReq: AuthorizationRequestMessage = {
       id,
@@ -356,7 +359,7 @@ describe('auth', () => {
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
       thid: id,
       body: authReqBody,
-      from: DID.idFromDID(issuerDID).string()
+      from: verifierDID
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
@@ -365,6 +368,7 @@ describe('auth', () => {
 
     const authR = await authHandler.parseAuthorizationRequest(msgBytes);
 
+    // let's check that we didn't create profile for verifier
     const authProfile = await idWallet.getProfileByVerifier(authR.from);
     const authProfileDID = authProfile
       ? DID.parse(authProfile.id)
