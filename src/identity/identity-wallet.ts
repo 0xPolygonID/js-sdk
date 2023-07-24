@@ -75,7 +75,6 @@ export interface Iden3ProofCreationResult {
 /**
  * Interface for IdentityWallet
  * @public
- * @public
  */
 export interface IIdentityWallet {
   /**
@@ -277,9 +276,7 @@ export interface IIdentityWallet {
  * revoke credentials, add credentials to Merkle trees, push states to reverse hash service
  *
  *
- * @public
  * @class IdentityWallet - class
- * @public
  * @implements implements IIdentityWallet interface
  */
 export class IdentityWallet implements IIdentityWallet {
