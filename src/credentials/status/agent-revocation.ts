@@ -26,7 +26,10 @@ export class AgentResolver implements CredentialStatusResolver {
       throw new Error('UserDID is not set in options');
     }
 
-    if (!credentialStatus.revocationNonce) {
+    if (
+      credentialStatus.revocationNonce === undefined ||
+      credentialStatus.revocationNonce === null
+    ) {
       throw new Error('Revocation nonce is not set in credential status');
     }
 
