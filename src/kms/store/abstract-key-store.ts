@@ -1,9 +1,8 @@
 /**
  * KeyStore that allows to import and get keys by alias.
- *
- * @export
+  *
  * @abstract
- * @beta
+ * @public
  * @class AbstractPrivateKeyStore
  */
 export abstract class AbstractPrivateKeyStore {

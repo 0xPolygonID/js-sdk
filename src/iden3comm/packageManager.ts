@@ -7,8 +7,7 @@ import { byteDecoder, byteEncoder } from '../utils';
 /**
  * Basic package manager for iden3 communication protocol
  *
- * @export
- * @beta
+ * @public
  * @class PackageManager
  * @implements implements IPackageManager interface
  */

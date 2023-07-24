@@ -5,12 +5,20 @@ import { newHashFromBigInt, Proof, setBitBigEndian } from '@iden3/js-merkletree'
 /**
  * IssuerResolver is a class that allows to interact with the issuer's http endpoint to get revocation status.
  *
- * @export
- * @beta
+ * @public
  * @class IssuerResolver
  */
 
 export class IssuerResolver implements CredentialStatusResolver {
+ 
+  /**
+   * resolve is a method to resolve a credential status directly from the issuer.
+   *
+   * @public
+   * @param {CredentialStatus} credentialStatus -  credential status to resolve
+   * @param {CredentialStatusResolveOptions} credentialStatusResolveOptions -  options for resolver
+   * @returns `{Promise<RevocationStatus>}`
+   */
   async resolve(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
     const revStatusResp = await fetch(credentialStatus.id);
     const revStatus = await revStatusResp.json();
@@ -21,7 +29,6 @@ export class IssuerResolver implements CredentialStatusResolver {
 /**
  *  Proof dto as a partial result of fetching credential status with type SparseMerkleTreeProof
  *
- * @export
  * @interface ProofDTO
  */
 export interface ProofDTO {
@@ -36,8 +43,7 @@ export interface ProofDTO {
 /**
  * RevocationStatusDTO is a result of fetching credential status with type SparseMerkleTreeProof
  *
- * @beta
- * @export
+ * @public
  * @class RevocationStatusDTO
  */
 export class RevocationStatusDTO {

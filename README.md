@@ -4,8 +4,7 @@ SDK to work with Polygon ID using JavaScript and TypeScript languages.
 
 ## Disclaimer
 
-Polygon ID JS SDK is in public beta. It may still contain bugs or missing functionality.
-We provide limited support for it and would love to hear your feedback.
+Polygon ID JS SDK is in public now. It may still contain bugs or missing functionality, that it will be added in next versions.
 
 ## Usage
 

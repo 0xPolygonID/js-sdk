@@ -5,8 +5,7 @@ import { TreeState } from '../circuits';
 /**
  * Represents the published state of the issuer
  *
- * @export
- * @beta
+ * @public
  * @interface   State
  */
 export interface State {
@@ -23,8 +22,7 @@ export interface State {
 /**
  *  IssuerData is the data that is used to create a proof
  *
- * @export
- * @beta
+ * @public
  * @class   IssuerData
  */
 export class IssuerData {
@@ -60,8 +58,7 @@ export class IssuerData {
 /**
  * Iden3SparseMerkleProof is a iden3 protocol merkle tree proof
  *
- * @export
- * @beta
+ * @public
  * @class Iden3SparseMerkleTreeProof
  */
 export class Iden3SparseMerkleTreeProof {
@@ -92,8 +89,7 @@ export class Iden3SparseMerkleTreeProof {
 /**
  *
  * BJJSignatureProof2021 is a signature of core claim by BJJ key
- * @export
- * @beta
+ * @public
  * @class BJJSignatureProof2021
  */
 export class BJJSignatureProof2021 {
@@ -109,8 +105,7 @@ export class BJJSignatureProof2021 {
 /**
  *  Query represents structure for query to atomic circuit
  *
- * @export
- * @beta
+ * @public
  * @interface   ProofQuery
  */
 export interface ProofQuery {
@@ -127,8 +122,7 @@ export interface ProofQuery {
 /**
  * Proof with MerkleTree info
  *
- * @export
- * @beta
+ * @public
  * @interface   MerkleTreeProofWithTreeState
  */
 export interface MerkleTreeProofWithTreeState {
@@ -139,8 +133,7 @@ export interface MerkleTreeProofWithTreeState {
 /**
  *
  * CredentialStatus contains type and revocation Url
- * @export
- * @beta
+ * @public
  * @interface   CredentialStatus
  */
 export interface CredentialStatus {

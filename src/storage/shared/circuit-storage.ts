@@ -7,8 +7,7 @@ import { IDataSource } from '../interfaces/data-source';
 /**
  * Implementation of ICircuitStorage to store keys data
  *
- * @export
- * @beta
+ * @public
  * @class CircuitStorage
  * @implements implements ICircuitStorage interface
  */

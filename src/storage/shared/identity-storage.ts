@@ -5,8 +5,7 @@ import { IIdentityStorage } from '../interfaces/identity';
 /**
  * Implementation of the IIdentityStorage with KV data source
  *
- * @export
- * @beta
+ * @public
  * @class IdentityStorage
  * @implements implements IIdentityStorage interface
  */

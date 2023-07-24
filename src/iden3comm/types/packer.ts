@@ -83,8 +83,7 @@ export type StateVerificationFunc = (id: string, pubSignals: Array<string>) => P
 /**
  * Defines method that must be implemented by any packer
  *
- * @export
- * @beta
+ * @public
  * @interface   IPacker
  */
 export interface IPacker {

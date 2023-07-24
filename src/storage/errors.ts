@@ -1,7 +1,6 @@
 /**
  * Storage Errors definition
- *
- * @export
+  *
  * @enum {number}
  */
 export enum StorageErrors {

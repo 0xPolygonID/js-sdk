@@ -17,8 +17,7 @@ import { byteDecoder, byteEncoder } from '../utils';
  * AtomicQuerySigV2Inputs representation for credentialAtomicQuerySig.circom
  * Inputs and public signals declaration, marshalling and parsing
  *
- * @export
- * @beta
+ * @public
  * @class AtomicQuerySigV2Inputs
  * @extends {BaseConfig}
  */
@@ -219,8 +218,7 @@ interface AtomicQuerySigV2CircuitInputs {
 /**
  *
  * public signals
- * @export
- * @beta
+ * @public
  * @class AtomicQuerySigV2PubSignals
  * @extends {BaseConfig}
  */

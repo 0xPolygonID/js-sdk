@@ -3,8 +3,7 @@ import { W3CCredential, ProofQuery } from '../../verifiable';
 
 /**
  * search errors
- *
- * @export
+  *
  * @enum {number}
  */
 export enum SearchError {
@@ -21,8 +20,7 @@ export type FilterOperatorFunction = (a: any, b: any) => boolean;
 /**
  * query filter interface that allows to query Verifiable Credential
  *
- * @export
- * @beta
+ * @public
  * @interface   IFilterQuery
  */
 export interface IFilterQuery {
@@ -83,8 +81,7 @@ export const resolvePath = (object: object, path: string, defaultValue = null) =
  * Filter for queries of credentialSubject with a json path e.g  birthday.date
  *
  *
- * @export
- * @beta
+ * @public
  * @class FilterQuery
  * @implements implements IFilterQuery interface
  */

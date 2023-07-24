@@ -10,11 +10,19 @@ import * as uuid from 'uuid';
 /**
  * AgentResolver is a class that allows to interact with the issuer's agent to get revocation status.
  *
- * @export
- * @beta
+ * @public
  * @class AgentResolver
  */
 export class AgentResolver implements CredentialStatusResolver {
+  
+  /**
+   * resolve is a method to resolve a credential status from an agent.
+   *
+   * @public
+   * @param {CredentialStatus} credentialStatus -  credential status to resolve
+   * @param {CredentialStatusResolveOptions} credentialStatusResolveOptions -  options for resolver
+   * @returns `{Promise<RevocationStatus>}`
+  */
   async resolve(
     credentialStatus: CredentialStatus,
     credentialStatusResolveOptions?: CredentialStatusResolveOptions

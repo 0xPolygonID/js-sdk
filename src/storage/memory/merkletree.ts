@@ -14,8 +14,7 @@ declare type TreeWithMetaInfo = {
 /**
  *
  *
- * @export
- * @beta
+ * @public
  * @class InMemoryMerkleTreeStorage
  * @implements implements IMerkleTreeStorage interface
  */

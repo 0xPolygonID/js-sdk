@@ -153,8 +153,7 @@ export interface IProofService {
  * Proof service is an implementation of IProofService
  * that works with a native groth16 prover
  *
- * @export
- * @beta
+ * @public
  * @class ProofService
  * @implements implements IProofService interface
  */

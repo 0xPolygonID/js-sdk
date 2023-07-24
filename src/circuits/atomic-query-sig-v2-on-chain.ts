@@ -16,8 +16,7 @@ import { byteDecoder, byteEncoder } from '../utils';
 /**
  * AtomicQuerySigV2OnChainInputs ZK private inputs for credentialAtomicQuerySig.circom
  *
- * @export
- * @beta
+ * @public
  * @class AtomicQuerySigV2OnChainInputs
  * @extends {BaseConfig}
  */
@@ -226,8 +225,7 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
 /**
  * AtomicQuerySigV2OnChainCircuitInputs type represents credentialAtomicQuerySig.circom private inputs required by prover
  *
- * @export
- * @beta
+ * @public
  * @class AtomicQuerySigV2OnChainCircuitInputs
  */
 export class AtomicQuerySigV2OnChainCircuitInputs {
@@ -311,8 +309,7 @@ export class AtomicQuerySigV2OnChainCircuitInputs {
 /**
  *
  * public signals
- * @export
- * @beta
+ * @public
  * @class AtomicQuerySigV2OnChainPubSignals
  * @extends {BaseConfig}
  */

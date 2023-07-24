@@ -1,7 +1,6 @@
 /**
  * List of available operators.
- *
- * @export
+  *
  * @enum {number}
  */
 export enum Operators {
@@ -33,8 +32,7 @@ export interface IComparer {
 /**
  * Scalar is used to compare two scalar value.
  *
- * @export
- * @beta
+ * @public
  * @class Scalar
  * @implements implements IComparer interface
  */
@@ -70,8 +68,7 @@ export class Scalar implements IComparer {
 /**
  * Vector uses for find/not find x scalar type in y vector type.
  *
- * @export
- * @beta
+ * @public
  * @class Vector
  * @implements implements IComparer interface
  */

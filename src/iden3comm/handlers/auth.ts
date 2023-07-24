@@ -21,15 +21,13 @@ import { byteDecoder, byteEncoder } from '../../utils';
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
  *
- * @export
- * @beta
+ * @public
  * @interface IAuthHandler
  */
 export interface IAuthHandler {
   /**
    * unpacks authorization request
-   * @export
-   * @beta
+   * @public
    * @param {Uint8Array} request - raw byte message
    * @returns `Promise<AuthorizationRequestMessage>`
    */
@@ -37,8 +35,7 @@ export interface IAuthHandler {
 
   /**
    * unpacks authorization request
-   * @export
-   * @beta
+   * @public
    * @param {did} did  - sender DID
    * @param {Uint8Array} request - raw byte message
    * @returns `Promise<{
@@ -61,8 +58,7 @@ export interface IAuthHandler {
  *
  * Options to pass to auth handler
  *
- * @export
- * @beta
+ * @public
  * @interface AuthHandlerOptions
  */
 export interface AuthHandlerOptions {
@@ -74,8 +70,7 @@ export interface AuthHandlerOptions {
  *
  * Allows to process AuthorizationRequest protocol message and produce JWZ response.
  *
- * @export
- * @beta
+ * @public
 
  * @class AuthHandler
  * @implements implements IAuthHandler interface
@@ -94,8 +89,7 @@ export class AuthHandler implements IAuthHandler {
 
   /**
    * unpacks authorization request
-   * @export
-   * @beta
+   * @public
    * @param {Uint8Array} request - raw byte message
    * @returns `Promise<AuthorizationRequestMessage>`
    */
@@ -110,8 +104,7 @@ export class AuthHandler implements IAuthHandler {
 
   /**
    * unpacks authorization request and packs authorization response
-   * @export
-   * @beta
+   * @public
    * @param {did} did  - sender DID
    * @param {Uint8Array} request - raw byte message
    * @returns `Promise<{

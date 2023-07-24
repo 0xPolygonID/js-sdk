@@ -5,8 +5,7 @@ import { IDataSource } from '../interfaces/data-source';
 /**
  * Generic Memory Data Source
  *
- * @export
- * @beta
+ * @public
  * @class InMemoryDataSource - class
  * @template Type
  */

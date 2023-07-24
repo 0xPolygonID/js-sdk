@@ -4,8 +4,7 @@ import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/m
 /**
  * Interface to work with a merkle tree storage
  *
- * @export
- * @beta
+ * @public
  * @interface   IMerkleTreeStorage
  */
 export interface IMerkleTreeStorage {

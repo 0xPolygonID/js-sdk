@@ -13,8 +13,7 @@ import { ProofNode } from './status/reverse-sparse-merkle-tree';
 /**
  * Interface to unite contains three trees: claim, revocation and rootOfRoots
  * Also contains the current state of identity
- * @export
- * @beta
+ * @public
  * @interface TreesModel
  */
 export interface TreesModel {
@@ -29,8 +28,7 @@ export interface TreesModel {
  *
  * A reverse hash service (RHS) is a centralized or decentralized service for storing publicly available data about identity.
  * Such data are identity state and state of revocation tree and roots tree root tree.
- *
- * @export
+  *
  * @param {Hash} state - current state of identity
  * @param {TreesModel} trees - current trees of identity (claims, revocation, rootOfRoots )
  * @param {string} rhsUrl - URL of service
@@ -95,7 +93,7 @@ async function addRevocationNode(
 /**
  * Builder to send state information to Reverse hash Service
  *
- * @beta
+ * @public
  * @class NodesBuilder
  */
 class NodesBuilder {

@@ -46,7 +46,7 @@ import { Profile } from '../storage';
  * DID creation options
  * seed - seed to generate BJJ keypair
  * revocationOpts -
- * @export
+
  * @interface IdentityCreationOptions
  */
 export interface IdentityCreationOptions {
@@ -64,8 +64,7 @@ export interface IdentityCreationOptions {
 /**
  *  Proof creation result
  *
- * @export
- * @beta
+ * @public
  * @interface   Iden3ProofCreationResult
  */
 export interface Iden3ProofCreationResult {
@@ -76,7 +75,7 @@ export interface Iden3ProofCreationResult {
 /**
  * Interface for IdentityWallet
  * @public
- * @beta
+ * @public
  */
 export interface IIdentityWallet {
   /**
@@ -87,7 +86,7 @@ export interface IIdentityWallet {
    *
    * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:mumbai** with generated key.
    * @returns `Promise<{ did: DID; credential: W3CCredential }>` - returns did and Auth BJJ credential
-   * @beta
+   * @public
    */
 
   createIdentity(opts: IdentityCreationOptions): Promise<{ did: DID; credential: W3CCredential }>;
@@ -228,8 +227,7 @@ export interface IIdentityWallet {
   /**
    * Extracts core claim from signature or merkle tree proof. If both proof persists core claim must be the same
    *
-   * @exports
-   * @beta
+   * @public
    * @param {W3CCredential} credential - credential to extract core claim
    * @returns `{Promise<Claim>}`
    */
@@ -279,10 +277,9 @@ export interface IIdentityWallet {
  * revoke credentials, add credentials to Merkle trees, push states to reverse hash service
  *
  *
- * @export
- * @beta
+ * @public
  * @class IdentityWallet - class
- * @beta
+ * @public
  * @implements implements IIdentityWallet interface
  */
 export class IdentityWallet implements IIdentityWallet {

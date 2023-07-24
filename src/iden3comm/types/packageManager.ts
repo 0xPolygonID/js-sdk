@@ -4,8 +4,7 @@ import { MediaType } from '../constants';
 /**
  * Interface for defining the registry of packers
  *
- * @export
- * @beta
+ * @public
  * @interface   IPackageManager
  */
 export interface IPackageManager {

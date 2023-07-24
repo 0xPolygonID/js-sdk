@@ -5,8 +5,7 @@ import * as ldcontext from 'jsonld/lib/context';
 /**
  * LDParser can parse JSONLD schema according to specification
  *
- * @export
- * @beta
+ * @public
  * @class LDParser
  */
 export class LDParser {
