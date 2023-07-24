@@ -8,7 +8,6 @@ import * as providerHelpers from '../provider-helpers';
 /**
  * Provider for Baby Jub Jub keys
  * @public
- * @public
  * @class BjjProvider
  * @implements implements IKeyProvider interface
  */
