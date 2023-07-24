@@ -26,7 +26,6 @@ export interface CredentialStatusResolveOptions {
  * @interface CredentialStatusResolver
  */
 export interface CredentialStatusResolver {
-  
   /**
    * resolve is a method to resolve a credential status from the the spefic source.
    *

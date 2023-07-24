@@ -213,7 +213,7 @@ export const existenceToInt = (b: boolean): number => (b ? 0 : 1);
 
 /**
  * return object properties
-  *
+ *
  * @param {object} obj
  * @returns object
  */

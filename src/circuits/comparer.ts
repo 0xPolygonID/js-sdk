@@ -1,6 +1,6 @@
 /**
  * List of available operators.
-  *
+ *
  * @enum {number}
  */
 export enum Operators {

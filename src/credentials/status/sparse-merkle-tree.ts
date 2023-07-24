@@ -10,7 +10,6 @@ import { newHashFromBigInt, Proof, setBitBigEndian } from '@iden3/js-merkletree'
  */
 
 export class IssuerResolver implements CredentialStatusResolver {
- 
   /**
    * resolve is a method to resolve a credential status directly from the issuer.
    *

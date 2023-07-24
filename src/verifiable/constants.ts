@@ -37,7 +37,7 @@ export const VerifiableConstants = Object.freeze({
 
 /**
  * Proof type for Verifiable Credential supported by sdk
-  *
+ *
  * @enum {number}
  */
 export enum ProofType {
@@ -49,7 +49,7 @@ export enum ProofType {
 
 /**
  * CredentialStatusType type for revocation type
-  *
+ *
  * @enum {number}
  */
 export enum CredentialStatusType {
@@ -65,7 +65,7 @@ export enum CredentialStatusType {
 
 /**
  * W3C Proof purpose
-  *
+ *
  * @enum {number}
  */
 export enum ProofPurpose {
@@ -74,7 +74,7 @@ export enum ProofPurpose {
 
 /**
  * Merklized Core.Claim root position for vc creation
-  *
+ *
  * @enum {number}
  */
 export enum MerklizedRootPosition {
@@ -88,7 +88,7 @@ export enum MerklizedRootPosition {
 
 /**
  * Subject Core.Claim position for vc creation
-  *
+ *
  * @enum {number}
  */
 export enum SubjectPosition {

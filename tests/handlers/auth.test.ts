@@ -56,7 +56,6 @@ describe('auth', () => {
   const rhsUrl = process.env.RHS_URL as string;
   const ipfsNodeURL = process.env.IPFS_URL as string;
 
-
   const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
   const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
@@ -306,7 +305,6 @@ describe('auth', () => {
     // assume that we authorized to the issuer with profile did
     const profileDID = await idWallet.createProfile(userDID, 50, issuerDID.string());
 
-
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
@@ -351,7 +349,7 @@ describe('auth', () => {
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
-    const verifierDID = "did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw"
+    const verifierDID = 'did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw';
     const id = uuid.v4();
     const authReq: AuthorizationRequestMessage = {
       id,

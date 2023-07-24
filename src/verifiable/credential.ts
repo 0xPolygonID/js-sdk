@@ -105,7 +105,7 @@ export class W3CCredential {
 
 /**
  * extracts core claim from Proof and returns Proof Type
-  *
+ *
  * @param {object} proof - proof of vc
  * @returns {*}  {{ claim: Claim; proofType: ProofType }}
  */

@@ -198,8 +198,7 @@ export class ProofService implements IProofService {
 
     // find credential
 
-    const credential =
-      opts.credential ?? (await this.findCredential(identifier, proofReq.query));
+    const credential = opts.credential ?? (await this.findCredential(identifier, proofReq.query));
 
     const { nonce: authProfileNonce, genesisDID } =
       await this._identityWallet.getGenesisDIDMetadata(identifier);

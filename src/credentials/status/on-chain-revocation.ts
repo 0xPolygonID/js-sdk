@@ -28,7 +28,7 @@ export class OnChainResolver implements CredentialStatusResolver {
    * @param {CredentialStatus} credentialStatus -  credential status to resolve
    * @param {CredentialStatusResolveOptions} credentialStatusResolveOptions -  options for resolver
    * @returns `{Promise<RevocationStatus>}`
-  */
+   */
   async resolve(
     credentialStatus: CredentialStatus,
     credentialStatusResolveOptions?: CredentialStatusResolveOptions

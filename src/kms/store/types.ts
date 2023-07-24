@@ -1,6 +1,6 @@
 /**
  * Key type that can be used in the key management system
-  *
+ *
  * @enum {number}
  */
 export enum KmsKeyType {

@@ -125,7 +125,7 @@ describe('sig proofs', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-     ipfsNodeURL
+      ipfsNodeURL
     });
 
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
@@ -390,7 +390,7 @@ describe('sig proofs', () => {
       }
     };
     const issuedCred = await idWallet.issueCredential(issuerDID, claimReq, {
-     ipfsNodeURL
+      ipfsNodeURL
     });
 
     await credWallet.save(issuedCred);
@@ -429,7 +429,7 @@ describe('sig proofs', () => {
     };
 
     const deliveryCred = await idWallet.issueCredential(issuerDID, deliveryClaimReq, {
-     ipfsNodeURL
+      ipfsNodeURL
     });
 
     await credWallet.save(deliveryCred);

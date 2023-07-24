@@ -3,7 +3,7 @@ import { W3CCredential, ProofQuery } from '../../verifiable';
 
 /**
  * search errors
-  *
+ *
  * @enum {number}
  */
 export enum SearchError {

@@ -51,7 +51,7 @@ export class Query {
 
 /**
  * CircuitID is alias for circuit identifier
-  *
+ *
  * @enum {number}
  */
 export enum CircuitId {
@@ -146,7 +146,7 @@ export interface GISTProof {
 
 /**
  * List of errors of circuit inputs processing
-  *
+ *
  * @enum {number}
  */
 export enum CircuitError {

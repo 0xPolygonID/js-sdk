@@ -28,7 +28,7 @@ export interface TreesModel {
  *
  * A reverse hash service (RHS) is a centralized or decentralized service for storing publicly available data about identity.
  * Such data are identity state and state of revocation tree and roots tree root tree.
-  *
+ *
  * @param {Hash} state - current state of identity
  * @param {TreesModel} trees - current trees of identity (claims, revocation, rootOfRoots )
  * @param {string} rhsUrl - URL of service

@@ -14,7 +14,6 @@ import * as uuid from 'uuid';
  * @class AgentResolver
  */
 export class AgentResolver implements CredentialStatusResolver {
-  
   /**
    * resolve is a method to resolve a credential status from an agent.
    *
@@ -22,7 +21,7 @@ export class AgentResolver implements CredentialStatusResolver {
    * @param {CredentialStatus} credentialStatus -  credential status to resolve
    * @param {CredentialStatusResolveOptions} credentialStatusResolveOptions -  options for resolver
    * @returns `{Promise<RevocationStatus>}`
-  */
+   */
   async resolve(
     credentialStatus: CredentialStatus,
     credentialStatusResolveOptions?: CredentialStatusResolveOptions

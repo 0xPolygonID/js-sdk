@@ -12,7 +12,7 @@ export interface IdentityMerkleTreeMetaInformation {
 
 /**
  * Type of MerkleTree
-  *
+ *
  * @enum {number}
  */
 export enum MerkleTreeType {
