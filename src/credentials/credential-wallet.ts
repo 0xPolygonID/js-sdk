@@ -25,8 +25,7 @@ const ErrAllClaimsRevoked = 'all claims are revoked';
 /**
  * Request to core library to create Core Claim from W3C Verifiable Credential
  *
- * @export
- * @beta
+ * @public
  * @interface CredentialRequest
  */
 export interface CredentialRequest {
@@ -80,8 +79,7 @@ export interface CredentialRequest {
 /**
  * Interface to work with credential wallets
  *
- * @export
- * @beta
+ * @public
  * @interface   ICredentialWallet
  */
 export interface ICredentialWallet {
@@ -200,8 +198,7 @@ export interface ICredentialWallet {
  * Wallet instance is a wrapper of CRUD logic for W3C credentials,
  * also it allows to fetch revocation statuses.
  *
- * @export
- * @beta
+ * @public
  * @class CredentialWallet
  * @implements implements ICredentialWallet interface
  */

@@ -6,8 +6,7 @@ import { QueryOperators } from './comparer';
 /**
  * TreeState is model for merkle tree roots
  *
- * @export
- * @beta
+ * @public
  * @interface   TreeState
  */
 export interface TreeState {
@@ -21,8 +20,7 @@ export interface TreeState {
  * claim non revocation status for circuit
  * TreeState and Proof of inclusion / non-inclusion
  *
- * @export
- * @beta
+ * @public
  * @interface   ClaimNonRevStatus
  */
 export interface ClaimNonRevStatus {
@@ -32,8 +30,7 @@ export interface ClaimNonRevStatus {
 /**
  * Query represents basic request to claim slot verification
  *
- * @export
- * @beta
+ * @public
  * @class Query
  */
 export class Query {
@@ -55,7 +52,6 @@ export class Query {
 /**
  * CircuitID is alias for circuit identifier
  *
- * @export
  * @enum {number}
  */
 export enum CircuitId {
@@ -76,8 +72,7 @@ export enum CircuitId {
 /**
  * Claim structure for circuit inputs
  *
- * @export
- * @beta
+ * @public
  * @class CircuitClaim
  */
 export class CircuitClaim {
@@ -92,8 +87,7 @@ export class CircuitClaim {
 /**
  *
  * Claim for circuit with non revocation proof and signature proof
- * @export
- * @beta
+ * @public
  * @interface   ClaimWithSigProof
  */
 export interface ClaimWithSigProof {
@@ -106,8 +100,7 @@ export interface ClaimWithSigProof {
 /**
  * Claim for circuit with non revocation proof and proof of merkle tree inclusion
  *
- * @export
- * @beta
+ * @public
  * @interface   ClaimWithMTPProof
  */
 export interface ClaimWithMTPProof {
@@ -120,8 +113,7 @@ export interface ClaimWithMTPProof {
 /**
  * prepared bjj signature for circuits with auth bjj claim data
  *
- * @export
- * @beta
+ * @public
  * @interface   BJJSignatureProof
  */
 export interface BJJSignatureProof {
@@ -134,8 +126,7 @@ export interface BJJSignatureProof {
 /**
  * prepared mtp with a tree state
  *
- * @export
- * @beta
+ * @public
  * @interface   MTProof
  */
 export interface MTProof {
@@ -145,8 +136,7 @@ export interface MTProof {
 /**
  * global identity state proof
  *
- * @export
- * @beta
+ * @public
  * @interface   GISTProof
  */
 export interface GISTProof {
@@ -157,7 +147,6 @@ export interface GISTProof {
 /**
  * List of errors of circuit inputs processing
  *
- * @export
  * @enum {number}
  */
 export enum CircuitError {
@@ -184,8 +173,7 @@ export enum CircuitError {
 /**
  * ValueProof represents a Merkle Proof for a value stored as MT
  *
- * @export
- * @beta
+ * @public
  * @class ValueProof
  */
 export class ValueProof {

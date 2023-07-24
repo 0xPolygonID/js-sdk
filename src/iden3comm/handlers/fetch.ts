@@ -18,8 +18,7 @@ import { DID } from '@iden3/js-iden3-core';
  *
  * Options to pass to fetch handler
  *
- * @export
- * @beta
+ * @public
  * @interface FetchHandlerOptions
  */
 export interface FetchHandlerOptions {
@@ -33,15 +32,13 @@ export interface FetchHandlerOptions {
 /**
  * Interface that allows the processing of the credential offer in the raw format for given identifier
  *
- * @export
- * @beta
+ * @public
  * @interface IFetchHandler
  */
 export interface IFetchHandler {
   /**
    * unpacks authorization request
-   * @export
-   * @beta
+   * @public
    * @param {Uint8Array} offer - raw byte message
    * @param {FetchHandlerOptions} opts - FetchHandlerOptions
    * @returns `Promise<{
@@ -56,8 +53,7 @@ export interface IFetchHandler {
  *
  * Allows to handle Credential offer protocol message and return fetched credential
  *
- * @export
- * @beta
+ * @public
 
  * @class FetchHandler
  * @implements implements IFetchHandler interface

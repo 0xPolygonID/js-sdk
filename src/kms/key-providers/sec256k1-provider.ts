@@ -7,9 +7,7 @@ import { base64ToBytes, byteEncoder, bytesToHex, hexToBytes } from '../../utils'
 
 /**
  * Provider for Sec256p1 keys256p1
- * @beta
- * @export
- * @beta
+ * @public
  * @class Sec256p1Provider
  * @implements implements IKeyProvider interface
  */

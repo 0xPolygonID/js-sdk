@@ -7,9 +7,8 @@ import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
 /**
  * W3C Verifiable credential
  *
- * https://www.w3.org/2018/credentials/v1
+ * @public
  * @export
- * @beta
  * @class W3CCredential
  */
 export class W3CCredential {
@@ -107,7 +106,6 @@ export class W3CCredential {
 /**
  * extracts core claim from Proof and returns Proof Type
  *
- * @export
  * @param {object} proof - proof of vc
  * @returns {*}  {{ claim: Claim; proofType: ProofType }}
  */
@@ -140,8 +138,7 @@ export function extractProof(proof: object): { claim: Claim; proofType: ProofTyp
 /**
  * Credential schema vc
  *
- * @export
- * @beta
+ * @public
  * @interface   CredentialSchema
  */
 export interface CredentialSchema {
@@ -152,8 +149,7 @@ export interface CredentialSchema {
 /**
  * Issuer tree information
  *
- * @export
- * @beta
+ * @public
  * @interface   Issuer
  */
 export interface Issuer {
@@ -166,8 +162,7 @@ export interface Issuer {
 /**
  *
  * RevocationStatus status of revocation nonce. Info required to check revocation state of claim in circuits
- * @export
- * @beta
+ * @public
  * @interface   RevocationStatus
  */
 export interface RevocationStatus {

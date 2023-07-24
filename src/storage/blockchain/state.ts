@@ -10,8 +10,7 @@ import { byteEncoder } from '../../utils';
 /**
  * Configuration of ethereum based blockchain connection
  *
- * @export
- * @beta
+ * @public
  * @interface   EthConnectionConfig
  */
 export interface EthConnectionConfig {
@@ -48,8 +47,7 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
 /**
  *
  *
- * @export
- * @beta
+ * @public
  * @class EthStateStorage
  * @implements implements IStateStorage interface
  */

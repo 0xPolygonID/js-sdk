@@ -17,8 +17,7 @@ export const JSON_SCHEMA_VALIDATORS_REGISTRY = {
 /**
  * JSON Schema Validator
  *
- * @export
- * @beta
+ * @public
  * @class JsonSchemaValidator
  */
 export class JsonSchemaValidator {

@@ -6,8 +6,7 @@ import { IStateStorage } from './state';
 /**
  * General Data storage interface that union identity, credential, merkletree and states storage.
  *
- * @export
- * @beta
+ * @public
  * @interface   IDataStorage
  */
 export interface IDataStorage {

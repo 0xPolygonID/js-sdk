@@ -3,8 +3,7 @@ import * as fs from 'fs';
 /**
  * Loader interface to load from different sources
  *
- * @export
- * @beta
+ * @public
  * @interface   IKeyLoader
  */
 export interface IKeyLoader {
@@ -21,8 +20,7 @@ const isBrowser = new Function('try {return this===window;}catch(e){ return fals
 /**
  * Loader from file system
  *
- * @export
- * @beta
+ * @public
  * @class FSKeyLoader
  * @implements implements IKeyLoader interface
  */

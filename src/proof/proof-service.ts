@@ -153,8 +153,7 @@ export interface IProofService {
  * Proof service is an implementation of IProofService
  * that works with a native groth16 prover
  *
- * @export
- * @beta
+ * @public
  * @class ProofService
  * @implements implements IProofService interface
  */
@@ -199,8 +198,7 @@ export class ProofService implements IProofService {
 
     // find credential
 
-    const credential =
-      opts.credential ?? (await this.findCredential(identifier, proofReq.query));
+    const credential = opts.credential ?? (await this.findCredential(identifier, proofReq.query));
 
     const { nonce: authProfileNonce, genesisDID } =
       await this._identityWallet.getGenesisDIDMetadata(identifier);

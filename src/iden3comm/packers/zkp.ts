@@ -27,8 +27,7 @@ const { getProvingMethod } = proving;
 /**
  * Handler to
  *
- * @export
- * @beta
+ * @public
  * @class DataPrepareHandlerFunc
  */
 export class DataPrepareHandlerFunc {
@@ -54,8 +53,7 @@ export class DataPrepareHandlerFunc {
 /**
  * Handler to verify public signals of authorization circuits
  *
- * @export
- * @beta
+ * @public
  * @class VerificationHandlerFunc
  */
 export class VerificationHandlerFunc {
@@ -80,8 +78,7 @@ export class VerificationHandlerFunc {
 /**
  * Packer that can pack message to JWZ token,
  * and unpack and validate JWZ envelope
- * @exports
- * @beta
+ * @public
  * @class ZKPPacker
  * @implements implements IPacker interface
  */

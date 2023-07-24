@@ -4,8 +4,7 @@ import { CircuitData } from '../entities/circuitData';
 /**
  * Interface to work with circuit files
  *
- * @export
- * @beta
+ * @public
  * @interface   ICircuitStorage
  */
 export interface ICircuitStorage {

@@ -5,8 +5,7 @@ import { IDataSource } from '../interfaces/data-source';
 /**
  * Storage in the browser, uses local storage
  *
- * @export
- * @beta
+ * @public
  * @class BrowserDataSource
  * @template Type
  */

@@ -16,8 +16,7 @@ import {
 /**
  * Packer that can pack message to JWZ token,
  * and unpack and validate JWZ envelope
- * @exports
- * @beta
+ * @public
  * @class ZKPPacker
  * @implements implements IPacker interface
  */

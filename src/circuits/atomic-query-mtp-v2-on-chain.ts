@@ -16,8 +16,7 @@ import { byteDecoder, byteEncoder } from '../utils';
 /**
  * AtomicQueryMTPV2OnChainInputs ZK private inputs for credentialAtomicQueryMTPV2OnChain.circom
  *
- * @export
- * @beta
+ * @public
  * @class AtomicQuerySigV2OnChainInputs
  * @extends {BaseConfig}
  */
@@ -238,8 +237,7 @@ interface atomicQueryMTPV2OnChainCircuitInputs {
 /**
  *
  * public signals
- * @export
- * @beta
+ * @public
  * @class AtomicQueryMTPV2OnChainPubSignals
  * @extends {BaseConfig}
  */

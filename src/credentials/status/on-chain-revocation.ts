@@ -8,19 +8,27 @@ import { DID } from '@iden3/js-iden3-core';
  * OnChainIssuer is a class that allows to interact with the onchain contract
  * and build the revocation status.
  *
- * @export
- * @beta
+ * @public
  * @class OnChainIssuer
  */
 export class OnChainResolver implements CredentialStatusResolver {
   /**
    *
    * Creates an instance of OnChainIssuer.
+   * @public
    * @param {Array<EthConnectionConfig>} - onchain contract address
    * @param {string} - list of EthConnectionConfig
    */
   constructor(private readonly _configs: EthConnectionConfig[]) {}
 
+  /**
+   * resolve is a method to resolve a credential status from the blockchain.
+   *
+   * @public
+   * @param {CredentialStatus} credentialStatus -  credential status to resolve
+   * @param {CredentialStatusResolveOptions} credentialStatusResolveOptions -  options for resolver
+   * @returns `{Promise<RevocationStatus>}`
+   */
   async resolve(
     credentialStatus: CredentialStatus,
     credentialStatusResolveOptions?: CredentialStatusResolveOptions
@@ -36,7 +44,7 @@ export class OnChainResolver implements CredentialStatusResolver {
    *
    * @param {CredentialStatus} credentialStatus - credential status section of credential
    * @param {DID} issuerDid - issuer did
-   * @returns Promise<RevocationStatus>
+   * @returns `{Promise<RevocationStatus>}`
    */
   async getRevocationOnChain(
     credentialStatus: CredentialStatus,

@@ -3,8 +3,7 @@ import { AbstractPrivateKeyStore } from './abstract-key-store';
 /**
  * Key Store to use in memory
  *
- * @export
- * @beta
+ * @public
  * @class InMemoryPrivateKeyStore
  * @implements implements AbstractPrivateKeyStore interface
  */

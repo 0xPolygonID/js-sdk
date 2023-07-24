@@ -9,8 +9,7 @@ import { byteDecoder, byteEncoder } from '../utils';
  * Auth v2 circuit representation
  * Inputs and public signals declaration, marshalling and parsing
  *
- * @export
- * @beta
+ * @public
  * @class AuthV2Inputs
  * @extends {BaseConfig}
  */
@@ -115,8 +114,7 @@ interface AuthV2CircuitInputs {
 /**
  * public signals
  *
- * @export
- * @beta
+ * @public
  * @class AuthV2PubSignals
  */
 export class AuthV2PubSignals {

@@ -1,7 +1,6 @@
 /**
  * Key type that can be used in the key management system
  *
- * @export
  * @enum {number}
  */
 export enum KmsKeyType {
@@ -12,8 +11,7 @@ export enum KmsKeyType {
 /**
  * ID of the key that describe contain key type
  *
- * @export
- * @beta
+ * @public
  * @interface   KmsKeyId
  */
 export interface KmsKeyId {

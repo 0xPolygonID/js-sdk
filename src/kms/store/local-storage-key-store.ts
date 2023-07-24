@@ -5,8 +5,7 @@ import { KmsKeyId } from './types';
  * Allows storing keys in the local storage of the browser
  * (NOT ENCRYPTED: DO NOT USE IN THE PRODUCTION)
  *
- * @export
- * @beta
+ * @public
  * @class LocalStoragePrivateKeyStore
  * @implements implements AbstractPrivateKeyStore interface
  */

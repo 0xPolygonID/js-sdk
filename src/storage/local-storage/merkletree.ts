@@ -9,8 +9,7 @@ const mtTypes = [MerkleTreeType.Claims, MerkleTreeType.Revocations, MerkleTreeTy
 /**
  * Merkle tree storage that uses browser local storage
  *
- * @export
- * @beta
+ * @public
  * @class MerkleTreeLocalStorage
  * @implements implements IMerkleTreeStorage interface
  */

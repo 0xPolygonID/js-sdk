@@ -5,8 +5,7 @@ import { RootInfo, StateInfo, StateProof } from '../entities/state';
 /**
  * Interface that defines methods for state storage
  *
- * @export
- * @beta
+ * @public
  * @interface   IStateStorage
  */
 export interface IStateStorage {

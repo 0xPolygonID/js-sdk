@@ -22,8 +22,7 @@ export const ErrorEmptyIssuerAuthClaimNonRevProof =
 /**
  * base config for circuit inputs
  *
- * @export
- * @beta
+ * @public
  * @class BaseConfig
  */
 export class BaseConfig {
@@ -162,8 +161,7 @@ export const bigIntArrayToStringArray = (arr: bigint[]): string[] => {
 /**
  * auxiliary node
  *
- * @export
- * @beta
+ * @public
  * @interface   NodeAuxValue
  */
 export interface NodeAuxValue {
@@ -216,7 +214,6 @@ export const existenceToInt = (b: boolean): number => (b ? 0 : 1);
 /**
  * return object properties
  *
- * @export
  * @param {object} obj
  * @returns object
  */

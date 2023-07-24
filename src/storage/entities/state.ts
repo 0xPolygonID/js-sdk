@@ -1,8 +1,7 @@
 /**
  * state information of identity from chain.
  *
- * @export
- * @beta
+ * @public
  * @interface   StateInfo
  */
 export interface StateInfo {
@@ -18,8 +17,7 @@ export interface StateInfo {
 /**
  * state proof of identity from chain
  *
- * @export
- * @beta
+ * @public
  * @interface   StateProof
  */
 export interface StateProof {
@@ -36,8 +34,7 @@ export interface StateProof {
 /**
  * global identity state root info from chain
  *
- * @export
- * @beta
+ * @public
  * @interface   RootInfo
  */
 export interface RootInfo {

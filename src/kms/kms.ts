@@ -3,8 +3,7 @@ import { KmsKeyId, KmsKeyType } from './store';
 /**
  * KeyProvider is responsible for signing and creation of the keys
  *
- * @export
- * @beta
+ * @public
  * @interface   IKeyProvider
  */
 export interface IKeyProvider {
@@ -43,8 +42,7 @@ export interface IKeyProvider {
  * Key management system class contains different key providers.
  * allows to register custom provider, create key, get public key and sign
  *
- * @beta
- * @export
+ * @public
  * @class KMS - class
  */
 export class KMS {

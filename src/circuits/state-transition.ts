@@ -9,8 +9,7 @@ import { byteDecoder, byteEncoder } from '../utils';
  * StateTransition circuit representation
  * Inputs and public signals declaration, marshalling and parsing
  *
- * @export
- * @beta
+ * @public
  * @class StateTransitionInputs
  * @extends {BaseConfig}
  */
@@ -104,8 +103,7 @@ interface StateTransitionInputsInternal {
 /**
  * Public signals of StateTransition circuit
  *
- * @export
- * @beta
+ * @public
  * @class StateTransitionPubSignals
  */
 export class StateTransitionPubSignals {

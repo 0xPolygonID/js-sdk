@@ -16,7 +16,6 @@ export const swapEndianness = (buf: Uint8Array): Uint8Array => buf.reverse();
 /**
  * FieldToByteArray convert fields to byte representation based on type
  *
- * @export
  * @param {unknown} field - field to convert
  * @returns Uint8Array
  */
@@ -36,7 +35,6 @@ export function fieldToByteArray(field: unknown): Uint8Array {
 /**
  * checks if data fills into slot capacity ()
  *
- * @export
  * @param {Uint8Array} slot - current slot data
  * @param {Uint8Array} newData - new slot data
  * @returns boolean
@@ -48,7 +46,6 @@ export function dataFillsSlot(slot: Uint8Array, newData: Uint8Array): boolean {
 /**
  * check if byte data is in Q field
  *
- * @export
  * @param {Uint8Array} data - bytes payload
  * @returns boolean
  */

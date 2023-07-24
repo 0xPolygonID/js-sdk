@@ -192,11 +192,12 @@ describe('sig onchain proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID ,{challenge: BigInt(2),
-    skipRevocation:false});
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+      challenge: BigInt(2),
+      skipRevocation: false
+    });
     console.log(proof);
 
     expect(vp).to.be.undefined;
-
   });
 });

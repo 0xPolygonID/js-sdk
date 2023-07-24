@@ -32,7 +32,6 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
 /**
  * Media types for iden3 comm communication protocol
  *
- * @export
  * @enum {number}
  */
 export enum MediaType {

@@ -4,8 +4,7 @@ import { Profile } from '../entities';
 /**
  * storage for identities and profiles
  *
- * @export
- * @beta
+ * @public
  * @interface   IIdentityStorage
  */
 export interface IIdentityStorage {
