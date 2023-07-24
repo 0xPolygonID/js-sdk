@@ -12,6 +12,7 @@ import * as uuid from 'uuid';
 import { W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { proving } from '@iden3/js-jwz';
+import { DID } from '@iden3/js-iden3-core';
 
 /**
  *
@@ -123,9 +124,10 @@ export class FetchHandler implements IFetchHandler {
               provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
             };
 
+      const senderDID = DID.parse(offerMessage.to);
       const token = byteDecoder.decode(
         await this._packerMgr.pack(opts.mediaType, msgBytes, {
-          senderDID: offerMessage.to,
+          senderDID,
           ...packerOpts
         })
       );
