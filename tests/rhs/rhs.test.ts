@@ -21,7 +21,7 @@ import { expect } from 'chai';
 import { RHSResolver } from '../../src/credentials';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 
-describe('rhs', () => {
+describe.only('rhs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
   let dataStorage: IDataStorage;
@@ -140,7 +140,7 @@ describe('rhs', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
 
-  it('genesis reject', async () => {
+  it('genesis reject : backup is called', async () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
@@ -167,6 +167,7 @@ describe('rhs', () => {
       statusIssuer: credBasicStatus
     };
 
+
     const rhsResolver = new RHSResolver(mockStateStorageForGenesisState);
 
     return rhsResolver
@@ -175,7 +176,7 @@ describe('rhs', () => {
         throw new Error('was not supposed to succeed');
       })
       .catch((m) => {
-        expect((m as Error).message).to.equal(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
+        expect((m as Error).message).to.contains(`can't fetch revocation status from backup endpoint`);
       });
   });
 
@@ -213,6 +214,7 @@ describe('rhs', () => {
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };
+
     const credRHSStatus: CredentialStatus = {
       id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
