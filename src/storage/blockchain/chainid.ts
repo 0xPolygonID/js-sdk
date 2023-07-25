@@ -45,7 +45,7 @@ export const registerChainId = (blockchain: string, chainId: number, network?: s
  * @throws {Error} Throws an error if the chainId not found.
  * @beta This API will change in the future.
  * @example
- * const chainId = getChainId('ethr', eth', 'main');
+ * const chainId = getChainId('eth', 'main');
  * // chainId will be 1
  */
 export const getChainId = (blockchain: string, network?: string): number => {
