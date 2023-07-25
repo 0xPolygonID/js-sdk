@@ -1,2 +1,2 @@
 export * from './state';
-export * from './chainId';
+export * from './chainid';
