@@ -99,10 +99,7 @@ export class OnChainResolver implements CredentialStatusResolver {
       contractAddress = utils.getAddress(utils.hexDataSlice(ethAddr, 0));
       const blockchain = DID.blockchainFromId(issuerId);
       const network = DID.networkIdFromId(issuerId);
-      chainId = getChainId(blockchain, network);
-      if (!chainId) {
-        throw new Error(`chain id for '${blockchain}' and '${network}' is not registered`);
-      }
+      chainId = getChainId(issuerDID.method, blockchain, network);
     } else {
       const parts = contractAddress.split(':');
       if (parts.length != 2) {

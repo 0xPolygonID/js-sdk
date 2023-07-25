@@ -3,32 +3,41 @@
  * @type { [key: string]: number }
  */
 export const CHAIN_IDS: { [key: string]: number } = {
-  eth: 1,
-  'eth:main': 1,
-  'eth:goerli': 5,
-  polygon: 137,
-  'polygon:main': 137,
-  'polygon:mumbai': 80001
+  ethr: 1,
+  'ethr:eth': 1,
+  'ethr:eth:main': 1,
+  'ethr:eth:goerli': 5,
+  polygonid: 137,
+  'polygonid:polygon': 137,
+  'polygonid:polygon:main': 137,
+  'polygonid:polygon:mumbai': 80001
 };
 
 /**
  * Registers a new chain ID for a blockchain and network combination.
  * If the blockchain or network is not provided, an error will be thrown.
+ * @param {string} methodId - The method ID.
+ * @param {number} chainId - The chain ID to be registered.
  * @param {string} blockchain - The blockchain name.
  * @param {string} network - The network name.
- * @param {number} chainId - The chain ID to be registered.
- * @throws {Error} Throws an error if the blockchain name is not provided.
+ * @beta This API will change in the future.
  * @example
- * registerChainId('eth', 'ropsten', 3);
+ * registerChainId('ethr', 'eth', 'ropsten', 3);
  */
-export const registerChainId = (blockchain: string, network: string, chainId: number): void => {
-  if (!blockchain) {
-    throw new Error('blockchain is required');
+export const registerChainId = (
+  methodId: string,
+  chainId: number,
+  blockchain?: string,
+  network?: string
+): void => {
+  let prefix = methodId;
+  if (blockchain) {
+    prefix += `:${blockchain}`;
   }
-  let prefix = blockchain;
   if (network) {
     prefix += `:${network}`;
   }
+
   CHAIN_IDS[prefix] = chainId;
 };
 
@@ -38,18 +47,23 @@ export const registerChainId = (blockchain: string, network: string, chainId: nu
  * @param {string} blockchain - The blockchain name.
  * @param {string} network - The network name.
  * @returns {number} The chain ID for the specified blockchain and network.
+ * @throws {Error} Throws an error if the chainId not found.
+ * @beta This API will change in the future.
  * @example
- * const chainId = getChainId('eth', 'main');
+ * const chainId = getChainId('ethr', eth', 'main');
  * // chainId will be 1
  */
-export const getChainId = (blockchain: string, network: string): number => {
-  let prefix = blockchain;
+export const getChainId = (methodId: string, blockchain?: string, network?: string): number => {
+  let prefix = methodId;
+  if (blockchain) {
+    prefix += `:${blockchain}`;
+  }
   if (network) {
     prefix += `:${network}`;
   }
   const chainId = CHAIN_IDS[prefix];
   if (!chainId) {
-    return 0;
+    throw new Error(`chainId not found for ${prefix}`);
   }
   return chainId;
 };
