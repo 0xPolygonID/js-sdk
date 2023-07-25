@@ -1,11 +1,9 @@
 import { CredentialStatus, RevocationStatus } from '../../verifiable';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
-import {
-  RevocationStatusRequestMessage,
-  RevocationStatusResponseMessage
-} from '../../iden3comm/types';
+import { RevocationStatusRequestMessage } from '../../iden3comm/types';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../iden3comm/constants';
 import * as uuid from 'uuid';
+import { RevocationStatusDTO } from './sparse-merkle-tree';
 
 /**
  * AgentResolver is a class that allows to interact with the issuer's agent to get revocation status.
@@ -33,7 +31,7 @@ export class AgentResolver implements CredentialStatusResolver {
       throw new Error('UserDID is not set in options');
     }
 
-    if (!credentialStatus.revocationNonce) {
+    if (typeof credentialStatus.revocationNonce !== 'number') {
       throw new Error('Revocation nonce is not set in credential status');
     }
 
@@ -47,8 +45,8 @@ export class AgentResolver implements CredentialStatusResolver {
         'Content-Type': 'application/json'
       }
     });
-    const agentResponse: RevocationStatusResponseMessage = await response.json();
-    return toRevocationStatus(agentResponse);
+    const agentResponse = await response.json();
+    return new RevocationStatusDTO(agentResponse.body).toRevocationStatus();
   }
 }
 
@@ -67,18 +65,5 @@ function buildRevocationMessageRequest(
     thid: uuid.v4(),
     from: from,
     to: to
-  };
-}
-
-function toRevocationStatus(revocationResponse: RevocationStatusResponseMessage): RevocationStatus {
-  if (!revocationResponse.body?.mtp) {
-    throw new Error('Revocation status response does not contain mtp');
-  }
-  if (!revocationResponse.body?.issuer) {
-    throw new Error('Revocation status response does not contain issuer');
-  }
-  return {
-    mtp: revocationResponse.body.mtp,
-    issuer: revocationResponse.body.issuer
   };
 }
