@@ -167,7 +167,6 @@ describe('rhs', () => {
       statusIssuer: credBasicStatus
     };
 
-
     const rhsResolver = new RHSResolver(mockStateStorageForGenesisState);
 
     return rhsResolver
@@ -176,7 +175,9 @@ describe('rhs', () => {
         throw new Error('was not supposed to succeed');
       })
       .catch((m) => {
-        expect((m as Error).message).to.contains(`can't fetch revocation status from backup endpoint`);
+        expect((m as Error).message).to.contains(
+          `can't fetch revocation status from backup endpoint`
+        );
       });
   });
 
