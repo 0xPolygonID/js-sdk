@@ -1,11 +1,9 @@
 import { CredentialStatus, RevocationStatus } from '../../verifiable';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
-import {
-  RevocationStatusRequestMessage,
-  RevocationStatusResponseMessage
-} from '../../iden3comm/types';
+import { RevocationStatusRequestMessage } from '../../iden3comm/types';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../iden3comm/constants';
 import * as uuid from 'uuid';
+import { newHashFromBigInt } from '@iden3/js-merkletree';
 
 /**
  * AgentResolver is a class that allows to interact with the issuer's agent to get revocation status.
@@ -26,10 +24,7 @@ export class AgentResolver implements CredentialStatusResolver {
       throw new Error('UserDID is not set in options');
     }
 
-    if (
-      credentialStatus.revocationNonce === undefined ||
-      credentialStatus.revocationNonce === null
-    ) {
+    if (typeof credentialStatus.revocationNonce !== 'number') {
       throw new Error('Revocation nonce is not set in credential status');
     }
 
@@ -43,7 +38,7 @@ export class AgentResolver implements CredentialStatusResolver {
         'Content-Type': 'application/json'
       }
     });
-    const agentResponse: RevocationStatusResponseMessage = await response.json();
+    const agentResponse = await response.json();
     return toRevocationStatus(agentResponse);
   }
 }
@@ -66,15 +61,23 @@ function buildRevocationMessageRequest(
   };
 }
 
-function toRevocationStatus(revocationResponse: RevocationStatusResponseMessage): RevocationStatus {
+function toRevocationStatus(revocationResponse: any): RevocationStatus {
   if (!revocationResponse.body?.mtp) {
     throw new Error('Revocation status response does not contain mtp');
   }
   if (!revocationResponse.body?.issuer) {
     throw new Error('Revocation status response does not contain issuer');
   }
-  return {
+  const rs = {
     mtp: revocationResponse.body.mtp,
     issuer: revocationResponse.body.issuer
   };
+  if (revocationResponse.body.mtp.node_aux) {
+    rs.mtp.nodeAux = {
+      key: newHashFromBigInt(BigInt(revocationResponse.body.mtp.node_aux.key)),
+      value: newHashFromBigInt(BigInt(revocationResponse.body.mtp.node_aux.value))
+    };
+  }
+
+  return rs;
 }
