@@ -19,9 +19,9 @@ export const CHAIN_IDS: { [key: string]: number } = {
  * @param {number} chainId - The chain ID to be registered.
  * @throws {Error} Throws an error if the blockchain name is not provided.
  * @example
- * RegisterChainId('eth', 'ropsten', 3);
+ * registerChainId('eth', 'ropsten', 3);
  */
-export const RegisterChainId = (blockchain: string, network: string, chainId: number): void => {
+export const registerChainId = (blockchain: string, network: string, chainId: number): void => {
   if (!blockchain) {
     throw new Error('blockchain is required');
   }
@@ -39,10 +39,10 @@ export const RegisterChainId = (blockchain: string, network: string, chainId: nu
  * @param {string} network - The network name.
  * @returns {number} The chain ID for the specified blockchain and network.
  * @example
- * const chainId = GetChainId('eth', 'main');
+ * const chainId = getChainId('eth', 'main');
  * // chainId will be 1
  */
-export const GetChainId = (blockchain: string, network: string): number => {
+export const getChainId = (blockchain: string, network: string): number => {
   let prefix = blockchain;
   if (network) {
     prefix += `:${network}`;

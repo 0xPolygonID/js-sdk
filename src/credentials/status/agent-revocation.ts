@@ -3,7 +3,7 @@ import { CredentialStatusResolver, CredentialStatusResolveOptions } from './reso
 import { RevocationStatusRequestMessage } from '../../iden3comm/types';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../iden3comm/constants';
 import * as uuid from 'uuid';
-import { newHashFromBigInt } from '@iden3/js-merkletree';
+import { RevocationStatusDTO } from './sparse-merkle-tree';
 
 /**
  * AgentResolver is a class that allows to interact with the issuer's agent to get revocation status.
@@ -39,7 +39,7 @@ export class AgentResolver implements CredentialStatusResolver {
       }
     });
     const agentResponse = await response.json();
-    return toRevocationStatus(agentResponse);
+    return new RevocationStatusDTO(agentResponse.body).toRevocationStatus();
   }
 }
 
@@ -59,25 +59,4 @@ function buildRevocationMessageRequest(
     from: from,
     to: to
   };
-}
-
-function toRevocationStatus(revocationResponse: any): RevocationStatus {
-  if (!revocationResponse.body?.mtp) {
-    throw new Error('Revocation status response does not contain mtp');
-  }
-  if (!revocationResponse.body?.issuer) {
-    throw new Error('Revocation status response does not contain issuer');
-  }
-  const rs = {
-    mtp: revocationResponse.body.mtp,
-    issuer: revocationResponse.body.issuer
-  };
-  if (revocationResponse.body.mtp.node_aux) {
-    rs.mtp.nodeAux = {
-      key: newHashFromBigInt(BigInt(revocationResponse.body.mtp.node_aux.key)),
-      value: newHashFromBigInt(BigInt(revocationResponse.body.mtp.node_aux.value))
-    };
-  }
-
-  return rs;
 }
