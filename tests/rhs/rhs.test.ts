@@ -21,7 +21,7 @@ import { expect } from 'chai';
 import { RHSResolver } from '../../src/credentials';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 
-describe.only('rhs', () => {
+describe('rhs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
   let dataStorage: IDataStorage;
