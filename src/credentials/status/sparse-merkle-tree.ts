@@ -25,34 +25,32 @@ export class IssuerResolver implements CredentialStatusResolver {
   }
 }
 
+
 /**
- *  Proof dto as a partial result of fetching credential status with type SparseMerkleTreeProof
- *
- * @interface ProofDTO
+ * RevocationStatusResponse is a куізщтіу of fetching credential status with type SparseMerkleTreeProof
+ * 
+ * @export
+ * @interface RevocationStatusResponse
  */
-export interface MtpProof {
-  existence: boolean;
-  siblings: string[];
-  node_aux: {
-    key: string;
-    value: string;
+export interface RevocationStatusResponse {
+  issuer: Issuer;
+  mtp: {
+    existence: boolean;
+    siblings: string[];
+    node_aux: {
+      key: string;
+      value: string;
+    };
   };
 }
 
-/**
- * toRevocationStatus is a result of fetching credential status with type SparseMerkleTreeProof
+ /**
+ * toRevocationStatus is a result of fetching credential status with type SparseMerkleTreeProof converts to RevocationStatus
  *
- * @public
- * @class RevocationStatusDTO
+ * @param {RevocationStatusResponse} { issuer, mtp }
+ * @returns {RevocationStatus} RevocationStatus
  */
-
-export const toRevocationStatus = ({
-  issuer,
-  mtp
-}: {
-  issuer: Issuer;
-  mtp: MtpProof;
-}): RevocationStatus => {
+export const toRevocationStatus = ({ issuer, mtp }: RevocationStatusResponse): RevocationStatus => {
   const p = new Proof();
   p.existence = mtp.existence;
   if (mtp.node_aux) {
