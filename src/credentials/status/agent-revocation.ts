@@ -3,7 +3,7 @@ import { CredentialStatusResolver, CredentialStatusResolveOptions } from './reso
 import { RevocationStatusRequestMessage } from '../../iden3comm/types';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../iden3comm/constants';
 import * as uuid from 'uuid';
-import { RevocationStatusDTO } from './sparse-merkle-tree';
+import { toRevocationStatus } from './sparse-merkle-tree';
 
 /**
  * AgentResolver is a class that allows to interact with the issuer's agent to get revocation status.
@@ -46,7 +46,7 @@ export class AgentResolver implements CredentialStatusResolver {
       }
     });
     const agentResponse = await response.json();
-    return new RevocationStatusDTO(agentResponse.body).toRevocationStatus();
+    return toRevocationStatus(agentResponse.body);
   }
 }
 

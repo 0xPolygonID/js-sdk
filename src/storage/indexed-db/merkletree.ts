@@ -4,8 +4,7 @@ import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/m
 import * as uuid from 'uuid';
 
 import { IMerkleTreeStorage } from '../interfaces/merkletree';
-
-const mtTypes = [MerkleTreeType.Claims, MerkleTreeType.Revocations, MerkleTreeType.Roots];
+import { createMerkleTreeMetaInfo } from '../utils';
 
 /**
  * Merkle tree storage that uses browser indexed db storage
@@ -48,24 +47,13 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     if (!identifier) {
       identifier = `${uuid.v4()}`;
     }
-    const createMetaInfo = () => {
-      const treesMeta: IdentityMerkleTreeMetaInformation[] = [];
-      for (let index = 0; index < mtTypes.length; index++) {
-        const mType = mtTypes[index];
-        const treeId = identifier.concat('+' + mType.toString());
-        const metaInfo = { treeId, identifier, type: mType };
-        treesMeta.push(metaInfo);
-      }
-      return treesMeta;
-    };
-
     const existingBinging = await get(identifier, this._bindingStore);
     if (existingBinging) {
       throw new Error(
         `Present merkle tree meta information in the store for current identifier ${identifier}`
       );
     }
-    const treesMeta = createMetaInfo();
+    const treesMeta = createMerkleTreeMetaInfo(identifier);
     await set(identifier, treesMeta, this._merkleTreeMetaStore);
     return treesMeta;
   }
