@@ -21,61 +21,56 @@ export class IssuerResolver implements CredentialStatusResolver {
   async resolve(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
     const revStatusResp = await fetch(credentialStatus.id);
     const revStatus = await revStatusResp.json();
-    return new RevocationStatusDTO(revStatus).toRevocationStatus();
+    return toRevocationStatus(revStatus);
   }
 }
 
 /**
- *  Proof dto as a partial result of fetching credential status with type SparseMerkleTreeProof
+ * RevocationStatusResponse is a response of fetching credential status with type SparseMerkleTreeProof
  *
- * @interface ProofDTO
+ * @export
+ * @interface RevocationStatusResponse
  */
-export interface ProofDTO {
-  existence: boolean;
-  siblings: string[];
-  node_aux: {
-    key: string;
-    value: string;
+export interface RevocationStatusResponse {
+  issuer: Issuer;
+  mtp: {
+    existence: boolean;
+    siblings: string[];
+    node_aux: {
+      key: string;
+      value: string;
+    };
   };
 }
 
 /**
- * RevocationStatusDTO is a result of fetching credential status with type SparseMerkleTreeProof
+ * toRevocationStatus is a result of fetching credential status with type SparseMerkleTreeProof converts to RevocationStatus
  *
- * @public
- * @class RevocationStatusDTO
+ * @param {RevocationStatusResponse} { issuer, mtp }
+ * @returns {RevocationStatus} RevocationStatus
  */
-export class RevocationStatusDTO {
-  issuer!: Issuer;
-  mtp!: ProofDTO;
-
-  constructor(payload: object) {
-    Object.assign(this, payload);
-  }
-
-  toRevocationStatus(): RevocationStatus {
-    const p = new Proof();
-    p.existence = this.mtp.existence;
-    if (this.mtp.node_aux) {
-      p.nodeAux = {
-        key: newHashFromBigInt(BigInt(this.mtp.node_aux.key)),
-        value: newHashFromBigInt(BigInt(this.mtp.node_aux.value))
-      };
-    }
-    const s = this.mtp.siblings.map((s) => newHashFromBigInt(BigInt(s)));
-
-    p.siblings = [];
-    p.depth = s.length;
-
-    for (let lvl = 0; lvl < s.length; lvl++) {
-      if (s[lvl].bigInt() !== BigInt(0)) {
-        setBitBigEndian(p.notEmpties, lvl);
-        p.siblings.push(s[lvl]);
-      }
-    }
-    return {
-      mtp: p,
-      issuer: this.issuer
+export const toRevocationStatus = ({ issuer, mtp }: RevocationStatusResponse): RevocationStatus => {
+  const p = new Proof();
+  p.existence = mtp.existence;
+  if (mtp.node_aux) {
+    p.nodeAux = {
+      key: newHashFromBigInt(BigInt(mtp.node_aux.key)),
+      value: newHashFromBigInt(BigInt(mtp.node_aux.value))
     };
   }
-}
+  const s = mtp.siblings.map((s) => newHashFromBigInt(BigInt(s)));
+
+  p.siblings = [];
+  p.depth = s.length;
+
+  for (let lvl = 0; lvl < s.length; lvl++) {
+    if (s[lvl].bigInt() !== BigInt(0)) {
+      setBitBigEndian(p.notEmpties, lvl);
+      p.siblings.push(s[lvl]);
+    }
+  }
+  return {
+    mtp: p,
+    issuer
+  };
+};

@@ -3,13 +3,12 @@ import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/m
 import * as uuid from 'uuid';
 
 import { IMerkleTreeStorage } from '../interfaces/merkletree';
+import { MERKLE_TREE_TYPES } from '../utils';
 
-const mtTypes = [MerkleTreeType.Claims, MerkleTreeType.Revocations, MerkleTreeType.Roots];
-
-declare type TreeWithMetaInfo = {
+export interface TreeWithMetaInfo {
   tree: Merkletree;
   metaInfo: IdentityMerkleTreeMetaInformation;
-};
+}
 
 /**
  *
@@ -59,7 +58,7 @@ export class InMemoryMerkleTreeStorage implements IMerkleTreeStorage {
     this._data[identifier] = [];
 
     const treesMeta: IdentityMerkleTreeMetaInformation[] = [];
-    mtTypes.forEach((t) => {
+    MERKLE_TREE_TYPES.forEach((t) => {
       const treeId = identifier.concat('+' + t.toString());
       const tree = new Merkletree(new InMemoryDB(str2Bytes(treeId)), true, this.mtDepth);
 
