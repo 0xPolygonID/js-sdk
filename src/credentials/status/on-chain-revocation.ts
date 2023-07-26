@@ -3,7 +3,7 @@ import { EthConnectionConfig } from '../../storage/blockchain';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revocation';
 import { DID, Id } from '@iden3/js-iden3-core';
-import { getChainId } from '../../storage/blockchain';
+import { getChainIdByDIDsParts } from '../../storage/blockchain';
 import { utils } from 'ethers';
 
 /**
@@ -99,10 +99,7 @@ export class OnChainResolver implements CredentialStatusResolver {
       contractAddress = utils.getAddress(utils.hexDataSlice(ethAddr, 0));
       const blockchain = DID.blockchainFromId(issuerId);
       const network = DID.networkIdFromId(issuerId);
-      chainId = getChainId(blockchain, network);
-      if (!chainId) {
-        throw new Error(`chain id for '${blockchain}' and '${network}' is not registered`);
-      }
+      chainId = getChainIdByDIDsParts(issuerDID.method, blockchain, network);
     } else {
       const parts = contractAddress.split(':');
       if (parts.length != 2) {

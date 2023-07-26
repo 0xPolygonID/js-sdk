@@ -12,24 +12,28 @@ export const CHAIN_IDS: { [key: string]: number } = {
 };
 
 /**
- * Registers a new chain ID for a blockchain and network combination.
- * If the blockchain or network is not provided, an error will be thrown.
- * @param {string} blockchain - The blockchain name.
- * @param {string} network - The network name.
- * @param {number} chainId - The chain ID to be registered.
- * @throws {Error} Throws an error if the blockchain name is not provided.
- * @example
- * registerChainId('eth', 'ropsten', 3);
+ * Object containing default networks for DIDs.
+ * @type { [key: string]: number }
  */
-export const registerChainId = (blockchain: string, network: string, chainId: number): void => {
-  if (!blockchain) {
-    throw new Error('blockchain is required');
-  }
-  let prefix = blockchain;
+export const DEFAULT_NETWORKS: { [key: string]: number } = {
+  ethr: 1,
+  polygonid: 137
+};
+
+/**
+ * Registers a new chain ID for a blockchain and network combination.
+ * @param {string} blockchain - The blockchain name.
+ * @param {number} chainId - The chain ID to be registered.
+ * @param {string} network - The network name.
+ * @beta This API will change in the future.
+ * @example
+ * registerChainId('eth', 3, 'ropsten');
+ */
+export const registerChainId = (blockchain: string, chainId: number, network?: string): void => {
   if (network) {
-    prefix += `:${network}`;
+    blockchain += `:${network}`;
   }
-  CHAIN_IDS[prefix] = chainId;
+  CHAIN_IDS[blockchain] = chainId;
 };
 
 /**
@@ -38,18 +42,70 @@ export const registerChainId = (blockchain: string, network: string, chainId: nu
  * @param {string} blockchain - The blockchain name.
  * @param {string} network - The network name.
  * @returns {number} The chain ID for the specified blockchain and network.
+ * @throws {Error} Throws an error if the chainId not found.
+ * @beta This API will change in the future.
  * @example
- * const chainId = getChainId('eth', 'main');
+ * const chainId = getChainId('ethr', eth', 'main');
  * // chainId will be 1
  */
-export const getChainId = (blockchain: string, network: string): number => {
-  let prefix = blockchain;
+export const getChainId = (blockchain: string, network?: string): number => {
   if (network) {
-    prefix += `:${network}`;
+    blockchain += `:${network}`;
   }
-  const chainId = CHAIN_IDS[prefix];
+  const chainId = CHAIN_IDS[blockchain];
   if (!chainId) {
-    return 0;
+    throw new Error(`chainId not found for ${blockchain}`);
   }
   return chainId;
+};
+
+/**
+ * Registers a default chain ID for methodId.
+ * @param {string} blockchain - The blockchain name.
+ * @param {number} chainId - The chain ID to be registered.
+ * @param {string} network - The network name.
+ * @beta This API will change in the future.
+ * @example
+ * registerChainId('polygonid', 137);
+ */
+export const registerDefaultNetworkForMethodId = (methodId: string, chainId: number): void => {
+  DEFAULT_NETWORKS[methodId] = chainId;
+};
+
+/**
+ * Gets the chain ID for a given methodId.
+ * If the chain ID is not found, 0 will be returned.
+ * @param {string} methodId - The blockchain name.
+ * @returns {number} The chain ID for the specified blockchain and network.
+ * @throws {Error} Throws an error if the chainId not found.
+ * @beta This API will change in the future.
+ * @example
+ * const chainId = getChainId('polygonid');
+ * // chainId will be 137
+ */
+export const getDefaultNetworkForMethodId = (methodId: string): number => {
+  const chainId = DEFAULT_NETWORKS[methodId];
+  if (!chainId) {
+    throw new Error(`chainId not found for ${methodId}`);
+  }
+  return chainId;
+};
+
+/**
+ * Gets the chain ID for a given methodId, blockchain and network combination.
+ * @param {string} methodId - The blockchain name.
+ * @param {string} blockchain - The blockchain name.
+ * @param {string} network - The network name.
+ * @returns {number} The chain ID for the specified blockchain and network.
+ * @beta This API will change in the future.
+ */
+export const getChainIdByDIDsParts = (
+  methodId: string,
+  blockchain?: string,
+  network?: string
+): number => {
+  if (!blockchain) {
+    return getDefaultNetworkForMethodId(methodId);
+  }
+  return getChainId(blockchain, network);
 };

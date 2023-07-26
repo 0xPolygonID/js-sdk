@@ -21,7 +21,7 @@ import { expect } from 'chai';
 import { RHSResolver } from '../../src/credentials';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 
-describe.only('rhs', () => {
+describe('rhs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
   let dataStorage: IDataStorage;
@@ -167,7 +167,6 @@ describe.only('rhs', () => {
       statusIssuer: credBasicStatus
     };
 
-
     const rhsResolver = new RHSResolver(mockStateStorageForGenesisState);
 
     return rhsResolver
@@ -176,7 +175,9 @@ describe.only('rhs', () => {
         throw new Error('was not supposed to succeed');
       })
       .catch((m) => {
-        expect((m as Error).message).to.contains(`can't fetch revocation status from backup endpoint`);
+        expect((m as Error).message).to.contains(
+          `can't fetch revocation status from backup endpoint`
+        );
       });
   });
 
