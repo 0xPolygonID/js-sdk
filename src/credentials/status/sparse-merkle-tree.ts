@@ -25,10 +25,9 @@ export class IssuerResolver implements CredentialStatusResolver {
   }
 }
 
-
 /**
  * RevocationStatusResponse is a куізщтіу of fetching credential status with type SparseMerkleTreeProof
- * 
+ *
  * @export
  * @interface RevocationStatusResponse
  */
@@ -44,7 +43,7 @@ export interface RevocationStatusResponse {
   };
 }
 
- /**
+/**
  * toRevocationStatus is a result of fetching credential status with type SparseMerkleTreeProof converts to RevocationStatus
  *
  * @param {RevocationStatusResponse} { issuer, mtp }
