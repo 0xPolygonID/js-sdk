@@ -27,7 +27,7 @@ export interface IZKProver {
    *
    * @param {ZKProof} zkp - zero knowledge proof that will be verified
    * @param {string} circuitId - circuit id for proof verification
-   * @returns `Promise<ZKProof>`
+   * @returns `Promise<boolean>`
    */
   verify(zkp: ZKProof, circuitId: string): Promise<boolean>;
 }
