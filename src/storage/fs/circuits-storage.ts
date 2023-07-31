@@ -33,15 +33,19 @@ export interface FSCircuitStorageOptions {
  * @implements implements ICircuitStorage interface
  */
 export class FSCircuitStorage implements ICircuitStorage {
-  private readonly _defaultVerificationKeyPath = 'verification_key.json';
-  private readonly _defaultProvingKeyPath = 'circuit_final.zkey';
-  private readonly _defaultWasmFilePath = 'circuit.wasm';
+  private readonly _verificationKeyPath: string = 'verification_key.json';
+  private readonly _provingKeyPath: string = 'circuit_final.zkey';
+  private readonly _wasmFilePath: string = 'circuit.wasm';
 
   /**
    * Creates an instance of FSCircuitStorage.
    * @param {string} opts - options to read / save files
    */
-  constructor(private readonly opts: FSCircuitStorageOptions) {}
+  constructor(private readonly opts: FSCircuitStorageOptions) {
+    this._verificationKeyPath = this.opts.verificationFileName ?? this._verificationKeyPath;
+    this._provingKeyPath = this.opts.provingFileName ?? this._provingKeyPath;
+    this._wasmFilePath = this.opts.wasmFileName ?? this._wasmFilePath;
+  }
 
   /**
    * loads circuit data by id from file storage
@@ -50,18 +54,9 @@ export class FSCircuitStorage implements ICircuitStorage {
    * @returns `Promise<CircuitData>`
    */
   async loadCircuitData(circuitId: CircuitId): Promise<CircuitData> {
-    const verificationKey = await this.loadCircuitFile(
-      circuitId,
-      this.opts.verificationFileName ?? this._defaultVerificationKeyPath
-    );
-    const provingKey = await this.loadCircuitFile(
-      circuitId,
-      this.opts.provingFileName ?? this._defaultProvingKeyPath
-    );
-    const wasm = await this.loadCircuitFile(
-      circuitId,
-      this.opts.wasmFileName ?? this._defaultWasmFilePath
-    );
+    const verificationKey = await this.loadCircuitFile(circuitId, this._verificationKeyPath);
+    const provingKey = await this.loadCircuitFile(circuitId, this._provingKeyPath);
+    const wasm = await this.loadCircuitFile(circuitId, this._wasmFilePath);
 
     return {
       circuitId,
@@ -105,25 +100,17 @@ export class FSCircuitStorage implements ICircuitStorage {
     if (circuitData.verificationKey) {
       await this.writeCircuitFile(
         circuitId,
-        this.opts.verificationFileName ?? this._defaultVerificationKeyPath,
+        this._verificationKeyPath,
         circuitData.verificationKey,
         'utf-8'
       );
     }
 
     if (circuitData.provingKey) {
-      await this.writeCircuitFile(
-        circuitId,
-        this.opts.provingFileName ?? this._defaultProvingKeyPath,
-        circuitData.provingKey
-      );
+      await this.writeCircuitFile(circuitId, this._provingKeyPath, circuitData.provingKey);
     }
     if (circuitData.wasm) {
-      await this.writeCircuitFile(
-        circuitId,
-        this.opts.wasmFileName ?? this._defaultWasmFilePath,
-        circuitData.wasm
-      );
+      await this.writeCircuitFile(circuitId, this._wasmFilePath, circuitData.wasm);
     }
   }
 }
