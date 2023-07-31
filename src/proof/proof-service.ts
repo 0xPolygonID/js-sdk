@@ -36,7 +36,7 @@ import {
   W3CCredential
 } from '../verifiable';
 import { toClaimNonRevStatus, toGISTProof } from './common';
-import { NativeProver } from './prover';
+import { IZKProver, NativeProver } from './prover';
 
 import {
   DocumentLoader,
@@ -158,7 +158,7 @@ export interface IProofService {
  * @implements implements IProofService interface
  */
 export class ProofService implements IProofService {
-  private readonly _prover: NativeProver;
+  private readonly _prover: IZKProver;
   private readonly _ldLoader: DocumentLoader;
   /**
    * Creates an instance of ProofService.
@@ -219,10 +219,7 @@ export class ProofService implements IProofService {
       credentialSubjectProfileNonce
     });
 
-    const { proof, pub_signals } = await this._prover.generate(
-      inputs,
-      proofReq.circuitId as CircuitId
-    );
+    const { proof, pub_signals } = await this._prover.generate(inputs, proofReq.circuitId);
 
     return {
       id: proofReq.id,

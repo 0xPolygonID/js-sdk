@@ -7,11 +7,48 @@ import { byteDecoder } from '../utils';
 import * as snarkjs from 'snarkjs';
 import { getCurveFromName } from 'ffjavascript';
 
-// NativeProver service responsible for zk generation groth16 algorithm with bn128 curve
-export class NativeProver {
+/**
+ * ZKProver is responsible for proof generation and verification
+ *
+ * @public
+ * @interface ZKProver
+ */
+export interface IZKProver {
+  /**
+   * generates zero knowledge proof
+   *
+   * @param {Uint8Array} inputs - inputs that will be used for proof generation
+   * @param {string} circuitId - circuit id for proof generation
+   * @returns `Promise<ZKProof>`
+   */
+  generate(inputs: Uint8Array, circuitId: string): Promise<ZKProof>;
+  /**
+   * verifies zero knowledge proof
+   *
+   * @param {ZKProof} zkp - zero knowledge proof that will be verified
+   * @param {string} circuitId - circuit id for proof verification
+   * @returns `Promise<ZKProof>`
+   */
+  verify(zkp: ZKProof, circuitId: string): Promise<boolean>;
+}
+
+/**
+ *  NativeProver service responsible for zk generation and verification of groth16 algorithm with bn128 curve
+ * @public
+ * @class NativeProver
+ * @implements implements IZKProver interface
+ */
+export class NativeProver implements IZKProver {
   private static readonly curveName = 'bn128';
   constructor(private readonly _circuitStorage: ICircuitStorage) {}
 
+  /**
+   * verifies zero knowledge proof
+   *
+   * @param {ZKProof} zkp - zero knowledge proof that will be verified
+   * @param {string} circuitId - circuit id for proof verification
+   * @returns `Promise<ZKProof>`
+   */
   async verify(zkp: ZKProof, circuitName: CircuitId): Promise<boolean> {
     try {
       const verKey: Uint8Array = (await this._circuitStorage.loadCircuitData(circuitName))
@@ -33,7 +70,13 @@ export class NativeProver {
     }
   }
 
-  // Generate calls prover-server for proof generation
+  /**
+   * generates zero knowledge proof
+   *
+   * @param {Uint8Array} inputs - inputs that will be used for proof generation
+   * @param {string} circuitId - circuit id for proof generation
+   * @returns `Promise<ZKProof>`
+   */
   async generate(inputs: Uint8Array, circuitId: CircuitId): Promise<ZKProof> {
     const circuitData = await this._circuitStorage.loadCircuitData(circuitId);
     const wasm: Uint8Array = circuitData.wasm;
