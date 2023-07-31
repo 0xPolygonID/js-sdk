@@ -49,13 +49,16 @@ export class NativeProver implements IZKProver {
    * @param {string} circuitId - circuit id for proof verification
    * @returns `Promise<ZKProof>`
    */
-  async verify(zkp: ZKProof, circuitName: CircuitId): Promise<boolean> {
+  async verify(zkp: ZKProof, circuitId: CircuitId): Promise<boolean> {
     try {
-      const verKey: Uint8Array = (await this._circuitStorage.loadCircuitData(circuitName))
-        .verificationKey;
+      const circuitData = await this._circuitStorage.loadCircuitData(circuitId);
+
+      if (!circuitData.verificationKey) {
+        throw new Error(`verification file doesn't exist for circuit ${circuitId}`);
+      }
 
       await snarkjs.groth16.verify(
-        JSON.parse(byteDecoder.decode(verKey)),
+        JSON.parse(byteDecoder.decode(circuitData.verificationKey)),
         zkp.pub_signals,
         zkp.proof
       );
@@ -79,17 +82,20 @@ export class NativeProver implements IZKProver {
    */
   async generate(inputs: Uint8Array, circuitId: CircuitId): Promise<ZKProof> {
     const circuitData = await this._circuitStorage.loadCircuitData(circuitId);
-    const wasm: Uint8Array = circuitData.wasm;
+    if (!circuitData.wasm) {
+      throw new Error(`wasm file doesn't exist for circuit ${circuitId}`);
+    }
 
-    const witnessCalculator = await witnessBuilder(wasm);
+    const witnessCalculator = await witnessBuilder(circuitData.wasm);
 
     const parsedData = JSON.parse(byteDecoder.decode(inputs));
 
     const wtnsBytes: Uint8Array = await witnessCalculator.calculateWTNSBin(parsedData, 0);
 
-    const provingKey = circuitData.provingKey;
-
-    const { proof, publicSignals } = await snarkjs.groth16.prove(provingKey, wtnsBytes);
+    if (!circuitData.provingKey) {
+      throw new Error(`proving file doesn't exist for circuit ${circuitId}`);
+    }
+    const { proof, publicSignals } = await snarkjs.groth16.prove(circuitData.provingKey, wtnsBytes);
 
     // we need to terminate curve manually
     await this.terminateCurve();

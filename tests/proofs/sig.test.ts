@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import {
-  CircuitStorage,
   CredentialStorage,
+  FSCircuitStorage,
   Identity,
   IdentityStorage,
   IdentityWallet,
@@ -9,18 +9,16 @@ import {
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
+import { ICircuitStorage, IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { FSKeyLoader } from '../../src/loaders';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { byteEncoder } from '../../src';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
-import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
@@ -37,7 +35,7 @@ describe('sig proofs', () => {
 
   let userDID: DID;
   let issuerDID: DID;
-  let circuitStorage: CircuitStorage;
+  let circuitStorage: ICircuitStorage;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -70,38 +68,10 @@ describe('sig proofs', () => {
     }
   };
 
-  before(async () => {
-    circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
-
-    const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
-
-    await circuitStorage.saveCircuitData(CircuitId.AuthV2, {
-      circuitId: CircuitId.AuthV2,
-      wasm: await loader.load(`${CircuitId.AuthV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AuthV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(`${CircuitId.AuthV2.toString()}/verification_key.json`)
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.AtomicQuerySigV2, {
-      circuitId: CircuitId.AtomicQuerySigV2,
-      wasm: await loader.load(`${CircuitId.AtomicQuerySigV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AtomicQuerySigV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQuerySigV2.toString()}/verification_key.json`
-      )
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
-      circuitId: CircuitId.StateTransition,
-      wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
-    });
-  });
-
   beforeEach(async () => {
+    circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, './testdata')
+    });
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
