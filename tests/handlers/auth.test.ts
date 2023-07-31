@@ -4,8 +4,8 @@ import { IdentityStorage } from '../../src/storage/shared/identity-storage';
 import { PlainPacker } from '../../src/iden3comm/packers/plain';
 import {
   AuthHandler,
-  CircuitStorage,
   CredentialStorage,
+  FSCircuitStorage,
   IAuthHandler,
   IdentityWallet,
   byteEncoder
@@ -17,7 +17,6 @@ import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { FSKeyLoader } from '../../src/loaders';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
@@ -99,6 +98,10 @@ describe('auth', () => {
 
     const verificationFn = new VerificationHandlerFunc(stateVerificationFn);
     const mapKey = proving.provingMethodGroth16AuthV2Instance.methodAlg.toString();
+
+    if (!circuitData.verificationKey) {
+      throw new Error(`verification key doesn't exist for ${circuitData.circuitId}`);
+    }
     const verificationParamMap: Map<string, VerificationParams> = new Map([
       [
         mapKey,
@@ -109,6 +112,12 @@ describe('auth', () => {
       ]
     ]);
 
+    if (!circuitData.provingKey) {
+      throw new Error(`proving doesn't exist for ${circuitData.circuitId}`);
+    }
+    if (!circuitData.wasm) {
+      throw new Error(`wasm file doesn't exist for ${circuitData.circuitId}`);
+    }
     const provingParamMap: Map<string, ProvingParams> = new Map();
     provingParamMap.set(mapKey, {
       dataPreparer: authInputsHandler,
@@ -138,34 +147,8 @@ describe('auth', () => {
       mt: new InMemoryMerkleTreeStorage(40),
       states: mockStateStorage // new EthStateStorage(defaultEthConnectionConfig)
     };
-
-    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
-
-    const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
-
-    await circuitStorage.saveCircuitData(CircuitId.AuthV2, {
-      circuitId: CircuitId.AuthV2.toString(),
-      wasm: await loader.load(`${CircuitId.AuthV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AuthV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(`${CircuitId.AuthV2.toString()}/verification_key.json`)
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.AtomicQuerySigV2, {
-      circuitId: CircuitId.AtomicQuerySigV2.toString(),
-      wasm: await loader.load(`${CircuitId.AtomicQuerySigV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AtomicQuerySigV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQuerySigV2.toString()}/verification_key.json`
-      )
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
-      circuitId: CircuitId.StateTransition.toString(),
-      wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
     });
 
     const resolvers = new CredentialStatusResolverRegistry();

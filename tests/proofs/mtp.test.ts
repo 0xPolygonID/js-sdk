@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import {
-  CircuitStorage,
   CredentialStorage,
+  FSCircuitStorage,
   Identity,
   IdentityStorage,
   IdentityWallet,
@@ -15,14 +15,12 @@ import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { FSKeyLoader } from '../../src/loaders';
 import { ethers } from 'ethers';
 import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
-import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
@@ -92,27 +90,8 @@ describe('mtp proofs', () => {
       states: mockStateStorage
     };
 
-    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
-
-    // todo: change this loader
-    const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
-
-    await circuitStorage.saveCircuitData(CircuitId.AtomicQueryMTPV2, {
-      circuitId: CircuitId.AtomicQueryMTPV2,
-      wasm: await loader.load(`${CircuitId.AtomicQueryMTPV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AtomicQueryMTPV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
-      circuitId: CircuitId.StateTransition,
-      wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, './testdata')
     });
 
     /*

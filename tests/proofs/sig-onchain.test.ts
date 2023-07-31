@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import {
-  CircuitStorage,
   CredentialStorage,
+  FSCircuitStorage,
   Identity,
   IdentityStorage,
   IdentityWallet,
@@ -19,13 +19,11 @@ import {
 } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { FSKeyLoader } from '../../src/loaders';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { byteEncoder } from '../../src';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
-import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 
@@ -84,36 +82,10 @@ describe('sig onchain proofs', () => {
       states: mockStateStorage
     };
 
-    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
-
-    const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
-
-    await circuitStorage.saveCircuitData(CircuitId.AuthV2, {
-      circuitId: CircuitId.AuthV2,
-      wasm: await loader.load(`${CircuitId.AuthV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AuthV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(`${CircuitId.AuthV2.toString()}/verification_key.json`)
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, './testdata')
     });
 
-    await circuitStorage.saveCircuitData(CircuitId.AtomicQuerySigV2OnChain, {
-      circuitId: CircuitId.AtomicQuerySigV2OnChain,
-      wasm: await loader.load(`${CircuitId.AtomicQuerySigV2OnChain.toString()}/circuit.wasm`),
-      provingKey: await loader.load(
-        `${CircuitId.AtomicQuerySigV2OnChain.toString()}/circuit_final.zkey`
-      ),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQuerySigV2OnChain.toString()}/verification_key.json`
-      )
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
-      circuitId: CircuitId.StateTransition,
-      wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
-    });
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
