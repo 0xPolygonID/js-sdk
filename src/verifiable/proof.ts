@@ -5,8 +5,7 @@ import { TreeState } from '../circuits';
 /**
  * Represents the published state of the issuer
  *
- * @export
- * @beta
+ * @public
  * @interface   State
  */
 export interface State {
@@ -23,13 +22,12 @@ export interface State {
 /**
  *  IssuerData is the data that is used to create a proof
  *
- * @export
- * @beta
+ * @public
  * @class   IssuerData
  */
 export class IssuerData {
-  id: string;
-  state: State;
+  id = '';
+  state!: State;
   authCoreClaim?: string;
   mtp?: Proof;
   credentialStatus?: CredentialStatus;
@@ -48,7 +46,11 @@ export class IssuerData {
   toJSON() {
     return {
       ...this,
-      mtp: { existence: this.mtp.existence, siblings: this.mtp.siblings, nodeAux: this.mtp.nodeAux }
+      mtp: {
+        existence: this.mtp?.existence,
+        siblings: this.mtp?.siblings,
+        nodeAux: this.mtp?.nodeAux
+      }
     };
   }
 }
@@ -56,15 +58,14 @@ export class IssuerData {
 /**
  * Iden3SparseMerkleProof is a iden3 protocol merkle tree proof
  *
- * @export
- * @beta
+ * @public
  * @class Iden3SparseMerkleTreeProof
  */
 export class Iden3SparseMerkleTreeProof {
-  type: ProofType;
-  issuerData: IssuerData;
-  mtp: Proof;
-  coreClaim: string;
+  type!: ProofType;
+  issuerData!: IssuerData;
+  mtp!: Proof;
+  coreClaim = '';
   /**
    * Creates an instance of Iden3SparseMerkleTreeProof.
    * @param {object} obj
@@ -88,21 +89,23 @@ export class Iden3SparseMerkleTreeProof {
 /**
  *
  * BJJSignatureProof2021 is a signature of core claim by BJJ key
- * @export
- * @beta
+ * @public
  * @class BJJSignatureProof2021
  */
 export class BJJSignatureProof2021 {
-  type: ProofType;
-  issuerData: IssuerData;
-  signature: string;
-  coreClaim: string;
+  type!: ProofType;
+  issuerData!: IssuerData;
+  signature!: string;
+  coreClaim!: string;
+
+  constructor(obj?: object) {
+    Object.assign(this, obj ?? {});
+  }
 }
 /**
  *  Query represents structure for query to atomic circuit
  *
- * @export
- * @beta
+ * @public
  * @interface   ProofQuery
  */
 export interface ProofQuery {
@@ -113,13 +116,13 @@ export interface ProofQuery {
   credentialSubjectId?: string;
   context?: string;
   type?: string;
+  skipClaimRevocationCheck?: boolean;
 }
 
 /**
  * Proof with MerkleTree info
  *
- * @export
- * @beta
+ * @public
  * @interface   MerkleTreeProofWithTreeState
  */
 export interface MerkleTreeProofWithTreeState {
@@ -130,8 +133,7 @@ export interface MerkleTreeProofWithTreeState {
 /**
  *
  * CredentialStatus contains type and revocation Url
- * @export
- * @beta
+ * @public
  * @interface   CredentialStatus
  */
 export interface CredentialStatus {

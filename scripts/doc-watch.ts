@@ -37,9 +37,7 @@ async function main() {
 		process.exitCode = 1;
 	}
 	const outputFolder = './temp';
-	// if (fs.existsSync(DOCS_DIR)) {
-	// 	await fs.promises.rm(DOCS_DIR, { recursive: true, force: true });
-	// }
+
 	await fs.promises.mkdir(outputFolder, { recursive: true })
 	await fs.promises.mkdir(DOCS_DIR, { recursive: true })
 
@@ -94,22 +92,11 @@ async function main() {
 
 					skip = true
 				}
-
-				// See issue #4. api-documenter expects \| to escape table
-				// column delimiters, but docusaurus uses a markdown processor
-				// that doesn't support this. Replace with an escape sequence
-				// that renders |.
 				if (line.startsWith('|')) {
 					line = line.replace(/\\\|/g, '&#124;')
 				}
 
-				// MDX cries when you put commects in there :(
 				line = replaceAll(line, '<!-- -->', '')
-
-				if (id === 'core') {
-					line = line.replace('core package', 'Veramo Core')
-				}
-
 				if (!skip) {
 					output.push(line)
 				}
@@ -147,9 +134,7 @@ chokidar.watch(path.join(__dirname, '../src/'), {
 	console.log(`${event} - ${path} - present changes, building...`);
 	await main();
 	console.log('finished building...');
-}).on('ready', async (event, path) => {
-	// console.log(`${event} - ${path} - present changes, building...`);
-	// await main();
+}).on('ready', async (event:unknown, path:unknown) => {
 	console.log('ready building...');
 });
  main();

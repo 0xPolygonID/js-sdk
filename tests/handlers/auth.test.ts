@@ -1,13 +1,13 @@
+/* eslint-disable no-console */
 import { Identity, Profile } from '../../src/storage/entities/identity';
 import { IdentityStorage } from '../../src/storage/shared/identity-storage';
 import { PlainPacker } from '../../src/iden3comm/packers/plain';
 import {
   AuthHandler,
-  CircuitStorage,
   CredentialStorage,
+  FSCircuitStorage,
   IAuthHandler,
   IdentityWallet,
-  ZKPRequestWithCredential,
   byteEncoder
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
@@ -17,7 +17,6 @@ import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { FSKeyLoader } from '../../src/loaders';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
@@ -40,7 +39,7 @@ import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { Token } from '@iden3/js-jwz';
-import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
@@ -54,6 +53,10 @@ describe('auth', () => {
   let authHandler: IAuthHandler;
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
+  const ipfsNodeURL = process.env.IPFS_URL as string;
+
+  const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+  const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -95,6 +98,10 @@ describe('auth', () => {
 
     const verificationFn = new VerificationHandlerFunc(stateVerificationFn);
     const mapKey = proving.provingMethodGroth16AuthV2Instance.methodAlg.toString();
+
+    if (!circuitData.verificationKey) {
+      throw new Error(`verification key doesn't exist for ${circuitData.circuitId}`);
+    }
     const verificationParamMap: Map<string, VerificationParams> = new Map([
       [
         mapKey,
@@ -105,6 +112,12 @@ describe('auth', () => {
       ]
     ]);
 
+    if (!circuitData.provingKey) {
+      throw new Error(`proving doesn't exist for ${circuitData.circuitId}`);
+    }
+    if (!circuitData.wasm) {
+      throw new Error(`wasm file doesn't exist for ${circuitData.circuitId}`);
+    }
     const provingParamMap: Map<string, ProvingParams> = new Map();
     provingParamMap.set(mapKey, {
       dataPreparer: authInputsHandler,
@@ -134,34 +147,8 @@ describe('auth', () => {
       mt: new InMemoryMerkleTreeStorage(40),
       states: mockStateStorage // new EthStateStorage(defaultEthConnectionConfig)
     };
-
-    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
-
-    const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
-
-    await circuitStorage.saveCircuitData(CircuitId.AuthV2, {
-      circuitId: CircuitId.AuthV2.toString(),
-      wasm: await loader.load(`${CircuitId.AuthV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AuthV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(`${CircuitId.AuthV2.toString()}/verification_key.json`)
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.AtomicQuerySigV2, {
-      circuitId: CircuitId.AtomicQuerySigV2.toString(),
-      wasm: await loader.load(`${CircuitId.AtomicQuerySigV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AtomicQuerySigV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQuerySigV2.toString()}/verification_key.json`
-      )
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
-      circuitId: CircuitId.StateTransition.toString(),
-      wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
     });
 
     const resolvers = new CredentialStatusResolverRegistry();
@@ -173,20 +160,17 @@ describe('auth', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      ipfsGatewayURL: 'https://ipfs.io'
+      ipfsNodeURL
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    authHandler = new AuthHandler(packageMgr, proofService, credWallet);
+    authHandler = new AuthHandler(packageMgr, proofService);
   });
 
-  it('request-response flow genesis', async () => {
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
-
+  it('request-response flow identity (not profile)', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -198,6 +182,8 @@ describe('auth', () => {
       }
     });
 
+    expect(cred).not.to.be.undefined;
+
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -208,13 +194,14 @@ describe('auth', () => {
         id: rhsUrl
       }
     });
+    expect(issuerAuthCredential).not.to.be.undefined;
 
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -253,6 +240,8 @@ describe('auth', () => {
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
+    const issuerId = DID.idFromDID(issuerDID);
+
     const id = uuid.v4();
     const authReq: AuthorizationRequestMessage = {
       id,
@@ -260,12 +249,12 @@ describe('auth', () => {
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
       thid: id,
       body: authReqBody,
-      from: issuerDID.id.string()
+      from: issuerId.string()
     };
 
     console.log(JSON.stringify(issuerCred));
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-    const authRes = await authHandler.handleAuthorizationRequestForGenesisDID(userDID, msgBytes);
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
 
     const tokenStr = authRes.token;
     console.log(tokenStr);
@@ -275,10 +264,7 @@ describe('auth', () => {
   });
 
   it('request-response flow profiles', async () => {
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
-
-    const { did: userDID, credential: cred } = await idWallet.createIdentity({
+    const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
@@ -288,9 +274,8 @@ describe('auth', () => {
         id: rhsUrl
       }
     });
-    const profileDID = await idWallet.createProfile(userDID, 50, 'test verifier');
 
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+    const { did: issuerDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
@@ -300,13 +285,15 @@ describe('auth', () => {
         id: rhsUrl
       }
     });
+    // assume that we authorized to the issuer with profile did
+    const profileDID = await idWallet.createProfile(userDID, 50, issuerDID.string());
 
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: profileDID.toString(),
+        id: profileDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -345,6 +332,7 @@ describe('auth', () => {
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
+    const verifierDID = 'did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw';
     const id = uuid.v4();
     const authReq: AuthorizationRequestMessage = {
       id,
@@ -352,65 +340,22 @@ describe('auth', () => {
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
       thid: id,
       body: authReqBody,
-      from: issuerDID.id.string()
+      from: verifierDID
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
 
-    const authR = await authHandler.parseAuthorizationRequest(msgBytes);
-
-    // let's find cred for each request.
-    const reqCreds: ZKPRequestWithCredential[] = [];
-
-    for (let index = 0; index < authR.body!.scope.length; index++) {
-      const zkpReq = authR.body!.scope[index];
-
-      const credsToChooseForZKPReq = await credWallet.findByQuery(zkpReq.query);
-
-      // filter credentials for subjects that are profiles of identity
-
-      //    1g                      2g
-      // 1.1p Pas 1.2p Age   2.1p Pas 2.2p Age
-
-      const profiles = await dataStorage.identity.getProfilesByGenesisIdentifier(
-        userDID.toString()
-      );
-      // 1.1p Pas 1.2p Age
-
-      // finds all credentials that belongs to genesis identity or profiles derived from it
-      const credsThatBelongToGenesisIdOrItsProfiles = credsToChooseForZKPReq.filter((cred) => {
-        const credentialSubjectId = cred.credentialSubject['id'] as string; // credential subject
-        return (
-          credentialSubjectId == userDID.toString() ||
-          profiles.some((p) => {
-            return p.id === credentialSubjectId;
-          })
-        );
-      });
-
-      // you can show user credential that can be used for request
-      const chosenCredByUser = credsThatBelongToGenesisIdOrItsProfiles[0];
-
-      // get profile nonce that was used as a part of subject in the credential
-      const credentialSubjectProfileNonce =
-        chosenCredByUser.credentialSubject['id'] === userDID.toString()
-          ? 0
-          : profiles.find((p) => {
-              return p.id === chosenCredByUser.credentialSubject['id'];
-            })!.nonce;
-      reqCreds.push({ req: zkpReq, credential: chosenCredByUser, credentialSubjectProfileNonce });
-    }
-
     // you can create new profile here for auth or if you want to login with genesis set to 0.
 
-    const authProfileNonce = 100;
+    const authR = await authHandler.parseAuthorizationRequest(msgBytes);
 
-    const resp = await authHandler.generateAuthorizationResponse(
-      userDID,
-      authProfileNonce,
-      authR,
-      reqCreds
-    );
+    // let's check that we didn't create profile for verifier
+    const authProfile = await idWallet.getProfileByVerifier(authR.from);
+    const authProfileDID = authProfile
+      ? DID.parse(authProfile.id)
+      : await idWallet.createProfile(userDID, 100, authR.from);
+
+    const resp = await authHandler.handleAuthorizationRequest(authProfileDID, msgBytes);
 
     console.log(resp);
   });

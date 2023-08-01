@@ -1,8 +1,7 @@
 /**
  * Interface to store metadata about merkle tree
  *
- * @export
- * @beta
+ * @public
  * @interface   IdentityMerkleTreeMetaInformation
  */
 export interface IdentityMerkleTreeMetaInformation {
@@ -14,7 +13,6 @@ export interface IdentityMerkleTreeMetaInformation {
 /**
  * Type of MerkleTree
  *
- * @export
  * @enum {number}
  */
 export enum MerkleTreeType {

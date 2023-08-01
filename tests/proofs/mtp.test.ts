@@ -1,6 +1,7 @@
+/* eslint-disable no-console */
 import {
-  CircuitStorage,
   CredentialStorage,
+  FSCircuitStorage,
   Identity,
   IdentityStorage,
   IdentityWallet,
@@ -14,17 +15,14 @@ import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { FSKeyLoader } from '../../src/loaders';
 import { ethers } from 'ethers';
 import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
-import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import { checkVerifiablePresentation } from './common';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 
@@ -92,27 +90,8 @@ describe('mtp proofs', () => {
       states: mockStateStorage
     };
 
-    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
-
-    // todo: change this loader
-    const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
-
-    await circuitStorage.saveCircuitData(CircuitId.AtomicQueryMTPV2, {
-      circuitId: CircuitId.AtomicQueryMTPV2,
-      wasm: await loader.load(`${CircuitId.AtomicQueryMTPV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AtomicQueryMTPV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
-      circuitId: CircuitId.StateTransition,
-      wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, './testdata')
     });
 
     /*
@@ -168,7 +147,7 @@ describe('mtp proofs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -232,26 +211,16 @@ describe('mtp proofs', () => {
     const creds = await credWallet.findByQuery(proofReq.query);
     expect(creds.length).to.not.equal(0);
 
-    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds.length).to.equal(1);
-
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID);
     console.log(proof);
     expect(vp).to.be.undefined;
-    await checkVerifiablePresentation(
-      claimReq.type,
-      userDID,
-      credsForMyUserDID[0],
-      proofService,
-      CircuitId.AtomicQueryMTPV2
-    );
   });
 
   it('mtpv2-merklized', async () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedsnew');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential } = await idWallet.createIdentity({
+    const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
@@ -279,7 +248,7 @@ describe('mtp proofs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -347,15 +316,11 @@ describe('mtp proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(creds.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+      credential: credsForMyUserDID[0],
+      skipRevocation: false
+    });
     console.log(proof);
     expect(vp).to.be.undefined;
-    await checkVerifiablePresentation(
-      claimReq.type,
-      userDID,
-      credsForMyUserDID[0],
-      proofService,
-      CircuitId.AtomicQueryMTPV2
-    );
   });
 });

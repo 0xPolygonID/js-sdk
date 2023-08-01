@@ -32,7 +32,6 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
 /**
  * Media types for iden3 comm communication protocol
  *
- * @export
  * @enum {number}
  */
 export enum MediaType {
@@ -40,11 +39,6 @@ export enum MediaType {
   PlainMessage = 'application/iden3comm-plain-json',
   SignedMessage = 'application/iden3comm-signed-json'
 }
-
-/**
- * Universal resolver url
- */
-export const UNIVERSAL_RESOLVER_URL = 'https://dev.uniresolver.io/1.0/identifiers';
 
 export const SUPPORTED_PUBLIC_KEY_TYPES = {
   ES256K: [

@@ -25,8 +25,7 @@ const ErrAllClaimsRevoked = 'all claims are revoked';
 /**
  * Request to core library to create Core Claim from W3C Verifiable Credential
  *
- * @export
- * @beta
+ * @public
  * @interface CredentialRequest
  */
 export interface CredentialRequest {
@@ -80,8 +79,7 @@ export interface CredentialRequest {
 /**
  * Interface to work with credential wallets
  *
- * @export
- * @beta
+ * @public
  * @interface   ICredentialWallet
  */
 export interface ICredentialWallet {
@@ -200,8 +198,7 @@ export interface ICredentialWallet {
  * Wallet instance is a wrapper of CRUD logic for W3C credentials,
  * also it allows to fetch revocation statuses.
  *
- * @export
- * @beta
+ * @public
  * @class CredentialWallet
  * @implements implements ICredentialWallet interface
  */
@@ -240,7 +237,7 @@ export class CredentialWallet implements ICredentialWallet {
     const authBJJCredsOfIssuer = await this._storage.credential.findCredentialsByQuery({
       context: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD_URL,
       type: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_TYPE,
-      allowedIssuers: [did.toString()]
+      allowedIssuers: [did.string()]
     });
 
     if (!authBJJCredsOfIssuer.length) {
@@ -298,7 +295,7 @@ export class CredentialWallet implements ICredentialWallet {
     credStatus: CredentialStatus,
     credentialStatusResolveOptions?: CredentialStatusResolveOptions
   ): Promise<RevocationStatus> {
-    const statusResolver = this._credentialStatusResolverRegistry.get(credStatus.type);
+    const statusResolver = this._credentialStatusResolverRegistry?.get(credStatus.type);
     if (!statusResolver) {
       throw new Error(`credential status resolver does not exist for ${credStatus.type} type`);
     }
@@ -329,7 +326,6 @@ export class CredentialWallet implements ICredentialWallet {
     const expirationDate =
       !request.expiration || request.expiration == 0 ? null : request.expiration;
 
-    const issuerDID = issuer.toString();
     const credentialSubject = request.credentialSubject;
     credentialSubject['type'] = request.type;
 
@@ -340,7 +336,7 @@ export class CredentialWallet implements ICredentialWallet {
     cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
     cr.issuanceDate = new Date().toISOString();
     cr.credentialSubject = credentialSubject;
-    cr.issuer = issuerDID.toString();
+    cr.issuer = issuer.string();
     cr.credentialSchema = {
       id: request.credentialSchema,
       type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
@@ -410,7 +406,7 @@ export class CredentialWallet implements ICredentialWallet {
     subject: DID
   ): Promise<W3CCredential[]> {
     return credentials.filter((cred: W3CCredential) => {
-      return cred.credentialSubject['id'] === subject.toString();
+      return cred.credentialSubject['id'] === subject.string();
     });
   }
   async findNonRevokedCredential(creds: W3CCredential[]): Promise<{

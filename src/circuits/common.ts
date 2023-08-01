@@ -22,15 +22,14 @@ export const ErrorEmptyIssuerAuthClaimNonRevProof =
 /**
  * base config for circuit inputs
  *
- * @export
- * @beta
+ * @public
  * @class BaseConfig
  */
 export class BaseConfig {
-  mtLevel: number; // Max levels of MT
-  valueArraySize: number; // Size if( value array in identity circuit)s
-  mtLevelOnChain: number;
-  mtLevelClaimsMerklization: number; // max levels in the merklization
+  mtLevel!: number; // Max levels of MT
+  valueArraySize!: number; // Size if( value array in identity circuit)s
+  mtLevelOnChain!: number;
+  mtLevelClaimsMerklization!: number; // max levels in the merklization
 
   /**
    *  getMTLevel max circuit MT levels
@@ -162,8 +161,7 @@ export const bigIntArrayToStringArray = (arr: bigint[]): string[] => {
 /**
  * auxiliary node
  *
- * @export
- * @beta
+ * @public
  * @interface   NodeAuxValue
  */
 export interface NodeAuxValue {
@@ -216,16 +214,16 @@ export const existenceToInt = (b: boolean): number => (b ? 0 : 1);
 /**
  * return object properties
  *
- * @export
  * @param {object} obj
  * @returns object
  */
 export function getProperties(obj: object): object {
-  const result: object = {};
+  const result: { [key: string]: unknown } = {};
+
   for (const property in obj) {
     // eslint-disable-next-line no-prototype-builtins
     if (obj.hasOwnProperty(property) && !property.startsWith('_')) {
-      result[property] = obj[property];
+      result[property] = obj[property as keyof typeof obj];
     }
   }
   return result;

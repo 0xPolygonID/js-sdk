@@ -11,3 +11,4 @@ export const ErrSenderNotUsedTokenCreation = 'sender of message is not used for 
 export const ErrPackedWithUnsupportedCircuit = 'message was packed with unsupported circuit';
 export const ErrProofIsInvalid = 'message proof is invalid';
 export const ErrStateVerificationFailed = 'message state verification failed';
+export const ErrNoProvingMethodAlg = 'unknown proving method algorithm';

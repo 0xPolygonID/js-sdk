@@ -1,25 +1,64 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import { ZKProof } from '@iden3/js-jwz';
-import * as snarkjs from 'snarkjs';
 import { CircuitId } from '../circuits';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { witnessBuilder } from './witness_calculator';
-import { getCurveFromName } from 'ffjavascript';
 import { byteDecoder } from '../utils';
+import * as snarkjs from 'snarkjs';
+import { getCurveFromName } from 'ffjavascript';
 
-/* eslint-disable no-console */
+/**
+ * ZKProver is responsible for proof generation and verification
+ *
+ * @public
+ * @interface ZKProver
+ */
+export interface IZKProver {
+  /**
+   * generates zero knowledge proof
+   *
+   * @param {Uint8Array} inputs - inputs that will be used for proof generation
+   * @param {string} circuitId - circuit id for proof generation
+   * @returns `Promise<ZKProof>`
+   */
+  generate(inputs: Uint8Array, circuitId: string): Promise<ZKProof>;
+  /**
+   * verifies zero knowledge proof
+   *
+   * @param {ZKProof} zkp - zero knowledge proof that will be verified
+   * @param {string} circuitId - circuit id for proof verification
+   * @returns `Promise<boolean>`
+   */
+  verify(zkp: ZKProof, circuitId: string): Promise<boolean>;
+}
 
-// NativeProver service responsible for zk generation groth16 algorithm with bn128 curve
-export class NativeProver {
+/**
+ *  NativeProver service responsible for zk generation and verification of groth16 algorithm with bn128 curve
+ * @public
+ * @class NativeProver
+ * @implements implements IZKProver interface
+ */
+export class NativeProver implements IZKProver {
   private static readonly curveName = 'bn128';
   constructor(private readonly _circuitStorage: ICircuitStorage) {}
 
-  async verify(zkp: ZKProof, circuitName: CircuitId): Promise<boolean> {
+  /**
+   * verifies zero knowledge proof
+   *
+   * @param {ZKProof} zkp - zero knowledge proof that will be verified
+   * @param {string} circuitId - circuit id for proof verification
+   * @returns `Promise<ZKProof>`
+   */
+  async verify(zkp: ZKProof, circuitId: CircuitId): Promise<boolean> {
     try {
-      const verKey: Uint8Array = (await this._circuitStorage.loadCircuitData(circuitName))
-        .verificationKey;
+      const circuitData = await this._circuitStorage.loadCircuitData(circuitId);
+
+      if (!circuitData.verificationKey) {
+        throw new Error(`verification file doesn't exist for circuit ${circuitId}`);
+      }
 
       await snarkjs.groth16.verify(
-        JSON.parse(byteDecoder.decode(verKey)),
+        JSON.parse(byteDecoder.decode(circuitData.verificationKey)),
         zkp.pub_signals,
         zkp.proof
       );
@@ -28,38 +67,43 @@ export class NativeProver {
       await this.terminateCurve();
       return true;
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.log(e);
       return false;
     }
   }
 
-  // Generate calls prover-server for proof generation
+  /**
+   * generates zero knowledge proof
+   *
+   * @param {Uint8Array} inputs - inputs that will be used for proof generation
+   * @param {string} circuitId - circuit id for proof generation
+   * @returns `Promise<ZKProof>`
+   */
   async generate(inputs: Uint8Array, circuitId: CircuitId): Promise<ZKProof> {
-    try {
-      const circuitData = await this._circuitStorage.loadCircuitData(circuitId);
-      const wasm: Uint8Array = circuitData.wasm;
-
-      const witnessCalculator = await witnessBuilder(wasm);
-
-      const parsedData = JSON.parse(byteDecoder.decode(inputs));
-
-      const wtnsBytes: Uint8Array = await witnessCalculator.calculateWTNSBin(parsedData, 0);
-
-      const provingKey = circuitData.provingKey;
-
-      const { proof, publicSignals } = await snarkjs.groth16.prove(provingKey, wtnsBytes);
-
-      // we need to terminate curve manually
-      await this.terminateCurve();
-
-      return {
-        proof: proof,
-        pub_signals: publicSignals
-      };
-    } catch (e) {
-      console.log(e);
-      throw e;
+    const circuitData = await this._circuitStorage.loadCircuitData(circuitId);
+    if (!circuitData.wasm) {
+      throw new Error(`wasm file doesn't exist for circuit ${circuitId}`);
     }
+
+    const witnessCalculator = await witnessBuilder(circuitData.wasm);
+
+    const parsedData = JSON.parse(byteDecoder.decode(inputs));
+
+    const wtnsBytes: Uint8Array = await witnessCalculator.calculateWTNSBin(parsedData, 0);
+
+    if (!circuitData.provingKey) {
+      throw new Error(`proving file doesn't exist for circuit ${circuitId}`);
+    }
+    const { proof, publicSignals } = await snarkjs.groth16.prove(circuitData.provingKey, wtnsBytes);
+
+    // we need to terminate curve manually
+    await this.terminateCurve();
+
+    return {
+      proof,
+      pub_signals: publicSignals
+    };
   }
 
   private async terminateCurve(): Promise<void> {

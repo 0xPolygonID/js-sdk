@@ -1,19 +1,11 @@
 import { InMemoryDataSource } from './../../src/storage/memory/data-source';
 import { CredentialStorage } from './../../src/storage/shared/credential-storage';
-import {
-  CircuitStorage,
-  Identity,
-  IdentityStorage,
-  IdentityWallet,
-  Profile,
-  byteEncoder
-} from '../../src';
+import { Identity, IdentityStorage, IdentityWallet, Profile, byteEncoder } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { FSKeyLoader } from '../../src/loaders';
 import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import {
   CredentialStatus,
@@ -24,10 +16,8 @@ import {
 } from '../../src/verifiable';
 import { Proof } from '@iden3/js-merkletree';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
-import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import path from 'path';
 import { RHSResolver } from '../../src/credentials';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 
@@ -130,17 +120,13 @@ describe('rhs', () => {
       states: ethStorage
     };
 
-    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
-
-    const loader = new FSKeyLoader(path.join(__dirname, '../proofs/testdata'));
-
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    credWallet.getRevocationStatusFromCredential = async (cred: W3CCredential) => {
+    credWallet.getRevocationStatusFromCredential = async () => {
       const r: RevocationStatus = {
         mtp: {
           existence: false,
@@ -154,9 +140,7 @@ describe('rhs', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
 
-  it('genesis reject', async () => {
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
-
+  it('genesis reject : backup is called', async () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
@@ -186,12 +170,14 @@ describe('rhs', () => {
     const rhsResolver = new RHSResolver(mockStateStorageForGenesisState);
 
     return rhsResolver
-      .getStatus(credRHSStatus, issuerDID)
-      .then(function (m) {
+      .resolve(credRHSStatus, { issuerDID })
+      .then(function () {
         throw new Error('was not supposed to succeed');
       })
-      .catch(function (m) {
-        expect((m as Error).message).to.equal(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
+      .catch((m) => {
+        expect((m as Error).message).to.contains(
+          `can't fetch revocation status from backup endpoint`
+        );
       });
   });
 
@@ -213,7 +199,7 @@ describe('rhs', () => {
 
     await credWallet.save(issuerAuthCredential);
 
-    const { did: userDID, credential } = await idWallet.createIdentity({
+    const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
@@ -229,6 +215,7 @@ describe('rhs', () => {
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };
+
     const credRHSStatus: CredentialStatus = {
       id: rhsUrl,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -241,7 +228,7 @@ describe('rhs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -298,6 +285,8 @@ describe('rhs', () => {
       }
     });
 
+    expect(credential).not.to.be.undefined;
+
     const credBasicStatus: CredentialStatus = {
       id: 'issuerurl',
       revocationNonce: 0,
@@ -315,7 +304,7 @@ describe('rhs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -331,7 +320,7 @@ describe('rhs', () => {
 
     await credWallet.save(issuerCred);
 
-    const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
+    await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
 
     // this state is published
 
@@ -342,7 +331,7 @@ describe('rhs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960523,
         documentType: 1
       },
@@ -358,7 +347,7 @@ describe('rhs', () => {
 
     await credWallet.save(issuerCred2);
 
-    const res2 = await idWallet.addCredentialsToMerkleTree([issuerCred2], issuerDID);
+    await idWallet.addCredentialsToMerkleTree([issuerCred2], issuerDID);
 
     const nonce: number = await idWallet.revokeCredential(issuerDID, issuerCred2);
 
@@ -369,7 +358,7 @@ describe('rhs', () => {
     // state is published to blockchain (2)
 
     const rhsResolver = new RHSResolver(dataStorage.states);
-    const rhsStatus = await rhsResolver.getStatus(credRHSStatus, issuerDID);
+    const rhsStatus = await rhsResolver.resolve(credRHSStatus, { issuerDID });
 
     expect(rhsStatus.issuer.state).to.equal(latestTree.state.hex());
     expect(rhsStatus.issuer.claimsTreeRoot).to.equal((await latestTree.claimsTree.root()).hex());

@@ -14,8 +14,7 @@ import { EthConnectionConfig } from './state';
  * OnChainRevocationStore is a class that allows to interact with the onchain contract
  * and build the revocation status.
  *
- * @export
- * @beta
+ * @public
  * @class OnChainIssuer
  */
 export class OnChainRevocationStorage {
@@ -25,6 +24,7 @@ export class OnChainRevocationStorage {
   /**
    *
    * Creates an instance of OnChainIssuer.
+   * @public
    * @param {string} - onhcain contract address
    * @param {string} - rpc url to connect to the blockchain
    */
@@ -36,7 +36,7 @@ export class OnChainRevocationStorage {
 
   /**
    * Get revocation status by nonce from the onchain contract.
-   *
+   * @public
    * @returns Promise<RevocationStatus>
    */
   public async getRevocationStatus(issuerID: bigint, nonce: number): Promise<RevocationStatus> {
@@ -51,7 +51,7 @@ export class OnChainRevocationStorage {
     };
   }
 
-  private static convertIssuerInfo(issuer: unknown): Issuer {
+  private static convertIssuerInfo(issuer: unknown[]): Issuer {
     return {
       state: newHashFromBigInt(BigNumber.from(issuer[0]).toBigInt()).hex(),
       claimsTreeRoot: newHashFromBigInt(BigNumber.from(issuer[1]).toBigInt()).hex(),
@@ -70,10 +70,7 @@ export class OnChainRevocationStorage {
     const p = new Proof();
     p.existence = mtp.existence;
     if (p.existence) {
-      p.nodeAux = {
-        key: undefined,
-        value: undefined
-      } as NodeAux;
+      p.nodeAux = {} as NodeAux;
     } else {
       if (mtp.auxExistence) {
         const auxIndex = BigInt(mtp.auxIndex.toString());
@@ -83,10 +80,7 @@ export class OnChainRevocationStorage {
           value: newHashFromBigInt(auxValue)
         } as NodeAux;
       } else {
-        p.nodeAux = {
-          key: undefined,
-          value: undefined
-        } as NodeAux;
+        p.nodeAux = {} as NodeAux;
       }
     }
 

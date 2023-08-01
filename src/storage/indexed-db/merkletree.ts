@@ -4,14 +4,12 @@ import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/m
 import * as uuid from 'uuid';
 
 import { IMerkleTreeStorage } from '../interfaces/merkletree';
-
-const mtTypes = [MerkleTreeType.Claims, MerkleTreeType.Revocations, MerkleTreeType.Roots];
+import { createMerkleTreeMetaInfo } from '../utils';
 
 /**
  * Merkle tree storage that uses browser indexed db storage
  *
- * @export
- * @beta
+ * @public
  * @class MerkleTreeIndexedDBStorage
  * @implements implements IMerkleTreeStorage interface
  */
@@ -49,24 +47,13 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     if (!identifier) {
       identifier = `${uuid.v4()}`;
     }
-    const createMetaInfo = () => {
-      const treesMeta: IdentityMerkleTreeMetaInformation[] = [];
-      for (let index = 0; index < mtTypes.length; index++) {
-        const mType = mtTypes[index];
-        const treeId = identifier.concat('+' + mType.toString());
-        const metaInfo = { treeId, identifier, type: mType };
-        treesMeta.push(metaInfo);
-      }
-      return treesMeta;
-    };
-
     const existingBinging = await get(identifier, this._bindingStore);
     if (existingBinging) {
       throw new Error(
         `Present merkle tree meta information in the store for current identifier ${identifier}`
       );
     }
-    const treesMeta = createMetaInfo();
+    const treesMeta = createMerkleTreeMetaInfo(identifier);
     await set(identifier, treesMeta, this._merkleTreeMetaStore);
     return treesMeta;
   }
@@ -97,7 +84,10 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
       throw err;
     }
 
-    const resultMeta = meta.find((m) => m.identifier === identifier && m.type === mtType);
+    const resultMeta = meta.find(
+      (m: { identifier: string; type: MerkleTreeType }) =>
+        m.identifier === identifier && m.type === mtType
+    );
     if (!resultMeta) {
       throw err;
     }
@@ -114,7 +104,10 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
     if (!meta) {
       throw new Error(`Merkle tree meta not found for identifier ${identifier}`);
     }
-    const resultMeta = meta.find((m) => m.identifier === identifier && m.type === mtType);
+    const resultMeta = meta.find(
+      (m: { identifier: string; type: MerkleTreeType }) =>
+        m.identifier === identifier && m.type === mtType
+    );
     if (!resultMeta) {
       throw new Error(`Merkle tree not found for identifier ${identifier} and type ${mtType}`);
     }
@@ -135,7 +128,10 @@ export class MerkleTreeIndexedDBStorage implements IMerkleTreeStorage {
       throw new Error(`Merkle tree meta not found for identifier ${oldIdentifier}`);
     }
 
-    const treesMeta = meta.map((m) => ({ ...m, identifier: newIdentifier }));
+    const treesMeta = meta.map((m: { identifier: string; type: MerkleTreeType }) => ({
+      ...m,
+      identifier: newIdentifier
+    }));
 
     await del(oldIdentifier, this._merkleTreeMetaStore);
     await set(newIdentifier, treesMeta, this._merkleTreeMetaStore);

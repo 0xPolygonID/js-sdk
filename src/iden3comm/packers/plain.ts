@@ -6,8 +6,7 @@ import { byteDecoder, byteEncoder } from '../../utils';
 /**
  * Plain packer just serializes bytes to JSON and adds media type
  *
- * @export
- * @beta
+ * @public
  * @class PlainPacker
  * @implements implements IPacker interface
  */

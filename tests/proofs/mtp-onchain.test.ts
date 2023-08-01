@@ -1,6 +1,7 @@
+/* eslint-disable no-console */
 import {
-  CircuitStorage,
   CredentialStorage,
+  FSCircuitStorage,
   Identity,
   IdentityStorage,
   IdentityWallet,
@@ -19,17 +20,14 @@ import {
 } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { FSKeyLoader } from '../../src/loaders';
 import { ethers } from 'ethers';
 import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
-import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import { checkVerifiablePresentation } from './common';
 
 describe('mtp onchain proofs', () => {
   let idWallet: IdentityWallet;
@@ -95,29 +93,8 @@ describe('mtp onchain proofs', () => {
       states: mockStateStorage
     };
 
-    const circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
-
-    // todo: change this loader
-    const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
-
-    await circuitStorage.saveCircuitData(CircuitId.AtomicQueryMTPV2OnChain, {
-      circuitId: CircuitId.AtomicQueryMTPV2OnChain,
-      wasm: await loader.load(`${CircuitId.AtomicQueryMTPV2OnChain.toString()}/circuit.wasm`),
-      provingKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2OnChain.toString()}/circuit_final.zkey`
-      ),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2OnChain.toString()}/verification_key.json`
-      )
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
-      circuitId: CircuitId.StateTransition,
-      wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2OnChain.toString()}/verification_key.json`
-      )
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, './testdata')
     });
 
     /*
@@ -130,6 +107,7 @@ describe('mtp onchain proofs', () => {
       dataStorage.states = ethStorage;
   
       */
+
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -145,7 +123,7 @@ describe('mtp onchain proofs', () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedsnew');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID, credential } = await idWallet.createIdentity({
+    const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
@@ -173,7 +151,7 @@ describe('mtp onchain proofs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -235,21 +213,11 @@ describe('mtp onchain proofs', () => {
       }
     };
 
-    const creds = await credWallet.findByQuery(proofReq.query);
-    expect(creds.length).to.not.equal(0);
-
-    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(creds.length).to.equal(1);
-
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+      challenge: BigInt(2),
+      skipRevocation: false
+    });
     console.log(proof);
     expect(vp).to.be.undefined;
-    await checkVerifiablePresentation(
-      claimReq.type,
-      userDID,
-      credsForMyUserDID[0],
-      proofService,
-      CircuitId.AtomicQueryMTPV2OnChain
-    );
   });
 });

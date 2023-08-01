@@ -8,8 +8,7 @@ import { Options } from '@iden3/js-jsonld-merklization';
 /**
  * Parsed slots of core.Claim
  *
- * @export
- * @beta
+ * @public
  * @interface   ParsedSlots
  */
 export interface ParsedSlots {
@@ -22,8 +21,7 @@ export interface ParsedSlots {
 /**
  * Serialization of data slots for the fields non-merklized claims
  *
- * @export
- * @beta
+ * @public
  * @interface   SerializationSchema
  */
 export interface SerializationSchema {
@@ -36,8 +34,7 @@ export interface SerializationSchema {
 /**
  * schema metadata in the json credential schema
  *
- * @export
- * @beta
+ * @public
  * @interface   SchemaMetadata
  */
 export interface SchemaMetadata {
@@ -48,8 +45,7 @@ export interface SchemaMetadata {
 /**
  * JSON credential Schema
  *
- * @export
- * @beta
+ * @public
  * @interface   Schema
  */
 export interface JSONSchema {
@@ -61,8 +57,7 @@ export interface JSONSchema {
 /**
  * CoreClaimOptions is params for core claim parsing
  *
- * @export
- * @beta
+ * @public
  * @interface   CoreClaimOptions
  */
 export interface CoreClaimOptions {
@@ -71,14 +66,13 @@ export interface CoreClaimOptions {
   subjectPosition: string;
   merklizedRootPosition: string;
   updatable: boolean;
-  merklizeOpts: Options;
+  merklizeOpts?: Options;
 }
 
 /**
  * Parser can parse claim and schema data according to specification
  *
- * @export
- * @beta
+ * @public
  * @class Parser
  */
 export class Parser {
@@ -129,14 +123,15 @@ export class Parser {
     }
     if (subjectId) {
       const did = DID.parse(subjectId.toString());
+      const id = DID.idFromDID(did);
 
       switch (opts.subjectPosition) {
         case '':
         case SubjectPosition.Index:
-          claim.setIndexId(did.id);
+          claim.setIndexId(id);
           break;
         case SubjectPosition.Value:
-          claim.setValueId(did.id);
+          claim.setValueId(id);
           break;
         default:
           throw new Error('unknown subject position');

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Hex, Poseidon, Signature } from '@iden3/js-crypto';
 import {
   BytesHelper,
@@ -37,7 +36,7 @@ import {
   W3CCredential
 } from '../verifiable';
 import { toClaimNonRevStatus, toGISTProof } from './common';
-import { NativeProver } from './prover';
+import { IZKProver, NativeProver } from './prover';
 
 import {
   DocumentLoader,
@@ -73,11 +72,17 @@ export interface QueryWithFieldName {
 }
 
 export interface ProofGenerationOptions {
-  authProfileNonce: number;
-  credentialSubjectProfileNonce: number;
   skipRevocation: boolean;
   challenge?: bigint;
+  credential?: W3CCredential;
 }
+
+export interface DIDProfileMetadata {
+  authProfileNonce: number;
+  credentialSubjectProfileNonce: number;
+}
+
+type InputsParams = ProofGenerationOptions & DIDProfileMetadata;
 
 export interface IProofService {
   /**
@@ -102,7 +107,6 @@ export interface IProofService {
   generateProof(
     proofReq: ZeroKnowledgeProofRequest,
     identifier: DID,
-    credential: W3CCredential,
     opts?: ProofGenerationOptions
   ): Promise<ZeroKnowledgeProofResponse>;
 
@@ -115,12 +119,7 @@ export interface IProofService {
    * @param {CircuitId} circuitId - circuit id for authentication
    * @returns `Promise<Uint8Array>`
    */
-  generateAuthV2Inputs(
-    hash: Uint8Array,
-    did: DID,
-    profileNonce: number,
-    circuitId: CircuitId
-  ): Promise<Uint8Array>;
+  generateAuthV2Inputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
 
   /**
    * state verification function
@@ -154,13 +153,12 @@ export interface IProofService {
  * Proof service is an implementation of IProofService
  * that works with a native groth16 prover
  *
- * @export
- * @beta
+ * @public
  * @class ProofService
  * @implements implements IProofService interface
  */
 export class ProofService implements IProofService {
-  private readonly _prover: NativeProver;
+  private readonly _prover: IZKProver;
   private readonly _ldLoader: DocumentLoader;
   /**
    * Creates an instance of ProofService.
@@ -189,30 +187,39 @@ export class ProofService implements IProofService {
   async generateProof(
     proofReq: ZeroKnowledgeProofRequest,
     identifier: DID,
-    credential: W3CCredential,
     opts?: ProofGenerationOptions
   ): Promise<ZeroKnowledgeProofResponse> {
     if (!opts) {
       opts = {
-        authProfileNonce: 0,
-        credentialSubjectProfileNonce: 0,
         skipRevocation: false,
         challenge: 0n
       };
     }
+
+    // find credential
+
+    const credential = opts.credential ?? (await this.findCredential(identifier, proofReq.query));
+
+    const { nonce: authProfileNonce, genesisDID } =
+      await this._identityWallet.getGenesisDIDMetadata(identifier);
+
     const preparedCredential: PreparedCredential = await this.getPreparedCredential(credential);
 
-    const { inputs, vp } = await this.generateInputs(
-      preparedCredential,
-      identifier,
-      proofReq,
-      opts
-    );
+    const subjectDID = DID.parse(preparedCredential.credential.credentialSubject['id'] as string);
 
-    const { proof, pub_signals } = await this._prover.generate(
-      inputs,
-      proofReq.circuitId as CircuitId
-    );
+    const { nonce: credentialSubjectProfileNonce, genesisDID: subjectGenesisDID } =
+      await this._identityWallet.getGenesisDIDMetadata(subjectDID);
+
+    if (subjectGenesisDID.string() !== genesisDID.string()) {
+      throw new Error('subject and auth profiles are not derived from the same did');
+    }
+    const { inputs, vp } = await this.generateInputs(preparedCredential, genesisDID, proofReq, {
+      ...opts,
+      authProfileNonce,
+      credentialSubjectProfileNonce
+    });
+
+    const { proof, pub_signals } = await this._prover.generate(inputs, proofReq.circuitId);
 
     return {
       id: proofReq.id,
@@ -249,7 +256,7 @@ export class ProofService implements IProofService {
     const signature = await this._identityWallet.signChallenge(challenge, authInfo.authCredential);
 
     const circuitInputs = new StateTransitionInputs();
-    circuitInputs.id = did.id;
+    circuitInputs.id = DID.idFromDID(did);
 
     circuitInputs.signature = signature;
     circuitInputs.isOldStateGenesis = isOldStateGenesis;
@@ -279,12 +286,11 @@ export class ProofService implements IProofService {
   }
 
   private async getPreparedCredential(credential: W3CCredential): Promise<PreparedCredential> {
-    const { cred: nonRevokedCred, revStatus } =
-      await this._credentialWallet.findNonRevokedCredential([credential]);
+    const revStatus = await this._credentialWallet.getRevocationStatusFromCredential(credential);
 
-    const credCoreClaim = await this._identityWallet.getCoreClaimFromCredential(nonRevokedCred);
+    const credCoreClaim = await this._identityWallet.getCoreClaimFromCredential(credential);
 
-    return { credential: nonRevokedCred, revStatus, credentialCoreClaim: credCoreClaim };
+    return { credential, revStatus, credentialCoreClaim: credCoreClaim };
   }
 
   private async prepareAuthBJJCredential(
@@ -319,7 +325,7 @@ export class ProofService implements IProofService {
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    opts: ProofGenerationOptions
+    params: InputsParams
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     let generateInputFn;
     switch (proofReq.circuitId) {
@@ -339,14 +345,14 @@ export class ProofService implements IProofService {
         throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
 
-    return generateInputFn(preparedCredential, identifier, proofReq, opts);
+    return generateInputFn(preparedCredential, identifier, proofReq, params);
   }
 
   private async generateMTPV2Inputs(
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    opts: ProofGenerationOptions
+    params: InputsParams
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
@@ -354,7 +360,7 @@ export class ProofService implements IProofService {
     );
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     const circuitInputs = new AtomicQueryMTPV2Inputs();
-    circuitInputs.id = identifier.id;
+    circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.requestID = BigInt(proofReq.id);
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
@@ -370,9 +376,9 @@ export class ProofService implements IProofService {
       nonRevProof: circuitClaimData.nonRevProof
     };
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-    circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
-    circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
-    circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
+    circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
+    circuitInputs.profileNonce = BigInt(params.authProfileNonce);
+    circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
@@ -381,7 +387,7 @@ export class ProofService implements IProofService {
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    opts: ProofGenerationOptions
+    params: InputsParams
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
@@ -396,32 +402,37 @@ export class ProofService implements IProofService {
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
     const circuitInputs = new AtomicQueryMTPV2OnChainInputs();
-    circuitInputs.id = identifier.id;
+    const id = DID.idFromDID(identifier);
+    circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.requestID = BigInt(proofReq.id);
 
-    const stateProof = await this._stateStorage.getGISTProof(identifier.id.bigInt());
+    const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
 
     const gistProof = toGISTProof(stateProof);
     circuitInputs.gistProof = gistProof;
 
-    circuitInputs.treeState = {
-      state: authClaimData.treeState.state,
-      claimsRoot: authClaimData.treeState.claimsRoot,
-      revocationRoot: authClaimData.treeState.revocationRoot,
-      rootOfRoots: authClaimData.treeState.rootOfRoots
-    };
+    if (authClaimData?.treeState) {
+      circuitInputs.treeState = {
+        state: authClaimData?.treeState?.state,
+        claimsRoot: authClaimData?.treeState?.claimsRoot,
+        revocationRoot: authClaimData?.treeState?.revocationRoot,
+        rootOfRoots: authClaimData?.treeState?.rootOfRoots
+      };
+    }
 
     circuitInputs.authClaim = authClaimData.claim;
     circuitInputs.authClaimIncMtp = authClaimData.proof;
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
-
+    if (!params.challenge) {
+      throw new Error('challenge must be provided for onchain circuits');
+    }
     const signature = await this._identityWallet.signChallenge(
-      opts.challenge ?? BigInt(proofReq.id),
+      params.challenge,
       authPrepared.authCredential
     );
 
     circuitInputs.signature = signature;
-    circuitInputs.challenge = opts.challenge;
+    circuitInputs.challenge = params.challenge;
 
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
@@ -437,9 +448,9 @@ export class ProofService implements IProofService {
       nonRevProof: circuitClaimData.nonRevProof
     };
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-    circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
-    circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
-    circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
+    circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
+    circuitInputs.profileNonce = BigInt(params.authProfileNonce);
+    circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
@@ -448,7 +459,7 @@ export class ProofService implements IProofService {
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    opts: ProofGenerationOptions
+    params: InputsParams
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
@@ -458,17 +469,17 @@ export class ProofService implements IProofService {
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
     const circuitInputs = new AtomicQuerySigV2Inputs();
-    circuitInputs.id = identifier.id;
+    circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.claim = {
-      issuerID: circuitClaimData.issuerId,
+      issuerID: circuitClaimData?.issuerId,
       signatureProof: circuitClaimData.signatureProof,
       claim: circuitClaimData.claim,
       nonRevProof: circuitClaimData.nonRevProof
     };
     circuitInputs.requestID = BigInt(proofReq.id);
-    circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
-    circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
-    circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
+    circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
+    circuitInputs.profileNonce = BigInt(params.authProfileNonce);
+    circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
       preparedCredential.credential,
@@ -484,7 +495,7 @@ export class ProofService implements IProofService {
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    opts: ProofGenerationOptions
+    params: InputsParams
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
@@ -500,7 +511,8 @@ export class ProofService implements IProofService {
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
     const circuitInputs = new AtomicQuerySigV2OnChainInputs();
-    circuitInputs.id = identifier.id;
+    const id = DID.idFromDID(identifier);
+    circuitInputs.id = id;
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
       signatureProof: circuitClaimData.signatureProof,
@@ -508,9 +520,9 @@ export class ProofService implements IProofService {
       nonRevProof: circuitClaimData.nonRevProof
     };
     circuitInputs.requestID = BigInt(proofReq.id);
-    circuitInputs.claimSubjectProfileNonce = BigInt(opts.credentialSubjectProfileNonce);
-    circuitInputs.profileNonce = BigInt(opts.authProfileNonce);
-    circuitInputs.skipClaimRevocationCheck = opts.skipRevocation;
+    circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
+    circuitInputs.profileNonce = BigInt(params.authProfileNonce);
+    circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
       preparedCredential.credential,
@@ -520,14 +532,16 @@ export class ProofService implements IProofService {
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
-    circuitInputs.treeState = {
-      state: authClaimData.treeState.state,
-      claimsRoot: authClaimData.treeState.claimsRoot,
-      revocationRoot: authClaimData.treeState.revocationRoot,
-      rootOfRoots: authClaimData.treeState.rootOfRoots
-    };
+    if (authClaimData.treeState) {
+      circuitInputs.treeState = {
+        state: authClaimData.treeState?.state,
+        claimsRoot: authClaimData.treeState?.claimsRoot,
+        revocationRoot: authClaimData.treeState?.revocationRoot,
+        rootOfRoots: authClaimData.treeState?.rootOfRoots
+      };
+    }
 
-    const stateProof = await this._stateStorage.getGISTProof(identifier.id.bigInt());
+    const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
     const gistProof = toGISTProof(stateProof);
     circuitInputs.gistProof = gistProof;
 
@@ -535,13 +549,17 @@ export class ProofService implements IProofService {
     circuitInputs.authClaimIncMtp = authClaimData.proof;
     circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
 
+    if (!params.challenge) {
+      throw new Error('challenge must be provided for onchain circuits');
+    }
+
     const signature = await this._identityWallet.signChallenge(
-      opts.challenge ?? BigInt(proofReq.id),
+      params.challenge,
       authPrepared.authCredential
     );
 
     circuitInputs.signature = signature;
-    circuitInputs.challenge = opts.challenge;
+    circuitInputs.challenge = params.challenge;
 
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
@@ -556,7 +574,7 @@ export class ProofService implements IProofService {
 
     const circuitClaim = new CircuitClaim();
     circuitClaim.claim = coreClaim;
-    circuitClaim.issuerId = DID.parse(credential.issuer).id;
+    circuitClaim.issuerId = DID.idFromDID(DID.parse(credential.issuer));
 
     if (smtProof) {
       circuitClaim.proof = smtProof.mtp;
@@ -583,24 +601,28 @@ export class ProofService implements IProofService {
         userDID = DID.parse(credential.credentialSubject.id);
       }
 
-      const opts: CredentialStatusResolveOptions = {
-        issuerData: sigProof.issuerData,
-        issuerDID,
-        userDID
-      };
-      const rs: RevocationStatus = await this._credentialWallet.getRevocationStatus(
-        sigProof.issuerData.credentialStatus,
-        opts
-      );
+      let rs: RevocationStatus | undefined;
+
+      if (sigProof.issuerData.credentialStatus) {
+        const opts: CredentialStatusResolveOptions = {
+          issuerData: sigProof.issuerData,
+          issuerDID,
+          userDID
+        };
+        rs = await this._credentialWallet.getRevocationStatus(
+          sigProof.issuerData.credentialStatus,
+          opts
+        );
+      }
 
       const issuerAuthNonRevProof: MTProof = {
         treeState: {
-          state: strMTHex(rs.issuer.state),
-          claimsRoot: strMTHex(rs.issuer.claimsTreeRoot),
-          revocationRoot: strMTHex(rs.issuer.revocationTreeRoot),
-          rootOfRoots: strMTHex(rs.issuer.rootOfRoots)
+          state: strMTHex(rs?.issuer.state),
+          claimsRoot: strMTHex(rs?.issuer.claimsTreeRoot),
+          revocationRoot: strMTHex(rs?.issuer.revocationTreeRoot),
+          rootOfRoots: strMTHex(rs?.issuer.rootOfRoots)
         },
-        proof: rs.mtp
+        proof: rs?.mtp
       };
       if (!sigProof.issuerData.mtp) {
         throw new Error('issuer auth credential must have a mtp proof');
@@ -677,7 +699,10 @@ export class ProofService implements IProofService {
     parsedQuery.query.valueProof.mtp = proof;
     parsedQuery.query.valueProof.path = pathKey;
     parsedQuery.query.valueProof.mtp = proof;
-    const mtEntry = await mtValue.mtEntry();
+    const mtEntry = await mtValue?.mtEntry();
+    if (!mtEntry) {
+      throw new Error(`can't merklize credential: no merkle tree entry found`);
+    }
     parsedQuery.query.valueProof.value = mtEntry;
 
     if (merklizedPosition == MerklizedRootPosition.Index) {
@@ -694,8 +719,8 @@ export class ProofService implements IProofService {
     if (parsedQuery.isSelectiveDisclosure) {
       const rawValue = mk.rawValue(path);
       const vp = createVerifiablePresentation(
-        query.context,
-        query.type,
+        query.context ?? '',
+        query.type ?? '',
         parsedQuery.fieldName,
         rawValue
       );
@@ -778,7 +803,7 @@ export class ProofService implements IProofService {
 
     const [fieldName, fieldReq] = entries[0];
 
-    const fieldReqEntries = Object.entries(fieldReq);
+    const fieldReqEntries = Object.entries(fieldReq as { [key: string]: unknown });
 
     if (fieldReqEntries.length > 1) {
       throw new Error(`multiple predicates for one field not supported`);
@@ -793,10 +818,10 @@ export class ProofService implements IProofService {
 
     let operator = 0;
     const [key, value] = fieldReqEntries[0];
-    if (!QueryOperators[key]) {
+    if (!QueryOperators[key as keyof typeof QueryOperators]) {
       throw new Error(`operator is not supported by lib`);
     }
-    operator = QueryOperators[key];
+    operator = QueryOperators[key as keyof typeof QueryOperators];
 
     query.operator = operator;
 
@@ -820,15 +845,19 @@ export class ProofService implements IProofService {
   async generateAuthV2Inputs(
     hash: Uint8Array,
     did: DID,
-    profileNonce: number,
     circuitId: CircuitId
   ): Promise<Uint8Array> {
     if (circuitId !== CircuitId.AuthV2) {
       throw new Error('CircuitId is not supported');
     }
+
+    const { nonce: authProfileNonce, genesisDID } =
+      await this._identityWallet.getGenesisDIDMetadata(did);
+
+    //
     // todo: check if bigint is correct
     const challenge = BytesHelper.bytesToInt(hash.reverse());
-    const authPrepared = await this.prepareAuthBJJCredential(did);
+    const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
 
     const authClaimData = await this.newCircuitClaimData(
       authPrepared.authCredential,
@@ -839,7 +868,7 @@ export class ProofService implements IProofService {
       challenge,
       authPrepared.authCredential
     );
-    const id = did.id;
+    const id = DID.idFromDID(genesisDID);
     const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
 
     const gistProof = toGISTProof(stateProof);
@@ -847,7 +876,7 @@ export class ProofService implements IProofService {
     const authInputs = new AuthV2Inputs();
 
     authInputs.genesisID = id;
-    authInputs.profileNonce = BigInt(profileNonce);
+    authInputs.profileNonce = BigInt(authProfileNonce);
     authInputs.authClaim = authClaimData.claim;
     authInputs.authClaimIncMtp = authClaimData.proof;
     authInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
@@ -881,6 +910,21 @@ export class ProofService implements IProofService {
     }
 
     return true;
+  }
+
+  private async findCredential(did: DID, query: ProofQuery): Promise<W3CCredential> {
+    const credentials = await this._identityWallet.findOwnedCredentialsByDID(did, query);
+
+    if (!credentials.length) {
+      throw new Error(`no credentials belong to did ot its profiles`);
+    }
+
+    //  For EQ / IN / NIN / LT / GT operations selective if credential satisfies query - we can get any.
+    // TODO: choose credential for selective credentials
+    const credential = query.skipClaimRevocationCheck
+      ? credentials[0]
+      : (await this._credentialWallet.findNonRevokedCredential(credentials)).cred;
+    return credential;
   }
 }
 // BJJSignatureFromHexString converts hex to  babyjub.Signature

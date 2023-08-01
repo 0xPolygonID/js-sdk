@@ -170,7 +170,7 @@ export async function generate(privKeyHex: string): Promise<{
   const state = poseidon.hash([ctr.bigInt(), BigInt(0), BigInt(0)]);
   // create new identity
   const identity = Id.idGenesisFromIdenState(
-    buildDIDType('iden3', Blockchain.Polygon, NetworkId.Mumbai),
+    buildDIDType(DidMethod.Iden3, Blockchain.Polygon, NetworkId.Mumbai),
     state
   );
 
@@ -197,12 +197,12 @@ async function calcStateFromRoots(claimsTree: Merkletree, ...args: Merkletree[])
 }
 
 export class IdentityTest {
-  id: Id;
-  clt: Merkletree;
-  ret: Merkletree;
-  rot: Merkletree;
-  authClaim: Claim;
-  pk: PrivateKey;
+  id!: Id;
+  clt!: Merkletree;
+  ret!: Merkletree;
+  rot!: Merkletree;
+  authClaim!: Claim;
+  pk!: PrivateKey;
 
   /**
    *
@@ -247,7 +247,7 @@ export class IdentityTest {
     it.rot = new Merkletree(new InMemoryDB(str2Bytes('')), true, 40);
 
     // extract pubKey
-    const { key, x, y } = extractPubXY(privKHex);
+    const { x, y } = extractPubXY(privKHex);
 
     // create auth claim
     const authClaim = authV2ClaimFromPubKey(x, y);
@@ -283,7 +283,7 @@ export function extractPubXY(privKHex: string): { key: PrivateKey; x: bigint; y:
 }
 
 export function idFromState(state: bigint): Id {
-  const typ = buildDIDType(DidMethod.Iden3, Blockchain.NoChain, NetworkId.NoNetwork);
+  const typ = buildDIDType(DidMethod.Iden3, Blockchain.ReadOnly, NetworkId.NoNetwork);
   // create new identity
   return Id.idGenesisFromIdenState(typ, state);
 }
@@ -342,19 +342,6 @@ export function prepareIntArray(arr: bigint[], length: number): bigint[] {
 export function mtHashFromStr(hashStr: string): Hash {
   return newHashFromString(hashStr);
 }
-
-export const JSONSerializer = (key, value) => {
-  if (typeof value === 'bigint') {
-    return value.toString();
-  }
-  if (value instanceof Id) {
-    return value.bigInt().toString();
-  }
-  if (value instanceof SchemaHash) {
-    return value.bigInt().toString();
-  }
-  return value;
-};
 
 export const globalTree = () => new Merkletree(new InMemoryDB(str2Bytes('')), true, 64);
 

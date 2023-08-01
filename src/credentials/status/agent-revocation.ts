@@ -1,20 +1,25 @@
 import { CredentialStatus, RevocationStatus } from '../../verifiable';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
-import {
-  RevocationStatusRequestMessage,
-  RevocationStatusResponseMessage
-} from '../../iden3comm/types';
+import { RevocationStatusRequestMessage } from '../../iden3comm/types';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../iden3comm/constants';
 import * as uuid from 'uuid';
+import { toRevocationStatus } from './sparse-merkle-tree';
 
 /**
  * AgentResolver is a class that allows to interact with the issuer's agent to get revocation status.
  *
- * @export
- * @beta
+ * @public
  * @class AgentResolver
  */
 export class AgentResolver implements CredentialStatusResolver {
+  /**
+   * resolve is a method to resolve a credential status from an agent.
+   *
+   * @public
+   * @param {CredentialStatus} credentialStatus -  credential status to resolve
+   * @param {CredentialStatusResolveOptions} credentialStatusResolveOptions -  options for resolver
+   * @returns `{Promise<RevocationStatus>}`
+   */
   async resolve(
     credentialStatus: CredentialStatus,
     credentialStatusResolveOptions?: CredentialStatusResolveOptions
@@ -26,8 +31,12 @@ export class AgentResolver implements CredentialStatusResolver {
       throw new Error('UserDID is not set in options');
     }
 
-    const from = credentialStatusResolveOptions.userDID.toString();
-    const to = credentialStatusResolveOptions.issuerDID.toString();
+    if (typeof credentialStatus.revocationNonce !== 'number') {
+      throw new Error('Revocation nonce is not set in credential status');
+    }
+
+    const from = credentialStatusResolveOptions.userDID.string();
+    const to = credentialStatusResolveOptions.issuerDID.string();
     const msg = buildRevocationMessageRequest(from, to, credentialStatus.revocationNonce);
     const response = await fetch(credentialStatus.id, {
       method: 'POST',
@@ -36,8 +45,8 @@ export class AgentResolver implements CredentialStatusResolver {
         'Content-Type': 'application/json'
       }
     });
-    const agentResponse: RevocationStatusResponseMessage = await response.json();
-    return toRevocationStatus(agentResponse);
+    const agentResponse = await response.json();
+    return toRevocationStatus(agentResponse.body);
   }
 }
 
@@ -56,12 +65,5 @@ function buildRevocationMessageRequest(
     thid: uuid.v4(),
     from: from,
     to: to
-  };
-}
-
-function toRevocationStatus(revocationResponse: RevocationStatusResponseMessage): RevocationStatus {
-  return {
-    mtp: revocationResponse.body.mtp,
-    issuer: revocationResponse.body.issuer
   };
 }

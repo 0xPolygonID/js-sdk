@@ -4,8 +4,7 @@ SDK to work with Polygon ID using JavaScript and TypeScript languages.
 
 ## Disclaimer
 
-Polygon ID JS SDK is in public beta. It may still contain bugs or missing functionality.
-We provide limited support for it and would love to hear your feedback.
+Polygon ID JS SDK is in public now. It may still contain bugs or missing functionality, that it will be added in next versions.
 
 ## Usage
 
@@ -33,6 +32,8 @@ To run them, please set following variables:
 export WALLET_KEY="...key in hex format"
 export RPC_URL="...url to polygon network rpc node"
 export RHS_URL="..reverse hash service url"
+export IPFS_URL="url for ipfs"
+
 ```
 
 And place actual circuits to `test/proofs/testdata`

@@ -1,11 +1,11 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import * as jsonld from 'jsonld/lib';
 import * as ldcontext from 'jsonld/lib/context';
 
 /**
  * LDParser can parse JSONLD schema according to specification
  *
- * @export
- * @beta
+ * @public
  * @class LDParser
  */
 export class LDParser {
@@ -25,7 +25,7 @@ export class LDParser {
       throw new Error(`Failed process LD context. Error ${e}`);
     }
 
-    const terms = res.mappings as Map<string, unknown>;
+    const terms = res.mappings;
     return terms;
   }
 

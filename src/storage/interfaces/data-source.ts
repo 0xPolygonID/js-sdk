@@ -1,8 +1,7 @@
 /**
  * Generic Key/Value Data Source for crud operation
  *
- * @export
- * @beta
+ * @public
  * @interface   IDataSource
  * @template Type - generic type
  */

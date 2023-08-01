@@ -10,8 +10,7 @@ import { byteEncoder } from '../../utils';
 /**
  * Configuration of ethereum based blockchain connection
  *
- * @export
- * @beta
+ * @public
  * @interface   EthConnectionConfig
  */
 export interface EthConnectionConfig {
@@ -26,7 +25,7 @@ export interface EthConnectionConfig {
   rpcResponseTimeout: number;
   waitReceiptCycleTime: number;
   waitBlockCycleTime: number;
-  chainId: number;
+  chainId: number | null;
 }
 
 export /** @type {EthConnectionConfig} - default configuration for EthConnectionConfig */
@@ -48,8 +47,7 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
 /**
  *
  *
- * @export
- * @beta
+ * @public
  * @class EthStateStorage
  * @implements implements IStateStorage interface
  */
@@ -93,9 +91,9 @@ export class EthStateStorage implements IStateStorage {
     const { userId, oldUserState, newUserState, isOldStateGenesis } = stateTransitionPubSig;
 
     const payload = [
-      userId.bigInt().toString(),
-      oldUserState.bigInt().toString(),
-      newUserState.bigInt().toString(),
+      userId?.bigInt().toString(),
+      oldUserState?.bigInt().toString(),
+      newUserState?.bigInt().toString(),
       isOldStateGenesis,
       proof.proof.pi_a.slice(0, 2),
       [
@@ -127,7 +125,10 @@ export class EthStateStorage implements IStateStorage {
     return {
       root: BigInt(data.root.toString()),
       existence: data.existence,
-      siblings: data.siblings?.map((sibling) => BigInt(sibling.toString())),
+      siblings: data.siblings?.map(
+        (sibling: { toString: () => string | number | bigint | boolean }) =>
+          BigInt(sibling.toString())
+      ),
       index: BigInt(data.index.toString()),
       value: BigInt(data.value.toString()),
       auxExistence: data.auxExistence,

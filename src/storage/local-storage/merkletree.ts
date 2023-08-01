@@ -3,14 +3,12 @@ import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from '../entities/m
 import * as uuid from 'uuid';
 
 import { IMerkleTreeStorage } from '../interfaces/merkletree';
-
-const mtTypes = [MerkleTreeType.Claims, MerkleTreeType.Revocations, MerkleTreeType.Roots];
+import { createMerkleTreeMetaInfo } from '../utils';
 
 /**
  * Merkle tree storage that uses browser local storage
  *
- * @export
- * @beta
+ * @public
  * @class MerkleTreeLocalStorage
  * @implements implements IMerkleTreeStorage interface
  */
@@ -35,16 +33,6 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
     if (!identifier) {
       identifier = `${uuid.v4()}`;
     }
-    const createMetaInfo = () => {
-      const treesMeta: IdentityMerkleTreeMetaInformation[] = [];
-      for (let index = 0; index < mtTypes.length; index++) {
-        const mType = mtTypes[index];
-        const treeId = identifier.concat('+' + mType.toString());
-        const metaInfo = { treeId, identifier, type: mType };
-        treesMeta.push(metaInfo);
-      }
-      return treesMeta;
-    };
     const meta = localStorage.getItem(MerkleTreeLocalStorage.storageKeyMeta);
     if (meta) {
       const metaInfo: IdentityMerkleTreeMetaInformation[] = JSON.parse(meta);
@@ -58,7 +46,7 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
       if (identityMetaInfo.length > 0) {
         return identityMetaInfo;
       }
-      const treesMeta = createMetaInfo();
+      const treesMeta = createMerkleTreeMetaInfo(identifier);
       localStorage.setItem(
         MerkleTreeLocalStorage.storageKeyMeta,
         JSON.stringify([...metaInfo, ...treesMeta])
@@ -66,7 +54,7 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
 
       return [...metaInfo, ...treesMeta];
     }
-    const treesMeta = createMetaInfo();
+    const treesMeta = createMerkleTreeMetaInfo(identifier);
     localStorage.setItem(MerkleTreeLocalStorage.storageKeyMeta, JSON.stringify(treesMeta));
     return treesMeta;
   }
@@ -92,6 +80,11 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
     identifier: string,
     mtType: MerkleTreeType
   ): Promise<Merkletree> {
+    const resultMeta = this.getMeta(identifier, mtType);
+    return new Merkletree(new LocalStorageDB(str2Bytes(resultMeta.treeId)), true, this._mtDepth);
+  }
+
+  private getMeta(identifier: string, mtType: MerkleTreeType) {
     const meta = localStorage.getItem(MerkleTreeLocalStorage.storageKeyMeta);
     const err = new Error(`Merkle tree not found for identifier ${identifier} and type ${mtType}`);
     if (!meta) {
@@ -103,8 +96,9 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
     if (!resultMeta) {
       throw err;
     }
-    return new Merkletree(new LocalStorageDB(str2Bytes(resultMeta.treeId)), true, this._mtDepth);
+    return resultMeta;
   }
+
   /** adds to merkle tree in the local storage */
   async addToMerkleTree(
     identifier: string,
@@ -112,16 +106,7 @@ export class MerkleTreeLocalStorage implements IMerkleTreeStorage {
     hindex: bigint,
     hvalue: bigint
   ): Promise<void> {
-    const meta = localStorage.getItem(MerkleTreeLocalStorage.storageKeyMeta);
-    if (!meta) {
-      throw new Error(`Merkle tree meta not found for identifier ${identifier}`);
-    }
-
-    const metaInfo: IdentityMerkleTreeMetaInformation[] = JSON.parse(meta);
-    const resultMeta = metaInfo.filter((m) => m.identifier === identifier && m.type === mtType)[0];
-    if (!resultMeta) {
-      throw new Error(`Merkle tree not found for identifier ${identifier} and type ${mtType}`);
-    }
+    const resultMeta = this.getMeta(identifier, mtType);
 
     const tree = new Merkletree(
       new LocalStorageDB(str2Bytes(resultMeta.treeId)),

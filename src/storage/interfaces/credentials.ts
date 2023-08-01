@@ -3,8 +3,7 @@ import { ProofQuery, W3CCredential } from '../../verifiable';
 /**
  * Interface for credential storages
  *
- * @export
- * @beta
+ * @public
  * @interface   ICredentialStorage
  */
 export interface ICredentialStorage {

@@ -1,20 +1,3 @@
 {
-  "root": true,
-  "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint", "prettier"],
-  "parserOptions": {
-    "project": ["tsconfig.json", "tsconfig.test.json"]
-  },
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/eslint-recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
-  ],
-  "rules": {
-    "no-console": 1, // Means warning
-    "prettier/prettier": 2, // Means error
-    "@typescript-eslint/no-floating-promises": ["error"]
-  },
-  "ignorePatterns": ["dist", "node_modules"]
+  "extends": ["@iden3/eslint-config"]
 }

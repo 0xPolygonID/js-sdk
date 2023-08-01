@@ -5,8 +5,7 @@ import { set, get, del, values, createStore, UseStore } from 'idb-keyval';
 /**
  * Storage in the browser, uses indexed db storage
  *
- * @export
- * @beta
+ * @public
  * @class IndexedDBDataSource
  * @template Type
  */
@@ -38,7 +37,6 @@ export class IndexedDBDataSource<Type> implements IDataSource<Type> {
    * @param {string} key - key value
    * @param {string}  [keyName='id'] -  key name
    */
-
   async get(key: string, keyName = 'id'): Promise<Type | undefined> {
     return get(key, this._store);
   }

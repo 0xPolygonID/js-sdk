@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.0.0-beta.18",
+  "version": "1.0.0",
   "description": "SDK to work with Polygon ID",
   "main": "dist/cjs/index.js",
   "module": "dist/esm_esbuild/index.js",
@@ -22,9 +22,8 @@
     "doc:build": "npm run doc:extract && npm run doc:documenter",
     "doc:watch:website": "ts-node ./scripts/doc-watch.ts",
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
-    "test": "mocha",
-    "test:watch": "mocha --watch",
-    "lint": "eslint --fix --ext .js,.ts src/**",
+    "test": "env TS_NODE_COMPILER_OPTIONS='{\"strict\": false}' mocha",
+    "lint": "eslint --fix --ext .ts src/** tests/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "deps:check": "madge --circular --extensions ts ./"
   },
@@ -39,22 +38,26 @@
   },
   "homepage": "https://github.com/0xPolygonID/js-sdk#readme",
   "devDependencies": {
-    "@4c/fetch-mock": "^8.0.0",
     "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
     "@esbuild-plugins/node-modules-polyfill": "^0.1.4",
-    "@microsoft/api-documenter": "^7.20.1",
-    "@microsoft/api-extractor": "^7.34.4",
+    "@gr2m/fetch-mock": "^9.11.0-pull-request-644.1",
+    "@iden3/eslint-config": "https://github.com/iden3/eslint-config",
+    "@microsoft/api-documenter": "^7.8.20",
+    "@microsoft/api-extractor": "^7.9.0",
     "@types/chai": "^4.3.4",
     "@types/chai-as-promised": "^7.1.5",
-    "@types/jsonld": "^1.4.8",
+    "@types/elliptic": "^6.4.14",
+    "@types/fs-extra": "^11.0.1",
+    "@types/jsonld": "^1.5.9",
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.16.19",
+    "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.41.0",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
     "chokidar": "^3.5.3",
     "esbuild": "^0.15.15",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",
     "madge": "^6.0.0",
     "mocha": "10.2.0",
@@ -65,11 +68,11 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "@iden3/js-crypto": "1.0.0-beta.1",
-    "@iden3/js-iden3-core": "1.0.0-beta.2",
-    "@iden3/js-jsonld-merklization": "1.0.0-beta.16",
-    "@iden3/js-jwz": "1.0.0-beta.2",
-    "@iden3/js-merkletree": "1.0.0-beta.5",
+    "@iden3/js-crypto": "1.0.0",
+    "@iden3/js-iden3-core": "1.0.0",
+    "@iden3/js-jsonld-merklization": "1.0.1",
+    "@iden3/js-jwz": "1.0.0",
+    "@iden3/js-merkletree": "1.0.0",
     "@lumeweb/js-sha3-browser": "^0.8.1",
     "ajv": "^8.12.0",
     "base58-js": "^1.0.4",
@@ -82,7 +85,6 @@
     "ethers": "^5.7.2",
     "ffjavascript": "^0.2.57",
     "idb-keyval": "^6.2.0",
-    "ipfs-http-client": "56.0.3",
     "jsonld": "^8.1.1",
     "multiformats": "^9.6.5",
     "rfc4648": "^1.5.2",
@@ -104,5 +106,5 @@
   },
   "engines": {
     "node": ">=18.16.0"
-   }
+  }
 }

@@ -1,4 +1,5 @@
-import { DIDDocumentJSONSchema, JsonSchemaValidator, byteDecoder, byteEncoder } from '../../src';
+/* eslint-disable @typescript-eslint/no-floating-promises */
+import { DIDDocumentJSONSchema, JsonSchemaValidator, byteEncoder } from '../../src';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { cred07, cred20, schema07, schema2020 } from './data/json-validator-data';

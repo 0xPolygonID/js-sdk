@@ -12,6 +12,7 @@ import { AuthV2PubSignals, CircuitId } from '../../circuits/index';
 import { DID, Id } from '@iden3/js-iden3-core';
 import { bytesToProtocolMessage } from '../utils/envelope';
 import {
+  ErrNoProvingMethodAlg,
   ErrPackedWithUnsupportedCircuit,
   ErrProofIsInvalid,
   ErrSenderNotUsedTokenCreation,
@@ -26,8 +27,7 @@ const { getProvingMethod } = proving;
 /**
  * Handler to
  *
- * @export
- * @beta
+ * @public
  * @class DataPrepareHandlerFunc
  */
 export class DataPrepareHandlerFunc {
@@ -42,25 +42,18 @@ export class DataPrepareHandlerFunc {
    *
    * @param {Uint8Array} hash - challenge that will be signed
    * @param {DID} did - did of identity that will prepare inputs
-   * @param {Number} profileNonce - nonce for profile (genesis id must be 0)
    * @param {CircuitId} circuitId - circuit id
    * @returns `Promise<Uint8Array>`
    */
-  prepare(
-    hash: Uint8Array,
-    did: DID,
-    profileNonce: number,
-    circuitId: CircuitId
-  ): Promise<Uint8Array> {
-    return this.dataPrepareFunc(hash, did, profileNonce, circuitId);
+  prepare(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array> {
+    return this.dataPrepareFunc(hash, did, circuitId);
   }
 }
 
 /**
  * Handler to verify public signals of authorization circuits
  *
- * @export
- * @beta
+ * @public
  * @class VerificationHandlerFunc
  */
 export class VerificationHandlerFunc {
@@ -85,8 +78,7 @@ export class VerificationHandlerFunc {
 /**
  * Packer that can pack message to JWZ token,
  * and unpack and validate JWZ envelope
- * @exports
- * @beta
+ * @public
  * @class ZKPPacker
  * @implements implements IPacker interface
  */
@@ -110,19 +102,21 @@ export class ZKPPacker implements IPacker {
    */
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
     const provingMethod = await getProvingMethod(params.provingMethodAlg);
-    const { provingKey, wasm, dataPreparer } = this.provingParamsMap.get(
-      params.provingMethodAlg.toString()
-    );
+    const provingParams = this.provingParamsMap.get(params.provingMethodAlg.toString());
+
+    if (!provingParams) {
+      throw new Error(ErrNoProvingMethodAlg);
+    }
 
     const token = new Token(
       provingMethod,
       byteDecoder.decode(payload),
-      (hash: Uint8Array, circuitID: CircuitId) => {
-        return dataPreparer.prepare(hash, params.senderDID, params.profileNonce, circuitID);
+      (hash: Uint8Array, circuitId: string) => {
+        return provingParams?.dataPreparer?.prepare(hash, params.senderDID, circuitId as CircuitId);
       }
     );
     token.setHeader(Header.Type, MediaType.ZKPMessage);
-    const tokenStr = await token.prove(provingKey, wasm);
+    const tokenStr = await token.prove(provingParams.provingKey, provingParams.wasm);
     return byteEncoder.encode(tokenStr);
   }
 
@@ -135,18 +129,16 @@ export class ZKPPacker implements IPacker {
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
     const token = await Token.parse(byteDecoder.decode(envelope));
     const provingMethodAlg = new ProvingMethodAlg(token.alg, token.circuitId);
-    const { key: verificationKey, verificationFn } = this.verificationParamsMap.get(
-      provingMethodAlg.toString()
-    );
-    if (!verificationKey) {
+    const verificationParams = this.verificationParamsMap.get(provingMethodAlg.toString());
+    if (!verificationParams?.key) {
       throw new Error(ErrPackedWithUnsupportedCircuit);
     }
-    const isValid = await token.verify(verificationKey);
+    const isValid = await token.verify(verificationParams?.key);
     if (!isValid) {
       throw new Error(ErrProofIsInvalid);
     }
 
-    const verificationResult = await verificationFn.verify(
+    const verificationResult = await verificationParams?.verificationFn?.verify(
       token.circuitId,
       token.zkProof.pub_signals
     );
@@ -170,7 +162,7 @@ export class ZKPPacker implements IPacker {
 const verifySender = (token: Token, msg: BasicMessage): void => {
   switch (token.circuitId) {
     case CircuitId.AuthV2:
-      if (!verifyAuthV2Sender(msg.from, token.zkProof.pub_signals)) {
+      if (!msg.from || !verifyAuthV2Sender(msg.from, token.zkProof.pub_signals)) {
         throw new Error(ErrSenderNotUsedTokenCreation);
       }
       break;
@@ -183,10 +175,10 @@ const verifyAuthV2Sender = (from: string, pubSignals: Array<string>): boolean =>
   const authSignals = new AuthV2PubSignals();
 
   const pubSig = authSignals.pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(pubSignals)));
-  return checkSender(from, pubSig.userID);
+  return pubSig.userID ? checkSender(from, pubSig.userID) : false;
 };
 
 const checkSender = (from: string, id: Id): boolean => {
   const did = DID.parseFromId(id);
-  return from === did.toString();
+  return from === did.string();
 };

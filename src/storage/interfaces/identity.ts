@@ -4,8 +4,7 @@ import { Profile } from '../entities';
 /**
  * storage for identities and profiles
  *
- * @export
- * @beta
+ * @public
  * @interface   IIdentityStorage
  */
 export interface IIdentityStorage {
@@ -46,14 +45,14 @@ export interface IIdentityStorage {
    * @param {string} verifier - verifier to which profile has been shared
    * @returns `{Promise<Profile>}`
    */
-  getProfileByVerifier(verifier: string): Promise<Profile>;
+  getProfileByVerifier(verifier: string): Promise<Profile | undefined>;
   /**
    * gets profile by identifier
    *
    * @param {string} identifier - profile id
    * @returns `{Promise<Profile>}`
    */
-  getProfileById(identifier: string): Promise<Profile>;
+  getProfileById(identifier: string): Promise<Profile | undefined>;
   /**
    *
    * gets profile identity by genesis identifiers

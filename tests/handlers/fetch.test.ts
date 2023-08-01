@@ -34,7 +34,7 @@ import * as uuid from 'uuid';
 import { byteEncoder } from '../../src/utils';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { assert, expect } from 'chai';
-import fetchMock from '@4c/fetch-mock';
+import fetchMock from '@gr2m/fetch-mock';
 import { after } from 'mocha';
 
 describe('fetch', () => {
@@ -46,6 +46,7 @@ describe('fetch', () => {
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
   const agentUrl = 'https://testagent.com/';
+
   const mockedToken = 'jwz token to fetch credential';
 
   const mockStateStorage: IStateStorage = {
@@ -185,7 +186,7 @@ describe('fetch', () => {
     fetchMock.restore();
   });
 
-  it('fetch credential', async () => {
+  it('fetch credential issued to genesis did', async () => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
@@ -199,6 +200,8 @@ describe('fetch', () => {
         id: rhsUrl
       }
     });
+    expect(cred).not.to.be.undefined;
+
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -210,6 +213,8 @@ describe('fetch', () => {
       }
     });
 
+    expect(issuerAuthCredential).not.to.be.undefined;
+
     const id = uuid.v4();
     const authReq: CredentialsOfferMessage = {
       id,
@@ -220,12 +225,13 @@ describe('fetch', () => {
         url: agentUrl,
         credentials: [{ id: 'https://credentialId', description: 'kyc age credentials' }]
       } as CredentialsOfferMessageBody,
-      from: issuerDID.id.string()
+      from: issuerDID.string(),
+      to: userDID.string()
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
 
-    const res = await fetchHandler.handleCredentialOffer(userDID, msgBytes);
+    const res = await fetchHandler.handleCredentialOffer(msgBytes);
 
     await credWallet.saveAll(res);
 

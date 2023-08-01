@@ -1,4 +1,4 @@
-import { IdPosition, MerklizedRootPosition } from '@iden3/js-iden3-core';
+import { DID, Id, IdPosition, MerklizedRootPosition } from '@iden3/js-iden3-core';
 import { SchemaMetadata } from '../schema-processor';
 import { SubjectPosition } from '../verifiable';
 
@@ -30,7 +30,7 @@ export const defineMerklizedRootPosition = (
   metadata?: SchemaMetadata,
   position?: MerklizedRootPosition
 ): MerklizedRootPosition => {
-  if (!metadata && !metadata.serialization) {
+  if (!metadata?.serialization) {
     return MerklizedRootPosition.None;
   }
 
@@ -39,4 +39,17 @@ export const defineMerklizedRootPosition = (
   }
 
   return MerklizedRootPosition.Index;
+};
+
+/**
+ * Returns profile DID based on did and profile nonce
+ *
+ * @param {DID} [did] - did from which profile will be derived
+ * @param {number} [profileNonce] - profile nonce
+ * @returns {DID}
+ */
+export const generateProfileDID = (did: DID, profileNonce?: number): DID => {
+  const id = DID.idFromDID(did);
+  const profile = Id.profileId(id, BigInt(profileNonce ?? 0));
+  return DID.parseFromId(profile);
 };

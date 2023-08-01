@@ -30,7 +30,7 @@ describe('zkp packer tests', () => {
     );
 
     const didFromToken = DID.parseFromId(outs.userID);
-    expect(senderDID.toString()).to.deep.equal(didFromToken.toString());
+    expect(senderDID.string()).to.deep.equal(didFromToken.string());
   });
 
   it('test plain message packer', async () => {

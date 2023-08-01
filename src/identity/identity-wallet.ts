@@ -15,7 +15,7 @@ import {
 import { Hex, poseidon, PublicKey, Signature } from '@iden3/js-crypto';
 import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
-import { subjectPositionIndex } from './common';
+import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
 import { JSONSchema, Parser, CoreClaimOptions } from '../schema-processor';
 import { IDataStorage } from '../storage/interfaces/data-storage';
@@ -31,7 +31,8 @@ import {
   Iden3SparseMerkleTreeProof,
   ProofType,
   IssuerData,
-  CredentialStatusType
+  CredentialStatusType,
+  ProofQuery
 } from '../verifiable';
 import { CredentialRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/rhs';
@@ -39,12 +40,13 @@ import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
 import { Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 import { sha256js } from 'cross-sha256';
+import { Profile } from '../storage';
 
 /**
  * DID creation options
  * seed - seed to generate BJJ keypair
  * revocationOpts -
- * @export
+
  * @interface IdentityCreationOptions
  */
 export interface IdentityCreationOptions {
@@ -62,8 +64,7 @@ export interface IdentityCreationOptions {
 /**
  *  Proof creation result
  *
- * @export
- * @beta
+ * @public
  * @interface   Iden3ProofCreationResult
  */
 export interface Iden3ProofCreationResult {
@@ -74,7 +75,6 @@ export interface Iden3ProofCreationResult {
 /**
  * Interface for IdentityWallet
  * @public
- * @beta
  */
 export interface IIdentityWallet {
   /**
@@ -85,7 +85,7 @@ export interface IIdentityWallet {
    *
    * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:mumbai** with generated key.
    * @returns `Promise<{ did: DID; credential: W3CCredential }>` - returns did and Auth BJJ credential
-   * @beta
+   * @public
    */
 
   createIdentity(opts: IdentityCreationOptions): Promise<{ did: DID; credential: W3CCredential }>;
@@ -226,12 +226,46 @@ export interface IIdentityWallet {
   /**
    * Extracts core claim from signature or merkle tree proof. If both proof persists core claim must be the same
    *
-   * @exports
-   * @beta
+   * @public
    * @param {W3CCredential} credential - credential to extract core claim
    * @returns `{Promise<Claim>}`
    */
   getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim>;
+
+  /**
+   *
+   * gets profile identity by genesis identifiers
+   *
+   * @param {string} did - genesis identifier from which profile has been derived
+   * @returns `{Promise<Profile[]>}`
+   */
+  getProfilesByDID(did: DID): Promise<Profile[]>;
+
+  /**
+   *
+   * gets profile nonce by it's id. if profile is genesis identifier - 0 is returned
+   *
+   * @param {string} did -  profile that has been derived or genesis identity
+   * @returns `{Promise<{nonce:number, genesisIdentifier: DID}>}`
+   */
+  getGenesisDIDMetadata(did: DID): Promise<{ nonce: number; genesisDID: DID }>;
+
+  /**
+   *
+   * find all credentials that belong to any profile or genesis identity for the given did
+   *
+   * @param {string} did -  profile that has been derived or genesis identity
+   * @returns `{Promise<W3CCredential[]>}`
+   */
+  findOwnedCredentialsByDID(did: DID, query: ProofQuery): Promise<W3CCredential[]>;
+  /**
+   *
+   * gets profile identity by verifier
+   *
+   * @param {string} verifier -  identifier of the verifier
+   * @returns `{Promise<Profile>}`
+   */
+  getProfileByVerifier(verifier: string): Promise<Profile | undefined>;
 }
 
 /**
@@ -242,10 +276,7 @@ export interface IIdentityWallet {
  * revoke credentials, add credentials to Merkle trees, push states to reverse hash service
  *
  *
- * @export
- * @beta
  * @class IdentityWallet - class
- * @beta
  * @implements implements IIdentityWallet interface
  */
 export class IdentityWallet implements IIdentityWallet {
@@ -281,9 +312,11 @@ export class IdentityWallet implements IIdentityWallet {
 
     opts.seed = opts.seed ?? getRandomBytes(32);
 
-    const keyID = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, opts.seed);
+    const keyId = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, opts.seed);
 
-    const pubKey = (await this._kms.publicKey(keyID)) as PublicKey;
+    const pubKeyHex = await this._kms.publicKey(keyId);
+
+    const pubKey = PublicKey.newFromHex(pubKeyHex);
 
     const schemaHash = SchemaHash.authSchemaHash;
 
@@ -317,7 +350,7 @@ export class IdentityWallet implements IIdentityWallet {
     const identifier = Id.idGenesisFromIdenState(didType, currentState.bigInt());
     const did = DID.parseFromId(identifier);
 
-    await this._storage.mt.bindMerkleTreeToNewIdentifier(tmpIdentifier, did.toString());
+    await this._storage.mt.bindMerkleTreeToNewIdentifier(tmpIdentifier, did.string());
 
     const schema = JSON.parse(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSON);
 
@@ -360,7 +393,7 @@ export class IdentityWallet implements IIdentityWallet {
       type: ProofType.Iden3SparseMerkleTreeProof,
       mtp: proof,
       issuerData: new IssuerData({
-        id: did.toString(),
+        id: did.string(),
         state: {
           rootOfRoots: ZERO_HASH.hex(),
           revocationTreeRoot: ZERO_HASH.hex(),
@@ -377,10 +410,10 @@ export class IdentityWallet implements IIdentityWallet {
     credential.proof = [mtpProof];
 
     await this._storage.identity.saveIdentity({
-      identifier: did.toString(),
+      did: did.string(),
       state: currentState,
-      published: false,
-      genesis: true
+      isStatePublished: false,
+      isStateGenesis: true
     });
 
     await this._credentialWallet.save(credential);
@@ -390,13 +423,28 @@ export class IdentityWallet implements IIdentityWallet {
       credential
     };
   }
+  /** {@inheritDoc IIdentityWallet.getGenesisDIDMetadata} */
+  async getGenesisDIDMetadata(did: DID): Promise<{ nonce: number; genesisDID: DID }> {
+    // check if it is a genesis identity
+    const identity = await this._storage.identity.getIdentity(did.string());
+
+    if (identity) {
+      return { nonce: 0, genesisDID: DID.parse(identity.did) };
+    }
+    const profile = await this._storage.identity.getProfileById(did.string());
+
+    if (!profile) {
+      throw new Error('profile or identity not found');
+    }
+    return { nonce: profile.nonce, genesisDID: DID.parse(profile.genesisIdentifier) };
+  }
 
   /** {@inheritDoc IIdentityWallet.createProfile} */
   async createProfile(did: DID, nonce: number, verifier: string): Promise<DID> {
-    const id = did.id;
+    const profileDID = generateProfileDID(did, nonce);
 
     const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
-      did.toString()
+      did.string()
     );
 
     const existingProfile = identityProfiles.find(
@@ -406,36 +454,46 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error('profile with given nonce or verifier already exists');
     }
 
-    const profile = Id.profileId(id, BigInt(nonce));
-    const profileDID = DID.parseFromId(profile);
-
     await this._storage.identity.saveProfile({
-      id: profileDID.toString(),
+      id: profileDID.string(),
       nonce,
-      genesisIdentifier: did.toString(),
+      genesisIdentifier: did.string(),
       verifier
     });
     return profileDID;
   }
 
+  /**
+   *
+   * gets profile identity by genesis identifiers
+   *
+   * @param {string} genesisIdentifier - genesis identifier from which profile has been derived
+   * @returns `{Promise<Profile[]>}`
+   */
+  async getProfilesByDID(did: DID): Promise<Profile[]> {
+    return this._storage.identity.getProfilesByGenesisIdentifier(did.string());
+  }
   /** {@inheritDoc IIdentityWallet.generateKey} */
   async generateKey(keyType: KmsKeyType): Promise<KmsKeyId> {
     const key = await this._kms.createKeyFromSeed(keyType, getRandomBytes(32));
     return key;
   }
 
+  async getProfileByVerifier(verifier: string): Promise<Profile | undefined> {
+    return this._storage.identity.getProfileByVerifier(verifier);
+  }
   /** {@inheritDoc IIdentityWallet.getDIDTreeModel} */
   async getDIDTreeModel(did: DID): Promise<TreesModel> {
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Claims
     );
     const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Revocations
     );
     const rootsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Roots
     );
     const state = await hashElems([
@@ -463,7 +521,7 @@ export class IdentityWallet implements IIdentityWallet {
     const treesModel = await this.getDIDTreeModel(did);
 
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Claims
     );
 
@@ -499,7 +557,7 @@ export class IdentityWallet implements IIdentityWallet {
     const treesModel = await this.getDIDTreeModel(did);
 
     const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.toString(),
+      did.string(),
       MerkleTreeType.Revocations
     );
 
@@ -617,12 +675,14 @@ export class IdentityWallet implements IIdentityWallet {
     if (!issuerAuthBJJCredential.proof) {
       throw new Error('issuer auth credential must have proof');
     }
-    const mtpAuthBJJProof = issuerAuthBJJCredential.proof[0] as Iden3SparseMerkleTreeProof;
+    const mtpAuthBJJProof = (
+      issuerAuthBJJCredential.proof as unknown[]
+    )[0] as Iden3SparseMerkleTreeProof;
 
-    const sigProof: BJJSignatureProof2021 = {
+    const sigProof = new BJJSignatureProof2021({
       type: ProofType.BJJSignature,
       issuerData: new IssuerData({
-        id: issuerDID.toString(),
+        id: issuerDID.string(),
         state: mtpAuthBJJProof.issuerData.state,
         authCoreClaim: mtpAuthBJJProof.coreClaim,
         mtp: mtpAuthBJJProof.mtp,
@@ -630,7 +690,7 @@ export class IdentityWallet implements IIdentityWallet {
       }),
       coreClaim: coreClaim.hex(),
       signature: Hex.encodeString(signature)
-    };
+    });
     credential.proof = [sigProof];
 
     return credential;
@@ -679,7 +739,7 @@ export class IdentityWallet implements IIdentityWallet {
       }
 
       await this._storage.mt.addToMerkleTree(
-        issuerDID.toString(),
+        issuerDID.string(),
         MerkleTreeType.Claims,
         coreClaim.hIndex(),
         coreClaim.hValue()
@@ -689,7 +749,7 @@ export class IdentityWallet implements IIdentityWallet {
     const newIssuerTreeState = await this.getDIDTreeModel(issuerDID);
     const claimTreeRoot = await newIssuerTreeState.claimsTree.root();
     await this._storage.mt.addToMerkleTree(
-      issuerDID.toString(),
+      issuerDID.string(),
       MerkleTreeType.Roots,
       claimTreeRoot.bigInt(),
       BigInt(0)
@@ -735,7 +795,7 @@ export class IdentityWallet implements IIdentityWallet {
         type: ProofType.Iden3SparseMerkleTreeProof,
         mtp: mtpWithProof.proof,
         issuerData: new IssuerData({
-          id: issuerDID.toString(),
+          id: issuerDID.string(),
           state: {
             claimsTreeRoot: mtpWithProof.treeState.claimsRoot.hex(),
             revocationTreeRoot: mtpWithProof.treeState.revocationRoot.hex(),
@@ -819,5 +879,26 @@ export class IdentityWallet implements IIdentityWallet {
     const coreClaim = coreClaimFromMtpProof ?? coreClaimFromSigProof!;
 
     return coreClaim;
+  }
+
+  async findOwnedCredentialsByDID(did: DID, query: ProofQuery): Promise<W3CCredential[]> {
+    const credentials = await this._credentialWallet.findByQuery(query);
+    if (!credentials.length) {
+      throw new Error(`no credential satisfied query`);
+    }
+
+    const { genesisDID } = await this.getGenesisDIDMetadata(did);
+
+    const profiles = await this.getProfilesByDID(genesisDID);
+
+    return credentials.filter((cred) => {
+      const credentialSubjectId = cred.credentialSubject['id'] as string; // credential subject
+      return (
+        credentialSubjectId == genesisDID.string() ||
+        profiles.some((p) => {
+          return p.id === credentialSubjectId;
+        })
+      );
+    });
   }
 }

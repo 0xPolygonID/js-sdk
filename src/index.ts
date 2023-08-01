@@ -7,7 +7,6 @@ export * from './schema-processor';
 export * from './proof';
 export * from './iden3comm';
 export * from './circuits';
-export * from './loaders';
 export * from './iden3comm/handlers';
 export * from './utils';
 import * as core from '@iden3/js-iden3-core';

@@ -1,6 +1,7 @@
+/* eslint-disable no-console */
 import {
-  CircuitStorage,
   CredentialStorage,
+  FSCircuitStorage,
   Identity,
   IdentityStorage,
   IdentityWallet,
@@ -8,18 +9,16 @@ import {
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
+import { ICircuitStorage, IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { FSKeyLoader } from '../../src/loaders';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { byteEncoder } from '../../src';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
-import { CircuitData } from '../../src/storage/entities/circuitData';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
@@ -32,9 +31,11 @@ describe('sig proofs', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
   const rhsUrl = process.env.RHS_URL as string;
+  const ipfsNodeURL = process.env.IPFS_URL as string;
+
   let userDID: DID;
   let issuerDID: DID;
-  let circuitStorage: CircuitStorage;
+  let circuitStorage: ICircuitStorage;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -67,38 +68,10 @@ describe('sig proofs', () => {
     }
   };
 
-  before(async () => {
-    circuitStorage = new CircuitStorage(new InMemoryDataSource<CircuitData>());
-
-    const loader = new FSKeyLoader(path.join(__dirname, './testdata'));
-
-    await circuitStorage.saveCircuitData(CircuitId.AuthV2, {
-      circuitId: CircuitId.AuthV2,
-      wasm: await loader.load(`${CircuitId.AuthV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AuthV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(`${CircuitId.AuthV2.toString()}/verification_key.json`)
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.AtomicQuerySigV2, {
-      circuitId: CircuitId.AtomicQuerySigV2,
-      wasm: await loader.load(`${CircuitId.AtomicQuerySigV2.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.AtomicQuerySigV2.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQuerySigV2.toString()}/verification_key.json`
-      )
-    });
-
-    await circuitStorage.saveCircuitData(CircuitId.StateTransition, {
-      circuitId: CircuitId.StateTransition,
-      wasm: await loader.load(`${CircuitId.StateTransition.toString()}/circuit.wasm`),
-      provingKey: await loader.load(`${CircuitId.StateTransition.toString()}/circuit_final.zkey`),
-      verificationKey: await loader.load(
-        `${CircuitId.AtomicQueryMTPV2.toString()}/verification_key.json`
-      )
-    });
-  });
-
   beforeEach(async () => {
+    circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, './testdata')
+    });
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
@@ -122,7 +95,7 @@ describe('sig proofs', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      ipfsGatewayURL: 'https://ipfs.io'
+      ipfsNodeURL
     });
 
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
@@ -151,7 +124,7 @@ describe('sig proofs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -188,7 +161,7 @@ describe('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID);
 
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
@@ -200,7 +173,7 @@ describe('sig proofs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -237,7 +210,10 @@ describe('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+      credential: credsForMyUserDID[0],
+      skipRevocation: false
+    });
 
     expect(vp).to.be.undefined;
     expect(proof).not.to.be.undefined;
@@ -249,7 +225,7 @@ describe('sig proofs', () => {
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
@@ -286,7 +262,10 @@ describe('sig proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+      credential: credsForMyUserDID[0],
+      skipRevocation: true
+    });
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
   });
@@ -324,7 +303,7 @@ describe('sig proofs', () => {
       credentialSchema: 'ipfs://Qmb1Q5jLETkUkhswCVX52ntTCNQnRm3NyyGf1NZG98u5cv',
       type: 'TestString',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         stringTest: 'test'
       },
       expiration: 1693526400,
@@ -334,7 +313,7 @@ describe('sig proofs', () => {
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsGatewayURL: 'https://ipfs.io'
+      ipfsNodeURL
     });
 
     await credWallet.save(issuerCred);
@@ -342,14 +321,7 @@ describe('sig proofs', () => {
     const creds = await credWallet.findByQuery(req.body.scope[0].query);
     expect(creds.length).to.not.equal(0);
 
-    const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
-    expect(credsForMyUserDID.length).to.equal(1);
-
-    const { proof, vp } = await proofService.generateProof(
-      req.body.scope[0],
-      userDID,
-      credsForMyUserDID[0]
-    );
+    const { proof, vp } = await proofService.generateProof(req.body.scope[0], userDID);
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
   });
@@ -368,7 +340,7 @@ describe('sig proofs', () => {
       credentialSchema: 'ipfs://QmbLQKw9Mzc9fVHowatJbvZjWNSUZchxYQX5Wtt8Ff9rGx',
       type: 'DeliveryAddress',
       credentialSubject: {
-        id: userDID.toString(),
+        id: userDID.string(),
         price: 10,
         deliveryTime: '2023-07-11T16:05:51.140Z',
         postalProviderInformation: {
@@ -388,7 +360,7 @@ describe('sig proofs', () => {
       }
     };
     const issuedCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsGatewayURL: 'https://ipfs.io'
+      ipfsNodeURL
     });
 
     await credWallet.save(issuedCred);
@@ -407,7 +379,7 @@ describe('sig proofs', () => {
           line1: 'Kyiv, Zdanovskoi Y. 35',
           line2: 'apt.1'
         },
-        id: userDID.toString(),
+        id: userDID.string(),
         isPostalProvider: false,
         operatorId: 103,
         postalProviderInformation: {
@@ -427,7 +399,7 @@ describe('sig proofs', () => {
     };
 
     const deliveryCred = await idWallet.issueCredential(issuerDID, deliveryClaimReq, {
-      ipfsGatewayURL: 'https://ipfs.io'
+      ipfsNodeURL
     });
 
     await credWallet.save(deliveryCred);
@@ -454,7 +426,7 @@ describe('sig proofs', () => {
       circuitId: 'credentialAtomicQuerySigV2',
       query
     };
-    const { proof, vp } = await proofService.generateProof(vpReq, userDID, credsForMyUserDID[0]);
+    const { proof, vp } = await proofService.generateProof(vpReq, userDID);
     expect(proof).not.to.be.undefined;
 
     expect(vp).to.deep.equal({
@@ -482,8 +454,7 @@ describe('sig proofs', () => {
     };
     const { proof: deliveryProof, vp: deliveryVP } = await proofService.generateProof(
       deliveryVPReq,
-      userDID,
-      credsFromWallet[0]
+      userDID
     );
     expect(deliveryProof).not.to.be.undefined;
 

@@ -19,8 +19,7 @@ import { VerifiableConstants, CredentialStatusType } from '../../verifiable/cons
  * ProofNode is a partial Reverse Hash Service result
  * it contains the current node hash and its children
  *
- * @export
- * @beta
+ * @public
  * @class ProofNode
  */
 export class ProofNode {
@@ -102,33 +101,20 @@ enum NodeType {
 /**
  * RHSResolver is a class that allows to interact with the RHS service to get revocation status.
  *
- * @export
- * @beta
+ * @public
  * @class RHSResolver
  */
 export class RHSResolver implements CredentialStatusResolver {
   constructor(private readonly _state: IStateStorage) {}
 
   /**
-   * Gets revocation status from rhs service.
-   * @param {CredentialStatus} credentialStatus
-   * @param {DID} issuerDID
-   * @returns Promise<RevocationStatus>
+   * resolve is a method to resolve a credential status from the blockchain.
+   *
+   * @public
+   * @param {CredentialStatus} credentialStatus -  credential status to resolve
+   * @param {CredentialStatusResolveOptions} credentialStatusResolveOptions -  options for resolver
+   * @returns `{Promise<RevocationStatus>}`
    */
-  public async getStatus(
-    credentialStatus: CredentialStatus,
-    issuerDID: DID
-  ): Promise<RevocationStatus> {
-    const latestStateInfo = await this._state.getLatestStateById(issuerDID.id.bigInt());
-    const hashedRevNonce = newHashFromBigInt(BigInt(credentialStatus.revocationNonce ?? 0));
-    const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
-    return await this.getRevocationStatusFromRHS(
-      hashedRevNonce,
-      hashedIssuerRoot,
-      credentialStatus.id
-    );
-  }
-
   async resolve(
     credentialStatus: CredentialStatus,
     credentialStatusResolveOptions?: CredentialStatusResolveOptions
@@ -139,13 +125,13 @@ export class RHSResolver implements CredentialStatusResolver {
 
     try {
       return await this.getStatus(credentialStatus, credentialStatusResolveOptions.issuerDID);
-    } catch (e) {
-      const errMsg = e.reason ?? e.message;
+    } catch (e: unknown) {
+      const errMsg = (e as { reason: string })?.reason ?? (e as Error).message ?? (e as string);
       if (
         !!credentialStatusResolveOptions.issuerData &&
         errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
         isIssuerGenesis(
-          credentialStatusResolveOptions.issuerDID.toString(),
+          credentialStatusResolveOptions.issuerDID.string(),
           credentialStatusResolveOptions.issuerData.state.value
         )
       ) {
@@ -172,6 +158,27 @@ export class RHSResolver implements CredentialStatusResolver {
   }
 
   /**
+   * Gets revocation status from rhs service.
+   * @param {CredentialStatus} credentialStatus
+   * @param {DID} issuerDID
+   * @returns Promise<RevocationStatus>
+   */
+  private async getStatus(
+    credentialStatus: CredentialStatus,
+    issuerDID: DID
+  ): Promise<RevocationStatus> {
+    const id = DID.idFromDID(issuerDID);
+    const latestStateInfo = await this._state.getLatestStateById(id.bigInt());
+    const hashedRevNonce = newHashFromBigInt(BigInt(credentialStatus.revocationNonce ?? 0));
+    const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
+    return await this.getRevocationStatusFromRHS(
+      hashedRevNonce,
+      hashedIssuerRoot,
+      credentialStatus.id
+    );
+  }
+
+  /**
    * Gets partial revocation status info from rhs service.
    *
    * @param {Hash} data - hash to fetch
@@ -179,7 +186,7 @@ export class RHSResolver implements CredentialStatusResolver {
    * @param {string} rhsUrl - base URL for reverse hash service
    * @returns Promise<RevocationStatus>
    */
-  public async getRevocationStatusFromRHS(
+  private async getRevocationStatusFromRHS(
     data: Hash,
     issuerRoot: Hash,
     rhsUrl: string
@@ -278,23 +285,23 @@ export class RHSResolver implements CredentialStatusResolver {
 /**
  * Checks if issuer did is created from given state is genesis
  *
- * @export
  * @param {string} issuer - did (string)
  * @param {string} state  - hex state
  * @returns boolean
  */
 export function isIssuerGenesis(issuer: string, state: string): boolean {
   const did = DID.parse(issuer);
+  const id = DID.idFromDID(did);
+  const { method, blockchain, networkId } = DID.decodePartsFromId(id);
   const arr = BytesHelper.hexToBytes(state);
   const stateBigInt = BytesHelper.bytesToInt(arr);
-  const type = buildDIDType(did.method, did.blockchain, did.networkId);
-  return isGenesisStateId(did.id.bigInt(), stateBigInt, type);
+  const type = buildDIDType(method, blockchain, networkId);
+  return isGenesisStateId(DID.idFromDID(did).bigInt(), stateBigInt, type);
 }
 
 /**
  * Checks if id is created from given state and type is genesis
  *
- * @export
  * @param {bigint} id
  * @param {bigint} state
  * @param {Uint8Array} type

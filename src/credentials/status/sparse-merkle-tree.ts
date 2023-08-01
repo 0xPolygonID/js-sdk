@@ -1,72 +1,76 @@
 import { CredentialStatus, RevocationStatus, Issuer } from '../../verifiable';
 import { CredentialStatusResolver } from './resolver';
-import { newHashFromBigInt, Proof, NodeAux, setBitBigEndian } from '@iden3/js-merkletree';
+import { newHashFromBigInt, Proof, setBitBigEndian } from '@iden3/js-merkletree';
 
 /**
  * IssuerResolver is a class that allows to interact with the issuer's http endpoint to get revocation status.
  *
- * @export
- * @beta
+ * @public
  * @class IssuerResolver
  */
 
 export class IssuerResolver implements CredentialStatusResolver {
+  /**
+   * resolve is a method to resolve a credential status directly from the issuer.
+   *
+   * @public
+   * @param {CredentialStatus} credentialStatus -  credential status to resolve
+   * @param {CredentialStatusResolveOptions} credentialStatusResolveOptions -  options for resolver
+   * @returns `{Promise<RevocationStatus>}`
+   */
   async resolve(credentialStatus: CredentialStatus): Promise<RevocationStatus> {
-    const revStatusDTO = await (await fetch(credentialStatus.id)).json();
-    return Object.assign(new RevocationStatusDTO(), revStatusDTO).toRevocationStatus();
+    const revStatusResp = await fetch(credentialStatus.id);
+    const revStatus = await revStatusResp.json();
+    return toRevocationStatus(revStatus);
   }
 }
 
 /**
- *  Proof dto as a partial result of fetching credential status with type SparseMerkleTreeProof
+ * RevocationStatusResponse is a response of fetching credential status with type SparseMerkleTreeProof
  *
  * @export
- * @class ProofDTO
+ * @interface RevocationStatusResponse
  */
-export class ProofDTO {
-  existence: boolean;
-  siblings: string[];
-  node_aux: {
-    key: string;
-    value: string;
+export interface RevocationStatusResponse {
+  issuer: Issuer;
+  mtp: {
+    existence: boolean;
+    siblings: string[];
+    node_aux: {
+      key: string;
+      value: string;
+    };
   };
 }
 
 /**
- * RevocationStatusDTO is a result of fetching credential status with type SparseMerkleTreeProof
+ * toRevocationStatus is a result of fetching credential status with type SparseMerkleTreeProof converts to RevocationStatus
  *
- * @beta
- * @export
- * @class RevocationStatusDTO
+ * @param {RevocationStatusResponse} { issuer, mtp }
+ * @returns {RevocationStatus} RevocationStatus
  */
-export class RevocationStatusDTO {
-  issuer: Issuer;
-  mtp: ProofDTO;
-
-  toRevocationStatus(): RevocationStatus {
-    const p = new Proof();
-    p.existence = this.mtp.existence;
-    p.nodeAux = this.mtp.node_aux
-      ? ({
-          key: newHashFromBigInt(BigInt(this.mtp.node_aux.key)),
-          value: newHashFromBigInt(BigInt(this.mtp.node_aux.value))
-        } as NodeAux)
-      : undefined;
-
-    const s = this.mtp.siblings.map((s) => newHashFromBigInt(BigInt(s)));
-
-    p.siblings = [];
-    p.depth = s.length;
-
-    for (let lvl = 0; lvl < s.length; lvl++) {
-      if (s[lvl].bigInt() !== BigInt(0)) {
-        setBitBigEndian(p.notEmpties, lvl);
-        p.siblings.push(s[lvl]);
-      }
-    }
-    return {
-      mtp: p,
-      issuer: this.issuer
+export const toRevocationStatus = ({ issuer, mtp }: RevocationStatusResponse): RevocationStatus => {
+  const p = new Proof();
+  p.existence = mtp.existence;
+  if (mtp.node_aux) {
+    p.nodeAux = {
+      key: newHashFromBigInt(BigInt(mtp.node_aux.key)),
+      value: newHashFromBigInt(BigInt(mtp.node_aux.value))
     };
   }
-}
+  const s = mtp.siblings.map((s) => newHashFromBigInt(BigInt(s)));
+
+  p.siblings = [];
+  p.depth = s.length;
+
+  for (let lvl = 0; lvl < s.length; lvl++) {
+    if (s[lvl].bigInt() !== BigInt(0)) {
+      setBitBigEndian(p.notEmpties, lvl);
+      p.siblings.push(s[lvl]);
+    }
+  }
+  return {
+    mtp: p,
+    issuer
+  };
+};

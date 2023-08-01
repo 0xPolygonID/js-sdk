@@ -4,9 +4,7 @@ import {
   JWSPacker,
   KmsKeyType,
   Sec256k1Provider,
-  byteDecoder,
   byteEncoder,
-  bytesToBase64,
   bytesToBase64url,
   hexToBytes,
   keyPath

@@ -5,8 +5,7 @@ import { AbstractPrivateKeyStore } from './abstract-key-store';
  * Allows storing keys in the indexed db storage of the browser
  * (NOT ENCRYPTED: DO NOT USE IN THE PRODUCTION)
  *
- * @export
- * @beta
+ * @public
  * @class IndexedDBPrivateKeyStore
  * @implements implements AbstractPrivateKeyStore interface
  */

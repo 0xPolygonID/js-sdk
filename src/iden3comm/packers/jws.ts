@@ -1,14 +1,10 @@
-import { BasicMessage, IPacker, PackerParams } from '../types';
+import { BasicMessage, IPacker, JWSPackerParams } from '../types';
 import { MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
-import {
-  extractPublicKeyBytes,
-  resolveVerificationMethods,
-  resolveDIDDocument
-} from '../utils/did';
+import { extractPublicKeyBytes, resolveVerificationMethods } from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
 
-import { Signer, verifyJWS } from 'did-jwt';
-import { DIDDocument, Resolvable, VerificationMethod, parse } from 'did-resolver';
+import { verifyJWS } from 'did-jwt';
+import { DIDDocument, Resolvable, parse } from 'did-resolver';
 import {
   byteDecoder,
   byteEncoder,
@@ -16,13 +12,11 @@ import {
   decodeBase64url,
   encodeBase64url
 } from '../../utils';
-export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
 
 /**
  * Packer that can pack message to JWZ token,
  * and unpack and validate JWZ envelope
- * @exports
- * @beta
+ * @public
  * @class ZKPPacker
  * @implements implements IPacker interface
  */
@@ -31,13 +25,10 @@ export class JWSPacker implements IPacker {
    * Creates an instance of JWSPacker.
    *
    * @param {KMS} _kms
-   * @param {Resolvable} [_documentResolver={ resolve: resolveDIDDocument }]
+   * @param {Resolvable} _documentResolver
    * @memberof JWSPacker
    */
-  constructor(
-    private readonly _kms: KMS,
-    private readonly _documentResolver: Resolvable = { resolve: resolveDIDDocument }
-  ) {}
+  constructor(private readonly _kms: KMS, private readonly _documentResolver: Resolvable) {}
   /**
    * creates JSON Web Signature token
    *
@@ -45,15 +36,7 @@ export class JWSPacker implements IPacker {
    * @param {PackerParams} params - sender id and proving alg are required
    * @returns `Promise<Uint8Array>`
    */
-  async pack(
-    payload: Uint8Array,
-    params: PackerParams & {
-      alg: string;
-      kid?: string;
-      didDocument?: DIDDocument;
-      signer?: SignerFn;
-    }
-  ): Promise<Uint8Array> {
+  async pack(payload: Uint8Array, params: JWSPackerParams): Promise<Uint8Array> {
     if (!params.alg) {
       throw new Error('Missing algorithm');
     }
@@ -64,7 +47,8 @@ export class JWSPacker implements IPacker {
       throw new Error('Missing sender DID');
     }
 
-    const vmTypes: string[] = SUPPORTED_PUBLIC_KEY_TYPES[params.alg];
+    const vmTypes: string[] =
+      SUPPORTED_PUBLIC_KEY_TYPES[params.alg as keyof typeof SUPPORTED_PUBLIC_KEY_TYPES];
     if (!vmTypes?.length) {
       throw new Error(`No supported verification methods for algorithm ${params.alg}`);
     }

@@ -6,8 +6,7 @@ import { QueryOperators } from './comparer';
 /**
  * TreeState is model for merkle tree roots
  *
- * @export
- * @beta
+ * @public
  * @interface   TreeState
  */
 export interface TreeState {
@@ -21,8 +20,7 @@ export interface TreeState {
  * claim non revocation status for circuit
  * TreeState and Proof of inclusion / non-inclusion
  *
- * @export
- * @beta
+ * @public
  * @interface   ClaimNonRevStatus
  */
 export interface ClaimNonRevStatus {
@@ -32,22 +30,21 @@ export interface ClaimNonRevStatus {
 /**
  * Query represents basic request to claim slot verification
  *
- * @export
- * @beta
+ * @public
  * @class Query
  */
 export class Query {
-  slotIndex: number;
-  values: bigint[];
-  operator: number;
-  valueProof?: ValueProof;
+  slotIndex!: number;
+  values!: bigint[];
+  operator!: number;
+  valueProof!: ValueProof;
 
   /**
    * Validates Query instance
    *
    */
   validate(): void {
-    if (this.operator !== QueryOperators.$noop && this.values.some((v) => typeof v !== 'bigint'))
+    if (this.operator !== QueryOperators.$noop && this.values?.some((v) => typeof v !== 'bigint'))
       throw new Error(CircuitError.EmptyQueryValue);
   }
 }
@@ -55,7 +52,6 @@ export class Query {
 /**
  * CircuitID is alias for circuit identifier
  *
- * @export
  * @enum {number}
  */
 export enum CircuitId {
@@ -76,52 +72,48 @@ export enum CircuitId {
 /**
  * Claim structure for circuit inputs
  *
- * @export
- * @beta
+ * @public
  * @class CircuitClaim
  */
 export class CircuitClaim {
-  issuerId: Id;
-  claim: CoreClaim;
-  treeState: TreeState;
-  proof: Proof;
-  nonRevProof: ClaimNonRevStatus; // Claim non revocation proof
-  signatureProof: BJJSignatureProof;
+  issuerId!: Id;
+  claim!: CoreClaim;
+  treeState!: TreeState;
+  proof!: Proof;
+  nonRevProof!: ClaimNonRevStatus; // Claim non revocation proof
+  signatureProof!: BJJSignatureProof;
 }
 
 /**
  *
  * Claim for circuit with non revocation proof and signature proof
- * @export
- * @beta
+ * @public
  * @interface   ClaimWithSigProof
  */
 export interface ClaimWithSigProof {
-  issuerID: Id;
-  claim: Claim;
-  nonRevProof: MTProof;
-  signatureProof: BJJSignatureProof;
+  issuerID?: Id;
+  claim?: Claim;
+  nonRevProof?: MTProof;
+  signatureProof?: BJJSignatureProof;
 }
 
 /**
  * Claim for circuit with non revocation proof and proof of merkle tree inclusion
  *
- * @export
- * @beta
+ * @public
  * @interface   ClaimWithMTPProof
  */
 export interface ClaimWithMTPProof {
   issuerID?: Id;
-  claim: Claim;
-  incProof: MTProof;
-  nonRevProof: MTProof;
+  claim?: Claim;
+  incProof?: MTProof;
+  nonRevProof?: MTProof;
 }
 
 /**
  * prepared bjj signature for circuits with auth bjj claim data
  *
- * @export
- * @beta
+ * @public
  * @interface   BJJSignatureProof
  */
 export interface BJJSignatureProof {
@@ -134,19 +126,17 @@ export interface BJJSignatureProof {
 /**
  * prepared mtp with a tree state
  *
- * @export
- * @beta
+ * @public
  * @interface   MTProof
  */
 export interface MTProof {
-  proof: Proof;
+  proof?: Proof;
   treeState?: TreeState;
 }
 /**
  * global identity state proof
  *
- * @export
- * @beta
+ * @public
  * @interface   GISTProof
  */
 export interface GISTProof {
@@ -157,7 +147,6 @@ export interface GISTProof {
 /**
  * List of errors of circuit inputs processing
  *
- * @export
  * @enum {number}
  */
 export enum CircuitError {
@@ -184,8 +173,7 @@ export enum CircuitError {
 /**
  * ValueProof represents a Merkle Proof for a value stored as MT
  *
- * @export
- * @beta
+ * @public
  * @class ValueProof
  */
 export class ValueProof {

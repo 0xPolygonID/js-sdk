@@ -5,7 +5,6 @@ const { randomBytes } = require('crypto');
 /**
  * builds key path
  *
- * @export
  * @param {KmsKeyType} keyType - key type
  * @param {string} keyID - key id
  * @returns string path
@@ -18,7 +17,6 @@ export function keyPath(keyType: KmsKeyType, keyID: string): string {
 /**
  * generates Uint8Array with random bytes of size n
  *
- * @export
  * @param {number} n - size of array
  * @returns Uint8Array
  */

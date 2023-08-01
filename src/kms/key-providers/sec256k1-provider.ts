@@ -2,15 +2,12 @@ import { IKeyProvider } from '../kms';
 import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 import Elliptic from 'elliptic';
 import * as providerHelpers from '../provider-helpers';
-import { PublicKey } from '@iden3/js-crypto';
 import { ES256KSigner } from 'did-jwt';
 import { base64ToBytes, byteEncoder, bytesToHex, hexToBytes } from '../../utils';
 
 /**
  * Provider for Sec256p1 keys256p1
- * @beta
- * @export
- * @beta
+ * @public
  * @class Sec256p1Provider
  * @implements implements IKeyProvider interface
  */
@@ -42,7 +39,7 @@ export class Sec256k1Provider implements IKeyProvider {
     const keyPair = this._ec.genKeyPair();
     const kmsId = {
       type: this.keyType,
-      id: providerHelpers.keyPath(this.keyType, keyPair.getPublic().encode('hex'))
+      id: providerHelpers.keyPath(this.keyType, keyPair.getPublic().encode('hex', false))
     };
     await this._keyStore.importKey({ alias: kmsId.id, key: keyPair.getPrivate().toString('hex') });
 
@@ -54,9 +51,9 @@ export class Sec256k1Provider implements IKeyProvider {
    *
    * @param {KmsKeyId} keyId - key identifier
    */
-  async publicKey(keyId: KmsKeyId): Promise<PublicKey> {
+  async publicKey(keyId: KmsKeyId): Promise<string> {
     const privateKeyHex = await this.privateKey(keyId);
-    return this._ec.keyFromPrivate(privateKeyHex, 'hex').getPublic().encode('hex');
+    return this._ec.keyFromPrivate(privateKeyHex, 'hex').getPublic().encode('hex', false);
   }
 
   /**

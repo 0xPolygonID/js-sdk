@@ -67,7 +67,7 @@ describe('tests packageManager with ZKP Packer', () => {
 
     const { unpackedMessage, unpackedMediaType } = await pm.unpack(e);
     expect(unpackedMediaType).to.deep.equal(MediaType.ZKPMessage);
-    expect(senderDID.toString()).to.deep.equal(unpackedMessage.from);
+    expect(senderDID.string()).to.deep.equal(unpackedMessage.from);
     expect(byteDecoder.decode(msgBytes)).to.deep.equal(JSON.stringify(unpackedMessage));
   });
 });
@@ -75,8 +75,8 @@ describe('tests packageManager with ZKP Packer', () => {
 const createFetchCredentialMessage = (typ: MediaType, from: DID, to: DID) => {
   const msg: CredentialFetchRequestMessage = {
     id: '',
-    from: from.toString(),
-    to: to.toString(),
+    from: from.string(),
+    to: to.string(),
     typ: typ,
     type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE,
     body: {
