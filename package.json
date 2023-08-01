@@ -8,11 +8,7 @@
   "esm:esbuild": "dist/esm_esbuild/index.js",
   "typings": "dist/types/index.d.ts",
   "files": [
-    "dist",
-    "src",
-    "tsconfig.json",
-    "scripts",
-    "config"
+    "dist"
   ],
   "scripts": {
     "build": "npm run clean && npm run build:esm && npm run build:umd && npm run build:esm:esbuild && npm run build:tsc",
@@ -21,7 +17,6 @@
     "build:tsc": "tsc --module commonjs",
     "build:esm": "tsc -p config/tsconfig.esm.json",
     "clean": "rimraf ./dist",
-    "prepare": "npm run build",
     "doc:extract": "ts-node ./scripts/doc-extract.ts",
     "doc:documenter": "ts-node ./scripts/doc-documenter.ts",
     "doc:build": "npm run doc:extract && npm run doc:documenter",
