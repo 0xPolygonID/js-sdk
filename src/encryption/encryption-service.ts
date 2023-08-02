@@ -4,7 +4,7 @@ import { IEncryptionService } from './interfaces/encryption-service';
 /**
  * Encryption Service
  * @public
- * @class EncryptedDataSource - class
+ * @class EncryptionService - class
  * @template Type
  */
 export class EncryptionService<Type> implements IEncryptionService<Type> {
