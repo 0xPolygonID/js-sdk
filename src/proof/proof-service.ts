@@ -705,11 +705,11 @@ export class ProofService implements IProofService {
     }
     parsedQuery.query.valueProof.value = mtEntry;
 
-    if (merklizedPosition == MerklizedRootPosition.Index) {
-      parsedQuery.query.slotIndex = 2; // value data slot a
-    } else {
-      parsedQuery.query.slotIndex = 5; // value data slot b
-    }
+    // for merklized credentials slotIndex in query must be equal to zero
+    // and not a position of merklization root.
+    // it has no influence on check in the off-chain circuits, but it aligns with onchain verification standard
+    parsedQuery.query.slotIndex = 0;
+
     if (!parsedQuery.fieldName) {
       const resultQuery = parsedQuery.query;
       resultQuery.operator = QueryOperators.$eq;

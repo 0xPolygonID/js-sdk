@@ -151,8 +151,8 @@ describe('sig onchain proofs', () => {
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
         credentialSubject: {
-          documentType: {
-            $eq: 99
+          birthday: {
+            $lt: 20020101
           }
         }
       }
@@ -164,12 +164,17 @@ describe('sig onchain proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(credsForMyUserDID.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+    const { proof, vp, pub_signals } = await proofService.generateProof(proofReq, userDID, {
       challenge: BigInt(2),
       skipRevocation: false
     });
     console.log(proof);
 
     expect(vp).to.be.undefined;
+
+    // query hash test
+    expect(pub_signals[2]).to.be.equal(
+      '15045271939084694661437431358729281571840804299863053791890179002991342242959'
+    );
   });
 });
