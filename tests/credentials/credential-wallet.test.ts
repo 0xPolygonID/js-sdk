@@ -1,6 +1,7 @@
 import { InMemoryDataSource } from './../../src/storage/memory/data-source';
 import { CredentialStorage } from './../../src/storage/shared/credential-storage';
 import { IDataStorage } from './../../src/storage/interfaces/data-storage';
+import { EncryptedDataSource } from '../../src/storage/encryption';
 import { CredentialWallet } from '../../src/credentials';
 import { SearchError } from '../../src/storage/filters/jsonQuery';
 import { cred1, cred2, cred3, cred4 } from './mock';
@@ -339,7 +340,11 @@ const credentialFlow = async (storage: IDataStorage) => {
 describe('credential-wallet', () => {
   it('run in memory with 3 credential', async () => {
     const storage = {
-      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>())
+      credential: new CredentialStorage(
+        new EncryptedDataSource<W3CCredential>(new InMemoryDataSource<string>(), {
+          password: 'p@ssword1'
+        })
+      )
     } as unknown as IDataStorage;
     await credentialFlow(storage);
   });
