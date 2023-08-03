@@ -1,6 +1,6 @@
 declare module 'snarkjs' {
   export namespace groth16 {
-    export function verify(verKey: object, pubSignals: string[], proof: object): Promise<void>;
+    export function verify(verKey: object, pubSignals: string[], proof: object): Promise<boolean>;
 
     export function prove(
       provingKey: object,

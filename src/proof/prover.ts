@@ -57,7 +57,7 @@ export class NativeProver implements IZKProver {
         throw new Error(`verification file doesn't exist for circuit ${circuitId}`);
       }
 
-      await snarkjs.groth16.verify(
+      const result = await snarkjs.groth16.verify(
         JSON.parse(byteDecoder.decode(circuitData.verificationKey)),
         zkp.pub_signals,
         zkp.proof
@@ -65,7 +65,8 @@ export class NativeProver implements IZKProver {
 
       // we need to terminate curve manually
       await this.terminateCurve();
-      return true;
+
+      return result;
     } catch (e) {
       // eslint-disable-next-line no-console
       console.log(e);
