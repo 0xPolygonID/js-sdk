@@ -1,6 +1,6 @@
 import { EncryptOptions, SymmetricKeyAlgorithms } from './encryption-options';
 import { IEncryptionService } from './interfaces/encryption-service';
-
+import { getRandomValues, subtle } from 'crypto';
 /**
  * Encryption Service
  * @public
@@ -11,13 +11,13 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
   private readonly _password: string;
   private readonly _algorithm: string;
   private readonly _stringEncoding: BufferEncoding;
-  private readonly _crypto: Crypto;
+  // private readonly _crypto: Crypto;
 
   constructor(opts: EncryptOptions) {
     this._password = opts.password;
     this._algorithm = opts.algorithm ?? SymmetricKeyAlgorithms.AESGCM;
     this._stringEncoding = opts.stringEncoding ?? 'utf-8';
-    this._crypto = typeof window === 'undefined' ? require('node:crypto') : window.crypto;
+    // this._crypto = typeof window === 'undefined' ? crypto : window.crypto;
   }
 
   /**
@@ -31,8 +31,8 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
     const [cryptoKey, salt] = await this.keyFromPassword();
     const data = JSON.stringify(dataObj);
     const dataBuffer = Buffer.from(data, this._stringEncoding);
-    const vector = this._crypto.getRandomValues(new Uint8Array(16));
-    const buf = await this._crypto.subtle.encrypt(
+    const vector = getRandomValues(new Uint8Array(16));
+    const buf = await subtle.encrypt(
       {
         name: this._algorithm,
         iv: vector
@@ -60,12 +60,12 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
   async decrypt(text: string): Promise<Type> {
     const payload = JSON.parse(text);
     const { salt } = payload;
-    const [ cryptoKey ] = await this.keyFromPassword(salt);
+    const [cryptoKey] = await this.keyFromPassword(salt);
     const encryptedData = Buffer.from(payload.data, 'base64');
     const vector = Buffer.from(payload.iv, 'base64');
     let decryptedObj;
     try {
-      const result = await this._crypto.subtle.decrypt(
+      const result = await subtle.decrypt(
         { name: this._algorithm, iv: vector },
         cryptoKey,
         encryptedData
@@ -87,7 +87,7 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
    */
   private generateSalt(byteCount = 32): string {
     const view = new Uint8Array(byteCount);
-    this._crypto.getRandomValues(view);
+    getRandomValues(view);
     const b64encoded = btoa(String.fromCharCode.apply(null, view as unknown as number[]));
     return b64encoded;
   }
@@ -105,11 +105,11 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
   ): Promise<[CryptoKey, string]> {
     const passBuffer = Buffer.from(this._password, this._stringEncoding);
     const saltBuffer = Buffer.from(salt, 'base64');
-    const key = await this._crypto.subtle.importKey('raw', passBuffer, { name: 'PBKDF2' }, false, [
+    const key = await subtle.importKey('raw', passBuffer, { name: 'PBKDF2' }, false, [
       'deriveBits',
       'deriveKey'
     ]);
-    const derivedKey = await this._crypto.subtle.deriveKey(
+    const derivedKey = await subtle.deriveKey(
       {
         name: 'PBKDF2',
         salt: saltBuffer,

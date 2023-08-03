@@ -30,6 +30,7 @@ import {
   PlainPacker,
   PROTOCOL_CONSTANTS
 } from '../../src/iden3comm';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 import * as uuid from 'uuid';
 import { byteEncoder } from '../../src/utils';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -147,7 +148,9 @@ describe('fetch', () => {
 }`;
 
   beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const memoryKeyStore = new EncryptedKeyStore<InMemoryPrivateKeyStore>(InMemoryPrivateKeyStore, {
+      password: 'p@ssword1'
+    });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);

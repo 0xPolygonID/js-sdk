@@ -43,6 +43,7 @@ import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -134,7 +135,9 @@ describe('auth', () => {
   };
 
   beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const memoryKeyStore = new EncryptedKeyStore<InMemoryPrivateKeyStore>(InMemoryPrivateKeyStore, {
+      password: 'p@ssword1'
+    });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);

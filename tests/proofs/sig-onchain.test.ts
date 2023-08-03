@@ -9,6 +9,7 @@ import {
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import {
@@ -67,7 +68,9 @@ describe('sig onchain proofs', () => {
   };
 
   beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const memoryKeyStore = new EncryptedKeyStore<InMemoryPrivateKeyStore>(InMemoryPrivateKeyStore, {
+      password: 'p@ssword1'
+    });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
