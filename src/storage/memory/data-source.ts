@@ -29,7 +29,7 @@ export class InMemoryDataSource<Type> implements IDataSource<Type> {
 
   /** loads from value from the memory */
   async load(): Promise<Type[]> {
-    return Array.from(this._data.values());
+    return this._data;
   }
 
   /** deletes from value from the memory */
