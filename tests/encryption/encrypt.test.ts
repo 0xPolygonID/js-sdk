@@ -1,5 +1,7 @@
 import { expect } from 'chai';
 import { EncryptionService } from '../../src/encryption/encryption-service';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
+import { InMemoryPrivateKeyStore, LocalStoragePrivateKeyStore } from '../../src/kms';
 
 describe('encrypt tests', () => {
   it('encrypt service works', async () => {
@@ -23,5 +25,24 @@ describe('encrypt tests', () => {
       .catch((m) => {
         expect((m as Error).message).to.contains(`Incorrect password`);
       });
+  });
+
+  it('encrypt key-store works', async () => {
+      const storegTypes = [InMemoryPrivateKeyStore, LocalStoragePrivateKeyStore];
+
+      const testKeyStore = async (t: any) => {
+         const memoryKeyStore = new EncryptedKeyStore<typeof t>(t, {
+          password: 'p@ssword1'
+        });
+
+        const testSecret = 'private-key-122333441';
+        await memoryKeyStore.importKey({ alias: 'test', key: testSecret });
+        const decryptedSecred = await memoryKeyStore.get({alias: 'test'});
+        expect(testSecret).to.be.equal(decryptedSecred);
+      }
+      
+      for(let i = 0; i < storegTypes.length; i++) {
+        await testKeyStore(storegTypes[i]);
+      }
   });
 });
