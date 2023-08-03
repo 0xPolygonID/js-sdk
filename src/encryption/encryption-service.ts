@@ -11,13 +11,11 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
   private readonly _password: string;
   private readonly _algorithm: string;
   private readonly _stringEncoding: BufferEncoding;
-  // private readonly _crypto: Crypto;
 
   constructor(opts: EncryptOptions) {
     this._password = opts.password;
     this._algorithm = opts.algorithm ?? SymmetricKeyAlgorithms.AESGCM;
     this._stringEncoding = opts.stringEncoding ?? 'utf-8';
-    // this._crypto = typeof window === 'undefined' ? crypto : window.crypto;
   }
 
   /**
