@@ -321,9 +321,36 @@ describe('sig proofs', () => {
     const creds = await credWallet.findByQuery(req.body.scope[0].query);
     expect(creds.length).to.not.equal(0);
 
-    const { proof, vp } = await proofService.generateProof(req.body.scope[0], userDID);
+    const { proof, vp, circuitId, pub_signals } = await proofService.generateProof(
+      req.body.scope[0],
+      userDID
+    );
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
+
+    const isValid = await proofService.verifyProof(
+      {
+        proof,
+        pub_signals
+      },
+      circuitId as CircuitId
+    );
+
+    expect(isValid).to.be.true;
+
+    const pi_a = ['99', ...proof.pi_a.slice(1)];
+    const isNotValid = await proofService.verifyProof(
+      {
+        proof: {
+          ...proof,
+          pi_a
+        },
+        pub_signals
+      },
+      circuitId as CircuitId
+    );
+
+    expect(isNotValid).to.be.false;
   });
 
   it('sigv2 vp-credential', async () => {
