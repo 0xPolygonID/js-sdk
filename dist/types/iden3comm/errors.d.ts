@@ -1,0 +1,9 @@
+export declare const ErrNotProtocolMessage = "the envelope is not a protocol message";
+export declare const ErrNotEnvelopeStub = "the envelope doesn't contain field protected";
+export declare const ErrNotHeaderStub = "the envelope doesn't contain field typ";
+export declare const ErrUnknownCircuitID = "unknown circuit ID. can't verify msg sender";
+export declare const ErrSenderNotUsedTokenCreation = "sender of message is not used for jwz token creation";
+export declare const ErrPackedWithUnsupportedCircuit = "message was packed with unsupported circuit";
+export declare const ErrProofIsInvalid = "message proof is invalid";
+export declare const ErrStateVerificationFailed = "message state verification failed";
+export declare const ErrNoProvingMethodAlg = "unknown proving method algorithm";
