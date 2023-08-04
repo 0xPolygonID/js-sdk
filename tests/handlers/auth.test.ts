@@ -55,6 +55,7 @@ describe('auth', () => {
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
   const ipfsNodeURL = process.env.IPFS_URL as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 
   const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
   const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -136,7 +137,7 @@ describe('auth', () => {
 
   beforeEach(async () => {
     const memoryKeyStore = new EncryptedKeyStore<InMemoryPrivateKeyStore>(InMemoryPrivateKeyStore, {
-      password: 'p@ssword1'
+      password: encryptionPassword
     });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();

@@ -36,6 +36,7 @@ describe('mtp proofs', () => {
 
   const rhsUrl = process.env.RHS_URL as string;
   const walletKey = process.env.WALLET_KEY as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -77,7 +78,7 @@ describe('mtp proofs', () => {
   };
   beforeEach(async () => {
     const memoryKeyStore = new EncryptedKeyStore<InMemoryPrivateKeyStore>(InMemoryPrivateKeyStore, {
-      password: 'p@ssword1'
+      password: encryptionPassword
     });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();

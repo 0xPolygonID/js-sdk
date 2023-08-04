@@ -1,6 +1,6 @@
 import { EncryptOptions, SymmetricKeyAlgorithms } from './encryption-options';
 import { IEncryptionService } from './interfaces/encryption-service';
-import { getRandomValues, subtle } from 'crypto';
+import * as crypto from 'crypto';
 /**
  * Encryption Service
  * @public
@@ -29,8 +29,8 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
     const [cryptoKey, salt] = await this.keyFromPassword();
     const data = JSON.stringify(dataObj);
     const dataBuffer = Buffer.from(data, this._stringEncoding);
-    const vector = getRandomValues(new Uint8Array(16));
-    const buf = await subtle.encrypt(
+    const vector = crypto.getRandomValues(new Uint8Array(16));
+    const buf = await crypto.subtle.encrypt(
       {
         name: this._algorithm,
         iv: vector
@@ -63,7 +63,7 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
     const vector = Buffer.from(payload.iv, 'base64');
     let decryptedObj;
     try {
-      const result = await subtle.decrypt(
+      const result = await crypto.subtle.decrypt(
         { name: this._algorithm, iv: vector },
         cryptoKey,
         encryptedData
@@ -85,7 +85,7 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
    */
   private generateSalt(byteCount = 32): string {
     const view = new Uint8Array(byteCount);
-    getRandomValues(view);
+    crypto.getRandomValues(view);
     const b64encoded = btoa(String.fromCharCode.apply(null, view as unknown as number[]));
     return b64encoded;
   }
@@ -103,11 +103,11 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
   ): Promise<[CryptoKey, string]> {
     const passBuffer = Buffer.from(this._password, this._stringEncoding);
     const saltBuffer = Buffer.from(salt, 'base64');
-    const key = await subtle.importKey('raw', passBuffer, { name: 'PBKDF2' }, false, [
+    const key = await crypto.subtle.importKey('raw', passBuffer, { name: 'PBKDF2' }, false, [
       'deriveBits',
       'deriveKey'
     ]);
-    const derivedKey = await subtle.deriveKey(
+    const derivedKey = await crypto.subtle.deriveKey(
       {
         name: 'PBKDF2',
         salt: saltBuffer,

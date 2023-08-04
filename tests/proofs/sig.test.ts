@@ -33,6 +33,7 @@ describe('sig proofs', () => {
   let proofService: ProofService;
   const rhsUrl = process.env.RHS_URL as string;
   const ipfsNodeURL = process.env.IPFS_URL as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 
   let userDID: DID;
   let issuerDID: DID;
@@ -74,7 +75,7 @@ describe('sig proofs', () => {
       dirname: path.join(__dirname, './testdata')
     });
     const memoryKeyStore = new EncryptedKeyStore<InMemoryPrivateKeyStore>(InMemoryPrivateKeyStore, {
-      password: 'p@ssword1'
+      password: encryptionPassword
     });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();

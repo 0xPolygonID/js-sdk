@@ -28,6 +28,7 @@ describe('rhs', () => {
   let dataStorage: IDataStorage;
   const rhsUrl = process.env.RHS_URL as string;
   const infuraUrl = process.env.RPC_URL as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 
   const mockStateStorageForGenesisState: IStateStorage = {
     getLatestStateById: async () => {
@@ -101,7 +102,7 @@ describe('rhs', () => {
 
   beforeEach(async () => {
     const memoryKeyStore = new EncryptedKeyStore<InMemoryPrivateKeyStore>(InMemoryPrivateKeyStore, {
-      password: 'p@ssword1'
+      password: encryptionPassword
     });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();

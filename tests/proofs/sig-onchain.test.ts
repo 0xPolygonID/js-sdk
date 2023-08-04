@@ -35,6 +35,7 @@ describe('sig onchain proofs', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
   const rhsUrl = process.env.RHS_URL as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -69,7 +70,7 @@ describe('sig onchain proofs', () => {
 
   beforeEach(async () => {
     const memoryKeyStore = new EncryptedKeyStore<InMemoryPrivateKeyStore>(InMemoryPrivateKeyStore, {
-      password: 'p@ssword1'
+      password: encryptionPassword
     });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();

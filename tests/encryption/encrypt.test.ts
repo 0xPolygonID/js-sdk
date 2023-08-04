@@ -4,9 +4,10 @@ import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 import { InMemoryPrivateKeyStore, LocalStoragePrivateKeyStore } from '../../src/kms';
 
 describe('encrypt tests', () => {
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
   it('encrypt service works', async () => {
     const encryptService = new EncryptionService<string>({
-      password: 'p@ssword1'
+      password: encryptionPassword
     });
     const testSecret = 'private-key-122333441';
     const encryptedSecret = await encryptService.encrypt(testSecret);
@@ -15,7 +16,7 @@ describe('encrypt tests', () => {
     expect(testSecret).to.be.equal(decryptedSecred);
 
     const newEncryptService = new EncryptionService<string>({
-      password: 'p@ssword'
+      password: encryptionPassword
     });
     newEncryptService
       .decrypt(encryptedSecret)
@@ -28,21 +29,21 @@ describe('encrypt tests', () => {
   });
 
   it('encrypt key-store works', async () => {
-      const storegTypes = [InMemoryPrivateKeyStore, LocalStoragePrivateKeyStore];
+    const storegTypes = [InMemoryPrivateKeyStore, LocalStoragePrivateKeyStore];
 
-      const testKeyStore = async (t: any) => {
-         const memoryKeyStore = new EncryptedKeyStore<typeof t>(t, {
-          password: 'p@ssword1'
-        });
+    const testKeyStore = async (t: any) => {
+      const memoryKeyStore = new EncryptedKeyStore<typeof t>(t, {
+        password: encryptionPassword
+      });
 
-        const testSecret = 'private-key-122333441';
-        await memoryKeyStore.importKey({ alias: 'test', key: testSecret });
-        const decryptedSecred = await memoryKeyStore.get({alias: 'test'});
-        expect(testSecret).to.be.equal(decryptedSecred);
-      }
-      
-      for(let i = 0; i < storegTypes.length; i++) {
-        await testKeyStore(storegTypes[i]);
-      }
+      const testSecret = 'private-key-122333441';
+      await memoryKeyStore.importKey({ alias: 'test', key: testSecret });
+      const decryptedSecred = await memoryKeyStore.get({ alias: 'test' });
+      expect(testSecret).to.be.equal(decryptedSecred);
+    };
+
+    for (let i = 0; i < storegTypes.length; i++) {
+      await testKeyStore(storegTypes[i]);
+    }
   });
 });

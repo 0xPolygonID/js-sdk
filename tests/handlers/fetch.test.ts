@@ -46,6 +46,7 @@ describe('fetch', () => {
   let fetchHandler: IFetchHandler;
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
   const agentUrl = 'https://testagent.com/';
 
   const mockedToken = 'jwz token to fetch credential';
@@ -149,7 +150,7 @@ describe('fetch', () => {
 
   beforeEach(async () => {
     const memoryKeyStore = new EncryptedKeyStore<InMemoryPrivateKeyStore>(InMemoryPrivateKeyStore, {
-      password: 'p@ssword1'
+      password: encryptionPassword
     });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();

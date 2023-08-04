@@ -58,4 +58,5 @@ jobs:
           WALLET_KEY: ${{ secrets.WALLET_KEY }}
           RPC_URL: ${{ secrets.RPC_URL }}
           RHS_URL: ${{ secrets.RHS_URL }}
+          ENCRYPTION_PASSWORD: ${{ secrets.ENCRYPTION_PASSWORD }}
         run: npm run test
