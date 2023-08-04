@@ -1,6 +1,9 @@
 import { EncryptOptions, SymmetricKeyAlgorithms } from './encryption-options';
 import { IEncryptionService } from './interfaces/encryption-service';
-import * as crypto from 'crypto';
+import * as nodeCrypto from 'crypto';
+import { getRandomBytes } from '../kms/provider-helpers';
+
+const crypto = typeof window !== 'undefined' ? globalThis.crypto : nodeCrypto;
 /**
  * Encryption Service
  * @public
@@ -29,7 +32,7 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
     const [cryptoKey, salt] = await this.keyFromPassword();
     const data = JSON.stringify(dataObj);
     const dataBuffer = Buffer.from(data, this._stringEncoding);
-    const vector = crypto.getRandomValues(new Uint8Array(16));
+    const vector = getRandomBytes(16);
     const buf = await crypto.subtle.encrypt(
       {
         name: this._algorithm,
@@ -84,8 +87,7 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
    * @returns A randomly generated string.
    */
   private generateSalt(byteCount = 32): string {
-    const view = new Uint8Array(byteCount);
-    crypto.getRandomValues(view);
+    const view = getRandomBytes(byteCount);
     const b64encoded = btoa(String.fromCharCode.apply(null, view as unknown as number[]));
     return b64encoded;
   }

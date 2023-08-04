@@ -34,10 +34,13 @@
         RHSResolver, 
         defaultEthConnectionConfig,
         OnChainResolver,
-        MerkleTreeIndexedDBStorage
+        MerkleTreeIndexedDBStorage,
+        EncryptionService
     } = PolygonIdSdk;
 
     const run = async () => {
+        const encryptionService = new EncryptionService({password:'123'});
+        const encrypted = await encryptionService.encrypt('test-secret');
         const keyStore = new LocalStoragePrivateKeyStore();
         const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, keyStore);
         const kms = new KMS();
@@ -83,7 +86,7 @@
             method: core.DidMethod.Iden3,
             blockchain: core.Blockchain.Polygon,
             networkId: core.NetworkId.Mumbai,
-            seed: seedPhrase,
+            // seed: seedPhrase,
             revocationOpts: {
                 type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
                 id: 'http://rhs.com/node'
