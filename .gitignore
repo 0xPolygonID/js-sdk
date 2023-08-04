@@ -1,7 +1,7 @@
 /node_modules
 coverage
-docs
 dist
+docs
 temp
 .DS_Store
 .idea
