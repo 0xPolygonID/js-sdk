@@ -311,6 +311,7 @@ export class IdentityWallet implements IIdentityWallet {
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
 
     opts.seed = opts.seed ?? getRandomBytes(32);
+
     const keyId = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, opts.seed);
 
     const pubKeyHex = await this._kms.publicKey(keyId);
