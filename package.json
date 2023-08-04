@@ -8,7 +8,11 @@
   "esm:esbuild": "dist/esm_esbuild/index.js",
   "typings": "dist/types/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "src",
+    "tsconfig.json",
+    "config",
+    "scripts"
   ],
   "scripts": {
     "build": "npm run clean && npm run build:esm && npm run build:umd && npm run build:esm:esbuild && npm run build:tsc",
@@ -25,7 +29,8 @@
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"strict\": false}' mocha",
     "lint": "eslint --fix --ext .ts src/** tests/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "deps:check": "madge --circular --extensions ts ./"
+    "deps:check": "madge --circular --extensions ts ./",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
