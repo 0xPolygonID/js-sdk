@@ -6,7 +6,7 @@ import { InMemoryPrivateKeyStore, LocalStoragePrivateKeyStore } from '../../src/
 describe('encrypt tests', () => {
   const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
   it('encrypt service works', async () => {
-    const encryptService = new EncryptionService<string>({
+    const encryptService = new EncryptionService({
       password: encryptionPassword
     });
     const testSecret = 'private-key-122333441';
@@ -15,7 +15,7 @@ describe('encrypt tests', () => {
     const decryptedSecred = await encryptService.decrypt(encryptedSecret);
     expect(testSecret).to.be.equal(decryptedSecred);
 
-    const newEncryptService = new EncryptionService<string>({
+    const newEncryptService = new EncryptionService({
       password: encryptionPassword
     });
     newEncryptService
@@ -32,7 +32,7 @@ describe('encrypt tests', () => {
     const storegTypes = [InMemoryPrivateKeyStore, LocalStoragePrivateKeyStore];
 
     const testKeyStore = async (t: any) => {
-      const memoryKeyStore = new EncryptedKeyStore<typeof t>(t, {
+      const memoryKeyStore = new EncryptedKeyStore(new t(), {
         password: encryptionPassword
       });
 

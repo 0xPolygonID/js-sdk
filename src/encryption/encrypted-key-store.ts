@@ -8,14 +8,12 @@ import { EncryptionService } from './encryption-service';
  * @class EncryptedKeyStore - class
  * @template Type
  */
-export class EncryptedKeyStore<Type extends AbstractPrivateKeyStore>
-  implements AbstractPrivateKeyStore
-{
-  private _keyStore: Type;
-  private _encryptionService: EncryptionService<string>;
-  constructor(keyStoreType: { new (): Type }, options: EncryptOptions) {
-    this._keyStore = new keyStoreType();
-    this._encryptionService = new EncryptionService<string>(options);
+export class EncryptedKeyStore implements AbstractPrivateKeyStore {
+  private _keyStore: AbstractPrivateKeyStore;
+  private _encryptionService: EncryptionService;
+  constructor(keyStore: AbstractPrivateKeyStore, options: EncryptOptions) {
+    this._keyStore = keyStore;
+    this._encryptionService = new EncryptionService(options);
   }
 
   async importKey(args: { alias: string; key: string }): Promise<void> {

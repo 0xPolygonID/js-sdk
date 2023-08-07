@@ -1,9 +1,8 @@
 /** Encryption options */
-export type EncryptOptions = {
+export interface EncryptOptions {
   password: string;
   algorithm?: SymmetricKeyAlgorithms;
-  stringEncoding?: BufferEncoding;
-};
+}
 
 /**
  * Symmetric Key Algorithms

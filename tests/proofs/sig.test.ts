@@ -74,7 +74,7 @@ describe('sig proofs', () => {
     circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, './testdata')
     });
-    const memoryKeyStore = new EncryptedKeyStore<InMemoryPrivateKeyStore>(InMemoryPrivateKeyStore, {
+    const memoryKeyStore = new EncryptedKeyStore(new InMemoryPrivateKeyStore(), {
       password: encryptionPassword
     });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);

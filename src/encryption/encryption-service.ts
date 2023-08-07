@@ -2,6 +2,13 @@ import { EncryptOptions, SymmetricKeyAlgorithms } from './encryption-options';
 import { IEncryptionService } from './interfaces/encryption-service';
 import * as nodeCrypto from 'crypto';
 import { getRandomBytes } from '../kms/provider-helpers';
+import {
+  base64ToBytes,
+  byteDecoder,
+  byteEncoder,
+  bytesToBase64url,
+  encodeBase64url
+} from '../utils';
 
 const crypto = typeof window !== 'undefined' ? globalThis.crypto : nodeCrypto;
 /**
@@ -10,15 +17,13 @@ const crypto = typeof window !== 'undefined' ? globalThis.crypto : nodeCrypto;
  * @class EncryptionService - class
  * @template Type
  */
-export class EncryptionService<Type> implements IEncryptionService<Type> {
+export class EncryptionService implements IEncryptionService {
   private readonly _password: string;
   private readonly _algorithm: string;
-  private readonly _stringEncoding: BufferEncoding;
 
   constructor(opts: EncryptOptions) {
     this._password = opts.password;
     this._algorithm = opts.algorithm ?? SymmetricKeyAlgorithms.AESGCM;
-    this._stringEncoding = opts.stringEncoding ?? 'utf-8';
   }
 
   /**
@@ -28,10 +33,10 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
    * @param dataObj - The data to encrypt.
    * @returns The encrypted vault.
    */
-  public async encrypt(dataObj: Type): Promise<string> {
+  public async encrypt<Type>(dataObj: Type): Promise<string> {
     const [cryptoKey, salt] = await this.keyFromPassword();
     const data = JSON.stringify(dataObj);
-    const dataBuffer = Buffer.from(data, this._stringEncoding);
+    const dataBuffer = byteEncoder.encode(data);
     const vector = getRandomBytes(16);
     const buf = await crypto.subtle.encrypt(
       {
@@ -42,8 +47,8 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
       dataBuffer
     );
     const buffer = new Uint8Array(buf);
-    const vectorStr = Buffer.from(vector).toString('base64');
-    const vaultStr = Buffer.from(buffer).toString('base64');
+    const vectorStr = bytesToBase64url(vector);
+    const vaultStr = bytesToBase64url(buffer);
     return JSON.stringify({
       data: vaultStr,
       iv: vectorStr,
@@ -58,12 +63,12 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
    * @param text - The cypher text to decrypt.
    * @returns The decrypted data.
    */
-  async decrypt(text: string): Promise<Type> {
+  async decrypt<Type>(text: string): Promise<Type> {
     const payload = JSON.parse(text);
     const { salt } = payload;
     const [cryptoKey] = await this.keyFromPassword(salt);
-    const encryptedData = Buffer.from(payload.data, 'base64');
-    const vector = Buffer.from(payload.iv, 'base64');
+    const encryptedData = base64ToBytes(payload.data);
+    const vector = base64ToBytes(payload.iv);
     let decryptedObj;
     try {
       const result = await crypto.subtle.decrypt(
@@ -72,7 +77,7 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
         encryptedData
       );
       const decryptedData = new Uint8Array(result);
-      const decryptedStr = Buffer.from(decryptedData).toString(this._stringEncoding);
+      const decryptedStr = byteDecoder.decode(decryptedData);
       decryptedObj = JSON.parse(decryptedStr);
     } catch (e) {
       throw new Error('Incorrect password');
@@ -88,7 +93,9 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
    */
   private generateSalt(byteCount = 32): string {
     const view = getRandomBytes(byteCount);
-    const b64encoded = btoa(String.fromCharCode.apply(null, view as unknown as number[]));
+    const b64encoded = encodeBase64url(
+      String.fromCharCode.apply(null, view as unknown as number[])
+    );
     return b64encoded;
   }
 
@@ -103,8 +110,8 @@ export class EncryptionService<Type> implements IEncryptionService<Type> {
     salt: string = this.generateSalt(),
     exportable = false
   ): Promise<[CryptoKey, string]> {
-    const passBuffer = Buffer.from(this._password, this._stringEncoding);
-    const saltBuffer = Buffer.from(salt, 'base64');
+    const passBuffer = byteEncoder.encode(this._password);
+    const saltBuffer = base64ToBytes(salt);
     const key = await crypto.subtle.importKey('raw', passBuffer, { name: 'PBKDF2' }, false, [
       'deriveBits',
       'deriveKey'
