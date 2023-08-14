@@ -916,7 +916,7 @@ export class ProofService implements IProofService {
     const credentials = await this._identityWallet.findOwnedCredentialsByDID(did, query);
 
     if (!credentials.length) {
-      throw new Error(`no credentials belong to did ot its profiles`);
+      throw new Error(`no credentials belong to did or its profiles`);
     }
 
     //  For EQ / IN / NIN / LT / GT operations selective if credential satisfies query - we can get any.
