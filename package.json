@@ -69,7 +69,7 @@
   },
   "dependencies": {
     "@iden3/js-crypto": "1.0.0",
-    "@iden3/js-iden3-core": "1.0.0",
+    "@iden3/js-iden3-core": "1.0.1",
     "@iden3/js-jsonld-merklization": "1.0.1",
     "@iden3/js-jwz": "1.0.0",
     "@iden3/js-merkletree": "1.0.0",
