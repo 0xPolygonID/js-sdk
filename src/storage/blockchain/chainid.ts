@@ -6,9 +6,13 @@ export const CHAIN_IDS: { [key: string]: number } = {
   eth: 1,
   'eth:main': 1,
   'eth:goerli': 5,
+  'eth:sepolia': 11155111,
   polygon: 137,
   'polygon:main': 137,
-  'polygon:mumbai': 80001
+  'polygon:mumbai': 80001,
+  zkevm: 1101,
+  'zkevm:main': 1101,
+  'zkevm:test': 1442
 };
 
 /**
