@@ -6,34 +6,34 @@ import {
   getChainIdByDIDsParts
 } from '../../src';
 
-describe('try to get already registred', () => {
-  it('get by blokchain', async () => {
-    registerDefaultNetworkForMethodId('eth', 1);
+describe('try to get already registered', () => {
+  it('get by blockchain', async () => {
+    expect(getChainId('eth')).to.be.equal(1);
   });
-  it('get by blokchain and network', async () => {
-    registerDefaultNetworkForMethodId('polygon:mumbai', 80001);
+  it('get by blockchain and network', async () => {
+    expect(getChainId('polygon','mumbai')).to.be.equal(80001);
   });
 });
 
 describe('get chainId by did parts', () => {
   it('register default chaiId', async () => {
-    registerDefaultNetworkForMethodId('dima', 12);
+    registerDefaultNetworkForMethodId('testMethodId', 12);
   });
   it('register blockchain', async () => {
-    registerChainId('kolez', 13, 'zagreb');
+    registerChainId('testChain', 13, 'testNetwork');
   });
   it('get default chainId by method did', () => {
-    expect(getChainIdByDIDsParts('dima')).to.be.equal(12);
+    expect(getChainIdByDIDsParts('testMethodId')).to.be.equal(12);
   });
   it('get chaiId by chainId and network', () => {
-    expect(getChainIdByDIDsParts('dima', 'kolez', 'zagreb')).to.be.equal(13);
+    expect(getChainIdByDIDsParts('testMethodIds', 'testChain', 'testNetwork')).to.be.equal(13);
   });
 });
 
-describe('try to get non registred chain id', () => {
-  it('try to get non registred by methodId', async () => {
+describe('try to get non registered chain id', () => {
+  it('try to get non registered by blockchain', async () => {
     expect(() => {
-      getChainId('ukr');
-    }).to.be.throw('chainId not found for ukr');
+      getChainId('testChain2');
+    }).to.be.throw('chainId not found for testChain2');
   });
 });
