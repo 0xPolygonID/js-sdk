@@ -228,3 +228,21 @@ export function getProperties(obj: object): object {
   }
   return result;
 }
+
+/**
+ *
+ * Returns the full siblings compatible with circom
+ * @export
+ * @param {Proof} proof
+ * @param {number} levels
+ * @returns {Hash[]}
+ */
+export function circomSiblings(proof: Proof, levels: number): Hash[] {
+  const siblings = proof?.allSiblings() || proof.siblings;
+
+  // Add the rest of empty levels to the siblings
+  for (let i = siblings.length; i < levels; i++) {
+    siblings.push(ZERO_HASH);
+  }
+  return siblings;
+}
