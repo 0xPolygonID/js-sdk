@@ -656,13 +656,9 @@ export class IdentityWallet implements IIdentityWallet {
       req.type,
       opts
     );
+    console.log('credentialType', credentialType);
 
-    const coreClaim = await new Parser().parseClaim(
-      credential,
-      credentialType,
-      schemaBytes,
-      coreClaimOpts
-    );
+    const coreClaim = await Parser.parseClaim(credential, coreClaimOpts);
 
     const { hi, hv } = coreClaim.hiHv();
 
@@ -732,7 +728,7 @@ export class IdentityWallet implements IIdentityWallet {
       const credential = credentials[index];
 
       // credential must have a bjj signature proof
-      const coreClaim = await credential.getCoreClaimFromProof(ProofType.BJJSignature);
+      const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
 
       if (!coreClaim) {
         throw new Error('credential must have coreClaim representation in the signature proof');

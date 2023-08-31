@@ -1,0 +1,20 @@
+{
+  "id": "http://example.edu/credentials/3732",
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://example.com/schema-delivery-address.json-ld"
+  ],
+  "type": [
+    "VerifiableCredential",
+    "DeliverAddressMultiTestForked"
+  ],
+  "credentialSubject": {
+    "type": "DeliverAddressMultiTestForked",
+    "price": "123.52",
+    "isPostalProvider": false,
+    "postalProviderInformation": {
+      "insured": true,
+      "weight": "1.3"
+    }
+  }
+}

@@ -5,8 +5,7 @@ import listOfLDContexts from './data/list-of-ld-contexts.json';
 import listWithSingleLDContext from './data/list-with-single-ld-context.json';
 import singleLDContextV2 from './data/single-ld-context-2.json';
 import singleLDContext from './data/single-ld-context.json';
-import kyc from './data/kyc.json';
-import { LDParser, Parser } from '../../src';
+import { LDParser } from '../../src';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 describe('get types from jsonld schema', () => {
@@ -68,21 +67,6 @@ describe('get types from jsonld schema', () => {
       [
         'KYCAgeCredential',
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCAgeCredential'
-      ]
-    ]);
-
-    expect(prefixes).deep.eq(e);
-  });
-});
-
-describe('extract jsonld types by json schema', () => {
-  it('with list of ld contexts', async () => {
-    const data: string = JSON.stringify(kyc);
-    const prefixes = await Parser.getLdPrefixesByJSONSchema(data);
-    const e: Map<string, string> = new Map([
-      [
-        'KYCEmployee',
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld#KYCEmployee'
       ]
     ]);
 

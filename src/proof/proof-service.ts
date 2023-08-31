@@ -760,8 +760,14 @@ export class ProofService implements IProofService {
     }
 
     const parsedQuery = await this.parseRequest(query.credentialSubject);
-    parsedQuery.query.slotIndex = new Parser().getFieldSlotIndex(
+
+    if (!query.type) {
+      throw new Error('query type is not defined');
+    }
+
+    parsedQuery.query.slotIndex = await Parser.getFieldSlotIndex(
       parsedQuery.fieldName,
+      query.type,
       byteEncoder.encode(JSON.stringify(schema))
     );
     const { vp, mzValue, dataType } = await verifiablePresentationFromCred(

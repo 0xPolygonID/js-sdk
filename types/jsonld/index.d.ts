@@ -3,9 +3,9 @@ declare module 'jsonld/lib' {
     activeCtx: unknown,
     localCtx: unknown,
     opts: unknown
-  ): Promise<{ mappings: Map<string, unknown> }>;
+  ): Promise<{ mappings: Map<string, Record<string, unknown>> }>;
 }
 
 declare module 'jsonld/lib/context' {
-  function getInitialContext(opts: unknown): Map<string, unknown>;
+  function getInitialContext(opts: unknown): Map<string, object>;
 }
