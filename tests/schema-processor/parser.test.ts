@@ -14,7 +14,7 @@ import { DocumentLoader, Path, getDocumentLoader } from '@iden3/js-jsonld-merkli
 import { RemoteDocument, Url } from 'jsonld/jsonld-spec';
 import { DID } from '@iden3/js-iden3-core';
 
-describe.only('schema-processor/parser', () => {
+describe('schema-processor/parser', () => {
   const documentLoader: DocumentLoader = async (url: Url) => {
     if (url === 'https://www.w3.org/2018/credentials/v1') {
       return { document: credentialsV1 } as unknown as RemoteDocument;
