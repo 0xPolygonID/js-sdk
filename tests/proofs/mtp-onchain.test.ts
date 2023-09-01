@@ -37,13 +37,14 @@ describe('mtp onchain proofs', () => {
   let proofService: ProofService;
 
   const rhsUrl = process.env.RHS_URL as string;
+
   const walletKey = process.env.WALLET_KEY as string;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
       return {
         id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
-        state: 15316103435703269893947162180693935798669021972402205481551466808302934202991n,
+        state: 5224437024673068498206105743424598123651101873588696368477339341771571761791n,
         replacedByState: 0n,
         createdAtTimestamp: 1672245326n,
         replacedAtTimestamp: 0n,
@@ -97,16 +98,11 @@ describe('mtp onchain proofs', () => {
       dirname: path.join(__dirname, './testdata')
     });
 
-    /*
-      To use ethereum storage 
-  
-      const conf = defaultEthConnectionConfig;
-      conf.url = infuraUrl; 
-      conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
-      ethStorage = new EthStateStorage(conf);
-      dataStorage.states = ethStorage;
-  
-      */
+    // const conf =defaultEthConnectionConfig ;
+    // conf.url = rpcUrl ;
+    // conf.contractAddress = '0x134B1BE34911E39A8397ec6289782989729807a4';
+    // const ethStorage = new EthStateStorage(conf);
+    // dataStorage.states = ethStorage;
 
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
@@ -155,7 +151,7 @@ describe('mtp onchain proofs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         nonce: 1000,
@@ -213,11 +209,16 @@ describe('mtp onchain proofs', () => {
       }
     };
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+    const { proof, pub_signals, vp } = await proofService.generateProof(proofReq, userDID, {
       challenge: BigInt(2),
       skipRevocation: false
     });
-    console.log(proof);
     expect(vp).to.be.undefined;
+
+    const isValid = await proofService.verifyProof(
+      { proof, pub_signals },
+      CircuitId.AtomicQueryMTPV2OnChain
+    );
+    expect(isValid).to.be.true;
   });
 });

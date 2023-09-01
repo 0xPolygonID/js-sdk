@@ -128,7 +128,7 @@ describe('sig proofs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -177,7 +177,7 @@ describe('sig proofs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -229,7 +229,7 @@ describe('sig proofs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -306,7 +306,7 @@ describe('sig proofs', () => {
         id: userDID.string(),
         stringTest: 'test'
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -380,7 +380,7 @@ describe('sig proofs', () => {
         },
         isPostalProvider: true
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -418,7 +418,7 @@ describe('sig proofs', () => {
         price: 15.2,
         type: 'DeliverAddressMultiTest'
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
