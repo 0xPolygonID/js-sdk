@@ -11,7 +11,7 @@ describe('try to get already registered', () => {
     expect(getChainId('eth')).to.be.equal(1);
   });
   it('get by blockchain and network', async () => {
-    expect(getChainId('polygon','mumbai')).to.be.equal(80001);
+    expect(getChainId('polygon', 'mumbai')).to.be.equal(80001);
   });
 });
 
