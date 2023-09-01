@@ -175,5 +175,11 @@ describe('sig onchain proofs', () => {
     expect(pub_signals[2]).to.be.equal(
       '15045271939084694661437431358729281571840804299863053791890179002991342242959'
     );
+
+    const isValid = await proofService.verifyProof(
+      { proof, pub_signals },
+      CircuitId.AtomicQuerySigV2OnChain
+    );
+    expect(isValid).to.be.true;
   });
 });

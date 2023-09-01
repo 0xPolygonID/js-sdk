@@ -211,8 +211,14 @@ describe('mtp proofs', () => {
     const creds = await credWallet.findByQuery(proofReq.query);
     expect(creds.length).to.not.equal(0);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID);
+    const { proof, pub_signals, vp } = await proofService.generateProof(proofReq, userDID);
     expect(vp).to.be.undefined;
+
+    const isValid = await proofService.verifyProof(
+      { proof, pub_signals },
+      CircuitId.AtomicQueryMTPV2
+    );
+    expect(isValid).to.be.true;
   });
 
   it('mtpv2-merklized', async () => {
@@ -265,7 +271,6 @@ describe('mtp proofs', () => {
 
     const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
 
-
     await idWallet.publishStateToRHS(issuerDID, rhsUrl);
 
     // you must store stat info (e.g. state and it's roots)
@@ -314,10 +319,16 @@ describe('mtp proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(creds.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+    const { proof, pub_signals, vp } = await proofService.generateProof(proofReq, userDID, {
       credential: credsForMyUserDID[0],
       skipRevocation: false
     });
     expect(vp).to.be.undefined;
+
+    const isValid = await proofService.verifyProof(
+      { proof, pub_signals },
+      CircuitId.AtomicQueryMTPV2
+    );
+    expect(isValid).to.be.true;
   });
 });

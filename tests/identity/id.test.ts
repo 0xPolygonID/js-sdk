@@ -129,9 +129,11 @@ describe('identity', () => {
 
     const dbProfile = await dataStorage.identity.getProfileByVerifier('http://polygonissuer.com/');
     expect(dbProfile).not.to.be.undefined;
-    expect(dbProfile!.id).to.equal(profileDID.string());
-    expect(dbProfile!.genesisIdentifier).to.equal(did.string());
-    expect(dbProfile!.nonce).to.equal(10);
+    if (dbProfile) {
+      expect(dbProfile.id).to.equal(profileDID.string());
+      expect(dbProfile.genesisIdentifier).to.equal(did.string());
+      expect(dbProfile.nonce).to.equal(10);
+    }
   });
   it('sign', async () => {
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');

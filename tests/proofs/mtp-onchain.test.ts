@@ -21,7 +21,7 @@ import {
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { ethers } from 'ethers';
-import { EthStateStorage, defaultEthConnectionConfig } from '../../src/storage/blockchain/state';
+import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, W3CCredential } from '../../src/verifiable';
@@ -37,7 +37,6 @@ describe('mtp onchain proofs', () => {
   let proofService: ProofService;
 
   const rhsUrl = process.env.RHS_URL as string;
-  const rpcUrl = process.env.RPC_URL as string;
 
   const walletKey = process.env.WALLET_KEY as string;
 
@@ -99,13 +98,11 @@ describe('mtp onchain proofs', () => {
       dirname: path.join(__dirname, './testdata')
     });
 
-  
-      // const conf =defaultEthConnectionConfig ;
-      // conf.url = rpcUrl ; 
-      // conf.contractAddress = '0x134B1BE34911E39A8397ec6289782989729807a4';
-      // const ethStorage = new EthStateStorage(conf);
-      // dataStorage.states = ethStorage;
-  
+    // const conf =defaultEthConnectionConfig ;
+    // conf.url = rpcUrl ;
+    // conf.contractAddress = '0x134B1BE34911E39A8397ec6289782989729807a4';
+    // const ethStorage = new EthStateStorage(conf);
+    // dataStorage.states = ethStorage;
 
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
@@ -212,10 +209,16 @@ describe('mtp onchain proofs', () => {
       }
     };
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+    const { proof, pub_signals, vp } = await proofService.generateProof(proofReq, userDID, {
       challenge: BigInt(2),
       skipRevocation: false
     });
     expect(vp).to.be.undefined;
+
+    const isValid = await proofService.verifyProof(
+      { proof, pub_signals },
+      CircuitId.AtomicQueryMTPV2OnChain
+    );
+    expect(isValid).to.be.true;
   });
 });

@@ -354,6 +354,6 @@ describe('auth', () => {
       : await idWallet.createProfile(userDID, 100, authR.from);
 
     const resp = await authHandler.handleAuthorizationRequest(authProfileDID, msgBytes);
-
+    expect(resp).not.to.be.undefined;
   });
 });
