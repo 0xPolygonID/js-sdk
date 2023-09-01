@@ -40,7 +40,7 @@ describe('mtp proofs', () => {
     getLatestStateById: async () => {
       return {
         id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
-        state: 15316103435703269893947162180693935798669021972402205481551466808302934202991n,
+        state: 5224437024673068498206105743424598123651101873588696368477339341771571761791n,
         replacedByState: 0n,
         createdAtTimestamp: 1672245326n,
         replacedAtTimestamp: 0n,
@@ -151,7 +151,7 @@ describe('mtp proofs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         nonce: 1000,
@@ -212,7 +212,6 @@ describe('mtp proofs', () => {
     expect(creds.length).to.not.equal(0);
 
     const { proof, vp } = await proofService.generateProof(proofReq, userDID);
-    console.log(proof);
     expect(vp).to.be.undefined;
   });
 
@@ -252,7 +251,7 @@ describe('mtp proofs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         nonce: 1000,
@@ -266,7 +265,6 @@ describe('mtp proofs', () => {
 
     const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
 
-    // publish to rhs
 
     await idWallet.publishStateToRHS(issuerDID, rhsUrl);
 
@@ -320,7 +318,6 @@ describe('mtp proofs', () => {
       credential: credsForMyUserDID[0],
       skipRevocation: false
     });
-    console.log(proof);
     expect(vp).to.be.undefined;
   });
 });

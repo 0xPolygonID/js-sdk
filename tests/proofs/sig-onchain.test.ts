@@ -131,7 +131,7 @@ describe('sig onchain proofs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -168,7 +168,6 @@ describe('sig onchain proofs', () => {
       challenge: BigInt(2),
       skipRevocation: false
     });
-    console.log(proof);
 
     expect(vp).to.be.undefined;
 
