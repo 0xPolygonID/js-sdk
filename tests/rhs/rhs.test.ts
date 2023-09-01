@@ -63,7 +63,45 @@ describe('rhs', () => {
     getLatestStateById: async () => {
       return {
         id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
-        state: 15316103435703269893947162180693935798669021972402205481551466808302934202991n,
+        state: 9237508920537027525017236505396978200808288762330464571183908763595717964946n,
+        replacedByState: 0n,
+        createdAtTimestamp: 1672245326n,
+        replacedAtTimestamp: 0n,
+        createdAtBlock: 30258020n,
+        replacedAtBlock: 0n
+      };
+    },
+    publishState: async () => {
+      return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+    },
+    getGISTProof: (): Promise<StateProof> => {
+      return Promise.resolve({
+        root: 0n,
+        existence: false,
+        siblings: [],
+        index: 0n,
+        value: 0n,
+        auxExistence: false,
+        auxIndex: 0n,
+        auxValue: 0n
+      });
+    },
+    getGISTRootInfo: (): Promise<RootInfo> => {
+      return Promise.resolve({
+        root: 0n,
+        replacedByRoot: 0n,
+        createdAtTimestamp: 0n,
+        replacedAtTimestamp: 0n,
+        createdAtBlock: 0n,
+        replacedAtBlock: 0n
+      });
+    }
+  };
+  const mockStateStorageForSecondState: IStateStorage = {
+    getLatestStateById: async () => {
+      return {
+        id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
+        state: 6331804583810507588859496367559464513815759967776810588505869388511678144501n,
         replacedByState: 0n,
         createdAtTimestamp: 1672245326n,
         replacedAtTimestamp: 0n,
@@ -232,7 +270,7 @@ describe('rhs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         nonce: 1000,
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -308,7 +346,7 @@ describe('rhs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         nonce: 1000,
@@ -322,8 +360,6 @@ describe('rhs', () => {
 
     await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
 
-    // this state is published
-
     // let's add  one more credential
 
     const claimReq2: CredentialRequest = {
@@ -335,7 +371,7 @@ describe('rhs', () => {
         birthday: 19960523,
         documentType: 1
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl,
@@ -356,6 +392,7 @@ describe('rhs', () => {
     await idWallet.publishStateToRHS(issuerDID, rhsUrl, [nonce]);
 
     // state is published to blockchain (2)
+    dataStorage.states = mockStateStorageForSecondState;
 
     const rhsResolver = new RHSResolver(dataStorage.states);
     const rhsStatus = await rhsResolver.resolve(credRHSStatus, { issuerDID });
