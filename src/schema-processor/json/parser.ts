@@ -257,20 +257,6 @@ export class Parser {
 
     const serStr = (termCtx as Record<string, string>)[serializationFullKey] ?? '';
     return serStr;
-
-    // for (const [typeName, typeDef] of termDef.entries()) {
-    //   const typeCtx = typeDef[contextFullKey];
-    //   if (!typeCtx) {
-    //     throw new Error('type @context is not of correct type');
-    //   }
-    //   const typeID = typeCtx['@id'] as string;
-    //   if (typeName !== tp && typeID !== tp) {
-    //     continue;
-    //   }
-
-    // }
-
-    // return '';
   }
 
   static parseSerializationAttr(serAttr: string): SlotsPaths {
@@ -351,7 +337,6 @@ export class Parser {
 
     await fillSlot(slots.valueB, mz, sPaths.valueBPath);
 
-    console.log('slots', slots);
     return { slots, nonMerklized: true };
   }
 

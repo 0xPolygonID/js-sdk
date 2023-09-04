@@ -198,7 +198,7 @@ describe('auth', () => {
 
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: userDID.string(),
@@ -223,7 +223,7 @@ describe('auth', () => {
         allowedIssuers: ['*'],
         type: claimReq.type,
         context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
         credentialSubject: {
           documentType: {
             $eq: 99
@@ -288,7 +288,7 @@ describe('auth', () => {
 
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: profileDID.string(),
@@ -313,7 +313,7 @@ describe('auth', () => {
         allowedIssuers: ['*'],
         type: claimReq.type,
         context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
         credentialSubject: {
           documentType: {
             $eq: 99

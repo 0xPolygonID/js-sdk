@@ -63,7 +63,7 @@ describe('rhs', () => {
     getLatestStateById: async () => {
       return {
         id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
-        state: 9237508920537027525017236505396978200808288762330464571183908763595717964946n,
+        state: 16074735548090432706010308621156024769148807454202029933745588915345672503542n,
         replacedByState: 0n,
         createdAtTimestamp: 1672245326n,
         replacedAtTimestamp: 0n,
@@ -101,7 +101,7 @@ describe('rhs', () => {
     getLatestStateById: async () => {
       return {
         id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
-        state: 6331804583810507588859496367559464513815759967776810588505869388511678144501n,
+        state: 6579597760262775007137624273344484963760596803465690980061360458400178710641n,
         replacedByState: 0n,
         createdAtTimestamp: 1672245326n,
         replacedAtTimestamp: 0n,
@@ -263,7 +263,7 @@ describe('rhs', () => {
 
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: userDID.string(),
@@ -339,7 +339,7 @@ describe('rhs', () => {
 
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: userDID.string(),
@@ -364,7 +364,7 @@ describe('rhs', () => {
 
     const claimReq2: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: userDID.string(),

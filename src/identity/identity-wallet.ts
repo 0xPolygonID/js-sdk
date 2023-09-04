@@ -17,7 +17,7 @@ import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
-import { JSONSchema, Parser, CoreClaimOptions } from '../schema-processor';
+import { JSONSchema, Parser, CoreClaimOptions, JsonSchemaValidator } from '../schema-processor';
 import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
 import { getRandomBytes, keyPath } from '../kms/provider-helpers';
@@ -38,7 +38,7 @@ import { CredentialRequest, ICredentialWallet } from '../credentials';
 import { pushHashesToRHS, TreesModel } from '../credentials/rhs';
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
-import { Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
+import { Options, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 import { sha256js } from 'cross-sha256';
 import { Profile } from '../storage';
 
@@ -627,8 +627,13 @@ export class IdentityWallet implements IIdentityWallet {
 
     try {
       credential = this._credentialWallet.createCredential(issuerDID, req, jsonSchema);
+
+      const encodedCred = byteEncoder.encode(JSON.stringify(credential));
+      const encodedSchema = byteEncoder.encode(JSON.stringify(schema));
+
+      await new JsonSchemaValidator().validate(encodedCred, encodedSchema);
     } catch (e) {
-      throw new Error('Error create Iden3Credential');
+      throw new Error(`Error create Iden3Credential ${(e as Error).message}`);
     }
 
     const issuerAuthBJJCredential = await this._credentialWallet.getAuthBJJCredential(issuerDID);
@@ -636,27 +641,11 @@ export class IdentityWallet implements IIdentityWallet {
     const coreClaimOpts: CoreClaimOptions = {
       revNonce: req.revocationOpts.nonce,
       subjectPosition: req.subjectPosition,
-      merklizedRootPosition: this.defineMTRootPosition(jsonSchema, req.merklizedRootPosition),
+      merklizedRootPosition: req.merklizedRootPosition ?? MerklizedRootPosition.None,
       updatable: false,
       version: 0,
       merklizeOpts: opts
     };
-
-    let jsonLDCtx: object;
-    try {
-      jsonLDCtx = (await loader(jsonSchema.$metadata.uris.jsonLdContext)).document;
-    } catch (e) {
-      throw new Error(`can't load json-ld schema ${jsonSchema.$metadata.uris.jsonLdContext}`);
-    }
-
-    const schemaBytes = byteEncoder.encode(JSON.stringify(jsonSchema));
-
-    const credentialType = await Path.getTypeIDFromContext(
-      JSON.stringify(jsonLDCtx),
-      req.type,
-      opts
-    );
-    console.log('credentialType', credentialType);
 
     const coreClaim = await Parser.parseClaim(credential, coreClaimOpts);
 
@@ -841,16 +830,6 @@ export class IdentityWallet implements IIdentityWallet {
     const pb: PublicKey = new PublicKey([BigInt(x), BigInt(y)]);
     const kp = keyPath(KmsKeyType.BabyJubJub, pb.hex());
     return { type: KmsKeyType.BabyJubJub, id: kp };
-  }
-
-  private defineMTRootPosition(schema: JSONSchema, position?: string): string {
-    if (schema.$metadata?.serialization) {
-      return '';
-    }
-    if (position) {
-      return position;
-    }
-    return MerklizedRootPosition.Index;
   }
 
   public async getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim> {
