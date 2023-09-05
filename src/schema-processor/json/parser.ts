@@ -120,14 +120,11 @@ export class Parser {
 
     // if schema is for non merklized credential, root position must be set to none ('')
     // otherwise default position for merklized position is index.
-    if (!nonMerklized) {
-      if (opts?.merklizedRootPosition === MerklizedRootPosition.None) {
-        opts.merklizedRootPosition = MerklizedRootPosition.Index;
-      }
-    } else {
-      if (opts?.merklizedRootPosition !== MerklizedRootPosition.None) {
-        throw new Error('merklized root position is not supported for non-merklized claims');
-      }
+    if (nonMerklized && opts.merklizedRootPosition !== MerklizedRootPosition.None) {
+      throw new Error('merklized root position is not supported for non-merklized claims');
+    }
+    if (!nonMerklized && opts.merklizedRootPosition === MerklizedRootPosition.None) {
+      opts.merklizedRootPosition = MerklizedRootPosition.Index;
     }
 
     const schemaHash = createSchemaHash(byteEncoder.encode(credentialType));
