@@ -3,6 +3,7 @@ import Ajv from 'ajv';
 import { byteDecoder } from '../../utils';
 import Ajv2020 from 'ajv/dist/2020';
 import Ajv2019 from 'ajv/dist/2019';
+import addFormats from 'ajv-formats';
 
 const defaultOpts = { verbose: true, strict: false };
 const defaultJSONSchemaValidator = new Ajv(defaultOpts);
@@ -39,6 +40,9 @@ export class JsonSchemaValidator {
     const ajv =
       JSON_SCHEMA_VALIDATORS_REGISTRY[draft as keyof typeof JSON_SCHEMA_VALIDATORS_REGISTRY];
     validator = ajv ?? defaultJSONSchemaValidator;
+    if (validator.formats && !Object.keys(validator.formats).length) {
+      addFormats(validator);
+    }
     const validate = validator.compile(schema);
     const valid = validate(data);
     if (!valid) {

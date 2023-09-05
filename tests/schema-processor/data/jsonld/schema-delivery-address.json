@@ -1,0 +1,86 @@
+{
+    "@context": [
+        {
+            "@protected": true,
+            "@version": 1.1,
+            "id": "@id",
+            "type": "@type",
+            "DeliverAddressMultiTestForked": {
+                "@context": {
+                    "@propagate": true,
+                    "@protected": true,
+                    "iden3_serialization": "iden3:v1:slotIndexA=price&slotValueB=postalProviderInformation.insured",
+                    "polygon-vocab": "urn:uuid:77157331-176d-4b84-814b-98ac52a1b870#",
+                    "xsd": "http://www.w3.org/2001/XMLSchema#",
+                    "operatorId": {
+                        "@id": "polygon-vocab:operatorId",
+                        "@type": "xsd:integer"
+                    },
+                    "country": {
+                        "@id": "polygon-vocab:country",
+                        "@type": "xsd:string"
+                    },
+                    "price": {
+                        "@id": "polygon-vocab:price",
+                        "@type": "xsd:double"
+                    },
+                    "deliveryTime": {
+                        "@id": "polygon-vocab:deliveryTime",
+                        "@type": "xsd:dateTime"
+                    },
+                    "isPostalProvider": {
+                        "@id": "polygon-vocab:isPostalProvider",
+                        "@type": "xsd:boolean"
+                    },
+                    "postalProviderInformation": {
+                        "@context": {
+                            "insured": {
+                                "@id": "polygon-vocab:insured",
+                                "@type": "xsd:boolean"
+                            },
+                            "weight": {
+                                "@id": "polygon-vocab:weight",
+                                "@type": "xsd:double"
+                            },
+                            "name": {
+                                "@id": "polygon-vocab:name",
+                                "@type": "xsd:string"
+                            },
+                            "officeNo": {
+                                "@id": "polygon-vocab:officeNo",
+                                "@type": "xsd:integer"
+                            },
+                            "expectedExpirationDate": {
+                                "@id": "polygon-vocab:expectedExpirationDate",
+                                "@type": "xsd:dateTime"
+                            },
+                            "isPerishable": {
+                                "@id": "polygon-vocab:isPerishable",
+                                "@type": "xsd:boolean"
+                            }
+                        },
+                        "@id": "polygon-vocab:postalProviderInformation"
+                    },
+                    "homeAddress": {
+                        "@context": {
+                            "expectedFrom": {
+                                "@id": "polygon-vocab:expectedFrom",
+                                "@type": "xsd:dateTime"
+                            },
+                            "line2": {
+                                "@id": "polygon-vocab:line2",
+                                "@type": "xsd:string"
+                            },
+                            "line1": {
+                                "@id": "polygon-vocab:line1",
+                                "@type": "xsd:string"
+                            }
+                        },
+                        "@id": "polygon-vocab:homeAddress"
+                    }
+                },
+                "@id": "urn:uuid:ac2ede19-b3b9-454d-b1a9-a7b3d5763100"
+            }
+        }
+    ]
+}

@@ -1,8 +1,7 @@
 import { Hex } from '@iden3/js-crypto';
 import { BytesHelper, checkBigIntInField, SchemaHash } from '@iden3/js-iden3-core';
+import { Merklizer } from '@iden3/js-jsonld-merklization';
 import { keccak256 } from '@lumeweb/js-sha3-browser';
-
-const errSlotsOverflowMsg = 'slots overflow';
 
 /**
  * SwapEndianness swaps the endianness of the value encoded in buf. If buf is
@@ -65,6 +64,8 @@ export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
   return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
 };
 
+export const credentialSubjectKey = 'credentialSubject';
+
 /**
  * checks if data can fill the slot
  *
@@ -72,21 +73,29 @@ export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
  * @param {string} fieldName - field name
  * @returns Uint8Array - filled slot
  */
-export const fillSlot = (data: { [key: string]: unknown }, fieldName: string): Uint8Array => {
-  let slot = Uint8Array.from([]);
+export const fillSlot = async (
+  slotData: Uint8Array,
+  mz: Merklizer,
+  path: string
+): Promise<void> => {
+  if (!path) {
+    return;
+  }
 
-  if (!fieldName) {
-    return new Uint8Array(32);
+  path = credentialSubjectKey + '.' + path;
+
+  try {
+    const p = await mz.resolveDocPath(path, mz.options);
+    const entry = await mz.entry(p);
+    const intVal = await entry.getValueMtEntry();
+
+    const bytesVal = BytesHelper.intToBytes(intVal);
+    slotData.set(bytesVal, 0);
+  } catch (err: unknown) {
+    if ((err as Error).toString().includes('entry not found')) {
+      throw new Error(`field not found in credential ${path}`);
+    }
+
+    throw err;
   }
-  const field = data[fieldName];
-  if (!field) {
-    throw new Error(`${fieldName} field is not in data`);
-  }
-  const byteValue = fieldToByteArray(field);
-  if (dataFillsSlot(slot, byteValue)) {
-    slot = Uint8Array.from([...slot, ...byteValue]);
-  } else {
-    throw new Error(errSlotsOverflowMsg);
-  }
-  return slot;
 };

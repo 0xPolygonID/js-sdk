@@ -48,9 +48,9 @@ import {
 import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
-import { Parser } from '../schema-processor';
+import { JSONSchema, Parser } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
-import { byteEncoder } from '../utils/encoding';
+import { byteDecoder, byteEncoder } from '../utils/encoding';
 
 interface PreparedAuthBJJCredential {
   authCredential: W3CCredential;
@@ -660,29 +660,22 @@ export class ProofService implements IProofService {
 
     return mtPosition === MerklizedRootPosition.None
       ? this.prepareNonMerklizedQuery(query, credential, opts)
-      : this.prepareMerklizedQuery(query, credential, mtPosition, opts);
+      : this.prepareMerklizedQuery(query, credential, opts);
   }
 
   private async prepareMerklizedQuery(
     query: ProofQuery,
     credential: W3CCredential,
-    merklizedPosition: MerklizedRootPosition,
     opts?: Options
   ): Promise<{ query: Query; vp?: object }> {
     const parsedQuery = await this.parseRequest(query.credentialSubject);
 
-    const loader = getDocumentLoader(opts);
-    let schema: object;
-    try {
-      schema = (await loader(credential['@context'][2])).document;
-    } catch (e) {
-      throw new Error(`can't load credential schema ${credential['@context'][2]}`);
-    }
+    const ldContext = await this.loadLdContextFromJSONSchema(credential.credentialSchema.id, opts);
 
     let path: Path = new Path();
     if (parsedQuery.fieldName) {
       path = await Path.getContextPathKey(
-        JSON.stringify(schema),
+        byteDecoder.decode(ldContext),
         credential.type[1],
         parsedQuery.fieldName,
         opts
@@ -746,23 +739,22 @@ export class ProofService implements IProofService {
     credential: W3CCredential,
     opts?: Options
   ): Promise<{ query: Query; vp?: object }> {
-    const loader = getDocumentLoader(opts);
-
-    let schema: object;
-    try {
-      schema = (await loader(credential.credentialSchema.id)).document;
-    } catch (e) {
-      throw new Error(`can't load credential schema ${credential['@context'][2]}`);
-    }
+    const ldContext = await this.loadLdContextFromJSONSchema(credential.credentialSchema.id, opts);
 
     if (query.credentialSubject && Object.keys(query.credentialSubject).length > 1) {
       throw new Error('multiple requests are not supported');
     }
 
     const parsedQuery = await this.parseRequest(query.credentialSubject);
-    parsedQuery.query.slotIndex = new Parser().getFieldSlotIndex(
+
+    if (!query.type) {
+      throw new Error('query type is not defined');
+    }
+
+    parsedQuery.query.slotIndex = await Parser.getFieldSlotIndex(
       parsedQuery.fieldName,
-      byteEncoder.encode(JSON.stringify(schema))
+      query.type,
+      ldContext
     );
     const { vp, mzValue, dataType } = await verifiablePresentationFromCred(
       credential,
@@ -787,6 +779,34 @@ export class ProofService implements IProofService {
     );
 
     return { query: parsedQuery.query };
+  }
+
+  private async loadLdContextFromJSONSchema(
+    jsonSchemaURL: string,
+    opts?: Options
+  ): Promise<Uint8Array> {
+    const loader = getDocumentLoader(opts);
+
+    let schema: object;
+    try {
+      schema = (await loader(jsonSchemaURL)).document;
+    } catch (e) {
+      throw new Error(`can't load credential schema ${jsonSchemaURL}`);
+    }
+    const jsonSchema = schema as JSONSchema;
+
+    let ldSchema: object;
+    let ldContextUrl = '';
+    try {
+      ldContextUrl = jsonSchema.$metadata.uris['jsonLdContext'];
+      if (!ldContextUrl) {
+        throw new Error('ldContext is not defined in json schema metadata');
+      }
+      ldSchema = (await loader(ldContextUrl)).document;
+    } catch (e) {
+      throw new Error(`can't load ld context from url ${ldContextUrl}`);
+    }
+    return byteEncoder.encode(JSON.stringify(ldSchema));
   }
 
   private async parseRequest(req?: { [key: string]: unknown }): Promise<QueryWithFieldName> {
