@@ -115,7 +115,7 @@ export interface IIdentityWallet {
    * @param {CredentialRequest} req - claim request
    * @returns `Promise<W3CCredential>` - returns created W3CCredential
    */
-  issueCredential(issuerDID: DID, req: CredentialRequest): Promise<W3CCredential>;
+  issueCredential(issuerDID: DID, req: CredentialRequest, opts?: Options): Promise<W3CCredential>;
 
   /**
    * Gets a tree model for given did that includes claims tree, revocation tree, the root of roots tree and calculated state hash
