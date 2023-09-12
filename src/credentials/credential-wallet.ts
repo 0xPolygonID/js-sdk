@@ -66,6 +66,7 @@ export interface CredentialRequest {
    *     id: string;
    *     nonce?: number;
    *     type: CredentialStatusType;
+   *     issuerState?: string;
    *   }}
    * @memberof CredentialRequest
    */
@@ -73,6 +74,7 @@ export interface CredentialRequest {
     id: string;
     nonce?: number;
     type: CredentialStatusType;
+    issuerState?: string;
   };
 }
 
@@ -342,19 +344,40 @@ export class CredentialWallet implements ICredentialWallet {
       type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
     };
 
-    const id =
-      request.revocationOpts.type === CredentialStatusType.SparseMerkleTreeProof
-        ? `${request.revocationOpts.id.replace(/\/$/, '')}/${request.revocationOpts.nonce}`
-        : request.revocationOpts.id;
-
-    cr.credentialStatus = {
-      id,
-      revocationNonce: request.revocationOpts.nonce,
-      type: request.revocationOpts.type
-    };
+    cr.credentialStatus = this.buildCredentialStatus(request);
 
     return cr;
   };
+
+  /**
+   * Builds credential status
+   * @param {CredentialRequest} request
+   * @returns `CredentialStatus`
+   */
+  private buildCredentialStatus(request: CredentialRequest): CredentialStatus {
+    const credentialStatus: CredentialStatus = {
+      id: request.revocationOpts.id,
+      type: request.revocationOpts.type,
+      revocationNonce: request.revocationOpts.nonce
+    };
+
+    switch (request.revocationOpts.type) {
+      case (CredentialStatusType.SparseMerkleTreeProof,
+      CredentialStatusType.Iden3commRevocationStatusV1):
+        credentialStatus.id = `${request.revocationOpts.id.replace(/\/$/, '')}/${
+          request.revocationOpts.nonce
+        }`;
+        break;
+      case CredentialStatusType.Iden3ReverseSparseMerkleTreeProof:
+        credentialStatus.id = request.revocationOpts.issuerState
+          ? `${request.revocationOpts.id}/node?state=${request.revocationOpts.issuerState}`
+          : `${request.revocationOpts.id}`;
+        break;
+    }
+
+    return credentialStatus;
+  }
+
   /**
    * {@inheritDoc ICredentialWallet.findById}
    */

@@ -83,3 +83,31 @@ export const cred4 = createTestCredential({
   expirationDate: '2023-11-11',
   issuanceDate: '2022-11-11'
 });
+
+export const cred5 = createTestCredential({
+  id: 'test4',
+  '@context': ['context4'],
+  credentialSchema: {
+    id: 'credentialSchemaId',
+    type: 'credentialSchemaType'
+  },
+  proof: ['some proof4'],
+  type: ['type4'],
+  credentialStatus: {
+    id: 'https://rhs-staging.polygonid.me',
+    type: 'Iden3ReverseSparseMerkleTreeProof',
+    nonce: 10
+  },
+  issuer: 'issuer4',
+  credentialSubject: {
+    countOfFines: 0,
+    country: {
+      name: 'Spain',
+      code: 'ES',
+      insured: true,
+      hasOwnPackage: 'false'
+    }
+  },
+  expirationDate: '2023-11-11',
+  issuanceDate: '2022-11-11'
+});

@@ -179,6 +179,7 @@ describe('fetch', () => {
     };
     packageMgr.pack = async (): Promise<Uint8Array> => byteEncoder.encode(mockedToken);
     fetchHandler = new FetchHandler(packageMgr);
+    fetchMock.spy();
     fetchMock.post(agentUrl, JSON.parse(mockedCredResponse));
   });
 

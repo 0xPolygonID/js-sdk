@@ -7,11 +7,12 @@ import {
   NodeAux,
   ZERO_HASH,
   setBitBigEndian,
-  testBit
+  testBit,
+  newHashFromHex
 } from '@iden3/js-merkletree';
 import { IStateStorage } from '../../storage';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
-import { CredentialStatus, RevocationStatus } from '../../verifiable';
+import { CredentialStatus, IssuerData, RevocationStatus } from '../../verifiable';
 import { strMTHex } from '../../circuits';
 import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
 
@@ -124,28 +125,12 @@ export class RHSResolver implements CredentialStatusResolver {
     }
 
     try {
-      return await this.getStatus(credentialStatus, credentialStatusResolveOptions.issuerDID);
+      return await this.getStatus(
+        credentialStatus,
+        credentialStatusResolveOptions.issuerDID,
+        credentialStatusResolveOptions.issuerData
+      );
     } catch (e: unknown) {
-      const errMsg = (e as { reason: string })?.reason ?? (e as Error).message ?? (e as string);
-      if (
-        !!credentialStatusResolveOptions.issuerData &&
-        errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
-        isIssuerGenesis(
-          credentialStatusResolveOptions.issuerDID.string(),
-          credentialStatusResolveOptions.issuerData.state.value
-        )
-      ) {
-        return {
-          mtp: new Proof(),
-          issuer: {
-            state: credentialStatusResolveOptions.issuerData.state.value,
-            revocationTreeRoot: credentialStatusResolveOptions.issuerData.state.revocationTreeRoot,
-            rootOfRoots: credentialStatusResolveOptions.issuerData.state.rootOfRoots,
-            claimsTreeRoot: credentialStatusResolveOptions.issuerData.state.claimsTreeRoot
-          }
-        };
-      }
-
       if (credentialStatus?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
         try {
           return await (await fetch(credentialStatus.id)).json();
@@ -161,21 +146,65 @@ export class RHSResolver implements CredentialStatusResolver {
    * Gets revocation status from rhs service.
    * @param {CredentialStatus} credentialStatus
    * @param {DID} issuerDID
+   * @param {IssuerData} issuerData
    * @returns Promise<RevocationStatus>
    */
   private async getStatus(
     credentialStatus: CredentialStatus,
-    issuerDID: DID
+    issuerDID: DID,
+    issuerData?: IssuerData
   ): Promise<RevocationStatus> {
     const id = DID.idFromDID(issuerDID);
-    const latestStateInfo = await this._state.getLatestStateById(id.bigInt());
+
+    let latestState: bigint;
+    try {
+      const latestStateInfo = await this._state.getLatestStateById(id.bigInt());
+      latestState = latestStateInfo?.state || BigInt(0);
+    } catch (e) {
+      const errMsg = (e as { reason: string })?.reason ?? (e as Error).message ?? (e as string);
+      if (errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST)) {
+        const currentState = this.extractState(credentialStatus.id);
+        if (!currentState) {
+          return this.getRevocationStatusFromIssuerData(issuerDID, issuerData);
+        }
+        const currentStateBigInt = newHashFromHex(currentState).bigInt();
+        if (!isGenesisStateId(id.bigInt(), currentStateBigInt, id.type())) {
+          throw new Error(`state ${currentState} is not genesis`);
+        }
+        latestState = currentStateBigInt;
+      } else {
+        throw e;
+      }
+    }
+
+    const rhsHost = credentialStatus.id.split('/node')[0];
     const hashedRevNonce = newHashFromBigInt(BigInt(credentialStatus.revocationNonce ?? 0));
-    const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
-    return await this.getRevocationStatusFromRHS(
-      hashedRevNonce,
-      hashedIssuerRoot,
-      credentialStatus.id
-    );
+    const hashedIssuerRoot = newHashFromBigInt(latestState);
+    return await this.getRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, rhsHost);
+  }
+
+  /**
+   * Extract revocation status from issuer data.
+   * @param {DID} issuerDID
+   * @param {IssuerData} issuerData
+   */
+  private getRevocationStatusFromIssuerData(
+    issuerDID: DID,
+    issuerData?: IssuerData
+  ): RevocationStatus {
+    if (!!issuerData && isIssuerGenesis(issuerDID.string(), issuerData.state.value)) {
+      return {
+        mtp: new Proof(),
+        issuer: {
+          state: issuerData.state.value,
+          revocationTreeRoot: issuerData.state.revocationTreeRoot,
+          rootOfRoots: issuerData.state.rootOfRoots,
+          claimsTreeRoot: issuerData.state.claimsTreeRoot
+        }
+      };
+    } else {
+      throw new Error(`issuer data is empty`);
+    }
   }
 
   /**
@@ -279,6 +308,16 @@ export class RHSResolver implements CredentialStatusResolver {
       }
     }
     return p;
+  }
+
+  /**
+   * Get state param from rhs url
+   * @param {string} id
+   * @returns string | null
+   */
+  private extractState(id: string): string | null {
+    const u = new URL(id);
+    return u.searchParams.get('state');
   }
 }
 
