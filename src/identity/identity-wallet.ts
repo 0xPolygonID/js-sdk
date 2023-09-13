@@ -266,6 +266,18 @@ export interface IIdentityWallet {
    * @returns `{Promise<Profile>}`
    */
   getProfileByVerifier(verifier: string): Promise<Profile | undefined>;
+
+  /**
+   *
+   * updates latest identity state in storage with given state or latest from the trees.
+   *
+   * @param {string} issuerDID -  identifier of the verifier
+   * @param {boolean} published - if states is published onchain
+   * @param {string} treeState -  contains state to upgrade
+   * @returns `{Promise<Profile>}`
+   */
+  updateIdentityState(issuerDID: DID, published:boolean, treeState?: TreeState): Promise<void>;
+
 }
 
 /**
@@ -292,7 +304,7 @@ export class IdentityWallet implements IIdentityWallet {
     private readonly _kms: KMS,
     private readonly _storage: IDataStorage,
     private readonly _credentialWallet: ICredentialWallet
-  ) {}
+  ) { }
 
   /**
    * {@inheritDoc IIdentityWallet.createIdentity}
@@ -757,17 +769,19 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   /** {@inheritDoc IIdentityWallet.generateIden3SparseMerkleTreeProof} */
+  // treeState -  optional, if it is not passed proof of claim inclusion will be generated on the latest state in the tree.
   async generateIden3SparseMerkleTreeProof(
     issuerDID: DID,
     credentials: W3CCredential[],
     txId: string,
     blockNumber?: number,
-    blockTimestamp?: number
+    blockTimestamp?: number,
+    treeState?: TreeState
   ): Promise<W3CCredential[]> {
     for (let index = 0; index < credentials.length; index++) {
       const credential = credentials[index];
 
-      const mtpWithProof = await this.generateCredentialMtp(issuerDID, credential);
+      const mtpWithProof = await this.generateCredentialMtp(issuerDID, credential, treeState);
 
       // credential must have a bjj signature proof
       const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
@@ -876,4 +890,17 @@ export class IdentityWallet implements IIdentityWallet {
       );
     });
   }
+
+  /** {@inheritDoc IIdentityWallet.updateIdentityState} */
+  async updateIdentityState(issuerDID: DID, published:boolean, treeState?: TreeState): Promise<void> {
+    const latestTreeState = await this.getDIDTreeModel(issuerDID);
+
+    await this._storage.identity.saveIdentity({
+      did: issuerDID.string(),
+      state:  treeState ? treeState.state : latestTreeState.state,
+      isStatePublished: published,
+      isStateGenesis: false
+    });
+  }
+
 }
