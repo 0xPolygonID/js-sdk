@@ -12,7 +12,7 @@ import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { MerkleTreeType } from '../../src/storage/entities/mt';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { CredentialRequest, CredentialWallet } from '../../src/credentials';
+import { CredentialRequest, ICredentialWallet, CredentialWallet } from '../../src/credentials';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -22,7 +22,7 @@ import { RHSResolver } from '../../src/credentials';
 
 describe('identity', () => {
   const rhsURL = process.env.RHS_URL as string;
-  let credWallet: CredentialWallet;
+  let credWallet: ICredentialWallet;
   let wallet: IdentityWallet;
   let dataStorage: IDataStorage;
 
@@ -325,6 +325,6 @@ describe('identity', () => {
     const issuerCred = await wallet.issueCredential(issuerDID, claimReq);
     issuerCred.credentialStatus.id = rhsURL;
 
-    credWallet.getRevocationStatusFromCredential(issuerCred);
+    await credWallet.getRevocationStatusFromCredential(issuerCred);
   });
 });

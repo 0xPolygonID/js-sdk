@@ -202,9 +202,8 @@ export class RHSResolver implements CredentialStatusResolver {
           claimsTreeRoot: issuerData.state.claimsTreeRoot
         }
       };
-    } else {
-      throw new Error(`issuer data is empty`);
     }
+    throw new Error(`issuer data is empty`);
   }
 
   /**
