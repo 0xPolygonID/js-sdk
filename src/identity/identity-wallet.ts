@@ -271,10 +271,10 @@ export interface IIdentityWallet {
    *
    * updates latest identity state in storage with given state or latest from the trees.
    *
-   * @param {string} issuerDID -  identifier of the verifier
+   * @param {DID} issuerDID -  identifier of the issuer
    * @param {boolean} published - if states is published onchain
-   * @param {string} treeState -  contains state to upgrade
-   * @returns `{Promise<Profile>}`
+   * @param {TreeState} treeState -  contains state to upgrade
+   * @returns `{Promise<void>}`
    */
   updateIdentityState(issuerDID: DID, published:boolean, treeState?: TreeState): Promise<void>;
 

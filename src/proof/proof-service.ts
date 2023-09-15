@@ -283,7 +283,7 @@ export class ProofService implements IProofService {
 
     const txId = await stateStorage.publishState(proof, ethSigner);
 
-    this._identityWallet.updateIdentityState(did, true, newTreeState);
+    await this._identityWallet.updateIdentityState(did, true, newTreeState);
     
     return txId;
   }
