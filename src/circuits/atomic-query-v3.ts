@@ -2,24 +2,28 @@ import { Claim, Id, SchemaHash } from '@iden3/js-iden3-core';
 import {
   BaseConfig,
   bigIntArrayToStringArray,
-  circomSiblings,
+  prepareSiblingsStr,
   existenceToInt,
   getNodeAuxValue,
-  prepareCircuitArrayValues,
-  prepareSiblingsStr
+  prepareCircuitArrayValues
 } from './common';
 import { BJJSignatureProof, CircuitError, MTProof, Query, ValueProof } from './models';
 import { Hash, Proof, ZERO_HASH, newHashFromString } from '@iden3/js-merkletree';
 import { byteDecoder, byteEncoder } from '../utils';
 
-export type ProofType = 'sig' | 'mtp';
+export enum AtomicProofType {
+  Sig = 'sig',
+  MTP = 'mtp'
+}
+
+const zero = '0';
 
 export interface ClaimWithSigAndMTPProof {
   issuerID: Id;
   claim: Claim;
   nonRevProof: MTProof;
-  signatureProof: BJJSignatureProof;
-  incProof: MTProof;
+  signatureProof?: BJJSignatureProof;
+  incProof?: MTProof;
 }
 /**
  * AtomicQueryV3Inputs ZK private inputs for credentialAtomicQuerySig.circom
@@ -37,7 +41,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
   skipClaimRevocationCheck!: boolean;
   query!: Query;
   currentTimeStamp!: number;
-  proofType!: ProofType;
+  proofType!: AtomicProofType;
 
   validate(): void {
     if (!this.requestID) {
@@ -56,8 +60,8 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       throw new Error(CircuitError.InvalidProofType);
     }
 
-    if (this.proofType === 'sig') {
-      if (!this.claim.signatureProof.issuerAuthIncProof.proof) {
+    if (this.proofType === AtomicProofType.Sig) {
+      if (!this.claim.signatureProof?.issuerAuthIncProof.proof) {
         throw new Error(CircuitError.EmptyIssuerAuthClaimProof);
       }
 
@@ -69,35 +73,35 @@ export class AtomicQueryV3Inputs extends BaseConfig {
         throw new Error(CircuitError.EmptyClaimSignature);
       }
     }
-    if (this.proofType === 'mtp') {
-      if (!this.claim.incProof.proof) {
+    if (this.proofType === AtomicProofType.MTP) {
+      if (!this.claim?.incProof?.proof) {
         throw new Error(CircuitError.EmptyClaimProof);
       }
     }
   }
 
   fillMTPProofsWithZero(s: Partial<AtomicQueryV3CircuitInputs>) {
-    s.issuerClaimMtp = circomSiblings(new Proof(), this.getMTLevel());
-    s.issuerClaimClaimsTreeRoot = ZERO_HASH;
-    s.issuerClaimRevTreeRoot = ZERO_HASH;
-    s.issuerClaimRootsTreeRoot = ZERO_HASH;
-    s.issuerClaimIdenState = ZERO_HASH;
+    s.issuerClaimMtp = prepareSiblingsStr(new Proof(), this.getMTLevel());
+    s.issuerClaimClaimsTreeRoot = ZERO_HASH.bigInt().toString();
+    s.issuerClaimRevTreeRoot = ZERO_HASH.bigInt().toString();
+    s.issuerClaimRootsTreeRoot = ZERO_HASH.bigInt().toString();
+    s.issuerClaimIdenState = ZERO_HASH.bigInt().toString();
   }
 
   fillSigProofWithZero(s: Partial<AtomicQueryV3CircuitInputs>) {
-    s.issuerClaimSignatureR8x = '0';
-    s.issuerClaimSignatureR8y = '0';
-    s.issuerClaimSignatureS = '0';
-    s.issuerAuthClaim = new Claim();
+    s.issuerClaimSignatureR8x = zero;
+    s.issuerClaimSignatureR8y = zero;
+    s.issuerClaimSignatureS = zero;
+    s.issuerAuthClaim = new Claim().marshalJson();
     s.issuerAuthClaimMtp = prepareSiblingsStr(new Proof(), this.getMTLevel());
-    s.issuerAuthClaimsTreeRoot = '0';
-    s.issuerAuthRevTreeRoot = '0';
-    s.issuerAuthRootsTreeRoot = '0';
+    s.issuerAuthClaimsTreeRoot = zero;
+    s.issuerAuthRevTreeRoot = zero;
+    s.issuerAuthRootsTreeRoot = zero;
     s.issuerAuthClaimNonRevMtp = prepareSiblingsStr(new Proof(), this.getMTLevel());
 
-    s.issuerAuthClaimNonRevMtpAuxHi = ZERO_HASH;
-    s.issuerAuthClaimNonRevMtpAuxHv = ZERO_HASH;
-    s.issuerAuthClaimNonRevMtpNoAux = '0';
+    s.issuerAuthClaimNonRevMtpAuxHi = ZERO_HASH.bigInt().toString();
+    s.issuerAuthClaimNonRevMtpAuxHv = ZERO_HASH.bigInt().toString();
+    s.issuerAuthClaimNonRevMtpNoAux = zero;
   }
 
   // InputsMarshal returns Circom private inputs for credentialAtomicQueryV3.circom
@@ -113,8 +117,8 @@ export class AtomicQueryV3Inputs extends BaseConfig {
 
     if (!valueProof) {
       valueProof = new ValueProof();
-      valueProof.path = BigInt(0);
-      valueProof.value = BigInt(0);
+      valueProof.path = 0n;
+      valueProof.value = 0n;
       valueProof.mtp = new Proof();
     }
 
@@ -130,7 +134,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       profileNonce: this.profileNonce.toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
       issuerID: this.claim.issuerID.bigInt().toString(),
-      issuerClaim: this.claim.claim,
+      issuerClaim: this.claim.claim.marshalJson(),
 
       issuerClaimNonRevClaimsTreeRoot: treeState.claimsRoot.bigInt().toString(),
       issuerClaimNonRevRevTreeRoot: treeState.revocationRoot.bigInt().toString(),
@@ -157,15 +161,15 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       s.isRevocationChecked = 0;
     }
 
-    if (this.proofType === 'sig') {
-      s.proofType = '0';
+    if (this.proofType === AtomicProofType.Sig) {
+      s.proofType = zero;
 
-      s.issuerClaimSignatureR8x = this.claim.signatureProof.signature.R8[0].toString();
-      s.issuerClaimSignatureR8y = this.claim.signatureProof.signature.R8[1].toString();
-      s.issuerClaimSignatureS = this.claim.signatureProof.signature.S.toString();
-      s.issuerAuthClaim = this.claim.signatureProof.issuerAuthClaim;
+      s.issuerClaimSignatureR8x = this.claim.signatureProof?.signature.R8[0].toString();
+      s.issuerClaimSignatureR8y = this.claim.signatureProof?.signature.R8[1].toString();
+      s.issuerClaimSignatureS = this.claim.signatureProof?.signature.S.toString();
+      s.issuerAuthClaim = this.claim.signatureProof?.issuerAuthClaim?.marshalJson();
       s.issuerAuthClaimMtp = prepareSiblingsStr(
-        this.claim.signatureProof.issuerAuthIncProof.proof as Proof,
+        this.claim.signatureProof?.issuerAuthIncProof.proof as Proof,
         this.getMTLevel()
       );
       const issuerAuthTreeState = this.claim.nonRevProof.treeState;
@@ -177,46 +181,46 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       s.issuerAuthRevTreeRoot = issuerAuthTreeState.revocationRoot.bigInt().toString();
       s.issuerAuthRootsTreeRoot = issuerAuthTreeState.rootOfRoots.bigInt().toString();
       s.issuerAuthClaimNonRevMtp = prepareSiblingsStr(
-        this.claim.signatureProof.issuerAuthNonRevProof.proof as Proof,
+        this.claim.signatureProof?.issuerAuthNonRevProof.proof as Proof,
         this.getMTLevel()
       );
 
       const nodeAuxIssuerAuthNonRev = getNodeAuxValue(
-        this.claim.signatureProof.issuerAuthNonRevProof.proof
+        this.claim.signatureProof?.issuerAuthNonRevProof.proof
       );
-      s.issuerAuthClaimNonRevMtpAuxHi = nodeAuxIssuerAuthNonRev.key;
-      s.issuerAuthClaimNonRevMtpAuxHv = nodeAuxIssuerAuthNonRev.value;
+      s.issuerAuthClaimNonRevMtpAuxHi = nodeAuxIssuerAuthNonRev.key.bigInt().toString();
+      s.issuerAuthClaimNonRevMtpAuxHv = nodeAuxIssuerAuthNonRev.value.bigInt().toString();
       s.issuerAuthClaimNonRevMtpNoAux = nodeAuxIssuerAuthNonRev.noAux;
 
       this.fillMTPProofsWithZero(s);
-    } else if (this.proofType === 'mtp') {
+    } else if (this.proofType === AtomicProofType.MTP) {
       s.proofType = '1';
 
-      const incProofTreeState = this.claim.incProof.treeState;
+      const incProofTreeState = this.claim.incProof?.treeState;
 
       if (!incProofTreeState) {
         throw new Error(CircuitError.EmptyTreeState);
       }
 
-      s.issuerClaimMtp = circomSiblings(this.claim.incProof.proof as Proof, this.getMTLevel());
-      s.issuerClaimClaimsTreeRoot = incProofTreeState.claimsRoot;
-      s.issuerClaimRevTreeRoot = incProofTreeState.revocationRoot;
-      s.issuerClaimRootsTreeRoot = incProofTreeState.rootOfRoots;
-      s.issuerClaimIdenState = incProofTreeState.state;
+      s.issuerClaimMtp = prepareSiblingsStr(this.claim.incProof?.proof as Proof, this.getMTLevel());
+      s.issuerClaimClaimsTreeRoot = incProofTreeState.claimsRoot.bigInt().toString();
+      s.issuerClaimRevTreeRoot = incProofTreeState.revocationRoot.bigInt().toString();
+      s.issuerClaimRootsTreeRoot = incProofTreeState.rootOfRoots.bigInt().toString();
+      s.issuerClaimIdenState = incProofTreeState.state.bigInt().toString();
 
       this.fillSigProofWithZero(s);
     }
 
     const nodeAuxNonRev = getNodeAuxValue(this.claim.nonRevProof.proof);
-    s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev.key;
-    s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev.value;
+    s.issuerClaimNonRevMtpAuxHi = nodeAuxNonRev.key.bigInt().toString();
+    s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev.value.bigInt().toString();
     s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev.noAux;
 
     s.claimPathNotExists = existenceToInt(valueProof.mtp.existence);
     const nodAuxJSONLD = getNodeAuxValue(valueProof.mtp);
     s.claimPathMtpNoAux = nodAuxJSONLD.noAux;
-    s.claimPathMtpAuxHi = nodAuxJSONLD.key;
-    s.claimPathMtpAuxHv = nodAuxJSONLD.value;
+    s.claimPathMtpAuxHi = nodAuxJSONLD.key.bigInt().toString();
+    s.claimPathMtpAuxHv = nodAuxJSONLD.value.bigInt().toString();
 
     s.claimPathKey = valueProof.path.toString();
 
@@ -237,24 +241,24 @@ interface AtomicQueryV3CircuitInputs {
 
   issuerID: string;
   // Claim
-  issuerClaim: Claim;
+  issuerClaim: string[];
   issuerClaimNonRevClaimsTreeRoot: string;
   issuerClaimNonRevRevTreeRoot: string;
   issuerClaimNonRevRootsTreeRoot: string;
   issuerClaimNonRevState: string;
   issuerClaimNonRevMtp: string[];
-  issuerClaimNonRevMtpAuxHi: Hash;
-  issuerClaimNonRevMtpAuxHv: Hash;
+  issuerClaimNonRevMtpAuxHi: string;
+  issuerClaimNonRevMtpAuxHv: string;
   issuerClaimNonRevMtpNoAux: string;
   claimSchema: string;
   issuerClaimSignatureR8x: string;
   issuerClaimSignatureR8y: string;
   issuerClaimSignatureS: string;
-  issuerAuthClaim: Claim;
+  issuerAuthClaim: string[];
   issuerAuthClaimMtp: string[];
   issuerAuthClaimNonRevMtp: string[];
-  issuerAuthClaimNonRevMtpAuxHi: Hash;
-  issuerAuthClaimNonRevMtpAuxHv: Hash;
+  issuerAuthClaimNonRevMtpAuxHi: string;
+  issuerAuthClaimNonRevMtpAuxHv: string;
   issuerAuthClaimNonRevMtpNoAux: string;
   issuerAuthClaimsTreeRoot: string;
   issuerAuthRevTreeRoot: string;
@@ -266,8 +270,8 @@ interface AtomicQueryV3CircuitInputs {
   claimPathNotExists: number; // 0 for inclusion, 1 for non-inclusion
   claimPathMtp: string[];
   claimPathMtpNoAux: string; // 1 if aux node is empty, 0 if non-empty or for inclusion proofs
-  claimPathMtpAuxHi: Hash; // 0 for inclusion proof
-  claimPathMtpAuxHv: Hash; // 0 for inclusion proof
+  claimPathMtpAuxHi: string; // 0 for inclusion proof
+  claimPathMtpAuxHv: string; // 0 for inclusion proof
   claimPathKey: string; // hash of path in merklized json-ld document
   claimPathValue: string; // value in this path in merklized json-ld document
 
@@ -276,11 +280,11 @@ interface AtomicQueryV3CircuitInputs {
   timestamp: number;
   value: string[];
 
-  issuerClaimMtp: Hash[];
-  issuerClaimClaimsTreeRoot: Hash;
-  issuerClaimRevTreeRoot: Hash;
-  issuerClaimRootsTreeRoot: Hash;
-  issuerClaimIdenState: Hash;
+  issuerClaimMtp: string[];
+  issuerClaimClaimsTreeRoot: string;
+  issuerClaimRevTreeRoot: string;
+  issuerClaimRootsTreeRoot: string;
+  issuerClaimIdenState: string;
 
   proofType: string;
 }
@@ -295,7 +299,7 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
   claimSchema!: SchemaHash;
   slotIndex!: number;
   operator!: number;
-  value!: bigint[];
+  value: bigint[] = [];
   timestamp!: number;
   merklized!: number;
   claimPathKey!: bigint;

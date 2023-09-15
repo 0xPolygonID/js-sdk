@@ -105,7 +105,7 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
       issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof?.treeState?.rootOfRoots?.string(),
       issuerClaimNonRevState: this.claim.nonRevProof?.treeState?.state?.string(),
       claimSchema: this.claim.claim?.getSchemaHash().bigInt().toString(),
-      claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaimMerklization()),
+      claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaim()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query.operator,
       slotIndex: this.query.slotIndex,

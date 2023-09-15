@@ -159,7 +159,7 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
           this.getMTLevel()
         ),
       claimSchema: this.claim.claim?.getSchemaHash().bigInt().toString(),
-      claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaimMerklization()),
+      claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaim()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query?.operator,
       timestamp: this.currentTimeStamp,
