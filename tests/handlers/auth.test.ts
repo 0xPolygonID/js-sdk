@@ -198,14 +198,14 @@ describe('auth', () => {
 
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -223,7 +223,7 @@ describe('auth', () => {
         allowedIssuers: ['*'],
         type: claimReq.type,
         context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
         credentialSubject: {
           documentType: {
             $eq: 99
@@ -252,12 +252,10 @@ describe('auth', () => {
       from: issuerId.string()
     };
 
-    console.log(JSON.stringify(issuerCred));
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
 
     const tokenStr = authRes.token;
-    console.log(tokenStr);
     expect(tokenStr).to.be.a('string');
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');
@@ -290,14 +288,14 @@ describe('auth', () => {
 
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: profileDID.string(),
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -315,7 +313,7 @@ describe('auth', () => {
         allowedIssuers: ['*'],
         type: claimReq.type,
         context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
         credentialSubject: {
           documentType: {
             $eq: 99
@@ -356,7 +354,6 @@ describe('auth', () => {
       : await idWallet.createProfile(userDID, 100, authR.from);
 
     const resp = await authHandler.handleAuthorizationRequest(authProfileDID, msgBytes);
-
-    console.log(resp);
+    expect(resp).not.to.be.undefined;
   });
 });

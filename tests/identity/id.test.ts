@@ -103,7 +103,6 @@ describe('identity', () => {
       MerkleTreeType.Claims
     );
 
-    console.log(JSON.stringify(credential));
     expect((await claimsTree.root()).bigInt()).not.to.equal(0);
   });
   it('createProfile', async () => {
@@ -129,9 +128,12 @@ describe('identity', () => {
     );
 
     const dbProfile = await dataStorage.identity.getProfileByVerifier('http://polygonissuer.com/');
-    expect(dbProfile.id).to.equal(profileDID.string());
-    expect(dbProfile.genesisIdentifier).to.equal(did.string());
-    expect(dbProfile.nonce).to.equal(10);
+    expect(dbProfile).not.to.be.undefined;
+    if (dbProfile) {
+      expect(dbProfile.id).to.equal(profileDID.string());
+      expect(dbProfile.genesisIdentifier).to.equal(did.string());
+      expect(dbProfile.nonce).to.equal(10);
+    }
   });
   it('sign', async () => {
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
@@ -259,7 +261,7 @@ describe('identity', () => {
 
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: userDID.string(),

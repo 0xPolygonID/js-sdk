@@ -40,7 +40,7 @@ describe('mtp proofs', () => {
     getLatestStateById: async () => {
       return {
         id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
-        state: 15316103435703269893947162180693935798669021972402205481551466808302934202991n,
+        state: 5224437024673068498206105743424598123651101873588696368477339341771571761791n,
         replacedByState: 0n,
         createdAtTimestamp: 1672245326n,
         replacedAtTimestamp: 0n,
@@ -144,14 +144,14 @@ describe('mtp proofs', () => {
 
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v2.json',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: userDID.string(),
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         nonce: 1000,
@@ -199,7 +199,7 @@ describe('mtp proofs', () => {
         allowedIssuers: ['*'],
         type: claimReq.type,
         context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
         credentialSubject: {
           documentType: {
             $eq: 99
@@ -211,9 +211,14 @@ describe('mtp proofs', () => {
     const creds = await credWallet.findByQuery(proofReq.query);
     expect(creds.length).to.not.equal(0);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID);
-    console.log(proof);
+    const { proof, pub_signals, vp } = await proofService.generateProof(proofReq, userDID);
     expect(vp).to.be.undefined;
+
+    const isValid = await proofService.verifyProof(
+      { proof, pub_signals },
+      CircuitId.AtomicQueryMTPV2
+    );
+    expect(isValid).to.be.true;
   });
 
   it('mtpv2-merklized', async () => {
@@ -252,7 +257,7 @@ describe('mtp proofs', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1693526400,
+      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         nonce: 1000,
@@ -265,8 +270,6 @@ describe('mtp proofs', () => {
     await credWallet.save(issuerCred);
 
     const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
-
-    // publish to rhs
 
     await idWallet.publishStateToRHS(issuerDID, rhsUrl);
 
@@ -316,11 +319,16 @@ describe('mtp proofs', () => {
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
     expect(creds.length).to.equal(1);
 
-    const { proof, vp } = await proofService.generateProof(proofReq, userDID, {
+    const { proof, pub_signals, vp } = await proofService.generateProof(proofReq, userDID, {
       credential: credsForMyUserDID[0],
       skipRevocation: false
     });
-    console.log(proof);
     expect(vp).to.be.undefined;
+
+    const isValid = await proofService.verifyProof(
+      { proof, pub_signals },
+      CircuitId.AtomicQueryMTPV2
+    );
+    expect(isValid).to.be.true;
   });
 });

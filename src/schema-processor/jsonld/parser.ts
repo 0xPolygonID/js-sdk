@@ -30,7 +30,7 @@ export class LDParser {
   }
 
   /**
-   * GetPrefixesreturns a map of potential RDF prefixes based on the JSON-LD Term Definitions
+   * GetPrefixes returns a map of potential RDF prefixes based on the JSON-LD Term Definitions
    * in this context. No guarantees of the prefixes are given, beyond that it will not contain ":".
    *
    * onlyCommonPrefixes: If true, the result will not include "not so useful" prefixes, such as
