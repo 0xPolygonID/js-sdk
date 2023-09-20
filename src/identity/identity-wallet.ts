@@ -34,7 +34,12 @@ import {
   CredentialStatusType,
   ProofQuery
 } from '../verifiable';
-import { CredentialRequest, ICredentialWallet, pushHashesToRHS, TreesModel } from '../credentials';
+import {
+  CredentialRequest,
+  ICredentialWallet,
+  publishStateToRHS,
+  TreesModel
+} from '../credentials';
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
 import { Options, getDocumentLoader } from '@iden3/js-jsonld-merklization';
@@ -440,7 +445,7 @@ export class IdentityWallet implements IIdentityWallet {
         revocationTree: revocationTree,
         rootsTree: rootOfRootsTree
       };
-      await pushHashesToRHS(currentState, trees, opts.revocationOpts.id);
+      await publishStateToRHS(currentState, trees, opts.revocationOpts.id);
     }
 
     await this._storage.identity.saveIdentity({
@@ -846,13 +851,13 @@ export class IdentityWallet implements IIdentityWallet {
     rhsURL: string,
     revokedNonces?: number[]
   ): Promise<void> {
-    await pushHashesToRHS(treeModel.state, treeModel, rhsURL, revokedNonces);
+    await publishStateToRHS(treeModel.state, treeModel, rhsURL, revokedNonces);
   }
 
   /** {@inheritDoc IIdentityWallet.publishStateToRHS} */
   async publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void> {
     const treeState = await this.getDIDTreeModel(issuerDID);
-    await pushHashesToRHS(
+    await publishStateToRHS(
       treeState.state,
       {
         revocationTree: treeState.revocationTree,

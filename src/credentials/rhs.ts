@@ -35,7 +35,7 @@ export interface TreesModel {
  * @param {number[]} [revokedNonces] - revoked nonces since last published info
  * @returns void
  */
-export async function pushHashesToRHS(
+export async function publishStateToRHS(
   state: Hash,
   trees: TreesModel,
   rhsUrl: string,
