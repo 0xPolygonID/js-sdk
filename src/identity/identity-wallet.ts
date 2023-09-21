@@ -34,12 +34,7 @@ import {
   CredentialStatusType,
   ProofQuery
 } from '../verifiable';
-import {
-  CredentialRequest,
-  ICredentialWallet,
-  publishStateToRHS,
-  TreesModel
-} from '../credentials';
+import { CredentialRequest, ICredentialWallet, pushHashesToRHS, TreesModel } from '../credentials';
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
 import { Options, getDocumentLoader } from '@iden3/js-jsonld-merklization';
@@ -429,23 +424,7 @@ export class IdentityWallet implements IIdentityWallet {
     credential.proof = [mtpProof];
 
     if (opts.revocationOpts.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
-      const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-        did.string(),
-        MerkleTreeType.Revocations
-      );
-
-      const rootOfRootsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-        did.string(),
-        MerkleTreeType.Roots
-      );
-
-      const trees: TreesModel = {
-        state: currentState,
-        claimsTree: claimsTree,
-        revocationTree: revocationTree,
-        rootsTree: rootOfRootsTree
-      };
-      await publishStateToRHS(currentState, trees, opts.revocationOpts.id);
+      await this.publishStateToRHS(did, opts.revocationOpts.id);
     }
 
     await this._storage.identity.saveIdentity({
@@ -851,13 +830,13 @@ export class IdentityWallet implements IIdentityWallet {
     rhsURL: string,
     revokedNonces?: number[]
   ): Promise<void> {
-    await publishStateToRHS(treeModel.state, treeModel, rhsURL, revokedNonces);
+    await pushHashesToRHS(treeModel.state, treeModel, rhsURL, revokedNonces);
   }
 
   /** {@inheritDoc IIdentityWallet.publishStateToRHS} */
   async publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void> {
     const treeState = await this.getDIDTreeModel(issuerDID);
-    await publishStateToRHS(
+    await pushHashesToRHS(
       treeState.state,
       {
         revocationTree: treeState.revocationTree,
