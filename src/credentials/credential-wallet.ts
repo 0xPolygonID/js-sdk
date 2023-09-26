@@ -363,20 +363,22 @@ export class CredentialWallet implements ICredentialWallet {
 
     switch (request.revocationOpts.type) {
       case CredentialStatusType.SparseMerkleTreeProof:
-        credentialStatus.id = `${credentialStatus.id.replace(/\/$/, '')}/${
-          credentialStatus.revocationNonce
-        }`;
-        break;
+        return {
+          ...credentialStatus,
+          id: `${credentialStatus.id.replace(/\/$/, '')}/${credentialStatus.revocationNonce}`
+        };
       case CredentialStatusType.Iden3ReverseSparseMerkleTreeProof:
-        credentialStatus.id = request.revocationOpts.issuerState
-          ? `${credentialStatus.id.replace(/\/$/, '')}/node?state=${
-              request.revocationOpts.issuerState
-            }`
-          : `${credentialStatus.id.replace(/\/$/, '')}`;
-        break;
+        return {
+          ...credentialStatus,
+          id: request.revocationOpts.issuerState
+            ? `${credentialStatus.id.replace(/\/$/, '')}/node?state=${
+                request.revocationOpts.issuerState
+              }`
+            : `${credentialStatus.id.replace(/\/$/, '')}`
+        };
+      default:
+        return credentialStatus;
     }
-
-    return credentialStatus;
   }
 
   /**
