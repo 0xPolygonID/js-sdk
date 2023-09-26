@@ -12,7 +12,7 @@ import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { MerkleTreeType } from '../../src/storage/entities/mt';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { CredentialRequest, CredentialWallet } from '../../src/credentials';
+import { CredentialRequest, ICredentialWallet, CredentialWallet } from '../../src/credentials';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -21,6 +21,8 @@ import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 
 describe('identity', () => {
+  const rhsURL = process.env.RHS_URL as string;
+  let credWallet: ICredentialWallet;
   let wallet: IdentityWallet;
   let dataStorage: IDataStorage;
 
@@ -76,7 +78,7 @@ describe('identity', () => {
       new RHSResolver(dataStorage.states)
     );
 
-    const credWallet = new CredentialWallet(dataStorage, resolvers);
+    credWallet = new CredentialWallet(dataStorage, resolvers);
     wallet = new IdentityWallet(kms, dataStorage, credWallet);
   });
   it('createIdentity', async () => {
@@ -89,7 +91,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'http://rhs.com/node'
+        id: rhsURL
       }
     });
     expect(did.string()).to.equal(
@@ -115,7 +117,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'http://rhs.com/node'
+        id: rhsURL
       }
     });
     expect(did.string()).to.equal(
@@ -145,7 +147,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'http://rhs.com/node'
+        id: rhsURL
       }
     });
     expect(did.string()).to.equal(
@@ -171,7 +173,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'http://rhs.com/node'
+        id: rhsURL
       }
     });
     expect(did.string()).to.equal(
@@ -192,7 +194,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'http://rhs.com/node'
+        id: rhsURL
       }
     });
     expect(did.string()).to.equal(
@@ -214,7 +216,7 @@ describe('identity', () => {
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'http://rhs.com/node'
+        id: rhsURL
       }
     });
     expect(did.string()).to.equal(
@@ -237,7 +239,7 @@ describe('identity', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'http://rhs.com/node'
+        id: rhsURL
       }
     });
 
@@ -254,7 +256,7 @@ describe('identity', () => {
       seed: seedPhraseUser,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'http://rhs.com/node'
+        id: rhsURL
       }
     });
     expect(userAuthCredential).not.to.be.undefined;
@@ -271,11 +273,58 @@ describe('identity', () => {
       expiration: 12345678888,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'http://rhs.com/node'
+        id: rhsURL
       }
     };
     const issuerCred = await wallet.issueCredential(issuerDID, claimReq);
 
     expect(issuerCred.credentialSubject.id).to.equal(userDID.string());
+  });
+
+  it('build non-inclusion proof from issuer data', async () => {
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+    const seedPhraseUser: Uint8Array = byteEncoder.encode('userseedseedseedseedseedseeduser');
+
+    const { did: issuerDID } = await wallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsURL
+      }
+    });
+
+    const { did: userDID } = await wallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseUser,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsURL
+      }
+    });
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 12345678888,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsURL
+      }
+    };
+    const issuerCred = await wallet.issueCredential(issuerDID, claimReq);
+    issuerCred.credentialStatus.id = rhsURL;
+
+    await credWallet.getRevocationStatusFromCredential(issuerCred);
   });
 });

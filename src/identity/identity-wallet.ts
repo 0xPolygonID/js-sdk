@@ -34,8 +34,7 @@ import {
   CredentialStatusType,
   ProofQuery
 } from '../verifiable';
-import { CredentialRequest, ICredentialWallet } from '../credentials';
-import { pushHashesToRHS, TreesModel } from '../credentials/rhs';
+import { CredentialRequest, ICredentialWallet, pushHashesToRHS, TreesModel } from '../credentials';
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
 import { Options, getDocumentLoader } from '@iden3/js-jsonld-merklization';
@@ -224,6 +223,20 @@ export interface IIdentityWallet {
   publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void>;
 
   /**
+   *
+   *
+   * @param {TreesModel} treeModel - trees model to publish
+   * @param {string} rhsURL - reverse hash service URL
+   * @param {number[]} [revokedNonces] - revoked nonces for the period from the last published
+   * @returns `Promise<void>`
+   */
+  publishSpecificStateToRHS(
+    treeModel: TreesModel,
+    rhsURL: string,
+    revokedNonces?: number[]
+  ): Promise<void>;
+
+  /**
    * Extracts core claim from signature or merkle tree proof. If both proof persists core claim must be the same
    *
    * @public
@@ -382,7 +395,8 @@ export class IdentityWallet implements IIdentityWallet {
       revocationOpts: {
         nonce: revNonce,
         id: opts.revocationOpts.id.replace(/\/$/, ''),
-        type: opts.revocationOpts.type
+        type: opts.revocationOpts.type,
+        issuerState: currentState.hex()
       }
     };
 
@@ -420,6 +434,10 @@ export class IdentityWallet implements IIdentityWallet {
     });
 
     credential.proof = [mtpProof];
+
+    if (opts.revocationOpts.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
+      await this.publishStateToRHS(did, opts.revocationOpts.id);
+    }
 
     await this._storage.identity.saveIdentity({
       did: did.string(),
@@ -630,6 +648,9 @@ export class IdentityWallet implements IIdentityWallet {
     const jsonSchema = schema as JSONSchema;
     let credential: W3CCredential = new W3CCredential();
 
+    const issuerRoots = await this.getDIDTreeModel(issuerDID);
+    req.revocationOpts.issuerState = issuerRoots.state.hex();
+
     req.revocationOpts.nonce =
       typeof req.revocationOpts.nonce === 'number'
         ? req.revocationOpts.nonce
@@ -817,10 +838,18 @@ export class IdentityWallet implements IIdentityWallet {
     return credentials;
   }
 
+  /** {@inheritDoc IIdentityWallet.publishSpecificStateToRHS} */
+  async publishSpecificStateToRHS(
+    treeModel: TreesModel,
+    rhsURL: string,
+    revokedNonces?: number[]
+  ): Promise<void> {
+    await pushHashesToRHS(treeModel.state, treeModel, rhsURL, revokedNonces);
+  }
+
   /** {@inheritDoc IIdentityWallet.publishStateToRHS} */
   async publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void> {
     const treeState = await this.getDIDTreeModel(issuerDID);
-
     await pushHashesToRHS(
       treeState.state,
       {
