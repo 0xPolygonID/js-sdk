@@ -276,8 +276,7 @@ export interface IIdentityWallet {
    * @param {TreeState} treeState -  contains state to upgrade
    * @returns `{Promise<void>}`
    */
-  updateIdentityState(issuerDID: DID, published:boolean, treeState?: TreeState): Promise<void>;
-
+  updateIdentityState(issuerDID: DID, published: boolean, treeState?: TreeState): Promise<void>;
 }
 
 /**
@@ -304,7 +303,7 @@ export class IdentityWallet implements IIdentityWallet {
     private readonly _kms: KMS,
     private readonly _storage: IDataStorage,
     private readonly _credentialWallet: ICredentialWallet
-  ) { }
+  ) {}
 
   /**
    * {@inheritDoc IIdentityWallet.createIdentity}
@@ -892,15 +891,18 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   /** {@inheritDoc IIdentityWallet.updateIdentityState} */
-  async updateIdentityState(issuerDID: DID, published:boolean, treeState?: TreeState): Promise<void> {
+  async updateIdentityState(
+    issuerDID: DID,
+    published: boolean,
+    treeState?: TreeState
+  ): Promise<void> {
     const latestTreeState = await this.getDIDTreeModel(issuerDID);
 
     await this._storage.identity.saveIdentity({
       did: issuerDID.string(),
-      state:  treeState ? treeState.state : latestTreeState.state,
+      state: treeState ? treeState.state : latestTreeState.state,
       isStatePublished: published,
       isStateGenesis: false
     });
   }
-
 }
