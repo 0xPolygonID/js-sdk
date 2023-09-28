@@ -2,12 +2,16 @@ import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
-import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../types';
+import { IPackageManager, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../types';
 
-import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
-import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
+import {
+  ContractInvokeHandlerOptions,
+  ContractInvokeRequest
+} from '../types/protocol/contract-request';
 import { DID } from '@iden3/js-iden3-core';
+import { ZKProof } from '@iden3/js-jwz';
+import { IZKPVerifier } from '../../storage';
 
 /**
  * Interface that allows the processing of the contract request
@@ -17,20 +21,26 @@ import { DID } from '@iden3/js-iden3-core';
  */
 export interface IContractRequestHandler {
   /**
+   * unpacks contract invoker request
+   * @public
+   * @param {Uint8Array} request - raw byte message
+   * @returns `Promise<ContractInvokeRequest>`
+   */
+  parseContractInvokeRequest(request: Uint8Array): Promise<ContractInvokeRequest>;
+
+  /**
    * handle contract invoker request
    * @public
    * @param {did} did  - sender DID
-   * @param {ContractInvokeRequest} request  - contract invoke request
-   * @returns `Promise<{
-    response: ContractInvokeResponse;
-  }>`
+   * @param {Uint8Array} request - raw byte message
+   * @param {ContractInvokeHandlerOptions} opts - handler options
+   * @returns {Array<string>}` - array of transaction hashes
    */
   handleContractInvokeRequest(
     did: DID,
-    request: ContractInvokeRequest
-  ): Promise<{
-    response: ContractInvokeResponse;
-  }>;
+    request: Uint8Array,
+    opts?: ContractInvokeHandlerOptions
+  ): Promise<Array<string>>;
 }
 /**
  *
@@ -44,44 +54,54 @@ export interface IContractRequestHandler {
 export class ContractRequestHandler implements IContractRequestHandler {
   /**
    * Creates an instance of ContractRequestHandler.
+   * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    * @param {IProofService} _proofService -  proof service to verify zk proofs
+   * @param {IZKPVerifier} _zkpVerifier - zkp verifier to submit response
    *
    */
-  constructor(private readonly _proofService: IProofService) {}
+
+  constructor(
+    private readonly _packerMgr: IPackageManager,
+    private readonly _proofService: IProofService,
+    private readonly _zkpVerifier: IZKPVerifier
+  ) {}
+
+  /**
+   * unpacks authorization request
+   * @public
+   * @param {Uint8Array} request - raw byte message
+   * @returns `Promise<AuthorizationRequestMessage>`
+   */
+  async parseContractInvokeRequest(request: Uint8Array): Promise<ContractInvokeRequest> {
+    const { unpackedMessage: message } = await this._packerMgr.unpack(request);
+    const ciRequest = message as unknown as ContractInvokeRequest;
+    if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
+      throw new Error('Invalid media type');
+    }
+    return ciRequest;
+  }
 
   /**
    * handle contract invoker request
    * @public
    * @param {did} did  - sender DID
    * @param {ContractInvokeRequest} request  - contract invoke request
-   * @returns `Promise<{
-    response: ContractInvokeResponse;
-  }>`
+   * @param {ContractInvokeHandlerOptions} opts - handler options
+   * @returns {Array<string>}` - array of transaction hashes
    */
   async handleContractInvokeRequest(
     did: DID,
-    request: ContractInvokeRequest
-  ): Promise<{
-    response: ContractInvokeResponse;
-  }> {
-    if (request.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
+    request: Uint8Array,
+    opts?: ContractInvokeHandlerOptions
+  ): Promise<Array<string>> {
+    const ciRequest = await this.parseContractInvokeRequest(request);
+
+    if (ciRequest.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for contract invoke request');
     }
 
-    const guid = uuid.v4();
-
-    const ciResponse: ContractInvokeResponse = {
-      id: guid,
-      typ: request.typ,
-      type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
-      thid: request.thid ?? guid,
-      body: {
-        transaction_data: request.body.transaction_data,
-        scope: []
-      }
-    };
-
-    for (const proofReq of request.body.scope) {
+    const reqIdProofMap = new Map<number, ZKProof>();
+    for (const proofReq of ciRequest.body.scope) {
       const zkpReq: ZeroKnowledgeProofRequest = {
         id: proofReq.id,
         circuitId: proofReq.circuitId as CircuitId,
@@ -98,9 +118,15 @@ export class ContractRequestHandler implements IContractRequestHandler {
         }
       );
 
-      ciResponse.body.scope.push(zkpRes);
+      reqIdProofMap.set(proofReq.id, zkpRes as ZKProof);
     }
 
-    return { response: ciResponse };
+    const txData = ciRequest.body.transaction_data;
+
+    return this._zkpVerifier.submitZKPResponse(
+      txData.contract_address,
+      txData.chain_id,
+      reqIdProofMap
+    );
   }
 }

@@ -24,17 +24,5 @@ export type ContractInvokeTransactionData = {
   network?: string;
 };
 
-/** ContractInvokeResponse represents structure of contract invoke response object */
-export type ContractInvokeResponse = {
-  id: string;
-  typ: string;
-  type: string;
-  thid: string;
-  body: ContractInvokeResponseBody;
-};
-
-/** ContractInvokeResponseBody represents structure of contract invoke response body object */
-export type ContractInvokeResponseBody = {
-  scope: Array<ZeroKnowledgeProofResponse>;
-  transaction_data: ContractInvokeTransactionData;
-};
+/** ContractInvokeHandlerOptions represents contract invoke handler options */
+export type ContractInvokeHandlerOptions = {};

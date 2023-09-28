@@ -1,55 +1,65 @@
+import abi from './zkp-verifier-abi.json';
 import { ethers } from 'ethers';
-import abi from './onchain-revocation-abi.json';
-import { defaultEthConnectionConfig } from './state';
-import { ContractInvokeRequest, IContractRequestHandler } from '../../iden3comm';
-import { DID } from '@iden3/js-iden3-core';
+import { EthConnectionConfig } from './state';
+import { ZKProof } from '@iden3/js-jwz';
+import { IZKPVerifier } from '../interfaces/zkp-verifier';
 
 /**
  * ZKPVerifier is a class that allows to interact with the ZKPVerifier contract
  * and submitZKPResponse.
  *
- * @public
+ * @beta
  * @class ZKPVerifier
  */
-export class ZKPVerifier {
-  private readonly contractRequestHandler: IContractRequestHandler;
+export class ZKPVerifier implements IZKPVerifier {
+  private readonly config: EthConnectionConfig;
 
   /**
-   *
    * Creates an instance of ZKPVerifier.
    * @public
-   * @param {IContractRequestHandler} - contract request handler
+   * @param {EthConnectionConfig} config - eth connection config
    */
-
-  constructor(contractRequestHandler: IContractRequestHandler) {
-    this.contractRequestHandler = contractRequestHandler;
+  constructor(config: EthConnectionConfig) {
+    this.config = config;
   }
 
   /**
-   * Submit ZKP Response to ZKPVerifier contract.
+   * Submit ZKP Responses to ZKPVerifier contract.
    * @public
-   * @returns Promise<string>
+   * @param {string} address - ZKPVerifier contract address
+   * @param {number} chain_id - chain id
+   * @param {Map<number, ZKProof>} requestIdProofs - request id - proof data map
+   * @returns {Promise<Array<string>>} - array of transaction hashes
    */
   public async submitZKPResponse(
-    requestID: number,
-    request: ContractInvokeRequest,
-    did: DID,
-  ): Promise<void> {
-    const ciResponse = await this.contractRequestHandler.handleContractInvokeRequest(did, request);
-    const txData = ciResponse.response.body.transaction_data;
+    address: string,
+    chain_id: number,
+    requestIdProofs: Map<number, ZKProof>
+  ): Promise<Array<string>> {
+    this.config.chainId = chain_id;
 
-    const config = defaultEthConnectionConfig;
-    config.chainId = txData.chain_id;
+    const provider = new ethers.providers.JsonRpcProvider(this.config);
+    const contract: ethers.Contract = new ethers.Contract(address, abi, provider);
 
-    const provider = new ethers.providers.JsonRpcProvider(config);
-    const contract: ethers.Contract = new ethers.Contract(txData.contract_address, abi, provider);
+    const txHashes = [];
+    for (const requestProof of requestIdProofs) {
+      const requestID = requestProof[0];
+      const proofData = requestProof[1];
+      const inputs = proofData.pub_signals;
+      const a = proofData.proof.pi_a;
+      const b = proofData.proof.pi_b;
+      const c = proofData.proof.pi_c;
+      const tx = await contract.submitZKPResponse([requestID, inputs, a, b, c]);
+      const txnReceipt = await tx.wait();
+      const status: number = txnReceipt.status;
+      const txnHash: string = txnReceipt.transactionHash;
 
-    for (const proofRes of ciResponse.response.body.scope) {
-      const inputs = proofRes.pub_signals;
-      const a = proofRes.proof.pi_a;
-      const b = proofRes.proof.pi_b;
-      const c = proofRes.proof.pi_c;
-      const response = await contract.submitZKPResponse([requestID, inputs, a, b, c]);
+      if (status === 0) {
+        throw new Error(`transaction: ${txnHash} failed to mined`);
+      }
+      txHashes.push(txnHash);
     }
+
+    return txHashes;
   }
 }
