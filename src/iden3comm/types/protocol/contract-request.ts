@@ -1,4 +1,4 @@
-import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from './auth';
+import { ZeroKnowledgeProofRequest } from './auth';
 
 /** ContractInvokeRequest represents structure of contract invoke request object */
 export type ContractInvokeRequest = {
@@ -25,4 +25,4 @@ export type ContractInvokeTransactionData = {
 };
 
 /** ContractInvokeHandlerOptions represents contract invoke handler options */
-export type ContractInvokeHandlerOptions = {};
+export type ContractInvokeHandlerOptions = object;

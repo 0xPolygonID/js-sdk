@@ -92,7 +92,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
   async handleContractInvokeRequest(
     did: DID,
     request: Uint8Array,
-    opts?: ContractInvokeHandlerOptions
+    opts?: ContractInvokeHandlerOptions //eslint-disable-line @typescript-eslint/no-unused-vars
   ): Promise<Array<string>> {
     const ciRequest = await this.parseContractInvokeRequest(request);
 
