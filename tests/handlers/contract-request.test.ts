@@ -263,10 +263,10 @@ describe('contact-request', () => {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(ciRequest));
-    const authRes = await contractRequest.handleContractInvokeRequest(userDID, msgBytes);
+    const ciResponse = await contractRequest.handleContractInvokeRequest(userDID, msgBytes);
 
-    expect(authRes.length).to.be.equal(1);
-    expect(authRes[0]).to.be.equal('txhash1');
+    expect(ciResponse.length).to.be.equal(1);
+    expect(ciResponse[0]).to.be.equal('txhash1');
   });
 
 

@@ -67,10 +67,10 @@ export class ContractRequestHandler implements IContractRequestHandler {
   ) {}
 
   /**
-   * unpacks authorization request
+   * unpacks contract-request request
    * @public
    * @param {Uint8Array} request - raw byte message
-   * @returns `Promise<AuthorizationRequestMessage>`
+   * @returns `Promise<ContractInvokeRequest>`
    */
   async parseContractInvokeRequest(request: Uint8Array): Promise<ContractInvokeRequest> {
     const { unpackedMessage: message } = await this._packerMgr.unpack(request);
