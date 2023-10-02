@@ -344,7 +344,7 @@ export function isIssuerGenesis(issuer: string, state: string): boolean {
 }
 
 /**
- * @deprecated The method should not be used. Use isGenesisStateId instead.
+ * @deprecated The method should not be used. Use isGenesisState instead.
  * Checks if id is created from given state and type is genesis
  *
  * @param {bigint} id
