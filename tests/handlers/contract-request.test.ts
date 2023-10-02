@@ -48,7 +48,7 @@ import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, Signer } from 'ethers';
 
-describe.only('contact-request', () => {
+describe('contact-request', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 

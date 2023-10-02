@@ -112,7 +112,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
     for (const proofReq of ciRequest.body.scope) {
       if (!this._allowedCircuits.includes(proofReq.circuitId as CircuitId)) {
         throw new Error(
-          `Can\'t handle circuit ${proofReq.circuitId}. Only onchain circuits allowed.`
+          `Can't handle circuit ${proofReq.circuitId}. Only onchain circuits allowed.`
         );
       }
 
