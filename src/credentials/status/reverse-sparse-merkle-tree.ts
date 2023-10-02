@@ -15,6 +15,7 @@ import { CredentialStatusResolver, CredentialStatusResolveOptions } from './reso
 import { CredentialStatus, IssuerData, RevocationStatus } from '../../verifiable';
 import { strMTHex } from '../../circuits';
 import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
+import { isGenesisState } from './utils';
 
 /**
  * ProofNode is a partial Reverse Hash Service result
@@ -154,27 +155,31 @@ export class RHSResolver implements CredentialStatusResolver {
     issuerDID: DID,
     issuerData?: IssuerData
   ): Promise<RevocationStatus> {
-    const id = DID.idFromDID(issuerDID);
+    const issuerId = DID.idFromDID(issuerDID);
 
     let latestState: bigint;
     try {
-      const latestStateInfo = await this._state.getLatestStateById(id.bigInt());
-      latestState = latestStateInfo?.state || BigInt(0);
+      const latestStateInfo = await this._state.getLatestStateById(issuerId.bigInt());
+      if (!latestStateInfo.state) {
+        throw new Error('state contract returned empty state');
+      }
+      latestState = latestStateInfo.state;
     } catch (e) {
       const errMsg = (e as { reason: string })?.reason ?? (e as Error).message ?? (e as string);
-      if (errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST)) {
-        const currentState = this.extractState(credentialStatus.id);
-        if (!currentState) {
-          return this.getRevocationStatusFromIssuerData(issuerDID, issuerData);
-        }
-        const currentStateBigInt = newHashFromHex(currentState).bigInt();
-        if (!isGenesisStateId(id.bigInt(), currentStateBigInt, id.type())) {
-          throw new Error(`state ${currentState} is not genesis`);
-        }
-        latestState = currentStateBigInt;
-      } else {
+      if (!errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST)) {
         throw e;
       }
+      const stateHex = this.extractState(credentialStatus.id);
+      if (!stateHex) {
+        return this.getRevocationStatusFromIssuerData(issuerDID, issuerData);
+      }
+      const currentStateBigInt = newHashFromHex(stateHex).bigInt();
+      if (!isGenesisState(issuerDID, currentStateBigInt)) {
+        throw new Error(
+          `latest state not found and state prameter ${stateHex} is not genesis state`
+        );
+      }
+      latestState = currentStateBigInt;
     }
 
     const rhsHost = credentialStatus.id.split('/node')[0];
@@ -321,6 +326,7 @@ export class RHSResolver implements CredentialStatusResolver {
 }
 
 /**
+ * @deprecated The method should not be used. Use isGenesisState instead.
  * Checks if issuer did is created from given state is genesis
  *
  * @param {string} issuer - did (string)
@@ -338,6 +344,7 @@ export function isIssuerGenesis(issuer: string, state: string): boolean {
 }
 
 /**
+ * @deprecated The method should not be used. Use isGenesisStateId instead.
  * Checks if id is created from given state and type is genesis
  *
  * @param {bigint} id
