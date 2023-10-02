@@ -10,13 +10,12 @@ import {
   ContractInvokeRequest
 } from '../types/protocol/contract-request';
 import { DID } from '@iden3/js-iden3-core';
-import { ZKProof } from '@iden3/js-jwz';
 import { IZKPVerifier } from '../../storage';
 
 /**
  * Interface that allows the processing of the contract request
  *
- * @public
+ * @beta
  * @interface IContractRequestHandler
  */
 export interface IContractRequestHandler {
@@ -34,24 +33,29 @@ export interface IContractRequestHandler {
    * @param {did} did  - sender DID
    * @param {Uint8Array} request - raw byte message
    * @param {ContractInvokeHandlerOptions} opts - handler options
-   * @returns {Array<string>}` - array of transaction hashes
+   * @returns {Map<string, ZeroKnowledgeProofResponse>}` -  map of transaction hash - ZeroKnowledgeProofResponse
    */
   handleContractInvokeRequest(
     did: DID,
     request: Uint8Array,
     opts?: ContractInvokeHandlerOptions
-  ): Promise<Array<string>>;
+  ): Promise<Map<string, ZeroKnowledgeProofResponse>>;
 }
 /**
  *
  * Allows to process ContractInvokeRequest protocol message
  *
- * @public
+ * @beta
 
  * @class ContractRequestHandler
  * @implements implements IContractRequestHandler interface
  */
 export class ContractRequestHandler implements IContractRequestHandler {
+  private readonly _allowedCircuits = [
+    CircuitId.AtomicQueryMTPV2OnChain,
+    CircuitId.AtomicQuerySigV2OnChain
+  ];
+
   /**
    * Creates an instance of ContractRequestHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
@@ -87,21 +91,31 @@ export class ContractRequestHandler implements IContractRequestHandler {
    * @param {did} did  - sender DID
    * @param {ContractInvokeRequest} request  - contract invoke request
    * @param {ContractInvokeHandlerOptions} opts - handler options
-   * @returns {Array<string>}` - array of transaction hashes
+   * @returns {Map<string, ZeroKnowledgeProofResponse>}` - map of transaction hash - ZeroKnowledgeProofResponse
    */
   async handleContractInvokeRequest(
     did: DID,
     request: Uint8Array,
-    opts?: ContractInvokeHandlerOptions //eslint-disable-line @typescript-eslint/no-unused-vars
-  ): Promise<Array<string>> {
+    opts: ContractInvokeHandlerOptions
+  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
     const ciRequest = await this.parseContractInvokeRequest(request);
 
     if (ciRequest.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for contract invoke request');
     }
 
-    const reqIdProofMap = new Map<number, ZKProof>();
+    if (!opts.ethSigner) {
+      throw new Error("Can't sign transaction. Provide Signer in options.");
+    }
+
+    const zkRequests = [];
     for (const proofReq of ciRequest.body.scope) {
+      if (!this._allowedCircuits.includes(proofReq.circuitId as CircuitId)) {
+        throw new Error(
+          `Can\'t handle circuit ${proofReq.circuitId}. Only onchain circuits allowed.`
+        );
+      }
+
       const zkpReq: ZeroKnowledgeProofRequest = {
         id: proofReq.id,
         circuitId: proofReq.circuitId as CircuitId,
@@ -114,11 +128,12 @@ export class ContractRequestHandler implements IContractRequestHandler {
         zkpReq,
         did,
         {
-          skipRevocation: query.skipClaimRevocationCheck ?? false
+          skipRevocation: query.skipClaimRevocationCheck ?? false,
+          challenge: opts.challange
         }
       );
 
-      reqIdProofMap.set(proofReq.id, zkpRes as ZKProof);
+      zkRequests.push(zkpRes);
     }
 
     const txData = ciRequest.body.transaction_data;
@@ -126,7 +141,8 @@ export class ContractRequestHandler implements IContractRequestHandler {
     return this._zkpVerifier.submitZKPResponse(
       txData.contract_address,
       txData.chain_id,
-      reqIdProofMap
+      opts.ethSigner,
+      zkRequests
     );
   }
 }

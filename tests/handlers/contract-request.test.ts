@@ -6,7 +6,8 @@ import {
   CredentialStorage,
   FSCircuitStorage,
   IdentityWallet,
-  byteEncoder
+  byteEncoder,
+  EthStateStorage
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -21,6 +22,7 @@ import path from 'path';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import {
   AuthDataPrepareFunc,
+  ContractInvokeHandlerOptions,
   ContractInvokeRequest,
   ContractInvokeRequestBody,
   ContractInvokeTransactionData,
@@ -34,17 +36,19 @@ import {
   VerificationHandlerFunc,
   VerificationParams,
   ZeroKnowledgeProofRequest,
+  ZeroKnowledgeProofResponse,
   ZKPPacker
 } from '../../src/iden3comm';
-import { proving, ZKProof } from '@iden3/js-jwz';
+import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
+import { ethers, Signer } from 'ethers';
 
-describe('contact-request', () => {
+describe.only('contact-request', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -54,6 +58,7 @@ describe('contact-request', () => {
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
   const ipfsNodeURL = process.env.IPFS_URL as string;
+  const walletKey = process.env.WALLET_KEY as string;
 
   const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
   const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -90,12 +95,16 @@ describe('contact-request', () => {
   };
 
   const mockZKPVerifier: IZKPVerifier = {
-    submitZKPResponse: async ( 
-        address: string,
-        chain_id: number,
-        requestIdProofs: Map<number, ZKProof>) => {
-      return ['txhash1'];
-    },
+    submitZKPResponse: async (
+      address: string,
+      chain_id: number,
+      signer: Signer,
+      zkProofResponses: ZeroKnowledgeProofResponse[]
+    ) => {
+      const response = new Map<string, ZeroKnowledgeProofResponse>();
+      response.set('txhash1', zkProofResponses[0]);
+      return response;
+    }
   };
 
   const getPackageMgr = async (
@@ -226,7 +235,7 @@ describe('contact-request', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQuerySigV2,
+      circuitId: CircuitId.AtomicQuerySigV2OnChain,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -242,9 +251,9 @@ describe('contact-request', () => {
     };
 
     const transactionData: ContractInvokeTransactionData = {
-        contract_address: 'test_address',
-        method_id: '123',
-        chain_id: 80001
+      contract_address: 'test_address',
+      method_id: '123',
+      chain_id: 80001
     };
 
     const ciRequestBody: ContractInvokeRequestBody = {
@@ -262,12 +271,22 @@ describe('contact-request', () => {
       body: ciRequestBody
     };
 
+    const ethSigner = new ethers.Wallet(
+      walletKey,
+      (dataStorage.states as EthStateStorage).provider
+    );
+
+    const options: ContractInvokeHandlerOptions = {
+      ethSigner,
+      challange: BigInt(112312)
+    };
     const msgBytes = byteEncoder.encode(JSON.stringify(ciRequest));
-    const ciResponse = await contractRequest.handleContractInvokeRequest(userDID, msgBytes);
+    const ciResponse = await contractRequest.handleContractInvokeRequest(
+      userDID,
+      msgBytes,
+      options
+    );
 
-    expect(ciResponse.length).to.be.equal(1);
-    expect(ciResponse[0]).to.be.equal('txhash1');
+    expect(ciResponse.has('txhash1')).to.be.true;
   });
-
-
 });

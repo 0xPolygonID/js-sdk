@@ -1,3 +1,4 @@
+import { Signer } from 'ethers';
 import { ZeroKnowledgeProofRequest } from './auth';
 
 /** ContractInvokeRequest represents structure of contract invoke request object */
@@ -25,4 +26,7 @@ export type ContractInvokeTransactionData = {
 };
 
 /** ContractInvokeHandlerOptions represents contract invoke handler options */
-export type ContractInvokeHandlerOptions = object;
+export type ContractInvokeHandlerOptions = {
+  ethSigner: Signer;
+  challange?: bigint;
+};
