@@ -35,6 +35,31 @@ export class OnChainRevocationStorage {
   }
 
   /**
+   * Get revocation status by issuerId, issuerState and nonce from the onchain.
+   * @public
+   * @returns Promise<RevocationStatus>
+   */
+  public async getRevocationStatusByIdAndState(
+    issuerID: bigint,
+    state: bigint,
+    nonce: number
+  ): Promise<RevocationStatus> {
+    const response = await this.onchainContract.getRevocationStatusByIdAndState(
+      issuerID,
+      state,
+      nonce
+    );
+
+    const issuer = OnChainRevocationStorage.convertIssuerInfo(response.issuer);
+    const mtp = OnChainRevocationStorage.convertSmtProofToProof(response.mtp);
+
+    return {
+      issuer,
+      mtp
+    };
+  }
+
+  /**
    * Get revocation status by nonce from the onchain contract.
    * @public
    * @returns Promise<RevocationStatus>
