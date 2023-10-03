@@ -9,7 +9,9 @@ export interface IOnchainRevocationStore {
   /**
    * gets latest state of identity
    *
-   * @param {bigint} id - id to check
+   * @param {bigint} issuerID - issuer id
+   * @param {bigint} state - issuer state
+   * @param {number} nonce - revocation nonce
    * @returns `Promise<StateInfo>`
    */
   getRevocationStatusByIdAndState(

@@ -176,7 +176,7 @@ export class RHSResolver implements CredentialStatusResolver {
       const currentStateBigInt = newHashFromHex(stateHex).bigInt();
       if (!isGenesisState(issuerDID, currentStateBigInt)) {
         throw new Error(
-          `latest state not found and state prameter ${stateHex} is not genesis state`
+          `latest state not found and state parameter ${stateHex} is not genesis state`
         );
       }
       latestState = currentStateBigInt;

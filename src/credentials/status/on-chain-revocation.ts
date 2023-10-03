@@ -21,7 +21,7 @@ export class OnChainResolver implements CredentialStatusResolver {
    *
    * Creates an instance of OnChainIssuer.
    * @public
-   * @param {Array<EthConnectionConfig>} - list of ethereum network connections
+   * @param {Array<EthConnectionConfig>} _configs - list of ethereum network connections
    */
   constructor(private readonly _configs: EthConnectionConfig[]) {}
 
@@ -77,13 +77,13 @@ export class OnChainResolver implements CredentialStatusResolver {
 
       if (!stateHex) {
         throw new Error(
-          'latest state not found and state prameter is not present in credentialStatus.id'
+          'latest state not found and state parameter is not present in credentialStatus.id'
         );
       }
       const stateBigInt = newHashFromHex(stateHex).bigInt();
       if (!isGenesisState(issuer, stateBigInt)) {
         throw new Error(
-          `latest state not found and state prameter ${stateHex} is not genesis state`
+          `latest state not found and state parameter ${stateHex} is not genesis state`
         );
       }
       latestIssuerState = stateBigInt;
