@@ -55,8 +55,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         inputs,
         zkProof.proof.pi_a.slice(0, 2),
         [
-          [zkProof.proof.pi_b[0][1].toString(), zkProof.proof.pi_b[0][0].toString()],
-          [zkProof.proof.pi_b[1][1].toString(), zkProof.proof.pi_b[1][0].toString()]
+          [zkProof.proof.pi_b[0][1], zkProof.proof.pi_b[0][0]],
+          [zkProof.proof.pi_b[1][1], zkProof.proof.pi_b[1][0]]
         ],
         zkProof.proof.pi_c.slice(0, 2)
       ];
