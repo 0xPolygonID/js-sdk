@@ -7,7 +7,9 @@ import {
   FSCircuitStorage,
   IdentityWallet,
   byteEncoder,
-  EthStateStorage
+  EthStateStorage,
+  EthConnectionConfig,
+  defaultEthConnectionConfig
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -97,8 +99,8 @@ describe('contact-request', () => {
   const mockZKPVerifier: IZKPVerifier = {
     submitZKPResponse: async (
       address: string,
-      chain_id: number,
       signer: Signer,
+      ethConfig: EthConnectionConfig,
       zkProofResponses: ZeroKnowledgeProofResponse[]
     ) => {
       const response = new Map<string, ZeroKnowledgeProofResponse>();
@@ -185,7 +187,7 @@ describe('contact-request', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
+    contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier, defaultEthConnectionConfig);
   });
 
   it('contract request flow', async () => {
