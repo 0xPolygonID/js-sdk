@@ -6,7 +6,7 @@ import { DID, Id } from '@iden3/js-iden3-core';
 import { VerifiableConstants } from '../../verifiable/constants';
 import { isGenesisState } from './utils';
 import { newHashFromHex } from '@iden3/js-merkletree';
-import { EthStateStorage } from '../../../src/storage/blockchain/state';
+import { EthStateStorage } from '../../storage/blockchain/state';
 import { getChainId } from '../../storage/blockchain';
 import { IStateStorage, IOnchainRevocationStore } from '../../storage';
 /**
