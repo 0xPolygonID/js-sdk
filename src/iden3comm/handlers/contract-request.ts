@@ -10,7 +10,7 @@ import {
   ContractInvokeRequest
 } from '../types/protocol/contract-request';
 import { DID } from '@iden3/js-iden3-core';
-import { EthConnectionConfig, IZKPVerifier } from '../../storage';
+import { IOnChainZKPVerifier } from '../../storage';
 
 /**
  * Interface that allows the processing of the contract request
@@ -60,15 +60,14 @@ export class ContractRequestHandler implements IContractRequestHandler {
    * Creates an instance of ContractRequestHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    * @param {IProofService} _proofService -  proof service to verify zk proofs
-   * @param {IZKPVerifier} _zkpVerifier - zkp verifier to submit response
+   * @param {IOnChainZKPVerifier} _zkpVerifier - zkp verifier to submit response
    *
    */
 
   constructor(
     private readonly _packerMgr: IPackageManager,
     private readonly _proofService: IProofService,
-    private readonly _zkpVerifier: IZKPVerifier,
-    private readonly _ethConfig: EthConnectionConfig
+    private readonly _zkpVerifier: IOnChainZKPVerifier
   ) {}
 
   /**
@@ -139,12 +138,10 @@ export class ContractRequestHandler implements IContractRequestHandler {
 
     const txData = ciRequest.body.transaction_data;
 
-    const requestConfig =  {...this._ethConfig, chainId: txData.chain_id, };
-
     return this._zkpVerifier.submitZKPResponse(
       txData.contract_address,
       opts.ethSigner,
-      requestConfig,
+      txData.chain_id,
       zkRequests
     );
   }

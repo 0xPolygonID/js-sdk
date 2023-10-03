@@ -1,33 +1,46 @@
 import abi from './zkp-verifier-abi.json';
 import { ethers, Signer } from 'ethers';
 import { EthConnectionConfig } from './state';
-import { IZKPVerifier } from '../interfaces/zkp-verifier';
+import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
 import { ZeroKnowledgeProofResponse } from '../../iden3comm';
 
 /**
- * ZKPVerifier is a class that allows to interact with the ZKPVerifier contract
+ * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
  * and submitZKPResponse.
  *
  * @beta
- * @class ZKPVerifier
+ * @class OnChainZKPVerifier
  */
-export class ZKPVerifier implements IZKPVerifier {
+export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   /**
-   * Submit ZKP Responses to ZKPVerifier contract.
+   *
+   * Creates an instance of OnChainZKPVerifier.
    * @public
-   * @param {string} address - ZKPVerifier contract address
+   * @param {EthConnectionConfig[]} - array of ETH configs
+   */
+
+  constructor(private readonly _configs: EthConnectionConfig[]) {}
+
+  /**
+   * Submit ZKP Responses to OnChainZKPVerifier contract.
+   * @public
+   * @param {string} address - OnChainZKPVerifier contract address
    * @param {Signer} ethSigner - tx signer
-   * @param {EthConnectionConfig} ethConfig - ETH config
+   * @param {number} chainId - chain Id
    * @param {ZeroKnowledgeProofResponse[]} zkProofResponses - zkProofResponses
    * @returns {Promise<Map<string, ZeroKnowledgeProofResponse>>} - map of transaction hash - ZeroKnowledgeProofResponse
    */
   public async submitZKPResponse(
     address: string,
     ethSigner: Signer,
-    ethConfig: EthConnectionConfig,
+    chainId: number,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
-    const provider = new ethers.providers.JsonRpcProvider(ethConfig);
+    const chainConfig = this._configs.find((i) => i.chainId == chainId);
+    if (!chainConfig) {
+      throw new Error(`config for chain id ${chainId} was not found`);
+    }
+    const provider = new ethers.providers.JsonRpcProvider(chainConfig);
     const verifierContract: ethers.Contract = new ethers.Contract(address, abi, provider);
     ethSigner = ethSigner.connect(provider);
     const contract = verifierContract.connect(ethSigner);

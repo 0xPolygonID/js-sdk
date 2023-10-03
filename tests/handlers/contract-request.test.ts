@@ -8,14 +8,13 @@ import {
   IdentityWallet,
   byteEncoder,
   EthStateStorage,
-  EthConnectionConfig,
-  ZKPVerifier,
+  OnChainZKPVerifier,
   defaultEthConnectionConfig,
   hexToBytes
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage, IZKPVerifier } from '../../src/storage/interfaces';
+import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
@@ -99,11 +98,11 @@ describe('contract-request', () => {
     }
   };
 
-  const mockZKPVerifier: IZKPVerifier = {
+  const mockZKPVerifier: IOnChainZKPVerifier = {
     submitZKPResponse: async (
       address: string,
       signer: Signer,
-      ethConfig: EthConnectionConfig,
+      chainId: number,
       zkProofResponses: ZeroKnowledgeProofResponse[]
     ) => {
       const response = new Map<string, ZeroKnowledgeProofResponse>();
@@ -190,7 +189,7 @@ describe('contract-request', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier, defaultEthConnectionConfig);
+    contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
   });
 
   it('contract request flow', async () => {
@@ -295,9 +294,8 @@ describe('contract-request', () => {
     expect(ciResponse.has('txhash1')).to.be.true;
   });
 
-  // SKIPPED : integration test 
-  it('contract request flow - integration test', async () => {
-
+  // SKIPPED : integration test
+  it.skip('contract request flow - integration test', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = rpcUrl;
     stateEthConfig.contractAddress = '0x134b1be34911e39a8397ec6289782989729807a4';
@@ -335,8 +333,8 @@ describe('contract-request', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier, defaultEthConnectionConfig);
-  
+    contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
+
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -398,18 +396,19 @@ describe('contract-request', () => {
       }
     };
 
-    let contractAddress = '0xE826f870852D7eeeB79B2C030298f9B5DAA8C8a3';
-    let conf = defaultEthConnectionConfig;
+    const contractAddress = '0xE826f870852D7eeeB79B2C030298f9B5DAA8C8a3';
+    const conf = defaultEthConnectionConfig;
     conf.contractAddress = contractAddress;
     conf.url = rpcUrl;
+    conf.chainId = 80001;
 
-    const zkpVerifier = new ZKPVerifier();
-    contractRequest = new ContractRequestHandler(packageMgr, proofService, zkpVerifier, conf);
+    const zkpVerifier = new OnChainZKPVerifier([conf]);
+    contractRequest = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: contractAddress,
       method_id: 'b68967e2',
-      chain_id: 80001
+      chain_id: conf.chainId
     };
 
     const ciRequestBody: ContractInvokeRequestBody = {
@@ -427,16 +426,13 @@ describe('contract-request', () => {
       body: ciRequestBody
     };
 
-    const ethSigner = new ethers.Wallet(
-      walletKey
-    );
+    const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address))
+    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
 
     const options: ContractInvokeHandlerOptions = {
       ethSigner,
       challenge
-      
     };
     const msgBytes = byteEncoder.encode(JSON.stringify(ciRequest));
     const ciResponse = await contractRequest.handleContractInvokeRequest(
@@ -446,7 +442,8 @@ describe('contract-request', () => {
     );
 
     expect(ciResponse).not.be.undefined;
-    expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(proofReq.id);
-
+    expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(
+      proofReq.id
+    );
   });
 });

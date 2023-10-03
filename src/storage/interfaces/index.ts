@@ -5,4 +5,4 @@ export * from './state';
 export * from './data-storage';
 export * from './data-source';
 export * from './circuits';
-export * from './zkp-verifier';
+export * from './onchain-zkp-verifier';
