@@ -97,8 +97,8 @@ export class EthStateStorage implements IStateStorage {
       isOldStateGenesis,
       proof.proof.pi_a.slice(0, 2),
       [
-        [proof.proof.pi_b[0][1].toString(), proof.proof.pi_b[0][0].toString()],
-        [proof.proof.pi_b[1][1].toString(), proof.proof.pi_b[1][0].toString()]
+        [proof.proof.pi_b[0][1], proof.proof.pi_b[0][0]],
+        [proof.proof.pi_b[1][1], proof.proof.pi_b[1][0]]
       ],
       proof.proof.pi_c.slice(0, 2)
     ];
