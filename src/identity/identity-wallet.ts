@@ -900,7 +900,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     await this._storage.identity.saveIdentity({
       did: issuerDID.string(),
-      state: treeState ? treeState.state : latestTreeState.state,
+      state: treeState?.state ?? latestTreeState.state,
       isStatePublished: published,
       isStateGenesis: false
     });

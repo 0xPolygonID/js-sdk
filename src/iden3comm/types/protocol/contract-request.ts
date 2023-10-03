@@ -28,5 +28,5 @@ export type ContractInvokeTransactionData = {
 /** ContractInvokeHandlerOptions represents contract invoke handler options */
 export type ContractInvokeHandlerOptions = {
   ethSigner: Signer;
-  challange?: bigint;
+  challenge?: bigint;
 };

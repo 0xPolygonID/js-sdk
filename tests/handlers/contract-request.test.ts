@@ -278,7 +278,7 @@ describe('contact-request', () => {
 
     const options: ContractInvokeHandlerOptions = {
       ethSigner,
-      challange: BigInt(112312)
+      challenge: BigInt(112312)
     };
     const msgBytes = byteEncoder.encode(JSON.stringify(ciRequest));
     const ciResponse = await contractRequest.handleContractInvokeRequest(

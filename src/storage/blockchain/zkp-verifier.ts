@@ -12,16 +12,12 @@ import { ZeroKnowledgeProofResponse } from '../../iden3comm';
  * @class ZKPVerifier
  */
 export class ZKPVerifier implements IZKPVerifier {
-  private readonly config: EthConnectionConfig;
-
   /**
    * Creates an instance of ZKPVerifier.
    * @public
    * @param {EthConnectionConfig} config - eth connection config
    */
-  constructor(config: EthConnectionConfig) {
-    this.config = config;
-  }
+  constructor(private readonly _config: EthConnectionConfig) {}
 
   /**
    * Submit ZKP Responses to ZKPVerifier contract.
@@ -38,9 +34,9 @@ export class ZKPVerifier implements IZKPVerifier {
     ethSigner: Signer,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
-    this.config.chainId = chain_id;
+    this._config.chainId = chain_id;
 
-    const provider = new ethers.providers.JsonRpcProvider(this.config);
+    const provider = new ethers.providers.JsonRpcProvider(this._config);
     const verifierContract: ethers.Contract = new ethers.Contract(address, abi, provider);
     const contract = verifierContract.connect(ethSigner);
 

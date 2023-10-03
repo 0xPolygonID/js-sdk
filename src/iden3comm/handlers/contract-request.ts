@@ -45,7 +45,7 @@ export interface IContractRequestHandler {
  *
  * Allows to process ContractInvokeRequest protocol message
  *
- * @beta
+ * @public
 
  * @class ContractRequestHandler
  * @implements implements IContractRequestHandler interface
@@ -129,7 +129,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
         did,
         {
           skipRevocation: query.skipClaimRevocationCheck ?? false,
-          challenge: opts.challange
+          challenge: opts.challenge
         }
       );
 
