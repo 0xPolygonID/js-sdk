@@ -240,7 +240,6 @@ describe('onchain', () => {
     chai.spy.on(onchainResolver, '_getStateStorageForIssuer', () => {
       return {
         getLatestStateById: () => {
-          console.log('mocked getLatestStateById genesis case');
           throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
         }
       };
@@ -248,7 +247,6 @@ describe('onchain', () => {
     chai.spy.on(onchainResolver, '_getOnChainRevocationStorageForIssuer', () => {
       return {
         getRevocationStatusByIdAndState: () => {
-          console.log('mocked getRevocationStatusByIdAndState genesis case');
           return {
             mtp: {
               existence: false
@@ -345,7 +343,6 @@ describe('onchain', () => {
     chai.spy.on(onchainResolver, '_getStateStorageForIssuer', () => {
       return {
         getLatestStateById: () => {
-          console.log('mocked getLatestStateById latest state case');
           return {
             state: BigInt('0xf600ba49073ff1c396ed674263f04cb246647039d55d43a49ce310a857fa8923')
           };
@@ -355,7 +352,6 @@ describe('onchain', () => {
     chai.spy.on(onchainResolver, '_getOnChainRevocationStorageForIssuer', () => {
       return {
         getRevocationStatusByIdAndState: () => {
-          console.log('mocked getRevocationStatusByIdAndState latest state case');
           return {
             mtp: {
               existence: false
