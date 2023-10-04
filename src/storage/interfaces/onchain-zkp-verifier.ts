@@ -10,7 +10,7 @@ import { ZeroKnowledgeProofResponse } from '../../iden3comm';
 export interface IOnChainZKPVerifier {
   /**
    * Submit ZKP Responses to OnChainZKPVerifier contract.
-   * @public
+   * @beta
    * @param {string} address - OnChainZKPVerifier contract address
    * @param {Signer} ethSigner - tx signer
    * @param {number} chainId - chain Id

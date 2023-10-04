@@ -15,7 +15,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   /**
    *
    * Creates an instance of OnChainZKPVerifier.
-   * @public
+   * @beta
    * @param {EthConnectionConfig[]} - array of ETH configs
    */
 
@@ -23,7 +23,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
   /**
    * Submit ZKP Responses to OnChainZKPVerifier contract.
-   * @public
+   * @beta
    * @param {string} address - OnChainZKPVerifier contract address
    * @param {Signer} ethSigner - tx signer
    * @param {number} chainId - chain Id

@@ -5,12 +5,10 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { IPackageManager, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../types';
 
 import { ProofQuery } from '../../verifiable';
-import {
-  ContractInvokeHandlerOptions,
-  ContractInvokeRequest
-} from '../types/protocol/contract-request';
+import { ContractInvokeRequest } from '../types/protocol/contract-request';
 import { DID } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
+import { Signer } from 'ethers';
 
 /**
  * Interface that allows the processing of the contract request
@@ -21,7 +19,7 @@ import { IOnChainZKPVerifier } from '../../storage';
 export interface IContractRequestHandler {
   /**
    * unpacks contract invoker request
-   * @public
+   * @beta
    * @param {Uint8Array} request - raw byte message
    * @returns `Promise<ContractInvokeRequest>`
    */
@@ -29,7 +27,7 @@ export interface IContractRequestHandler {
 
   /**
    * handle contract invoker request
-   * @public
+   * @beta
    * @param {did} did  - sender DID
    * @param {Uint8Array} request - raw byte message
    * @param {ContractInvokeHandlerOptions} opts - handler options
@@ -41,11 +39,18 @@ export interface IContractRequestHandler {
     opts?: ContractInvokeHandlerOptions
   ): Promise<Map<string, ZeroKnowledgeProofResponse>>;
 }
+
+/** ContractInvokeHandlerOptions represents contract invoke handler options */
+export type ContractInvokeHandlerOptions = {
+  ethSigner: Signer;
+  challenge?: bigint;
+};
+
 /**
  *
  * Allows to process ContractInvokeRequest protocol message
  *
- * @public
+ * @beta
 
  * @class ContractRequestHandler
  * @implements implements IContractRequestHandler interface
@@ -71,8 +76,8 @@ export class ContractRequestHandler implements IContractRequestHandler {
   ) {}
 
   /**
-   * unpacks contract-request request
-   * @public
+   * unpacks contract-invoke request
+   * @beta
    * @param {Uint8Array} request - raw byte message
    * @returns `Promise<ContractInvokeRequest>`
    */
@@ -87,7 +92,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
 
   /**
    * handle contract invoker request
-   * @public
+   * @beta
    * @param {did} did  - sender DID
    * @param {ContractInvokeRequest} request  - contract invoke request
    * @param {ContractInvokeHandlerOptions} opts - handler options
@@ -112,7 +117,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
     for (const proofReq of ciRequest.body.scope) {
       if (!this._allowedCircuits.includes(proofReq.circuitId as CircuitId)) {
         throw new Error(
-          `Can't handle circuit ${proofReq.circuitId}. Only onchain circuits allowed.`
+          `Can't handle circuit ${proofReq.circuitId}. Only onchain circuits are allowed.`
         );
       }
 
