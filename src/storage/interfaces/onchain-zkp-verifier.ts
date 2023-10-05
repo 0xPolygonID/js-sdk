@@ -1,5 +1,5 @@
 import { Signer } from 'ethers';
-import { ZeroKnowledgeProofResponse } from '../../iden3comm';
+import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
 
 /**
  * Interface that defines methods for ZKP verifier
@@ -11,16 +11,14 @@ export interface IOnChainZKPVerifier {
   /**
    * Submit ZKP Responses to OnChainZKPVerifier contract.
    * @beta
-   * @param {string} address - OnChainZKPVerifier contract address
    * @param {Signer} ethSigner - tx signer
-   * @param {number} chainId - chain Id
+   * @param {txData} ContractInvokeTransactionData - transaction data
    * @param {ZeroKnowledgeProofResponse[]} zkProofResponses - zkProofResponses
    * @returns {Promise<Map<string, ZeroKnowledgeProofResponse>>} - map of transaction hash - ZeroKnowledgeProofResponse
    */
   submitZKPResponse(
-    address: string,
     ethSigner: Signer,
-    chainId: number,
+    txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<string, ZeroKnowledgeProofResponse>>;
 }

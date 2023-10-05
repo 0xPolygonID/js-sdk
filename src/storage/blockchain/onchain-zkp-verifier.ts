@@ -2,7 +2,7 @@ import abi from './zkp-verifier-abi.json';
 import { ethers, Signer } from 'ethers';
 import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
-import { ZeroKnowledgeProofResponse } from '../../iden3comm';
+import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
@@ -12,6 +12,12 @@ import { ZeroKnowledgeProofResponse } from '../../iden3comm';
  * @class OnChainZKPVerifier
  */
 export class OnChainZKPVerifier implements IOnChainZKPVerifier {
+  /**
+   * solidity identifier for function signature: 
+   * function submitZKPResponse(uint64 requestId, uint256[] calldata inputs,
+   * uint256[2] calldata a, uint256[2][2] calldata b, uint256[2] calldata c) public
+   */
+  private readonly _supportedMethodId = 'b68967e2';
   /**
    *
    * Creates an instance of OnChainZKPVerifier.
@@ -24,24 +30,31 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   /**
    * Submit ZKP Responses to OnChainZKPVerifier contract.
    * @beta
-   * @param {string} address - OnChainZKPVerifier contract address
    * @param {Signer} ethSigner - tx signer
-   * @param {number} chainId - chain Id
+   * @param {txData} ContractInvokeTransactionData - transaction data
    * @param {ZeroKnowledgeProofResponse[]} zkProofResponses - zkProofResponses
    * @returns {Promise<Map<string, ZeroKnowledgeProofResponse>>} - map of transaction hash - ZeroKnowledgeProofResponse
    */
   public async submitZKPResponse(
-    address: string,
     ethSigner: Signer,
-    chainId: number,
+    txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
-    const chainConfig = this._configs.find((i) => i.chainId == chainId);
+    const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
     if (!chainConfig) {
-      throw new Error(`config for chain id ${chainId} was not found`);
+      throw new Error(`config for chain id ${txData.chain_id} was not found`);
+    }
+    if (txData.method_id.replace('0x', '') !== this._supportedMethodId) {
+      throw new Error(
+        `submit doesn't implement requested method id. Only '0x${this._supportedMethodId}' is supported.`
+      );
     }
     const provider = new ethers.providers.JsonRpcProvider(chainConfig);
-    const verifierContract: ethers.Contract = new ethers.Contract(address, abi, provider);
+    const verifierContract: ethers.Contract = new ethers.Contract(
+      txData.contract_address,
+      abi,
+      provider
+    );
     ethSigner = ethSigner.connect(provider);
     const contract = verifierContract.connect(ethSigner);
 

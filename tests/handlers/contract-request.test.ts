@@ -100,9 +100,8 @@ describe('contract-request', () => {
 
   const mockZKPVerifier: IOnChainZKPVerifier = {
     submitZKPResponse: async (
-      address: string,
       signer: Signer,
-      chainId: number,
+      txData: ContractInvokeTransactionData,
       zkProofResponses: ZeroKnowledgeProofResponse[]
     ) => {
       const response = new Map<string, ZeroKnowledgeProofResponse>();
@@ -275,10 +274,7 @@ describe('contract-request', () => {
       body: ciRequestBody
     };
 
-    const ethSigner = new ethers.Wallet(
-      walletKey,
-      (dataStorage.states as EthStateStorage).provider
-    );
+    const ethSigner = new ethers.Wallet(walletKey);
 
     const options: ContractInvokeHandlerOptions = {
       ethSigner,
