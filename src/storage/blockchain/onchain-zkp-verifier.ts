@@ -38,7 +38,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
     }
-    if (txData.method_id !== '0xb68967e2') {
+    if (txData.method_id.replace('0x', '') !== 'b68967e2') {
       throw new Error(`sumbit doesn't implement requested method id`);
     }
     const provider = new ethers.providers.JsonRpcProvider(chainConfig);
