@@ -12,6 +12,11 @@ import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../..
  * @class OnChainZKPVerifier
  */
 export class OnChainZKPVerifier implements IOnChainZKPVerifier {
+  /**
+   * solidity identifier for function signature: 
+   * function submitZKPResponse(uint64 requestId, uint256[] calldata inputs,
+   * uint256[2] calldata a, uint256[2][2] calldata b, uint256[2] calldata c) public
+   */
   private readonly _supportedMethodId = 'b68967e2';
   /**
    *
