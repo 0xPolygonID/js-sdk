@@ -12,6 +12,7 @@ import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../..
  * @class OnChainZKPVerifier
  */
 export class OnChainZKPVerifier implements IOnChainZKPVerifier {
+  private readonly _supportedMethodId = 'b68967e2';
   /**
    *
    * Creates an instance of OnChainZKPVerifier.
@@ -38,8 +39,10 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
     }
-    if (txData.method_id.replace('0x', '') !== 'b68967e2') {
-      throw new Error(`submit doesn't implement requested method id. Only '0xb68967e2' is supported.`);
+    if (txData.method_id.replace('0x', '') !== this._supportedMethodId) {
+      throw new Error(
+        `submit doesn't implement requested method id. Only '0x${this._supportedMethodId}' is supported.`
+      );
     }
     const provider = new ethers.providers.JsonRpcProvider(chainConfig);
     const verifierContract: ethers.Contract = new ethers.Contract(
