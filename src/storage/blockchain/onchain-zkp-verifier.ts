@@ -2,7 +2,7 @@ import abi from './zkp-verifier-abi.json';
 import { ethers, Signer } from 'ethers';
 import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
-import { ZeroKnowledgeProofResponse } from '../../iden3comm';
+import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
@@ -24,24 +24,29 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   /**
    * Submit ZKP Responses to OnChainZKPVerifier contract.
    * @beta
-   * @param {string} address - OnChainZKPVerifier contract address
    * @param {Signer} ethSigner - tx signer
-   * @param {number} chainId - chain Id
+   * @param {txData} ContractInvokeTransactionData - transaction data
    * @param {ZeroKnowledgeProofResponse[]} zkProofResponses - zkProofResponses
    * @returns {Promise<Map<string, ZeroKnowledgeProofResponse>>} - map of transaction hash - ZeroKnowledgeProofResponse
    */
   public async submitZKPResponse(
-    address: string,
     ethSigner: Signer,
-    chainId: number,
+    txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
-    const chainConfig = this._configs.find((i) => i.chainId == chainId);
+    const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
     if (!chainConfig) {
-      throw new Error(`config for chain id ${chainId} was not found`);
+      throw new Error(`config for chain id ${txData.chain_id} was not found`);
+    }
+    if (txData.method_id !== '0xb68967e2') {
+      throw new Error(`sumbit doesn't implement requested method id`);
     }
     const provider = new ethers.providers.JsonRpcProvider(chainConfig);
-    const verifierContract: ethers.Contract = new ethers.Contract(address, abi, provider);
+    const verifierContract: ethers.Contract = new ethers.Contract(
+      txData.contract_address,
+      abi,
+      provider
+    );
     ethSigner = ethSigner.connect(provider);
     const contract = verifierContract.connect(ethSigner);
 

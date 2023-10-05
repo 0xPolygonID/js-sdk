@@ -141,12 +141,9 @@ export class ContractRequestHandler implements IContractRequestHandler {
       zkRequests.push(zkpRes);
     }
 
-    const txData = ciRequest.body.transaction_data;
-
     return this._zkpVerifier.submitZKPResponse(
-      txData.contract_address,
       opts.ethSigner,
-      txData.chain_id,
+      ciRequest.body.transaction_data,
       zkRequests
     );
   }
