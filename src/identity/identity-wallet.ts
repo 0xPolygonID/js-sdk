@@ -17,7 +17,13 @@ import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
-import { JSONSchema, Parser, CoreClaimOptions, JsonSchemaValidator } from '../schema-processor';
+import {
+  JSONSchema,
+  Parser,
+  CoreClaimOptions,
+  JsonSchemaValidator,
+  cacheLoader
+} from '../schema-processor';
 import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
 import { getRandomBytes, keyPath } from '../kms/provider-helpers';
@@ -37,7 +43,7 @@ import {
 import { CredentialRequest, ICredentialWallet, pushHashesToRHS, TreesModel } from '../credentials';
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
-import { Options, getDocumentLoader } from '@iden3/js-jsonld-merklization';
+import { Options } from '@iden3/js-jsonld-merklization';
 import { sha256js } from 'cross-sha256';
 import { Profile } from '../storage';
 
@@ -637,7 +643,8 @@ export class IdentityWallet implements IIdentityWallet {
     req.revocationOpts.id = req.revocationOpts.id.replace(/\/$/, '');
 
     let schema: object;
-    const loader = getDocumentLoader(opts);
+
+    const loader = opts?.documentLoader ?? cacheLoader(opts);
     try {
       schema = (await loader(req.credentialSchema)).document;
     } catch (e) {
@@ -676,7 +683,7 @@ export class IdentityWallet implements IIdentityWallet {
       merklizedRootPosition: req.merklizedRootPosition ?? MerklizedRootPosition.None,
       updatable: false,
       version: 0,
-      merklizeOpts: opts
+      merklizeOpts: { ...opts, documentLoader: loader }
     };
 
     const coreClaim = await Parser.parseClaim(credential, coreClaimOpts);

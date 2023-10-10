@@ -38,17 +38,11 @@ import {
 import { toClaimNonRevStatus, toGISTProof } from './common';
 import { IZKProver, NativeProver } from './prover';
 
-import {
-  DocumentLoader,
-  Merklizer,
-  Options,
-  Path,
-  getDocumentLoader
-} from '@iden3/js-jsonld-merklization';
+import { Merklizer, Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
-import { JSONSchema, Parser } from '../schema-processor';
+import { JSONSchema, Parser, cacheLoader } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 
@@ -159,7 +153,7 @@ export interface IProofService {
  */
 export class ProofService implements IProofService {
   private readonly _prover: IZKProver;
-  private readonly _ldLoader: DocumentLoader;
+  private readonly _ldOptions: Options;
   /**
    * Creates an instance of ProofService.
    * @param {IIdentityWallet} _identityWallet - identity wallet
@@ -175,7 +169,7 @@ export class ProofService implements IProofService {
     opts?: Options
   ) {
     this._prover = new NativeProver(_circuitStorage);
-    this._ldLoader = getDocumentLoader(opts);
+    this._ldOptions = { ...opts, documentLoader: opts?.documentLoader ?? cacheLoader(opts) };
   }
 
   /** {@inheritdoc IProofService.verifyProof} */
@@ -368,8 +362,7 @@ export class ProofService implements IProofService {
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
       preparedCredential.credential,
-      preparedCredential.credentialCoreClaim,
-      { documentLoader: this._ldLoader }
+      preparedCredential.credentialCoreClaim
     );
     circuitInputs.query = query;
     circuitInputs.claim = {
@@ -440,8 +433,7 @@ export class ProofService implements IProofService {
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
       preparedCredential.credential,
-      preparedCredential.credentialCoreClaim,
-      { documentLoader: this._ldLoader }
+      preparedCredential.credentialCoreClaim
     );
     circuitInputs.query = query;
     circuitInputs.claim = {
@@ -486,8 +478,7 @@ export class ProofService implements IProofService {
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
       preparedCredential.credential,
-      preparedCredential.credentialCoreClaim,
-      { documentLoader: this._ldLoader }
+      preparedCredential.credentialCoreClaim
     );
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -529,8 +520,7 @@ export class ProofService implements IProofService {
     const { query, vp } = await this.toCircuitsQuery(
       proofReq.query,
       preparedCredential.credential,
-      preparedCredential.credentialCoreClaim,
-      { documentLoader: this._ldLoader }
+      preparedCredential.credentialCoreClaim
     );
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -656,24 +646,22 @@ export class ProofService implements IProofService {
   private async toCircuitsQuery(
     query: ProofQuery,
     credential: W3CCredential,
-    coreClaim: Claim,
-    opts?: Options
+    coreClaim: Claim
   ): Promise<{ query: Query; vp?: object }> {
     const mtPosition = coreClaim.getMerklizedPosition();
 
     return mtPosition === MerklizedRootPosition.None
-      ? this.prepareNonMerklizedQuery(query, credential, opts)
-      : this.prepareMerklizedQuery(query, credential, opts);
+      ? this.prepareNonMerklizedQuery(query, credential)
+      : this.prepareMerklizedQuery(query, credential);
   }
 
   private async prepareMerklizedQuery(
     query: ProofQuery,
-    credential: W3CCredential,
-    opts?: Options
+    credential: W3CCredential
   ): Promise<{ query: Query; vp?: object }> {
     const parsedQuery = await this.parseRequest(query.credentialSubject);
 
-    const ldContext = await this.loadLdContextFromJSONSchema(credential.credentialSchema.id, opts);
+    const ldContext = await this.loadLdContextFromJSONSchema(credential.credentialSchema.id);
 
     let path: Path = new Path();
     if (parsedQuery.fieldName) {
@@ -681,12 +669,12 @@ export class ProofService implements IProofService {
         byteDecoder.decode(ldContext),
         credential.type[1],
         parsedQuery.fieldName,
-        opts
+        this._ldOptions
       );
     }
     path.prepend(['https://www.w3.org/2018/credentials#credentialSubject']);
 
-    const mk = await credential.merklize(opts);
+    const mk = await credential.merklize(this._ldOptions);
 
     const { proof, value: mtValue } = await mk.proof(path);
 
@@ -739,10 +727,9 @@ export class ProofService implements IProofService {
 
   private async prepareNonMerklizedQuery(
     query: ProofQuery,
-    credential: W3CCredential,
-    opts?: Options
+    credential: W3CCredential
   ): Promise<{ query: Query; vp?: object }> {
-    const ldContext = await this.loadLdContextFromJSONSchema(credential.credentialSchema.id, opts);
+    const ldContext = await this.loadLdContextFromJSONSchema(credential.credentialSchema.id);
 
     if (query.credentialSubject && Object.keys(query.credentialSubject).length > 1) {
       throw new Error('multiple requests are not supported');
@@ -763,7 +750,7 @@ export class ProofService implements IProofService {
       credential,
       query,
       parsedQuery.fieldName,
-      opts
+      this._ldOptions
     );
 
     if (parsedQuery.isSelectiveDisclosure) {
@@ -784,11 +771,8 @@ export class ProofService implements IProofService {
     return { query: parsedQuery.query };
   }
 
-  private async loadLdContextFromJSONSchema(
-    jsonSchemaURL: string,
-    opts?: Options
-  ): Promise<Uint8Array> {
-    const loader = getDocumentLoader(opts);
+  private async loadLdContextFromJSONSchema(jsonSchemaURL: string): Promise<Uint8Array> {
+    const loader = getDocumentLoader(this._ldOptions);
 
     let schema: object;
     try {
