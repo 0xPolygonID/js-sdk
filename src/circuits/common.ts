@@ -119,7 +119,13 @@ export const prepareSiblingsStr = (proof: Proof, levels: number): string[] => {
   for (let i = siblings.length; i < levels; i++) {
     siblings.push(ZERO_HASH);
   }
-  return siblings.map((s) => (typeof s === 'string' ? s : s.bigInt().toString()));
+  return siblings.map((s) =>
+    typeof s === 'string'
+      ? s
+      : s.bigInt
+      ? s.bigInt().toString()
+      : new Hash(Object.values(s.bytes) as unknown as Uint8Array).bigInt().toString()
+  );
 };
 
 /**
