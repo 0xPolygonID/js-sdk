@@ -1,4 +1,5 @@
 import { InMemoryPrivateKeyStore } from './../../src/kms/store/memory-key-store';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 import { KMS } from './../../src/kms/kms';
 import {
   JWSPacker,
@@ -12,6 +13,7 @@ import {
 import { expect } from 'chai';
 import { DIDResolutionResult } from 'did-resolver';
 
+const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 const didExample = {
   '@context': [
     'https://www.w3.org/ns/did/v1',
@@ -61,7 +63,9 @@ describe('jws packer tests', () => {
     const pub =
       '04fdd57adec3d438ea237fe46b33ee1e016eda6b585c3e27ea66686c2ea535847946393f8145252eea68afe67e287b3ed9b31685ba6c3b00060a73b9b1242d68f7';
 
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const memoryKeyStore = new EncryptedKeyStore(new InMemoryPrivateKeyStore(), {
+      password: encryptionPassword
+    });
     await memoryKeyStore.importKey({ alias: keyPath(KmsKeyType.Secp256k1, pub), key: sk });
     resolveDIDDocument = {
       resolve: () => Promise.resolve({ didDocument: didExample } as DIDResolutionResult)

@@ -43,6 +43,7 @@ import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -54,6 +55,7 @@ describe('auth', () => {
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
   const ipfsNodeURL = process.env.IPFS_URL as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 
   const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
   const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -134,7 +136,9 @@ describe('auth', () => {
   };
 
   beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const memoryKeyStore = new EncryptedKeyStore(new InMemoryPrivateKeyStore(), {
+      password: encryptionPassword
+    });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);

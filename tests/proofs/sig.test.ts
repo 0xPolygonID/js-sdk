@@ -9,6 +9,7 @@ import {
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 import { ICircuitStorage, IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
@@ -32,6 +33,7 @@ describe('sig proofs', () => {
   let proofService: ProofService;
   const rhsUrl = process.env.RHS_URL as string;
   const ipfsNodeURL = process.env.IPFS_URL as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 
   let userDID: DID;
   let issuerDID: DID;
@@ -72,7 +74,9 @@ describe('sig proofs', () => {
     circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, './testdata')
     });
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const memoryKeyStore = new EncryptedKeyStore(new InMemoryPrivateKeyStore(), {
+      password: encryptionPassword
+    });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);

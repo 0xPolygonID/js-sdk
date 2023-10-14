@@ -9,6 +9,7 @@ import {
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 import { MerkleTreeType } from '../../src/storage/entities/mt';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
@@ -25,6 +26,7 @@ describe('identity', () => {
   let credWallet: ICredentialWallet;
   let wallet: IdentityWallet;
   let dataStorage: IDataStorage;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -57,7 +59,9 @@ describe('identity', () => {
     }
   };
   beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const memoryKeyStore = new EncryptedKeyStore(new InMemoryPrivateKeyStore(), {
+      password: encryptionPassword
+    });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);

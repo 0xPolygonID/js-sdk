@@ -10,6 +10,7 @@ import {
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import {
@@ -39,6 +40,7 @@ describe('mtp onchain proofs', () => {
   const rhsUrl = process.env.RHS_URL as string;
 
   const walletKey = process.env.WALLET_KEY as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -79,7 +81,9 @@ describe('mtp onchain proofs', () => {
     }
   };
   beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const memoryKeyStore = new EncryptedKeyStore(new InMemoryPrivateKeyStore(), {
+      password: encryptionPassword
+    });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);

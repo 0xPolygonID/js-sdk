@@ -3,6 +3,7 @@ import { CredentialStorage } from './../../src/storage/shared/credential-storage
 import { Identity, IdentityStorage, IdentityWallet, Profile, byteEncoder } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
@@ -27,6 +28,7 @@ describe('rhs', () => {
   let dataStorage: IDataStorage;
   const rhsUrl = process.env.RHS_URL as string;
   const infuraUrl = process.env.RPC_URL as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
 
   const mockStateStorageForGenesisState: IStateStorage = {
     getLatestStateById: async () => {
@@ -137,7 +139,9 @@ describe('rhs', () => {
   };
 
   beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const memoryKeyStore = new EncryptedKeyStore(new InMemoryPrivateKeyStore(), {
+      password: encryptionPassword
+    });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);

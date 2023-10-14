@@ -33,6 +33,7 @@ export WALLET_KEY="...key in hex format"
 export RPC_URL="...url to polygon network rpc node"
 export RHS_URL="..reverse hash service url"
 export IPFS_URL="url for ipfs"
+export ENCRYPTION_PASSWORD="encryption password"
 
 ```
 

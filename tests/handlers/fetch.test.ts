@@ -30,6 +30,7 @@ import {
   PlainPacker,
   PROTOCOL_CONSTANTS
 } from '../../src/iden3comm';
+import { EncryptedKeyStore } from '../../src/encryption/encrypted-key-store';
 import * as uuid from 'uuid';
 import { byteEncoder } from '../../src/utils';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -45,6 +46,7 @@ describe('fetch', () => {
   let fetchHandler: IFetchHandler;
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
+  const encryptionPassword = process.env.ENCRYPTION_PASSWORD as string;
   const agentUrl = 'https://testagent.com/';
 
   const mockedToken = 'jwz token to fetch credential';
@@ -147,7 +149,9 @@ describe('fetch', () => {
 }`;
 
   beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const memoryKeyStore = new EncryptedKeyStore(new InMemoryPrivateKeyStore(), {
+      password: encryptionPassword
+    });
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
