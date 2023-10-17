@@ -1,6 +1,6 @@
 import { Proof } from '@iden3/js-merkletree';
 import { ProofType, CredentialStatusType } from './constants';
-import { TreeState } from '../circuits';
+import { prepareSiblingsStr, TreeState } from '../circuits';
 
 /**
  * Represents the published state of the issuer
@@ -48,7 +48,7 @@ export class IssuerData {
       ...this,
       mtp: {
         existence: this.mtp?.existence,
-        siblings: this.mtp?.siblings ? this.mtp.siblings.map(i => i.string()) : [],
+        siblings: this.mtp?.siblings ? prepareSiblingsStr(this.mtp, 40) : [],  // this.mtp?.siblings ? this.mtp.siblings.map(i => i.string()) : [],
         nodeAux: this.mtp?.nodeAux
       }
     };
@@ -83,7 +83,7 @@ export class Iden3SparseMerkleTreeProof {
       ...this,
       mtp: {
         existence: this.mtp.existence,
-        siblings: this.mtp.siblings.map(i => i.string()),
+        siblings: prepareSiblingsStr(this.mtp, 40), // this.mtp.siblings.map(i => i.string()),
         nodeAux: this.mtp.nodeAux
       }
     };
