@@ -48,7 +48,7 @@ export class IssuerData {
       ...this,
       mtp: {
         existence: this.mtp?.existence,
-        siblings: this.mtp?.siblings ? prepareSiblingsStr(this.mtp, 40) : [],  // this.mtp?.siblings ? this.mtp.siblings.map(i => i.string()) : [],
+        siblings: this.mtp?.siblings ? prepareSiblingsStr(this.mtp, this.mtp.depth) : [],  // this.mtp?.siblings ? this.mtp.siblings.map(i => i.string()) : [],
         nodeAux: this.mtp?.nodeAux
       }
     };
@@ -83,7 +83,7 @@ export class Iden3SparseMerkleTreeProof {
       ...this,
       mtp: {
         existence: this.mtp.existence,
-        siblings: prepareSiblingsStr(this.mtp, 40), // this.mtp.siblings.map(i => i.string()),
+        siblings: prepareSiblingsStr(this.mtp, this.mtp.depth), // this.mtp.siblings.map(i => i.string()),
         nodeAux: this.mtp.nodeAux
       }
     };
