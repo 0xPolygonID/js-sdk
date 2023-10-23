@@ -238,9 +238,10 @@ describe('fetch', () => {
 
     expect(res).to.be.a('array');
     expect(res).to.have.length(1);
-    assert.deepEqual(
-      res[0],
-      (JSON.parse(mockedCredResponse) as CredentialIssuanceMessage).body?.credential
+    const w3cCred = W3CCredential.fromJSON(
+      (JSON.parse(mockedCredResponse) as CredentialIssuanceMessage).body!.credential!
     );
+
+    assert.deepEqual(res[0], w3cCred);
   });
 });

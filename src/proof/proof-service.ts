@@ -6,7 +6,7 @@ import {
   getUnixTimestamp,
   MerklizedRootPosition
 } from '@iden3/js-iden3-core';
-import { newHashFromString } from '@iden3/js-merkletree';
+import { Hash } from '@iden3/js-merkletree';
 import {
   AtomicQueryMTPV2Inputs,
   AtomicQueryMTPV2OnChainInputs,
@@ -19,7 +19,6 @@ import {
   Query,
   QueryOperators,
   StateTransitionInputs,
-  strMTHex,
   TreeState,
   ValueProof
 } from '../circuits';
@@ -572,18 +571,17 @@ export class ProofService implements IProofService {
     if (smtProof) {
       circuitClaim.proof = smtProof.mtp;
       circuitClaim.treeState = {
-        state: strMTHex(smtProof.issuerData.state?.value),
-        claimsRoot: strMTHex(smtProof.issuerData.state?.claimsTreeRoot),
-        revocationRoot: strMTHex(smtProof.issuerData.state?.revocationTreeRoot),
-        rootOfRoots: strMTHex(smtProof.issuerData.state?.rootOfRoots)
+        state: smtProof.issuerData.state.value,
+        claimsRoot: smtProof.issuerData.state.claimsTreeRoot,
+        revocationRoot: smtProof.issuerData.state.revocationTreeRoot,
+        rootOfRoots: smtProof.issuerData.state.rootOfRoots
       };
     }
 
     const sigProof = credential.getBJJSignature2021Proof();
 
     if (sigProof) {
-      const signature = await bJJSignatureFromHexString(sigProof.signature);
-      const issuerDID = DID.parse(sigProof.issuerData.id);
+      const issuerDID = sigProof.issuerData.id;
       let userDID: DID;
       if (!credential.credentialSubject.id) {
         userDID = issuerDID;
@@ -594,29 +592,25 @@ export class ProofService implements IProofService {
         userDID = DID.parse(credential.credentialSubject.id);
       }
 
-      let rs: RevocationStatus | undefined;
-
-      if (sigProof.issuerData.credentialStatus) {
-        const opts: CredentialStatusResolveOptions = {
-          issuerData: sigProof.issuerData,
-          issuerDID,
-          userDID
-        };
-        rs = await this._credentialWallet.getRevocationStatus(
-          sigProof.issuerData.credentialStatus,
-          opts
+      if (!sigProof.issuerData.credentialStatus) {
+        throw new Error(
+          "can't check the validity of issuer auth claim: no credential status in proof"
         );
       }
-
-      const issuerAuthNonRevProof: MTProof = {
-        treeState: {
-          state: strMTHex(rs?.issuer.state),
-          claimsRoot: strMTHex(rs?.issuer.claimsTreeRoot),
-          revocationRoot: strMTHex(rs?.issuer.revocationTreeRoot),
-          rootOfRoots: strMTHex(rs?.issuer.rootOfRoots)
-        },
-        proof: rs?.mtp
+      const opts: CredentialStatusResolveOptions = {
+        issuerGenesisState: sigProof.issuerData.state,
+        issuerDID,
+        userDID
       };
+      const rs = await this._credentialWallet.getRevocationStatus(
+        sigProof.issuerData.credentialStatus,
+        opts
+      );
+      if (!rs) {
+        throw new Error("can't fetch the credential status of issuer auth claim");
+      }
+
+      const issuerAuthNonRevProof: MTProof = toClaimNonRevStatus(rs);
       if (!sigProof.issuerData.mtp) {
         throw new Error('issuer auth credential must have a mtp proof');
       }
@@ -625,17 +619,17 @@ export class ProofService implements IProofService {
       }
 
       circuitClaim.signatureProof = {
-        signature,
+        signature: sigProof.signature,
         issuerAuthIncProof: {
           proof: sigProof.issuerData.mtp,
           treeState: {
-            state: strMTHex(sigProof.issuerData.state?.value),
-            claimsRoot: strMTHex(sigProof.issuerData.state?.claimsTreeRoot),
-            revocationRoot: strMTHex(sigProof.issuerData.state?.revocationTreeRoot),
-            rootOfRoots: strMTHex(sigProof.issuerData.state?.rootOfRoots)
+            state: sigProof.issuerData.state.value,
+            claimsRoot: sigProof.issuerData.state.claimsTreeRoot,
+            revocationRoot: sigProof.issuerData.state.revocationTreeRoot,
+            rootOfRoots: sigProof.issuerData.state.rootOfRoots
           }
         },
-        issuerAuthClaim: new Claim().fromHex(sigProof.issuerData.authCoreClaim),
+        issuerAuthClaim: sigProof.issuerData.authCoreClaim,
         issuerAuthNonRevProof
       };
     }
@@ -898,7 +892,7 @@ export class ProofService implements IProofService {
     if (circuitId !== CircuitId.AuthV2) {
       throw new Error(`CircuitId is not supported ${circuitId}`);
     }
-    const gistRoot = newHashFromString(pubSignals[2]).bigInt();
+    const gistRoot = Hash.fromString(pubSignals[2]).bigInt();
     const globalStateInfo = await this._stateStorage.getGISTRootInfo(gistRoot);
 
     if (globalStateInfo.createdAtTimestamp === 0n) {

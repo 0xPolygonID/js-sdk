@@ -34,7 +34,9 @@
         RHSResolver, 
         defaultEthConnectionConfig,
         OnChainResolver,
-        MerkleTreeIndexedDBStorage
+        MerkleTreeIndexedDBStorage,
+        VerifiableConstants,
+        IndexedDBDataSource
     } = PolygonIdSdk;
 
     const run = async () => {
@@ -51,13 +53,36 @@
                 new BrowserDataSource(IdentityStorage.identitiesStorageKey),
                 new BrowserDataSource(IdentityStorage.profilesStorageKey)
             ),
-            mt: new MerkleTreeIndexedDBStorage(40),
+            mt: new MerkleTreeLocalStorage(40),
             states: {
-                getLatestStateById: async (issuerId) => {
-                    return { id: BigInt(0), state: BigInt(0) };
-                }
-            }
-        };
+    getLatestStateById: async () => {
+      throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
+    },
+    publishState: async () => {
+      return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+    },
+    getGISTProof: () => {
+      return Promise.resolve({
+        root: 0n,
+        existence: false,
+        siblings: [],
+        index: 0n,
+        value: 0n,
+        auxExistence: false,
+        auxIndex: 0n,
+        auxValue: 0n
+      });
+    },
+    getGISTRootInfo: () => {
+      return Promise.resolve({
+        root: 0n,
+        replacedByRoot: 0n,
+        createdAtTimestamp: 0n,
+        replacedAtTimestamp: 0n,
+        createdAtBlock: 0n,
+        replacedAtBlock: 0n
+      });
+    }}}
 
         const resolvers = new CredentialStatusResolverRegistry();
         resolvers.register(
@@ -77,21 +102,90 @@
         wallet = new IdentityWallet(kms, dataStorage, credWallet);
         console.log(wallet);
 
-        const seedPhrase = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
-
         const { did, credential } = await wallet.createIdentity({
             method: core.DidMethod.Iden3,
             blockchain: core.Blockchain.Polygon,
             networkId: core.NetworkId.Mumbai,
-            seed: seedPhrase,
             revocationOpts: {
                 type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-                id: 'http://rhs.com/node'
+                id: 'https://rhs-staging.polygonid.me'
             }
         }
         );
+        const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity({
+            method: core.DidMethod.Iden3,
+            blockchain: core.Blockchain.Polygon,
+            networkId: core.NetworkId.Mumbai,
+     revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: 'https://rhs-staging.polygonid.me'
+      }
+    });
+    await credWallet.save(issuerAuthCredential);
+
+    const claimReq = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: did.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        nonce: 1000,
+        id: 'https://rhs-staging.polygonid.me'
+      }
+    };
+
+    const issuerCred = await wallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+
+
+    const claimReqMerklized = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v4.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: did.string(),
+        birthday: 19960423,
+        documentType: 77
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        nonce: 1001,
+        id: 'https://rhs-staging.polygonid.me'
+      }
+    };
+
+    const issuerCredMerklized = await wallet.issueCredential(issuerDID, claimReqMerklized);
+
+    await credWallet.save(issuerCred);
+
+
+
+    const res = await wallet.addCredentialsToMerkleTree([issuerCred,issuerCredMerklized], issuerDID);
+
+    // publish to rhs
+
+    await wallet.publishStateToRHS(issuerDID, 'https://rhs-staging.polygonid.me');
+
+    // you must store stat info (e.g. state and it's roots)
+
+    const credsWithIden3MTPProof = await wallet.generateIden3SparseMerkleTreeProof(
+      issuerDID,
+      res.credentials,
+      "txId"
+    );
+
+        await credWallet.saveAll(credsWithIden3MTPProof);
+
         console.log(did.string());
-        console.assert(did.string() === 'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth');
 
     };
     run().catch(console.error);

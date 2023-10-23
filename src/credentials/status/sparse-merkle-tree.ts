@@ -1,6 +1,6 @@
 import { CredentialStatus, RevocationStatus, Issuer } from '../../verifiable';
 import { CredentialStatusResolver } from './resolver';
-import { newHashFromBigInt, Proof, setBitBigEndian } from '@iden3/js-merkletree';
+import { Proof } from '@iden3/js-merkletree';
 
 /**
  * IssuerResolver is a class that allows to interact with the issuer's http endpoint to get revocation status.
@@ -50,25 +50,12 @@ export interface RevocationStatusResponse {
  * @returns {RevocationStatus} RevocationStatus
  */
 export const toRevocationStatus = ({ issuer, mtp }: RevocationStatusResponse): RevocationStatus => {
-  const p = new Proof();
-  p.existence = mtp.existence;
-  if (mtp.node_aux) {
-    p.nodeAux = {
-      key: newHashFromBigInt(BigInt(mtp.node_aux.key)),
-      value: newHashFromBigInt(BigInt(mtp.node_aux.value))
-    };
-  }
-  const s = mtp.siblings.map((s) => newHashFromBigInt(BigInt(s)));
+  const p = Proof.fromJSON({
+    nodeAux: mtp.node_aux,
+    existence: mtp.existence,
+    siblings: mtp.siblings
+  });
 
-  p.siblings = [];
-  p.depth = s.length;
-
-  for (let lvl = 0; lvl < s.length; lvl++) {
-    if (s[lvl].bigInt() !== BigInt(0)) {
-      setBitBigEndian(p.notEmpties, lvl);
-      p.siblings.push(s[lvl]);
-    }
-  }
   return {
     mtp: p,
     issuer

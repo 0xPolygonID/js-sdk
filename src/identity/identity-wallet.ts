@@ -12,7 +12,7 @@ import {
   NetworkId,
   SchemaHash
 } from '@iden3/js-iden3-core';
-import { Hex, poseidon, PublicKey, Signature } from '@iden3/js-crypto';
+import { poseidon, PublicKey, Signature } from '@iden3/js-crypto';
 import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
 import { generateProfileDID, subjectPositionIndex } from './common';
@@ -36,7 +36,6 @@ import {
   MerkleTreeProofWithTreeState,
   Iden3SparseMerkleTreeProof,
   ProofType,
-  IssuerData,
   CredentialStatusType,
   ProofQuery
 } from '../verifiable';
@@ -409,7 +408,7 @@ export class IdentityWallet implements IIdentityWallet {
     try {
       credential = this._credentialWallet.createCredential(did, request, schema);
     } catch (e) {
-      throw new Error('Error create Iden3Credential');
+      throw new Error(`Error create w3c credential ${(e as Error).message}`);
     }
 
     const index = authClaim.hIndex();
@@ -417,25 +416,18 @@ export class IdentityWallet implements IIdentityWallet {
 
     const { proof } = await claimsTree.generateProof(index, ctr);
 
-    const claimsTreeHex = ctr.hex();
-    const stateHex = currentState.hex();
-
     const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
-      type: ProofType.Iden3SparseMerkleTreeProof,
       mtp: proof,
-      issuerData: new IssuerData({
-        id: did.string(),
+      issuerData: {
+        id: did,
         state: {
-          rootOfRoots: ZERO_HASH.hex(),
-          revocationTreeRoot: ZERO_HASH.hex(),
-          claimsTreeRoot: claimsTreeHex,
-          value: stateHex
-        },
-        authCoreClaim: authClaim.hex(),
-        credentialStatus: credential.credentialStatus,
-        mtp: proof
-      }),
-      coreClaim: authClaim.hex()
+          rootOfRoots: ZERO_HASH,
+          revocationTreeRoot: ZERO_HASH,
+          claimsTreeRoot: ctr,
+          value: currentState
+        }
+      },
+      coreClaim: authClaim
     });
 
     credential.proof = [mtpProof];
@@ -672,7 +664,7 @@ export class IdentityWallet implements IIdentityWallet {
 
       await new JsonSchemaValidator().validate(encodedCred, encodedSchema);
     } catch (e) {
-      throw new Error(`Error create Iden3Credential ${(e as Error).message}`);
+      throw new Error(`Error create w3c credential ${(e as Error).message}`);
     }
 
     const issuerAuthBJJCredential = await this._credentialWallet.getAuthBJJCredential(issuerDID);
@@ -692,9 +684,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const coreClaimHash = poseidon.hash([hi, hv]);
 
-    const keyKMSId = this.getKMSIdByAuthCredential(issuerAuthBJJCredential);
-
-    const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(coreClaimHash));
+    const signature = await this.signChallenge(coreClaimHash, issuerAuthBJJCredential);
 
     if (!issuerAuthBJJCredential.proof) {
       throw new Error('issuer auth credential must have proof');
@@ -706,17 +696,15 @@ export class IdentityWallet implements IIdentityWallet {
     }
 
     const sigProof = new BJJSignatureProof2021({
-      type: ProofType.BJJSignature,
-      issuerData: new IssuerData({
-        id: issuerDID.string(),
+      issuerData: {
+        id: issuerDID,
         state: mtpAuthBJJProof.issuerData.state,
-
         authCoreClaim: mtpAuthBJJProof.coreClaim,
         mtp: mtpAuthBJJProof.mtp,
-        credentialStatus: mtpAuthBJJProof.issuerData.credentialStatus
-      }),
-      coreClaim: coreClaim.hex(),
-      signature: Hex.encodeString(signature)
+        credentialStatus: issuerAuthBJJCredential.credentialStatus
+      },
+      coreClaim,
+      signature
     });
     credential.proof = [sigProof];
 
@@ -821,27 +809,26 @@ export class IdentityWallet implements IIdentityWallet {
       }
 
       const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
-        type: ProofType.Iden3SparseMerkleTreeProof,
         mtp: mtpWithProof.proof,
-        issuerData: new IssuerData({
-          id: issuerDID.string(),
+        issuerData: {
+          id: issuerDID,
           state: {
-            claimsTreeRoot: mtpWithProof.treeState.claimsRoot.hex(),
-            revocationTreeRoot: mtpWithProof.treeState.revocationRoot.hex(),
-            rootOfRoots: mtpWithProof.treeState.rootOfRoots.hex(),
-            value: mtpWithProof.treeState.state.hex(),
+            claimsTreeRoot: mtpWithProof.treeState.claimsRoot,
+            revocationTreeRoot: mtpWithProof.treeState.revocationRoot,
+            rootOfRoots: mtpWithProof.treeState.rootOfRoots,
+            value: mtpWithProof.treeState.state,
             txId,
             blockNumber,
             blockTimestamp
-          },
-          mtp: mtpWithProof.proof
-        }),
-        coreClaim: coreClaim.hex()
+          }
+        },
+        coreClaim
       });
+
       if (Array.isArray(credentials[index].proof)) {
         (credentials[index].proof as unknown[]).push(mtpProof);
       } else {
-        credentials[index].proof = mtpProof;
+        credentials[index].proof = [credentials[index].proof, mtpProof];
       }
     }
     return credentials;

@@ -23,6 +23,53 @@ export class W3CCredential {
   credentialSchema!: CredentialSchema;
   proof?: object | unknown[];
 
+  toJSON() {
+    const mapProofFcn = (p: any) => {
+      if (!p) {
+        return p;
+      }
+      if (!p['type']) {
+        throw new Error('proof must have type property');
+      }
+      switch (p.type) {
+        case ProofType.Iden3SparseMerkleTreeProof:
+        case ProofType.BJJSignature:
+          return p.toJSON();
+        default:
+          return p;
+      }
+    };
+    return {
+      ...this,
+      proof: Array.isArray(this.proof) ? this.proof.map(mapProofFcn) : mapProofFcn(this.proof)
+    };
+  }
+
+  static fromJSON(obj: W3CCredential): W3CCredential {
+    const w = new W3CCredential();
+    Object.assign(w, obj);
+
+    const mapProofFcn = (p: any) => {
+      if (!p) {
+        return p;
+      }
+      if (!p['type']) {
+        throw new Error('proof must have type property');
+      }
+      switch (p.type) {
+        case ProofType.Iden3SparseMerkleTreeProof:
+          return Iden3SparseMerkleTreeProof.fromJSON(p);
+        case ProofType.BJJSignature:
+          return BJJSignatureProof2021.fromJSON(p);
+        default:
+          return p;
+      }
+    };
+
+    w.proof = Array.isArray(w.proof) ? w.proof.map(mapProofFcn) : mapProofFcn(w.proof);
+
+    return w;
+  }
   /**
    * merklization of the verifiable credential
    *
@@ -65,16 +112,12 @@ export class W3CCredential {
     const proofType: ProofType = ProofType.BJJSignature;
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
-        const { proofType: extractedProofType } = extractProof(proof);
-        if (proofType === extractedProofType) {
-          return new BJJSignatureProof2021(proof);
+        if ((proof as any)?.type === proofType) {
+          return proof as BJJSignatureProof2021;
         }
       }
-    } else if (typeof this.proof === 'object') {
-      const { proofType: extractedProofType } = extractProof(this.proof);
-      if (extractedProofType == proofType) {
-        return new BJJSignatureProof2021(this.proof);
-      }
+    } else if ((this.proof as any)?.type == proofType) {
+      return this.proof as BJJSignatureProof2021;
     }
     return undefined;
   }
@@ -88,16 +131,12 @@ export class W3CCredential {
     const proofType: ProofType = ProofType.Iden3SparseMerkleTreeProof;
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
-        const { proofType: extractedProofType } = extractProof(proof);
-        if (proofType === extractedProofType) {
-          return new Iden3SparseMerkleTreeProof(proof);
+        if ((proof as any)?.type === proofType) {
+          return proof as Iden3SparseMerkleTreeProof;
         }
       }
-    } else if (typeof this.proof === 'object') {
-      const { proofType: extractedProofType } = extractProof(this.proof);
-      if (extractedProofType == proofType) {
-        return new Iden3SparseMerkleTreeProof(this.proof);
-      }
+    } else if ((this.proof as any)?.type == proofType) {
+      return this.proof as Iden3SparseMerkleTreeProof;
     }
     return undefined;
   }
@@ -112,24 +151,27 @@ export class W3CCredential {
 export function extractProof(proof: object): { claim: Claim; proofType: ProofType } {
   if (proof instanceof Iden3SparseMerkleTreeProof) {
     return {
-      claim: new Claim().fromHex(proof.coreClaim),
+      claim: proof.coreClaim,
       proofType: ProofType.Iden3SparseMerkleTreeProof
     };
   }
   if (proof instanceof BJJSignatureProof2021) {
-    return { claim: new Claim().fromHex(proof.coreClaim), proofType: ProofType.BJJSignature };
+    return { claim: proof.coreClaim, proofType: ProofType.BJJSignature };
   }
   if (typeof proof === 'object') {
-    const p = proof as { type: ProofType; coreClaim: string };
+    const p = proof as { type: ProofType; coreClaim: string | Claim };
     const defaultProofType: ProofType = p.type;
     if (!defaultProofType) {
       throw new Error('proof type is not specified');
     }
-    const coreClaimHex = p.coreClaim;
-    if (!coreClaimHex) {
+
+    if (!p.coreClaim) {
       throw new Error(`coreClaim field is not defined in proof type ${defaultProofType}`);
     }
-    return { claim: new Claim().fromHex(coreClaimHex), proofType: defaultProofType as ProofType };
+
+    const coreClaim = p.coreClaim instanceof Claim ? p.coreClaim : new Claim().fromHex(p.coreClaim);
+
+    return { claim: coreClaim, proofType: defaultProofType as ProofType };
   }
 
   throw new Error('proof format is not supported');

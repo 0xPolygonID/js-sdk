@@ -13,7 +13,7 @@ export const cred1 = createTestCredential({
     id: 'credentialSchemaId',
     type: 'credentialSchemaType'
   },
-  proof: ['some proof'],
+  proof: [],
   type: ['type1_1', 'type1_2', 'type1_3'],
   credentialStatus: {},
   issuer: 'issuer1',
@@ -31,7 +31,7 @@ export const cred2 = createTestCredential({
     id: 'credentialSchemaId',
     type: 'credentialSchemaType'
   },
-  proof: ['some proof2'],
+  proof: [],
   type: ['type2_1', 'type2_2', 'type2_3'],
   credentialStatus: {},
   issuer: 'issuer2',
@@ -49,7 +49,7 @@ export const cred3 = createTestCredential({
     id: 'credentialSchemaId',
     type: 'credentialSchemaType'
   },
-  proof: ['some proof3'],
+  proof: [],
   type: ['type3_1', 'type3_2', 'type3_3'],
   credentialStatus: {},
   issuer: 'issuer3',
@@ -67,7 +67,7 @@ export const cred4 = createTestCredential({
     id: 'credentialSchemaId',
     type: 'credentialSchemaType'
   },
-  proof: ['some proof4'],
+  proof: [],
   type: ['type4'],
   credentialStatus: {},
   issuer: 'issuer4',
@@ -91,7 +91,7 @@ export const cred5 = createTestCredential({
     id: 'credentialSchemaId',
     type: 'credentialSchemaType'
   },
-  proof: ['some proof4'],
+  proof: [],
   type: ['type4'],
   credentialStatus: {
     id: 'https://rhs-staging.polygonid.me',

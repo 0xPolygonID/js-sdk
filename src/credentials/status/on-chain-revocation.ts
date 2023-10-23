@@ -5,10 +5,10 @@ import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revoc
 import { DID, Id } from '@iden3/js-iden3-core';
 import { VerifiableConstants } from '../../verifiable/constants';
 import { isGenesisState } from './utils';
-import { newHashFromHex } from '@iden3/js-merkletree';
 import { EthStateStorage } from '../../storage/blockchain/state';
 import { getChainId } from '../../storage/blockchain';
 import { IStateStorage, IOnchainRevocationStore } from '../../storage';
+import { Hash } from '@iden3/js-merkletree';
 /**
  * OnChainIssuer is a class that allows to interact with the onchain contract
  * and build the revocation status.
@@ -80,7 +80,7 @@ export class OnChainResolver implements CredentialStatusResolver {
           'latest state not found and state parameter is not present in credentialStatus.id'
         );
       }
-      const stateBigInt = newHashFromHex(stateHex).bigInt();
+      const stateBigInt = Hash.fromHex(stateHex).bigInt();
       if (!isGenesisState(issuer, stateBigInt)) {
         throw new Error(
           `latest state not found and state parameter ${stateHex} is not genesis state`

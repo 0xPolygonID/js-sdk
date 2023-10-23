@@ -144,7 +144,7 @@ export class FetchHandler implements IFetchHandler {
           throw new Error(`could not fetch W3C credential, ${credentialInfo?.id}`);
         }
         message = await resp.json();
-        credentials.push(message.body.credential);
+        credentials.push(W3CCredential.fromJSON(message.body.credential));
       } catch (e: unknown) {
         throw new Error(
           `could not fetch W3C credential, ${credentialInfo?.id}, error: ${

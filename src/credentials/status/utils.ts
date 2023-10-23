@@ -1,4 +1,5 @@
-import { buildDIDType, DID, Id, BytesHelper } from '@iden3/js-iden3-core';
+import { buildDIDType, DID, Id } from '@iden3/js-iden3-core';
+import { Hash } from '@iden3/js-merkletree';
 /**
  * Checks if state is genesis state
  *
@@ -8,7 +9,7 @@ import { buildDIDType, DID, Id, BytesHelper } from '@iden3/js-iden3-core';
  */
 export function isGenesisState(did: DID, state: bigint | string): boolean {
   if (typeof state === 'string') {
-    state = BytesHelper.bytesToInt(BytesHelper.hexToBytes(state));
+    state = Hash.fromHex(state).bigInt();
   }
   const id = DID.idFromDID(did);
   const { method, blockchain, networkId } = DID.decodePartsFromId(id);
