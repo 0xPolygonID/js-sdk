@@ -74,7 +74,7 @@
     "@iden3/js-iden3-core": "1.0.3",
     "@iden3/js-jsonld-merklization": "1.1.0",
     "@iden3/js-jwz": "1.1.0",
-    "@iden3/js-merkletree": "1.1.0",
+    "@iden3/js-merkletree": "^1.1.0",
     "@lumeweb/js-sha3-browser": "^0.8.1",
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
