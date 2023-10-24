@@ -78,9 +78,32 @@ export class Iden3SparseMerkleTreeProof {
   }
 
   static fromJSON(obj: any) {
+
+    let mtp: Proof;
+    if (obj?.mtp?.notEmpties && obj?.mtp?.depth && obj?.mtp?.siblings) {
+      
+      // legacy
+    
+      const ne = obj?.mtp?.notEmpties;
+      const notEmpties = ne instanceof Uint8Array ? ne : new Uint8Array(Object.values(ne));
+      const siblingsHashes = obj?.mtp?.siblings.map((h: any) => Hash.fromString(JSON.stringify(h)))
+      const allSiblings = Proof.buildAllSiblings(obj?.mtp?.depth, notEmpties, siblingsHashes)
+      let nodeAux = undefined;
+      if (obj.mtp.nodeAux) {
+        nodeAux = {
+          key: Hash.fromString(JSON.stringify(obj.mtp.nodeAux.key)),
+          value: Hash.fromString(JSON.stringify(obj.mtp.nodeAux.value))
+        };
+      }
+      mtp = new Proof({existence : obj?.mtp.existence, nodeAux: nodeAux, siblings:allSiblings });
+    } else {
+      mtp = Proof.fromJSON(obj.mtp);
+    }
+
+
     return new Iden3SparseMerkleTreeProof({
       coreClaim: new Claim().fromHex(obj.coreClaim),
-      mtp: Proof.fromJSON(obj.mtp),
+      mtp,
       issuerData: {
         id: DID.parse(obj.issuerData.id),
         state: {
