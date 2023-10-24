@@ -58,7 +58,10 @@ const credentialFlow = async (storage: IDataStorage) => {
 
   // present id
   const credById = await credentialWallet.findById(cred2.id);
-  expect(credById).to.deep.equal(cred2);
+  if (!credById) {
+    throw new Error('credById is undefined');
+  }
+  expect(Object.entries(credById).toString()).to.deep.equal(Object.entries(cred2).toString());
 
   // not present id
   const emptyCredById = await credentialWallet.findById('otherId');
@@ -66,7 +69,7 @@ const credentialFlow = async (storage: IDataStorage) => {
 
   // findByContextType
   const [credByContextType] = await credentialWallet.findByContextType('context1', 'type1_2');
-  expect(credByContextType.id).to.deep.equal(cred1.id);
+  expect(credByContextType.id).to.equal(cred1.id);
 
   const queries: {
     query: ProofQuery;

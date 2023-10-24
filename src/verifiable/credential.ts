@@ -23,50 +23,54 @@ export class W3CCredential {
   credentialSchema!: CredentialSchema;
   proof?: object | unknown[];
 
-  toJSON() {
-    const mapProofFcn = (p: any) => {
-      if (!p) {
+  private proofToJSON = (p: any) => {
+    if (!p) {
+      return p;
+    }
+    if (!p['type']) {
+      throw new Error('proof must have type property');
+    }
+    switch (p.type) {
+      case ProofType.Iden3SparseMerkleTreeProof:
+      case ProofType.BJJSignature:
+        return p.toJSON();
+      default:
         return p;
-      }
-      if (!p['type']) {
-        throw new Error('proof must have type property');
-      }
-      switch (p.type) {
-        case ProofType.Iden3SparseMerkleTreeProof:
-        case ProofType.BJJSignature:
-          return p.toJSON();
-        default:
-          return p;
-      }
-    };
+    }
+  };
+
+  toJSON() {
     return {
       ...this,
-      proof: Array.isArray(this.proof) ? this.proof.map(mapProofFcn) : mapProofFcn(this.proof)
+      proof: Array.isArray(this.proof)
+        ? this.proof.map(this.proofToJSON)
+        : this.proofToJSON(this.proof)
     };
   }
+
+  private static proofFromJSON = (p: any) => {
+    if (!p) {
+      return p;
+    }
+    if (!p['type']) {
+      throw new Error('proof must have type property');
+    }
+    switch (p.type) {
+      case ProofType.Iden3SparseMerkleTreeProof:
+        return Iden3SparseMerkleTreeProof.fromJSON(p);
+      case ProofType.BJJSignature:
+        return BJJSignatureProof2021.fromJSON(p);
+      default:
+        return p;
+    }
+  };
 
   static fromJSON(obj: W3CCredential): W3CCredential {
     const w = new W3CCredential();
     Object.assign(w, obj);
-
-    const mapProofFcn = (p: any) => {
-      if (!p) {
-        return p;
-      }
-      if (!p['type']) {
-        throw new Error('proof must have type property');
-      }
-      switch (p.type) {
-        case ProofType.Iden3SparseMerkleTreeProof:
-          return Iden3SparseMerkleTreeProof.fromJSON(p);
-        case ProofType.BJJSignature:
-          return BJJSignatureProof2021.fromJSON(p);
-        default:
-          return p;
-      }
-    };
-
-    w.proof = Array.isArray(w.proof) ? w.proof.map(mapProofFcn) : mapProofFcn(w.proof);
+    w.proof = Array.isArray(w.proof)
+      ? w.proof.map(W3CCredential.proofFromJSON)
+      : W3CCredential.proofFromJSON(w.proof);
 
     return w;
   }
@@ -109,15 +113,9 @@ export class W3CCredential {
    * @returns BJJSignatureProof2021 | undefined
    */
   getBJJSignature2021Proof(): BJJSignatureProof2021 | undefined {
-    const proofType: ProofType = ProofType.BJJSignature;
-    if (Array.isArray(this.proof)) {
-      for (const proof of this.proof) {
-        if ((proof as any)?.type === proofType) {
-          return proof as BJJSignatureProof2021;
-        }
-      }
-    } else if ((this.proof as any)?.type == proofType) {
-      return this.proof as BJJSignatureProof2021;
+    const proof = this.getProofByType(ProofType.BJJSignature);
+    if (proof) {
+      return proof as BJJSignatureProof2021;
     }
     return undefined;
   }
@@ -128,15 +126,22 @@ export class W3CCredential {
    * @returns {*}  {(Iden3SparseMerkleTreeProof | undefined)}
    */
   getIden3SparseMerkleTreeProof(): Iden3SparseMerkleTreeProof | undefined {
-    const proofType: ProofType = ProofType.Iden3SparseMerkleTreeProof;
+    const proof = this.getProofByType(ProofType.Iden3SparseMerkleTreeProof);
+    if (proof) {
+      return proof as Iden3SparseMerkleTreeProof;
+    }
+    return undefined;
+  }
+
+  private getProofByType(proofType: ProofType): unknown | undefined {
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
-        if ((proof as any)?.type === proofType) {
-          return proof as Iden3SparseMerkleTreeProof;
+        if ((proof as { [k: string]: ProofType })?.type === proofType) {
+          return proof;
         }
       }
-    } else if ((this.proof as any)?.type == proofType) {
-      return this.proof as Iden3SparseMerkleTreeProof;
+    } else if ((this.proof as { [k: string]: ProofType })?.type == proofType) {
+      return this.proof;
     }
     return undefined;
   }

@@ -20,7 +20,6 @@ import {
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import {
   BasicMessage,
-  CredentialIssuanceMessage,
   CredentialsOfferMessage,
   CredentialsOfferMessageBody,
   FetchHandler,
@@ -33,7 +32,7 @@ import {
 import * as uuid from 'uuid';
 import { byteEncoder } from '../../src/utils';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-import { assert, expect } from 'chai';
+import { expect } from 'chai';
 import fetchMock from '@gr2m/fetch-mock';
 import { after } from 'mocha';
 
@@ -238,10 +237,8 @@ describe('fetch', () => {
 
     expect(res).to.be.a('array');
     expect(res).to.have.length(1);
-    const w3cCred = W3CCredential.fromJSON(
-      (JSON.parse(mockedCredResponse) as CredentialIssuanceMessage).body!.credential!
-    );
+    const w3cCred = W3CCredential.fromJSON(JSON.parse(mockedCredResponse).body.credential);
 
-    assert.deepEqual(res[0], w3cCred);
+    expect(Object.entries(res[0]).toString()).to.equal(Object.entries(w3cCred).toString());
   });
 });

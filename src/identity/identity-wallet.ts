@@ -544,6 +544,7 @@ export class IdentityWallet implements IIdentityWallet {
     treeState?: TreeState
   ): Promise<MerkleTreeProofWithTreeState> {
     const coreClaim = await this.getCoreClaimFromCredential(credential);
+    // todo: Parser.parseClaim
 
     const treesModel = await this.getDIDTreeModel(did);
 
@@ -801,6 +802,7 @@ export class IdentityWallet implements IIdentityWallet {
 
       const mtpWithProof = await this.generateCredentialMtp(issuerDID, credential, treeState);
 
+      // TODO: return coreClaim from generateCredentialMtp and use it below
       // credential must have a bjj signature proof
       const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
 

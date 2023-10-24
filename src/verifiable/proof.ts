@@ -131,7 +131,7 @@ export class BJJSignatureProof2021 {
   }
 
   /**
-   *
+   * toJSON is a method to serialize BJJSignatureProof2021 to json
    *
    * @returns `json object in serialized presentation`
    */
@@ -155,6 +155,11 @@ export class BJJSignatureProof2021 {
       signature: Hex.encodeString(this.signature.compress())
     };
   }
+
+  /**
+   * fromJSON is a method to deserialize BJJSignatureProof2021 from json
+   * @param obj
+   */
   static fromJSON(obj: any) {
     return new BJJSignatureProof2021({
       issuerData: {
