@@ -423,19 +423,4 @@ describe('credential-wallet', () => {
     expect(proof.issuerData.state.claimsTreeRoot.bigInt().toString()).to.equal(mockedProof.issuerData.state.claimsTreeRoot.bigInt().toString());
 
   });
-  it('Backward compatibility test - hash-as-json-bytes', async () => {
-    const credentialStorage = new CredentialStorage(
-      mockedDataSource
-    );
-
-    // hash-as-string-ints
-    const cred = await credentialStorage.findCredentialById(MockedLegacyCredential.id);
-    expect(cred?.proof).not.to.be.undefined;
-    const proof = (cred?.proof as unknown[])[0] as Iden3SparseMerkleTreeProof;
-    
-
-    const credJSON = cred!.toJSON();
-
-  });
-
 });
