@@ -43,7 +43,8 @@ export class JsonSchemaValidator {
     if (validator.formats && !Object.keys(validator.formats).length) {
       addFormats(validator);
     }
-    const validate = validator.compile(schema);
+    const validate =
+      (schema.$id ? validator.getSchema(schema.$id) : undefined) || validator.compile(schema);
     const valid = validate(data);
     if (!valid) {
       throw new Error(validate.errors?.map((e) => e.message).join(', '));
