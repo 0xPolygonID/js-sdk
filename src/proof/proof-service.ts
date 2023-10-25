@@ -855,8 +855,6 @@ export class ProofService implements IProofService {
     const { nonce: authProfileNonce, genesisDID } =
       await this._identityWallet.getGenesisDIDMetadata(did);
 
-    //
-    // todo: check if bigint is correct
     const challenge = BytesHelper.bytesToInt(hash.reverse());
     const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
 

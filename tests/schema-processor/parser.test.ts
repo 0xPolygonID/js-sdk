@@ -121,7 +121,6 @@ describe('schema-processor/parser', () => {
     expect(claim.getExpirationDate()).to.be.null;
   });
 
-  // todo: unskip
   it('TestParser_ParseClaimWithMerklizedRoot', async () => {
     const credential: W3CCredential = Object.assign(new W3CCredential(), credentialMerklized);
 
