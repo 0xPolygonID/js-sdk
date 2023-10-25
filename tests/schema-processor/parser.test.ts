@@ -4,27 +4,41 @@ import {
   MerklizedRootPosition,
   Parser,
   SubjectPosition,
+  VerifiableConstants,
   W3CCredential
 } from '../../src';
 import nonMerklized1 from './data/jsonld/non-merklized-1.json';
-import credentialsV1 from './data/jsonld/credentials-v1.json';
-import schemaDeliveryAddress from './data/jsonld/schema-delivery-address.json';
 import credentialMerklized from './data/credential-merklized.json';
-import { DocumentLoader, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
-import { RemoteDocument, Url } from 'jsonld/jsonld-spec';
 import { DID } from '@iden3/js-iden3-core';
+import { DocumentLoader, Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
+import { RemoteDocument, Url } from 'jsonld/jsonld-spec';
+import schemaDeliveryAddress from './data/jsonld/schema-delivery-address.json';
+
+const doc = JSON.parse(VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018);
+const cache = new Map<string, RemoteDocument>();
+cache.set(VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018, {
+  document: doc,
+  documentUrl: VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018
+});
+cache.set('https://example.com/schema-delivery-address.json-ld', {
+  document: schemaDeliveryAddress
+} as unknown as RemoteDocument);
+
+const cacheLoader = (opts?: Options): DocumentLoader => {
+  return async (url: Url): Promise<RemoteDocument> => {
+    let remoteDoc = cache.get(url);
+    if (remoteDoc) {
+      return remoteDoc;
+    }
+    remoteDoc = await getDocumentLoader(opts)(url);
+    cache.set(url, remoteDoc);
+    return remoteDoc;
+  };
+};
+
+const documentLoader = cacheLoader();
 
 describe('schema-processor/parser', () => {
-  const documentLoader: DocumentLoader = async (url: Url) => {
-    if (url === 'https://www.w3.org/2018/credentials/v1') {
-      return { document: credentialsV1 } as unknown as RemoteDocument;
-    }
-    if (url === 'https://example.com/schema-delivery-address.json-ld') {
-      return { document: schemaDeliveryAddress } as unknown as RemoteDocument;
-    }
-    return getDocumentLoader()(url);
-  };
-
   it('TestParser_parseSlots', async () => {
     const credential: W3CCredential = Object.assign(new W3CCredential(), nonMerklized1);
 
@@ -147,7 +161,7 @@ describe('schema-processor/parser', () => {
       'https://github.com/iden3/claim-schema-vocab/blob/main/credentials/kyc.md#birthday'
     ]);
 
-    const mk = await credential.merklize();
+    const mk = await credential.merklize({ documentLoader });
 
     const { proof, value: v } = await mk.proof(path);
     expect(v).not.to.be.undefined;

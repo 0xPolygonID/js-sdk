@@ -1,6 +1,8 @@
-import { Proof } from '@iden3/js-merkletree';
+import { Hash, Proof } from '@iden3/js-merkletree';
 import { ProofType, CredentialStatusType } from './constants';
 import { TreeState } from '../circuits';
+import { Hex, Signature } from '@iden3/js-crypto';
+import { Claim, DID } from '@iden3/js-iden3-core';
 
 /**
  * Represents the published state of the issuer
@@ -12,47 +14,11 @@ export interface State {
   txId?: string;
   blockTimestamp?: number;
   blockNumber?: number;
-  rootOfRoots: string;
-  claimsTreeRoot: string;
-  revocationTreeRoot: string;
-  value: string;
+  rootOfRoots: Hash;
+  claimsTreeRoot: Hash;
+  revocationTreeRoot: Hash;
+  value: Hash;
   status?: string;
-}
-
-/**
- *  IssuerData is the data that is used to create a proof
- *
- * @public
- * @class   IssuerData
- */
-export class IssuerData {
-  id = '';
-  state!: State;
-  authCoreClaim?: string;
-  mtp?: Proof;
-  credentialStatus?: CredentialStatus;
-  /**
-   * Creates an instance ofIssuerData .
-   * @param {object} obj
-   */
-  constructor(obj?: object) {
-    Object.assign(this, obj ?? {});
-  }
-  /**
-   *
-   *
-   * @returns `string`
-   */
-  toJSON() {
-    return {
-      ...this,
-      mtp: {
-        existence: this.mtp?.existence,
-        siblings: this.mtp?.siblings,
-        nodeAux: this.mtp?.nodeAux
-      }
-    };
-  }
 }
 
 /**
@@ -62,27 +28,93 @@ export class IssuerData {
  * @class Iden3SparseMerkleTreeProof
  */
 export class Iden3SparseMerkleTreeProof {
-  type!: ProofType;
-  issuerData!: IssuerData;
-  mtp!: Proof;
-  coreClaim = '';
+  type: ProofType;
+  issuerData: {
+    id: DID;
+    state: State;
+  };
+  mtp: Proof;
+  coreClaim: Claim;
   /**
    * Creates an instance of Iden3SparseMerkleTreeProof.
    * @param {object} obj
    */
-  constructor(obj?: object) {
-    Object.assign(this, obj ?? {});
+  constructor(obj: {
+    issuerData: {
+      id: DID;
+      state: State;
+    };
+    mtp: Proof;
+    coreClaim: Claim;
+  }) {
+    this.coreClaim = obj.coreClaim;
+    this.issuerData = obj.issuerData;
+    this.type = ProofType.Iden3SparseMerkleTreeProof;
+    this.mtp = obj.mtp;
   }
+
   /**
    *
    *
-   * @returns `string`
+   * @returns `json object in serialized presentation`
    */
   toJSON() {
+    const issuerId = this.issuerData.id;
     return {
-      ...this,
-      mtp: { existence: this.mtp.existence, siblings: this.mtp.siblings, nodeAux: this.mtp.nodeAux }
+      issuerData: {
+        id: issuerId.string(),
+        state: {
+          ...this.issuerData.state,
+          rootOfRoots: this.issuerData.state.rootOfRoots.hex(),
+          claimsTreeRoot: this.issuerData.state.claimsTreeRoot.hex(),
+          revocationTreeRoot: this.issuerData.state.revocationTreeRoot.hex(),
+          value: this.issuerData.state.value.hex()
+        }
+      },
+      type: this.type,
+      coreClaim: this.coreClaim.hex(),
+      mtp: this.mtp.toJSON()
     };
+  }
+
+  static fromJSON(obj: any) {
+
+    let mtp: Proof;
+    if (obj?.mtp?.notEmpties && obj?.mtp?.depth && obj?.mtp?.siblings) {
+      
+      // legacy
+    
+      const ne = obj?.mtp?.notEmpties;
+      const notEmpties = ne instanceof Uint8Array ? ne : new Uint8Array(Object.values(ne));
+      const siblingsHashes = obj?.mtp?.siblings.map((h: any) => Hash.fromString(JSON.stringify(h)))
+      const allSiblings = Proof.buildAllSiblings(obj?.mtp?.depth, notEmpties, siblingsHashes)
+      let nodeAux = undefined;
+      if (obj.mtp.nodeAux) {
+        nodeAux = {
+          key: Hash.fromString(JSON.stringify(obj.mtp.nodeAux.key)),
+          value: Hash.fromString(JSON.stringify(obj.mtp.nodeAux.value))
+        };
+      }
+      mtp = new Proof({existence : obj?.mtp.existence, nodeAux: nodeAux, siblings:allSiblings });
+    } else {
+      mtp = Proof.fromJSON(obj.mtp);
+    }
+
+
+    return new Iden3SparseMerkleTreeProof({
+      coreClaim: new Claim().fromHex(obj.coreClaim),
+      mtp,
+      issuerData: {
+        id: DID.parse(obj.issuerData.id),
+        state: {
+          ...obj.issuerData.state,
+          rootOfRoots: Hash.fromHex(obj.issuerData.state.rootOfRoots),
+          claimsTreeRoot: Hash.fromHex(obj.issuerData.state.claimsTreeRoot),
+          revocationTreeRoot: Hash.fromHex(obj.issuerData.state.revocationTreeRoot),
+          value: Hash.fromHex(obj.issuerData.state.value)
+        }
+      }
+    });
   }
 }
 
@@ -93,13 +125,84 @@ export class Iden3SparseMerkleTreeProof {
  * @class BJJSignatureProof2021
  */
 export class BJJSignatureProof2021 {
-  type!: ProofType;
-  issuerData!: IssuerData;
-  signature!: string;
-  coreClaim!: string;
+  type: ProofType;
+  issuerData: {
+    id: DID;
+    state: State;
+    authCoreClaim: Claim;
+    mtp: Proof;
+    credentialStatus: CredentialStatus;
+  };
+  signature: Signature;
+  coreClaim: Claim;
 
-  constructor(obj?: object) {
-    Object.assign(this, obj ?? {});
+  constructor(obj: {
+    issuerData: {
+      id: DID;
+      state: State;
+      authCoreClaim: Claim;
+      mtp: Proof;
+      credentialStatus: CredentialStatus;
+    };
+    coreClaim: Claim;
+    signature: Signature;
+  }) {
+    this.type = ProofType.BJJSignature;
+    this.issuerData = obj.issuerData;
+    this.coreClaim = obj.coreClaim;
+    this.signature = obj.signature;
+  }
+
+  /**
+   * toJSON is a method to serialize BJJSignatureProof2021 to json
+   *
+   * @returns `json object in serialized presentation`
+   */
+  toJSON() {
+    return {
+      issuerData: {
+        id: this.issuerData.id.string(),
+        state: {
+          ...this.issuerData.state,
+          rootOfRoots: this.issuerData.state.rootOfRoots.hex(),
+          claimsTreeRoot: this.issuerData.state.claimsTreeRoot.hex(),
+          revocationTreeRoot: this.issuerData.state.revocationTreeRoot.hex(),
+          value: this.issuerData.state.value.hex()
+        },
+        mtp: this.issuerData.mtp.toJSON(),
+        authCoreClaim: this.issuerData.authCoreClaim.hex(),
+        credentialStatus: this.issuerData.credentialStatus
+      },
+      type: this.type,
+      coreClaim: this.coreClaim.hex(),
+      signature: Hex.encodeString(this.signature.compress())
+    };
+  }
+
+  /**
+   * fromJSON is a method to deserialize BJJSignatureProof2021 from json
+   * @param obj
+   */
+  static fromJSON(obj: any) {
+    return new BJJSignatureProof2021({
+      issuerData: {
+        id: DID.parse(obj.issuerData.id),
+        mtp: Proof.fromJSON(obj.issuerData.mtp),
+        state: {
+          ...obj.issuerData.state,
+          rootOfRoots: Hash.fromHex(obj.issuerData.state.rootOfRoots),
+          claimsTreeRoot: Hash.fromHex(obj.issuerData.state.claimsTreeRoot),
+          revocationTreeRoot: Hash.fromHex(obj.issuerData.state.revocationTreeRoot),
+          value: Hash.fromHex(obj.issuerData.state.value)
+        },
+        credentialStatus: obj.issuerData.credentialStatus,
+        authCoreClaim: new Claim().fromHex(obj.issuerData.authCoreClaim)
+      },
+      coreClaim: new Claim().fromHex(obj.coreClaim),
+      signature: Signature.newFromCompressed(
+        Uint8Array.from(Hex.decodeString(obj.signature)).slice(0, 64)
+      )
+    });
   }
 }
 /**

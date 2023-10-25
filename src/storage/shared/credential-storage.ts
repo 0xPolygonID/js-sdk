@@ -26,20 +26,18 @@ export class CredentialStorage implements ICredentialStorage {
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async listCredentials(): Promise<W3CCredential[]> {
     const creds = await this._dataSource.load();
-    return creds
-      .filter((i) => i !== undefined)
-      .map((cred) => cred && Object.assign(new W3CCredential(), cred));
+    return creds.filter((i) => i !== undefined).map((cred) => cred && W3CCredential.fromJSON(cred));
   }
 
   /** @inheritdoc */
   async saveCredential(credential: W3CCredential): Promise<void> {
-    return this._dataSource.save(credential.id, credential);
+    return this._dataSource.save(credential.id, credential.toJSON());
   }
 
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async saveAllCredentials(credentials: W3CCredential[]): Promise<void> {
     for (const credential of credentials) {
-      await this._dataSource.save(credential.id, credential);
+      await this.saveCredential(credential);
     }
   }
 
@@ -51,7 +49,7 @@ export class CredentialStorage implements ICredentialStorage {
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async findCredentialById(id: string): Promise<W3CCredential | undefined> {
     const cred = await this._dataSource.get(id);
-    return cred && Object.assign(new W3CCredential(), cred);
+    return cred && W3CCredential.fromJSON(cred);
   }
 
   /** {@inheritdoc ICredentialStorage.listCredentials }
@@ -65,7 +63,7 @@ export class CredentialStorage implements ICredentialStorage {
 
     const mappedCreds = creds
       .filter((i) => i !== undefined)
-      .map((cred) => Object.assign(new W3CCredential(), cred));
+      .map((cred) => W3CCredential.fromJSON(cred));
 
     return mappedCreds;
   }

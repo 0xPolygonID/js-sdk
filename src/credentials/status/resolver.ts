@@ -1,10 +1,5 @@
 import { DID } from '@iden3/js-iden3-core';
-import {
-  IssuerData,
-  RevocationStatus,
-  CredentialStatus,
-  CredentialStatusType
-} from '../../verifiable';
+import { State, RevocationStatus, CredentialStatus, CredentialStatusType } from '../../verifiable';
 
 /**
  * CredentialStatusResolveOptions is a set of options that can be passed to CredentialStatusResolver
@@ -13,7 +8,19 @@ import {
  * @interface CredentialStatusResolveOptions
  */
 export interface CredentialStatusResolveOptions {
-  issuerData?: IssuerData;
+  /** 
+    @deprecated  it was used only for state in case issuer has a issuerGenesisState state
+  */
+  issuerData?: {
+    state: {
+      rootOfRoots: string;
+      claimsTreeRoot: string;
+      revocationTreeRoot: string;
+      value: string;
+    };
+  };
+
+  issuerGenesisState?: State;
   issuerDID?: DID;
   userDID?: DID;
 }

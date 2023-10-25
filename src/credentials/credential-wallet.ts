@@ -9,7 +9,7 @@ import {
   CredentialStatus,
   RevocationStatus,
   CredentialStatusType,
-  IssuerData
+  State
 } from './../verifiable';
 
 import { JSONSchema } from '../schema-processor';
@@ -264,12 +264,10 @@ export class CredentialWallet implements ICredentialWallet {
     const mtpProof = cred.getIden3SparseMerkleTreeProof();
     const sigProof = cred.getBJJSignature2021Proof();
 
-    const issuerData: IssuerData | undefined = mtpProof
-      ? mtpProof.issuerData
-      : sigProof?.issuerData;
-    if (!issuerData) {
-      throw new Error('no sig / mtp proof to check issuer info');
-    }
+    const stateInfo: State | undefined = mtpProof
+      ? mtpProof.issuerData.state
+      : sigProof?.issuerData.state;
+
     const issuerDID = DID.parse(cred.issuer);
 
     let userDID: DID;
@@ -283,7 +281,7 @@ export class CredentialWallet implements ICredentialWallet {
     }
 
     const opts: CredentialStatusResolveOptions = {
-      issuerData,
+      issuerGenesisState: stateInfo,
       issuerDID,
       userDID
     };
