@@ -23,7 +23,18 @@ export class W3CCredential {
   credentialSchema!: CredentialSchema;
   proof?: object | unknown[];
 
-  private proofToJSON = (p: any) => {
+
+
+  toJSON() {
+    return {
+      ...this,
+      proof: Array.isArray(this.proof)
+        ? this.proof.map(this.proofToJSON)
+        : this.proofToJSON(this.proof)
+    };
+  }
+
+  private proofToJSON(p: any){
     if (!p) {
       return p;
     }
@@ -38,16 +49,6 @@ export class W3CCredential {
         return p;
     }
   };
-
-  toJSON() {
-    return {
-      ...this,
-      proof: Array.isArray(this.proof)
-        ? this.proof.map(this.proofToJSON)
-        : this.proofToJSON(this.proof)
-    };
-  }
-
   private static proofFromJSON = (p: any) => {
     if (!p) {
       return p;
