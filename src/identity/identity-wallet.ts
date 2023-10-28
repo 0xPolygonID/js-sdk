@@ -12,7 +12,7 @@ import {
   NetworkId,
   SchemaHash
 } from '@iden3/js-iden3-core';
-import { poseidon, PublicKey, Signature } from '@iden3/js-crypto';
+import { poseidon, PublicKey, sha256, Signature, Hex, getRandomBytes } from '@iden3/js-crypto';
 import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
 import { generateProfileDID, subjectPositionIndex } from './common';
@@ -26,7 +26,7 @@ import {
 } from '../schema-processor';
 import { IDataStorage } from '../storage/interfaces/data-storage';
 import { MerkleTreeType } from '../storage/entities/mt';
-import { getRandomBytes, keyPath } from '../kms/provider-helpers';
+import { keyPath } from '../kms/provider-helpers';
 import {
   VerifiableConstants,
   BJJSignatureProof2021,
@@ -43,7 +43,6 @@ import { CredentialRequest, ICredentialWallet, pushHashesToRHS, TreesModel } fro
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
 import { Options } from '@iden3/js-jsonld-merklization';
-import { sha256js } from 'cross-sha256';
 import { Profile } from '../storage';
 
 /**
@@ -329,9 +328,7 @@ export class IdentityWallet implements IIdentityWallet {
   async createIdentity(
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
-    const tmpIdentifier = opts.seed
-      ? uuid.v5(new sha256js().update(opts.seed).digest('hex'), uuid.NIL)
-      : uuid.v4();
+    const tmpIdentifier = opts.seed ? uuid.v5(Hex.encode(sha256(opts.seed)), uuid.NIL) : uuid.v4();
 
     opts.method = opts.method ?? DidMethod.Iden3;
     opts.blockchain = opts.blockchain ?? Blockchain.Polygon;

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof, CredentialStatus } from './proof';
 import { Claim } from '@iden3/js-iden3-core';
 import { ProofType } from './constants';
@@ -23,8 +24,6 @@ export class W3CCredential {
   credentialSchema!: CredentialSchema;
   proof?: object | unknown[];
 
-
-
   toJSON() {
     return {
       ...this,
@@ -34,7 +33,7 @@ export class W3CCredential {
     };
   }
 
-  private proofToJSON(p: any){
+  private proofToJSON(p: any) {
     if (!p) {
       return p;
     }
@@ -48,7 +47,8 @@ export class W3CCredential {
       default:
         return p;
     }
-  };
+  }
+
   private static proofFromJSON = (p: any) => {
     if (!p) {
       return p;

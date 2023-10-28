@@ -1,8 +1,8 @@
 import { RevocationStatus, Issuer } from '../../verifiable';
-import { BigNumber, ethers } from 'ethers';
-import abi from './onchain-revocation-abi.json';
+import { JsonRpcProvider } from 'ethers';
 import { Proof, NodeAuxJSON, Hash } from '@iden3/js-merkletree';
 import { EthConnectionConfig } from './state';
+import { CredentialStatusResolver, CredentialStatusResolver__factory } from './contracts';
 
 /**
  * OnChainRevocationStore is a class that allows to interact with the onchain contract
@@ -12,8 +12,8 @@ import { EthConnectionConfig } from './state';
  * @class OnChainIssuer
  */
 export class OnChainRevocationStorage {
-  private readonly onchainContract: ethers.Contract;
-  private readonly provider: ethers.providers.JsonRpcProvider;
+  private readonly onchainContract: CredentialStatusResolver;
+  private readonly provider: JsonRpcProvider;
 
   /**
    *
@@ -24,8 +24,10 @@ export class OnChainRevocationStorage {
    */
 
   constructor(config: EthConnectionConfig, contractAddress: string) {
-    this.provider = new ethers.providers.JsonRpcProvider(config.url);
-    this.onchainContract = new ethers.Contract(contractAddress, abi, this.provider);
+    this.provider = new JsonRpcProvider(config.url);
+    this.onchainContract = CredentialStatusResolver__factory.connect(contractAddress, {
+      provider: this.provider
+    });
   }
 
   /**
@@ -70,12 +72,15 @@ export class OnChainRevocationStorage {
     };
   }
 
-  private static convertIssuerInfo(issuer: unknown[]): Issuer {
+  private static convertIssuerInfo(issuer: bigint[]): Issuer {
+    const [state, claimsTreeRoot, revocationTreeRoot, rootOfRoots] = issuer.map((i) =>
+      Hash.fromBigInt(i).hex()
+    );
     return {
-      state: Hash.fromBigInt(BigNumber.from(issuer[0]).toBigInt()).hex(),
-      claimsTreeRoot: Hash.fromBigInt(BigNumber.from(issuer[1]).toBigInt()).hex(),
-      revocationTreeRoot: Hash.fromBigInt(BigNumber.from(issuer[2]).toBigInt()).hex(),
-      rootOfRoots: Hash.fromBigInt(BigNumber.from(issuer[3]).toBigInt()).hex()
+      state,
+      claimsTreeRoot,
+      revocationTreeRoot,
+      rootOfRoots
     };
   }
 

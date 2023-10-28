@@ -1,8 +1,8 @@
-import abi from './zkp-verifier-abi.json';
-import { ethers, Signer } from 'ethers';
+import { JsonRpcProvider, Signer } from 'ethers';
 import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
 import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
+import { ZkpVerifier, ZkpVerifier__factory } from './contracts';
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
@@ -49,12 +49,10 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         `submit doesn't implement requested method id. Only '0x${this._supportedMethodId}' is supported.`
       );
     }
-    const provider = new ethers.providers.JsonRpcProvider(chainConfig);
-    const verifierContract: ethers.Contract = new ethers.Contract(
-      txData.contract_address,
-      abi,
+    const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
+    const verifierContract: ZkpVerifier = ZkpVerifier__factory.connect(txData.contract_address, {
       provider
-    );
+    });
     ethSigner = ethSigner.connect(provider);
     const contract = verifierContract.connect(ethSigner);
 
@@ -72,14 +70,17 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
           [zkProof.proof.pi_b[1][1], zkProof.proof.pi_b[1][0]]
         ],
         zkProof.proof.pi_c.slice(0, 2)
-      ];
+      ] as Parameters<typeof contract.submitZKPResponse>;
 
       const tx = await contract.submitZKPResponse(...payload);
       const txnReceipt = await tx.wait();
-      const status: number = txnReceipt.status;
-      const txnHash: string = txnReceipt.transactionHash;
+      if (!txnReceipt) {
+        throw new Error(`transaction: ${tx.hash} failed to mined`);
+      }
+      const status: number | null = txnReceipt.status;
+      const txnHash: string = txnReceipt.hash;
 
-      if (status === 0) {
+      if (!status) {
         throw new Error(`transaction: ${txnHash} failed to mined`);
       }
       response.set(txnHash, zkProof);
