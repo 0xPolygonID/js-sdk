@@ -31,7 +31,7 @@
     "doc:build": "npm run doc:extract && npm run doc:documenter",
     "doc:watch:website": "ts-node ./scripts/doc-watch.ts",
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
-    "test": "env TS_NODE_COMPILER_OPTIONS='{\"strict\": false}' mocha",
+    "test": "env TS_NODE_COMPILER_OPTIONS='{\"strict\": false, \"module\": \"CommonJS\"}' mocha",
     "lint": "eslint --fix --ext .ts src/** tests/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "deps:check": "madge --circular --extensions ts ./"
