@@ -1,8 +1,8 @@
-import { JsonRpcProvider, Signer } from 'ethers';
+import { JsonRpcProvider, Signer, Contract } from 'ethers';
 import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
 import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
-import { ZkpVerifier, ZkpVerifier__factory } from './contracts';
+import abi from './abi/ ZkpVerifier.json';
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
@@ -50,11 +50,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       );
     }
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
-    const verifierContract: ZkpVerifier = ZkpVerifier__factory.connect(txData.contract_address, {
-      provider
-    });
+    const verifierContract = new Contract(txData.contract_address, abi, provider);
     ethSigner = ethSigner.connect(provider);
-    const contract = verifierContract.connect(ethSigner);
+    const contract = verifierContract.connect(ethSigner) as Contract;
 
     const response = new Map<string, ZeroKnowledgeProofResponse>();
     for (const zkProof of zkProofResponses) {
@@ -70,7 +68,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
           [zkProof.proof.pi_b[1][1], zkProof.proof.pi_b[1][0]]
         ],
         zkProof.proof.pi_c.slice(0, 2)
-      ] as Parameters<typeof contract.submitZKPResponse>;
+      ];
 
       const tx = await contract.submitZKPResponse(...payload);
       const txnReceipt = await tx.wait();

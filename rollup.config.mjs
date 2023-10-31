@@ -7,20 +7,16 @@ import virtual from '@rollup/plugin-virtual';
 import json from '@rollup/plugin-json';
 const empty = 'export default {}';
 
-const external = [
-  ...Object.keys(packageJson.peerDependencies).filter(
-    (key) => key.startsWith('@iden3/') && !key.startsWith('@iden3/contracts-abi')
-  ),
-  'snarkjs',
-  'ffjavascript'
-];
-
 const config = {
   input: 'src/index.ts',
-  external,
+  external: [
+    ...Object.keys(packageJson.peerDependencies).filter((key) => key.startsWith('@iden3/')),
+    'snarkjs',
+    'ffjavascript'
+  ],
   output: {
     format: 'es',
-    file: 'dist/browser/esm/index.js',
+    file: packageJson.exports['.'].browser,
     sourcemap: true
   },
   context: 'window',
@@ -50,7 +46,7 @@ export default [
     output: {
       ...config.output,
       format: 'iife',
-      file: 'dist/browser/umd/index.js',
+      file: packageJson.exports['.'].umd,
       name: 'PolygonIdSdk'
     }
   }

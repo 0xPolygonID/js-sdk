@@ -1,11 +1,11 @@
 import { RootInfo, StateProof } from './../entities/state';
 import { ZKProof } from '@iden3/js-jwz';
 import { IStateStorage } from '../interfaces/state';
-import { JsonRpcProvider, Signer } from 'ethers';
+import { Contract, JsonRpcProvider, Signer } from 'ethers';
 import { StateInfo } from '../entities/state';
 import { StateTransitionPubSignals } from '../../circuits';
 import { byteEncoder } from '../../utils';
-import { State, State__factory } from './contracts';
+import abi from './abi/State.json';
 
 /**
  * Configuration of ethereum based blockchain connection
@@ -51,7 +51,7 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
  * @implements implements IStateStorage interface
  */
 export class EthStateStorage implements IStateStorage {
-  public readonly stateContract: State;
+  public readonly stateContract: Contract;
   public readonly provider: JsonRpcProvider;
 
   /**
@@ -60,9 +60,7 @@ export class EthStateStorage implements IStateStorage {
    */
   constructor(private readonly ethConfig: EthConnectionConfig = defaultEthConnectionConfig) {
     this.provider = new JsonRpcProvider(this.ethConfig.url);
-    this.stateContract = State__factory.connect(this.ethConfig.contractAddress, {
-      provider: this.provider
-    });
+    this.stateContract = new Contract(this.ethConfig.contractAddress, abi, this.provider);
   }
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
@@ -83,7 +81,7 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.publishState} */
   async publishState(proof: ZKProof, signer: Signer): Promise<string> {
-    const contract = this.stateContract.connect(signer);
+    const contract = this.stateContract.connect(signer) as Contract;
 
     const stateTransitionPubSig = new StateTransitionPubSignals();
     stateTransitionPubSig.pubSignalsUnmarshal(
@@ -102,7 +100,7 @@ export class EthStateStorage implements IStateStorage {
         [proof.proof.pi_b[1][1], proof.proof.pi_b[1][0]]
       ],
       proof.proof.pi_c.slice(0, 2)
-    ] as Parameters<State['transitState']>;
+    ];
 
     await contract.transitState.estimateGas(...payload);
 

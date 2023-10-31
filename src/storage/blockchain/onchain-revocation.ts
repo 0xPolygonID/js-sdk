@@ -1,8 +1,8 @@
 import { RevocationStatus, Issuer } from '../../verifiable';
-import { JsonRpcProvider } from 'ethers';
+import { Contract, JsonRpcProvider } from 'ethers';
 import { Proof, NodeAuxJSON, Hash } from '@iden3/js-merkletree';
 import { EthConnectionConfig } from './state';
-import { CredentialStatusResolver, CredentialStatusResolver__factory } from './contracts';
+import abi from '../blockchain/abi/CredentialStatusResolver.json';
 
 /**
  * OnChainRevocationStore is a class that allows to interact with the onchain contract
@@ -12,7 +12,7 @@ import { CredentialStatusResolver, CredentialStatusResolver__factory } from './c
  * @class OnChainIssuer
  */
 export class OnChainRevocationStorage {
-  private readonly onchainContract: CredentialStatusResolver;
+  private readonly onchainContract: Contract;
   private readonly provider: JsonRpcProvider;
 
   /**
@@ -25,9 +25,7 @@ export class OnChainRevocationStorage {
 
   constructor(config: EthConnectionConfig, contractAddress: string) {
     this.provider = new JsonRpcProvider(config.url);
-    this.onchainContract = CredentialStatusResolver__factory.connect(contractAddress, {
-      provider: this.provider
-    });
+    this.onchainContract = new Contract(contractAddress, abi, this.provider);
   }
 
   /**
