@@ -17,7 +17,7 @@ import {
   CredentialWallet,
   RHSResolver
 } from '../../src/credentials';
-import { ProofService } from '../../src/proof';
+import { NativeProver, ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
@@ -93,8 +93,11 @@ describe('sig onchain proofs', () => {
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    const prover = new NativeProver(circuitStorage);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
+      prover
+    });
   });
 
   it('sigv2-onchain-merklized', async () => {

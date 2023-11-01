@@ -77,6 +77,13 @@ export interface DIDProfileMetadata {
 
 type InputsParams = ProofGenerationOptions & DIDProfileMetadata;
 
+/**
+ *  List of options to customize ProofService
+ */
+export type ProofServiceOptions = Options & {
+  prover?: IZKProver;
+};
+
 export interface IProofService {
   /**
    * Verification of zkp proof for given circuit id
@@ -165,9 +172,9 @@ export class ProofService implements IProofService {
     private readonly _credentialWallet: ICredentialWallet,
     _circuitStorage: ICircuitStorage,
     private readonly _stateStorage: IStateStorage,
-    opts?: Options
+    opts?: ProofServiceOptions
   ) {
-    this._prover = new NativeProver(_circuitStorage);
+    this._prover = opts?.prover ?? new NativeProver(_circuitStorage);
     this._ldOptions = { ...opts, documentLoader: opts?.documentLoader ?? cacheLoader(opts) };
   }
 
