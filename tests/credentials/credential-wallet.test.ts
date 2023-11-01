@@ -4,7 +4,12 @@ import { IDataStorage } from './../../src/storage/interfaces/data-storage';
 import { CredentialWallet } from '../../src/credentials';
 import { SearchError } from '../../src/storage/filters/jsonQuery';
 import { MockedLegacyCredential, cred1, cred2, cred3, cred4 } from './mock';
-import { ProofQuery, W3CCredential, CredentialStatusType, Iden3SparseMerkleTreeProof } from '../../src/verifiable';
+import {
+  ProofQuery,
+  W3CCredential,
+  CredentialStatusType,
+  Iden3SparseMerkleTreeProof
+} from '../../src/verifiable';
 import { BrowserDataSource } from '../../src/storage/local-storage/data-source';
 import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
@@ -39,7 +44,7 @@ class LocalStorageMock {
   }
 }
 
-const mockedProof =  new Iden3SparseMerkleTreeProof({
+const mockedProof = new Iden3SparseMerkleTreeProof({
   issuerData: {
     id: DID.parse('did:polygonid:polygon:mumbai:2qKCnKB6smYGToFJLbjQ2kajWqVxXHJCaJ97vVCiPv'),
     state: {
@@ -49,9 +54,13 @@ const mockedProof =  new Iden3SparseMerkleTreeProof({
       rootOfRoots: ZERO_HASH
     }
   },
-  mtp: new Proof({ siblings: [Hash.fromBigInt(1n), ZERO_HASH, Hash.fromBigInt(2n),], nodeAux: { key: ZERO_HASH, value: ZERO_HASH }, existence: true }),
-  coreClaim: Claim.newClaim(SchemaHash.authSchemaHash),
-})
+  mtp: new Proof({
+    siblings: [Hash.fromBigInt(1n), ZERO_HASH, Hash.fromBigInt(2n)],
+    nodeAux: { key: ZERO_HASH, value: ZERO_HASH },
+    existence: true
+  }),
+  coreClaim: Claim.newClaim(SchemaHash.authSchemaHash)
+});
 
 global.localStorage = new LocalStorageMock() as unknown as Storage;
 
@@ -63,27 +72,22 @@ const mockedDataSource: IDataSource<W3CCredential> = {
     throw new Error('Function not implemented.');
   },
   get: function (key: string, keyName?: string | undefined): Promise<W3CCredential | undefined> {
-
-    let credential = cred1;
+    const credential = cred1;
     credential.id = key;
-    credential.proof = [
-      mockedProof
-    ]
+    credential.proof = [mockedProof];
 
     switch (credential.id) {
-
       case 'test1':
         // hash-as-string-ints
-        credential.proof = [(credential.proof[0] as Iden3SparseMerkleTreeProof).toJSON()]
-        
+        credential.proof = [(credential.proof[0] as Iden3SparseMerkleTreeProof).toJSON()];
+
         return Promise.resolve(credential);
-        
+
       case 'urn:fa4f7b0f-284d-4a24-9bff-023246582d76':
         return Promise.resolve(MockedLegacyCredential as unknown as W3CCredential);
 
       default:
         throw new Error('test identifier is not supported');
-
     }
   },
   delete: function (key: string, keyName?: string | undefined): Promise<void> {
@@ -128,230 +132,230 @@ const credentialFlow = async (storage: IDataStorage) => {
     query: ProofQuery;
     expected: W3CCredential[];
   }[] = [
-      {
-        query: {
-          allowedIssuers: ['*'],
-          type: 'type1_1'
-        },
-        expected: [cred1]
+    {
+      query: {
+        allowedIssuers: ['*'],
+        type: 'type1_1'
       },
-      {
-        query: {
-          allowedIssuers: ['issuer3', 'issuer2']
-        },
-        expected: [cred3, cred2]
+      expected: [cred1]
+    },
+    {
+      query: {
+        allowedIssuers: ['issuer3', 'issuer2']
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          context: 'context3_2',
-          type: 'type3_3',
-          schema: 'credentialSchemaId'
-        },
-        expected: [cred3]
+      expected: [cred3, cred2]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        context: 'context3_2',
+        type: 'type3_3',
+        schema: 'credentialSchemaId'
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          context: 'context2_2',
-          type: 'type2_3',
-          schema: 'credentialSchemaId',
-          credentialSubject: {
-            birthday: {
-              $gt: 20000100
-            }
+      expected: [cred3]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        context: 'context2_2',
+        type: 'type2_3',
+        schema: 'credentialSchemaId',
+        credentialSubject: {
+          birthday: {
+            $gt: 20000100
           }
-        },
-        expected: [cred2]
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            birthday: {
-              $lt: 20000102
-            }
+      expected: [cred2]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          birthday: {
+            $lt: 20000102
           }
-        },
-        expected: [cred1, cred2]
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            countryCode: {
-              $eq: 120
-            }
+      expected: [cred1, cred2]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countryCode: {
+            $eq: 120
           }
-        },
-        expected: [cred3]
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            countryCode: {
-              $in: [11, 120]
-            }
+      expected: [cred3]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countryCode: {
+            $in: [11, 120]
           }
-        },
-        expected: [cred3]
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            countryCode: {
-              $nin: [11, 111]
-            }
+      expected: [cred3]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countryCode: {
+            $nin: [11, 111]
           }
-        },
-        expected: [cred3]
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            countOfFines: {
-              $nin: [1, 2]
-            }
+      expected: [cred3]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countOfFines: {
+            $nin: [1, 2]
           }
-        },
-        expected: [cred4]
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            countOfFines: {
-              $in: [0]
-            }
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countOfFines: {
+            $in: [0]
           }
-        },
-        expected: [cred4]
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            countOfFines: {
-              $eq: 0
-            }
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countOfFines: {
+            $eq: 0
           }
-        },
-        expected: [cred4]
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            countOfFines: {
-              $eq: 1
-            }
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countOfFines: {
+            $eq: 1
           }
-        },
-        expected: []
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            countOfFines: {}
-          }
-        },
-        expected: [cred4]
+      expected: []
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          countOfFines: {}
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            'country.name': { $eq: 'Spain' }
-          }
-        },
-        expected: [cred4]
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.name': { $eq: 'Spain' }
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            'country.insured': { $eq: 'true' }
-          }
-        },
-        expected: [cred4]
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $eq: 'true' }
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            'country.insured': { $eq: 1 }
-          }
-        },
-        expected: [cred4]
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $eq: 1 }
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            'country.insured': { $eq: true }
-          }
-        },
-        expected: [cred4]
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $eq: true }
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            'country.insured': { $ne: 'false' }
-          }
-        },
-        expected: [cred4]
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $ne: 'false' }
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            'country.insured': { $ne: 0 }
-          }
-        },
-        expected: [cred4]
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $ne: 0 }
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            'country.insured': { $ne: false }
-          }
-        },
-        expected: [cred4]
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.insured': { $ne: false }
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            'country.hasOwnPackage': { $eq: 'false' }
-          }
-        },
-        expected: [cred4]
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.hasOwnPackage': { $eq: 'false' }
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            'country.hasOwnPackage': { $eq: 0 }
-          }
-        },
-        expected: [cred4]
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.hasOwnPackage': { $eq: 0 }
+        }
       },
-      {
-        query: {
-          allowedIssuers: ['*'],
-          credentialSubject: {
-            'country.hasOwnPackage': { $eq: false }
-          }
-        },
-        expected: [cred4]
-      }
-    ];
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.hasOwnPackage': { $eq: false }
+        }
+      },
+      expected: [cred4]
+    }
+  ];
 
   for (const item of queries) {
     const creds = await credentialWallet.findByQuery(item.query);
@@ -409,18 +413,18 @@ describe('credential-wallet', () => {
   });
 
   it('Backward compatibility test - hash-as-string-ints', async () => {
-    const credentialStorage = new CredentialStorage(
-      mockedDataSource
-    );
+    const credentialStorage = new CredentialStorage(mockedDataSource);
 
-   
     const cred = await credentialStorage.findCredentialById(cred1.id);
     expect(cred?.proof).not.to.be.undefined;
     const proof = (cred?.proof as unknown[])[0] as Iden3SparseMerkleTreeProof;
-    
-    expect(proof.coreClaim.getSchemaHash().bigInt().toString()).to.equal(SchemaHash.authSchemaHash.bigInt().toString());
-    expect(proof.mtp.allSiblings()).to.deep.equal(mockedProof.mtp.allSiblings());
-    expect(proof.issuerData.state.claimsTreeRoot.bigInt().toString()).to.equal(mockedProof.issuerData.state.claimsTreeRoot.bigInt().toString());
 
+    expect(proof.coreClaim.getSchemaHash().bigInt().toString()).to.equal(
+      SchemaHash.authSchemaHash.bigInt().toString()
+    );
+    expect(proof.mtp.allSiblings()).to.deep.equal(mockedProof.mtp.allSiblings());
+    expect(proof.issuerData.state.claimsTreeRoot.bigInt().toString()).to.equal(
+      mockedProof.issuerData.state.claimsTreeRoot.bigInt().toString()
+    );
   });
 });

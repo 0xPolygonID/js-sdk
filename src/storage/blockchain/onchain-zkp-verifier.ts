@@ -1,8 +1,8 @@
-import abi from './zkp-verifier-abi.json';
-import { ethers, Signer } from 'ethers';
+import { JsonRpcProvider, Signer, Contract } from 'ethers';
 import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
 import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
+import abi from './abi/ZkpVerifier.json';
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
@@ -49,14 +49,10 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         `submit doesn't implement requested method id. Only '0x${this._supportedMethodId}' is supported.`
       );
     }
-    const provider = new ethers.providers.JsonRpcProvider(chainConfig);
-    const verifierContract: ethers.Contract = new ethers.Contract(
-      txData.contract_address,
-      abi,
-      provider
-    );
+    const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
+    const verifierContract = new Contract(txData.contract_address, abi, provider);
     ethSigner = ethSigner.connect(provider);
-    const contract = verifierContract.connect(ethSigner);
+    const contract = verifierContract.connect(ethSigner) as Contract;
 
     const response = new Map<string, ZeroKnowledgeProofResponse>();
     for (const zkProof of zkProofResponses) {
@@ -76,10 +72,13 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
       const tx = await contract.submitZKPResponse(...payload);
       const txnReceipt = await tx.wait();
-      const status: number = txnReceipt.status;
-      const txnHash: string = txnReceipt.transactionHash;
+      if (!txnReceipt) {
+        throw new Error(`transaction: ${tx.hash} failed to mined`);
+      }
+      const status: number | null = txnReceipt.status;
+      const txnHash: string = txnReceipt.hash;
 
-      if (status === 0) {
+      if (!status) {
         throw new Error(`transaction: ${txnHash} failed to mined`);
       }
       response.set(txnHash, zkProof);

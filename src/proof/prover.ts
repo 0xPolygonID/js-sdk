@@ -4,7 +4,7 @@ import { CircuitId } from '../circuits';
 import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { witnessBuilder } from './witness_calculator';
 import { byteDecoder } from '../utils';
-import * as snarkjs from 'snarkjs';
+import { groth16 } from 'snarkjs';
 import { getCurveFromName } from 'ffjavascript';
 
 /**
@@ -57,7 +57,7 @@ export class NativeProver implements IZKProver {
         throw new Error(`verification file doesn't exist for circuit ${circuitId}`);
       }
 
-      const result = await snarkjs.groth16.verify(
+      const result = await groth16.verify(
         JSON.parse(byteDecoder.decode(circuitData.verificationKey)),
         zkp.pub_signals,
         zkp.proof
@@ -96,7 +96,7 @@ export class NativeProver implements IZKProver {
     if (!circuitData.provingKey) {
       throw new Error(`proving file doesn't exist for circuit ${circuitId}`);
     }
-    const { proof, publicSignals } = await snarkjs.groth16.prove(circuitData.provingKey, wtnsBytes);
+    const { proof, publicSignals } = await groth16.prove(circuitData.provingKey, wtnsBytes);
 
     // we need to terminate curve manually
     await this.terminateCurve();

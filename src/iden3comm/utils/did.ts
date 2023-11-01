@@ -3,7 +3,7 @@ import elliptic from 'elliptic';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
 
 import { KmsKeyType } from '../../kms';
-import { base58ToBytes, base64ToBytes, bytesToHex, hexToBytes } from '../../utils';
+import { base58ToBytes, base64UrlToBytes, bytesToHex, hexToBytes } from '../../utils';
 
 const DIDAuthenticationSection = 'authentication';
 export const resolveVerificationMethods = (didDocument: DIDDocument): VerificationMethod[] => {
@@ -41,7 +41,10 @@ export const extractPublicKeyBytes = (
     return { publicKeyBytes: base58ToBytes(vm.publicKeyBase58), kmsKeyType: KmsKeyType.Secp256k1 };
   }
   if (vm.publicKeyBase64 && isSupportedVmType) {
-    return { publicKeyBytes: base64ToBytes(vm.publicKeyBase64), kmsKeyType: KmsKeyType.Secp256k1 };
+    return {
+      publicKeyBytes: base64UrlToBytes(vm.publicKeyBase64),
+      kmsKeyType: KmsKeyType.Secp256k1
+    };
   }
   if (vm.publicKeyHex && isSupportedVmType) {
     return { publicKeyBytes: hexToBytes(vm.publicKeyHex), kmsKeyType: KmsKeyType.Secp256k1 };
@@ -56,8 +59,8 @@ export const extractPublicKeyBytes = (
       publicKeyBytes: hexToBytes(
         secp256k1
           .keyFromPublic({
-            x: bytesToHex(base64ToBytes(vm.publicKeyJwk.x)),
-            y: bytesToHex(base64ToBytes(vm.publicKeyJwk.y))
+            x: bytesToHex(base64UrlToBytes(vm.publicKeyJwk.x)),
+            y: bytesToHex(base64UrlToBytes(vm.publicKeyJwk.y))
           })
           .getPublic('hex')
       ),

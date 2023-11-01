@@ -3,7 +3,7 @@ import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 import Elliptic from 'elliptic';
 import * as providerHelpers from '../provider-helpers';
 import { ES256KSigner } from 'did-jwt';
-import { base64ToBytes, byteEncoder, bytesToHex, hexToBytes } from '../../utils';
+import { base64UrlToBytes, byteEncoder, bytesToHex, hexToBytes } from '../../utils';
 
 /**
  * Provider for Sec256p1 keys256p1
@@ -78,7 +78,7 @@ export class Sec256k1Provider implements IKeyProvider {
       opts.alg === 'ES256K-R'
     )(data);
 
-    const signatureHex = bytesToHex(base64ToBytes(signatureBase64.toString()));
+    const signatureHex = bytesToHex(base64UrlToBytes(signatureBase64.toString()));
     if (typeof signatureHex !== 'string') {
       throw new Error('Signature is not a string');
     }
