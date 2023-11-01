@@ -2,7 +2,7 @@ import { JsonRpcProvider, Signer, Contract } from 'ethers';
 import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
 import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
-import abi from './abi/ ZkpVerifier.json';
+import abi from './abi/ZkpVerifier.json';
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
