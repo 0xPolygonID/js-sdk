@@ -132,10 +132,10 @@ export class EthStateStorage implements IStateStorage {
     if (!txnReceipt) {
       throw new Error(`transaction: ${tx.hash} failed to mined`);
     }
-    const status: number | undefined | null = txnReceipt?.status;
-    const txnHash: string | undefined = txnReceipt?.hash;
+    const status: number | null = txnReceipt!.status;
+    const txnHash: string = txnReceipt!.hash;
 
-    if (!status || !txnHash) {
+    if (!status) {
       throw new Error(`transaction: ${txnHash} failed to mined`);
     }
 
