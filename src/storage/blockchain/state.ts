@@ -1,7 +1,7 @@
 import { RootInfo, StateProof } from './../entities/state';
 import { ZKProof } from '@iden3/js-jwz';
 import { IStateStorage } from '../interfaces/state';
-import { Contract, JsonRpcProvider, Signer } from 'ethers';
+import { Contract, JsonRpcProvider, Signer, TransactionRequest } from 'ethers';
 import { StateInfo } from '../entities/state';
 import { StateTransitionPubSignals } from '../../circuits';
 import { byteEncoder } from '../../utils';
@@ -17,7 +17,9 @@ export interface EthConnectionConfig {
   url: string;
   defaultGasLimit: number;
   minGasPrice?: string;
-  maxGasPrice?: string;
+  maxGasPrice?: string; // eip-1559 transaction do not support gasPrice 
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
   confirmationBlockCount: number;
   confirmationTimeout: number;
   contractAddress: string;
@@ -34,6 +36,8 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
   defaultGasLimit: 600000,
   minGasPrice: '0',
   maxGasPrice: '100000000000',
+  maxFeePerGas: '', //'2000000000',
+  maxPriorityFeePerGas: '', //'2000000000',
   confirmationBlockCount: 5,
   confirmationTimeout: 600000,
   contractAddress: '',
@@ -101,23 +105,41 @@ export class EthStateStorage implements IStateStorage {
       ],
       proof.proof.pi_c.slice(0, 2)
     ];
+   
+    const feeData = await this.provider.getFeeData();
 
-    await contract.transitState.estimateGas(...payload);
+    const maxFeePerGas = defaultEthConnectionConfig.maxFeePerGas ?
+      BigInt(defaultEthConnectionConfig.maxFeePerGas as string) : 
+      feeData.maxFeePerGas;
+    const maxPriorityFeePerGas = defaultEthConnectionConfig.maxPriorityFeePerGas ?
+      BigInt(defaultEthConnectionConfig.maxPriorityFeePerGas as string) : 
+      feeData.maxPriorityFeePerGas;
 
-    const tx = await contract.transitState(...payload);
+    const gasLimit = await contract.transitState.estimateGas(...payload);
+    const txData = await contract.transitState.populateTransaction(...payload);
+   
+    const request: TransactionRequest = {
+        to: txData.to,
+        data: txData.data,
+        gasLimit, // defaultGasLimit?
+        // gasPrice, // TypeError: eip-1559 transaction do not support gasPrice 
+        maxFeePerGas,
+        maxPriorityFeePerGas
+    };
+    const tx = await signer.sendTransaction(request);
 
     const txnReceipt = await tx.wait();
     if (!txnReceipt) {
       throw new Error(`transaction: ${tx.hash} failed to mined`);
     }
-    const status: number | null = txnReceipt.status;
-    const txnHash: string = txnReceipt.hash;
+    const status: number | undefined | null = txnReceipt?.status;
+    const txnHash: string | undefined = txnReceipt?.hash;
 
-    if (!status) {
+    if (!status || !txnHash) {
       throw new Error(`transaction: ${txnHash} failed to mined`);
     }
 
-    return txnHash;
+    return txnHash as string;
   }
 
   /** {@inheritdoc IStateStorage.getGISTProof} */
