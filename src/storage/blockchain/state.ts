@@ -17,7 +17,7 @@ export interface EthConnectionConfig {
   url: string;
   defaultGasLimit: number;
   minGasPrice?: string;
-  maxGasPrice?: string; // eip-1559 transaction do not support gasPrice 
+  maxGasPrice?: string; // eip-1559 transaction do not support gasPrice
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
   confirmationBlockCount: number;
@@ -105,26 +105,26 @@ export class EthStateStorage implements IStateStorage {
       ],
       proof.proof.pi_c.slice(0, 2)
     ];
-   
+
     const feeData = await this.provider.getFeeData();
 
-    const maxFeePerGas = defaultEthConnectionConfig.maxFeePerGas ?
-      BigInt(defaultEthConnectionConfig.maxFeePerGas as string) : 
-      feeData.maxFeePerGas;
-    const maxPriorityFeePerGas = defaultEthConnectionConfig.maxPriorityFeePerGas ?
-      BigInt(defaultEthConnectionConfig.maxPriorityFeePerGas as string) : 
-      feeData.maxPriorityFeePerGas;
+    const maxFeePerGas = defaultEthConnectionConfig.maxFeePerGas
+      ? BigInt(defaultEthConnectionConfig.maxFeePerGas)
+      : feeData.maxFeePerGas;
+    const maxPriorityFeePerGas = defaultEthConnectionConfig.maxPriorityFeePerGas
+      ? BigInt(defaultEthConnectionConfig.maxPriorityFeePerGas)
+      : feeData.maxPriorityFeePerGas;
 
     const gasLimit = await contract.transitState.estimateGas(...payload);
     const txData = await contract.transitState.populateTransaction(...payload);
-   
+
     const request: TransactionRequest = {
-        to: txData.to,
-        data: txData.data,
-        gasLimit, // defaultGasLimit?
-        // gasPrice, // TypeError: eip-1559 transaction do not support gasPrice 
-        maxFeePerGas,
-        maxPriorityFeePerGas
+      to: txData.to,
+      data: txData.data,
+      gasLimit, // defaultGasLimit?
+      // gasPrice, // TypeError: eip-1559 transaction do not support gasPrice
+      maxFeePerGas,
+      maxPriorityFeePerGas
     };
     const tx = await signer.sendTransaction(request);
 
@@ -132,14 +132,14 @@ export class EthStateStorage implements IStateStorage {
     if (!txnReceipt) {
       throw new Error(`transaction: ${tx.hash} failed to mined`);
     }
-    const status: number | null = txnReceipt!.status;
-    const txnHash: string = txnReceipt!.hash;
+    const status: number | null = txnReceipt.status;
+    const txnHash: string = txnReceipt.hash;
 
     if (!status) {
       throw new Error(`transaction: ${txnHash} failed to mined`);
     }
 
-    return txnHash as string;
+    return txnHash;
   }
 
   /** {@inheritdoc IStateStorage.getGISTProof} */
