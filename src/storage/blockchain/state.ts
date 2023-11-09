@@ -36,8 +36,6 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
   defaultGasLimit: 600000,
   minGasPrice: '0',
   maxGasPrice: '100000000000',
-  maxFeePerGas: '', //'2000000000',
-  maxPriorityFeePerGas: '', //'2000000000',
   confirmationBlockCount: 5,
   confirmationTimeout: 600000,
   contractAddress: '',
@@ -121,8 +119,7 @@ export class EthStateStorage implements IStateStorage {
     const request: TransactionRequest = {
       to: txData.to,
       data: txData.data,
-      gasLimit, // defaultGasLimit?
-      // gasPrice, // TypeError: eip-1559 transaction do not support gasPrice
+      gasLimit,
       maxFeePerGas,
       maxPriorityFeePerGas
     };
