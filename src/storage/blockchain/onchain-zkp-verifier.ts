@@ -1,4 +1,4 @@
-import { JsonRpcProvider, Signer, Contract } from 'ethers';
+import { JsonRpcProvider, Signer, Contract, TransactionRequest } from 'ethers';
 import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
 import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
@@ -70,7 +70,25 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         zkProof.proof.pi_c.slice(0, 2)
       ];
 
-      const tx = await contract.submitZKPResponse(...payload);
+      const feeData = await provider.getFeeData();
+      const maxFeePerGas = chainConfig.maxFeePerGas
+        ? BigInt(chainConfig.maxFeePerGas)
+        : feeData.maxFeePerGas;
+      const maxPriorityFeePerGas = chainConfig.maxPriorityFeePerGas
+        ? BigInt(chainConfig.maxPriorityFeePerGas)
+        : feeData.maxPriorityFeePerGas;
+
+      const gasLimit = await contract.submitZKPResponse.estimateGas(...payload);
+      const txData = await contract.submitZKPResponse.populateTransaction(...payload);
+
+      const request: TransactionRequest = {
+        to: txData.to,
+        data: txData.data,
+        gasLimit,
+        maxFeePerGas,
+        maxPriorityFeePerGas
+      };
+      const tx = await ethSigner.sendTransaction(request);
       const txnReceipt = await tx.wait();
       if (!txnReceipt) {
         throw new Error(`transaction: ${tx.hash} failed to mined`);

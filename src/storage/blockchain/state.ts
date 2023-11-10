@@ -1,7 +1,7 @@
 import { RootInfo, StateProof } from './../entities/state';
 import { ZKProof } from '@iden3/js-jwz';
 import { IStateStorage } from '../interfaces/state';
-import { Contract, JsonRpcProvider, Signer } from 'ethers';
+import { Contract, JsonRpcProvider, Signer, TransactionRequest } from 'ethers';
 import { StateInfo } from '../entities/state';
 import { StateTransitionPubSignals } from '../../circuits';
 import { byteEncoder } from '../../utils';
@@ -17,7 +17,9 @@ export interface EthConnectionConfig {
   url: string;
   defaultGasLimit: number;
   minGasPrice?: string;
-  maxGasPrice?: string;
+  maxGasPrice?: string; // eip-1559 transaction do not support gasPrice
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
   confirmationBlockCount: number;
   confirmationTimeout: number;
   contractAddress: string;
@@ -102,9 +104,26 @@ export class EthStateStorage implements IStateStorage {
       proof.proof.pi_c.slice(0, 2)
     ];
 
-    await contract.transitState.estimateGas(...payload);
+    const feeData = await this.provider.getFeeData();
 
-    const tx = await contract.transitState(...payload);
+    const maxFeePerGas = defaultEthConnectionConfig.maxFeePerGas
+      ? BigInt(defaultEthConnectionConfig.maxFeePerGas)
+      : feeData.maxFeePerGas;
+    const maxPriorityFeePerGas = defaultEthConnectionConfig.maxPriorityFeePerGas
+      ? BigInt(defaultEthConnectionConfig.maxPriorityFeePerGas)
+      : feeData.maxPriorityFeePerGas;
+
+    const gasLimit = await contract.transitState.estimateGas(...payload);
+    const txData = await contract.transitState.populateTransaction(...payload);
+
+    const request: TransactionRequest = {
+      to: txData.to,
+      data: txData.data,
+      gasLimit,
+      maxFeePerGas,
+      maxPriorityFeePerGas
+    };
+    const tx = await signer.sendTransaction(request);
 
     const txnReceipt = await tx.wait();
     if (!txnReceipt) {
