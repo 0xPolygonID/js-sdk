@@ -3,13 +3,21 @@ import { CredentialStorage } from './../../src/storage/shared/credential-storage
 import { IDataStorage } from './../../src/storage/interfaces/data-storage';
 import { CredentialWallet } from '../../src/credentials';
 import { SearchError } from '../../src/storage/filters/jsonQuery';
-import { cred1, cred2, cred3, cred4 } from './mock';
-import { ProofQuery, W3CCredential, CredentialStatusType } from '../../src/verifiable';
+import { MockedLegacyCredential, cred1, cred2, cred3, cred4 } from './mock';
+import {
+  ProofQuery,
+  W3CCredential,
+  CredentialStatusType,
+  Iden3SparseMerkleTreeProof
+} from '../../src/verifiable';
 import { BrowserDataSource } from '../../src/storage/local-storage/data-source';
 import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
+import { IDataSource } from '../../src';
+import { Claim, DID, SchemaHash } from '@iden3/js-iden3-core';
+import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
@@ -36,7 +44,56 @@ class LocalStorageMock {
   }
 }
 
+const mockedProof = new Iden3SparseMerkleTreeProof({
+  issuerData: {
+    id: DID.parse('did:polygonid:polygon:mumbai:2qKCnKB6smYGToFJLbjQ2kajWqVxXHJCaJ97vVCiPv'),
+    state: {
+      value: ZERO_HASH,
+      claimsTreeRoot: ZERO_HASH,
+      revocationTreeRoot: ZERO_HASH,
+      rootOfRoots: ZERO_HASH
+    }
+  },
+  mtp: new Proof({
+    siblings: [Hash.fromBigInt(1n), ZERO_HASH, Hash.fromBigInt(2n)],
+    nodeAux: { key: ZERO_HASH, value: ZERO_HASH },
+    existence: true
+  }),
+  coreClaim: Claim.newClaim(SchemaHash.authSchemaHash)
+});
+
 global.localStorage = new LocalStorageMock() as unknown as Storage;
+
+const mockedDataSource: IDataSource<W3CCredential> = {
+  load: function (): Promise<W3CCredential[]> {
+    throw new Error('Function not implemented.');
+  },
+  save: function (key: string, value: W3CCredential, keyName?: string | undefined): Promise<void> {
+    throw new Error('Function not implemented.');
+  },
+  get: function (key: string, keyName?: string | undefined): Promise<W3CCredential | undefined> {
+    const credential = cred1;
+    credential.id = key;
+    credential.proof = [mockedProof];
+
+    switch (credential.id) {
+      case 'test1':
+        // hash-as-string-ints
+        credential.proof = [(credential.proof[0] as Iden3SparseMerkleTreeProof).toJSON()];
+
+        return Promise.resolve(credential);
+
+      case 'urn:fa4f7b0f-284d-4a24-9bff-023246582d76':
+        return Promise.resolve(MockedLegacyCredential as unknown as W3CCredential);
+
+      default:
+        throw new Error('test identifier is not supported');
+    }
+  },
+  delete: function (key: string, keyName?: string | undefined): Promise<void> {
+    throw new Error('Function not implemented.');
+  }
+};
 
 const credentialFlow = async (storage: IDataStorage) => {
   const resolvers = new CredentialStatusResolverRegistry();
@@ -58,7 +115,10 @@ const credentialFlow = async (storage: IDataStorage) => {
 
   // present id
   const credById = await credentialWallet.findById(cred2.id);
-  expect(credById).to.deep.equal(cred2);
+  if (!credById) {
+    throw new Error('credById is undefined');
+  }
+  expect(Object.entries(credById).toString()).to.deep.equal(Object.entries(cred2).toString());
 
   // not present id
   const emptyCredById = await credentialWallet.findById('otherId');
@@ -66,7 +126,7 @@ const credentialFlow = async (storage: IDataStorage) => {
 
   // findByContextType
   const [credByContextType] = await credentialWallet.findByContextType('context1', 'type1_2');
-  expect(credByContextType.id).to.deep.equal(cred1.id);
+  expect(credByContextType.id).to.equal(cred1.id);
 
   const queries: {
     query: ProofQuery;
@@ -350,5 +410,21 @@ describe('credential-wallet', () => {
       )
     } as unknown as IDataStorage;
     await credentialFlow(storage);
+  });
+
+  it('Backward compatibility test - hash-as-string-ints', async () => {
+    const credentialStorage = new CredentialStorage(mockedDataSource);
+
+    const cred = await credentialStorage.findCredentialById(cred1.id);
+    expect(cred?.proof).not.to.be.undefined;
+    const proof = (cred?.proof as unknown[])[0] as Iden3SparseMerkleTreeProof;
+
+    expect(proof.coreClaim.getSchemaHash().bigInt().toString()).to.equal(
+      SchemaHash.authSchemaHash.bigInt().toString()
+    );
+    expect(proof.mtp.allSiblings()).to.deep.equal(mockedProof.mtp.allSiblings());
+    expect(proof.issuerData.state.claimsTreeRoot.bigInt().toString()).to.equal(
+      mockedProof.issuerData.state.claimsTreeRoot.bigInt().toString()
+    );
   });
 });

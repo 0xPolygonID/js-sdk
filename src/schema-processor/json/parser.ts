@@ -221,7 +221,6 @@ export class Parser {
     opts: Options,
     tp: string
   ): Promise<string> {
-    // const ctx = ldcontext.getInitialContext({}), data, {});
     const ldCtx = await jsonld.processContext(
       ldcontext.getInitialContext({}),
       credential['@context'],

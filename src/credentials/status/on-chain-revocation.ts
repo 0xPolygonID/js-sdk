@@ -3,9 +3,12 @@ import { EthConnectionConfig } from '../../storage/blockchain';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revocation';
 import { DID, Id } from '@iden3/js-iden3-core';
-import { getChainIdByDIDsParts } from '../../storage/blockchain';
-import { utils } from 'ethers';
-
+import { VerifiableConstants } from '../../verifiable/constants';
+import { isGenesisState } from './utils';
+import { EthStateStorage } from '../../storage/blockchain/state';
+import { getChainId } from '../../storage/blockchain';
+import { IStateStorage, IOnchainRevocationStore } from '../../storage';
+import { Hash } from '@iden3/js-merkletree';
 /**
  * OnChainIssuer is a class that allows to interact with the onchain contract
  * and build the revocation status.
@@ -18,8 +21,7 @@ export class OnChainResolver implements CredentialStatusResolver {
    *
    * Creates an instance of OnChainIssuer.
    * @public
-   * @param {Array<EthConnectionConfig>} - onchain contract address
-   * @param {string} - list of EthConnectionConfig
+   * @param {Array<EthConnectionConfig>} _configs - list of ethereum network connections
    */
   constructor(private readonly _configs: EthConnectionConfig[]) {}
 
@@ -52,15 +54,48 @@ export class OnChainResolver implements CredentialStatusResolver {
     credentialStatus: CredentialStatus,
     issuer: DID
   ): Promise<RevocationStatus> {
-    const { contractAddress, chainId, revocationNonce } =
+    const { contractAddress, chainId, revocationNonce, stateHex } =
       this.extractCredentialStatusInfo(credentialStatus);
     if (revocationNonce !== credentialStatus.revocationNonce) {
       throw new Error('revocationNonce does not match');
     }
-    const networkConfig = this.networkByChainId(chainId);
-    const onChainCaller = new OnChainRevocationStorage(networkConfig, contractAddress);
+
+    const issuerId = DID.idFromDID(issuer);
+    let latestIssuerState: bigint;
+    try {
+      const ethStorage = this._getStateStorageForIssuer(issuerId);
+      const latestStateInfo = await ethStorage.getLatestStateById(issuerId.bigInt());
+      if (!latestStateInfo.state) {
+        throw new Error('state contract returned empty state');
+      }
+      latestIssuerState = latestStateInfo.state;
+    } catch (e) {
+      const errMsg = (e as { reason: string })?.reason ?? (e as Error).message ?? (e as string);
+      if (!errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST)) {
+        throw e;
+      }
+
+      if (!stateHex) {
+        throw new Error(
+          'latest state not found and state parameter is not present in credentialStatus.id'
+        );
+      }
+      const stateBigInt = Hash.fromHex(stateHex).bigInt();
+      if (!isGenesisState(issuer, stateBigInt)) {
+        throw new Error(
+          `latest state not found and state parameter ${stateHex} is not genesis state`
+        );
+      }
+      latestIssuerState = stateBigInt;
+    }
+
     const id = DID.idFromDID(issuer);
-    const revocationStatus = await onChainCaller.getRevocationStatus(id.bigInt(), revocationNonce);
+    const onChainCaller = this._getOnChainRevocationStorageForIssuer(chainId, contractAddress);
+    const revocationStatus = await onChainCaller.getRevocationStatusByIdAndState(
+      id.bigInt(),
+      latestIssuerState,
+      revocationNonce
+    );
     return revocationStatus;
   }
 
@@ -74,7 +109,7 @@ export class OnChainResolver implements CredentialStatusResolver {
     contractAddress: string;
     chainId: number;
     revocationNonce: number;
-    issuer: string;
+    stateHex: string;
   } {
     if (!credentialStatus.id) {
       throw new Error('credentialStatus id is empty');
@@ -85,29 +120,18 @@ export class OnChainResolver implements CredentialStatusResolver {
       throw new Error('invalid credentialStatus id');
     }
 
-    const issuer = idParts[0];
-    const issuerDID = DID.parse(issuer);
-
     const idURL = new URL(credentialStatus.id);
-
-    // if contractAddress is not present in id as param, then it should be parsed from DID
-    let contractAddress = idURL.searchParams.get('contractAddress');
-    let chainId: number;
-    if (!contractAddress) {
-      const issuerId = DID.idFromDID(issuerDID);
-      const ethAddr = Id.ethAddressFromId(issuerId);
-      contractAddress = utils.getAddress(utils.hexDataSlice(ethAddr, 0));
-      const blockchain = DID.blockchainFromId(issuerId);
-      const network = DID.networkIdFromId(issuerId);
-      chainId = getChainIdByDIDsParts(issuerDID.method, blockchain, network);
-    } else {
-      const parts = contractAddress.split(':');
-      if (parts.length != 2) {
-        throw new Error('invalid contract address encoding. should be chainId:contractAddress');
-      }
-      chainId = parseInt(parts[0], 10);
-      contractAddress = parts[1];
+    const stateHex = idURL.searchParams.get('state') || '';
+    const contractIdentifier = idURL.searchParams.get('contractAddress');
+    if (!contractIdentifier) {
+      throw new Error('contractAddress not found in credentialStatus.id field');
     }
+    const parts = contractIdentifier.split(':');
+    if (parts.length != 2) {
+      throw new Error('invalid contract address encoding. should be chainId:contractAddress');
+    }
+    const chainId = parseInt(parts[0], 10);
+    const contractAddress = parts[1];
 
     // if revocationNonce is not present in id as param, then it should be extract from credentialStatus
     const rv = idURL.searchParams.get('revocationNonce') || credentialStatus.revocationNonce;
@@ -116,7 +140,7 @@ export class OnChainResolver implements CredentialStatusResolver {
     }
     const revocationNonce = typeof rv === 'number' ? rv : parseInt(rv, 10);
 
-    return { contractAddress, chainId, revocationNonce, issuer };
+    return { contractAddress, chainId, revocationNonce, stateHex };
   }
 
   networkByChainId(chainId: number): EthConnectionConfig {
@@ -125,5 +149,22 @@ export class OnChainResolver implements CredentialStatusResolver {
       throw new Error(`chainId "${chainId}" not supported`);
     }
     return network;
+  }
+
+  // TODO (illia-korotia): is dirty hack for mock in tests.
+  // need to pass to constructor list of state stores not list of network configs
+  private _getStateStorageForIssuer(issuerId: Id): IStateStorage {
+    const issuerChainId = getChainId(DID.blockchainFromId(issuerId), DID.networkIdFromId(issuerId));
+    const ethStorage = new EthStateStorage(this.networkByChainId(issuerChainId));
+    return ethStorage;
+  }
+
+  private _getOnChainRevocationStorageForIssuer(
+    chainId: number,
+    contractAddress: string
+  ): IOnchainRevocationStore {
+    const networkConfig = this.networkByChainId(chainId);
+    const onChainCaller = new OnChainRevocationStorage(networkConfig, contractAddress);
+    return onChainCaller;
   }
 }

@@ -1,8 +1,7 @@
-import { newHashFromString, Proof } from '@iden3/js-merkletree';
 import { Id, Claim } from '@iden3/js-iden3-core';
 import { Signature } from '@iden3/js-crypto';
 import { Query, ValueProof, CircuitError, TreeState, GISTProof, ClaimWithMTPProof } from './models';
-import { Hash } from '@iden3/js-merkletree';
+import { Hash, Proof } from '@iden3/js-merkletree';
 import {
   BaseConfig,
   bigIntArrayToStringArray,
@@ -298,7 +297,7 @@ export class AtomicQueryMTPV2OnChainPubSignals extends BaseConfig {
     fieldIdx++;
 
     // - gistRoot
-    this.gistRoot = newHashFromString(sVals[fieldIdx]);
+    this.gistRoot = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     // - issuerID
@@ -306,7 +305,7 @@ export class AtomicQueryMTPV2OnChainPubSignals extends BaseConfig {
     fieldIdx++;
 
     // - issuerClaimIdenState
-    this.issuerClaimIdenState = newHashFromString(sVals[fieldIdx]);
+    this.issuerClaimIdenState = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     // - isRevocationChecked
@@ -314,7 +313,7 @@ export class AtomicQueryMTPV2OnChainPubSignals extends BaseConfig {
     fieldIdx++;
 
     // - issuerClaimNonRevState
-    this.issuerClaimNonRevState = newHashFromString(sVals[fieldIdx]);
+    this.issuerClaimNonRevState = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     //  - timestamp

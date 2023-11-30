@@ -1,19 +1,11 @@
 import { buildDIDType, BytesHelper, DID, Id } from '@iden3/js-iden3-core';
 
-import {
-  newHashFromBigInt,
-  Hash,
-  Proof,
-  NodeAux,
-  ZERO_HASH,
-  setBitBigEndian,
-  testBit
-} from '@iden3/js-merkletree';
+import { Hash, Proof, NodeAux, ZERO_HASH, testBit } from '@iden3/js-merkletree';
 import { IStateStorage } from '../../storage';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
-import { CredentialStatus, RevocationStatus } from '../../verifiable';
-import { strMTHex } from '../../circuits';
+import { CredentialStatus, RevocationStatus, State } from '../../verifiable';
 import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
+import { isGenesisState } from './utils';
 
 /**
  * ProofNode is a partial Reverse Hash Service result
@@ -42,10 +34,7 @@ export class ProofNode {
       return NodeType.Middle;
     }
 
-    if (
-      this.children.length === 3 &&
-      this.children[2].hex() === newHashFromBigInt(BigInt(1)).hex()
-    ) {
+    if (this.children.length === 3 && this.children[2].hex() === Hash.fromBigInt(BigInt(1)).hex()) {
       return NodeType.Leaf;
     }
 
@@ -75,8 +64,8 @@ export class ProofNode {
    */
   static fromHex(hexNode: ProofNodeHex): ProofNode {
     return new ProofNode(
-      strMTHex(hexNode.hash),
-      hexNode.children.map((ch) => strMTHex(ch))
+      Hash.fromHex(hexNode.hash),
+      hexNode.children.map((ch) => Hash.fromHex(ch))
     );
   }
 }
@@ -124,28 +113,13 @@ export class RHSResolver implements CredentialStatusResolver {
     }
 
     try {
-      return await this.getStatus(credentialStatus, credentialStatusResolveOptions.issuerDID);
+      return await this.getStatus(
+        credentialStatus,
+        credentialStatusResolveOptions.issuerDID,
+        credentialStatusResolveOptions.issuerData,
+        credentialStatusResolveOptions.issuerGenesisState
+      );
     } catch (e: unknown) {
-      const errMsg = (e as { reason: string })?.reason ?? (e as Error).message ?? (e as string);
-      if (
-        !!credentialStatusResolveOptions.issuerData &&
-        errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) &&
-        isIssuerGenesis(
-          credentialStatusResolveOptions.issuerDID.string(),
-          credentialStatusResolveOptions.issuerData.state.value
-        )
-      ) {
-        return {
-          mtp: new Proof(),
-          issuer: {
-            state: credentialStatusResolveOptions.issuerData.state.value,
-            revocationTreeRoot: credentialStatusResolveOptions.issuerData.state.revocationTreeRoot,
-            rootOfRoots: credentialStatusResolveOptions.issuerData.state.rootOfRoots,
-            claimsTreeRoot: credentialStatusResolveOptions.issuerData.state.claimsTreeRoot
-          }
-        };
-      }
-
       if (credentialStatus?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
         try {
           return await (await fetch(credentialStatus.id)).json();
@@ -161,21 +135,97 @@ export class RHSResolver implements CredentialStatusResolver {
    * Gets revocation status from rhs service.
    * @param {CredentialStatus} credentialStatus
    * @param {DID} issuerDID
+   * @param {IssuerData} issuerData
    * @returns Promise<RevocationStatus>
    */
   private async getStatus(
     credentialStatus: CredentialStatus,
-    issuerDID: DID
+    issuerDID: DID,
+    issuerData?: {
+      state: {
+        rootOfRoots: string;
+        claimsTreeRoot: string;
+        revocationTreeRoot: string;
+        value: string;
+      };
+    },
+    genesisState?: State
   ): Promise<RevocationStatus> {
-    const id = DID.idFromDID(issuerDID);
-    const latestStateInfo = await this._state.getLatestStateById(id.bigInt());
-    const hashedRevNonce = newHashFromBigInt(BigInt(credentialStatus.revocationNonce ?? 0));
-    const hashedIssuerRoot = newHashFromBigInt(BigInt(latestStateInfo?.state ?? 0));
-    return await this.getRevocationStatusFromRHS(
-      hashedRevNonce,
-      hashedIssuerRoot,
-      credentialStatus.id
-    );
+    const issuerId = DID.idFromDID(issuerDID);
+
+    let latestState: bigint;
+    try {
+      const latestStateInfo = await this._state.getLatestStateById(issuerId.bigInt());
+      if (!latestStateInfo.state) {
+        throw new Error('state contract returned empty state');
+      }
+      latestState = latestStateInfo.state;
+    } catch (e) {
+      const errMsg = (e as { reason: string })?.reason ?? (e as Error).message ?? (e as string);
+      if (!errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST)) {
+        throw e;
+      }
+      const stateHex = this.extractState(credentialStatus.id);
+      if (!stateHex) {
+        return this.getRevocationStatusFromIssuerData(issuerDID, issuerData, genesisState);
+      }
+      const currentStateBigInt = Hash.fromHex(stateHex).bigInt();
+      if (!isGenesisState(issuerDID, currentStateBigInt)) {
+        throw new Error(
+          `latest state not found and state parameter ${stateHex} is not genesis state`
+        );
+      }
+      latestState = currentStateBigInt;
+    }
+
+    const rhsHost = credentialStatus.id.split('/node')[0];
+    const hashedRevNonce = Hash.fromBigInt(BigInt(credentialStatus.revocationNonce ?? 0));
+    const hashedIssuerRoot = Hash.fromBigInt(latestState);
+    return await this.getRevocationStatusFromRHS(hashedRevNonce, hashedIssuerRoot, rhsHost);
+  }
+
+  /**
+   * Extract revocation status from issuer data.
+   * @param {DID} issuerDID
+   * @param {IssuerData} issuerData
+   */
+  private getRevocationStatusFromIssuerData(
+    issuerDID: DID,
+    issuerData?: {
+      state: {
+        rootOfRoots: string;
+        claimsTreeRoot: string;
+        revocationTreeRoot: string;
+        value: string;
+      };
+    },
+    genesisState?: State
+  ): RevocationStatus {
+    if (!!genesisState && isGenesisState(issuerDID, genesisState.value.bigInt())) {
+      return {
+        mtp: new Proof(),
+        issuer: {
+          state: genesisState.value.hex(),
+          revocationTreeRoot: genesisState.revocationTreeRoot.hex(),
+          rootOfRoots: genesisState.rootOfRoots.hex(),
+          claimsTreeRoot: genesisState.claimsTreeRoot.hex()
+        }
+      };
+    }
+
+    // legacy
+    if (!!issuerData && isGenesisState(issuerDID, issuerData.state.value)) {
+      return {
+        mtp: new Proof(),
+        issuer: {
+          state: issuerData.state.value,
+          revocationTreeRoot: issuerData.state.revocationTreeRoot,
+          rootOfRoots: issuerData.state.rootOfRoots,
+          claimsTreeRoot: issuerData.state.claimsTreeRoot
+        }
+      };
+    }
+    throw new Error(`issuer data / genesis state param is empty`);
   }
 
   /**
@@ -202,7 +252,7 @@ export class RHSResolver implements CredentialStatusResolver {
     const s = issuerRoot.hex();
     const [cTR, rTR, roTR] = treeRoots.children;
 
-    const rtrHashed = strMTHex(rTR);
+    const rtrHashed = Hash.fromHex(rTR);
     const nonRevProof = await this.rhsGenerateProof(rtrHashed, data, `${rhsUrl}/node`);
 
     return {
@@ -217,11 +267,11 @@ export class RHSResolver implements CredentialStatusResolver {
   }
 
   async rhsGenerateProof(treeRoot: Hash, key: Hash, rhsUrl: string): Promise<Proof> {
-    let exists = false;
+    let existence = false;
     const siblings: Hash[] = [];
     let nodeAux: NodeAux;
 
-    const mkProof = () => this.newProofFromData(exists, siblings, nodeAux);
+    const mkProof = () => new Proof({ siblings, existence, nodeAux });
 
     let nextKey = treeRoot;
     for (let depth = 0; depth < key.bytes.length * 8; depth++) {
@@ -235,7 +285,7 @@ export class RHSResolver implements CredentialStatusResolver {
       switch (n.nodeType()) {
         case NodeType.Leaf:
           if (key.bytes.every((b, index) => b === n.children[0].bytes[index])) {
-            exists = true;
+            existence = true;
             return mkProof();
           }
           // We found a leaf whose entry didn't match hIndex
@@ -261,28 +311,19 @@ export class RHSResolver implements CredentialStatusResolver {
     throw new Error('tree depth is too high');
   }
 
-  async newProofFromData(
-    existence: boolean,
-    allSiblings: Hash[],
-    nodeAux: NodeAux
-  ): Promise<Proof> {
-    const p = new Proof();
-    p.existence = existence;
-    p.nodeAux = nodeAux;
-    p.depth = allSiblings.length;
-
-    for (let i = 0; i < allSiblings.length; i++) {
-      const sibling = allSiblings[i];
-      if (JSON.stringify(allSiblings[i]) !== JSON.stringify(ZERO_HASH)) {
-        setBitBigEndian(p.notEmpties, i);
-        p.siblings.push(sibling);
-      }
-    }
-    return p;
+  /**
+   * Get state param from rhs url
+   * @param {string} id
+   * @returns string | null
+   */
+  private extractState(id: string): string | null {
+    const u = new URL(id);
+    return u.searchParams.get('state');
   }
 }
 
 /**
+ * @deprecated The method should not be used. Use isGenesisState instead.
  * Checks if issuer did is created from given state is genesis
  *
  * @param {string} issuer - did (string)
@@ -300,6 +341,7 @@ export function isIssuerGenesis(issuer: string, state: string): boolean {
 }
 
 /**
+ * @deprecated The method should not be used. Use isGenesisState instead.
  * Checks if id is created from given state and type is genesis
  *
  * @param {bigint} id

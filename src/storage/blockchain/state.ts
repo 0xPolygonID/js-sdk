@@ -1,11 +1,11 @@
 import { RootInfo, StateProof } from './../entities/state';
 import { ZKProof } from '@iden3/js-jwz';
 import { IStateStorage } from '../interfaces/state';
-import { BigNumber, ethers, Signer } from 'ethers';
+import { Contract, JsonRpcProvider, Signer, TransactionRequest } from 'ethers';
 import { StateInfo } from '../entities/state';
-import abi from './state-abi.json';
 import { StateTransitionPubSignals } from '../../circuits';
 import { byteEncoder } from '../../utils';
+import abi from './abi/State.json';
 
 /**
  * Configuration of ethereum based blockchain connection
@@ -17,7 +17,9 @@ export interface EthConnectionConfig {
   url: string;
   defaultGasLimit: number;
   minGasPrice?: string;
-  maxGasPrice?: string;
+  maxGasPrice?: string; // eip-1559 transaction do not support gasPrice
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
   confirmationBlockCount: number;
   confirmationTimeout: number;
   contractAddress: string;
@@ -25,7 +27,7 @@ export interface EthConnectionConfig {
   rpcResponseTimeout: number;
   waitReceiptCycleTime: number;
   waitBlockCycleTime: number;
-  chainId: number | null;
+  chainId?: number;
 }
 
 export /** @type {EthConnectionConfig} - default configuration for EthConnectionConfig */
@@ -40,8 +42,7 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
   receiptTimeout: 600000,
   rpcResponseTimeout: 5000,
   waitReceiptCycleTime: 30000,
-  waitBlockCycleTime: 3000,
-  chainId: null
+  waitBlockCycleTime: 3000
 };
 
 /**
@@ -52,29 +53,29 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
  * @implements implements IStateStorage interface
  */
 export class EthStateStorage implements IStateStorage {
-  public readonly stateContract: ethers.Contract;
-  public readonly provider: ethers.providers.JsonRpcProvider;
+  public readonly stateContract: Contract;
+  public readonly provider: JsonRpcProvider;
 
   /**
    * Creates an instance of EthStateStorage.
    * @param {EthConnectionConfig} [ethConfig=defaultEthConnectionConfig]
    */
   constructor(private readonly ethConfig: EthConnectionConfig = defaultEthConnectionConfig) {
-    this.provider = new ethers.providers.JsonRpcProvider(this.ethConfig.url);
-    this.stateContract = new ethers.Contract(this.ethConfig.contractAddress, abi, this.provider);
+    this.provider = new JsonRpcProvider(this.ethConfig.url);
+    this.stateContract = new Contract(this.ethConfig.contractAddress, abi, this.provider);
   }
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
   async getLatestStateById(id: bigint): Promise<StateInfo> {
     const rawData = await this.stateContract.getStateInfoById(id);
     const stateInfo: StateInfo = {
-      id: BigNumber.from(rawData[0]).toBigInt(),
-      state: BigNumber.from(rawData[1]).toBigInt(),
-      replacedByState: BigNumber.from(rawData[2]).toBigInt(),
-      createdAtTimestamp: BigNumber.from(rawData[3]).toBigInt(),
-      replacedAtTimestamp: BigNumber.from(rawData[4]).toBigInt(),
-      createdAtBlock: BigNumber.from(rawData[5]).toBigInt(),
-      replacedAtBlock: BigNumber.from(rawData[6]).toBigInt()
+      id: BigInt(rawData[0]),
+      state: BigInt(rawData[1]),
+      replacedByState: BigInt(rawData[2]),
+      createdAtTimestamp: BigInt(rawData[3]),
+      replacedAtTimestamp: BigInt(rawData[4]),
+      createdAtBlock: BigInt(rawData[5]),
+      replacedAtBlock: BigInt(rawData[6])
     };
 
     return stateInfo;
@@ -82,7 +83,7 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.publishState} */
   async publishState(proof: ZKProof, signer: Signer): Promise<string> {
-    const contract = this.stateContract.connect(signer);
+    const contract = this.stateContract.connect(signer) as Contract;
 
     const stateTransitionPubSig = new StateTransitionPubSignals();
     stateTransitionPubSig.pubSignalsUnmarshal(
@@ -91,27 +92,47 @@ export class EthStateStorage implements IStateStorage {
     const { userId, oldUserState, newUserState, isOldStateGenesis } = stateTransitionPubSig;
 
     const payload = [
-      userId?.bigInt().toString(),
-      oldUserState?.bigInt().toString(),
-      newUserState?.bigInt().toString(),
+      userId.bigInt().toString(),
+      oldUserState.bigInt().toString(),
+      newUserState.bigInt().toString(),
       isOldStateGenesis,
       proof.proof.pi_a.slice(0, 2),
       [
-        [proof.proof.pi_b[0][1].toString(), proof.proof.pi_b[0][0].toString()],
-        [proof.proof.pi_b[1][1].toString(), proof.proof.pi_b[1][0].toString()]
+        [proof.proof.pi_b[0][1], proof.proof.pi_b[0][0]],
+        [proof.proof.pi_b[1][1], proof.proof.pi_b[1][0]]
       ],
       proof.proof.pi_c.slice(0, 2)
     ];
 
-    await contract.estimateGas.transitState(...payload);
+    const feeData = await this.provider.getFeeData();
 
-    const tx = await contract.transitState(...payload);
+    const maxFeePerGas = defaultEthConnectionConfig.maxFeePerGas
+      ? BigInt(defaultEthConnectionConfig.maxFeePerGas)
+      : feeData.maxFeePerGas;
+    const maxPriorityFeePerGas = defaultEthConnectionConfig.maxPriorityFeePerGas
+      ? BigInt(defaultEthConnectionConfig.maxPriorityFeePerGas)
+      : feeData.maxPriorityFeePerGas;
+
+    const gasLimit = await contract.transitState.estimateGas(...payload);
+    const txData = await contract.transitState.populateTransaction(...payload);
+
+    const request: TransactionRequest = {
+      to: txData.to,
+      data: txData.data,
+      gasLimit,
+      maxFeePerGas,
+      maxPriorityFeePerGas
+    };
+    const tx = await signer.sendTransaction(request);
 
     const txnReceipt = await tx.wait();
-    const status: number = txnReceipt.status;
-    const txnHash: string = txnReceipt.transactionHash;
+    if (!txnReceipt) {
+      throw new Error(`transaction: ${tx.hash} failed to mined`);
+    }
+    const status: number | null = txnReceipt.status;
+    const txnHash: string = txnReceipt.hash;
 
-    if (status === 0) {
+    if (!status) {
       throw new Error(`transaction: ${txnHash} failed to mined`);
     }
 

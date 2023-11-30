@@ -1,21 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible"
-        content="IE=edge">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
-    <script src="./dist/umd/index.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="./dist/browser/umd/index.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@iden3/js-crypto": "./node_modules/@iden3/js-crypto/dist/browser/esm/index.js",
+          "@iden3/js-iden3-core": "./node_modules/@iden3/js-iden3-core/dist/browser/esm/index.js",
+          "@iden3/js-merkletree": "./node_modules/@iden3/js-merkletree/dist/browser/esm/index.js",
+          "@iden3/js-jwz": "./node_modules/@iden3/js-jwz/dist/browser/esm/index.js",
+          "@iden3/js-jsonld-merklization": "./node_modules/@iden3/js-jsonld-merklization/dist/browser/esm/index.js",
+          "snarkjs": "./node_modules/snarkjs/build/browser.esm.js",
+          "ffjavascript": "./node_modules/ffjavascript/build/browser.esm.js"
+        }
+      }
+    </script>
     <title>Test</title>
-</head>
+  </head>
 
-<body>
+  <body>
     Test browser
-</body>
-<script>
-    const {
+  </body>
+  <script type="module">
+    const umd = window.PolygonIdSdk;
+    const esm = await import('./dist/browser/esm/index.js');
+    test(umd);
+    test(esm);
+    function test(module) {
+      const {
         LocalStoragePrivateKeyStore,
         IdentityStorage,
         MerkleTreeLocalStorage,
@@ -31,70 +46,158 @@
         CredentialStatusType,
         CredentialStatusResolverRegistry,
         IssuerResolver,
-        RHSResolver, 
+        RHSResolver,
         defaultEthConnectionConfig,
         OnChainResolver,
-        MerkleTreeIndexedDBStorage
-    } = PolygonIdSdk;
+        MerkleTreeIndexedDBStorage,
+        VerifiableConstants,
+        IndexedDBDataSource
+      } = module;
 
-    const run = async () => {
+      const run = async () => {
         const keyStore = new LocalStoragePrivateKeyStore();
         const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, keyStore);
         const kms = new KMS();
         kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
 
-        dataStorage = {
-            credential: new CredentialStorage(
-                new BrowserDataSource(CredentialStorage.storageKey)
-            ),
-            identity: new IdentityStorage(
-                new BrowserDataSource(IdentityStorage.identitiesStorageKey),
-                new BrowserDataSource(IdentityStorage.profilesStorageKey)
-            ),
-            mt: new MerkleTreeIndexedDBStorage(40),
-            states: {
-                getLatestStateById: async (issuerId) => {
-                    return { id: BigInt(0), state: BigInt(0) };
-                }
+        const dataStorage = {
+          credential: new CredentialStorage(new BrowserDataSource(CredentialStorage.storageKey)),
+          identity: new IdentityStorage(
+            new BrowserDataSource(IdentityStorage.identitiesStorageKey),
+            new BrowserDataSource(IdentityStorage.profilesStorageKey)
+          ),
+          mt: new MerkleTreeLocalStorage(40),
+          states: {
+            getLatestStateById: async () => {
+              throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
+            },
+            publishState: async () => {
+              return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+            },
+            getGISTProof: () => {
+              return Promise.resolve({
+                root: 0n,
+                existence: false,
+                siblings: [],
+                index: 0n,
+                value: 0n,
+                auxExistence: false,
+                auxIndex: 0n,
+                auxValue: 0n
+              });
+            },
+            getGISTRootInfo: () => {
+              return Promise.resolve({
+                root: 0n,
+                replacedByRoot: 0n,
+                createdAtTimestamp: 0n,
+                replacedAtTimestamp: 0n,
+                createdAtBlock: 0n,
+                replacedAtBlock: 0n
+              });
             }
+          }
         };
 
         const resolvers = new CredentialStatusResolverRegistry();
+        resolvers.register(CredentialStatusType.SparseMerkleTreeProof, new IssuerResolver());
         resolvers.register(
-            CredentialStatusType.SparseMerkleTreeProof,
-            new IssuerResolver()
+          CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+          new RHSResolver(dataStorage.states)
         );
         resolvers.register(
-            CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-            new RHSResolver(dataStorage.states)
+          CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+          new OnChainResolver([defaultEthConnectionConfig])
         );
-        resolvers.register(
-            CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-            new OnChainResolver([defaultEthConnectionConfig])
-        )
 
         const credWallet = new CredentialWallet(dataStorage, resolvers);
-        wallet = new IdentityWallet(kms, dataStorage, credWallet);
+        const wallet = new IdentityWallet(kms, dataStorage, credWallet);
         console.log(wallet);
 
-        const seedPhrase = new TextEncoder().encode('seedseedseedseedseedseedseedseed');
-
         const { did, credential } = await wallet.createIdentity({
-            method: core.DidMethod.Iden3,
-            blockchain: core.Blockchain.Polygon,
-            networkId: core.NetworkId.Mumbai,
-            seed: seedPhrase,
-            revocationOpts: {
-                type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-                id: 'http://rhs.com/node'
-            }
-        }
+          method: core.DidMethod.Iden3,
+          blockchain: core.Blockchain.Polygon,
+          networkId: core.NetworkId.Mumbai,
+          revocationOpts: {
+            type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+            id: 'https://rhs-staging.polygonid.me'
+          }
+        });
+        const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity({
+          method: core.DidMethod.Iden3,
+          blockchain: core.Blockchain.Polygon,
+          networkId: core.NetworkId.Mumbai,
+          revocationOpts: {
+            type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+            id: 'https://rhs-staging.polygonid.me'
+          }
+        });
+        await credWallet.save(issuerAuthCredential);
+
+        const claimReq = {
+          credentialSchema:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+          type: 'KYCAgeCredential',
+          credentialSubject: {
+            id: did.string(),
+            birthday: 19960424,
+            documentType: 99
+          },
+          expiration: 2793526400,
+          revocationOpts: {
+            type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+            nonce: 1000,
+            id: 'https://rhs-staging.polygonid.me'
+          }
+        };
+
+        const issuerCred = await wallet.issueCredential(issuerDID, claimReq);
+
+        await credWallet.save(issuerCred);
+
+        const claimReqMerklized = {
+          credentialSchema:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v4.json',
+          type: 'KYCAgeCredential',
+          credentialSubject: {
+            id: did.string(),
+            birthday: 19960423,
+            documentType: 77
+          },
+          expiration: 2793526400,
+          revocationOpts: {
+            type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+            nonce: 1001,
+            id: 'https://rhs-staging.polygonid.me'
+          }
+        };
+
+        const issuerCredMerklized = await wallet.issueCredential(issuerDID, claimReqMerklized);
+
+        await credWallet.save(issuerCred);
+
+        const res = await wallet.addCredentialsToMerkleTree(
+          [issuerCred, issuerCredMerklized],
+          issuerDID
         );
+
+        // publish to rhs
+
+        await wallet.publishStateToRHS(issuerDID, 'https://rhs-staging.polygonid.me');
+
+        // you must store stat info (e.g. state and it's roots)
+
+        const credsWithIden3MTPProof = await wallet.generateIden3SparseMerkleTreeProof(
+          issuerDID,
+          res.credentials,
+          'txId'
+        );
+
+        await credWallet.saveAll(credsWithIden3MTPProof);
+
         console.log(did.string());
-        console.assert(did.string() === 'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth');
-
-    };
-    run().catch(console.error);
-</script>
-
+      };
+      run().catch(console.error);
+    }
+  </script>
 </html>

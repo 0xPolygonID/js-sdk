@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
-    "declaration": true,
-    "declarationDir": "./dist/types",
     "outDir": "dist/cjs",
-    "sourceMap": true,
+    "module": "ES2020",
     "target": "es2020",
     "moduleResolution": "Node",
     "resolveJsonModule": true,
@@ -11,10 +9,8 @@
     "allowJs": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "strict": true
+    "strict": true,
+    "typeRoots": ["node_modules/@types"]
   },
-  "include": [
-    "src",
-    "types"
-  ]
+  "include": ["src", "types"]
 }
