@@ -6,6 +6,7 @@ import { CredentialStatusResolver, CredentialStatusResolveOptions } from './reso
 import { CredentialStatus, RevocationStatus, State } from '../../verifiable';
 import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
 import { isGenesisState } from './utils';
+import { IssuerResolver } from './sparse-merkle-tree';
 
 /**
  * ProofNode is a partial Reverse Hash Service result
@@ -122,7 +123,7 @@ export class RHSResolver implements CredentialStatusResolver {
     } catch (e: unknown) {
       if (credentialStatus?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
         try {
-          return await (await fetch(credentialStatus.statusIssuer.id)).json();
+          return new IssuerResolver().resolve(credentialStatus.statusIssuer);
         } catch (e) {
           throw new Error(
             `can't fetch revocation status from backup endpoint: ${(e as Error)?.message}`
