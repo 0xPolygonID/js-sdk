@@ -44,7 +44,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
   proofType!: AtomicProofType;
   linkNonce!: bigint;
   verifierID!: Id;
-  verifierSessionID: bigint;
+  verifierSessionID!: bigint;
 
   validate(): void {
     if (!this.requestID) {
