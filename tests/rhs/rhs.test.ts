@@ -194,7 +194,7 @@ describe('rhs', () => {
     await credWallet.save(issuerAuthCredential);
 
     const credBasicStatus: CredentialStatus = {
-      id: 'issuerurl',
+      id: 'http://issuerurl.com',
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };
@@ -249,7 +249,7 @@ describe('rhs', () => {
     });
 
     const credBasicStatus: CredentialStatus = {
-      id: 'issuerurl',
+      id: 'http://issuerurl.coml',
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };
@@ -326,7 +326,7 @@ describe('rhs', () => {
     expect(credential).not.to.be.undefined;
 
     const credBasicStatus: CredentialStatus = {
-      id: 'issuerurl',
+      id: 'http://issuerurl.coml',
       revocationNonce: 0,
       type: CredentialStatusType.SparseMerkleTreeProof
     };

@@ -123,7 +123,7 @@ export class RHSResolver implements CredentialStatusResolver {
     } catch (e: unknown) {
       if (credentialStatus?.statusIssuer?.type === CredentialStatusType.SparseMerkleTreeProof) {
         try {
-          return new IssuerResolver().resolve(credentialStatus.statusIssuer);
+          return await new IssuerResolver().resolve(credentialStatus.statusIssuer);
         } catch (e) {
           throw new Error(
             `can't fetch revocation status from backup endpoint: ${(e as Error)?.message}`
