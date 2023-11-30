@@ -12,8 +12,8 @@ import { Hash, Proof, ZERO_HASH, newHashFromString } from '@iden3/js-merkletree'
 import { byteDecoder, byteEncoder } from '../utils';
 
 export enum AtomicProofType {
-  Sig = 'sig',
-  MTP = 'mtp'
+  BJJSignature2021 = 'BJJSignature2021',
+  Iden3SparseMerkleTreeProof = 'Iden3SparseMerkleTreeProof'
 }
 
 const zero = '0';
@@ -42,6 +42,9 @@ export class AtomicQueryV3Inputs extends BaseConfig {
   query!: Query;
   currentTimeStamp!: number;
   proofType!: AtomicProofType;
+  linkNonce!: bigint;
+  verifierID!: Id;
+  verifierSessionID: bigint;
 
   validate(): void {
     if (!this.requestID) {
@@ -60,7 +63,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       throw new Error(CircuitError.InvalidProofType);
     }
 
-    if (this.proofType === AtomicProofType.Sig) {
+    if (this.proofType === AtomicProofType.BJJSignature2021) {
       if (!this.claim.signatureProof?.issuerAuthIncProof.proof) {
         throw new Error(CircuitError.EmptyIssuerAuthClaimProof);
       }
@@ -73,7 +76,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
         throw new Error(CircuitError.EmptyClaimSignature);
       }
     }
-    if (this.proofType === AtomicProofType.MTP) {
+    if (this.proofType === AtomicProofType.Iden3SparseMerkleTreeProof) {
       if (!this.claim?.incProof?.proof) {
         throw new Error(CircuitError.EmptyClaimProof);
       }
@@ -102,6 +105,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     s.issuerAuthClaimNonRevMtpAuxHi = ZERO_HASH.bigInt().toString();
     s.issuerAuthClaimNonRevMtpAuxHv = ZERO_HASH.bigInt().toString();
     s.issuerAuthClaimNonRevMtpNoAux = zero;
+    s.issuerAuthState = zero;
   }
 
   // InputsMarshal returns Circom private inputs for credentialAtomicQueryV3.circom
@@ -161,8 +165,8 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       s.isRevocationChecked = 0;
     }
 
-    if (this.proofType === AtomicProofType.Sig) {
-      s.proofType = zero;
+    if (this.proofType === AtomicProofType.BJJSignature2021) {
+      s.proofType = '1';
 
       s.issuerClaimSignatureR8x = this.claim.signatureProof?.signature.R8[0].toString();
       s.issuerClaimSignatureR8y = this.claim.signatureProof?.signature.R8[1].toString();
@@ -191,10 +195,13 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       s.issuerAuthClaimNonRevMtpAuxHi = nodeAuxIssuerAuthNonRev.key.bigInt().toString();
       s.issuerAuthClaimNonRevMtpAuxHv = nodeAuxIssuerAuthNonRev.value.bigInt().toString();
       s.issuerAuthClaimNonRevMtpNoAux = nodeAuxIssuerAuthNonRev.noAux;
+      s.issuerAuthState = this.claim.signatureProof?.issuerAuthIncProof.treeState?.state
+        .bigInt()
+        .toString();
 
       this.fillMTPProofsWithZero(s);
-    } else if (this.proofType === AtomicProofType.MTP) {
-      s.proofType = '1';
+    } else if (this.proofType === AtomicProofType.Iden3SparseMerkleTreeProof) {
+      s.proofType = '2';
 
       const incProofTreeState = this.claim.incProof?.treeState;
 
@@ -226,6 +233,10 @@ export class AtomicQueryV3Inputs extends BaseConfig {
 
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
     s.value = bigIntArrayToStringArray(values);
+
+    s.linkNonce = this.linkNonce.toString();
+    s.verifierID = this.verifierID.bigInt().toString();
+    s.verifierSessionID = this.verifierSessionID.toString();
 
     return byteEncoder.encode(JSON.stringify(s));
   }
@@ -263,6 +274,7 @@ interface AtomicQueryV3CircuitInputs {
   issuerAuthClaimsTreeRoot: string;
   issuerAuthRevTreeRoot: string;
   issuerAuthRootsTreeRoot: string;
+  issuerAuthState: string;
 
   isRevocationChecked: number;
   // Query
@@ -287,6 +299,11 @@ interface AtomicQueryV3CircuitInputs {
   issuerClaimIdenState: string;
 
   proofType: string;
+
+  // Private random nonce, used to generate LinkID
+  linkNonce: string;
+  verifierID: string;
+  verifierSessionID: string;
 }
 
 // AtomicQueryV3PubSignals public inputs
@@ -294,7 +311,7 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
   requestID!: bigint;
   userID!: Id;
   issuerID!: Id;
-  issuerAuthState!: Hash;
+  issuerState!: Hash;
   issuerClaimNonRevState!: Hash;
   claimSchema!: SchemaHash;
   slotIndex!: number;
@@ -305,15 +322,22 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
   claimPathKey!: bigint;
   claimPathNotExists!: number;
   isRevocationChecked!: number;
-  issuerClaimIdenState!: Hash;
   proofType!: number;
+  linkID!: bigint;
+  nullifier!: bigint;
+  operatorOutput!: bigint;
+  verifierID!: Id;
+  verifierSessionID!: bigint;
 
   // PubSignalsUnmarshal unmarshal credentialAtomicQueryV3.circom public signals
   pubSignalsUnmarshal(data: Uint8Array): AtomicQueryV3PubSignals {
     // expected order:
     // merklized
     // userID
-    // issuerAuthState
+    // issuerState
+    // linkID
+    // nullifier
+    // operatorOutput
     // proofType
     // requestID
     // issuerID
@@ -326,12 +350,13 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     // slotIndex
     // operator
     // value
-    // issuerClaimIdenState
+    // verifierID
+    // verifierSessionID
 
-    // 12 is a number of fields in AtomicQueryV3PubSignals before values, values is last element in the proof and
+    // 19 is a number of fields in AtomicQueryV3PubSignals before values, values is last element in the proof and
     // it is length could be different base on the circuit configuration. The length could be modified by set value
     // in ValueArraySize
-    const fieldLength = 15;
+    const fieldLength = 19;
 
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
@@ -353,11 +378,23 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     this.userID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
 
-    // - issuerAuthState
-    this.issuerAuthState = newHashFromString(sVals[fieldIdx]);
+    // - issuerState
+    this.issuerState = newHashFromString(sVals[fieldIdx]);
     fieldIdx++;
 
-    // proofType
+    // - linkID
+    this.linkID = BigInt(sVals[fieldIdx]);
+    fieldIdx++;
+
+    // - nullifier
+    this.nullifier = BigInt(sVals[fieldIdx]);
+    fieldIdx++;
+
+    // - operatorOutput
+    this.operatorOutput = BigInt(sVals[fieldIdx]);
+    fieldIdx++;
+
+    // - proofType
     this.proofType = parseInt(sVals[fieldIdx]);
     fieldIdx++;
 
@@ -407,8 +444,14 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
       fieldIdx++;
     }
 
-    // - issuerClaimIdenState
-    this.issuerClaimIdenState = newHashFromString(sVals[fieldIdx]);
+    // - verifierID
+    if (sVals[fieldIdx] !== '0') {
+      this.verifierID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
+    }
+    fieldIdx++;
+
+    // - verifierSessionID
+    this.verifierSessionID = BigInt(sVals[fieldIdx]);
 
     return this;
   }
