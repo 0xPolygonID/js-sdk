@@ -86,7 +86,7 @@
   },
   "peerDependencies": {
     "@iden3/js-crypto": "1.0.3",
-    "@iden3/js-iden3-core": "1.1.0",
+    "@iden3/js-iden3-core": "file:../js-iden3-core",
     "@iden3/js-jsonld-merklization": "1.1.2",
     "@iden3/js-jwz": "1.1.2",
     "@iden3/js-merkletree": "1.1.2",
