@@ -1,9 +1,9 @@
-import { Id, SchemaHash } from '@iden3/js-iden3-core';
+import { Id } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import {
   AtomicProofType,
-  AtomicQueryV3Inputs,
-  AtomicQueryV3PubSignals,
+  AtomicQueryV3OnChainInputs,
+  AtomicQueryV3OnChainPubSignals,
   Operators,
   prepareCircuitArrayValues,
   Query
@@ -14,16 +14,18 @@ import {
   issuerPK,
   defaultUserClaim,
   timestamp,
-  prepareIntArray
+  prepareIntArray,
+  calculateQueryHash,
+  globalTree
 } from './utils';
 
-import expectedMtpJson from './data/atomic-query-v3-mtp.json';
-import expectedSigJson from './data/atomic-query-v3-sig.json';
+import expectedMtpJson from './data/atomic-query-v3-mtp-on-chain.json';
+import expectedSigJson from './data/atomic-query-v3-sig-on-chain.json';
 import { expect } from 'chai';
 import { byteDecoder, byteEncoder } from '../../src';
 
 describe('atomic-query-v3', () => {
-  it('TestAttrQueryV3_SigPart_PrepareInputs', async () => {
+  it('TestAttrQueryV3OnChain_SigPart_PrepareInputs', async () => {
     const user = await IdentityTest.newIdentity(userPK);
     const issuer = await IdentityTest.newIdentity(issuerPK);
 
@@ -41,7 +43,17 @@ describe('atomic-query-v3', () => {
     const issuerAuthClaimNonRevMtp = await issuer.claimRevMTPRaw(issuer.authClaim);
     const issuerAuthClaimMtp = await issuer.claimMTPRaw(issuer.authClaim);
 
-    const inputs = new AtomicQueryV3Inputs();
+    const gTree = globalTree();
+
+    await gTree.add(issuer.id.bigInt(), (await issuer.state()).bigInt());
+    const globalProof = await gTree.generateProof(user.id.bigInt());
+
+    const authClaimIncMTP = await user.claimMTPRaw(user.authClaim);
+    const authClaimNonRevMTP = await user.claimRevMTPRaw(user.authClaim);
+    const challenge = BigInt(10);
+    const signature = user.signBJJ(challenge);
+
+    const inputs = new AtomicQueryV3OnChainInputs();
 
     inputs.requestID = BigInt(23);
     inputs.id = user.id;
@@ -90,11 +102,30 @@ describe('atomic-query-v3', () => {
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
     inputs.proofType = AtomicProofType.BJJSignature2021;
+
+    inputs.authClaim = user.authClaim;
+    inputs.authClaimIncMtp = authClaimIncMTP.proof;
+    inputs.authClaimNonRevMtp = authClaimNonRevMTP.proof;
+
+    inputs.treeState = {
+      state: await user.state(),
+      claimsRoot: await user.clt.root(),
+      revocationRoot: await user.ret.root(),
+      rootOfRoots: await user.rot.root()
+    };
+    inputs.signature = signature;
+    inputs.challenge = challenge;
+    inputs.gistProof = {
+      root: await gTree.root(),
+      proof: globalProof.proof
+    };
+
     inputs.linkNonce = BigInt(0);
     inputs.verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
     inputs.verifierSessionID = BigInt(32);
+    inputs.authEnabled = 1;
 
     const bytesInputs = inputs.inputsMarshal();
 
@@ -103,7 +134,7 @@ describe('atomic-query-v3', () => {
     expect(actualJson).to.deep.equal(expectedSigJson);
   });
 
-  it('TestAttrQueryV3_MTPPart_PrepareInputs', async () => {
+  it('TestAttrQueryV3OnChain_MTPPart_PrepareInputs', async () => {
     const user = await IdentityTest.newIdentity(userPK);
     const issuer = await IdentityTest.newIdentity(issuerPK);
 
@@ -120,7 +151,17 @@ describe('atomic-query-v3', () => {
 
     const issuerClaimNonRevMtp = await issuer.claimRevMTPRaw(claim);
 
-    const inputs = new AtomicQueryV3Inputs();
+    const inputs = new AtomicQueryV3OnChainInputs();
+
+    const gTree = globalTree();
+
+    await gTree.add(issuer.id.bigInt(), (await issuer.state()).bigInt());
+    const globalProof = await gTree.generateProof(user.id.bigInt());
+
+    const authClaimIncMTP = await user.claimMTPRaw(user.authClaim);
+    const authClaimNonRevMTP = await user.claimRevMTPRaw(user.authClaim);
+    const challenge = BigInt(10);
+    const signature = user.signBJJ(challenge);
 
     inputs.requestID = BigInt(23);
     inputs.id = user.id;
@@ -156,11 +197,30 @@ describe('atomic-query-v3', () => {
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
     inputs.proofType = AtomicProofType.Iden3SparseMerkleTreeProof;
+
+    inputs.authClaim = user.authClaim;
+    inputs.authClaimIncMtp = authClaimIncMTP.proof;
+    inputs.authClaimNonRevMtp = authClaimNonRevMTP.proof;
+
+    inputs.treeState = {
+      state: await user.state(),
+      claimsRoot: await user.clt.root(),
+      revocationRoot: await user.ret.root(),
+      rootOfRoots: await user.rot.root()
+    };
+    inputs.signature = signature;
+    inputs.challenge = challenge;
+    inputs.gistProof = {
+      root: await gTree.root(),
+      proof: globalProof.proof
+    };
+
     inputs.linkNonce = BigInt(0);
     inputs.verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
     inputs.verifierSessionID = BigInt(32);
+    inputs.authEnabled = 1;
 
     const bytesInputs = inputs.inputsMarshal();
 
@@ -169,126 +229,61 @@ describe('atomic-query-v3', () => {
     expect(actualJson).to.deep.equal(expectedMtpJson);
   });
 
-  it('TestAtomicQueryV3Outputs_Sig_CircuitUnmarshal', () => {
-    const out = new AtomicQueryV3PubSignals();
+  it('TestAtomicQueryV3OnChainOutputs_Sig_CircuitUnmarshal', () => {
+    const out = new AtomicQueryV3OnChainPubSignals();
     out.pubSignalsUnmarshal(
       byteEncoder.encode(
         `[
           "0",
-          "23148936466334350744548790012294489365207440754509988986684797708370051073",
+          "26109404700696283154998654512117952420503675471097392618762221546565140481",
+          "7002038488948284767652984010448061038733120594540539539730565455904340350321",
           "2943483356559152311923412925436024635269538717812859789851139200242297094",
           "0",
           "0",
           "0",
           "1",
           "23",
-          "21933750065545691586450392143787330185992517860945727248803138245838110721",
-          "1",
-          "2943483356559152311923412925436024635269538717812859789851139200242297094",
-          "1642074362",
-          "180410020913331409885634153623124536270",
-          "0",
-          "0",
-          "2",
-          "1",
           "10",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
+          "20177832565449474772630743317224985532862797657496372535616634430055981993180",
+          "27918766665310231445021466320959318414450284884582375163563581940319453185",
+          "1",
+          "20177832565449474772630743317224985532862797657496372535616634430055981993180",
+          "1642074362",
           "21929109382993718606847853573861987353620810345503358891473103689157378049",
-          "32"
+          "32",
+          "1"
           ]`
       )
     );
 
     const expValue = prepareCircuitArrayValues([BigInt(10)], 64);
+    const schema = '180410020913331409885634153623124536270';
+    const slotIndex = 2;
+    const operator = 1;
+    const queryHash = calculateQueryHash(expValue, schema, slotIndex, operator, 0, 1);
 
-    const exp = new AtomicQueryV3PubSignals();
+    const exp = new AtomicQueryV3OnChainPubSignals();
     exp.requestID = BigInt(23);
     exp.userID = Id.fromBigInt(
-      BigInt('23148936466334350744548790012294489365207440754509988986684797708370051073')
+      BigInt('26109404700696283154998654512117952420503675471097392618762221546565140481')
     );
     exp.issuerID = Id.fromBigInt(
-      BigInt('21933750065545691586450392143787330185992517860945727248803138245838110721')
+      BigInt('27918766665310231445021466320959318414450284884582375163563581940319453185')
     );
     exp.issuerState = Hash.fromString(
       '2943483356559152311923412925436024635269538717812859789851139200242297094'
     );
     exp.issuerClaimNonRevState = Hash.fromString(
-      '2943483356559152311923412925436024635269538717812859789851139200242297094'
+      '20177832565449474772630743317224985532862797657496372535616634430055981993180'
     );
-    exp.claimSchema = SchemaHash.newSchemaHashFromInt(
-      BigInt('180410020913331409885634153623124536270')
-    );
-
-    exp.slotIndex = 2;
-    exp.operator = 1;
-    exp.value = expValue;
+    exp.circuitQueryHash = queryHash;
     exp.timestamp = timestamp;
     exp.merklized = 0;
-    exp.claimPathKey = BigInt(0);
-    exp.claimPathNotExists = 0;
     exp.isRevocationChecked = 1;
+    exp.challenge = BigInt(10);
+    exp.gistRoot = Hash.fromString(
+      '20177832565449474772630743317224985532862797657496372535616634430055981993180'
+    );
     exp.proofType = 1;
     exp.linkID = BigInt(0);
     exp.nullifier = BigInt(0);
@@ -297,137 +292,74 @@ describe('atomic-query-v3', () => {
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
     exp.verifierSessionID = BigInt(32);
+    exp.authEnabled = 1;
     expect(exp).to.deep.equal(out);
   });
 
-  it('TestAtomicQueryV3Outputs_MTP_CircuitUnmarshal', () => {
-    const out = new AtomicQueryV3PubSignals();
+  it('TestAtomicQueryV3OnChainOutputs_MTP_CircuitUnmarshal', () => {
+    const out = new AtomicQueryV3OnChainPubSignals();
     out.pubSignalsUnmarshal(
       byteEncoder.encode(
         `[
           "0",
-          "19104853439462320209059061537253618984153217267677512271018416655565783041",
-          "5687720250943511874245715094520098014548846873346473635855112185560372332782",
+          "26109404700696283154998654512117952420503675471097392618762221546565140481",
+          "7002038488948284767652984010448061038733120594540539539730565455904340350321",
+          "2943483356559152311923412925436024635269538717812859789851139200242297094",
           "0",
           "0",
           "0",
           "2",
           "23",
-          "23528770672049181535970744460798517976688641688582489375761566420828291073",
-          "1",
-          "5687720250943511874245715094520098014548846873346473635855112185560372332782",
-          "1642074362",
-          "180410020913331409885634153623124536270",
-          "0",
-          "0",
-          "2",
-          "1",
           "10",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
-          "0",
+          "20177832565449474772630743317224985532862797657496372535616634430055981993180",
+          "27918766665310231445021466320959318414450284884582375163563581940319453185",
+          "1",
+          "20177832565449474772630743317224985532862797657496372535616634430055981993180",
+          "1642074362",
           "21929109382993718606847853573861987353620810345503358891473103689157378049",
-          "32"
+          "32",
+          "1"
           ]`
       )
     );
 
     const expValue = prepareCircuitArrayValues([BigInt(10)], 64);
+    const schema = '180410020913331409885634153623124536270';
+    const slotIndex = 2;
+    const operator = 1;
+    const queryHash = calculateQueryHash(expValue, schema, slotIndex, operator, 0, 1);
 
-    const exp = new AtomicQueryV3PubSignals();
+    const exp = new AtomicQueryV3OnChainPubSignals();
     exp.requestID = BigInt(23);
     exp.userID = Id.fromBigInt(
-      BigInt('19104853439462320209059061537253618984153217267677512271018416655565783041')
+      BigInt('26109404700696283154998654512117952420503675471097392618762221546565140481')
     );
     exp.issuerID = Id.fromBigInt(
-      BigInt('23528770672049181535970744460798517976688641688582489375761566420828291073')
-    );
-    exp.issuerState = Hash.fromString(
-      '5687720250943511874245715094520098014548846873346473635855112185560372332782'
+      BigInt('27918766665310231445021466320959318414450284884582375163563581940319453185')
     );
     exp.issuerClaimNonRevState = Hash.fromString(
-      '5687720250943511874245715094520098014548846873346473635855112185560372332782'
+      '20177832565449474772630743317224985532862797657496372535616634430055981993180'
     );
-    exp.claimSchema = SchemaHash.newSchemaHashFromInt(
-      BigInt('180410020913331409885634153623124536270')
-    );
-
-    exp.slotIndex = 2;
-    exp.operator = 1;
-    exp.value = expValue;
+    exp.circuitQueryHash = queryHash;
     exp.timestamp = timestamp;
     exp.merklized = 0;
-    exp.claimPathKey = BigInt(0);
-    exp.claimPathNotExists = 0;
     exp.isRevocationChecked = 1;
+    exp.challenge = BigInt(10);
+    exp.gistRoot = Hash.fromString(
+      '20177832565449474772630743317224985532862797657496372535616634430055981993180'
+    );
     exp.proofType = 2;
+    exp.issuerState = Hash.fromString(
+      '2943483356559152311923412925436024635269538717812859789851139200242297094'
+    );
+    exp.operatorOutput = BigInt(0);
     exp.linkID = BigInt(0);
     exp.nullifier = BigInt(0);
-    exp.operatorOutput = BigInt(0);
     exp.verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
     exp.verifierSessionID = BigInt(32);
+    exp.authEnabled = 1;
     expect(exp).to.deep.equal(out);
   });
 });

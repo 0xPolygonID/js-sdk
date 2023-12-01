@@ -1,4 +1,4 @@
-import { Claim, Id, SchemaHash } from '@iden3/js-iden3-core';
+import { Claim, Id } from '@iden3/js-iden3-core';
 import {
   BaseConfig,
   bigIntArrayToStringArray,
@@ -7,44 +7,45 @@ import {
   getNodeAuxValue,
   prepareCircuitArrayValues
 } from './common';
-import { BJJSignatureProof, CircuitError, MTProof, Query, ValueProof } from './models';
+import { CircuitError, GISTProof, Query, TreeState, ValueProof } from './models';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 import { byteDecoder, byteEncoder } from '../utils';
-
-export enum AtomicProofType {
-  BJJSignature2021 = 'BJJSignature2021',
-  Iden3SparseMerkleTreeProof = 'Iden3SparseMerkleTreeProof'
-}
+import { AtomicProofType, ClaimWithSigAndMTPProof } from './atomic-query-v3';
+import { Signature } from '@iden3/js-crypto';
 
 const zero = '0';
 
-export interface ClaimWithSigAndMTPProof {
-  issuerID: Id;
-  claim: Claim;
-  nonRevProof: MTProof;
-  signatureProof?: BJJSignatureProof;
-  incProof?: MTProof;
-}
 /**
- * AtomicQueryV3Inputs ZK private inputs for credentialAtomicQueryV3.circom
+ * AtomicQueryV3OnChainInputs ZK private inputs for credentialAtomicQueryV3OnChain.circom
  *
  * @beta
- * @class AtomicQueryV3Inputs
+ * @class AtomicQueryV3OnChainInputs
  * @extends {BaseConfig}
  */
-export class AtomicQueryV3Inputs extends BaseConfig {
+export class AtomicQueryV3OnChainInputs extends BaseConfig {
   requestID!: bigint;
   id!: Id;
   profileNonce!: bigint;
   claimSubjectProfileNonce!: bigint;
   claim!: ClaimWithSigAndMTPProof;
   skipClaimRevocationCheck!: boolean;
+
+  // Auth inputs
+  authClaim!: Claim;
+  authClaimIncMtp!: Proof;
+  authClaimNonRevMtp!: Proof;
+  treeState!: TreeState;
+  gistProof!: GISTProof;
+  signature!: Signature;
+  challenge!: bigint;
+
   query!: Query;
   currentTimeStamp!: number;
   proofType!: AtomicProofType;
   linkNonce!: bigint;
   verifierID!: Id;
   verifierSessionID!: bigint;
+  authEnabled!: number;
 
   validate(): void {
     if (!this.requestID) {
@@ -61,6 +62,28 @@ export class AtomicQueryV3Inputs extends BaseConfig {
 
     if (!this.proofType) {
       throw new Error(CircuitError.InvalidProofType);
+    }
+
+    if (this.authEnabled === 1) {
+      if (!this.authClaimIncMtp) {
+        throw new Error(CircuitError.EmptyAuthClaimProof);
+      }
+
+      if (!this.authClaimNonRevMtp) {
+        throw new Error(CircuitError.EmptyAuthClaimNonRevProof);
+      }
+
+      if (!this.gistProof.proof) {
+        throw new Error(CircuitError.EmptyGISTProof);
+      }
+
+      if (!this.signature) {
+        throw new Error(CircuitError.EmptyChallengeSignature);
+      }
+
+      if (!this.challenge) {
+        throw new Error(CircuitError.EmptyChallenge);
+      }
     }
 
     if (this.proofType === AtomicProofType.BJJSignature2021) {
@@ -83,7 +106,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     }
   }
 
-  fillMTPProofsWithZero(s: Partial<AtomicQueryV3CircuitInputs>) {
+  fillMTPProofsWithZero(s: Partial<AtomicQueryV3OnChainCircuitInputs>) {
     s.issuerClaimMtp = prepareSiblingsStr(new Proof(), this.getMTLevel());
     s.issuerClaimClaimsTreeRoot = ZERO_HASH.bigInt().toString();
     s.issuerClaimRevTreeRoot = ZERO_HASH.bigInt().toString();
@@ -91,7 +114,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     s.issuerClaimIdenState = ZERO_HASH.bigInt().toString();
   }
 
-  fillSigProofWithZero(s: Partial<AtomicQueryV3CircuitInputs>) {
+  fillSigProofWithZero(s: Partial<AtomicQueryV3OnChainCircuitInputs>) {
     s.issuerClaimSignatureR8x = zero;
     s.issuerClaimSignatureR8y = zero;
     s.issuerClaimSignatureS = zero;
@@ -108,7 +131,33 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     s.issuerAuthState = zero;
   }
 
-  // InputsMarshal returns Circom private inputs for credentialAtomicQueryV3.circom
+  fillAuthWithZero(s: Partial<AtomicQueryV3OnChainCircuitInputs>) {
+    s.authClaim = new Claim().marshalJson();
+
+    s.userClaimsTreeRoot = ZERO_HASH.bigInt().toString();
+    s.userRevTreeRoot = ZERO_HASH.bigInt().toString();
+    s.userRootsTreeRoot = ZERO_HASH.bigInt().toString();
+    s.userState = ZERO_HASH.bigInt().toString();
+
+    s.authClaimIncMtp = prepareSiblingsStr(new Proof(), this.getMTLevel());
+    s.authClaimNonRevMtp = prepareSiblingsStr(new Proof(), this.getMTLevel());
+    s.challenge = zero;
+    s.challengeSignatureR8x = zero;
+    s.challengeSignatureR8y = zero;
+    s.challengeSignatureS = zero;
+    s.gistRoot = ZERO_HASH.bigInt().toString();
+    s.gistMtp = prepareSiblingsStr(new Proof(), this.getMTLevelOnChain());
+
+    s.authClaimNonRevMtpAuxHi = ZERO_HASH.bigInt().toString();
+    s.authClaimNonRevMtpAuxHv = ZERO_HASH.bigInt().toString();
+    s.authClaimNonRevMtpNoAux = zero;
+
+    s.gistMtpAuxHi = ZERO_HASH.bigInt().toString();
+    s.gistMtpAuxHv = ZERO_HASH.bigInt().toString();
+    s.gistMtpNoAux = zero;
+  }
+
+  // InputsMarshal returns Circom private inputs for credentialAtomicQueryV3OnChain.circom
   inputsMarshal(): Uint8Array {
     this.validate();
 
@@ -132,7 +181,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       throw new Error(CircuitError.EmptyTreeState);
     }
 
-    const s: Partial<AtomicQueryV3CircuitInputs> = {
+    const s: Partial<AtomicQueryV3OnChainCircuitInputs> = {
       requestID: this.requestID.toString(),
       userGenesisID: this.id.bigInt().toString(),
       profileNonce: this.profileNonce.toString(),
@@ -160,6 +209,35 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       slotIndex: this.query.slotIndex,
       isRevocationChecked: 1
     };
+
+    if (this.authEnabled === 1) {
+      s.authClaim = this.authClaim?.marshalJson();
+      s.userClaimsTreeRoot = this.treeState.claimsRoot?.bigInt().toString();
+      s.userRevTreeRoot = this.treeState.revocationRoot?.bigInt().toString();
+      s.userRootsTreeRoot = this.treeState.rootOfRoots?.bigInt().toString();
+      s.userState = this.treeState.state?.bigInt().toString();
+      s.authClaimIncMtp = prepareSiblingsStr(this.authClaimIncMtp, this.getMTLevel());
+      s.authClaimNonRevMtp = prepareSiblingsStr(this.authClaimNonRevMtp, this.getMTLevel());
+      s.challenge = this.challenge?.toString();
+      s.challengeSignatureR8x = this.signature.R8[0].toString();
+      s.challengeSignatureR8y = this.signature.R8[1].toString();
+      s.challengeSignatureS = this.signature.S.toString();
+      s.gistRoot = this.gistProof.root.bigInt().toString();
+      s.gistMtp =
+        this.gistProof && prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain());
+
+      const nodeAuxAuth = getNodeAuxValue(this.authClaimNonRevMtp);
+      s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
+      s.authClaimNonRevMtpAuxHv = nodeAuxAuth.value.bigInt().toString();
+      s.authClaimNonRevMtpNoAux = nodeAuxAuth.noAux;
+
+      const globalNodeAux = getNodeAuxValue(this.gistProof.proof);
+      s.gistMtpAuxHi = globalNodeAux.key.bigInt().toString();
+      s.gistMtpAuxHv = globalNodeAux.value.bigInt().toString();
+      s.gistMtpNoAux = globalNodeAux.noAux;
+    } else {
+      this.fillAuthWithZero(s);
+    }
 
     if (this.skipClaimRevocationCheck) {
       s.isRevocationChecked = 0;
@@ -238,15 +316,17 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     s.verifierID = this.verifierID.bigInt().toString();
     s.verifierSessionID = this.verifierSessionID.toString();
 
+    s.authEnabled = this.authEnabled.toString();
+
     return byteEncoder.encode(JSON.stringify(s));
   }
 }
 
 /**
  * @beta
- * AtomicQueryV3CircuitInputs type represents credentialAtomicQueryV3.circom private inputs required by prover
+ * AtomicQueryV3OnChainCircuitInputs type represents credentialAtomicQueryV3OnChain.circom private inputs required by prover
  */
-interface AtomicQueryV3CircuitInputs {
+interface AtomicQueryV3OnChainCircuitInputs {
   requestID: string;
   // user data
   userGenesisID: string;
@@ -303,75 +383,80 @@ interface AtomicQueryV3CircuitInputs {
 
   proofType: string;
 
+  authClaim?: string[];
+  authClaimIncMtp?: string[];
+  authClaimNonRevMtp: string[];
+  authClaimNonRevMtpAuxHi?: string;
+  authClaimNonRevMtpAuxHv?: string;
+  authClaimNonRevMtpNoAux: string;
+  challenge: string;
+  challengeSignatureR8x: string;
+  challengeSignatureR8y: string;
+  challengeSignatureS: string;
+  userClaimsTreeRoot?: string;
+  userRevTreeRoot?: string;
+  userRootsTreeRoot?: string;
+  userState?: string;
+  gistRoot?: string;
+  gistMtp: string[];
+  gistMtpAuxHi?: string;
+  gistMtpAuxHv?: string;
+  gistMtpNoAux: string;
+
   // Private random nonce, used to generate LinkID
   linkNonce: string;
   verifierID: string;
   verifierSessionID: string;
+  authEnabled: string;
 }
+
 /**
  * @beta
- * AtomicQueryV3PubSignals public inputs
+ * AtomicQueryV3OnChainPubSignals public inputs
  */
-export class AtomicQueryV3PubSignals extends BaseConfig {
+export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
   requestID!: bigint;
   userID!: Id;
   issuerID!: Id;
   issuerState!: Hash;
   issuerClaimNonRevState!: Hash;
-  claimSchema!: SchemaHash;
-  slotIndex!: number;
-  operator!: number;
-  value: bigint[] = [];
   timestamp!: number;
   merklized!: number;
-  claimPathKey!: bigint;
-  claimPathNotExists!: number;
   isRevocationChecked!: number;
+  circuitQueryHash!: bigint;
+  challenge!: bigint;
+  gistRoot!: Hash;
   proofType!: number;
   linkID!: bigint;
   nullifier!: bigint;
   operatorOutput!: bigint;
   verifierID!: Id;
   verifierSessionID!: bigint;
+  authEnabled!: number;
 
   // PubSignalsUnmarshal unmarshal credentialAtomicQueryV3.circom public signals
-  pubSignalsUnmarshal(data: Uint8Array): AtomicQueryV3PubSignals {
+  pubSignalsUnmarshal(data: Uint8Array): AtomicQueryV3OnChainPubSignals {
     // expected order:
     // merklized
     // userID
+    // circuitQueryHash
     // issuerState
     // linkID
     // nullifier
     // operatorOutput
     // proofType
     // requestID
+    // challenge
+    // gistRoot
     // issuerID
     // isRevocationChecked
     // issuerClaimNonRevState
     // timestamp
-    // claimSchema
-    // claimPathNotExists
-    // claimPathKey
-    // slotIndex
-    // operator
-    // value
     // verifierID
     // verifierSessionID
-
-    // 19 is a number of fields in AtomicQueryV3PubSignals before values, values is last element in the proof and
-    // it is length could be different base on the circuit configuration. The length could be modified by set value
-    // in ValueArraySize
-    const fieldLength = 19;
+    // authEnabled
 
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
-
-    if (sVals.length !== fieldLength + this.getValueArrSize()) {
-      throw new Error(
-        `invalid number of Output values expected ${fieldLength + this.getValueArrSize()} got ${
-          sVals.length
-        }`
-      );
-    }
 
     let fieldIdx = 0;
 
@@ -381,6 +466,10 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
 
     //  - userID
     this.userID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
+    fieldIdx++;
+
+    // - circuitQueryHash
+    this.circuitQueryHash = BigInt(sVals[fieldIdx]);
     fieldIdx++;
 
     // - issuerState
@@ -407,6 +496,14 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     this.requestID = BigInt(sVals[fieldIdx]);
     fieldIdx++;
 
+    // - challenge
+    this.challenge = BigInt(sVals[fieldIdx]);
+    fieldIdx++;
+
+    // - gistRoot
+    this.gistRoot = Hash.fromString(sVals[fieldIdx]);
+    fieldIdx++;
+
     // - issuerID
     this.issuerID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
@@ -423,32 +520,6 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     this.timestamp = parseInt(sVals[fieldIdx]);
     fieldIdx++;
 
-    //  - claimSchema
-    this.claimSchema = SchemaHash.newSchemaHashFromInt(BigInt(sVals[fieldIdx]));
-    fieldIdx++;
-
-    // - ClaimPathNotExists
-    this.claimPathNotExists = parseInt(sVals[fieldIdx]);
-    fieldIdx++;
-
-    // - ClaimPathKey
-    this.claimPathKey = BigInt(sVals[fieldIdx]);
-    fieldIdx++;
-
-    // - slotIndex
-    this.slotIndex = parseInt(sVals[fieldIdx]);
-    fieldIdx++;
-
-    // - operator
-    this.operator = parseInt(sVals[fieldIdx]);
-    fieldIdx++;
-
-    //  - values
-    for (let index = 0; index < this.getValueArrSize(); index++) {
-      this.value.push(BigInt(sVals[fieldIdx]));
-      fieldIdx++;
-    }
-
     // - verifierID
     if (sVals[fieldIdx] !== '0') {
       this.verifierID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
@@ -457,6 +528,10 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
 
     // - verifierSessionID
     this.verifierSessionID = BigInt(sVals[fieldIdx]);
+    fieldIdx++;
+
+    // - authEnabled
+    this.authEnabled = parseInt(sVals[fieldIdx]);
 
     return this;
   }
