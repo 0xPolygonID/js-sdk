@@ -1,7 +1,6 @@
 import { Id } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import {
-  AtomicProofType,
   AtomicQueryV3OnChainInputs,
   AtomicQueryV3OnChainPubSignals,
   Operators,
@@ -22,7 +21,7 @@ import {
 import expectedMtpJson from './data/atomic-query-v3-mtp-on-chain.json';
 import expectedSigJson from './data/atomic-query-v3-sig-on-chain.json';
 import { expect } from 'chai';
-import { byteDecoder, byteEncoder } from '../../src';
+import { byteDecoder, byteEncoder, ProofType } from '../../src';
 
 describe('atomic-query-v3', () => {
   it('TestAttrQueryV3OnChain_SigPart_PrepareInputs', async () => {
@@ -101,7 +100,7 @@ describe('atomic-query-v3', () => {
     query.values = prepareIntArray([BigInt(10)], 64);
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
-    inputs.proofType = AtomicProofType.BJJSignature2021;
+    inputs.proofType = ProofType.BJJSignature;
 
     inputs.authClaim = user.authClaim;
     inputs.authClaimIncMtp = authClaimIncMTP.proof;
@@ -196,7 +195,7 @@ describe('atomic-query-v3', () => {
     query.values = prepareIntArray([BigInt(10)], 64);
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
-    inputs.proofType = AtomicProofType.Iden3SparseMerkleTreeProof;
+    inputs.proofType = ProofType.Iden3SparseMerkleTreeProof;
 
     inputs.authClaim = user.authClaim;
     inputs.authClaimIncMtp = authClaimIncMTP.proof;
