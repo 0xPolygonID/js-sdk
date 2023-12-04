@@ -9,4 +9,3 @@ export * from './atomic-query-v3-on-chain';
 export * from './atomic-query-sig-v2-on-chain';
 export * from './auth-v2';
 export * from './state-transition';
-export * from './linked-nullifier';
