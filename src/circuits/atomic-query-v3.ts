@@ -10,11 +10,7 @@ import {
 import { BJJSignatureProof, CircuitError, MTProof, Query, ValueProof } from './models';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 import { byteDecoder, byteEncoder } from '../utils';
-
-export enum AtomicProofType {
-  BJJSignature2021 = 'BJJSignature2021',
-  Iden3SparseMerkleTreeProof = 'Iden3SparseMerkleTreeProof'
-}
+import { ProofType } from '../verifiable';
 
 const zero = '0';
 
@@ -41,7 +37,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
   skipClaimRevocationCheck!: boolean;
   query!: Query;
   currentTimeStamp!: number;
-  proofType!: AtomicProofType;
+  proofType!: ProofType;
   linkNonce!: bigint;
   verifierID!: Id;
   verifierSessionID!: bigint;
@@ -63,7 +59,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       throw new Error(CircuitError.InvalidProofType);
     }
 
-    if (this.proofType === AtomicProofType.BJJSignature2021) {
+    if (this.proofType === ProofType.BJJSignature) {
       if (!this.claim.signatureProof?.issuerAuthIncProof.proof) {
         throw new Error(CircuitError.EmptyIssuerAuthClaimProof);
       }
@@ -76,7 +72,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
         throw new Error(CircuitError.EmptyClaimSignature);
       }
     }
-    if (this.proofType === AtomicProofType.Iden3SparseMerkleTreeProof) {
+    if (this.proofType === ProofType.Iden3SparseMerkleTreeProof) {
       if (!this.claim?.incProof?.proof) {
         throw new Error(CircuitError.EmptyClaimProof);
       }
@@ -165,7 +161,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       s.isRevocationChecked = 0;
     }
 
-    if (this.proofType === AtomicProofType.BJJSignature2021) {
+    if (this.proofType === ProofType.BJJSignature) {
       s.proofType = '1';
 
       s.issuerClaimSignatureR8x = this.claim.signatureProof?.signature.R8[0].toString();
@@ -200,7 +196,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
         .toString();
 
       this.fillMTPProofsWithZero(s);
-    } else if (this.proofType === AtomicProofType.Iden3SparseMerkleTreeProof) {
+    } else if (this.proofType === ProofType.Iden3SparseMerkleTreeProof) {
       s.proofType = '2';
 
       const incProofTreeState = this.claim.incProof?.treeState;

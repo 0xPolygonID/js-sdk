@@ -1,7 +1,6 @@
 import { Id, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import {
-  AtomicProofType,
   AtomicQueryV3Inputs,
   AtomicQueryV3PubSignals,
   Operators,
@@ -20,7 +19,7 @@ import {
 import expectedMtpJson from './data/atomic-query-v3-mtp.json';
 import expectedSigJson from './data/atomic-query-v3-sig.json';
 import { expect } from 'chai';
-import { byteDecoder, byteEncoder } from '../../src';
+import { byteDecoder, byteEncoder, ProofType } from '../../src';
 
 describe('atomic-query-v3', () => {
   it('TestAttrQueryV3_SigPart_PrepareInputs', async () => {
@@ -89,7 +88,7 @@ describe('atomic-query-v3', () => {
     query.values = prepareIntArray([BigInt(10)], 64);
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
-    inputs.proofType = AtomicProofType.BJJSignature2021;
+    inputs.proofType = ProofType.BJJSignature;
     inputs.linkNonce = BigInt(0);
     inputs.verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
@@ -155,7 +154,7 @@ describe('atomic-query-v3', () => {
     query.values = prepareIntArray([BigInt(10)], 64);
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
-    inputs.proofType = AtomicProofType.Iden3SparseMerkleTreeProof;
+    inputs.proofType = ProofType.Iden3SparseMerkleTreeProof;
     inputs.linkNonce = BigInt(0);
     inputs.verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
