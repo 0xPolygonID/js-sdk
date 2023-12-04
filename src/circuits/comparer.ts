@@ -10,7 +10,12 @@ export enum Operators {
   GT = 3,
   IN = 4,
   NIN = 5,
-  NE = 6
+  NE = 6,
+  LTE = 7,
+  GTE = 8,
+  BETWEEN = 9,
+  SD = 16,
+  NULLIFY = 17
 }
 
 /** QueryOperators represents operators for atomic circuits */
@@ -21,7 +26,12 @@ export const QueryOperators = {
   $gt: Operators.GT,
   $in: Operators.IN,
   $nin: Operators.NIN,
-  $ne: Operators.NE
+  $ne: Operators.NE,
+  $lte: Operators.LTE,
+  $gte: Operators.GTE,
+  $between: Operators.BETWEEN,
+  $sd: Operators.SD,
+  $nullify: Operators.NULLIFY
 };
 
 // Comparer value.
