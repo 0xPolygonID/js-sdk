@@ -120,7 +120,7 @@ export class LinkedMultiQueryPubSignals {
       fieldIdx++;
     }
 
-    // - operatorOutput
+    // - circuitQueryHash
     this.circuitQueryHash = [];
     for (let i = 0; i < queryLength; i++) {
       this.circuitQueryHash.push(BigInt(sVals[fieldIdx]));
