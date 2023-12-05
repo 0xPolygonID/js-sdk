@@ -145,6 +145,7 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
     s.challengeSignatureR8x = zero;
     s.challengeSignatureR8y = zero;
     s.challengeSignatureS = zero;
+    s.gistRoot = ZERO_HASH.bigInt().toString();
     s.gistMtp = prepareSiblingsStr(new Proof(), this.getMTLevelOnChain());
 
     s.authClaimNonRevMtpAuxHi = ZERO_HASH.bigInt().toString();
@@ -210,7 +211,6 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
     };
 
     s.challenge = this.challenge?.toString();
-    s.gistRoot = this.gistProof.root.bigInt().toString();
     if (this.authEnabled === 1) {
       s.authClaim = this.authClaim?.marshalJson();
       s.userClaimsTreeRoot = this.treeState.claimsRoot?.bigInt().toString();
@@ -233,6 +233,7 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
       s.gistMtpAuxHi = globalNodeAux.key.bigInt().toString();
       s.gistMtpAuxHv = globalNodeAux.value.bigInt().toString();
       s.gistMtpNoAux = globalNodeAux.noAux;
+      s.gistRoot = this.gistProof.root.bigInt().toString();
     } else {
       this.fillAuthWithZero(s);
     }
