@@ -70,6 +70,10 @@ export interface ProofGenerationOptions {
   skipRevocation: boolean;
   challenge?: bigint;
   credential?: W3CCredential;
+  linkNonce?: bigint;
+  verifierDID?: DID;
+  verifierSessionID?: bigint;
+  authEnabled?: number;
 }
 
 export interface DIDProfileMetadata {
@@ -624,9 +628,9 @@ export class ProofService implements IProofService {
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
-    circuitInputs.linkNonce = BigInt(0);
-    circuitInputs.verifierID = DID.idFromDID(identifier);
-    circuitInputs.verifierSessionID = BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+    circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
+    circuitInputs.verifierSessionID = params.verifierSessionID ?? BigInt(0);
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
 
@@ -683,10 +687,10 @@ export class ProofService implements IProofService {
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
-    circuitInputs.linkNonce = BigInt(0);
-    circuitInputs.verifierID = DID.idFromDID(identifier);
-    circuitInputs.verifierSessionID = BigInt(0);
-    circuitInputs.authEnabled = 1;
+    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+    circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
+    circuitInputs.verifierSessionID = params.verifierSessionID ?? BigInt(0);
+    circuitInputs.authEnabled = params.authEnabled ?? 1;
 
     // auth inputs
     if (circuitInputs.authEnabled === 1) {
