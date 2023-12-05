@@ -13,6 +13,7 @@ import {
   AtomicQuerySigV2Inputs,
   AtomicQuerySigV2OnChainInputs,
   AtomicQueryV3Inputs,
+  AtomicQueryV3OnChainInputs,
   AuthV2Inputs,
   CircuitClaim,
   CircuitId,
@@ -348,6 +349,9 @@ export class ProofService implements IProofService {
       case CircuitId.AtomicQueryV3:
         generateInputFn = this.generateQueryV3Inputs.bind(this);
         break;
+      case CircuitId.AtomicQueryV3OnChain:
+        generateInputFn = this.generateQueryV3OnChainInputs.bind(this);
+        break;
       default:
         throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
@@ -623,6 +627,98 @@ export class ProofService implements IProofService {
     circuitInputs.linkNonce = BigInt(0);
     circuitInputs.verifierID = DID.idFromDID(identifier);
     circuitInputs.verifierSessionID = BigInt(0);
+    return { inputs: circuitInputs.inputsMarshal(), vp };
+  }
+
+  private async generateQueryV3OnChainInputs(
+    preparedCredential: PreparedCredential,
+    identifier: DID,
+    proofReq: ZeroKnowledgeProofRequest,
+    params: InputsParams
+  ): Promise<{ inputs: Uint8Array; vp?: object }> {
+    const circuitClaimData = await this.newCircuitClaimData(
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
+
+    circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
+    let proofType: ProofType;
+    switch (proofReq.query.proofType) {
+      case ProofType.BJJSignature:
+        proofType = ProofType.BJJSignature;
+        break;
+      case ProofType.Iden3SparseMerkleTreeProof:
+        proofType = ProofType.Iden3SparseMerkleTreeProof;
+        break;
+      default:
+        if (circuitClaimData.proof) {
+          proofType = ProofType.Iden3SparseMerkleTreeProof;
+        } else if (circuitClaimData.signatureProof) {
+          proofType = ProofType.BJJSignature;
+        } else {
+          throw Error('claim has no MTP or signature proof');
+        }
+        break;
+    }
+
+    const circuitInputs = new AtomicQueryV3OnChainInputs();
+    circuitInputs.id = DID.idFromDID(identifier);
+    circuitInputs.claim = {
+      issuerID: circuitClaimData?.issuerId,
+      signatureProof: circuitClaimData.signatureProof,
+      claim: circuitClaimData.claim,
+      nonRevProof: circuitClaimData.nonRevProof,
+      incProof: { proof: circuitClaimData.proof, treeState: circuitClaimData.treeState }
+    };
+    circuitInputs.requestID = BigInt(proofReq.id);
+    circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
+    circuitInputs.profileNonce = BigInt(params.authProfileNonce);
+    circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
+    const { query, vp } = await this.toCircuitsQuery(
+      proofReq.query,
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
+    circuitInputs.query = query;
+    circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
+
+    circuitInputs.proofType = proofType;
+    circuitInputs.linkNonce = BigInt(0);
+    circuitInputs.verifierID = DID.idFromDID(identifier);
+    circuitInputs.verifierSessionID = BigInt(0);
+    circuitInputs.authEnabled = 1;
+
+    // auth inputs
+    if (circuitInputs.authEnabled === 1) {
+      const { nonce: authProfileNonce, genesisDID } =
+        await this._identityWallet.getGenesisDIDMetadata(identifier);
+
+      const challenge = BigInt(proofReq.query.challenge?.toString() ?? 0);
+      const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
+
+      const authClaimData = await this.newCircuitClaimData(
+        authPrepared.authCredential,
+        authPrepared.authCoreClaim
+      );
+
+      const signature = await this._identityWallet.signChallenge(
+        challenge,
+        authPrepared.authCredential
+      );
+      const id = DID.idFromDID(genesisDID);
+      const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
+
+      const gistProof = toGISTProof(stateProof);
+
+      circuitInputs.profileNonce = BigInt(authProfileNonce);
+      circuitInputs.authClaim = authClaimData.claim;
+      circuitInputs.authClaimIncMtp = authClaimData.proof;
+      circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
+      circuitInputs.treeState = authClaimData.treeState;
+      circuitInputs.signature = signature;
+      circuitInputs.challenge = challenge;
+      circuitInputs.gistProof = gistProof;
+    }
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
 

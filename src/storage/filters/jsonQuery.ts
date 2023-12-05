@@ -148,6 +148,8 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
         );
       case 'skipClaimRevocationCheck':
         return acc;
+      case 'challenge':
+        return acc;
       case 'credentialSubject': {
         const reqFilters = Object.keys(queryValue).reduce((acc: FilterQuery[], fieldKey) => {
           const fieldParams = queryValue[fieldKey];
