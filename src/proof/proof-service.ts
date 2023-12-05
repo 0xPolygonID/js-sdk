@@ -696,29 +696,26 @@ export class ProofService implements IProofService {
     circuitInputs.verifierSessionID = proofReq.query.verifierSessionID
       ? BigInt(proofReq.query.verifierSessionID?.toString())
       : BigInt(0);
-    circuitInputs.authEnabled = params.authEnabled ?? 1;
+    circuitInputs.authEnabled = params.authEnabled ?? 0;
 
+    circuitInputs.challenge = BigInt(params.challenge ?? 0);
+    const { nonce: authProfileNonce, genesisDID } =
+      await this._identityWallet.getGenesisDIDMetadata(identifier);
+    const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
+    const id = DID.idFromDID(genesisDID);
+    const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
+    const gistProof = toGISTProof(stateProof);
+    circuitInputs.gistProof = gistProof;
     // auth inputs
     if (circuitInputs.authEnabled === 1) {
-      const { nonce: authProfileNonce, genesisDID } =
-        await this._identityWallet.getGenesisDIDMetadata(identifier);
-
-      const challenge = BigInt(params.challenge ?? 0);
-      const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
-
       const authClaimData = await this.newCircuitClaimData(
         authPrepared.authCredential,
         authPrepared.authCoreClaim
       );
-
       const signature = await this._identityWallet.signChallenge(
-        challenge,
+        circuitInputs.challenge,
         authPrepared.authCredential
       );
-      const id = DID.idFromDID(genesisDID);
-      const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
-
-      const gistProof = toGISTProof(stateProof);
 
       circuitInputs.profileNonce = BigInt(authProfileNonce);
       circuitInputs.authClaim = authClaimData.claim;
@@ -726,8 +723,6 @@ export class ProofService implements IProofService {
       circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
       circuitInputs.treeState = authClaimData.treeState;
       circuitInputs.signature = signature;
-      circuitInputs.challenge = challenge;
-      circuitInputs.gistProof = gistProof;
     }
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }

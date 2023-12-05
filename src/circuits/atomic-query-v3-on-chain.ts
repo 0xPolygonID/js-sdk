@@ -142,11 +142,9 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
 
     s.authClaimIncMtp = prepareSiblingsStr(new Proof(), this.getMTLevel());
     s.authClaimNonRevMtp = prepareSiblingsStr(new Proof(), this.getMTLevel());
-    s.challenge = zero;
     s.challengeSignatureR8x = zero;
     s.challengeSignatureR8y = zero;
     s.challengeSignatureS = zero;
-    s.gistRoot = ZERO_HASH.bigInt().toString();
     s.gistMtp = prepareSiblingsStr(new Proof(), this.getMTLevelOnChain());
 
     s.authClaimNonRevMtpAuxHi = ZERO_HASH.bigInt().toString();
@@ -211,6 +209,8 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
       isRevocationChecked: 1
     };
 
+    s.challenge = this.challenge?.toString();
+    s.gistRoot = this.gistProof.root.bigInt().toString();
     if (this.authEnabled === 1) {
       s.authClaim = this.authClaim?.marshalJson();
       s.userClaimsTreeRoot = this.treeState.claimsRoot?.bigInt().toString();
@@ -219,14 +219,11 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
       s.userState = this.treeState.state?.bigInt().toString();
       s.authClaimIncMtp = prepareSiblingsStr(this.authClaimIncMtp, this.getMTLevel());
       s.authClaimNonRevMtp = prepareSiblingsStr(this.authClaimNonRevMtp, this.getMTLevel());
-      s.challenge = this.challenge?.toString();
       s.challengeSignatureR8x = this.signature.R8[0].toString();
       s.challengeSignatureR8y = this.signature.R8[1].toString();
       s.challengeSignatureS = this.signature.S.toString();
-      s.gistRoot = this.gistProof.root.bigInt().toString();
       s.gistMtp =
         this.gistProof && prepareSiblingsStr(this.gistProof.proof, this.getMTLevelOnChain());
-
       const nodeAuxAuth = getNodeAuxValue(this.authClaimNonRevMtp);
       s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key.bigInt().toString();
       s.authClaimNonRevMtpAuxHv = nodeAuxAuth.value.bigInt().toString();
