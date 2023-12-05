@@ -65,6 +65,14 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
       throw new Error(CircuitError.InvalidProofType);
     }
 
+    if (!this.gistProof.proof) {
+      throw new Error(CircuitError.EmptyGISTProof);
+    }
+
+    if (!this.challenge) {
+      throw new Error(CircuitError.EmptyChallenge);
+    }
+
     if (this.authEnabled === 1) {
       if (!this.authClaimIncMtp) {
         throw new Error(CircuitError.EmptyAuthClaimProof);
@@ -74,16 +82,8 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
         throw new Error(CircuitError.EmptyAuthClaimNonRevProof);
       }
 
-      if (!this.gistProof.proof) {
-        throw new Error(CircuitError.EmptyGISTProof);
-      }
-
       if (!this.signature) {
         throw new Error(CircuitError.EmptyChallengeSignature);
-      }
-
-      if (!this.challenge) {
-        throw new Error(CircuitError.EmptyChallenge);
       }
     }
 
