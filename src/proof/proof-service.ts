@@ -693,7 +693,7 @@ export class ProofService implements IProofService {
       const { nonce: authProfileNonce, genesisDID } =
         await this._identityWallet.getGenesisDIDMetadata(identifier);
 
-      const challenge = BigInt(proofReq.query.challenge?.toString() ?? 0);
+      const challenge = BigInt(params.challenge ?? 0);
       const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
 
       const authClaimData = await this.newCircuitClaimData(

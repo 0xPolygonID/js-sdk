@@ -165,8 +165,7 @@ describe('sig onchain proofs', () => {
           birthday: {
             $lt: 20020101
           }
-        },
-        challenge: '412312'
+        }
       }
     };
 

@@ -213,8 +213,7 @@ describe('mtp onchain proofs', () => {
           documentType: {
             $eq: 99
           }
-        },
-        challenge: '3331'
+        }
       }
     };
 
