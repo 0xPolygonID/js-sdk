@@ -58,7 +58,8 @@ export type ContractInvokeHandlerOptions = {
 export class ContractRequestHandler implements IContractRequestHandler {
   private readonly _allowedCircuits = [
     CircuitId.AtomicQueryMTPV2OnChain,
-    CircuitId.AtomicQuerySigV2OnChain
+    CircuitId.AtomicQuerySigV2OnChain,
+    CircuitId.AtomicQueryV3OnChain
   ];
 
   /**

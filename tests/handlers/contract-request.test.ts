@@ -442,4 +442,156 @@ describe('contract-request', () => {
       proofReq.id
     );
   });
+  // V3 integration test
+  it.skip('contract request flow V3 - integration test', async () => {
+    const stateEthConfig = defaultEthConnectionConfig;
+    stateEthConfig.url = rpcUrl;
+    stateEthConfig.contractAddress = '0x134b1be34911e39a8397ec6289782989729807a4';
+
+    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
+    const kms = new KMS();
+    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+    dataStorage = {
+      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
+      identity: new IdentityStorage(
+        new InMemoryDataSource<Identity>(),
+        new InMemoryDataSource<Profile>()
+      ),
+      mt: new InMemoryMerkleTreeStorage(40),
+      states: new EthStateStorage(stateEthConfig)
+    };
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, dataStorage.states, {
+      ipfsNodeURL
+    });
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.verifyState.bind(proofService)
+    );
+    contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
+
+    const { did: userDID, credential: cred } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    expect(cred).not.to.be.undefined;
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Mumbai,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+    expect(issuerAuthCredential).not.to.be.undefined;
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQueryV3OnChain,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+        credentialSubject: {
+          birthday: {
+            $lt: 20020101
+          }
+        }
+      }
+    };
+
+    const contractAddress = '0xEE6164690aBB9CCcBe9248D8eC0Da797f9F6C575';
+    const conf = defaultEthConnectionConfig;
+    conf.contractAddress = contractAddress;
+    conf.url = rpcUrl;
+    conf.chainId = 80001;
+
+    const zkpVerifier = new OnChainZKPVerifier([conf]);
+    contractRequest = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
+
+    const transactionData: ContractInvokeTransactionData = {
+      contract_address: contractAddress,
+      method_id: 'b68967e2',
+      chain_id: conf.chainId
+    };
+
+    const ciRequestBody: ContractInvokeRequestBody = {
+      reason: 'reason',
+      transaction_data: transactionData,
+      scope: [proofReq as ZeroKnowledgeProofRequest]
+    };
+
+    const id = uuid.v4();
+    const ciRequest: ContractInvokeRequest = {
+      id,
+      typ: MediaType.PlainMessage,
+      type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: ciRequestBody
+    };
+
+    const ethSigner = new ethers.Wallet(walletKey);
+
+    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+
+    const options: ContractInvokeHandlerOptions = {
+      ethSigner,
+      challenge
+    };
+    const msgBytes = byteEncoder.encode(JSON.stringify(ciRequest));
+    const ciResponse = await contractRequest.handleContractInvokeRequest(
+      userDID,
+      msgBytes,
+      options
+    );
+
+    expect(ciResponse).not.be.undefined;
+    expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(
+      proofReq.id
+    );
+  });
 });
