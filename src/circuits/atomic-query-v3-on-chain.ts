@@ -44,7 +44,7 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
   currentTimeStamp!: number;
   proofType!: ProofType;
   linkNonce!: bigint;
-  verifierID!: Id;
+  verifierID?: Id;
   verifierSessionID!: bigint;
   authEnabled!: number;
 
@@ -314,7 +314,7 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
     s.value = bigIntArrayToStringArray(values);
 
     s.linkNonce = this.linkNonce.toString();
-    s.verifierID = this.verifierID.bigInt().toString();
+    s.verifierID = this.verifierID?.bigInt().toString() ?? '0';
     s.verifierSessionID = this.verifierSessionID.toString();
 
     s.authEnabled = this.authEnabled.toString();
