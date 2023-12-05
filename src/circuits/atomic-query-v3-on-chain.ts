@@ -65,10 +65,6 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
       throw new Error(CircuitError.InvalidProofType);
     }
 
-    if (!this.gistProof.proof) {
-      throw new Error(CircuitError.EmptyGISTProof);
-    }
-
     if (!this.challenge) {
       throw new Error(CircuitError.EmptyChallenge);
     }
@@ -84,6 +80,10 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
 
       if (!this.signature) {
         throw new Error(CircuitError.EmptyChallengeSignature);
+      }
+
+      if (!this.gistProof.proof) {
+        throw new Error(CircuitError.EmptyGISTProof);
       }
     }
 
