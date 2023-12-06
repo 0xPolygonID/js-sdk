@@ -17,6 +17,8 @@ import {
   AuthV2Inputs,
   CircuitClaim,
   CircuitId,
+  LinkedMultiQueryInputs,
+  LinkedNullifierInputs,
   MTProof,
   Query,
   QueryOperators,
@@ -72,6 +74,9 @@ export interface ProofGenerationOptions {
   credential?: W3CCredential;
   verifierDID?: DID;
   authEnabled?: number;
+
+  // LINK ID POC:
+  queryLength?: number;
 }
 
 export interface DIDProfileMetadata {
@@ -354,6 +359,19 @@ export class ProofService implements IProofService {
       case CircuitId.AtomicQueryV3OnChain:
         generateInputFn = this.generateQueryV3OnChainInputs.bind(this);
         break;
+
+      // Link ID POC:
+      case CircuitId.LinkedNullifier:
+        generateInputFn = this.generateLinkedNullifierInputs.bind(this);
+        break;
+      case CircuitId.LinkedMultiQuery3:
+        params.queryLength = 3;
+        generateInputFn = this.generateLinkedMultiQueryInputs.bind(this);
+        break;
+      case CircuitId.LinkedMultiQuery10:
+        params.queryLength = 10;
+        generateInputFn = this.generateLinkedMultiQueryInputs.bind(this);
+        break;
       default:
         throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
@@ -572,6 +590,98 @@ export class ProofService implements IProofService {
 
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
+
+  // LinkID POC:
+  private async generateLinkedNullifierInputs(
+    preparedCredential: PreparedCredential,
+    identifier: DID,
+    proofReq: ZeroKnowledgeProofRequest,
+    params: InputsParams
+  ): Promise<{ inputs: Uint8Array; vp?: object }> {
+    const circuitClaimData = await this.newCircuitClaimData(
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
+
+    circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
+
+    const circuitInputs = new LinkedNullifierInputs();
+    circuitInputs.linkID = proofReq.query.linkID
+      ? BigInt(proofReq.query.linkID.toString())
+      : BigInt(0);
+    circuitInputs.linkNonce = proofReq.query.linkNonce
+      ? BigInt(proofReq.query.linkNonce.toString())
+      : BigInt(0);
+    circuitInputs.issuerClaim = circuitClaimData.claim;
+    circuitInputs.id = DID.idFromDID(identifier);
+    circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
+
+    circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
+    circuitInputs.verifierSessionID = proofReq.query.verifierSessionID
+      ? BigInt(proofReq.query.verifierSessionID?.toString())
+      : BigInt(0);
+
+    return { inputs: circuitInputs.inputsMarshal(), vp: undefined };
+  }
+
+  private async generateLinkedMultiQueryInputs(
+    preparedCredential: PreparedCredential,
+    identifier: DID,
+    proofReq: ZeroKnowledgeProofRequest,
+    params: InputsParams
+  ): Promise<{ inputs: Uint8Array; vp?: object }> {
+    const circuitClaimData = await this.newCircuitClaimData(
+      preparedCredential.credential,
+      preparedCredential.credentialCoreClaim
+    );
+
+    circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
+    let proofType: ProofType;
+    switch (proofReq.query.proofType) {
+      case ProofType.BJJSignature:
+        proofType = ProofType.BJJSignature;
+        break;
+      case ProofType.Iden3SparseMerkleTreeProof:
+        proofType = ProofType.Iden3SparseMerkleTreeProof;
+        break;
+      default:
+        if (circuitClaimData.proof) {
+          proofType = ProofType.Iden3SparseMerkleTreeProof;
+        } else if (circuitClaimData.signatureProof) {
+          proofType = ProofType.BJJSignature;
+        } else {
+          throw Error('claim has no MTP or signature proof');
+        }
+        break;
+    }
+
+    const circuitInputs = new LinkedMultiQueryInputs();
+    circuitInputs.linkID = proofReq.query.linkID
+      ? BigInt(proofReq.query.linkID.toString())
+      : BigInt(0);
+    circuitInputs.linkNonce = proofReq.query.linkNonce
+      ? BigInt(proofReq.query.linkNonce.toString())
+      : BigInt(0);
+
+    circuitInputs.claim = circuitClaimData.claim;
+
+    if (proofReq.query.length !== params.queryLength) {
+      throw Error('invalid query length');
+    }
+    const queries = [];
+    for (let i = 0; i < proofReq.query.length; i++) {
+      const { query, vp } = await this.toCircuitsQuery(
+        proofReq.query,
+        preparedCredential.credential,
+        preparedCredential.credentialCoreClaim
+      );
+      queries.push(query);
+    }
+
+    return { inputs: circuitInputs.inputsMarshal(), vp: undefined };
+  }
+
+  // End LinkID POC.
 
   private async generateQueryV3Inputs(
     preparedCredential: PreparedCredential,

@@ -14,7 +14,7 @@ export class LinkedNullifierInputs {
   issuerClaim!: Claim;
   id!: Id;
   claimSubjectProfileNonce!: bigint;
-  verifierID!: Id;
+  verifierID?: Id;
   verifierSessionID!: bigint;
 
   // InputsMarshal returns Circom private inputs for nullifier.circom
@@ -26,7 +26,7 @@ export class LinkedNullifierInputs {
       userGenesisID: this.id.bigInt().toString(),
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
       claimSchema: this.issuerClaim.getSchemaHash().bigInt().toString(),
-      verifierID: this.verifierID.bigInt().toString(),
+      verifierID: this.verifierID?.bigInt().toString() ?? '0',
       verifierSessionID: this.verifierSessionID.toString()
     };
 
