@@ -544,7 +544,7 @@ describe('contract-request', () => {
       }
     };
 
-    const contractAddress = '0x514Fc1Ca778498cf0b4df63847eD7B5C8f4657c7';
+    const contractAddress = '0x6Ee102705DD27c1025fc03E5Db375BAe1c237432';
     const conf = defaultEthConnectionConfig;
     conf.contractAddress = contractAddress;
     conf.url = rpcUrl;
