@@ -493,6 +493,6 @@
   ],
   "linkNonce": "0",
   "verifierID": "21929109382993718606847853573861987353620810345503358891473103689157378049",
-  "verifierSessionID": "32",
+  "nullifierSessionID": "32",
   "authEnabled": "1"
 }
