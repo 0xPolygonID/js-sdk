@@ -12,7 +12,6 @@ describe('linked-nullifier', () => {
     const claim = defaultUserClaim(id);
 
     const inputs = new LinkedNullifierInputs();
-    inputs.linkID = BigInt('12341231236643');
     inputs.linkNonce = BigInt('35346346369657418');
     inputs.issuerClaim = claim;
     inputs.id = user.id;
