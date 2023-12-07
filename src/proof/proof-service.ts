@@ -607,9 +607,7 @@ export class ProofService implements IProofService {
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
     const circuitInputs = new LinkedNullifierInputs();
-    circuitInputs.linkNonce = proofReq.query.linkNonce
-      ? BigInt(proofReq.query.linkNonce.toString())
-      : BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
     circuitInputs.issuerClaim = circuitClaimData.claim;
     circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
@@ -654,9 +652,7 @@ export class ProofService implements IProofService {
     }
 
     const circuitInputs = new LinkedMultiQueryInputs();
-    circuitInputs.linkNonce = proofReq.query.linkNonce
-      ? BigInt(proofReq.query.linkNonce.toString())
-      : BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
 
     circuitInputs.claim = circuitClaimData.claim;
 
