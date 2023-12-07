@@ -72,6 +72,7 @@ export interface ProofGenerationOptions {
   credential?: W3CCredential;
   verifierDID?: DID;
   authEnabled?: number;
+  linkNonce?: bigint;
 }
 
 export interface DIDProfileMetadata {
@@ -626,9 +627,7 @@ export class ProofService implements IProofService {
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
-    circuitInputs.linkNonce = proofReq.query.linkNonce
-      ? BigInt(proofReq.query.linkNonce.toString())
-      : BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
     circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
       ? BigInt(proofReq.params?.nullifierSessionID?.toString())
@@ -689,9 +688,7 @@ export class ProofService implements IProofService {
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
-    circuitInputs.linkNonce = proofReq.query.linkNonce
-      ? BigInt(proofReq.query.linkNonce.toString())
-      : BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
     circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
       ? BigInt(proofReq.params?.nullifierSessionID?.toString())
