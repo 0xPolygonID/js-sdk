@@ -212,7 +212,7 @@ describe('mtp proofs', () => {
       }
     };
 
-    const creds = await credWallet.findByQuery(proofReq.query as ProofQuery);
+    const creds = await credWallet.findByQuery(proofReq.query);
     expect(creds.length).to.not.equal(0);
 
     const { proof, pub_signals, vp } = await proofService.generateProof(proofReq, userDID);
@@ -318,7 +318,7 @@ describe('mtp proofs', () => {
       }
     };
 
-    const creds = await credWallet.findByQuery(proofReq.query as ProofQuery);
+    const creds = await credWallet.findByQuery(proofReq.query);
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);

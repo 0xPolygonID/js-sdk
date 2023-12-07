@@ -18,7 +18,6 @@ import { Query, ValueProof } from './models';
  * @class LinkedMultiQueryInputs
  */
 export class LinkedMultiQueryInputs extends BaseConfig {
-  linkID!: bigint;
   linkNonce!: bigint;
   claim!: Claim;
   query!: Query[];
@@ -28,7 +27,6 @@ export class LinkedMultiQueryInputs extends BaseConfig {
     const valueProofs: ValueProof[] = this.query.map((i) => i.valueProof);
 
     const s: Partial<LinkedMultiQueryCircuitInputs> = {
-      linkID: this.linkID.toString(),
       linkNonce: this.linkNonce.toString(),
       issuerClaim: this.claim.marshalJson(),
       claimSchema: this.claim.getSchemaHash().bigInt().toString(),
@@ -87,10 +85,10 @@ interface LinkedMultiQueryCircuitInputs {
  * @class LinkedMultiQueryPubSignals
  */
 export class LinkedMultiQueryPubSignals {
+  linkID!: bigint;
   merklized!: number;
   operatorOutput!: bigint[];
   circuitQueryHash!: bigint[];
-  linkID!: bigint;
 
   /**
    * PubSignalsUnmarshal unmarshal linkedMultiQuery.circom public inputs to LinkedMultiQueryPubSignals
@@ -109,6 +107,10 @@ export class LinkedMultiQueryPubSignals {
 
     let fieldIdx = 0;
 
+    // -- linkID
+    this.linkID = BigInt(sVals[fieldIdx]);
+    fieldIdx++;
+
     // -- merklized
     this.merklized = parseInt(sVals[fieldIdx]);
     fieldIdx++;
@@ -126,9 +128,6 @@ export class LinkedMultiQueryPubSignals {
       this.circuitQueryHash.push(BigInt(sVals[fieldIdx]));
       fieldIdx++;
     }
-
-    // -- linkID
-    this.linkID = BigInt(sVals[fieldIdx]);
 
     return this;
   }

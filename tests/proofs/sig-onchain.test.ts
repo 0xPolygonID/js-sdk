@@ -19,7 +19,7 @@ import {
 } from '../../src/credentials';
 import { NativeProver, ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { CredentialStatusType, ProofQuery, VerifiableConstants, W3CCredential } from '../../src/verifiable';
+import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { byteEncoder } from '../../src';
@@ -169,7 +169,7 @@ describe('sig onchain proofs', () => {
       }
     };
 
-    const creds = await credWallet.findByQuery(proofReq.query as ProofQuery);
+    const creds = await credWallet.findByQuery(proofReq.query);
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);

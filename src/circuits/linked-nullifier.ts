@@ -9,7 +9,6 @@ import { byteDecoder, byteEncoder } from '../utils';
  * @class LinkedNullifierInputs
  */
 export class LinkedNullifierInputs {
-  linkID!: bigint;
   linkNonce!: bigint;
   issuerClaim!: Claim;
   id!: Id;
@@ -20,7 +19,6 @@ export class LinkedNullifierInputs {
   // InputsMarshal returns Circom private inputs for nullifier.circom
   inputsMarshal(): Uint8Array {
     const s: LinkedNullifierCircuitInputs = {
-      linkID: this.linkID.toString(),
       linkNonce: this.linkNonce.toString(),
       issuerClaim: this.issuerClaim.marshalJson(),
       userGenesisID: this.id.bigInt().toString(),
@@ -38,7 +36,6 @@ export class LinkedNullifierInputs {
  * @beta
  */
 interface LinkedNullifierCircuitInputs {
-  linkID: string;
   linkNonce: string;
   issuerClaim: string[];
   userGenesisID: string;

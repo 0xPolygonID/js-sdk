@@ -207,8 +207,7 @@ export class ProofService implements IProofService {
 
     // find credential
 
-    const credential =
-      opts.credential ?? (await this.findCredential(identifier, proofReq.query as ProofQuery));
+    const credential = opts.credential ?? (await this.findCredential(identifier, proofReq.query));
 
     const { nonce: authProfileNonce, genesisDID } =
       await this._identityWallet.getGenesisDIDMetadata(identifier);
@@ -395,7 +394,7 @@ export class ProofService implements IProofService {
     circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.requestID = BigInt(proofReq.id);
     const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query as ProofQuery,
+      proofReq.query,
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim
     );
@@ -466,7 +465,7 @@ export class ProofService implements IProofService {
     circuitInputs.challenge = params.challenge;
 
     const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query as ProofQuery,
+      proofReq.query,
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim
     );
@@ -511,7 +510,7 @@ export class ProofService implements IProofService {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
     const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query as ProofQuery,
+      proofReq.query,
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim
     );
@@ -553,7 +552,7 @@ export class ProofService implements IProofService {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
     const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query as ProofQuery,
+      proofReq.query,
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim
     );
@@ -607,19 +606,16 @@ export class ProofService implements IProofService {
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
     const circuitInputs = new LinkedNullifierInputs();
-    circuitInputs.linkID = (proofReq.query as JSONObject).linkID
-      ? BigInt((proofReq.query as JSONObject).linkID.toString())
-      : BigInt(0);
-    circuitInputs.linkNonce = (proofReq.query as JSONObject).linkNonce
-      ? BigInt((proofReq.query as JSONObject).linkNonce.toString())
+    circuitInputs.linkNonce = proofReq.query.linkNonce
+      ? BigInt(proofReq.query.linkNonce.toString())
       : BigInt(0);
     circuitInputs.issuerClaim = circuitClaimData.claim;
     circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
 
     circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
-    circuitInputs.verifierSessionID = (proofReq.query as JSONObject).verifierSessionID
-      ? BigInt((proofReq.query as JSONObject).verifierSessionID?.toString())
+    circuitInputs.verifierSessionID = proofReq.query.verifierSessionID
+      ? BigInt(proofReq.query.verifierSessionID?.toString())
       : BigInt(0);
 
     return { inputs: circuitInputs.inputsMarshal(), vp: undefined };
@@ -638,7 +634,7 @@ export class ProofService implements IProofService {
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     let proofType: ProofType;
-    switch ((proofReq.query as JSONObject).proofType) {
+    switch (proofReq.query.proofType) {
       case ProofType.BJJSignature:
         proofType = ProofType.BJJSignature;
         break;
@@ -657,22 +653,27 @@ export class ProofService implements IProofService {
     }
 
     const circuitInputs = new LinkedMultiQueryInputs();
-    circuitInputs.linkID = (proofReq.query as JSONObject).linkID
-      ? BigInt((proofReq.query as JSONObject).linkID.toString())
-      : BigInt(0);
-    circuitInputs.linkNonce = (proofReq.query as JSONObject).linkNonce
-      ? BigInt((proofReq.query as JSONObject).linkNonce.toString())
+    circuitInputs.linkNonce = proofReq.query.linkNonce
+      ? BigInt(proofReq.query.linkNonce.toString())
       : BigInt(0);
 
     circuitInputs.claim = circuitClaimData.claim;
 
-    if (proofReq.query.length !== params.queryLength) {
+    const credSubjectKeys = Object.keys(proofReq.query.credentialSubject);
+
+    if (credSubjectKeys.length !== params.queryLength) {
       throw Error('invalid query length');
     }
     const queries = [];
-    for (let i = 0; i < (proofReq.query as JSONObject[]).length; i++) {
+    const queryCopy = JSON.parse(JSON.stringify(proofReq.query));
+    // todo: fix multi credentials in query
+    for (let i = 0; i < credSubjectKeys.length; i++) {
+      const propName = credSubjectKeys[i];
+      queryCopy.credentialSubject = {
+        [propName]: (proofReq.query.credentialSubject as any)[propName]
+      };
       const { query, vp } = await this.toCircuitsQuery(
-        (proofReq.query as JSONObject[])[i] as ProofQuery,
+        queryCopy,
         preparedCredential.credential,
         preparedCredential.credentialCoreClaim
       );
@@ -697,7 +698,7 @@ export class ProofService implements IProofService {
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     let proofType: ProofType;
-    switch ((proofReq.query as JSONObject).proofType) {
+    switch (proofReq.query.proofType) {
       case ProofType.BJJSignature:
         proofType = ProofType.BJJSignature;
         break;
@@ -729,7 +730,7 @@ export class ProofService implements IProofService {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
     const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query as ProofQuery,
+      proofReq.query,
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim
     );
@@ -737,8 +738,8 @@ export class ProofService implements IProofService {
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
-    circuitInputs.linkNonce = (proofReq.query as JSONObject).linkNonce
-      ? BigInt((proofReq.query as JSONObject).linkNonce.toString())
+    circuitInputs.linkNonce = proofReq.query.linkNonce
+      ? BigInt(proofReq.query.linkNonce.toString())
       : BigInt(0);
     circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
@@ -760,7 +761,7 @@ export class ProofService implements IProofService {
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     let proofType: ProofType;
-    switch ((proofReq.query as JSONObject).proofType) {
+    switch (proofReq.query.proofType) {
       case ProofType.BJJSignature:
         proofType = ProofType.BJJSignature;
         break;
@@ -792,7 +793,7 @@ export class ProofService implements IProofService {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
     const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query as ProofQuery,
+      proofReq.query,
       preparedCredential.credential,
       preparedCredential.credentialCoreClaim
     );
@@ -800,8 +801,8 @@ export class ProofService implements IProofService {
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
-    circuitInputs.linkNonce = (proofReq.query as JSONObject).linkNonce
-      ? BigInt((proofReq.query as JSONObject).linkNonce.toString())
+    circuitInputs.linkNonce = proofReq.query.linkNonce
+      ? BigInt(proofReq.query.linkNonce.toString())
       : BigInt(0);
     circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
