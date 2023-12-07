@@ -630,8 +630,8 @@ export class ProofService implements IProofService {
       ? BigInt(proofReq.query.linkNonce.toString())
       : BigInt(0);
     circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
-    circuitInputs.verifierSessionID = proofReq.query.verifierSessionID
-      ? BigInt(proofReq.query.verifierSessionID?.toString())
+    circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
+      ? BigInt(proofReq.params?.nullifierSessionID?.toString())
       : BigInt(0);
     return { inputs: circuitInputs.inputsMarshal(), vp };
   }
@@ -693,8 +693,8 @@ export class ProofService implements IProofService {
       ? BigInt(proofReq.query.linkNonce.toString())
       : BigInt(0);
     circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
-    circuitInputs.verifierSessionID = proofReq.query.verifierSessionID
-      ? BigInt(proofReq.query.verifierSessionID?.toString())
+    circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
+      ? BigInt(proofReq.params?.nullifierSessionID?.toString())
       : BigInt(0);
     circuitInputs.authEnabled = params.authEnabled ?? 0;
 

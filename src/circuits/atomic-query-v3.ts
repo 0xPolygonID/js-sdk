@@ -40,7 +40,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
   proofType!: ProofType;
   linkNonce!: bigint;
   verifierID?: Id;
-  verifierSessionID!: bigint;
+  nullifierSessionID!: bigint;
 
   validate(): void {
     if (!this.requestID) {
@@ -232,7 +232,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
 
     s.linkNonce = this.linkNonce.toString();
     s.verifierID = this.verifierID?.bigInt().toString() ?? '0';
-    s.verifierSessionID = this.verifierSessionID.toString();
+    s.nullifierSessionID = this.nullifierSessionID.toString();
 
     return byteEncoder.encode(JSON.stringify(s));
   }
@@ -302,7 +302,7 @@ interface AtomicQueryV3CircuitInputs {
   // Private random nonce, used to generate LinkID
   linkNonce: string;
   verifierID: string;
-  verifierSessionID: string;
+  nullifierSessionID: string;
 }
 /**
  * @beta
@@ -328,7 +328,7 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
   nullifier!: bigint;
   operatorOutput!: bigint;
   verifierID!: Id;
-  verifierSessionID!: bigint;
+  nullifierSessionID!: bigint;
 
   // PubSignalsUnmarshal unmarshal credentialAtomicQueryV3.circom public signals
   pubSignalsUnmarshal(data: Uint8Array): AtomicQueryV3PubSignals {
@@ -352,7 +352,7 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     // operator
     // value
     // verifierID
-    // verifierSessionID
+    // nullifierSessionID
 
     // 19 is a number of fields in AtomicQueryV3PubSignals before values, values is last element in the proof and
     // it is length could be different base on the circuit configuration. The length could be modified by set value
@@ -451,8 +451,8 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     }
     fieldIdx++;
 
-    // - verifierSessionID
-    this.verifierSessionID = BigInt(sVals[fieldIdx]);
+    // - nullifierSessionID
+    this.nullifierSessionID = BigInt(sVals[fieldIdx]);
 
     return this;
   }

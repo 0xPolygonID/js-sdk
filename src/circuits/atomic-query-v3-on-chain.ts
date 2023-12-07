@@ -45,7 +45,7 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
   proofType!: ProofType;
   linkNonce!: bigint;
   verifierID?: Id;
-  verifierSessionID!: bigint;
+  nullifierSessionID!: bigint;
   authEnabled!: number;
 
   validate(): void {
@@ -313,7 +313,7 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
 
     s.linkNonce = this.linkNonce.toString();
     s.verifierID = this.verifierID?.bigInt().toString() ?? '0';
-    s.verifierSessionID = this.verifierSessionID.toString();
+    s.nullifierSessionID = this.nullifierSessionID.toString();
 
     s.authEnabled = this.authEnabled.toString();
 
@@ -405,7 +405,7 @@ interface AtomicQueryV3OnChainCircuitInputs {
   // Private random nonce, used to generate LinkID
   linkNonce: string;
   verifierID: string;
-  verifierSessionID: string;
+  nullifierSessionID: string;
   authEnabled: string;
 }
 
@@ -430,7 +430,7 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
   nullifier!: bigint;
   operatorOutput!: bigint;
   verifierID!: Id;
-  verifierSessionID!: bigint;
+  nullifierSessionID!: bigint;
   authEnabled!: number;
 
   // PubSignalsUnmarshal unmarshal credentialAtomicQueryV3.circom public signals
@@ -452,7 +452,7 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
     // issuerClaimNonRevState
     // timestamp
     // verifierID
-    // verifierSessionID
+    // nullifierSessionID
     // authEnabled
 
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
@@ -525,8 +525,8 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
     }
     fieldIdx++;
 
-    // - verifierSessionID
-    this.verifierSessionID = BigInt(sVals[fieldIdx]);
+    // - nullifierSessionID
+    this.nullifierSessionID = BigInt(sVals[fieldIdx]);
     fieldIdx++;
 
     // - authEnabled
