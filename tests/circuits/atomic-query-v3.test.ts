@@ -93,7 +93,7 @@ describe('atomic-query-v3', () => {
     inputs.verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
-    inputs.verifierSessionID = BigInt(32);
+    inputs.nullifierSessionID = BigInt(32);
 
     const bytesInputs = inputs.inputsMarshal();
 
@@ -159,7 +159,7 @@ describe('atomic-query-v3', () => {
     inputs.verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
-    inputs.verifierSessionID = BigInt(32);
+    inputs.nullifierSessionID = BigInt(32);
 
     const bytesInputs = inputs.inputsMarshal();
 
@@ -295,7 +295,7 @@ describe('atomic-query-v3', () => {
     exp.verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
-    exp.verifierSessionID = BigInt(32);
+    exp.nullifierSessionID = BigInt(32);
     expect(exp).to.deep.equal(out);
   });
 
@@ -426,7 +426,7 @@ describe('atomic-query-v3', () => {
     exp.verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
-    exp.verifierSessionID = BigInt(32);
+    exp.nullifierSessionID = BigInt(32);
     expect(exp).to.deep.equal(out);
   });
 });
