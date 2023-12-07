@@ -45,7 +45,7 @@ export type ZeroKnowledgeProofRequest = {
   id: number;
   circuitId: string;
   optional?: boolean;
-  query: JSONObject;
+  query: JSONObject | JSONObject[];
   params?: JSONObject;
 };
 
