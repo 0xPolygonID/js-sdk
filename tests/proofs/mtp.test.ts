@@ -19,7 +19,7 @@ import { ethers } from 'ethers';
 import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
-import { CredentialStatusType, W3CCredential } from '../../src/verifiable';
+import { CredentialStatusType, ProofQuery, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
@@ -212,7 +212,7 @@ describe('mtp proofs', () => {
       }
     };
 
-    const creds = await credWallet.findByQuery(proofReq.query);
+    const creds = await credWallet.findByQuery(proofReq.query as ProofQuery);
     expect(creds.length).to.not.equal(0);
 
     const { proof, pub_signals, vp } = await proofService.generateProof(proofReq, userDID);
@@ -318,7 +318,7 @@ describe('mtp proofs', () => {
       }
     };
 
-    const creds = await credWallet.findByQuery(proofReq.query);
+    const creds = await credWallet.findByQuery(proofReq.query as ProofQuery);
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);

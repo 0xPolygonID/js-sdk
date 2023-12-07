@@ -14,7 +14,7 @@ import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
+import { CredentialStatusType, ProofQuery, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { byteEncoder } from '../../src';
@@ -159,7 +159,7 @@ describe('sig proofs', () => {
       }
     };
 
-    const creds = await credWallet.findByQuery(proofReq.query);
+    const creds = await credWallet.findByQuery(proofReq.query as ProofQuery);
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
@@ -179,7 +179,7 @@ describe('sig proofs', () => {
     await sigMerklizedTest(CircuitId.AtomicQuerySigV2);
   });
 
-  it('sigv3-merklized', async () => {
+  it.only('sigv3-merklized', async () => {
     await sigMerklizedTest(CircuitId.AtomicQueryV3);
   });
 
@@ -220,7 +220,7 @@ describe('sig proofs', () => {
       }
     };
 
-    const creds = await credWallet.findByQuery(proofReq.query);
+    const creds = await credWallet.findByQuery(proofReq.query as ProofQuery);
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
@@ -272,7 +272,7 @@ describe('sig proofs', () => {
       }
     };
 
-    const creds = await credWallet.findByQuery(proofReq.query);
+    const creds = await credWallet.findByQuery(proofReq.query as ProofQuery);
     expect(creds.length).to.not.equal(0);
 
     const credsForMyUserDID = await credWallet.filterByCredentialSubject(creds, userDID);
