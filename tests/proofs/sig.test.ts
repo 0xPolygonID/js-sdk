@@ -179,7 +179,7 @@ describe('sig proofs', () => {
     await sigMerklizedTest(CircuitId.AtomicQuerySigV2);
   });
 
-  it.only('sigv3-merklized', async () => {
+  it('sigv3-merklized', async () => {
     await sigMerklizedTest(CircuitId.AtomicQueryV3);
   });
 
