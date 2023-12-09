@@ -17,6 +17,7 @@ import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
+import { set } from 'idb-keyval';
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
@@ -157,17 +158,41 @@ export class AuthHandler implements IAuthHandler {
       to: authRequest.from
     };
 
-    for (const proofReq of authRequest.body.scope) {
-      const zkpReq: ZeroKnowledgeProofRequest = {
-        id: proofReq.id,
-        circuitId: proofReq.circuitId as CircuitId,
-        query: proofReq.query
-      };
+    const combinedZKPReuests = authRequest.body.scope.reduce((acc, proofReq) => {
+      const groupId = proofReq.query.groupId as number | undefined;
+      if (!groupId) {
+        acc.set(Infinity, [...(acc.get(Infinity) ?? []), proofReq]);
+        return acc;
+      }
 
+      const existedRequests = acc.get(groupId);
+      if (!existedRequests?.length) {
+        acc.set(groupId, [proofReq]);
+        return acc;
+      }
+
+      const existedRequest = existedRequests[0];
+      acc.set(groupId, [
+        {
+          ...existedRequest,
+          query: {
+            ...existedRequest.query,
+            credentialSubject: {
+              ...(existedRequest.query.credentialSubject as object)
+            }
+          }
+        }
+      ]);
+
+      return acc;
+    }, new Map<number, ZeroKnowledgeProofRequest[]>());
+
+    const requestScope = [...combinedZKPReuests.values()].flat();
+    for (const proofReq of requestScope) {
       const query = proofReq.query as unknown as ProofQuery;
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
-        zkpReq,
+        proofReq,
         did,
         {
           skipRevocation: query.skipClaimRevocationCheck ?? false
