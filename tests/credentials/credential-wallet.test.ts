@@ -354,6 +354,31 @@ const credentialFlow = async (storage: IDataStorage) => {
         }
       },
       expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.name': { $eq: 'Spain' },
+          countOfFines: {
+            $eq: 0
+          }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.name': { $eq: 'Spain' },
+          countOfFines: {
+            $eq: 1
+          },
+          'country.hasOwnPackage': { $eq: 0 }
+        }
+      },
+      expected: []
     }
   ];
 
