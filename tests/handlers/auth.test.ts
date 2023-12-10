@@ -175,7 +175,7 @@ describe('auth', () => {
     authHandler = new AuthHandler(packageMgr, proofService, credWallet);
   });
 
-  it.only('request-response flow identity (not profile)', async () => {
+  it('request-response flow identity (not profile)', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
