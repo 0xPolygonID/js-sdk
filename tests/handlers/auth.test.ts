@@ -17,7 +17,12 @@ import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
+import {
+  CredentialStatusType,
+  ProofType,
+  VerifiableConstants,
+  W3CCredential
+} from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CircuitData } from '../../src/storage/entities/circuitData';
@@ -167,10 +172,10 @@ describe('auth', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    authHandler = new AuthHandler(packageMgr, proofService);
+    authHandler = new AuthHandler(packageMgr, proofService, credWallet);
   });
 
-  it('request-response flow identity (not profile)', async () => {
+  it.only('request-response flow identity (not profile)', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -217,9 +222,10 @@ describe('auth', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQuerySigV2,
+      circuitId: CircuitId.AtomicQueryV3,
       optional: false,
       query: {
+        proofType: ProofType.BJJSignature,
         allowedIssuers: ['*'],
         type: claimReq.type,
         context:
@@ -237,7 +243,21 @@ describe('auth', () => {
       reason: 'reason',
       message: 'mesage',
       did_doc: {},
-      scope: [proofReq as ZeroKnowledgeProofRequest]
+      scope: [
+        proofReq,
+        {
+          ...proofReq,
+          id: 2,
+          query: {
+            ...proofReq.query,
+            credentialSubject: {
+              birthday: {
+                $gt: 19960423
+              }
+            }
+          }
+        }
+      ]
     };
 
     const issuerId = DID.idFromDID(issuerDID);
