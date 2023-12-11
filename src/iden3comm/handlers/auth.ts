@@ -1,5 +1,4 @@
 import { MediaType } from '../constants';
-import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
@@ -9,16 +8,14 @@ import {
   IPackageManager,
   JSONObject,
   JWSPackerParams,
-  ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
-import { ProofQuery, W3CCredential } from '../../verifiable';
+import { W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { set } from 'idb-keyval';
 import { ICredentialWallet } from '../../credentials';
 
 /**
