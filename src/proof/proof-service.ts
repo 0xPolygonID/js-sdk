@@ -663,7 +663,7 @@ export class ProofService implements IProofService {
     }
     const queries = [];
     const queryCopy = JSON.parse(JSON.stringify(proofReq.query));
-    // todo: fix multi credentials in query
+
     for (let i = 0; i < credSubjectKeys.length; i++) {
       const propName = credSubjectKeys[i];
       queryCopy.credentialSubject = {
