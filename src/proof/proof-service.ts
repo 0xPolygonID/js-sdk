@@ -202,11 +202,10 @@ export class ProofService implements IProofService {
     if (!opts) {
       opts = {
         skipRevocation: false,
+        linkNonce: 0n,
         challenge: 0n
       };
     }
-
-    // find credential
 
     const credential = opts.credential ?? (await this.findCredential(identifier, proofReq.query));
 

@@ -205,7 +205,8 @@ export class AuthHandler implements IAuthHandler {
         did,
         {
           skipRevocation: (query.skipClaimRevocationCheck as boolean) ?? false,
-          credential: credential[0]
+          credential: credential[0],
+          linkNonce: opts.linkNonce
         }
       );
 
