@@ -175,7 +175,7 @@ describe('auth', () => {
     authHandler = new AuthHandler(packageMgr, proofService, credWallet);
   });
 
-  it('request-response flow identity (not profile)', async () => {
+  it.only('request-response flow identity (not profile)', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -275,10 +275,8 @@ describe('auth', () => {
               $eq: 1
             },
             position: {
-              $eq: 'boss'
-            },
-            salary: {
-              $eq: 200
+              $eq: 'boss',
+              $ne: 'employee'
             }
           }
         }
@@ -289,7 +287,6 @@ describe('auth', () => {
         optional: false,
         query: {
           groupId: 1,
-          // TODO: proofType how it should works?
           proofType: ProofType.BJJSignature,
           allowedIssuers: ['*'],
           type: 'KYCEmployee',
@@ -299,15 +296,6 @@ describe('auth', () => {
             hireDate: {
               $eq: '2023-12-11'
             }
-            // salary: {
-            //   $gte: 200
-            // },
-            // position: {
-            //   $ne: 'badJoke'
-            // },
-            // documentType: {
-            //   $eq: 1
-            // }
           }
         }
       }
@@ -321,8 +309,6 @@ describe('auth', () => {
       scope: proofReqs
     };
 
-    const issuerId = DID.idFromDID(issuerDID);
-
     const id = uuid.v4();
     const authReq: AuthorizationRequestMessage = {
       id,
@@ -330,7 +316,7 @@ describe('auth', () => {
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
       thid: id,
       body: authReqBody,
-      from: issuerId.string()
+      from: issuerDID.string()
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));

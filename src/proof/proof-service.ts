@@ -638,24 +638,25 @@ export class ProofService implements IProofService {
 
     const credSubjectKeys = Object.keys(proofReq.query.credentialSubject);
 
-    if (credSubjectKeys.length !== params.queryLength) {
-      throw Error('invalid query length');
-    }
-    const queries = [];
-    const queryCopy = JSON.parse(JSON.stringify(proofReq.query));
+    const queriesWithVPPromises = credSubjectKeys.reduce((acc, fieldName) => {
+      const property = (proofReq.query.credentialSubject as JSONObject)[fieldName];
+      const q = Object.entries(property).map(([operator, value]) => {
+        return this.toCircuitsQuery(
+          { ...proofReq.query, credentialSubject: { [fieldName]: { [operator]: value } } },
+          preparedCredential.credential,
+          preparedCredential.credentialCoreClaim
+        );
+      });
+      return [...acc, ...q];
+    }, [] as Promise<{ query: Query; vp?: object }>[]);
 
-    for (let i = 0; i < credSubjectKeys.length; i++) {
-      const propName = credSubjectKeys[i];
-      queryCopy.credentialSubject = {
-        [propName]: (proofReq.query.credentialSubject as JSONObject)[propName]
-      };
-      const { query } = await this.toCircuitsQuery(
-        queryCopy,
-        preparedCredential.credential,
-        preparedCredential.credentialCoreClaim
+    if (queriesWithVPPromises.length !== params.queryLength) {
+      throw new Error(
+        `expected ${params.queryLength} queries, got ${queriesWithVPPromises.length}`
       );
-      queries.push(query);
     }
+    const queriesWithVP = await Promise.all(queriesWithVPPromises);
+    const queries = queriesWithVP.map((q) => q.query);
     circuitInputs.query = queries;
 
     return { inputs: circuitInputs.inputsMarshal() };
