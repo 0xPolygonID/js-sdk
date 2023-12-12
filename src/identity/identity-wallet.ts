@@ -53,9 +53,9 @@ import { Profile } from '../storage';
  * @interface IdentityCreationOptions
  */
 export interface IdentityCreationOptions {
-  method?: DidMethod;
-  blockchain?: Blockchain;
-  networkId?: NetworkId;
+  method?: string;
+  blockchain?: string;
+  networkId?: string;
   revocationOpts: {
     id: string;
     type: CredentialStatusType;
