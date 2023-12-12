@@ -14,12 +14,7 @@ import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import {
-  CredentialStatusType,
-  ProofQuery,
-  VerifiableConstants,
-  W3CCredential
-} from '../../src/verifiable';
+import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { byteEncoder } from '../../src';

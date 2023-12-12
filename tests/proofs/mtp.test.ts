@@ -19,7 +19,7 @@ import { ethers } from 'ethers';
 import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
-import { CredentialStatusType, ProofQuery, W3CCredential } from '../../src/verifiable';
+import { CredentialStatusType, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
@@ -303,7 +303,7 @@ describe('mtp proofs', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQueryMTPV2,
+      circuitId,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -330,10 +330,7 @@ describe('mtp proofs', () => {
     });
     expect(vp).to.be.undefined;
 
-    const isValid = await proofService.verifyProof(
-      { proof, pub_signals },
-      CircuitId.AtomicQueryMTPV2
-    );
+    const isValid = await proofService.verifyProof({ proof, pub_signals }, circuitId);
     expect(isValid).to.be.true;
   };
 

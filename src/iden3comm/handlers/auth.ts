@@ -62,8 +62,9 @@ export interface IAuthHandler {
  * @interface AuthHandlerOptions
  */
 export interface AuthHandlerOptions {
-  mediaType: MediaType;
+  mediaType?: MediaType;
   packerOptions?: JWSPackerParams;
+  linkNonce?: bigint;
 }
 
 /**
@@ -128,12 +129,8 @@ export class AuthHandler implements IAuthHandler {
     if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for authorization request');
     }
-
-    if (!opts) {
-      opts = {
-        mediaType: MediaType.ZKPMessage
-      };
-    }
+    opts = opts ?? {};
+    opts.mediaType = opts.mediaType ?? MediaType.ZKPMessage;
 
     if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
       throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
@@ -171,14 +168,14 @@ export class AuthHandler implements IAuthHandler {
         return acc;
       }
 
+      const credentialSubject = mergeObjects(
+        existedQuery.credentialSubject as JSONObject,
+        proofReq.query.credentialSubject as JSONObject
+      );
+
       acc.set(groupId, {
         ...existedQuery,
-        query: {
-          ...existedQuery,
-          credentialSubject: {
-            ...(existedQuery.credentialSubject as object)
-          }
-        }
+        credentialSubject
       });
 
       return acc;
@@ -233,4 +230,41 @@ export class AuthHandler implements IAuthHandler {
 
     return { authRequest, authResponse, token };
   }
+}
+
+export function mergeObjects(credSubject: JSONObject, otherCredSubject: JSONObject) {
+  let result = {} as JSONObject;
+  const credSubjectKeys = Object.keys(credSubject);
+
+  for (const key of credSubjectKeys) {
+    if (typeof otherCredSubject[key] !== 'undefined') {
+      if (typeof credSubject[key] !== 'object' && typeof otherCredSubject[key] !== 'object') {
+        throw new Error('Invalid query');
+      }
+      const subjectProperty = credSubject[key] as JSONObject;
+      const otherSubjectProperty = otherCredSubject[key] as JSONObject;
+      const propertyOperators = Object.keys(subjectProperty);
+      const subjectPropertyResult: { [k: string]: unknown } = {};
+      for (const operatorKey of propertyOperators) {
+        if (typeof otherSubjectProperty[operatorKey] !== 'undefined') {
+          const operatorValue1 = subjectProperty[operatorKey] as JSONObject;
+          const operatorValue2 = otherSubjectProperty[operatorKey];
+          subjectPropertyResult[operatorKey] = [
+            ...new Set([
+              ...((subjectPropertyResult[operatorKey] as Array<JSONObject>) ?? []),
+              operatorValue1,
+              operatorValue2
+            ])
+          ];
+        } else {
+          subjectPropertyResult[operatorKey] = subjectProperty[operatorKey];
+        }
+      }
+      result[key] = { ...(otherCredSubject[key] as JSONObject), ...subjectPropertyResult };
+    }
+  }
+
+  // Add remaining keys from obj2
+  result = { ...credSubject, ...otherCredSubject, ...result };
+  return result;
 }

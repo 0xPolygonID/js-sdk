@@ -632,25 +632,6 @@ export class ProofService implements IProofService {
     );
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
-    let proofType: ProofType;
-    switch (proofReq.query.proofType) {
-      case ProofType.BJJSignature:
-        proofType = ProofType.BJJSignature;
-        break;
-      case ProofType.Iden3SparseMerkleTreeProof:
-        proofType = ProofType.Iden3SparseMerkleTreeProof;
-        break;
-      default:
-        if (circuitClaimData.proof) {
-          proofType = ProofType.Iden3SparseMerkleTreeProof;
-        } else if (circuitClaimData.signatureProof) {
-          proofType = ProofType.BJJSignature;
-        } else {
-          throw Error('claim has no MTP or signature proof');
-        }
-        break;
-    }
-
     const circuitInputs = new LinkedMultiQueryInputs();
     circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
 
@@ -663,21 +644,22 @@ export class ProofService implements IProofService {
     }
     const queries = [];
     const queryCopy = JSON.parse(JSON.stringify(proofReq.query));
-    // todo: fix multi credentials in query
+    // TODO: fix multi credentials in query
     for (let i = 0; i < credSubjectKeys.length; i++) {
       const propName = credSubjectKeys[i];
       queryCopy.credentialSubject = {
-        [propName]: (proofReq.query.credentialSubject as any)[propName]
+        [propName]: (proofReq.query.credentialSubject as JSONObject)[propName]
       };
-      const { query, vp } = await this.toCircuitsQuery(
+      const { query } = await this.toCircuitsQuery(
         queryCopy,
         preparedCredential.credential,
         preparedCredential.credentialCoreClaim
       );
       queries.push(query);
     }
+    circuitInputs.query = queries;
 
-    return { inputs: circuitInputs.inputsMarshal(), vp: undefined };
+    return { inputs: circuitInputs.inputsMarshal() };
   }
 
   // End LinkID POC.
@@ -1075,7 +1057,7 @@ export class ProofService implements IProofService {
 
     const entries = Object.entries(req);
     if (entries.length > 1) {
-      throw new Error(`multiple requests  not supported`);
+      throw new Error(`multiple requests  not supported for circuit ${req.circuitId}`);
     }
 
     const [fieldName, fieldReq] = entries[0];
@@ -1083,7 +1065,9 @@ export class ProofService implements IProofService {
     const fieldReqEntries = Object.entries(fieldReq as { [key: string]: unknown });
 
     if (fieldReqEntries.length > 1) {
-      throw new Error(`multiple predicates for one field not supported`);
+      throw new Error(
+        `multiple predicates for one field not supported for circuit ${req.circuitId}`
+      );
     }
 
     const isSelectiveDisclosure = fieldReqEntries.length === 0;
@@ -1095,9 +1079,11 @@ export class ProofService implements IProofService {
 
     let operator = 0;
     const [key, value] = fieldReqEntries[0];
+
     if (!QueryOperators[key as keyof typeof QueryOperators]) {
       throw new Error(`operator is not supported by lib`);
     }
+
     operator = QueryOperators[key as keyof typeof QueryOperators];
 
     query.operator = operator;

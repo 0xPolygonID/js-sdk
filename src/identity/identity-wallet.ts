@@ -541,7 +541,7 @@ export class IdentityWallet implements IIdentityWallet {
     treeState?: TreeState
   ): Promise<MerkleTreeProofWithTreeState> {
     const coreClaim = await this.getCoreClaimFromCredential(credential);
-    // todo: Parser.parseClaim
+    // TODO: Parser.parseClaim
 
     const treesModel = await this.getDIDTreeModel(did);
 

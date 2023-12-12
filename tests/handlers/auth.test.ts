@@ -218,46 +218,107 @@ describe('auth', () => {
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
 
-    await credWallet.save(issuerCred);
+    const employeeCredRequest: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCEmployee-v101.json',
+      type: 'KYCEmployee',
+      credentialSubject: {
+        id: userDID.string(),
+        ZKPexperiance: true,
+        hireDate: '2023-12-11',
+        position: 'boss',
+        salary: 200,
+        documentType: 1
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(issuerDID, employeeCredRequest);
 
-    const proofReq: ZeroKnowledgeProofRequest = {
-      id: 1,
-      circuitId: CircuitId.AtomicQueryV3,
-      optional: false,
-      query: {
-        proofType: ProofType.BJJSignature,
-        allowedIssuers: ['*'],
-        type: claimReq.type,
-        context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
-        credentialSubject: {
-          documentType: {
-            $eq: 99
+    await credWallet.save(issuerCred);
+    await credWallet.save(employeeCred);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: claimReq.type,
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+          credentialSubject: {
+            documentType: {
+              $eq: 99
+            }
+          }
+        }
+      },
+      {
+        id: 2,
+        circuitId: CircuitId.LinkedMultiQuery3,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.Iden3SparseMerkleTreeProof,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            documentType: {
+              $eq: 1
+            },
+            position: {
+              $eq: 'boss'
+            },
+            salary: {
+              $eq: 200
+            }
+          }
+        }
+      },
+      {
+        id: 3,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          groupId: 1,
+          // TODO: proofType how it should works?
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            hireDate: {
+              $eq: '2023-12-11'
+            }
+            // salary: {
+            //   $gte: 200
+            // },
+            // position: {
+            //   $ne: 'badJoke'
+            // },
+            // documentType: {
+            //   $eq: 1
+            // }
           }
         }
       }
-    };
+    ];
 
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'mesage',
       did_doc: {},
-      scope: [
-        proofReq,
-        {
-          ...proofReq,
-          id: 2,
-          query: {
-            ...proofReq.query,
-            credentialSubject: {
-              birthday: {
-                $gt: 19960423
-              }
-            }
-          }
-        }
-      ]
+      scope: proofReqs
     };
 
     const issuerId = DID.idFromDID(issuerDID);
@@ -273,7 +334,9 @@ describe('auth', () => {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
+      linkNonce: BigInt('1702367960174')
+    });
 
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
