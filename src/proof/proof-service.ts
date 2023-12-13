@@ -3,6 +3,7 @@ import {
   BytesHelper,
   Claim,
   DID,
+  Id,
   getUnixTimestamp,
   MerklizedRootPosition
 } from '@iden3/js-iden3-core';
@@ -71,7 +72,6 @@ export interface ProofGenerationOptions {
   challenge?: bigint;
   credential?: W3CCredential;
   verifierDID?: DID;
-  authEnabled?: number;
   linkNonce?: bigint;
 }
 
@@ -693,7 +693,14 @@ export class ProofService implements IProofService {
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
       ? BigInt(proofReq.params?.nullifierSessionID?.toString())
       : BigInt(0);
-    circuitInputs.authEnabled = params.authEnabled ?? 0;
+
+    let isEthIdentity = true;
+    try {
+      Id.ethAddressFromId(circuitInputs.id);
+    } catch {
+      isEthIdentity = false;
+    }
+    circuitInputs.authEnabled = isEthIdentity ? 0 : 1;
 
     circuitInputs.challenge = BigInt(params.challenge ?? 0);
     const { nonce: authProfileNonce, genesisDID } =
