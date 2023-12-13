@@ -612,8 +612,8 @@ export class ProofService implements IProofService {
     circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
 
     circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
-    circuitInputs.verifierSessionID = proofReq.query.verifierSessionID
-      ? BigInt(proofReq.query.verifierSessionID?.toString())
+    circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
+      ? BigInt(proofReq.params?.nullifierSessionID?.toString())
       : BigInt(0);
 
     return { inputs: circuitInputs.inputsMarshal(), vp: undefined };
@@ -650,14 +650,18 @@ export class ProofService implements IProofService {
       return [...acc, ...q];
     }, [] as Promise<{ query: Query; vp?: object }>[]);
 
-    if (queriesWithVPPromises.length !== params.queryLength) {
+    if (!params.queryLength) {
+      throw new Error(`please provide queryLength param for this circuit`);
+    }
+    if (queriesWithVPPromises.length > params.queryLength) {
       throw new Error(
-        `expected ${params.queryLength} queries, got ${queriesWithVPPromises.length}`
+        `expected up to ${params.queryLength} queries, got ${queriesWithVPPromises.length}`
       );
     }
     const queriesWithVP = await Promise.all(queriesWithVPPromises);
     const queries = queriesWithVP.map((q) => q.query);
     circuitInputs.query = queries;
+    circuitInputs.queryLength = params.queryLength;
 
     return { inputs: circuitInputs.inputsMarshal() };
   }

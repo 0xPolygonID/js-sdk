@@ -19,7 +19,7 @@ describe('linked-nullifier', () => {
     inputs.verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
-    inputs.verifierSessionID = BigInt(322215);
+    inputs.nullifierSessionID = BigInt(322215);
 
     const bytesInputs = inputs.inputsMarshal();
 
@@ -34,14 +34,14 @@ describe('linked-nullifier', () => {
     const verifierID = Id.fromBigInt(
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
-    const verifierSessionID = BigInt(2033444042);
+    const nullifierSessionID = BigInt(2033444042);
 
     const out = byteEncoder.encode(
       JSON.stringify([
         nullifier.toString(),
         linkID.toString(),
         verifierID.bigInt().toString(),
-        verifierSessionID.toString()
+        nullifierSessionID.toString()
       ])
     );
 
@@ -50,6 +50,6 @@ describe('linked-nullifier', () => {
     expect(nullifier.toString()).to.deep.equal(ao.nullifier.toString());
     expect(linkID.toString()).to.deep.equal(ao.linkID.toString());
     expect(verifierID.string()).to.deep.equal(ao.verifierID.string());
-    expect(verifierSessionID.toString()).to.deep.equal(ao.verifierSessionID.toString());
+    expect(nullifierSessionID.toString()).to.deep.equal(ao.nullifierSessionID.toString());
   });
 });

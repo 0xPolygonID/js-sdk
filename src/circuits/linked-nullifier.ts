@@ -14,7 +14,7 @@ export class LinkedNullifierInputs {
   id!: Id;
   claimSubjectProfileNonce!: bigint;
   verifierID?: Id;
-  verifierSessionID!: bigint;
+  nullifierSessionID!: bigint;
 
   // InputsMarshal returns Circom private inputs for nullifier.circom
   inputsMarshal(): Uint8Array {
@@ -25,7 +25,7 @@ export class LinkedNullifierInputs {
       claimSubjectProfileNonce: this.claimSubjectProfileNonce.toString(),
       claimSchema: this.issuerClaim.getSchemaHash().bigInt().toString(),
       verifierID: this.verifierID?.bigInt().toString() ?? '0',
-      verifierSessionID: this.verifierSessionID.toString()
+      nullifierSessionID: this.nullifierSessionID.toString()
     };
 
     return byteEncoder.encode(JSON.stringify(s));
@@ -42,7 +42,7 @@ interface LinkedNullifierCircuitInputs {
   claimSubjectProfileNonce: string;
   claimSchema: string;
   verifierID: string;
-  verifierSessionID: string;
+  nullifierSessionID: string;
 }
 
 // LinkedNullifierPubSignals nullifier.circom public signals
@@ -56,7 +56,7 @@ export class LinkedNullifierPubSignals {
   nullifier!: bigint;
   linkID!: bigint;
   verifierID!: Id;
-  verifierSessionID!: bigint;
+  nullifierSessionID!: bigint;
 
   /**
    * PubSignalsUnmarshal unmarshal nullifier.circom public inputs to LinkedNullifierPubSignals
@@ -79,7 +79,7 @@ export class LinkedNullifierPubSignals {
 
     this.verifierID = Id.fromBigInt(BigInt(sVals[2]));
 
-    this.verifierSessionID = BigInt(sVals[3]);
+    this.nullifierSessionID = BigInt(sVals[3]);
 
     return this;
   }
