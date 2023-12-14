@@ -330,10 +330,7 @@ describe('mtp proofs', () => {
     });
     expect(vp).to.be.undefined;
 
-    const isValid = await proofService.verifyProof(
-      { proof, pub_signals },
-      CircuitId.AtomicQueryMTPV2
-    );
+    const isValid = await proofService.verifyProof({ proof, pub_signals }, circuitId);
     expect(isValid).to.be.true;
   };
 
