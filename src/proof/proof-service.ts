@@ -1,4 +1,4 @@
-import { Hex, Poseidon, Signature } from '@iden3/js-crypto';
+import { Poseidon } from '@iden3/js-crypto';
 import {
   BytesHelper,
   Claim,
@@ -19,8 +19,8 @@ import {
   CircuitClaim,
   CircuitId,
   MTProof,
+  Operators,
   Query,
-  QueryOperators,
   StateTransitionInputs,
   TreeState,
   ValueProof
@@ -34,17 +34,23 @@ import {
   ProofQuery,
   ProofType,
   RevocationStatus,
-  verifiablePresentationFromCred,
   W3CCredential
 } from '../verifiable';
-import { toClaimNonRevStatus, toGISTProof } from './common';
+import {
+  QueryMetadata,
+  parseCredentialSubject,
+  parseQueryMetadata,
+  toClaimNonRevStatus,
+  toGISTProof,
+  transformQueryValueToBigInts
+} from './common';
 import { IZKProver, NativeProver } from './prover';
 
 import { Merklizer, Options, Path, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
-import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
-import { JSONSchema, Parser, cacheLoader } from '../schema-processor';
+import { JSONObject, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
+import { cacheLoader } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 
@@ -218,11 +224,71 @@ export class ProofService implements IProofService {
     if (subjectGenesisDID.string() !== genesisDID.string()) {
       throw new Error('subject and auth profiles are not derived from the same did');
     }
-    const { inputs, vp } = await this.generateInputs(preparedCredential, genesisDID, proofReq, {
-      ...opts,
-      authProfileNonce,
-      credentialSubjectProfileNonce
-    });
+
+    // const queries: QueryMetadata[] = await this.prepareQueryMetadata(proofReq, preparedCredential);
+
+    const propertiesMetadata = await parseCredentialSubject(
+      proofReq.query.credentialSubject as JSONObject
+    );
+    if (!propertiesMetadata.length) {
+      throw new Error('no queries in zkp request');
+    }
+
+    // let's merklize credential if there is a merklized root position
+    const mtPosition = preparedCredential.credentialCoreClaim.getMerklizedPosition();
+
+    let mk: Merklizer | undefined;
+    if (mtPosition !== MerklizedRootPosition.None) {
+      mk = await preparedCredential.credential.merklize(this._ldOptions);
+    }
+    const context = proofReq.query['context'] as string;
+
+    const ldContext = await this.loadLdContext(context);
+
+    const credentialType = proofReq.query['type'] as string;
+
+    const queriesMetadata: QueryMetadata[] = [];
+    const circuitQueries: Query[] = [];
+
+    for (const propertyMetadata of propertiesMetadata) {
+      const queryMetadata = await parseQueryMetadata(
+        propertyMetadata,
+        byteDecoder.decode(ldContext),
+        credentialType,
+        this._ldOptions
+      );
+
+      queriesMetadata.push(queryMetadata);
+      const circuitQuery = await this.toCircuitsQuery(
+        preparedCredential.credential,
+        queryMetadata,
+        mk
+      );
+      circuitQueries.push(circuitQuery);
+    }
+
+    const { inputs } = await this.generateInputs(
+      preparedCredential,
+      genesisDID,
+      proofReq,
+      {
+        ...opts,
+        authProfileNonce,
+        credentialSubjectProfileNonce
+      },
+      circuitQueries
+    );
+
+    const sdQueries = queriesMetadata.filter((q) => q.operator === Operators.SD);
+    let vp: object | undefined;
+    if (sdQueries.length) {
+      vp = createVerifiablePresentation(
+        context,
+        credentialType,
+        preparedCredential.credential,
+        sdQueries
+      );
+    }
 
     const { proof, pub_signals } = await this._prover.generate(inputs, proofReq.circuitId);
 
@@ -333,7 +399,8 @@ export class ProofService implements IProofService {
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    params: InputsParams
+    params: InputsParams,
+    queries: Query[]
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     let generateInputFn;
     switch (proofReq.circuitId) {
@@ -359,14 +426,15 @@ export class ProofService implements IProofService {
         throw new Error(`circuit with id ${proofReq.circuitId} is not supported by issuer`);
     }
 
-    return generateInputFn(preparedCredential, identifier, proofReq, params);
+    return generateInputFn(preparedCredential, identifier, proofReq, params, queries);
   }
 
   private async generateMTPV2Inputs(
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    params: InputsParams
+    params: InputsParams,
+    circuitQueries: Query[]
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
@@ -376,12 +444,9 @@ export class ProofService implements IProofService {
     const circuitInputs = new AtomicQueryMTPV2Inputs();
     circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.requestID = BigInt(proofReq.id);
-    const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query,
-      preparedCredential.credential,
-      preparedCredential.credentialCoreClaim
-    );
-    circuitInputs.query = query;
+
+    // todo: don't forget about vp
+    circuitInputs.query = circuitQueries[0];
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
       claim: circuitClaimData.claim,
@@ -393,14 +458,15 @@ export class ProofService implements IProofService {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    return { inputs: circuitInputs.inputsMarshal(), vp };
+    return { inputs: circuitInputs.inputsMarshal() };
   }
 
   private async generateMTPV2OnChainInputs(
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    params: InputsParams
+    params: InputsParams,
+    circuitQueries: Query[]
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
@@ -447,12 +513,7 @@ export class ProofService implements IProofService {
     circuitInputs.signature = signature;
     circuitInputs.challenge = params.challenge;
 
-    const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query,
-      preparedCredential.credential,
-      preparedCredential.credentialCoreClaim
-    );
-    circuitInputs.query = query;
+    circuitInputs.query = circuitQueries[0];
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
       claim: circuitClaimData.claim,
@@ -464,14 +525,15 @@ export class ProofService implements IProofService {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    return { inputs: circuitInputs.inputsMarshal(), vp };
+    return { inputs: circuitInputs.inputsMarshal() };
   }
 
   private async generateQuerySigV2Inputs(
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    params: InputsParams
+    params: InputsParams,
+    circuitQueries: Query[]
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
@@ -492,21 +554,18 @@ export class ProofService implements IProofService {
     circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
-    const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query,
-      preparedCredential.credential,
-      preparedCredential.credentialCoreClaim
-    );
-    circuitInputs.query = query;
+
+    circuitInputs.query = circuitQueries[0];
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
-    return { inputs: circuitInputs.inputsMarshal(), vp };
+    return { inputs: circuitInputs.inputsMarshal() };
   }
 
   private async generateQuerySigV2OnChainInputs(
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    params: InputsParams
+    params: InputsParams,
+    circuitQueries: Query[]
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
@@ -534,12 +593,8 @@ export class ProofService implements IProofService {
     circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
-    const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query,
-      preparedCredential.credential,
-      preparedCredential.credentialCoreClaim
-    );
-    circuitInputs.query = query;
+
+    circuitInputs.query = circuitQueries[0];
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     if (authClaimData.treeState) {
@@ -571,14 +626,15 @@ export class ProofService implements IProofService {
     circuitInputs.signature = signature;
     circuitInputs.challenge = params.challenge;
 
-    return { inputs: circuitInputs.inputsMarshal(), vp };
+    return { inputs: circuitInputs.inputsMarshal() };
   }
 
   private async generateQueryV3Inputs(
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    params: InputsParams
+    params: InputsParams,
+    circuitQueries: Query[]
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
@@ -618,12 +674,9 @@ export class ProofService implements IProofService {
     circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
-    const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query,
-      preparedCredential.credential,
-      preparedCredential.credentialCoreClaim
-    );
-    circuitInputs.query = query;
+
+    circuitInputs.query = circuitQueries[0];
+
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
@@ -632,14 +685,15 @@ export class ProofService implements IProofService {
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
       ? BigInt(proofReq.params?.nullifierSessionID?.toString())
       : BigInt(0);
-    return { inputs: circuitInputs.inputsMarshal(), vp };
+    return { inputs: circuitInputs.inputsMarshal() };
   }
 
   private async generateQueryV3OnChainInputs(
     preparedCredential: PreparedCredential,
     identifier: DID,
     proofReq: ZeroKnowledgeProofRequest,
-    params: InputsParams
+    params: InputsParams,
+    circuitQueries: Query[]
   ): Promise<{ inputs: Uint8Array; vp?: object }> {
     const circuitClaimData = await this.newCircuitClaimData(
       preparedCredential.credential,
@@ -679,12 +733,8 @@ export class ProofService implements IProofService {
     circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
-    const { query, vp } = await this.toCircuitsQuery(
-      proofReq.query,
-      preparedCredential.credential,
-      preparedCredential.credentialCoreClaim
-    );
-    circuitInputs.query = query;
+
+    circuitInputs.query = circuitQueries[0];
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
@@ -728,7 +778,7 @@ export class ProofService implements IProofService {
       circuitInputs.treeState = authClaimData.treeState;
       circuitInputs.signature = signature;
     }
-    return { inputs: circuitInputs.inputsMarshal(), vp };
+    return { inputs: circuitInputs.inputsMarshal() };
   }
 
   // NewCircuitClaimData generates circuits claim structure
@@ -813,208 +863,64 @@ export class ProofService implements IProofService {
   }
 
   private async toCircuitsQuery(
-    query: ProofQuery,
     credential: W3CCredential,
-    coreClaim: Claim
-  ): Promise<{ query: Query; vp?: object }> {
-    const mtPosition = coreClaim.getMerklizedPosition();
-
-    return mtPosition === MerklizedRootPosition.None
-      ? this.prepareNonMerklizedQuery(query, credential)
-      : this.prepareMerklizedQuery(query, credential);
-  }
-
-  private async prepareMerklizedQuery(
-    query: ProofQuery,
-    credential: W3CCredential
-  ): Promise<{ query: Query; vp?: object }> {
-    const parsedQuery = await this.parseRequest(query.credentialSubject);
-
-    const ldContext = await this.loadLdContextFromJSONSchema(credential.credentialSchema.id);
-
-    let path: Path = new Path();
-    if (parsedQuery.fieldName) {
-      path = await Path.getContextPathKey(
-        byteDecoder.decode(ldContext),
-        credential.type[1],
-        parsedQuery.fieldName,
-        this._ldOptions
-      );
+    queryMetadata: QueryMetadata,
+    merklizedCredential?: Merklizer
+  ): Promise<Query> {
+    if (queryMetadata.merklizedSchema && !merklizedCredential) {
+      throw new Error('merklized root position is set to None for merklized schema');
     }
-    path.prepend(['https://www.w3.org/2018/credentials#credentialSubject']);
-
-    const mk = await credential.merklize(this._ldOptions);
-
-    const { proof, value: mtValue } = await mk.proof(path);
-
-    const pathKey = await path.mtEntry();
-    parsedQuery.query.valueProof = new ValueProof();
-    parsedQuery.query.valueProof.mtp = proof;
-    parsedQuery.query.valueProof.path = pathKey;
-    parsedQuery.query.valueProof.mtp = proof;
-    const mtEntry = await mtValue?.mtEntry();
-    if (!mtEntry) {
-      throw new Error(`can't merklize credential: no merkle tree entry found`);
+    if (!queryMetadata.merklizedSchema && merklizedCredential) {
+      throw new Error('merklized root position is set not set to None for non-merklized schema');
     }
-    parsedQuery.query.valueProof.value = mtEntry;
-
-    // for merklized credentials slotIndex in query must be equal to zero
-    // and not a position of merklization root.
-    // it has no influence on check in the off-chain circuits, but it aligns with onchain verification standard
-    parsedQuery.query.slotIndex = 0;
-
-    if (!parsedQuery.fieldName) {
-      const resultQuery = parsedQuery.query;
-      resultQuery.operator = QueryOperators.$eq;
-      resultQuery.values = [mtEntry];
-      return { query: resultQuery };
-    }
-    if (parsedQuery.isSelectiveDisclosure) {
-      const rawValue = mk.rawValue(path);
-      const vp = createVerifiablePresentation(
-        query.context ?? '',
-        query.type ?? '',
-        parsedQuery.fieldName,
-        rawValue
-      );
-      const resultQuery = parsedQuery.query;
-      resultQuery.operator = QueryOperators.$eq;
-      resultQuery.values = [mtEntry];
-      return { query: resultQuery, vp };
-    }
-    if (parsedQuery.rawValue === null || parsedQuery.rawValue === undefined) {
-      throw new Error('value is not presented in the query');
-    }
-    const ldType = await mk.jsonLDType(path);
-    parsedQuery.query.values = await this.transformQueryValueToBigInts(
-      parsedQuery.rawValue,
-      ldType
-    );
-
-    return { query: parsedQuery.query };
-  }
-
-  private async prepareNonMerklizedQuery(
-    query: ProofQuery,
-    credential: W3CCredential
-  ): Promise<{ query: Query; vp?: object }> {
-    const ldContext = await this.loadLdContextFromJSONSchema(credential.credentialSchema.id);
-
-    if (query.credentialSubject && Object.keys(query.credentialSubject).length > 1) {
-      throw new Error('multiple requests are not supported');
-    }
-
-    const parsedQuery = await this.parseRequest(query.credentialSubject);
-
-    if (!query.type) {
-      throw new Error('query type is not defined');
-    }
-
-    parsedQuery.query.slotIndex = await Parser.getFieldSlotIndex(
-      parsedQuery.fieldName,
-      query.type,
-      ldContext
-    );
-    const { vp, mzValue, dataType } = await verifiablePresentationFromCred(
-      credential,
-      query,
-      parsedQuery.fieldName,
-      this._ldOptions
-    );
-
-    if (parsedQuery.isSelectiveDisclosure) {
-      const resultQuery = parsedQuery.query;
-      resultQuery.operator = QueryOperators.$eq;
-      resultQuery.values = [await mzValue.mtEntry()];
-      return { query: resultQuery, vp };
-    }
-    if (parsedQuery.rawValue === null || parsedQuery.rawValue === undefined) {
-      throw new Error('value is not presented in the query');
-    }
-
-    parsedQuery.query.values = await this.transformQueryValueToBigInts(
-      parsedQuery.rawValue,
-      dataType
-    );
-
-    return { query: parsedQuery.query };
-  }
-
-  private async loadLdContextFromJSONSchema(jsonSchemaURL: string): Promise<Uint8Array> {
-    const loader = getDocumentLoader(this._ldOptions);
-
-    let schema: object;
-    try {
-      schema = (await loader(jsonSchemaURL)).document;
-    } catch (e) {
-      throw new Error(`can't load credential schema ${jsonSchemaURL}`);
-    }
-    const jsonSchema = schema as JSONSchema;
-
-    let ldSchema: object;
-    let ldContextUrl = '';
-    try {
-      ldContextUrl = jsonSchema.$metadata.uris['jsonLdContext'];
-      if (!ldContextUrl) {
-        throw new Error('ldContext is not defined in json schema metadata');
-      }
-      ldSchema = (await loader(ldContextUrl)).document;
-    } catch (e) {
-      throw new Error(`can't load ld context from url ${ldContextUrl}`);
-    }
-    return byteEncoder.encode(JSON.stringify(ldSchema));
-  }
-
-  private async parseRequest(req?: { [key: string]: unknown }): Promise<QueryWithFieldName> {
-    if (!req) {
-      const query = new Query();
-      query.operator = QueryOperators.$eq;
-      return { query, fieldName: '' };
-    }
-
-    const entries = Object.entries(req);
-    if (entries.length > 1) {
-      throw new Error(`multiple requests  not supported`);
-    }
-
-    const [fieldName, fieldReq] = entries[0];
-
-    const fieldReqEntries = Object.entries(fieldReq as { [key: string]: unknown });
-
-    if (fieldReqEntries.length > 1) {
-      throw new Error(`multiple predicates for one field not supported`);
-    }
-
-    const isSelectiveDisclosure = fieldReqEntries.length === 0;
     const query = new Query();
 
-    if (isSelectiveDisclosure) {
-      return { query, fieldName, isSelectiveDisclosure };
+    query.slotIndex = queryMetadata.slotIndex;
+    query.operator = queryMetadata.operator;
+    query.values = queryMetadata.values;
+
+    if (queryMetadata.merklizedSchema && merklizedCredential) {
+      const { proof, value: mtValue } = await merklizedCredential.proof(queryMetadata.path);
+      query.valueProof = new ValueProof();
+      query.valueProof.mtp = proof;
+      query.valueProof.path = queryMetadata.claimPathKey;
+
+      const mtEntry = await mtValue?.mtEntry();
+      if (!mtEntry) {
+        throw new Error(`can't merklize credential: no merkle tree entry found`);
+      }
+
+      query.valueProof.value = mtEntry;
+      if (!queryMetadata.fieldName) {
+        query.values = [mtEntry];
+        return query;
+      }
     }
 
-    let operator = 0;
-    const [key, value] = fieldReqEntries[0];
-    if (!QueryOperators[key as keyof typeof QueryOperators]) {
-      throw new Error(`operator is not supported by lib`);
+    if (queryMetadata.operator === Operators.SD) {
+      const [first, ...rest] = queryMetadata.fieldName.split('.');
+      let v = credential.credentialSubject[first];
+      for (const part of rest) {
+        v = (v as JSONObject)[part];
+      }
+      if (typeof v === 'undefined') {
+        throw new Error(`credential doesn't contain value for field ${queryMetadata.fieldName}`);
+      }
+      query.values = await transformQueryValueToBigInts(v, queryMetadata.datatype);
     }
-    operator = QueryOperators[key as keyof typeof QueryOperators];
 
-    query.operator = operator;
-
-    return { query, fieldName, rawValue: value };
+    return query;
   }
 
-  async transformQueryValueToBigInts(value: unknown, ldType: string): Promise<bigint[]> {
-    const values: bigint[] = new Array<bigint>(64).fill(BigInt(0));
-
-    if (Array.isArray(value)) {
-      for (let index = 0; index < value.length; index++) {
-        values[index] = await Merklizer.hashValue(ldType, value[index]);
-      }
-    } else {
-      values[0] = await Merklizer.hashValue(ldType, value);
+  private async loadLdContext(context: string): Promise<Uint8Array> {
+    const loader = getDocumentLoader(this._ldOptions);
+    let ldSchema: object;
+    try {
+      ldSchema = (await loader(context)).document;
+    } catch (e) {
+      throw new Error(`can't load ld context from url ${context}`);
     }
-    return values;
+    return byteEncoder.encode(JSON.stringify(ldSchema));
   }
 
   /** {@inheritdoc IProofService.generateAuthV2Inputs} */
@@ -1101,10 +1007,3 @@ export class ProofService implements IProofService {
     return credential;
   }
 }
-// BJJSignatureFromHexString converts hex to  babyjub.Signature
-export const bJJSignatureFromHexString = async (sigHex: string): Promise<Signature> => {
-  const signatureBytes = Hex.decodeString(sigHex);
-  const compressedSig = Uint8Array.from(signatureBytes).slice(0, 64);
-  const bjjSig = Signature.newFromCompressed(compressedSig);
-  return bjjSig as Signature;
-};
