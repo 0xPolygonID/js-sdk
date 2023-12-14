@@ -36,13 +36,13 @@ export const buildFieldPath = async (
   return path;
 };
 
-export const findValue = (fieldName: string, credential: W3CCredential): any => {
+export const findValue = (fieldName: string, credential: W3CCredential): JSONObject => {
   const [first, ...rest] = fieldName.split('.');
   let v = credential.credentialSubject[first];
   for (const part of rest) {
     v = (v as JSONObject)[part];
   }
-  return v;
+  return v as JSONObject;
 };
 
 export const createVerifiablePresentation = (
@@ -60,7 +60,7 @@ export const createVerifiablePresentation = (
     vcTypes.push(tp);
   }
 
-  const sceleton = {
+  const skeleton = {
     '@context': baseContext,
     '@type': VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_PRESENTATION,
     verifiableCredential: {
@@ -85,10 +85,10 @@ export const createVerifiablePresentation = (
     result = { ...result, ...current };
   }
 
-  sceleton.verifiableCredential.credentialSubject = {
-    ...sceleton.verifiableCredential.credentialSubject,
+  skeleton.verifiableCredential.credentialSubject = {
+    ...skeleton.verifiableCredential.credentialSubject,
     ...result
   };
 
-  return sceleton;
+  return skeleton;
 };

@@ -1,18 +1,43 @@
 import { NodeAux, Hash, Proof } from '@iden3/js-merkletree';
 import {
   buildTreeState,
+  CircuitClaim,
   ClaimNonRevStatus,
   GISTProof,
+  MTProof,
   Operators,
   QueryOperators,
+  TreeState
 } from '../circuits';
 import { StateProof } from '../storage/entities/state';
-import { RevocationStatus, buildFieldPath } from '../verifiable';
+import {
+  Iden3SparseMerkleTreeProof,
+  MerkleTreeProofWithTreeState,
+  ProofType,
+  RevocationStatus,
+  W3CCredential,
+  buildFieldPath
+} from '../verifiable';
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { Parser } from '../schema-processor/json';
 import { byteEncoder } from '../utils';
 import { JSONObject } from '../iden3comm';
+import { Claim, DID } from '@iden3/js-iden3-core';
+import { ICredentialWallet } from '../credentials';
+import { IIdentityWallet } from '../identity';
 
+export type PreparedCredential = {
+  credential: W3CCredential;
+  credentialCoreClaim: Claim;
+  revStatus: RevocationStatus;
+};
+
+export type PreparedAuthBJJCredential = {
+  authCredential: W3CCredential;
+  incProof: MerkleTreeProofWithTreeState;
+  nonRevProof: MerkleTreeProofWithTreeState;
+  authCoreClaim: Claim;
+};
 /**
  * converts verifiable RevocationStatus model to circuits structure
  *
@@ -200,4 +225,90 @@ export const transformQueryValueToBigInts = async (
     values[0] = await Merklizer.hashValue(ldType, value);
   }
   return values;
+};
+
+export const newCircuitClaimData = async (
+  preparedCredential: PreparedCredential
+): Promise<CircuitClaim> => {
+  const smtProof: Iden3SparseMerkleTreeProof | undefined =
+    preparedCredential.credential.getIden3SparseMerkleTreeProof();
+
+  const circuitClaim = new CircuitClaim();
+  circuitClaim.claim = preparedCredential.credentialCoreClaim;
+  circuitClaim.issuerId = DID.idFromDID(DID.parse(preparedCredential.credential.issuer));
+
+  if (smtProof) {
+    circuitClaim.proof = smtProof.mtp;
+    circuitClaim.treeState = {
+      state: smtProof.issuerData.state.value,
+      claimsRoot: smtProof.issuerData.state.claimsTreeRoot,
+      revocationRoot: smtProof.issuerData.state.revocationTreeRoot,
+      rootOfRoots: smtProof.issuerData.state.rootOfRoots
+    };
+  }
+
+  const sigProof = preparedCredential.credential.getBJJSignature2021Proof();
+
+  if (sigProof) {
+    if (!sigProof.issuerData.credentialStatus) {
+      throw new Error(
+        "can't check the validity of issuer auth claim: no credential status in proof"
+      );
+    }
+
+    const rs = preparedCredential.revStatus;
+    if (!rs) {
+      throw new Error("can't fetch the credential status of issuer auth claim");
+    }
+
+    const issuerAuthNonRevProof: MTProof = toClaimNonRevStatus(rs);
+    if (!sigProof.issuerData.mtp) {
+      throw new Error('issuer auth credential must have a mtp proof');
+    }
+    if (!sigProof.issuerData.authCoreClaim) {
+      throw new Error('issuer auth credential must have a core claim proof');
+    }
+
+    circuitClaim.signatureProof = {
+      signature: sigProof.signature,
+      issuerAuthIncProof: {
+        proof: sigProof.issuerData.mtp,
+        treeState: {
+          state: sigProof.issuerData.state.value,
+          claimsRoot: sigProof.issuerData.state.claimsTreeRoot,
+          revocationRoot: sigProof.issuerData.state.revocationTreeRoot,
+          rootOfRoots: sigProof.issuerData.state.rootOfRoots
+        }
+      },
+      issuerAuthClaim: sigProof.issuerData.authCoreClaim,
+      issuerAuthNonRevProof
+    };
+  }
+
+  return circuitClaim;
+};
+
+export const prepareAuthBJJCredential = async (
+  credentialWallet: ICredentialWallet,
+  identityWallet: IIdentityWallet,
+  did: DID,
+  treeStateInfo?: TreeState
+): Promise<PreparedAuthBJJCredential> => {
+  const authCredential = await credentialWallet.getAuthBJJCredential(did);
+
+  const incProof = await identityWallet.generateCredentialMtp(did, authCredential, treeStateInfo);
+
+  const nonRevProof = await identityWallet.generateNonRevocationMtp(
+    did,
+    authCredential,
+    treeStateInfo
+  );
+
+  const authCoreClaim = authCredential.getCoreClaimFromProof(ProofType.Iden3SparseMerkleTreeProof);
+
+  if (!authCoreClaim) {
+    throw new Error('auth core claim is not defined for auth bjj credential');
+  }
+
+  return { authCredential, incProof, nonRevProof, authCoreClaim };
 };

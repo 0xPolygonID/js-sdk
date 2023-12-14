@@ -303,7 +303,7 @@ describe('mtp proofs', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQueryMTPV2,
+      circuitId,
       optional: false,
       query: {
         allowedIssuers: ['*'],
