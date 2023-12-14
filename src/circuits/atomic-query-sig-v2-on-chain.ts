@@ -12,6 +12,7 @@ import {
   prepareSiblingsStr
 } from './common';
 import { byteDecoder, byteEncoder } from '../utils';
+import { Operators } from './comparer';
 
 /**
  * AtomicQuerySigV2OnChainInputs ZK private inputs for credentialAtomicQuerySig.circom
@@ -161,7 +162,7 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
       claimSchema: this.claim.claim?.getSchemaHash().bigInt().toString(),
       claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaim()),
       claimPathValue: valueProof.value.toString(),
-      operator: this.query?.operator,
+      operator: this.query.operator === Operators.SD ? Operators.EQ : this.query.operator,
       timestamp: this.currentTimeStamp,
       // value in this path in merklized json-ld document
       slotIndex: this.query?.slotIndex,
