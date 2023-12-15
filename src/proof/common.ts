@@ -104,9 +104,7 @@ export type QueryMetadata = PropertyQuery & {
   merklizedSchema: boolean;
 };
 
-export const parseCredentialSubject = async (
-  credentialSubject?: JSONObject
-): Promise<PropertyQuery[]> => {
+export const parseCredentialSubject = (credentialSubject?: JSONObject): PropertyQuery[] => {
   // credentialSubject is empty
   if (!credentialSubject) {
     return [{ operator: QueryOperators.$eq, fieldName: '' }];
@@ -205,7 +203,7 @@ export const parseQueriesMetadata = async (
   credentialSubject: JSONObject,
   options: Options
 ): Promise<QueryMetadata[]> => {
-  const queriesMetadata = await parseCredentialSubject(credentialSubject);
+  const queriesMetadata = parseCredentialSubject(credentialSubject);
   return Promise.all(
     queriesMetadata.map((m) => parseQueryMetadata(m, ldContextJSON, credentialType, options))
   );

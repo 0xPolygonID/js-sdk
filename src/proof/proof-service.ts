@@ -178,7 +178,7 @@ export class ProofService implements IProofService {
       throw new Error('subject and auth profiles are not derived from the same did');
     }
 
-    const propertiesMetadata = await parseCredentialSubject(
+    const propertiesMetadata = parseCredentialSubject(
       proofReq.query.credentialSubject as JSONObject
     );
     if (!propertiesMetadata.length) {

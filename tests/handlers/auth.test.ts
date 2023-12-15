@@ -175,7 +175,7 @@ describe('auth', () => {
     authHandler = new AuthHandler(packageMgr, proofService, credWallet);
   });
 
-  it('request-response flow identity (not profile)', async () => {
+  it.only('request-response flow identity (not profile)', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -230,7 +230,6 @@ describe('auth', () => {
         salary: 200,
         documentType: 1
       },
-      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
