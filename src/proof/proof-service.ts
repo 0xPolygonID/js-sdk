@@ -193,6 +193,7 @@ export class ProofService implements IProofService {
     }
 
     const context = proofReq.query['context'] as string;
+    const groupId = proofReq.query['groupId'] as number | undefined;
 
     const ldContext = await this.loadLdContext(context);
 
@@ -223,6 +224,7 @@ export class ProofService implements IProofService {
       proofReq,
       {
         ...opts,
+        linkNonce: groupId ? opts.linkNonce : 0n,
         authProfileNonce,
         credentialSubjectProfileNonce
       },
