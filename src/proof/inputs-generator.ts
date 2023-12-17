@@ -347,7 +347,7 @@ export class InputGenerator {
     circuitInputs.proofType = proofType;
     circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
     circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
-    circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
+    circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionId
       ? BigInt(proofReq.params?.nullifierSessionID?.toString())
       : BigInt(0);
     return circuitInputs.inputsMarshal();
