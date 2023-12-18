@@ -166,22 +166,22 @@ interface AtomicQueryMTPV2CircuitInputs {
  * @extends {BaseConfig}
  */
 export class AtomicQueryMTPV2PubSignals extends BaseConfig {
-  requestID?: bigint;
-  userID?: Id;
-  issuerID?: Id;
-  issuerClaimIdenState?: Hash;
-  issuerClaimNonRevState?: Hash;
-  claimSchema?: SchemaHash;
-  slotIndex?: number;
-  operator?: number;
+  requestID!: bigint;
+  userID!: Id;
+  issuerID!: Id;
+  issuerClaimIdenState!: Hash;
+  issuerClaimNonRevState!: Hash;
+  claimSchema!: SchemaHash;
+  slotIndex!: number;
+  operator!: number;
   value: bigint[] = [];
-  timestamp?: number;
-  merklized?: number;
-  claimPathKey?: bigint;
+  timestamp!: number;
+  merklized!: number;
+  claimPathKey!: bigint;
   // 0 for inclusion, 1 for non-inclusion
-  claimPathNotExists?: number;
+  claimPathNotExists!: number;
   // 0 revocation not check, // 1 for check revocation
-  isRevocationChecked?: number;
+  isRevocationChecked!: number;
 
   /**
    * PubSignalsUnmarshal unmarshal credentialAtomicQueryMTP.circom public signals array to AtomicQueryMTPPubSignals

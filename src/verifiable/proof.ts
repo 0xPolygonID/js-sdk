@@ -77,6 +77,7 @@ export class Iden3SparseMerkleTreeProof {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromJSON(obj: any) {
     let mtp: Proof;
     if (obj?.mtp?.notEmpties && obj?.mtp?.depth && obj?.mtp?.siblings) {
@@ -84,7 +85,9 @@ export class Iden3SparseMerkleTreeProof {
 
       const ne = obj?.mtp?.notEmpties;
       const notEmpties = ne instanceof Uint8Array ? ne : new Uint8Array(Object.values(ne));
-      const siblingsHashes = obj?.mtp?.siblings.map((h: any) => Hash.fromString(JSON.stringify(h)));
+      const siblingsHashes = obj?.mtp?.siblings.map((h: unknown) =>
+        Hash.fromString(JSON.stringify(h))
+      );
       const allSiblings = Proof.buildAllSiblings(obj?.mtp?.depth, notEmpties, siblingsHashes);
       let nodeAux = undefined;
       if (obj.mtp.nodeAux) {
@@ -180,6 +183,7 @@ export class BJJSignatureProof2021 {
    * fromJSON is a method to deserialize BJJSignatureProof2021 from json
    * @param obj
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static fromJSON(obj: any) {
     return new BJJSignatureProof2021({
       issuerData: {
