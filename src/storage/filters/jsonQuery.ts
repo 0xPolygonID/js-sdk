@@ -170,6 +170,9 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
 
         return acc.concat(reqFilters);
       }
+      case 'proofType': {
+        return acc;
+      }
       default:
         throw new Error(SearchError.NotDefinedQueryKey);
     }

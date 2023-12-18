@@ -31,7 +31,7 @@ export type ProofGenerationOptions = {
   skipRevocation: boolean;
   challenge?: bigint;
   credential?: W3CCredential;
-  verifierDID?: DID;
+  verifierDid?: DID;
   linkNonce?: bigint;
 };
 
@@ -346,9 +346,9 @@ export class InputGenerator {
 
     circuitInputs.proofType = proofType;
     circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
-    circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
+    circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionId
-      ? BigInt(proofReq.params?.nullifierSessionID?.toString())
+      ? BigInt(proofReq.params?.nullifierSessionId?.toString())
       : BigInt(0);
     return circuitInputs.inputsMarshal();
   };
@@ -401,7 +401,7 @@ export class InputGenerator {
 
     circuitInputs.proofType = proofType;
     circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
-    circuitInputs.verifierID = params.verifierDID ? DID.idFromDID(params.verifierDID) : undefined;
+    circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
       ? BigInt(proofReq.params?.nullifierSessionID?.toString())
       : BigInt(0);

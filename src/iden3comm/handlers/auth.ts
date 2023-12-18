@@ -158,19 +158,14 @@ export class AuthHandler implements IAuthHandler {
     };
 
     for (const proofReq of authRequest.body.scope) {
-      const zkpReq: ZeroKnowledgeProofRequest = {
-        id: proofReq.id,
-        circuitId: proofReq.circuitId as CircuitId,
-        query: proofReq.query
-      };
-
       const query = proofReq.query as unknown as ProofQuery;
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
-        zkpReq,
+        proofReq,
         did,
         {
-          skipRevocation: query.skipClaimRevocationCheck ?? false
+          skipRevocation: query.skipClaimRevocationCheck ?? false,
+          verifierDid: DID.parse(authRequest.from)
         }
       );
 
