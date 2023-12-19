@@ -191,7 +191,7 @@ describe('contract-request', () => {
     contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
   });
 
-  it('contract request flow', async () => {
+  it.only('contract request flow', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -443,7 +443,7 @@ describe('contract-request', () => {
     );
   });
   // V3 integration test
-  it.skip('contract request flow V3 - integration test', async () => {
+  it.only('contract request flow V3 - integration test', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = rpcUrl;
     stateEthConfig.contractAddress = '0x134b1be34911e39a8397ec6289782989729807a4';

@@ -2,13 +2,14 @@ import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
-import { IPackageManager, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../types';
+import { IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 
 import { ProofQuery } from '../../verifiable';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
-import { DID } from '@iden3/js-iden3-core';
+import { DID, ChainIds, DidMethod } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
+import { buildVerifierId } from '../../utils';
 
 /**
  * Interface that allows the processing of the contract request
@@ -115,6 +116,22 @@ export class ContractRequestHandler implements IContractRequestHandler {
     }
 
     const zkRequests = [];
+    const { contract_address, chain_id } = ciRequest.body.transaction_data;
+    const networkFlag = Object.keys(ChainIds).find((key) => ChainIds[key] === chain_id);
+
+    if (!networkFlag) {
+      throw new Error(`Invalid chain id ${chain_id}`);
+    }
+    const [blockchain, networkId] = networkFlag.split(':');
+
+    const verifierId = buildVerifierId(contract_address, {
+      blockchain,
+      networkId,
+      method: DidMethod.Iden3
+    });
+
+    const verifierDid = DID.parseFromId(verifierId);
+
     for (const proofReq of ciRequest.body.scope) {
       if (!this._allowedCircuits.includes(proofReq.circuitId as CircuitId)) {
         throw new Error(
@@ -122,20 +139,15 @@ export class ContractRequestHandler implements IContractRequestHandler {
         );
       }
 
-      const zkpReq: ZeroKnowledgeProofRequest = {
-        id: proofReq.id,
-        circuitId: proofReq.circuitId as CircuitId,
-        query: proofReq.query
-      };
-
-      const query = proofReq.query as unknown as ProofQuery;
+      const query = proofReq.query as ProofQuery;
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
-        zkpReq,
+        proofReq,
         did,
         {
           skipRevocation: query.skipClaimRevocationCheck ?? false,
-          challenge: opts.challenge
+          challenge: opts.challenge,
+          verifierDid
         }
       );
 
