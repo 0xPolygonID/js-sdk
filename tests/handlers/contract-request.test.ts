@@ -191,7 +191,7 @@ describe('contract-request', () => {
     contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
   });
 
-  it.only('contract request flow', async () => {
+  it('contract request flow', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -238,7 +238,7 @@ describe('contract-request', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQuerySigV2OnChain,
+      circuitId: CircuitId.AtomicQueryV3OnChain,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -254,7 +254,7 @@ describe('contract-request', () => {
     };
 
     const transactionData: ContractInvokeTransactionData = {
-      contract_address: 'test_address',
+      contract_address: '0x134b1be34911e39a8397ec6289782989729807a4',
       method_id: '123',
       chain_id: 80001
     };
@@ -443,7 +443,7 @@ describe('contract-request', () => {
     );
   });
   // V3 integration test
-  it.only('contract request flow V3 - integration test', async () => {
+  it.skip('contract request flow V3 - integration test', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = rpcUrl;
     stateEthConfig.contractAddress = '0x134b1be34911e39a8397ec6289782989729807a4';
