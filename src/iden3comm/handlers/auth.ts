@@ -17,6 +17,7 @@ import * as uuid from 'uuid';
 import { W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
 import { ICredentialWallet } from '../../credentials';
+import { getRandomBytes } from '@iden3/js-crypto';
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
@@ -168,8 +169,7 @@ export class AuthHandler implements IAuthHandler {
 
       const existedData = acc.get(groupId);
       if (!existedData) {
-        const seed = new Uint8Array(16);
-        globalThis.crypto.getRandomValues(seed);
+        const seed = getRandomBytes(12);
         const dataView = new DataView(seed.buffer);
         const linkNonce = dataView.getUint32(0);
         acc.set(groupId, { query: proofReq.query, linkNonce });
