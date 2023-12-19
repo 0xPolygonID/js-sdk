@@ -6,6 +6,7 @@ import {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
   IPackageManager,
+  JSONObject,
   JWSPackerParams,
   ZeroKnowledgeProofResponse
 } from '../types';
@@ -13,8 +14,9 @@ import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
-import { ProofQuery } from '../../verifiable';
-import { byteDecoder, byteEncoder } from '../../utils';
+import { W3CCredential } from '../../verifiable';
+import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
+import { ICredentialWallet } from '../../credentials';
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
@@ -78,11 +80,13 @@ export class AuthHandler implements IAuthHandler {
    * Creates an instance of AuthHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    * @param {IProofService} _proofService -  proof service to verify zk proofs
+   * @param {ICredentialWallet} _credentialWallet -  credential wallet to fetch credentials
    *
    */
   constructor(
     private readonly _packerMgr: IPackageManager,
-    private readonly _proofService: IProofService
+    private readonly _proofService: IProofService,
+    private readonly _credentialWallet: ICredentialWallet
   ) {}
 
   /**
@@ -155,15 +159,66 @@ export class AuthHandler implements IAuthHandler {
       to: authRequest.from
     };
 
-    for (const proofReq of authRequest.body.scope) {
-      const query = proofReq.query as unknown as ProofQuery;
+    const requestScope = authRequest.body.scope;
+    const combinedQueries = requestScope.reduce((acc, proofReq) => {
+      const groupId = proofReq.query.groupId as number | undefined;
+      if (!groupId) {
+        return acc;
+      }
+
+      const existedData = acc.get(groupId);
+      if (!existedData) {
+        const seed = new Uint8Array(16);
+        globalThis.crypto.getRandomValues(seed);
+        const dataView = new DataView(seed.buffer);
+        const linkNonce = dataView.getUint32(0);
+        acc.set(groupId, { query: proofReq.query, linkNonce });
+        return acc;
+      }
+
+      const credentialSubject = mergeObjects(
+        existedData.query as JSONObject,
+        proofReq.query.credentialSubject as JSONObject
+      );
+
+      acc.set(groupId, {
+        ...existedData,
+        query: {
+          ...(existedData.query as JSONObject),
+          credentialSubject
+        }
+      });
+
+      return acc;
+    }, new Map<number, { query: JSONObject; linkNonce: number }>());
+
+    for (const proofReq of requestScope) {
+      const query = proofReq.query;
+      let credential: W3CCredential[] = [];
+      const combinedQueryData = combinedQueries.get(query.groupId as number);
+      if (query.groupId) {
+        if (!combinedQueryData) {
+          throw new Error(`Invalid group id ${query.groupId}`);
+        }
+        const combinedQuery = combinedQueryData.query;
+        credential = await this._credentialWallet.findByQuery(combinedQuery);
+
+        if (!credential?.length) {
+          throw new Error(`Credential not found for query ${JSON.stringify(combinedQuery)}`);
+        }
+
+        if (credential.length > 1) {
+          throw new Error(`Multiple credentials found for query ${JSON.stringify(combinedQuery)}`);
+        }
+      }
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
         proofReq,
         did,
         {
-          skipRevocation: query.skipClaimRevocationCheck ?? false,
-          verifierDid: DID.parse(authRequest.from)
+          skipRevocation: (query.skipClaimRevocationCheck as boolean) ?? false,
+          credential: credential[0],
+          linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
         }
       );
 

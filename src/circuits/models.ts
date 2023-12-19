@@ -77,7 +77,22 @@ export enum CircuitId {
    * @beta
    */
   // AtomicQueryV3OnChainCircuitID is a type for credentialAtomicQueryV3OnChain.circom
-  AtomicQueryV3OnChain = 'credentialAtomicQueryV3OnChain'
+  AtomicQueryV3OnChain = 'credentialAtomicQueryV3OnChain',
+  /**
+   * @beta
+   */
+  // LinkedNullifier is a type for linkedNullifier.circom
+  LinkedNullifier = 'linkedNullifier',
+  /**
+   * @beta
+   */
+  // LinkedMultiQuery is a type for linkedMultiQuery.circom
+  LinkedMultiQuery3 = 'linkedMultiQuery3',
+  /**
+   * @beta
+   */
+  // LinkedMultiQuery is a type for linkedMultiQuery.circom
+  LinkedMultiQuery10 = 'linkedMultiQuery10'
 }
 
 /**

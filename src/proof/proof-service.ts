@@ -177,7 +177,7 @@ export class ProofService implements IProofService {
       throw new Error('subject and auth profiles are not derived from the same did');
     }
 
-    const propertiesMetadata = await parseCredentialSubject(
+    const propertiesMetadata = parseCredentialSubject(
       proofReq.query.credentialSubject as JSONObject
     );
     if (!propertiesMetadata.length) {
@@ -192,6 +192,7 @@ export class ProofService implements IProofService {
     }
 
     const context = proofReq.query['context'] as string;
+    const groupId = proofReq.query['groupId'] as number;
 
     const ldContext = await this.loadLdContext(context);
 
@@ -223,7 +224,8 @@ export class ProofService implements IProofService {
       {
         ...opts,
         authProfileNonce,
-        credentialSubjectProfileNonce
+        credentialSubjectProfileNonce,
+        linkNonce: groupId ? opts.linkNonce : 0n
       },
       circuitQueries
     );

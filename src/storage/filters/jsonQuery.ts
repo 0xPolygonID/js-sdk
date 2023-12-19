@@ -12,7 +12,17 @@ export enum SearchError {
 }
 
 /** allowed operators to search */
-export type FilterOperatorMethod = '$noop' | '$eq' | '$in' | '$nin' | '$gt' | '$lt' | '$ne';
+export type FilterOperatorMethod =
+  | '$noop'
+  | '$eq'
+  | '$in'
+  | '$nin'
+  | '$gt'
+  | '$lt'
+  | '$ne'
+  | '$gte'
+  | '$lte'
+  | '$sd';
 
 /** filter function type */
 export type FilterOperatorFunction = (a: any, b: any) => boolean;
@@ -35,11 +45,31 @@ export interface IFilterQuery {
 
 const truthyValues = [true, 1, 'true'];
 const falsyValues = [false, 0, 'false'];
+type ComparableType = number | string | boolean;
+const equalsComparator = (
+  a: ComparableType | Array<ComparableType>,
+  b: ComparableType | Array<ComparableType>
+) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return (
+      a.length === b.length && a.every((val, index) => val === (b as Array<ComparableType>)[index])
+    );
+  }
 
-const equalsComparator = (a: number | string | boolean, b: number | string | boolean) => {
+  if (!Array.isArray(a) && Array.isArray(b)) {
+    return b.includes(a);
+  }
+
+  if (Array.isArray(a) && !Array.isArray(b)) {
+    return a.includes(b);
+  }
+
+  a = a as ComparableType;
+  b = b as ComparableType;
   if (truthyValues.includes(a) && truthyValues.includes(b)) {
     return true;
   }
+
   if (falsyValues.includes(a) && falsyValues.includes(b)) {
     return true;
   }
@@ -47,15 +77,113 @@ const equalsComparator = (a: number | string | boolean, b: number | string | boo
   return a === b;
 };
 
-export /** @type {*}  - filter operators and their functions */
-const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFunction } = {
+const greaterThan = (
+  a: ComparableType | ComparableType[],
+  b: ComparableType | ComparableType[]
+) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.every((val, index) => val > (b as ComparableType[])[index]);
+  }
+  if (!Array.isArray(a) && Array.isArray(b)) {
+    return b.every((val) => a > val);
+  }
+  if (Array.isArray(a) && !Array.isArray(b)) {
+    return a.every((val) => val > b);
+  }
+  return a > b;
+};
+
+const lessThan = (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.every((val, index) => val < (b as ComparableType[])[index]);
+  }
+  if (!Array.isArray(a) && Array.isArray(b)) {
+    return b.every((val) => a < val);
+  }
+  if (Array.isArray(a) && !Array.isArray(b)) {
+    return a.every((val) => val < b);
+  }
+  return a < b;
+};
+
+const greaterThanOrEqual = (
+  a: ComparableType | ComparableType[],
+  b: ComparableType | ComparableType[]
+) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.every((val, index) => val >= (b as ComparableType[])[index]);
+  }
+  if (!Array.isArray(a) && Array.isArray(b)) {
+    return b.every((val) => a >= val);
+  }
+  if (Array.isArray(a) && !Array.isArray(b)) {
+    return a.every((val) => val >= b);
+  }
+  return a >= b;
+};
+
+const lessThanOrEqual = (
+  a: ComparableType | ComparableType[],
+  b: ComparableType | ComparableType[]
+) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.every((val, index) => val <= (b as ComparableType[])[index]);
+  }
+  if (!Array.isArray(a) && Array.isArray(b)) {
+    return b.every((val) => a <= val);
+  }
+  if (Array.isArray(a) && !Array.isArray(b)) {
+    return a.every((val) => val <= b);
+  }
+  return a <= b;
+};
+
+const inOperator = (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.every((val) => b.includes(val));
+  }
+  if (!Array.isArray(a) && Array.isArray(b)) {
+    return b.includes(a);
+  }
+  if (Array.isArray(a) && !Array.isArray(b)) {
+    return a.includes(b);
+  }
+  return false;
+};
+
+const ninOperator = (
+  a: ComparableType | ComparableType[],
+  b: ComparableType | ComparableType[]
+) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.every((val) => !b.includes(val));
+  }
+  if (!Array.isArray(a) && Array.isArray(b)) {
+    return !b.includes(a);
+  }
+  if (Array.isArray(a) && !Array.isArray(b)) {
+    return !a.includes(b);
+  }
+  return false;
+};
+
+export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFunction } = {
   $noop: () => true,
+  $sd: () => true,
   $eq: (a, b) => equalsComparator(a, b),
-  $in: (a: string, b: string[]) => b.includes(a),
-  $nin: (a: string, b: string[]) => !b.includes(a),
-  $gt: (a: number, b: number) => a > b,
-  $lt: (a: number, b: number) => a < b,
-  $ne: (a, b) => !equalsComparator(a, b)
+  $in: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
+    inOperator(a, b),
+  $nin: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
+    ninOperator(a, b),
+  $gt: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
+    greaterThan(a, b),
+  $lt: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
+    lessThan(a, b),
+  $ne: (a, b) => !equalsComparator(a, b),
+  $gte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
+    greaterThanOrEqual(a, b),
+  $lte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
+    lessThanOrEqual(a, b)
 };
 
 /**
@@ -169,11 +297,12 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
         return acc.concat(reqFilters);
       }
       case 'proofType':
+      case 'groupId':
       case 'skipClaimRevocationCheck': {
         return acc;
       }
       default:
-        throw new Error(SearchError.NotDefinedQueryKey);
+        throw new Error(`${queryKey} : ${SearchError.NotDefinedQueryKey}`);
     }
   }, []);
 };

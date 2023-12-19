@@ -175,7 +175,7 @@ describe('auth', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    authHandler = new AuthHandler(packageMgr, proofService);
+    authHandler = new AuthHandler(packageMgr, proofService, credWallet);
   });
 
   it('request-response flow identity (not profile)', async () => {

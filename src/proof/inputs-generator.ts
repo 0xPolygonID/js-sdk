@@ -9,6 +9,8 @@ import {
   AtomicQueryV3Inputs,
   AtomicQueryV3OnChainInputs,
   CircuitId,
+  LinkedMultiQueryInputs,
+  LinkedNullifierInputs,
   Query
 } from '../circuits';
 import {
@@ -55,7 +57,10 @@ const circuitValidator: {
   [CircuitId.AtomicQueryV3]: { maxQueriesCount: 1 },
   [CircuitId.AtomicQueryV3OnChain]: { maxQueriesCount: 1 },
   [CircuitId.AuthV2]: { maxQueriesCount: 1 },
-  [CircuitId.StateTransition]: { maxQueriesCount: 1 }
+  [CircuitId.StateTransition]: { maxQueriesCount: 1 },
+  [CircuitId.LinkedNullifier]: { maxQueriesCount: 1 },
+  [CircuitId.LinkedMultiQuery3]: { maxQueriesCount: 3 },
+  [CircuitId.LinkedMultiQuery10]: { maxQueriesCount: 10 }
 };
 
 export class InputGenerator {
@@ -452,4 +457,53 @@ export class InputGenerator {
     }
     return circuitInputs.inputsMarshal();
   };
+
+  private linkedNullifierPrepareInputs = async ({
+    preparedCredential,
+    identifier,
+    proofReq,
+    params
+  }: InputContext): Promise<Uint8Array> => {
+    const circuitClaimData = await newCircuitClaimData(preparedCredential);
+
+    circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
+
+    const circuitInputs = new LinkedNullifierInputs();
+    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+    circuitInputs.issuerClaim = circuitClaimData.claim;
+    circuitInputs.id = DID.idFromDID(identifier);
+    circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
+
+    circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
+    circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
+      ? BigInt(proofReq.params?.nullifierSessionID?.toString())
+      : BigInt(0);
+
+    return circuitInputs.inputsMarshal();
+  };
+
+  private generateLinkedMultiQueryInputs = async ({
+    preparedCredential,
+    proofReq,
+    params,
+    circuitQueries
+  }: InputContext): Promise<Uint8Array> => {
+    const circuitClaimData = await newCircuitClaimData(preparedCredential);
+
+    circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
+    const circuitInputs = new LinkedMultiQueryInputs();
+    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+
+    circuitInputs.claim = circuitClaimData.claim;
+    circuitInputs.query = circuitQueries;
+    circuitInputs.queryLength = circuitValidator[proofReq.circuitId as CircuitId].maxQueriesCount;
+
+    return circuitInputs.inputsMarshal();
+  };
+
+  linkedMultiQuery3PrepareInputs = async (cxt: InputContext): Promise<Uint8Array> =>
+    this.generateLinkedMultiQueryInputs(cxt);
+
+  linkedMultiQuery10PrepareInputs = async (cxt: InputContext): Promise<Uint8Array> =>
+    this.generateLinkedMultiQueryInputs(cxt);
 }
