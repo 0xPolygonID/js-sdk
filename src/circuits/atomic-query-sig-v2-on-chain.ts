@@ -12,7 +12,6 @@ import {
   prepareSiblingsStr
 } from './common';
 import { byteDecoder, byteEncoder } from '../utils';
-import { Operators } from './comparer';
 
 /**
  * AtomicQuerySigV2OnChainInputs ZK private inputs for credentialAtomicQuerySig.circom

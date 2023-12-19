@@ -11,7 +11,6 @@ import {
   prepareSiblingsStr
 } from './common';
 import { byteDecoder, byteEncoder } from '../utils';
-import { Operators } from './comparer';
 
 /**
  * AtomicQueryMTPV2OnChainInputs ZK private inputs for credentialAtomicQueryMTPV2OnChain.circom
