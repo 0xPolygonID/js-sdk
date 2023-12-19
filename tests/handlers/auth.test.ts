@@ -458,6 +458,7 @@ describe('auth', () => {
         circuitId: CircuitId.AtomicQueryV3,
         optional: false,
         query: {
+          groupId: 2,
           allowedIssuers: ['*'],
           type: claimReq.type,
           proofType: ProofType.BJJSignature,
@@ -478,6 +479,7 @@ describe('auth', () => {
           nullifierSessionId: 12345
         },
         query: {
+          groupId: 1,
           proofType: ProofType.Iden3SparseMerkleTreeProof,
           allowedIssuers: ['*'],
           type: 'KYCEmployee',
@@ -486,6 +488,40 @@ describe('auth', () => {
           credentialSubject: {
             hireDate: {
               $eq: '2023-12-11'
+            }
+          }
+        }
+      },
+      {
+        id: 3,
+        circuitId: CircuitId.LinkedMultiQuery10,
+        optional: false,
+        query: {
+          groupId: 1,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            documentType: {
+              $eq: 1,
+              $ne: 2
+            },
+            position: {
+              $eq: 'boss',
+              $ne: 'employee'
+            },
+            salary: {
+              $lte: 1000,
+              $gte: 2
+            },
+            hireDate: {
+              $eq: '2023-12-11',
+              $ne: '2023-12-12'
+            },
+            ZKPexperiance: {
+              $eq: true,
+              $ne: false
             }
           }
         }

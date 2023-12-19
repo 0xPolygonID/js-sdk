@@ -177,7 +177,7 @@ export class AuthHandler implements IAuthHandler {
       }
 
       const credentialSubject = mergeObjects(
-        existedData.query as JSONObject,
+        existedData.query.credentialSubject as JSONObject,
         proofReq.query.credentialSubject as JSONObject
       );
 
