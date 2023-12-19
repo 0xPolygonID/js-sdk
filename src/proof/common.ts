@@ -250,10 +250,19 @@ export const newCircuitClaimData = async (
   const sigProof = preparedCredential.credential.getBJJSignature2021Proof();
 
   if (sigProof) {
-    if (!sigProof.issuerData.credentialStatus) {
+    const { credentialStatus, mtp, authCoreClaim } = sigProof.issuerData;
+    if (!credentialStatus) {
       throw new Error(
         "can't check the validity of issuer auth claim: no credential status in proof"
       );
+    }
+
+    if (!mtp) {
+      throw new Error('issuer auth credential must have a mtp proof');
+    }
+
+    if (!authCoreClaim) {
+      throw new Error('issuer auth credential must have a core claim proof');
     }
 
     const rs = preparedCredential.revStatus;
@@ -262,12 +271,6 @@ export const newCircuitClaimData = async (
     }
 
     const issuerAuthNonRevProof: MTProof = toClaimNonRevStatus(rs);
-    if (!sigProof.issuerData.mtp) {
-      throw new Error('issuer auth credential must have a mtp proof');
-    }
-    if (!sigProof.issuerData.authCoreClaim) {
-      throw new Error('issuer auth credential must have a core claim proof');
-    }
 
     circuitClaim.signatureProof = {
       signature: sigProof.signature,
