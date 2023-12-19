@@ -10,7 +10,7 @@ import {
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
-import { Operators, QueryOperators } from './comparer';
+import { QueryOperators } from './comparer';
 import { byteDecoder, byteEncoder } from '../utils';
 
 /**
@@ -129,7 +129,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
 
       claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaim()),
       claimPathValue: valueProof.value.toString(),
-      operator: this.query.operator === Operators.SD ? Operators.EQ : this.query.operator,
+      operator: this.query.operator,
       timestamp: this.currentTimeStamp,
       // value in this path in merklized json-ld document
       slotIndex: this.query.slotIndex

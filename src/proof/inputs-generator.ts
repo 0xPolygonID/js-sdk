@@ -11,6 +11,7 @@ import {
   CircuitId,
   LinkedMultiQueryInputs,
   LinkedNullifierInputs,
+  Operators,
   Query
 } from '../circuits';
 import {
@@ -108,7 +109,9 @@ export class InputGenerator {
     circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.requestID = BigInt(proofReq.id);
 
-    circuitInputs.query = circuitQueries[0];
+    const query = circuitQueries[0];
+    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
+    circuitInputs.query = query;
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
       claim: circuitClaimData.claim,
@@ -183,7 +186,9 @@ export class InputGenerator {
     circuitInputs.signature = signature;
     circuitInputs.challenge = params.challenge;
 
-    circuitInputs.query = circuitQueries[0];
+    const query = circuitQueries[0];
+    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
+    circuitInputs.query = query;
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
       claim: circuitClaimData.claim,
@@ -222,7 +227,9 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    circuitInputs.query = circuitQueries[0];
+    const query = circuitQueries[0];
+    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
+    circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
     return circuitInputs.inputsMarshal();
   };
@@ -267,7 +274,9 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    circuitInputs.query = circuitQueries[0];
+    const query = circuitQueries[0];
+    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
+    circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     if (authClaimData.treeState) {
@@ -345,7 +354,9 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    circuitInputs.query = circuitQueries[0];
+    const query = circuitQueries[0];
+    query.values = query.operator === Operators.SD ? new Array(64).fill(0) : query.values;
+    circuitInputs.query = query;
 
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
@@ -401,7 +412,9 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    circuitInputs.query = circuitQueries[0];
+    const query = circuitQueries[0];
+    query.values = query.operator === Operators.SD ? new Array(64).fill(0) : query.values;
+    circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;

@@ -89,7 +89,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
       claimSchema: this.claim.claim?.getSchemaHash().bigInt().toString(),
       claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaim()),
       claimPathValue: valueProof.value.toString(),
-      operator: this.query.operator === Operators.SD ? Operators.EQ : this.query.operator,
+      operator: this.query.operator,
       slotIndex: this.query.slotIndex,
       timestamp: this.currentTimeStamp
     };
