@@ -212,6 +212,7 @@ export class ProofService implements IProofService {
       const circuitQuery = await this.toCircuitsQuery(
         preparedCredential.credential,
         queryMetadata,
+        proofReq.circuitId,
         mk
       );
       circuitQueries.push(circuitQuery);
@@ -334,6 +335,7 @@ export class ProofService implements IProofService {
   private async toCircuitsQuery(
     credential: W3CCredential,
     queryMetadata: QueryMetadata,
+    circuitId: string,
     merklizedCredential?: Merklizer
   ): Promise<Query> {
     if (queryMetadata.merklizedSchema && !merklizedCredential) {
@@ -375,7 +377,12 @@ export class ProofService implements IProofService {
       if (typeof v === 'undefined') {
         throw new Error(`credential doesn't contain value for field ${queryMetadata.fieldName}`);
       }
-      query.values = await transformQueryValueToBigInts(v, queryMetadata.datatype);
+      if (circuitId.includes('V2')) {
+        // for V2 circuits set to query value actual value for SD operator.
+        query.values = await transformQueryValueToBigInts(v, queryMetadata.datatype);
+      } else {
+        query.values = new Array(64).fill(0);
+      }
     }
 
     return query;

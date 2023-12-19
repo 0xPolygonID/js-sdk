@@ -44,7 +44,11 @@ export class Query {
    *
    */
   validate(): void {
-    if (this.operator !== QueryOperators.$noop && this.values?.some((v) => typeof v !== 'bigint'))
+    if (
+      this.operator !== QueryOperators.$noop &&
+      this.operator !== QueryOperators.$sd &&
+      this.values?.some((v) => typeof v !== 'bigint')
+    )
       throw new Error(CircuitError.EmptyQueryValue);
   }
 }
