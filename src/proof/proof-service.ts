@@ -340,7 +340,7 @@ export class ProofService implements IProofService {
       throw new Error('merklized root position is set to None for merklized schema');
     }
     if (!queryMetadata.merklizedSchema && merklizedCredential) {
-      throw new Error('merklized root position is set not set to None for non-merklized schema');
+      throw new Error('merklized root position is not set to None for non-merklized schema');
     }
     const query = new Query();
 
