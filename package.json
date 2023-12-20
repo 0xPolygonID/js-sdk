@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "SDK to work with Polygon ID",
   "main": "dist/node/cjs/index.js",
   "module": "dist/node/esm/index.js",
@@ -86,9 +86,9 @@
   },
   "peerDependencies": {
     "@iden3/js-crypto": "1.0.3",
-    "@iden3/js-iden3-core": "1.2.0",
+    "@iden3/js-iden3-core": "1.2.1",
     "@iden3/js-jsonld-merklization": "1.1.2",
-    "@iden3/js-jwz": "1.2.0",
+    "@iden3/js-jwz": "1.2.1",
     "@iden3/js-merkletree": "1.1.2",
     "ffjavascript": "0.2.62",
     "snarkjs": "0.7.2",
