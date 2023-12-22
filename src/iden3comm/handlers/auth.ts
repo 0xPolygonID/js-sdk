@@ -14,9 +14,8 @@ import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
-import { W3CCredential } from '../../verifiable';
+import { RevocationStatus, W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
-import { ICredentialWallet } from '../../credentials';
 import { getRandomBytes } from '@iden3/js-crypto';
 
 /**
@@ -81,13 +80,11 @@ export class AuthHandler implements IAuthHandler {
    * Creates an instance of AuthHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    * @param {IProofService} _proofService -  proof service to verify zk proofs
-   * @param {ICredentialWallet} _credentialWallet -  credential wallet to fetch credentials
    *
    */
   constructor(
     private readonly _packerMgr: IPackageManager,
-    private readonly _proofService: IProofService,
-    private readonly _credentialWallet: ICredentialWallet
+    private readonly _proofService: IProofService
   ) {}
 
   /**
@@ -184,6 +181,8 @@ export class AuthHandler implements IAuthHandler {
       acc.set(groupId, {
         ...existedData,
         query: {
+          skipClaimRevocationCheck:
+            existedData.query.skipClaimRevocationCheck || proofReq.query.skipClaimRevocationCheck,
           ...(existedData.query as JSONObject),
           credentialSubject
         }
@@ -192,32 +191,43 @@ export class AuthHandler implements IAuthHandler {
       return acc;
     }, new Map<number, { query: JSONObject; linkNonce: number }>());
 
+    const groupedCredentialsCache = new Map<
+      number,
+      { cred: W3CCredential; revStatus?: RevocationStatus }
+    >();
+
     for (const proofReq of requestScope) {
       const query = proofReq.query;
-      let credential: W3CCredential[] = [];
-      const combinedQueryData = combinedQueries.get(query.groupId as number);
-      if (query.groupId) {
+      const groupId = query.groupId as number | undefined;
+      const combinedQueryData = combinedQueries.get(groupId as number);
+      if (groupId) {
         if (!combinedQueryData) {
           throw new Error(`Invalid group id ${query.groupId}`);
         }
         const combinedQuery = combinedQueryData.query;
-        credential = await this._credentialWallet.findByQuery(combinedQuery);
 
-        if (!credential?.length) {
-          throw new Error(`Credential not found for query ${JSON.stringify(combinedQuery)}`);
-        }
+        if (!groupedCredentialsCache.has(groupId)) {
+          const credWithRevStatus = await this._proofService.findCredentialByProofQuery(
+            did,
+            combinedQueryData.query
+          );
+          if (!credWithRevStatus.cred) {
+            throw new Error(`Credential not found for query ${JSON.stringify(combinedQuery)}`);
+          }
 
-        if (credential.length > 1) {
-          throw new Error(`Multiple credentials found for query ${JSON.stringify(combinedQuery)}`);
+          groupedCredentialsCache.set(groupId, credWithRevStatus);
         }
       }
+
+      const credWithRevStatus = groupedCredentialsCache.get(groupId as number);
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
         proofReq,
         did,
         {
-          skipRevocation: (query.skipClaimRevocationCheck as boolean) ?? false,
-          credential: credential[0],
+          skipRevocation: Boolean(query.skipClaimRevocationCheck),
+          credential: credWithRevStatus?.cred,
+          credentialRevocationStatus: credWithRevStatus?.revStatus,
           linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
         }
       );

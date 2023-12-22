@@ -12,14 +12,17 @@ import {
 } from '../circuits';
 import { ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
-import { createVerifiablePresentation, ProofQuery, W3CCredential } from '../verifiable';
+import {
+  createVerifiablePresentation,
+  ProofQuery,
+  RevocationStatus,
+  W3CCredential
+} from '../verifiable';
 import {
   PreparedCredential,
   QueryMetadata,
-  newCircuitClaimData,
   parseCredentialSubject,
   parseQueryMetadata,
-  prepareAuthBJJCredential,
   toGISTProof,
   transformQueryValueToBigInts
 } from './common';
@@ -111,6 +114,12 @@ export interface IProofService {
     stateStorage: IStateStorage,
     ethSigner: Signer
   ): Promise<string>;
+
+  findCredentialByProofQuery(
+    did: DID,
+    query: ProofQuery,
+    opts?: { skipClaimRevocationCheck: boolean }
+  ): Promise<{ cred: W3CCredential; revStatus: RevocationStatus | undefined }>;
 }
 /**
  * Proof service is an implementation of IProofService
@@ -161,12 +170,38 @@ export class ProofService implements IProofService {
       };
     }
 
-    const credential = opts.credential ?? (await this.findCredential(identifier, proofReq.query));
+    let credentialWithRevStatus: {
+      cred: W3CCredential | undefined;
+      revStatus: RevocationStatus | undefined;
+    } = { cred: opts.credential, revStatus: opts.credentialRevocationStatus };
+
+    if (!opts.credential) {
+      credentialWithRevStatus = await this.findCredentialByProofQuery(identifier, proofReq.query);
+    }
+
+    if (opts.credential && !opts.credentialRevocationStatus && !opts.skipRevocation) {
+      const revStatus = await this._credentialWallet.getRevocationStatusFromCredential(
+        opts.credential
+      );
+      credentialWithRevStatus = { cred: opts.credential, revStatus };
+    }
+
+    if (!credentialWithRevStatus.cred) {
+      throw new Error(`credential not found for query ${JSON.stringify(proofReq.query)}`);
+    }
+
+    const credentialCoreClaim = await this._identityWallet.getCoreClaimFromCredential(
+      credentialWithRevStatus.cred
+    );
 
     const { nonce: authProfileNonce, genesisDID } =
       await this._identityWallet.getGenesisDIDMetadata(identifier);
 
-    const preparedCredential: PreparedCredential = await this.getPreparedCredential(credential);
+    const preparedCredential: PreparedCredential = {
+      credential: credentialWithRevStatus.cred,
+      credentialCoreClaim,
+      revStatus: credentialWithRevStatus.revStatus
+    };
 
     const subjectDID = DID.parse(preparedCredential.credential.credentialSubject['id'] as string);
 
@@ -260,12 +295,7 @@ export class ProofService implements IProofService {
     stateStorage: IStateStorage,
     ethSigner: Signer
   ): Promise<string> {
-    const authInfo = await prepareAuthBJJCredential(
-      this._credentialWallet,
-      this._identityWallet,
-      did,
-      oldTreeState
-    );
+    const authInfo = await this._inputsGenerator.prepareAuthBJJCredential(did, oldTreeState);
 
     const newTreeModel = await this._identityWallet.getDIDTreeModel(did);
     const claimsRoot = await newTreeModel.claimsTree.root();
@@ -280,7 +310,7 @@ export class ProofService implements IProofService {
     };
     const challenge = Poseidon.hash([oldTreeState.state.bigInt(), newTreeState.state.bigInt()]);
 
-    const signature = await this._identityWallet.signChallenge(challenge, authInfo.authCredential);
+    const signature = await this._identityWallet.signChallenge(challenge, authInfo.credential);
 
     const circuitInputs = new StateTransitionInputs();
     circuitInputs.id = DID.idFromDID(did);
@@ -290,7 +320,7 @@ export class ProofService implements IProofService {
 
     const authClaimIncProofNewState = await this._identityWallet.generateCredentialMtp(
       did,
-      authInfo.authCredential,
+      authInfo.credential,
       newTreeState
     );
 
@@ -299,7 +329,7 @@ export class ProofService implements IProofService {
 
     circuitInputs.oldTreeState = oldTreeState;
     circuitInputs.authClaim = {
-      claim: authInfo.authCoreClaim,
+      claim: authInfo.coreClaim,
       incProof: authInfo.incProof,
       nonRevProof: authInfo.nonRevProof
     };
@@ -392,14 +422,6 @@ export class ProofService implements IProofService {
     return byteEncoder.encode(JSON.stringify(ldSchema));
   }
 
-  private async getPreparedCredential(credential: W3CCredential): Promise<PreparedCredential> {
-    const revStatus = await this._credentialWallet.getRevocationStatusFromCredential(credential);
-
-    const credCoreClaim = await this._identityWallet.getCoreClaimFromCredential(credential);
-
-    return { credential, revStatus, credentialCoreClaim: credCoreClaim };
-  }
-
   /** {@inheritdoc IProofService.generateAuthV2Inputs} */
   async generateAuthV2Inputs(
     hash: Uint8Array,
@@ -415,26 +437,14 @@ export class ProofService implements IProofService {
 
     const challenge = BytesHelper.bytesToInt(hash.reverse());
 
-    const authPrepared = await prepareAuthBJJCredential(
-      this._credentialWallet,
-      this._identityWallet,
-      genesisDID
-    );
+    const authPrepared = await this._inputsGenerator.prepareAuthBJJCredential(genesisDID);
 
-    const revStatus = await this._credentialWallet.getRevocationStatusFromCredential(
-      authPrepared.authCredential
-    );
-
-    const authClaimData = await newCircuitClaimData({
-      credential: authPrepared.authCredential,
-      revStatus,
-      credentialCoreClaim: authPrepared.authCoreClaim
+    const authClaimData = await this._inputsGenerator.newCircuitClaimData({
+      credential: authPrepared.credential,
+      credentialCoreClaim: authPrepared.coreClaim
     });
 
-    const signature = await this._identityWallet.signChallenge(
-      challenge,
-      authPrepared.authCredential
-    );
+    const signature = await this._identityWallet.signChallenge(challenge, authPrepared.credential);
     const id = DID.idFromDID(genesisDID);
     const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
 
@@ -479,7 +489,10 @@ export class ProofService implements IProofService {
     return true;
   }
 
-  private async findCredential(did: DID, query: ProofQuery): Promise<W3CCredential> {
+  async findCredentialByProofQuery(
+    did: DID,
+    query: ProofQuery
+  ): Promise<{ cred: W3CCredential; revStatus: RevocationStatus | undefined }> {
     const credentials = await this._identityWallet.findOwnedCredentialsByDID(did, query);
 
     if (!credentials.length) {
@@ -489,8 +502,9 @@ export class ProofService implements IProofService {
     //  For EQ / IN / NIN / LT / GT operations selective if credential satisfies query - we can get any.
     // TODO: choose credential for selective credentials
     const credential = query.skipClaimRevocationCheck
-      ? credentials[0]
-      : (await this._credentialWallet.findNonRevokedCredential(credentials)).cred;
+      ? { cred: credentials[0], revStatus: undefined }
+      : await this._credentialWallet.findNonRevokedCredential(credentials);
+
     return credential;
   }
 }

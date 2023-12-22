@@ -93,19 +93,6 @@ const greaterThan = (
   return a > b;
 };
 
-const lessThan = (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) => {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.every((val, index) => val < (b as ComparableType[])[index]);
-  }
-  if (!Array.isArray(a) && Array.isArray(b)) {
-    return b.every((val) => a < val);
-  }
-  if (Array.isArray(a) && !Array.isArray(b)) {
-    return a.every((val) => val < b);
-  }
-  return a < b;
-};
-
 const greaterThanOrEqual = (
   a: ComparableType | ComparableType[],
   b: ComparableType | ComparableType[]
@@ -151,22 +138,6 @@ const inOperator = (a: ComparableType | ComparableType[], b: ComparableType | Co
   return false;
 };
 
-const ninOperator = (
-  a: ComparableType | ComparableType[],
-  b: ComparableType | ComparableType[]
-) => {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.every((val) => !b.includes(val));
-  }
-  if (!Array.isArray(a) && Array.isArray(b)) {
-    return !b.includes(a);
-  }
-  if (Array.isArray(a) && !Array.isArray(b)) {
-    return !a.includes(b);
-  }
-  return false;
-};
-
 export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFunction } = {
   $noop: () => true,
   $sd: () => true,
@@ -174,11 +145,11 @@ export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFun
   $in: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     inOperator(a, b),
   $nin: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
-    ninOperator(a, b),
+    !inOperator(a, b),
   $gt: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     greaterThan(a, b),
   $lt: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
-    lessThan(a, b),
+    !greaterThan(a, b),
   $ne: (a, b) => !equalsComparator(a, b),
   $gte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     greaterThanOrEqual(a, b),

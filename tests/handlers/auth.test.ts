@@ -175,7 +175,7 @@ describe('auth', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    authHandler = new AuthHandler(packageMgr, proofService, credWallet);
+    authHandler = new AuthHandler(packageMgr, proofService);
   });
 
   it('request-response flow identity (not profile)', async () => {
@@ -458,7 +458,6 @@ describe('auth', () => {
         circuitId: CircuitId.AtomicQueryV3,
         optional: false,
         query: {
-          groupId: 2,
           allowedIssuers: ['*'],
           type: claimReq.type,
           proofType: ProofType.BJJSignature,
@@ -480,14 +479,34 @@ describe('auth', () => {
         },
         query: {
           groupId: 1,
-          proofType: ProofType.Iden3SparseMerkleTreeProof,
+          proofType: ProofType.BJJSignature,
           allowedIssuers: ['*'],
           type: 'KYCEmployee',
           context:
             'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          skipClaimRevocationCheck: true,
           credentialSubject: {
-            hireDate: {
-              $eq: '2023-12-11'
+            salary: {
+              $eq: 200
+            }
+          }
+        }
+      },
+      {
+        id: 3,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.Iden3SparseMerkleTreeProof,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          skipClaimRevocationCheck: true,
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            salary: {
+              $ne: 300
             }
           }
         }

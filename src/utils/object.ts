@@ -28,7 +28,7 @@ export function mergeObjects(credSubject: obj, otherCredSubject: obj) {
             ...new Set([
               ...((subjectPropertyResult[operatorKey] as Array<obj>) ?? []),
               operatorValue1,
-              operatorValue2
+              ...(Array.isArray(operatorValue2) ? operatorValue2 : [operatorValue2])
             ])
           ];
         } else {

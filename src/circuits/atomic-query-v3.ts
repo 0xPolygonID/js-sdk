@@ -122,7 +122,10 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       valueProof.mtp = new Proof();
     }
 
-    const treeState = this.claim.nonRevProof.treeState;
+    let treeState = this.claim.nonRevProof.treeState;
+    if (this.proofType === ProofType.BJJSignature && this.skipClaimRevocationCheck) {
+      treeState = this.claim.signatureProof?.issuerAuthNonRevProof.treeState;
+    }
 
     if (!treeState) {
       throw new Error(CircuitError.EmptyTreeState);
@@ -172,14 +175,10 @@ export class AtomicQueryV3Inputs extends BaseConfig {
         this.claim.signatureProof?.issuerAuthIncProof.proof as Proof,
         this.getMTLevel()
       );
-      const issuerAuthTreeState = this.claim.nonRevProof.treeState;
 
-      if (!issuerAuthTreeState) {
-        throw new Error(CircuitError.EmptyTreeState);
-      }
-      s.issuerAuthClaimsTreeRoot = issuerAuthTreeState.claimsRoot.bigInt().toString();
-      s.issuerAuthRevTreeRoot = issuerAuthTreeState.revocationRoot.bigInt().toString();
-      s.issuerAuthRootsTreeRoot = issuerAuthTreeState.rootOfRoots.bigInt().toString();
+      s.issuerAuthClaimsTreeRoot = treeState.claimsRoot.bigInt().toString();
+      s.issuerAuthRevTreeRoot = treeState.revocationRoot.bigInt().toString();
+      s.issuerAuthRootsTreeRoot = treeState.rootOfRoots.bigInt().toString();
       s.issuerAuthClaimNonRevMtp = prepareSiblingsStr(
         this.claim.signatureProof?.issuerAuthNonRevProof.proof as Proof,
         this.getMTLevel()

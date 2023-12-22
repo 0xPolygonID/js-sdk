@@ -6,3 +6,4 @@ export * from './status/agent-revocation';
 export * from './status/utils';
 export * from './credential-wallet';
 export * from './rhs';
+export * from './utils';

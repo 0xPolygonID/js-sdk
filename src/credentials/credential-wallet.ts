@@ -18,6 +18,7 @@ import { CredentialStatusResolverRegistry } from './status/resolver';
 import { IssuerResolver } from './status/sparse-merkle-tree';
 import { AgentResolver } from './status/agent-revocation';
 import { CredentialStatusResolveOptions } from './status/resolver';
+import { getUserDIDFromCredential } from './utils';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -267,24 +268,16 @@ export class CredentialWallet implements ICredentialWallet {
     const stateInfo: State | undefined = mtpProof
       ? mtpProof.issuerData.state
       : sigProof?.issuerData.state;
-
     const issuerDID = DID.parse(cred.issuer);
 
-    let userDID: DID;
-    if (!cred.credentialSubject.id) {
-      userDID = issuerDID;
-    } else {
-      if (typeof cred.credentialSubject.id !== 'string') {
-        throw new Error('credential status `id` is not a string');
-      }
-      userDID = DID.parse(cred.credentialSubject.id);
-    }
+    const userDID = getUserDIDFromCredential(issuerDID, cred);
 
     const opts: CredentialStatusResolveOptions = {
       issuerGenesisState: stateInfo,
       issuerDID,
       userDID
     };
+
     return this.getRevocationStatus(cred.credentialStatus, opts);
   }
 

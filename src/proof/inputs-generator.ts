@@ -1,5 +1,10 @@
 import { DID, Id, getUnixTimestamp } from '@iden3/js-iden3-core';
-import { ProofType, W3CCredential } from '../verifiable';
+import {
+  Iden3SparseMerkleTreeProof,
+  ProofType,
+  RevocationStatus,
+  W3CCredential
+} from '../verifiable';
 import { ZeroKnowledgeProofRequest } from '../iden3comm';
 import {
   AtomicQueryMTPV2Inputs,
@@ -8,22 +13,28 @@ import {
   AtomicQuerySigV2OnChainInputs,
   AtomicQueryV3Inputs,
   AtomicQueryV3OnChainInputs,
+  CircuitClaim,
   CircuitId,
   LinkedMultiQueryInputs,
   LinkedNullifierInputs,
+  MTProof,
   Operators,
-  Query
+  Query,
+  TreeState
 } from '../circuits';
 import {
+  PreparedAuthBJJCredential,
   PreparedCredential,
-  newCircuitClaimData,
-  prepareAuthBJJCredential,
   toClaimNonRevStatus,
   toGISTProof
 } from './common';
 import { IIdentityWallet } from '../identity';
 import { IStateStorage } from '../storage';
-import { ICredentialWallet } from '../credentials';
+import {
+  CredentialStatusResolveOptions,
+  ICredentialWallet,
+  getUserDIDFromCredential
+} from '../credentials';
 
 export type DIDProfileMetadata = {
   authProfileNonce: number;
@@ -34,6 +45,7 @@ export type ProofGenerationOptions = {
   skipRevocation: boolean;
   challenge?: bigint;
   credential?: W3CCredential;
+  credentialRevocationStatus?: RevocationStatus;
   verifierDid?: DID;
   linkNonce?: bigint;
 };
@@ -96,6 +108,116 @@ export class InputGenerator {
     return fn(ctx);
   }
 
+  async newCircuitClaimData(preparedCredential: PreparedCredential): Promise<CircuitClaim> {
+    const smtProof: Iden3SparseMerkleTreeProof | undefined =
+      preparedCredential.credential.getIden3SparseMerkleTreeProof();
+
+    const circuitClaim = new CircuitClaim();
+    circuitClaim.claim = preparedCredential.credentialCoreClaim;
+    circuitClaim.issuerId = DID.idFromDID(DID.parse(preparedCredential.credential.issuer));
+
+    if (smtProof) {
+      circuitClaim.proof = smtProof.mtp;
+      circuitClaim.treeState = {
+        state: smtProof.issuerData.state.value,
+        claimsRoot: smtProof.issuerData.state.claimsTreeRoot,
+        revocationRoot: smtProof.issuerData.state.revocationTreeRoot,
+        rootOfRoots: smtProof.issuerData.state.rootOfRoots
+      };
+    }
+
+    const sigProof = preparedCredential.credential.getBJJSignature2021Proof();
+
+    if (sigProof) {
+      const issuerDID = sigProof.issuerData.id;
+      const userDID: DID = getUserDIDFromCredential(issuerDID, preparedCredential.credential);
+
+      if (!sigProof.issuerData.credentialStatus) {
+        throw new Error(
+          "can't check the validity of issuer auth claim: no credential status in proof"
+        );
+      }
+      const opts: CredentialStatusResolveOptions = {
+        issuerGenesisState: sigProof.issuerData.state,
+        issuerDID,
+        userDID
+      };
+
+      const rs = await this._credentialWallet.getRevocationStatus(
+        sigProof.issuerData.credentialStatus,
+        opts
+      );
+
+      const { credentialStatus, mtp, authCoreClaim } = sigProof.issuerData;
+      if (!credentialStatus) {
+        throw new Error(
+          "can't check the validity of issuer auth claim: no credential status in proof"
+        );
+      }
+
+      if (!mtp) {
+        throw new Error('issuer auth credential must have a mtp proof');
+      }
+
+      if (!authCoreClaim) {
+        throw new Error('issuer auth credential must have a core claim proof');
+      }
+
+      const issuerAuthNonRevProof: MTProof = toClaimNonRevStatus(rs);
+
+      circuitClaim.signatureProof = {
+        signature: sigProof.signature,
+        issuerAuthIncProof: {
+          proof: sigProof.issuerData.mtp,
+          treeState: {
+            state: sigProof.issuerData.state.value,
+            claimsRoot: sigProof.issuerData.state.claimsTreeRoot,
+            revocationRoot: sigProof.issuerData.state.revocationTreeRoot,
+            rootOfRoots: sigProof.issuerData.state.rootOfRoots
+          }
+        },
+        issuerAuthClaim: sigProof.issuerData.authCoreClaim,
+        issuerAuthNonRevProof
+      };
+    }
+
+    return circuitClaim;
+  }
+
+  async prepareAuthBJJCredential(
+    did: DID,
+    treeStateInfo?: TreeState
+  ): Promise<PreparedAuthBJJCredential> {
+    const authCredential = await this._credentialWallet.getAuthBJJCredential(did);
+
+    const incProof = await this._identityWallet.generateCredentialMtp(
+      did,
+      authCredential,
+      treeStateInfo
+    );
+
+    const nonRevProof = await this._identityWallet.generateNonRevocationMtp(
+      did,
+      authCredential,
+      treeStateInfo
+    );
+
+    const authCoreClaim = authCredential.getCoreClaimFromProof(
+      ProofType.Iden3SparseMerkleTreeProof
+    );
+
+    if (!authCoreClaim) {
+      throw new Error('auth core claim is not defined for auth bjj credential');
+    }
+
+    return {
+      credential: authCredential,
+      incProof,
+      nonRevProof,
+      coreClaim: authCoreClaim
+    };
+  }
+
   private credentialAtomicQueryMTPV2PrepareInputs = async ({
     preparedCredential,
     identifier,
@@ -103,7 +225,7 @@ export class InputGenerator {
     params,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {
-    const circuitClaimData = await newCircuitClaimData(preparedCredential);
+    const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     const circuitInputs = new AtomicQueryMTPV2Inputs();
     circuitInputs.id = DID.idFromDID(identifier);
@@ -133,22 +255,13 @@ export class InputGenerator {
     params,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {
-    const circuitClaimData = await newCircuitClaimData(preparedCredential);
+    const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
-    const authInfo = await prepareAuthBJJCredential(
-      this._credentialWallet,
-      this._identityWallet,
-      identifier
-    );
+    const authInfo = await this.prepareAuthBJJCredential(identifier);
 
-    const authRevStatus = await this._credentialWallet.getRevocationStatusFromCredential(
-      authInfo.authCredential
-    );
-
-    const authClaimData = await newCircuitClaimData({
-      credential: authInfo.authCredential,
-      credentialCoreClaim: authInfo.authCoreClaim,
-      revStatus: authRevStatus
+    const authClaimData = await this.newCircuitClaimData({
+      credential: authInfo.credential,
+      credentialCoreClaim: authInfo.coreClaim
     });
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
@@ -180,7 +293,7 @@ export class InputGenerator {
     }
     const signature = await this._identityWallet.signChallenge(
       params.challenge,
-      authInfo.authCredential
+      authInfo.credential
     );
 
     circuitInputs.signature = signature;
@@ -210,7 +323,7 @@ export class InputGenerator {
     params,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {
-    const circuitClaimData = await newCircuitClaimData(preparedCredential);
+    const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
@@ -241,21 +354,13 @@ export class InputGenerator {
     params,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {
-    const circuitClaimData = await newCircuitClaimData(preparedCredential);
+    const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
-    const authPrepared = await prepareAuthBJJCredential(
-      this._credentialWallet,
-      this._identityWallet,
-      identifier
-    );
+    const authInfo = await this.prepareAuthBJJCredential(identifier);
 
-    const authRevStatus = await this._credentialWallet.getRevocationStatusFromCredential(
-      authPrepared.authCredential
-    );
-    const authClaimData = await newCircuitClaimData({
-      credential: authPrepared.authCredential,
-      credentialCoreClaim: authPrepared.authCoreClaim,
-      revStatus: authRevStatus
+    const authClaimData = await this.newCircuitClaimData({
+      credential: authInfo.credential,
+      credentialCoreClaim: authInfo.coreClaim
     });
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
@@ -294,7 +399,7 @@ export class InputGenerator {
 
     circuitInputs.authClaim = authClaimData.claim;
     circuitInputs.authClaimIncMtp = authClaimData.proof;
-    circuitInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
+    circuitInputs.authClaimNonRevMtp = authInfo.nonRevProof.proof;
 
     if (!params.challenge) {
       throw new Error('challenge must be provided for onchain circuits');
@@ -302,7 +407,7 @@ export class InputGenerator {
 
     const signature = await this._identityWallet.signChallenge(
       params.challenge,
-      authPrepared.authCredential
+      authInfo.credential
     );
 
     circuitInputs.signature = signature;
@@ -318,7 +423,7 @@ export class InputGenerator {
     params,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {
-    const circuitClaimData = await newCircuitClaimData(preparedCredential);
+    const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     let proofType: ProofType;
@@ -376,7 +481,7 @@ export class InputGenerator {
     params,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {
-    const circuitClaimData = await newCircuitClaimData(preparedCredential);
+    const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     let proofType: ProofType;
@@ -435,30 +540,22 @@ export class InputGenerator {
     circuitInputs.challenge = BigInt(params.challenge ?? 0);
     const { nonce: authProfileNonce, genesisDID } =
       await this._identityWallet.getGenesisDIDMetadata(identifier);
-    const authPrepared = await prepareAuthBJJCredential(
-      this._credentialWallet,
-      this._identityWallet,
-      genesisDID
-    );
+    const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
     const id = DID.idFromDID(genesisDID);
     const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
     const gistProof = toGISTProof(stateProof);
     circuitInputs.gistProof = gistProof;
     // auth inputs
     if (circuitInputs.authEnabled === 1) {
-      const authRevStatus = await this._credentialWallet.getRevocationStatusFromCredential(
-        authPrepared.authCredential
-      );
 
-      const authClaimData = await newCircuitClaimData({
-        credential: authPrepared.authCredential,
-        credentialCoreClaim: authPrepared.authCoreClaim,
-        revStatus: authRevStatus
+      const authClaimData = await this.newCircuitClaimData({
+        credential: authPrepared.credential,
+        credentialCoreClaim: authPrepared.coreClaim
       });
 
       const signature = await this._identityWallet.signChallenge(
         circuitInputs.challenge,
-        authPrepared.authCredential
+        authPrepared.credential
       );
 
       circuitInputs.profileNonce = BigInt(authProfileNonce);
@@ -477,7 +574,7 @@ export class InputGenerator {
     proofReq,
     params
   }: InputContext): Promise<Uint8Array> => {
-    const circuitClaimData = await newCircuitClaimData(preparedCredential);
+    const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
@@ -501,7 +598,7 @@ export class InputGenerator {
     params,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {
-    const circuitClaimData = await newCircuitClaimData(preparedCredential);
+    const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     const circuitInputs = new LinkedMultiQueryInputs();
