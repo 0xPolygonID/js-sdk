@@ -16,7 +16,7 @@ export const getUserDIDFromCredential = (issuerDID: DID, credential: W3CCredenti
   }
 
   if (typeof credential.credentialSubject.id !== 'string') {
-    throw new Error('credential status `id` is not a string');
+    throw new Error('credential subject `id` is not a string');
   }
   return DID.parse(credential.credentialSubject.id);
 };
