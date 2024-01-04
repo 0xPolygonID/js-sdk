@@ -127,6 +127,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
     const verifierId = buildVerifierId(contract_address, {
       blockchain,
       networkId,
+      // DidMethod.Iden3 is used based on discussions: all onchain issuers have iden3 did method by default. This can be changed in the release of v3 circuit.
       method: DidMethod.Iden3
     });
 

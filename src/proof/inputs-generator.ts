@@ -69,10 +69,9 @@ const circuitValidator: {
   [CircuitId.AtomicQuerySigV2OnChain]: { maxQueriesCount: 1 },
   [CircuitId.AtomicQueryV3]: { maxQueriesCount: 1 },
   [CircuitId.AtomicQueryV3OnChain]: { maxQueriesCount: 1 },
-  [CircuitId.AuthV2]: { maxQueriesCount: 1 },
-  [CircuitId.StateTransition]: { maxQueriesCount: 1 },
+  [CircuitId.AuthV2]: { maxQueriesCount: 0 },
+  [CircuitId.StateTransition]: { maxQueriesCount: 0 },
   [CircuitId.LinkedNullifier]: { maxQueriesCount: 1 },
-  [CircuitId.LinkedMultiQuery3]: { maxQueriesCount: 3 },
   [CircuitId.LinkedMultiQuery10]: { maxQueriesCount: 10 }
 };
 
@@ -85,7 +84,7 @@ export class InputGenerator {
 
   async generateInputs(ctx: InputContext): Promise<Uint8Array> {
     const { circuitId } = ctx.proofReq;
-    const fnName = `${circuitId}PrepareInputs`;
+    const fnName = `${circuitId.split('-')[0]}PrepareInputs`;
 
     const queriesLength = ctx.circuitQueries.length;
 
@@ -132,23 +131,8 @@ export class InputGenerator {
       const issuerDID = sigProof.issuerData.id;
       const userDID: DID = getUserDIDFromCredential(issuerDID, preparedCredential.credential);
 
-      if (!sigProof.issuerData.credentialStatus) {
-        throw new Error(
-          "can't check the validity of issuer auth claim: no credential status in proof"
-        );
-      }
-      const opts: CredentialStatusResolveOptions = {
-        issuerGenesisState: sigProof.issuerData.state,
-        issuerDID,
-        userDID
-      };
-
-      const rs = await this._credentialWallet.getRevocationStatus(
-        sigProof.issuerData.credentialStatus,
-        opts
-      );
-
       const { credentialStatus, mtp, authCoreClaim } = sigProof.issuerData;
+
       if (!credentialStatus) {
         throw new Error(
           "can't check the validity of issuer auth claim: no credential status in proof"
@@ -162,6 +146,14 @@ export class InputGenerator {
       if (!authCoreClaim) {
         throw new Error('issuer auth credential must have a core claim proof');
       }
+
+      const opts: CredentialStatusResolveOptions = {
+        issuerGenesisState: sigProof.issuerData.state,
+        issuerDID,
+        userDID
+      };
+
+      const rs = await this._credentialWallet.getRevocationStatus(credentialStatus, opts);
 
       const issuerAuthNonRevProof: MTProof = toClaimNonRevStatus(rs);
 
@@ -540,13 +532,13 @@ export class InputGenerator {
     circuitInputs.challenge = BigInt(params.challenge ?? 0);
     const { nonce: authProfileNonce, genesisDID } =
       await this._identityWallet.getGenesisDIDMetadata(identifier);
-    const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
     const id = DID.idFromDID(genesisDID);
     const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
     const gistProof = toGISTProof(stateProof);
     circuitInputs.gistProof = gistProof;
     // auth inputs
     if (circuitInputs.authEnabled === 1) {
+      const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
 
       const authClaimData = await this.newCircuitClaimData({
         credential: authPrepared.credential,
@@ -592,7 +584,7 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  private generateLinkedMultiQueryInputs = async ({
+  linkedMultiQuery10PrepareInputs = async ({
     preparedCredential,
     proofReq,
     params,
@@ -610,10 +602,4 @@ export class InputGenerator {
 
     return circuitInputs.inputsMarshal();
   };
-
-  linkedMultiQuery3PrepareInputs = async (cxt: InputContext): Promise<Uint8Array> =>
-    this.generateLinkedMultiQueryInputs(cxt);
-
-  linkedMultiQuery10PrepareInputs = async (cxt: InputContext): Promise<Uint8Array> =>
-    this.generateLinkedMultiQueryInputs(cxt);
 }
