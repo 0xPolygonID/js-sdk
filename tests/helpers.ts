@@ -25,7 +25,7 @@ export const SEED_ISSUER: Uint8Array = byteEncoder.encode('seedseedseedseedseeds
 export const SEED_USER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 export const RHS_URL = process.env.RHS_URL as string;
 export const RHS_CONTRACT_ADDRESS = process.env.RHS_CONTRACT_ADDRESS as string;
-export const STATE_CONTRACT = process.env.CONTRACT_ADDRESS as string;
+export const STATE_CONTRACT = process.env.STATE_CONTRACT_ADDRESS as string;
 export const RPC_URL = process.env.RPC_URL as string;
 export const WALLET_KEY = process.env.WALLET_KEY as string;
 
