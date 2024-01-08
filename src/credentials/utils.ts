@@ -1,5 +1,7 @@
 import { DID } from '@iden3/js-iden3-core';
 import { W3CCredential } from '../verifiable';
+import { PublicKey } from '@iden3/js-crypto';
+import { KmsKeyId, KmsKeyType, keyPath } from '../kms';
 
 /**
  * Retrieves the user DID from a given credential.
@@ -19,4 +21,16 @@ export const getUserDIDFromCredential = (issuerDID: DID, credential: W3CCredenti
     throw new Error('credential subject `id` is not a string');
   }
   return DID.parse(credential.credentialSubject.id);
+};
+
+export const getKMSIdByAuthCredential = (credential: W3CCredential): KmsKeyId => {
+  if (!credential.type.includes('AuthBJJCredential')) {
+    throw new Error("can't sign with not AuthBJJCredential credential");
+  }
+  const x = credential.credentialSubject['x'] as unknown as string;
+  const y = credential.credentialSubject['y'] as unknown as string;
+
+  const pb: PublicKey = new PublicKey([BigInt(x), BigInt(y)]);
+  const kp = keyPath(KmsKeyType.BabyJubJub, pb.hex());
+  return { type: KmsKeyType.BabyJubJub, id: kp };
 };

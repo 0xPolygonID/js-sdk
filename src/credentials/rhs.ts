@@ -1,15 +1,11 @@
-import {
-  Hash,
-  newHashFromBigInt,
-  testBit,
-  Merkletree,
-  NodeLeaf,
-  Siblings
-} from '@iden3/js-merkletree';
+import { Hash, testBit, Merkletree, NodeLeaf, Siblings } from '@iden3/js-merkletree';
 
 import { NODE_TYPE_LEAF } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
 import { ProofNode } from './status/reverse-sparse-merkle-tree';
+import { DID } from '@iden3/js-iden3-core';
+import { TransactionReceipt } from 'ethers';
+import { OnChainRevocationStorage } from '../storage';
 /**
  * Interface to unite contains three trees: claim, revocation and rootOfRoots
  * Also contains the current state of identity
@@ -24,11 +20,58 @@ export interface TreesModel {
 }
 
 /**
+ * Options for RhsCommon.
+ */
+export type RHSOptions = {
+  revokedNonces?: number[];
+  treeModel?: TreesModel;
+  issuerDID?: DID;
+  rhsUrl?: string;
+  onChain?: {
+    storage: OnChainRevocationStorage;
+    txCallback?: (tx: TransactionReceipt) => Promise<void>;
+  };
+};
+
+/**
+ * Saves the given nodes to the RHS off-chain storage.
+ *
+ * @param nodes - The nodes to be saved.
+ * @param nodeUrl - The URL of the RHS node.
+ * @returns A promise that resolves to a boolean indicating whether the nodes were successfully saved.
+ */
+export const saveNodesToRHSOffChain = async (
+  nodes: ProofNode[],
+  nodeUrl: string
+): Promise<boolean> => {
+  const nodesJSON = nodes.map((n) => n.toJSON());
+  const resp = await fetch(nodeUrl + '/node', { method: 'post', body: JSON.stringify(nodesJSON) });
+  const status = resp.status;
+  return status === 200;
+};
+
+/**
+ * Saves the given nodes to the on-chain revocation storage.
+ *
+ * @param nodes - The nodes to be saved.
+ * @param storage - The on-chain revocation storage.
+ * @returns A promise that resolves to the transaction response.
+ */
+export const saveNodesToRHSOnChain = async (
+  nodes: ProofNode[],
+  storage: OnChainRevocationStorage
+): Promise<TransactionReceipt> => {
+  const nodesBigInts = nodes.map((n) => n.children.map((c) => c.bigInt()));
+  return storage.saveNodes(nodesBigInts);
+};
+
+/**
  * Pushes identity state information to a reverse hash service.
  *
  * A reverse hash service (RHS) is a centralized or decentralized service for storing publicly available data about identity.
  * Such data are identity state and state of revocation tree and roots tree root tree.
  *
+ * @deprecated Use `pushHashesToReverseHashService` instead.
  * @param {Hash} state - current state of identity
  * @param {TreesModel} trees - current trees of identity (claims, revocation, rootOfRoots )
  * @param {string} rhsUrl - URL of service
@@ -41,6 +84,26 @@ export async function pushHashesToRHS(
   rhsUrl: string,
   revokedNonces?: number[]
 ): Promise<void> {
+  const nodes = await getNodesRepresentation(revokedNonces, trees, state);
+
+  if (nodes.length > 0) {
+    await saveNodesToRHSOffChain(nodes, rhsUrl);
+  }
+}
+
+/**
+ * Retrieves the representation of nodes for generating a proof.
+ *
+ * @param revokedNonces - An array of revoked nonces.
+ * @param trees - The TreesModel object containing the necessary trees.
+ * @param state - The hash of the state.
+ * @returns A Promise that resolves to an array of ProofNode objects.
+ */
+export async function getNodesRepresentation(
+  revokedNonces: number[] | undefined,
+  trees: TreesModel,
+  state: Hash
+): Promise<ProofNode[]> {
   const nb = new NodesBuilder();
 
   if (revokedNonces) {
@@ -60,16 +123,7 @@ export async function pushHashesToRHS(
     );
   }
 
-  if (nb.nodes.length > 0) {
-    await saveNodes(nb.nodes, rhsUrl);
-  }
-}
-
-async function saveNodes(nodes: ProofNode[], nodeUrl: string): Promise<boolean> {
-  const nodesJSON = nodes.map((n) => n.toJSON());
-  const resp = await fetch(nodeUrl + '/node', { method: 'post', body: JSON.stringify(nodesJSON) });
-  const status = resp.status;
-  return status === 200;
+  return nb.nodes;
 }
 
 async function addRoRNode(nb: NodesBuilder, trees: TreesModel): Promise<void> {
@@ -78,6 +132,7 @@ async function addRoRNode(nb: NodesBuilder, trees: TreesModel): Promise<void> {
 
   return nb.addKey(currentRootsTree, (await claimsTree.root()).bigInt());
 }
+
 async function addRevocationNode(
   nb: NodesBuilder,
   trees: TreesModel,
@@ -105,9 +160,9 @@ class NodesBuilder {
   async addKey(tree: Merkletree, nodeKey: bigint): Promise<void> {
     const { value: nodeValue, siblings } = await tree.get(nodeKey);
 
-    const nodeKeyHash = newHashFromBigInt(nodeKey);
+    const nodeKeyHash = Hash.fromBigInt(nodeKey);
 
-    const nodeValueHash = newHashFromBigInt(nodeValue);
+    const nodeValueHash = Hash.fromBigInt(nodeValue);
 
     const node = new NodeLeaf(nodeKeyHash, nodeValueHash);
     const newNodes: ProofNode[] = await buildNodesUp(siblings, node);
@@ -142,7 +197,7 @@ async function buildNodesUp(siblings: Siblings, node: NodeLeaf): Promise<ProofNo
     nodes[index] = new ProofNode();
   }
   nodes[sl].hash = prevHash;
-  const hashOfOne = newHashFromBigInt(BigInt(1));
+  const hashOfOne = Hash.fromBigInt(BigInt(1));
 
   nodes[sl].children = [node.entry[0], node.entry[1], hashOfOne];
 
@@ -157,7 +212,7 @@ async function buildNodesUp(siblings: Siblings, node: NodeLeaf): Promise<ProofNo
       nodes[i].children[0] = prevHash;
       nodes[i].children[1] = siblings[i];
     }
-    nodes[i].hash = await hashElems([nodes[i].children[0].bigInt(), nodes[i].children[1].bigInt()]);
+    nodes[i].hash = hashElems([nodes[i].children[0].bigInt(), nodes[i].children[1].bigInt()]);
 
     prevHash = nodes[i].hash;
   }

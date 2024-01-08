@@ -24,9 +24,7 @@ import {
   JsonSchemaValidator,
   cacheLoader
 } from '../schema-processor';
-import { IDataStorage } from '../storage/interfaces/data-storage';
-import { MerkleTreeType } from '../storage/entities/mt';
-import { keyPath } from '../kms/provider-helpers';
+import { IDataStorage, MerkleTreeType, OnChainRevocationStorage, Profile } from '../storage';
 import {
   VerifiableConstants,
   BJJSignatureProof2021,
@@ -39,15 +37,26 @@ import {
   CredentialStatusType,
   ProofQuery
 } from '../verifiable';
-import { CredentialRequest, ICredentialWallet, pushHashesToRHS, TreesModel } from '../credentials';
+import {
+  CredentialRequest,
+  getKMSIdByAuthCredential,
+  getNodesRepresentation,
+  ICredentialWallet,
+  ProofNode,
+  pushHashesToRHS,
+  RHSOptions,
+  saveNodesToRHSOnChain,
+  saveNodesToRHSOffChain,
+  TreesModel
+} from '../credentials';
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
 import { Options } from '@iden3/js-jsonld-merklization';
-import { Profile } from '../storage';
+import { TransactionReceipt } from 'ethers';
 
 /**
  * DID creation options
- * seed - seed to generate BJJ keypair
+ * seed - seed to generate BJJ key pair
  * revocationOpts -
 
  * @interface IdentityCreationOptions
@@ -60,6 +69,10 @@ export interface IdentityCreationOptions {
     id: string;
     type: CredentialStatusType;
     nonce?: number;
+    onChain?: {
+      storage: OnChainRevocationStorage;
+      txCallback?: (tx: TransactionReceipt) => Promise<void>;
+    };
   };
   seed?: Uint8Array;
 }
@@ -217,18 +230,24 @@ export interface IIdentityWallet {
   ): Promise<Iden3ProofCreationResult>;
 
   /**
+   * Publishes issuer state to the reverse hash service by given URL
    *
-   *
+   * @deprecated use publishStateToReverseHashService instead with the same arguments in opts
    * @param {DID} issuerDID - issuer did
    * @param {string} rhsURL - reverse hash service URL
    * @param {number[]} [revokedNonces] - revoked nonces for the period from the last published
    * @returns `Promise<void>`
    */
-  publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void>;
+  publishStateToRHS(
+    issuerDID: DID,
+    rhsURL: string,
+    revokedNonces?: number[],
+    opts?: object
+  ): Promise<void>;
 
   /**
-   *
-   *
+   * Publishes specific state to the reverse hash service by given URL
+   * @deprecated use publishStateToReverseHashService instead with the same arguments in opts
    * @param {TreesModel} treeModel - trees model to publish
    * @param {string} rhsURL - reverse hash service URL
    * @param {number[]} [revokedNonces] - revoked nonces for the period from the last published
@@ -237,8 +256,18 @@ export interface IIdentityWallet {
   publishSpecificStateToRHS(
     treeModel: TreesModel,
     rhsURL: string,
-    revokedNonces?: number[]
+    revokedNonces?: number[],
+    opts?: object
   ): Promise<void>;
+
+  /**
+   * Publishes state to the reverse hash service by given options
+   *
+   * @param {(RHSOptions)} opts
+   * @returns {Promise<void>}
+   * @memberof IIdentityWallet
+   */
+  publishStateToReverseHashService(opts: RHSOptions): Promise<void>;
 
   /**
    * Extracts core claim from signature or merkle tree proof. If both proof persists core claim must be the same
@@ -430,7 +459,23 @@ export class IdentityWallet implements IIdentityWallet {
     credential.proof = [mtpProof];
 
     if (opts.revocationOpts.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
-      await this.publishStateToRHS(did, opts.revocationOpts.id);
+      await this.publishStateToReverseHashService({
+        issuerDID: did,
+        rhsUrl: opts.revocationOpts.id
+      });
+    } else if (
+      opts.revocationOpts.type === CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023
+    ) {
+      if (!opts.revocationOpts.onChain) {
+        throw new Error(
+          `on chain section is not provided for ${CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023} revocation type`
+        );
+      }
+
+      await this.publishStateToReverseHashService({
+        issuerDID: did,
+        onChain: opts.revocationOpts.onChain
+      });
     }
 
     await this._storage.identity.saveIdentity({
@@ -607,7 +652,7 @@ export class IdentityWallet implements IIdentityWallet {
 
   /** {@inheritDoc IIdentityWallet.sign} */
   async sign(message: Uint8Array, credential: W3CCredential): Promise<Signature> {
-    const keyKMSId = this.getKMSIdByAuthCredential(credential);
+    const keyKMSId = getKMSIdByAuthCredential(credential);
     const payload = poseidon.hashBytes(message);
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(payload));
@@ -617,7 +662,7 @@ export class IdentityWallet implements IIdentityWallet {
 
   /** {@inheritDoc IIdentityWallet.signChallenge} */
   async signChallenge(challenge: bigint, credential: W3CCredential): Promise<Signature> {
-    const keyKMSId = this.getKMSIdByAuthCredential(credential);
+    const keyKMSId = getKMSIdByAuthCredential(credential);
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(challenge));
 
@@ -858,16 +903,62 @@ export class IdentityWallet implements IIdentityWallet {
     );
   }
 
-  private getKMSIdByAuthCredential(credential: W3CCredential): KmsKeyId {
-    if (credential.type.indexOf('AuthBJJCredential') === -1) {
-      throw new Error("can't sign with not AuthBJJCredential credential");
+  async publishStateToReverseHashService(opts: RHSOptions): Promise<void> {
+    if (!opts.issuerDID && !opts.treeModel) {
+      throw new Error('either issuerDID or treeModel must be provided');
     }
-    const x = credential.credentialSubject['x'] as unknown as string;
-    const y = credential.credentialSubject['y'] as unknown as string;
 
-    const pb: PublicKey = new PublicKey([BigInt(x), BigInt(y)]);
-    const kp = keyPath(KmsKeyType.BabyJubJub, pb.hex());
-    return { type: KmsKeyType.BabyJubJub, id: kp };
+    let nodes: ProofNode[] = [];
+    if (opts.issuerDID) {
+      const treeState = await this.getDIDTreeModel(opts.issuerDID);
+      nodes = await getNodesRepresentation(
+        opts.revokedNonces,
+        {
+          revocationTree: treeState.revocationTree,
+          claimsTree: treeState.claimsTree,
+          state: treeState.state,
+          rootsTree: treeState.rootsTree
+        },
+        treeState.state
+      );
+    }
+
+    if (opts.treeModel) {
+      nodes = await getNodesRepresentation(
+        opts.revokedNonces,
+        {
+          revocationTree: opts.treeModel.revocationTree,
+          claimsTree: opts.treeModel.claimsTree,
+          state: opts.treeModel.state,
+          rootsTree: opts.treeModel.rootsTree
+        },
+        opts.treeModel.state
+      );
+    }
+
+    if (!nodes.length) {
+      return;
+    }
+
+    if (opts.rhsUrl) {
+      await saveNodesToRHSOffChain(nodes, opts.rhsUrl);
+      return;
+    }
+
+    if (opts.onChain) {
+      const txPromise = saveNodesToRHSOnChain(nodes, opts.onChain.storage);
+
+      if (opts.onChain.txCallback) {
+        const cb = opts.onChain.txCallback;
+        txPromise.then((receipt) => cb(receipt));
+        return;
+      }
+
+      await txPromise;
+      return;
+    }
+
+    throw new Error('either rhsUrl or rpcUrl must be provided');
   }
 
   public async getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim> {
