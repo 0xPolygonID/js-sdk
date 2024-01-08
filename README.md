@@ -30,9 +30,11 @@ To run them, please set following variables:
 
 ```bash
 export WALLET_KEY="...key in hex format"
-export RPC_URL="...url to polygon network rpc node"
+export RPC_URL="...url to network rpc node"
 export RHS_URL="..reverse hash service url"
 export IPFS_URL="url for ipfs"
+export STATE_CONTRACT_ADDRESS="state contract address"
+export RHS_CONTRACT_ADDRESS="reverse hash service contract address"
 
 ```
 
