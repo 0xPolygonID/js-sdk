@@ -1,53 +1,30 @@
 /* eslint-disable no-console */
 import {
-  CredentialStorage,
-  Identity,
-  IdentityStorage,
   IdentityWallet,
-  Profile,
   byteEncoder,
-  BjjProvider,
-  KMS,
-  KmsKeyType,
-  InMemoryPrivateKeyStore,
   MerkleTreeType,
   IDataStorage,
-  InMemoryDataSource,
-  InMemoryMerkleTreeStorage,
   CredentialRequest,
   ICredentialWallet,
   CredentialWallet,
   CredentialStatusResolverRegistry,
   RHSResolver,
-  CredentialStatusType,
-  W3CCredential,
-  OnChainRevocationStorage,
-  defaultEthConnectionConfig,
-  OnChainResolver,
-  IProofService,
-  FSCircuitStorage,
-  ProofService,
-  ICircuitStorage,
-  ZeroKnowledgeProofRequest,
-  CircuitId
+  CredentialStatusType
 } from '../../src';
+import {
+  MOCK_STATE_STORAGE,
+  SEED_USER,
+  createIdentity,
+  RHS_URL,
+  getInMemoryDataStorage,
+  registerBJJIntoInMemoryKMS
+} from '../helpers';
 import { expect } from 'chai';
-import { Wallet } from 'ethers';
-import { MOCK_STATE_STORAGE, SEED_USER, createIdentity } from '../helpers';
-import path from 'path';
 
 describe('identity', () => {
-  const rhsURL = process.env.RHS_URL as string;
   let credWallet: ICredentialWallet;
   let idWallet: IdentityWallet;
   let dataStorage: IDataStorage;
-
-  const rpcUrl = process.env.RPC_URL as string;
-  const walletKey = process.env.WALLET_KEY as string;
-  const rhsContract = process.env.RHS_CONTRACT_ADDRESS as string;
-  const stateContract = process.env.CONTRACT_ADDRESS as string;
-  let proofService: IProofService;
-  let circuitStorage: ICircuitStorage;
 
   const createClaimReq = (
     credentialSubjectId: string,
@@ -65,51 +42,21 @@ describe('identity', () => {
       expiration: 12345678888,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsURL
+        id: RHS_URL
       },
       ...opts
     };
   };
 
   beforeEach(async () => {
-    circuitStorage = new FSCircuitStorage({
-      dirname: path.join(__dirname, '../proofs/testdata')
-    });
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
-    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
-    const kms = new KMS();
-    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
-
-    dataStorage = {
-      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
-      identity: new IdentityStorage(
-        new InMemoryDataSource<Identity>(),
-        new InMemoryDataSource<Profile>()
-      ),
-      mt: new InMemoryMerkleTreeStorage(40),
-      states: MOCK_STATE_STORAGE
-    };
-
+    dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       new RHSResolver(dataStorage.states)
     );
-    resolvers.register(
-      CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-      new OnChainResolver([
-        {
-          ...defaultEthConnectionConfig,
-          url: rpcUrl,
-          contractAddress: stateContract,
-          chainId: 80001
-        }
-      ])
-    );
-
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
+    idWallet = new IdentityWallet(registerBJJIntoInMemoryKMS(), dataStorage, credWallet);
   });
   it('createIdentity', async () => {
     const { did, credential } = await createIdentity(idWallet);
@@ -228,93 +175,8 @@ describe('identity', () => {
 
     const claimReq: CredentialRequest = createClaimReq(userDID.string());
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
-    issuerCred.credentialStatus.id = rhsURL;
+    issuerCred.credentialStatus.id = RHS_URL;
 
     await credWallet.getRevocationStatusFromCredential(issuerCred);
-  });
-
-  it('issueCredential and generate proofs with onchain RHS status with tx callbacks', async () => {
-    const signer = new Wallet(walletKey);
-    const id = rhsContract;
-
-    const storage = new OnChainRevocationStorage(
-      { ...defaultEthConnectionConfig, url: rpcUrl },
-      rhsContract,
-      signer
-    );
-    return new Promise((resolve) => {
-      (async () => {
-        const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(
-          idWallet,
-          {
-            seed: byteEncoder.encode('soedseedseedseedseedseedseedseed'),
-            revocationOpts: {
-              id,
-              type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-              onChain: {
-                storage,
-                txCallback: async (tx) => {
-                  console.log(tx.hash);
-                  const { did: userDID, credential: userAuthCredential } = await createIdentity(
-                    idWallet,
-                    {
-                      seed: byteEncoder.encode('seedseedseedseedseedseedseedseex'),
-                      revocationOpts: {
-                        id,
-                        type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-                        onChain: {
-                          storage,
-                          txCallback: async (txReceipt) => {
-                            console.log(txReceipt.hash);
-
-                            const claimReq: CredentialRequest = createClaimReq(userDID.string(), {
-                              revocationOpts: {
-                                type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-                                id
-                              }
-                            });
-
-                            const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
-
-                            expect(issuerCred.credentialSubject.id).to.equal(userDID.string());
-
-                            await credWallet.save(issuerCred);
-
-                            const proofReq: ZeroKnowledgeProofRequest = {
-                              id: 1,
-                              circuitId: CircuitId.AtomicQuerySigV2,
-                              optional: false,
-                              query: {
-                                allowedIssuers: ['*'],
-                                type: claimReq.type,
-                                context:
-                                  'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
-                                credentialSubject: {
-                                  documentType: {
-                                    $eq: 99
-                                  }
-                                }
-                              }
-                            };
-
-                            const { proof } = await proofService.generateProof(proofReq, userDID);
-
-                            expect(proof).not.to.be.undefined;
-                            resolve();
-                          }
-                        }
-                      }
-                    }
-                  );
-
-                  expect(userAuthCredential.credentialStatus.id).to.contain(rhsContract);
-                }
-              }
-            }
-          }
-        );
-        expect(issuerAuthCredential.credentialStatus.id).to.contain(rhsContract);
-      })();
-    });
   });
 });

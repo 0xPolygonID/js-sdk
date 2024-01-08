@@ -1,20 +1,42 @@
-import { OnChainResolver } from '../../src/credentials/status/on-chain-revocation';
-import { InMemoryDataSource } from './../../src/storage/memory/data-source';
-import { CredentialStorage } from './../../src/storage/shared/credential-storage';
-import { Identity, IdentityStorage, IdentityWallet, Profile, byteEncoder } from '../../src';
-import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
-import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage } from '../../src/storage/interfaces';
-import { InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
-import { CredentialStatusType, RevocationStatus, W3CCredential } from '../../src/verifiable';
-import { Proof } from '@iden3/js-merkletree';
-import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import {
+  OnChainResolver,
+  FSCircuitStorage,
+  InMemoryDataSource,
+  Identity,
+  IdentityStorage,
+  IdentityWallet,
+  OnChainRevocationStorage,
+  Profile,
+  CredentialStorage,
+  IDataStorage,
+  InMemoryMerkleTreeStorage,
+  CredentialRequest,
+  CredentialWallet,
+  defaultEthConnectionConfig,
+  EthStateStorage,
+  CredentialStatusType,
+  W3CCredential,
+  CredentialStatusResolverRegistry,
+  ProofService,
+  IProofService,
+  ICircuitStorage,
+  byteEncoder
+} from '../../src';
+
+import {
+  createIdentity,
+  registerBJJIntoInMemoryKMS,
+  STATE_CONTRACT,
+  RPC_URL,
+  WALLET_KEY,
+  RHS_CONTRACT_ADDRESS
+} from '../helpers';
+
 import chai from 'chai';
-import { CredentialStatusResolverRegistry } from '../../src/credentials';
-import { VerifiableConstants } from '../../src/verifiable';
+import path from 'path';
 import spies from 'chai-spies';
+import { JsonRpcProvider, Wallet } from 'ethers';
+import { getRandomBytes } from '@iden3/js-crypto';
 chai.use(spies);
 const expect = chai.expect;
 
@@ -128,23 +150,51 @@ describe('parse credential status with type Iden3OnchainSparseMerkleTreeProof202
   }
 });
 
-describe('onchain', () => {
+describe('onchain revocation checks', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
   let dataStorage: IDataStorage;
-  const infuraUrl = process.env.RPC_URL as string;
+
+  let proofService: IProofService;
+  let circuitStorage: ICircuitStorage;
+  let storage: OnChainRevocationStorage;
+  let signer: Wallet;
+  let onchainResolver: OnChainResolver;
+
+  const createCredRequest = (
+    credentialSubjectId: string,
+    opts?: Partial<CredentialRequest>
+  ): CredentialRequest => {
+    return {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: credentialSubjectId,
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        nonce: 1000,
+        type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+        id: RHS_CONTRACT_ADDRESS
+      },
+      ...opts
+    };
+  };
 
   beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
-    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
-    const kms = new KMS();
-    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+    circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
 
-    defaultEthConnectionConfig.url = infuraUrl;
-    defaultEthConnectionConfig.chainId = 80001;
-    const conf = defaultEthConnectionConfig;
-    conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
-    const ethStorage = new EthStateStorage(conf);
+    const ethStorage = new EthStateStorage({
+      ...defaultEthConnectionConfig,
+      contractAddress: STATE_CONTRACT,
+      chainId: 80001,
+      url: RPC_URL
+    });
 
     dataStorage = {
       credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
@@ -156,231 +206,168 @@ describe('onchain', () => {
       states: ethStorage
     };
 
+    onchainResolver = new OnChainResolver([
+      {
+        ...defaultEthConnectionConfig,
+        url: RPC_URL,
+        contractAddress: STATE_CONTRACT,
+        chainId: 80001
+      }
+    ]);
+
     const resolvers = new CredentialStatusResolverRegistry();
-    resolvers.register(
-      CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-      new OnChainResolver([defaultEthConnectionConfig])
-    );
+    resolvers.register(CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023, onchainResolver);
+
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    credWallet.getRevocationStatusFromCredential = async () => {
-      const r: RevocationStatus = {
-        mtp: {
-          existence: false,
-          nodeAux: undefined,
-          siblings: []
-        } as unknown as Proof,
-        issuer: {}
-      };
-      return r;
-    };
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    idWallet = new IdentityWallet(registerBJJIntoInMemoryKMS(), dataStorage, credWallet);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
+
+    signer = new Wallet(WALLET_KEY, new JsonRpcProvider(RPC_URL));
+
+    storage = new OnChainRevocationStorage(
+      { ...defaultEthConnectionConfig, url: RPC_URL },
+      RHS_CONTRACT_ADDRESS,
+      signer
+    );
   });
 
   it('issuer has genesis state', async () => {
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
-
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
-
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-        id: 'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth/credentialStatus?contractAddress=80001:0x068F826Da7e5119891a792817C5bE8bB9816b9D3',
-        nonce: 0
+    const revocationOpts = {
+      type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+      id: RHS_CONTRACT_ADDRESS,
+      onChain: {
+        storage
       }
+    };
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet, {
+      seed: getRandomBytes(32),
+      revocationOpts
     });
 
     await credWallet.save(issuerAuthCredential);
 
-    const { did: userDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-        id: 'did:iden3:polygon:mumbai:wuw5tydZ7AAd3efwEqPprnqjiNHR24jqruSPKmV1V/credentialStatus?contractAddress=80001:0x068F826Da7e5119891a792817C5bE8bB9816b9D3',
-        nonce: 0
-      }
+    const { did: userDID } = await createIdentity(idWallet, {
+      seed: getRandomBytes(32),
+      revocationOpts
     });
 
-    const claimReq: CredentialRequest = {
-      credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
-      type: 'KYCAgeCredential',
-      credentialSubject: {
-        id: userDID.string(),
-        birthday: 19960424,
-        documentType: 99
-      },
-      expiration: 2793526400,
-      revocationOpts: {
-        nonce: 1000,
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth/credentialStatus?contractAddress=80001:0x068F826Da7e5119891a792817C5bE8bB9816b9D3&state=ed17a07e8b78ab979507829fa4d37e663ca5906714d506dec8a174d949c5eb09'
-      }
-    };
+    const claimReq: CredentialRequest = createCredRequest(userDID.string());
 
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
 
     await credWallet.save(issuerCred);
 
     const cs = {
-      id: claimReq.revocationOpts.id,
+      id: issuerCred.credentialStatus.id,
       type: claimReq.revocationOpts.type,
       revocationNonce: claimReq.revocationOpts.nonce
     };
-    const onchainResolver = new OnChainResolver([defaultEthConnectionConfig]);
 
-    // state contract returns identity state not found error
-    // sc returns non inclusion proof for issuer genesis state
-    chai.spy.on(onchainResolver, '_getStateStorageForIssuer', () => {
-      return {
-        getLatestStateById: () => {
-          throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
-        }
-      };
-    });
-    chai.spy.on(onchainResolver, '_getOnChainRevocationStorageForIssuer', () => {
-      return {
-        getRevocationStatusByIdAndState: () => {
-          return {
-            mtp: {
-              existence: false
-            },
-            issuer: {
-              state: 'ed17a07e8b78ab979507829fa4d37e663ca5906714d506dec8a174d949c5eb09',
-              claimsTreeRoot: '6091193ec58a6c020183c2d889a92c32410f31812595f228d67a2bf37e04a729',
-              revocationTreeRoot:
-                '0000000000000000000000000000000000000000000000000000000000000000',
-              rootOfRoots: '0000000000000000000000000000000000000000000000000000000000000000'
-            }
-          };
-        }
-      };
+    let onchainStatus = await onchainResolver.resolve(cs, {
+      issuerDID
     });
 
-    const onchainStatus = await onchainResolver.resolve(cs, {
-      issuerDID: issuerDID
-    });
+    const treeState = await idWallet.getDIDTreeModel(issuerDID);
+    const [ctrHex, rtrHex, rorTrHex] = (
+      await Promise.all([
+        treeState.claimsTree.root(),
+        treeState.revocationTree.root(),
+        treeState.rootsTree.root()
+      ])
+    ).map((r) => r.hex());
 
-    const latestTree = await idWallet.getDIDTreeModel(issuerDID);
-    expect(onchainStatus.issuer.state).to.equal(latestTree.state.hex());
-    expect(onchainStatus.issuer.claimsTreeRoot).to.equal(
-      (await latestTree.claimsTree.root()).hex()
-    );
-    expect(onchainStatus.issuer.revocationTreeRoot).to.equal(
-      (await latestTree.revocationTree.root()).hex()
-    );
-    expect(onchainStatus.issuer.rootOfRoots).to.equal((await latestTree.rootsTree.root()).hex());
+    expect(onchainStatus.issuer.state).to.equal(treeState.state.hex());
+    expect(onchainStatus.issuer.claimsTreeRoot).to.equal(ctrHex);
+    expect(onchainStatus.issuer.revocationTreeRoot).to.equal(rtrHex);
+    expect(onchainStatus.issuer.rootOfRoots).to.equal(rorTrHex);
     expect(onchainStatus.mtp.existence).to.equal(false);
+
+    const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
+
+    await idWallet.publishStateToReverseHashService({
+      issuerDID,
+      onChain: { storage }
+    });
+
+    await proofService.transitState(issuerDID, res.oldTreeState, true, dataStorage.states, signer);
+
+    const [ctrHexL, rtrHexL, rorTrHexL] = [
+      res.newTreeState.claimsRoot.hex(),
+      res.newTreeState.revocationRoot.hex(),
+      res.newTreeState.rootOfRoots.hex()
+    ];
+
+    onchainStatus = await onchainResolver.resolve(cs, {
+      issuerDID
+    });
+
+    expect(onchainStatus.issuer.state).to.equal(res.newTreeState.state.hex());
+    expect(onchainStatus.issuer.claimsTreeRoot).to.equal(ctrHexL);
+    expect(onchainStatus.issuer.revocationTreeRoot).to.equal(rtrHexL);
+    expect(onchainStatus.issuer.rootOfRoots).to.equal(rorTrHexL);
+    expect(onchainStatus.mtp.existence).to.equal(false);
+
+    expect(res.newTreeState.state.hex()).not.to.equal(treeState.state.hex());
+    expect(ctrHexL).not.to.equal(ctrHex);
+    expect(rtrHexL).to.equal(rtrHex);
+    expect(rorTrHexL).not.to.equal(rorTrHex);
   });
 
-  it('state contract returns latest state', async () => {
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
+  it('issueCredential and generate proofs with onchain RHS status with tx callbacks', async () => {
+    const id = RHS_CONTRACT_ADDRESS;
+    return new Promise((resolve) => {
+      (async () => {
+        const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(
+          idWallet,
+          {
+            seed: byteEncoder.encode('soedseedseedseedseedseedseedseed'),
+            revocationOpts: {
+              id,
+              type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+              onChain: {
+                storage,
+                txCallback: async () => {
+                  const { did: userDID, credential: userAuthCredential } = await createIdentity(
+                    idWallet,
+                    {
+                      seed: byteEncoder.encode('seedseedseedseedseedseedseedseex'),
+                      revocationOpts: {
+                        id,
+                        type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+                        onChain: {
+                          storage,
+                          txCallback: async () => {
+                            const claimReq: CredentialRequest = createCredRequest(
+                              userDID.string(),
+                              {
+                                revocationOpts: {
+                                  type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+                                  id
+                                }
+                              }
+                            );
 
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
+                            const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
 
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-        id: 'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth/credentialStatus?contractAddress=80001:0x068F826Da7e5119891a792817C5bE8bB9816b9D3',
-        nonce: 0
-      }
-    });
+                            expect(issuerCred.credentialSubject.id).to.equal(userDID.string());
 
-    await credWallet.save(issuerAuthCredential);
+                            await credWallet.save(issuerCred);
+                            resolve();
+                          }
+                        }
+                      }
+                    }
+                  );
 
-    const { did: userDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-        id: 'did:iden3:polygon:mumbai:wuw5tydZ7AAd3efwEqPprnqjiNHR24jqruSPKmV1V/credentialStatus?contractAddress=80001:0x068F826Da7e5119891a792817C5bE8bB9816b9D3',
-        nonce: 0
-      }
-    });
-
-    const claimReq: CredentialRequest = {
-      credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
-      type: 'KYCAgeCredential',
-      credentialSubject: {
-        id: userDID.string(),
-        birthday: 19960424,
-        documentType: 99
-      },
-      expiration: 2793526400,
-      revocationOpts: {
-        nonce: 1000,
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: 'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth/credentialStatus?contractAddress=80001:0x068F826Da7e5119891a792817C5bE8bB9816b9D3'
-      }
-    };
-
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
-    await credWallet.save(issuerCred);
-    await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
-
-    const cs = {
-      id: claimReq.revocationOpts.id,
-      type: claimReq.revocationOpts.type,
-      revocationNonce: claimReq.revocationOpts.nonce
-    };
-    const onchainResolver = new OnChainResolver([defaultEthConnectionConfig]);
-
-    // state contract returns latest state
-    // sc generates inclusion proof for issuer latest state
-    chai.spy.on(onchainResolver, '_getStateStorageForIssuer', () => {
-      return {
-        getLatestStateById: () => {
-          return {
-            state: BigInt('0xf600ba49073ff1c396ed674263f04cb246647039d55d43a49ce310a857fa8923')
-          };
-        }
-      };
-    });
-    chai.spy.on(onchainResolver, '_getOnChainRevocationStorageForIssuer', () => {
-      return {
-        getRevocationStatusByIdAndState: () => {
-          return {
-            mtp: {
-              existence: false
-            },
-            issuer: {
-              state: 'f600ba49073ff1c396ed674263f04cb246647039d55d43a49ce310a857fa8923',
-              claimsTreeRoot: '9a50b13ef0d27bc5ec194717fc01e3574b8d1b61e94d78641c00960039d35805',
-              revocationTreeRoot:
-                '0000000000000000000000000000000000000000000000000000000000000000',
-              rootOfRoots: '9b8fb367151795494ce222daebd769f6f4eb2f4d9c8de6e5bb2548b76022c812'
+                  expect(userAuthCredential.credentialStatus.id).to.contain(RHS_CONTRACT_ADDRESS);
+                }
+              }
             }
-          };
-        }
-      };
+          }
+        );
+        expect(issuerAuthCredential.credentialStatus.id).to.contain(RHS_CONTRACT_ADDRESS);
+      })();
     });
-
-    const onchainStatus = await onchainResolver.resolve(cs, {
-      issuerDID: issuerDID
-    });
-
-    const latestTree = await idWallet.getDIDTreeModel(issuerDID);
-    expect(onchainStatus.issuer.state).to.equal(latestTree.state.hex());
-    expect(onchainStatus.issuer.claimsTreeRoot).to.equal(
-      (await latestTree.claimsTree.root()).hex()
-    );
-    expect(onchainStatus.issuer.revocationTreeRoot).to.equal(
-      (await latestTree.revocationTree.root()).hex()
-    );
-    expect(onchainStatus.issuer.rootOfRoots).to.equal((await latestTree.rootsTree.root()).hex());
-    expect(onchainStatus.mtp.existence).to.equal(false);
   });
 });

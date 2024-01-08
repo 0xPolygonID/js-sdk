@@ -1,18 +1,33 @@
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import {
+  BjjProvider,
   CredentialStatusType,
+  CredentialStorage,
   IIdentityWallet,
   IStateStorage,
+  Identity,
   IdentityCreationOptions,
+  IdentityStorage,
+  InMemoryDataSource,
+  InMemoryMerkleTreeStorage,
+  InMemoryPrivateKeyStore,
+  KMS,
+  KmsKeyType,
+  Profile,
   RootInfo,
   StateProof,
   VerifiableConstants,
+  W3CCredential,
   byteEncoder
 } from '../src';
 
 export const SEED_ISSUER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
-export const SEED_USER: Uint8Array = byteEncoder.encode('userseedseedseedseedseedseeduser');
-const rhsURL = process.env.RHS_URL as string;
+export const SEED_USER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
+export const RHS_URL = process.env.RHS_URL as string;
+export const RHS_CONTRACT_ADDRESS = process.env.RHS_CONTRACT_ADDRESS as string;
+export const STATE_CONTRACT = process.env.CONTRACT_ADDRESS as string;
+export const RPC_URL = process.env.RPC_URL as string;
+export const WALLET_KEY = process.env.WALLET_KEY as string;
 
 export const createIdentity = async (
   wallet: IIdentityWallet,
@@ -25,7 +40,7 @@ export const createIdentity = async (
     seed: SEED_ISSUER,
     revocationOpts: {
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-      id: rhsURL
+      id: RHS_URL
     },
     ...opts
   });
@@ -60,4 +75,24 @@ export const MOCK_STATE_STORAGE: IStateStorage = {
       replacedAtBlock: 0n
     });
   }
+};
+
+export const registerBJJIntoInMemoryKMS = (): KMS => {
+  const memoryKeyStore = new InMemoryPrivateKeyStore();
+  const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
+  const kms = new KMS();
+  kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+  return kms;
+};
+
+export const getInMemoryDataStorage = (states: IStateStorage) => {
+  return {
+    credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
+    identity: new IdentityStorage(
+      new InMemoryDataSource<Identity>(),
+      new InMemoryDataSource<Profile>()
+    ),
+    mt: new InMemoryMerkleTreeStorage(40),
+    states
+  };
 };

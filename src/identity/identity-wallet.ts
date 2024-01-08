@@ -553,19 +553,20 @@ export class IdentityWallet implements IIdentityWallet {
   }
   /** {@inheritDoc IIdentityWallet.getDIDTreeModel} */
   async getDIDTreeModel(did: DID): Promise<TreesModel> {
+    const didStr = did.string();
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.string(),
+      didStr,
       MerkleTreeType.Claims
     );
     const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.string(),
+      didStr,
       MerkleTreeType.Revocations
     );
     const rootsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.string(),
+      didStr,
       MerkleTreeType.Roots
     );
-    const state = await hashElems([
+    const state = hashElems([
       (await claimsTree.root()).bigInt(),
       (await revocationTree.root()).bigInt(),
       (await rootsTree.root()).bigInt()
