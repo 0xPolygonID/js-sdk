@@ -18,12 +18,10 @@ import {
   ZERO_HASH,
   Merkletree,
   InMemoryDB,
-  Proof,
-  newHashFromBigInt,
-  newHashFromString
+  Proof
 } from '@iden3/js-merkletree';
 import { Hex, poseidon, PrivateKey, Signature } from '@iden3/js-crypto';
-import { TreeState } from '../../src/circuits';
+import { prepareCircuitArrayValues, TreeState } from '../../src/circuits';
 import { Merklizer } from '@iden3/js-jsonld-merklization';
 
 const TestClaimDocument = `{
@@ -271,7 +269,7 @@ export class IdentityTest {
     const rot = await this.rot.root();
 
     const state = idenState(clt.bigInt(), ret.bigInt(), rot.bigInt());
-    const hash = newHashFromBigInt(state);
+    const hash = Hash.fromBigInt(state);
     return hash;
   }
 }
@@ -340,7 +338,7 @@ export function prepareIntArray(arr: bigint[], length: number): bigint[] {
 }
 
 export function mtHashFromStr(hashStr: string): Hash {
-  return newHashFromString(hashStr);
+  return Hash.fromString(hashStr);
 }
 
 export const globalTree = () => new Merkletree(new InMemoryDB(str2Bytes('')), true, 64);
@@ -349,3 +347,25 @@ export const coreSchemaFromStr = (schemaIntString: string) => {
   const schemaInt = BigInt(schemaIntString);
   return SchemaHash.newSchemaHashFromInt(schemaInt);
 };
+
+export function calculateQueryHash(
+  values: bigint[],
+  schema: string,
+  slotIndex: string | number,
+  operator: string | number,
+  claimPathKey: string | number,
+  claimPathNotExists: string | number
+): bigint {
+  const expValue = prepareCircuitArrayValues(values, 64);
+  const valueHash = poseidon.spongeHashX(expValue, 6);
+  const schemaHash = coreSchemaFromStr(schema);
+  const queryHash = poseidon.hash([
+    schemaHash.bigInt(),
+    BigInt(slotIndex),
+    BigInt(operator),
+    BigInt(claimPathKey),
+    BigInt(claimPathNotExists),
+    valueHash
+  ]);
+  return queryHash;
+}

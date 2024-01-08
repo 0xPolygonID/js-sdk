@@ -116,6 +116,14 @@ describe('mtp onchain proofs', () => {
   });
 
   it('mtpv2onchain-merklized', async () => {
+    await onChainMerklizedTest(CircuitId.AtomicQueryMTPV2OnChain);
+  });
+
+  it('mtpv3onchain-merklized', async () => {
+    await onChainMerklizedTest(CircuitId.AtomicQueryV3OnChain);
+  });
+
+  const onChainMerklizedTest = async (circuitId: CircuitId) => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedsnew');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
@@ -194,7 +202,7 @@ describe('mtp onchain proofs', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQueryMTPV2OnChain,
+      circuitId: circuitId,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -215,10 +223,7 @@ describe('mtp onchain proofs', () => {
     });
     expect(vp).to.be.undefined;
 
-    const isValid = await proofService.verifyProof(
-      { proof, pub_signals },
-      CircuitId.AtomicQueryMTPV2OnChain
-    );
+    const isValid = await proofService.verifyProof({ proof, pub_signals }, circuitId);
     expect(isValid).to.be.true;
-  });
+  };
 });

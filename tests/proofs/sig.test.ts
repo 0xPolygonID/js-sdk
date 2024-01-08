@@ -119,6 +119,10 @@ describe('sig proofs', () => {
   });
 
   it('sigv2-non-merklized', async () => {
+    await sigNonMerklizedTest(CircuitId.AtomicQuerySigV2);
+  });
+
+  const sigNonMerklizedTest = async (circuitId: CircuitId) => {
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
@@ -140,7 +144,7 @@ describe('sig proofs', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQuerySigV2,
+      circuitId: circuitId,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -165,9 +169,21 @@ describe('sig proofs', () => {
 
     expect(proof).not.to.be.undefined;
     expect(vp).to.be.undefined;
+  };
+
+  it('sigv3-non-merklized', async () => {
+    await sigNonMerklizedTest(CircuitId.AtomicQueryV3);
   });
 
   it('sigv2-merklized', async () => {
+    await sigMerklizedTest(CircuitId.AtomicQuerySigV2);
+  });
+
+  it('sigv3-merklized', async () => {
+    await sigMerklizedTest(CircuitId.AtomicQueryV3);
+  });
+
+  const sigMerklizedTest = async (circuitId: CircuitId) => {
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
@@ -189,7 +205,7 @@ describe('sig proofs', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQuerySigV2,
+      circuitId: circuitId,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -217,7 +233,7 @@ describe('sig proofs', () => {
 
     expect(vp).to.be.undefined;
     expect(proof).not.to.be.undefined;
-  });
+  };
 
   it('sigv2-merklized-query-array', async () => {
     const claimReq: CredentialRequest = {

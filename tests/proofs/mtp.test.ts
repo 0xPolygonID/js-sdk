@@ -116,6 +116,10 @@ describe('mtp proofs', () => {
   });
 
   it('mtpv2-non-merklized', async () => {
+    await nonMerklizedTest(CircuitId.AtomicQueryMTPV2);
+  });
+
+  const nonMerklizedTest = async (circuitId: CircuitId) => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
@@ -193,7 +197,7 @@ describe('mtp proofs', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQueryMTPV2,
+      circuitId: circuitId,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -214,14 +218,15 @@ describe('mtp proofs', () => {
     const { proof, pub_signals, vp } = await proofService.generateProof(proofReq, userDID);
     expect(vp).to.be.undefined;
 
-    const isValid = await proofService.verifyProof(
-      { proof, pub_signals },
-      CircuitId.AtomicQueryMTPV2
-    );
+    const isValid = await proofService.verifyProof({ proof, pub_signals }, circuitId);
     expect(isValid).to.be.true;
-  });
+  };
 
   it('mtpv2-merklized', async () => {
+    await merklizedTest(CircuitId.AtomicQueryMTPV2);
+  });
+
+  const merklizedTest = async (circuitId: CircuitId) => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedsnew');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
@@ -298,7 +303,7 @@ describe('mtp proofs', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQueryMTPV2,
+      circuitId,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -325,10 +330,15 @@ describe('mtp proofs', () => {
     });
     expect(vp).to.be.undefined;
 
-    const isValid = await proofService.verifyProof(
-      { proof, pub_signals },
-      CircuitId.AtomicQueryMTPV2
-    );
+    const isValid = await proofService.verifyProof({ proof, pub_signals }, circuitId);
     expect(isValid).to.be.true;
+  };
+
+  it('mtpv3-non-merklized', async () => {
+    await nonMerklizedTest(CircuitId.AtomicQueryV3);
+  });
+
+  it('mtpv3-merklized', async () => {
+    await merklizedTest(CircuitId.AtomicQueryV3);
   });
 });

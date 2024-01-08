@@ -1,4 +1,20 @@
 /**
+ * Represents the XSD namespace and its corresponding data types.
+ */
+
+export enum XSDNS {
+  Boolean = 'http://www.w3.org/2001/XMLSchema#boolean',
+  Integer = 'http://www.w3.org/2001/XMLSchema#integer',
+  NonNegativeInteger = 'http://www.w3.org/2001/XMLSchema#nonNegativeInteger',
+  NonPositiveInteger = 'http://www.w3.org/2001/XMLSchema#nonPositiveInteger',
+  NegativeInteger = 'http://www.w3.org/2001/XMLSchema#negativeInteger',
+  PositiveInteger = 'http://www.w3.org/2001/XMLSchema#positiveInteger',
+  DateTime = 'http://www.w3.org/2001/XMLSchema#dateTime',
+  Double = 'http://www.w3.org/2001/XMLSchema#double',
+  String = 'http://www.w3.org/2001/XMLSchema#string'
+}
+
+/**
  * List of available operators.
  *
  * @enum {number}
@@ -10,7 +26,12 @@ export enum Operators {
   GT = 3,
   IN = 4,
   NIN = 5,
-  NE = 6
+  NE = 6,
+  LTE = 7,
+  GTE = 8,
+  BETWEEN = 9,
+  SD = 16,
+  NULLIFY = 17
 }
 
 /** QueryOperators represents operators for atomic circuits */
@@ -21,7 +42,45 @@ export const QueryOperators = {
   $gt: Operators.GT,
   $in: Operators.IN,
   $nin: Operators.NIN,
-  $ne: Operators.NE
+  $ne: Operators.NE,
+  $lte: Operators.LTE,
+  $gte: Operators.GTE,
+  $between: Operators.BETWEEN,
+  $sd: Operators.SD,
+  $nullify: Operators.NULLIFY
+};
+
+const allOperations = Object.values(QueryOperators);
+
+export const availableTypesOperators: Map<string, Operators[]> = new Map([
+  [XSDNS.Boolean, [QueryOperators.$eq, QueryOperators.$ne]],
+  [XSDNS.Integer, allOperations],
+  [XSDNS.NonNegativeInteger, allOperations],
+  [XSDNS.PositiveInteger, allOperations],
+  [XSDNS.Double, [QueryOperators.$eq, QueryOperators.$ne, QueryOperators.$in, QueryOperators.$nin]],
+  [XSDNS.String, [QueryOperators.$eq, QueryOperators.$ne, QueryOperators.$in, QueryOperators.$nin]],
+  [XSDNS.DateTime, allOperations]
+]);
+
+/**
+ * Checks if the given operation is valid for the specified datatype.
+ * @param datatype - The datatype to check the operation for.
+ * @param op - The operation to check.
+ * @returns True if the operation is valid, false otherwise.
+ */
+export const isValidOperation = (datatype: string, op: number): boolean => {
+  if (op === Operators.NOOP) {
+    return true;
+  }
+
+  if (!availableTypesOperators.has(datatype)) {
+    return false;
+  }
+  const ops = availableTypesOperators.get(datatype);
+  if (!ops) {
+    return false;
+  }
+  return ops.includes(op);
 };
 
 // Comparer value.

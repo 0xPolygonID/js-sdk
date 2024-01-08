@@ -68,10 +68,10 @@ const mockedDataSource: IDataSource<W3CCredential> = {
   load: function (): Promise<W3CCredential[]> {
     throw new Error('Function not implemented.');
   },
-  save: function (key: string, value: W3CCredential, keyName?: string | undefined): Promise<void> {
+  save: function (): Promise<void> {
     throw new Error('Function not implemented.');
   },
-  get: function (key: string, keyName?: string | undefined): Promise<W3CCredential | undefined> {
+  get: function (key: string): Promise<W3CCredential | undefined> {
     const credential = cred1;
     credential.id = key;
     credential.proof = [mockedProof];
@@ -90,7 +90,7 @@ const mockedDataSource: IDataSource<W3CCredential> = {
         throw new Error('test identifier is not supported');
     }
   },
-  delete: function (key: string, keyName?: string | undefined): Promise<void> {
+  delete: (): Promise<void> => {
     throw new Error('Function not implemented.');
   }
 };
@@ -354,6 +354,31 @@ const credentialFlow = async (storage: IDataStorage) => {
         }
       },
       expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.name': { $eq: 'Spain' },
+          countOfFines: {
+            $eq: 0
+          }
+        }
+      },
+      expected: [cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['*'],
+        credentialSubject: {
+          'country.name': { $eq: 'Spain' },
+          countOfFines: {
+            $eq: 1
+          },
+          'country.hasOwnPackage': { $eq: 0 }
+        }
+      },
+      expected: []
     }
   ];
 

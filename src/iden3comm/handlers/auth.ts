@@ -1,5 +1,4 @@
 import { MediaType } from '../constants';
-import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
@@ -7,16 +6,17 @@ import {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
   IPackageManager,
+  JSONObject,
   JWSPackerParams,
-  ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
-import { ProofQuery } from '../../verifiable';
-import { byteDecoder, byteEncoder } from '../../utils';
+import { RevocationStatus, W3CCredential } from '../../verifiable';
+import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
+import { getRandomBytes } from '@iden3/js-crypto';
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
@@ -157,20 +157,78 @@ export class AuthHandler implements IAuthHandler {
       to: authRequest.from
     };
 
-    for (const proofReq of authRequest.body.scope) {
-      const zkpReq: ZeroKnowledgeProofRequest = {
-        id: proofReq.id,
-        circuitId: proofReq.circuitId as CircuitId,
-        query: proofReq.query
-      };
+    const requestScope = authRequest.body.scope;
+    const combinedQueries = requestScope.reduce((acc, proofReq) => {
+      const groupId = proofReq.query.groupId as number | undefined;
+      if (!groupId) {
+        return acc;
+      }
 
-      const query = proofReq.query as unknown as ProofQuery;
+      const existedData = acc.get(groupId);
+      if (!existedData) {
+        const seed = getRandomBytes(12);
+        const dataView = new DataView(seed.buffer);
+        const linkNonce = dataView.getUint32(0);
+        acc.set(groupId, { query: proofReq.query, linkNonce });
+        return acc;
+      }
+
+      const credentialSubject = mergeObjects(
+        existedData.query.credentialSubject as JSONObject,
+        proofReq.query.credentialSubject as JSONObject
+      );
+
+      acc.set(groupId, {
+        ...existedData,
+        query: {
+          skipClaimRevocationCheck:
+            existedData.query.skipClaimRevocationCheck || proofReq.query.skipClaimRevocationCheck,
+          ...(existedData.query as JSONObject),
+          credentialSubject
+        }
+      });
+
+      return acc;
+    }, new Map<number, { query: JSONObject; linkNonce: number }>());
+
+    const groupedCredentialsCache = new Map<
+      number,
+      { cred: W3CCredential; revStatus?: RevocationStatus }
+    >();
+
+    for (const proofReq of requestScope) {
+      const query = proofReq.query;
+      const groupId = query.groupId as number | undefined;
+      const combinedQueryData = combinedQueries.get(groupId as number);
+      if (groupId) {
+        if (!combinedQueryData) {
+          throw new Error(`Invalid group id ${query.groupId}`);
+        }
+        const combinedQuery = combinedQueryData.query;
+
+        if (!groupedCredentialsCache.has(groupId)) {
+          const credWithRevStatus = await this._proofService.findCredentialByProofQuery(
+            did,
+            combinedQueryData.query
+          );
+          if (!credWithRevStatus.cred) {
+            throw new Error(`Credential not found for query ${JSON.stringify(combinedQuery)}`);
+          }
+
+          groupedCredentialsCache.set(groupId, credWithRevStatus);
+        }
+      }
+
+      const credWithRevStatus = groupedCredentialsCache.get(groupId as number);
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
-        zkpReq,
+        proofReq,
         did,
         {
-          skipRevocation: query.skipClaimRevocationCheck ?? false
+          skipRevocation: Boolean(query.skipClaimRevocationCheck),
+          credential: credWithRevStatus?.cred,
+          credentialRevocationStatus: credWithRevStatus?.revStatus,
+          linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
         }
       );
 

@@ -13,7 +13,7 @@ export type ProtocolMessage = string;
 /**
  * JSONValue
  */
-type JSONValue = string | number | boolean | object | Array<object>;
+export type JSONValue = string | number | boolean | object | Array<object>;
 
 /**
  * JSON object

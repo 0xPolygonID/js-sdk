@@ -47,6 +47,7 @@ export class JsonSchemaValidator {
       (schema.$id ? validator.getSchema(schema.$id) : undefined) || validator.compile(schema);
     const valid = validate(data);
     if (!valid) {
+      // TODO: extract correct error messages
       throw new Error(validate.errors?.map((e) => e.message).join(', '));
     }
     return true;

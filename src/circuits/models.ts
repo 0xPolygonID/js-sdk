@@ -44,7 +44,11 @@ export class Query {
    *
    */
   validate(): void {
-    if (this.operator !== QueryOperators.$noop && this.values?.some((v) => typeof v !== 'bigint'))
+    if (
+      this.operator !== QueryOperators.$noop &&
+      this.operator !== QueryOperators.$sd &&
+      this.values?.some((v) => typeof v !== 'bigint')
+    )
       throw new Error(CircuitError.EmptyQueryValue);
   }
 }
@@ -66,7 +70,27 @@ export enum CircuitId {
   // AtomicQuerySig is a type for credentialAttrQuerySig.circom
   AtomicQuerySigV2 = 'credentialAtomicQuerySigV2',
   // AtomicQuerySigOnChain is a type for credentialAtomicQuerySigOnChain.circom
-  AtomicQuerySigV2OnChain = 'credentialAtomicQuerySigV2OnChain'
+  AtomicQuerySigV2OnChain = 'credentialAtomicQuerySigV2OnChain',
+  /**
+   * @beta
+   */
+  // AtomicQueryV3CircuitID is a type for credentialAtomicQueryV3.circom
+  AtomicQueryV3 = 'credentialAtomicQueryV3-beta.0',
+  /**
+   * @beta
+   */
+  // AtomicQueryV3OnChainCircuitID is a type for credentialAtomicQueryV3OnChain.circom
+  AtomicQueryV3OnChain = 'credentialAtomicQueryV3OnChain-beta.0',
+  /**
+   * @beta
+   */
+  // LinkedNullifier is a type for linkedNullifier.circom
+  LinkedNullifier = 'linkedNullifier-beta.0',
+  /**
+   * @beta
+   */
+  // LinkedMultiQuery is a type for linkedMultiQuery.circom
+  LinkedMultiQuery10 = 'linkedMultiQuery10-beta.0'
 }
 
 /**
@@ -167,7 +191,9 @@ export enum CircuitError {
   EmptyId = 'empty Id',
   EmptyChallenge = 'empty challenge',
   EmptyGISTProof = 'empty GIST merkle tree proof',
-  EmptyRequestID = 'empty request ID'
+  EmptyTreeState = 'empty tree state',
+  EmptyRequestID = 'empty request ID',
+  InvalidProofType = 'invalid proof type'
 }
 
 /**

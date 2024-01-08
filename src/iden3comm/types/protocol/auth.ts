@@ -46,6 +46,7 @@ export type ZeroKnowledgeProofRequest = {
   circuitId: string;
   optional?: boolean;
   query: JSONObject;
+  params?: JSONObject;
 };
 
 /** ZeroKnowledgeProofResponse represents structure of zkp response */

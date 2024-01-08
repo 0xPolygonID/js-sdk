@@ -80,6 +80,10 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
 
     const valueProof = this.query.valueProof ?? new ValueProof();
 
+    const treeState = this.skipClaimRevocationCheck
+      ? this.claim.signatureProof?.issuerAuthNonRevProof.treeState
+      : this.claim.nonRevProof?.treeState;
+
     const s: Partial<AtomicQuerySigV2CircuitInputs> = {
       requestID: this.requestID.toString(),
       userGenesisID: this.id.bigInt().toString(),
@@ -87,16 +91,10 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
       claimSubjectProfileNonce: this.claimSubjectProfileNonce?.toString(),
       issuerID: this.claim.issuerID?.bigInt().toString(),
       issuerClaim: this.claim.claim?.marshalJson(),
-      issuerClaimNonRevClaimsTreeRoot: this.claim.nonRevProof?.treeState?.claimsRoot
-        ?.bigInt()
-        .toString(),
-      issuerClaimNonRevRevTreeRoot: this.claim.nonRevProof?.treeState?.revocationRoot
-        ?.bigInt()
-        .toString(),
-      issuerClaimNonRevRootsTreeRoot: this.claim.nonRevProof?.treeState?.rootOfRoots
-        ?.bigInt()
-        .toString(),
-      issuerClaimNonRevState: this.claim.nonRevProof?.treeState?.state?.bigInt().toString(),
+      issuerClaimNonRevClaimsTreeRoot: treeState?.claimsRoot.bigInt().toString(),
+      issuerClaimNonRevRevTreeRoot: treeState?.revocationRoot.bigInt().toString(),
+      issuerClaimNonRevRootsTreeRoot: treeState?.rootOfRoots.bigInt().toString(),
+      issuerClaimNonRevState: treeState?.state.bigInt().toString(),
       issuerClaimNonRevMtp:
         this.claim.nonRevProof?.proof &&
         prepareSiblingsStr(this.claim.nonRevProof.proof, this.getMTLevel()),
@@ -108,14 +106,14 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
         this.claim.signatureProof?.issuerAuthIncProof?.proof &&
         prepareSiblingsStr(this.claim.signatureProof.issuerAuthIncProof.proof, this.getMTLevel()),
       issuerAuthClaimsTreeRoot: this.claim.signatureProof?.issuerAuthIncProof.treeState?.claimsRoot
-        ?.bigInt()
+        .bigInt()
         .toString(),
       issuerAuthRevTreeRoot:
         this.claim.signatureProof?.issuerAuthIncProof?.treeState?.revocationRoot
-          ?.bigInt()
+          .bigInt()
           .toString(),
       issuerAuthRootsTreeRoot: this.claim.signatureProof?.issuerAuthIncProof?.treeState?.rootOfRoots
-        ?.bigInt()
+        .bigInt()
         .toString(),
 
       issuerAuthClaimNonRevMtp:
@@ -127,7 +125,7 @@ export class AtomicQuerySigV2Inputs extends BaseConfig {
 
       claimSchema: this.claim.claim?.getSchemaHash().bigInt().toString(),
 
-      claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaimMerklization()),
+      claimPathMtp: prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaim()),
       claimPathValue: valueProof.value.toString(),
       operator: this.query.operator,
       timestamp: this.currentTimeStamp,

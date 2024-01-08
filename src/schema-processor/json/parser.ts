@@ -216,6 +216,7 @@ export class Parser {
   // Get `iden3_serialization` attr definition from context document either using
   // type name like DeliverAddressMultiTestForked or by type id like
   // urn:uuid:ac2ede19-b3b9-454d-b1a9-a7b3d5763100.
+
   static async getSerializationAttr(
     credential: W3CCredential,
     opts: Options,
@@ -226,6 +227,19 @@ export class Parser {
       credential['@context'],
       opts
     );
+
+    return Parser.getSerializationAttrFromParsedContext(ldCtx, tp);
+  }
+
+  // Get `iden3_serialization` attr definition from context document either using
+  // type name like DeliverAddressMultiTestForked or by type id like
+  // urn:uuid:ac2ede19-b3b9-454d-b1a9-a7b3d5763100.
+  static async getSerializationAttrFromContext(
+    context: object,
+    opts: Options,
+    tp: string
+  ): Promise<string> {
+    const ldCtx = await jsonld.processContext(ldcontext.getInitialContext({}), context, opts);
 
     return Parser.getSerializationAttrFromParsedContext(ldCtx, tp);
   }

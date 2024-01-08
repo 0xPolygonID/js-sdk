@@ -1,7 +1,8 @@
 import { VerifiableConstants } from './constants';
-import { Hasher, MtValue, Options, Path } from '@iden3/js-jsonld-merklization';
+import { Options, Path } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from './credential';
-import { ProofQuery } from './proof';
+import { QueryMetadata } from '../proof';
+import { JSONObject } from '../iden3comm';
 
 export const stringByPath = (obj: { [key: string]: unknown }, path: string): string => {
   const parts = path.split('.');
@@ -20,29 +21,35 @@ export const stringByPath = (obj: { [key: string]: unknown }, path: string): str
   return value.toString();
 };
 
-export const buildQueryPath = async (
-  contextURL: string,
+export const buildFieldPath = async (
+  ldSchema: string,
   contextType: string,
   field: string,
   opts?: Options
 ): Promise<Path> => {
-  let resp;
-  try {
-    resp = await (await fetch(contextURL)).json();
-  } catch (error: unknown) {
-    throw new Error(`context not found: ${(error as Error).message}`);
-  }
+  let path = new Path();
 
-  const path = await Path.getContextPathKey(JSON.stringify(resp), contextType, field, opts);
+  if (field) {
+    path = await Path.getContextPathKey(ldSchema, contextType, field, opts);
+  }
   path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   return path;
+};
+
+export const findValue = (fieldName: string, credential: W3CCredential): JSONObject => {
+  const [first, ...rest] = fieldName.split('.');
+  let v = credential.credentialSubject[first];
+  for (const part of rest) {
+    v = (v as JSONObject)[part];
+  }
+  return v as JSONObject;
 };
 
 export const createVerifiablePresentation = (
   context: string,
   tp: string,
-  path: string,
-  value: unknown
+  credential: W3CCredential,
+  queries: QueryMetadata[]
 ): object => {
   const baseContext = [VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018];
   const ldContext = baseContext[0] === context ? baseContext : [...baseContext, context];
@@ -53,56 +60,35 @@ export const createVerifiablePresentation = (
     vcTypes.push(tp);
   }
 
-  const [first, ...rest] = path.split('.');
-  const obj = rest.reduceRight((acc, key) => ({ [key]: acc }), value);
-
-  return {
+  const skeleton = {
     '@context': baseContext,
     '@type': VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_PRESENTATION,
     verifiableCredential: {
       '@context': ldContext,
       '@type': vcTypes,
       credentialSubject: {
-        '@type': tp,
-        [first]: obj
+        '@type': tp
       }
     }
   };
-};
 
-export const verifiablePresentationFromCred = async (
-  w3cCred: W3CCredential,
-  requestObj: ProofQuery,
-  field: string,
-  opts?: Options
-): Promise<{
-  vp: object;
-  mzValue: MtValue;
-  dataType: string;
-  hasher: Hasher;
-}> => {
-  const mz = await w3cCred.merklize(opts);
+  let result: JSONObject = {};
+  for (const query of queries) {
+    const parts = query.fieldName.split('.');
+    const current: JSONObject = parts.reduceRight((acc: JSONObject, part: string) => {
+      if (result[part]) {
+        return { [part]: { ...(result[part] as JSONObject), ...acc } };
+      }
+      return { [part]: acc };
+    }, findValue(query.fieldName, credential) as JSONObject);
 
-  const request = requestObj as { [key: string]: unknown };
-
-  const contextType = stringByPath(request, 'type');
-
-  const hasher = mz.hasher;
-
-  const contextURL = stringByPath(request, 'context');
-
-  const path = await buildQueryPath(contextURL, contextType, field, opts);
-
-  const dataType = await mz.jsonLDType(path);
-
-  const rawValue = mz.rawValue(path);
-
-  const { value } = await mz.proof(path);
-
-  const vp = createVerifiablePresentation(contextURL, contextType, field, rawValue);
-
-  if (!value) {
-    throw new Error(`can't merklize verifiable presentation`);
+    result = { ...result, ...current };
   }
-  return { vp, mzValue: value, dataType, hasher };
+
+  skeleton.verifiableCredential.credentialSubject = {
+    ...skeleton.verifiableCredential.credentialSubject,
+    ...result
+  };
+
+  return skeleton;
 };
