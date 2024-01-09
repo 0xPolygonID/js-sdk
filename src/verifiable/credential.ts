@@ -2,11 +2,11 @@
 import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof, CredentialStatus } from './proof';
 import { Claim, DID, buildDIDType, Id } from '@iden3/js-iden3-core';
 import { ProofType } from './constants';
-import { Proof, Hash, rootFromProof } from '@iden3/js-merkletree';
+import { Proof, Hash, rootFromProof, verifyProof } from '@iden3/js-merkletree';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
-import { StatusOptions } from './status/status';
 import { PublicKey, poseidon } from '@iden3/js-crypto';
-import type { DIDResolutionResult, Resolvable, VerificationMethod } from 'did-resolver';
+import type { DIDResolutionResult, VerificationMethod } from 'did-resolver';
+import { CredentialStatusResolverRegistry } from '../credentials';
 
 /**
  * W3C Verifiable credential
@@ -145,7 +145,7 @@ export class W3CCredential {
   async verifyProof(
     proofType: ProofType,
     resolverURL: string,
-    statusOpts?: StatusOptions
+    credStatusResolverRegistry?: CredentialStatusResolverRegistry
   ): Promise<boolean> {
     const proof = this.getProofByType(proofType);
     if (!proof) {
@@ -159,14 +159,16 @@ export class W3CCredential {
 
     switch (proofType) {
       case ProofType.BJJSignature: {
-        if (!statusOpts) {
-          throw new Error('please provide credential status options');
+        if (!credStatusResolverRegistry) {
+          throw new Error('please provide credential status resolver registry');
         }
+        const userDID = DID.parse(this.credentialSubject.id as string);
         return this.verifyBJJSignatureProof(
           proof as BJJSignatureProof2021,
           coreClaim,
           resolverURL,
-          statusOpts
+          userDID,
+          credStatusResolverRegistry
         );
       }
       case ProofType.Iden3SparseMerkleTreeProof: {
@@ -186,7 +188,8 @@ export class W3CCredential {
     proof: BJJSignatureProof2021,
     coreClaim: Claim,
     resolverURL: string,
-    statusOpts: StatusOptions
+    userDID: DID,
+    credStatusResolverRegistry: CredentialStatusResolverRegistry
   ): Promise<boolean> {
     // issuer auth claim
     const authClaim = proof.issuerData.authCoreClaim;
@@ -201,14 +204,40 @@ export class W3CCredential {
     if (!bjjValid) {
       throw new Error('signature proof not valid');
     }
-
     await this.validateDIDDocumentAuth(
       proof.issuerData.id,
       resolverURL,
       proof.issuerData.state.value
     );
-    // TODO: validate credential status
-    return false;
+
+    const credStatusType = proof.issuerData.credentialStatus.type;
+    const credStatusResolver = await credStatusResolverRegistry.get(credStatusType);
+    if (!credStatusResolver) {
+      throw new Error(`please register credential status resolver for ${credStatusType} type`);
+    }
+    const credStatus = await credStatusResolver.resolve(proof.issuerData.credentialStatus, {
+      issuerDID: proof.issuerData.id,
+      userDID: userDID
+    });
+    const stateValid = this.validateTreeState(credStatus.issuer);
+    if (!stateValid) {
+      throw new Error('invalid tree state');
+    }
+
+    const revocationNonce = BigInt(proof.issuerData.credentialStatus.revocationNonce || 0);
+    const proofValid = await verifyProof(
+      Hash.fromHex(credStatus.issuer.revocationTreeRoot),
+      credStatus.mtp,
+      revocationNonce,
+      BigInt(0)
+    );
+    if (!proofValid) {
+      throw new Error(`proof validation failed. revNonce=${revocationNonce}`);
+    }
+    if (credStatus.mtp.existence) {
+      throw new Error('credential is revoked');
+    }
+    return true;
   }
 
   private async verifyIden3SparseMerkleTreeProof(
@@ -261,7 +290,7 @@ export class W3CCredential {
   ): Promise<VerificationMethod | undefined> {
     let url = `${resolveURL}/${did.string().replace(/:/g, '%3A')}`;
     if (state) {
-      url += `?state=${state.bigInt().toString()}`;
+      url += `?state=${state.hex()}`;
     }
     const resp = await fetch(url);
     const didResolutionRes = (await resp.json()) as DIDResolutionResult;
@@ -276,6 +305,18 @@ export class W3CCredential {
     const didType = buildDIDType(method, blockchain, networkId);
     const genesisId = Id.idGenesisFromIdenState(didType, state.bigInt());
     return genesisId.equal(id);
+  }
+
+  private validateTreeState(treeState: Issuer) {
+    const ctrHash = treeState.claimsTreeRoot ? Hash.fromHex(treeState.claimsTreeRoot) : new Hash();
+    const rtrHash = treeState.revocationTreeRoot
+      ? Hash.fromHex(treeState.revocationTreeRoot)
+      : new Hash();
+    const rorHash = treeState.rootOfRoots ? Hash.fromHex(treeState.rootOfRoots) : new Hash();
+    const wantState = poseidon.hash([ctrHash.bigInt(), rtrHash.bigInt(), rorHash.bigInt()]);
+
+    const stateHash = treeState.state ? Hash.fromHex(treeState.state) : new Hash();
+    return wantState === stateHash.bigInt();
   }
 }
 
