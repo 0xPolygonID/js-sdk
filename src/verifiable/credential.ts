@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof, CredentialStatus } from './proof';
-import { Claim } from '@iden3/js-iden3-core';
+import { Claim, DID, buildDIDType, Id } from '@iden3/js-iden3-core';
 import { ProofType } from './constants';
-import { Proof } from '@iden3/js-merkletree';
+import { Proof, Hash, rootFromProof } from '@iden3/js-merkletree';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
+import { StatusOptions } from './status/status';
+import { PublicKey, poseidon } from '@iden3/js-crypto';
+import type { DIDResolutionResult, Resolvable, VerificationMethod } from 'did-resolver';
 
 /**
  * W3C Verifiable credential
@@ -134,6 +137,99 @@ export class W3CCredential {
     return undefined;
   }
 
+  /**
+   * Verify credential proof
+   *
+   * @returns {*}  {(boolean)}
+   */
+  async verifyProof(
+    proofType: ProofType,
+    resolverURL: string,
+    statusOpts?: StatusOptions
+  ): Promise<boolean> {
+    const proof = this.getProofByType(proofType);
+    if (!proof) {
+      throw new Error('proof not found');
+    }
+
+    const coreClaim = this.getCoreClaimFromProof(proofType);
+    if (!coreClaim) {
+      throw new Error(`can't get core claim`);
+    }
+
+    switch (proofType) {
+      case ProofType.BJJSignature: {
+        if (!statusOpts) {
+          throw new Error('please provide credential status options');
+        }
+        return this.verifyBJJSignatureProof(
+          proof as BJJSignatureProof2021,
+          coreClaim,
+          resolverURL,
+          statusOpts
+        );
+      }
+      case ProofType.Iden3SparseMerkleTreeProof: {
+        return this.verifyIden3SparseMerkleTreeProof(
+          proof as Iden3SparseMerkleTreeProof,
+          coreClaim,
+          resolverURL
+        );
+      }
+      default: {
+        throw new Error('invalid proof type');
+      }
+    }
+  }
+
+  private async verifyBJJSignatureProof(
+    proof: BJJSignatureProof2021,
+    coreClaim: Claim,
+    resolverURL: string,
+    statusOpts: StatusOptions
+  ): Promise<boolean> {
+    // issuer auth claim
+    const authClaim = proof.issuerData.authCoreClaim;
+    const rawSlotsInt = authClaim.rawSlotsAsInts();
+    const pubKey = new PublicKey([rawSlotsInt[2], rawSlotsInt[3]]);
+
+    // core claim hash
+    const { hi, hv } = coreClaim.hiHv();
+    const claimHash = poseidon.hash([hi, hv]);
+    const bjjValid = pubKey.verifyPoseidon(claimHash, proof.signature);
+
+    if (!bjjValid) {
+      throw new Error('signature proof not valid');
+    }
+
+    await this.validateDIDDocumentAuth(
+      proof.issuerData.id,
+      resolverURL,
+      proof.issuerData.state.value
+    );
+    // TODO: validate credential status
+    return false;
+  }
+
+  private async verifyIden3SparseMerkleTreeProof(
+    proof: Iden3SparseMerkleTreeProof,
+    coreClaim: Claim,
+    resolverURL: string
+  ): Promise<boolean> {
+    await this.validateDIDDocumentAuth(
+      proof.issuerData.id,
+      resolverURL,
+      proof.issuerData.state.value
+    );
+    // root from proof == issuerData.state.сlaimsTreeRoot
+    const { hi, hv } = coreClaim.hiHv();
+    const rootFropProof = await rootFromProof(proof.mtp, hi, hv);
+    if (!rootFropProof.equals(proof.issuerData.state.claimsTreeRoot)) {
+      throw new Error('root from proof not equal to issuer data claims tree root');
+    }
+    return true;
+  }
+
   private getProofByType(proofType: ProofType): unknown | undefined {
     if (Array.isArray(this.proof)) {
       for (const proof of this.proof) {
@@ -145,6 +241,41 @@ export class W3CCredential {
       return this.proof;
     }
     return undefined;
+  }
+
+  private async validateDIDDocumentAuth(did: DID, resolverURL: string, state: Hash) {
+    const vm = await this.resolveDIDDocumentAuth(did, resolverURL, state);
+    if (!vm) {
+      throw new Error(`can't resolve DID document`);
+    }
+    // published or genesis
+    if (!(vm as any).published && !this.isGenesis(did, state)) {
+      throw new Error(`issuer state not published and not genesis`);
+    }
+  }
+
+  private async resolveDIDDocumentAuth(
+    did: DID,
+    resolveURL: string,
+    state?: Hash
+  ): Promise<VerificationMethod | undefined> {
+    let url = `${resolveURL}/${did.string().replace(/:/g, '%3A')}`;
+    if (state) {
+      url += `?state=${state.bigInt().toString()}`;
+    }
+    const resp = await fetch(url);
+    const didResolutionRes = (await resp.json()) as DIDResolutionResult;
+    return didResolutionRes.didDocument?.verificationMethod?.find(
+      (i) => i.type === 'Iden3StateInfo2023'
+    );
+  }
+
+  private isGenesis(did: DID, state: Hash): boolean {
+    const id = DID.idFromDID(did);
+    const { method, blockchain, networkId } = DID.decodePartsFromId(id);
+    const didType = buildDIDType(method, blockchain, networkId);
+    const genesisId = Id.idGenesisFromIdenState(didType, state.bigInt());
+    return genesisId.equal(id);
   }
 }
 
