@@ -8,7 +8,6 @@ import { PublicKey, poseidon } from '@iden3/js-crypto';
 import { CredentialStatusResolverRegistry } from '../credentials';
 import { getUserDIDFromCredential } from '../credentials/utils';
 import { validateDIDDocumentAuth } from '../utils';
-import { validateTreeState } from './utils';
 
 /**
  * W3C Verifiable credential
@@ -305,6 +304,24 @@ export function extractProof(proof: object): { claim: Claim; proofType: ProofTyp
   }
 
   throw new Error('proof format is not supported');
+}
+
+/**
+ * validate tree state by recalculating poseidon hash of roots and comparing with state
+ *
+ * @param {Issuer} treeState - issuer struct
+ * @returns {boolean}
+ */
+export function validateTreeState(treeState: Issuer) {
+  const ctrHash = treeState.claimsTreeRoot ? Hash.fromHex(treeState.claimsTreeRoot) : new Hash();
+  const rtrHash = treeState.revocationTreeRoot
+    ? Hash.fromHex(treeState.revocationTreeRoot)
+    : new Hash();
+  const rorHash = treeState.rootOfRoots ? Hash.fromHex(treeState.rootOfRoots) : new Hash();
+  const wantState = poseidon.hash([ctrHash.bigInt(), rtrHash.bigInt(), rorHash.bigInt()]);
+
+  const stateHash = treeState.state ? Hash.fromHex(treeState.state) : new Hash();
+  return wantState === stateHash.bigInt();
 }
 
 /**
