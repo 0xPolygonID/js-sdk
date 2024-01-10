@@ -5,7 +5,8 @@ import {
   W3CCredential,
   CredentialStatusType,
   ProofType,
-  VerifiableConstants
+  VerifiableConstants,
+  W3CProofVerificationOptions
 } from '../../src/verifiable';
 import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
@@ -150,8 +151,8 @@ describe('Verify credential proof', () => {
     const credential = W3CCredential.fromJSON(JSON.parse(input));
     const resolverURL = 'http://my-universal-resolver/1.0/identifiers';
 
-    const credStatusResolver = new CredentialStatusResolverRegistry();
-    credStatusResolver.register(
+    const credStatusResolverRegistry = new CredentialStatusResolverRegistry();
+    credStatusResolverRegistry.register(
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       new RHSResolver(dataStorage.states)
     );
@@ -165,11 +166,11 @@ describe('Verify credential proof', () => {
       'https://rhs-staging.polygonid.me/node/34824a8e1defc326f935044e32e9f513377dbfc031d79475a0190830554d4409',
       `{"node":{"hash":"34824a8e1defc326f935044e32e9f513377dbfc031d79475a0190830554d4409","children":["4436ea12d352ddb84d2ac7a27bbf7c9f1bfc7d3ff69f3e6cf4348f424317fd0b","0000000000000000000000000000000000000000000000000000000000000000","37eabc712cdaa64793561b16b8143f56f149ad1b0c35297a1b125c765d1c071e"]},"status":"OK"}`
     );
-    const isValid = await credential.verifyProof(
-      ProofType.BJJSignature,
-      resolverURL,
-      credStatusResolver
-    );
+
+    const opts: W3CProofVerificationOptions = {
+      credStatusResolverRegistry
+    };
+    const isValid = await credential.verifyProof(ProofType.BJJSignature, resolverURL, opts);
     expect(isValid).to.be.eq(true);
   });
 
@@ -242,8 +243,8 @@ describe('Verify credential proof', () => {
     const credential = W3CCredential.fromJSON(JSON.parse(input));
     const resolverURL = 'http://my-universal-resolver/1.0/identifiers';
 
-    const credStatusResolver = new CredentialStatusResolverRegistry();
-    credStatusResolver.register(
+    const credStatusResolverRegistry = new CredentialStatusResolverRegistry();
+    credStatusResolverRegistry.register(
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       new RHSResolver(dataStorage.states)
     );
@@ -257,11 +258,12 @@ describe('Verify credential proof', () => {
       'https://rhs-staging.polygonid.me/node/da6184809dbad90ccc52bb4dbfe2e8ff3f516d87c74d75bcc68a67101760b817',
       `{"node":{"hash":"da6184809dbad90ccc52bb4dbfe2e8ff3f516d87c74d75bcc68a67101760b817","children":["aec50251fdc67959254c74ab4f2e746a7cd1c6f494c8ac028d655dfbccea430e","0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000"]},"status":"OK"}`
     );
-    const isValid = await credential.verifyProof(
-      ProofType.BJJSignature,
-      resolverURL,
-      credStatusResolver
-    );
+
+    const opts: W3CProofVerificationOptions = {
+      credStatusResolverRegistry
+    };
+
+    const isValid = await credential.verifyProof(ProofType.BJJSignature, resolverURL, opts);
     expect(isValid).to.be.eq(true);
   });
 
@@ -346,8 +348,8 @@ describe('Verify credential proof', () => {
     const credential = W3CCredential.fromJSON(JSON.parse(input));
     const resolverURL = 'http://my-universal-resolver/1.0/identifiers';
 
-    const credStatusResolver = new CredentialStatusResolverRegistry();
-    credStatusResolver.register(
+    const credStatusResolverRegistry = new CredentialStatusResolverRegistry();
+    credStatusResolverRegistry.register(
       CredentialStatusType.Iden3commRevocationStatusV1,
       new AgentResolver()
     );
@@ -366,11 +368,11 @@ describe('Verify credential proof', () => {
       )
     );
 
-    const isValid = await credential.verifyProof(
-      ProofType.BJJSignature,
-      resolverURL,
-      credStatusResolver
-    );
+    const opts: W3CProofVerificationOptions = {
+      credStatusResolverRegistry
+    };
+
+    const isValid = await credential.verifyProof(ProofType.BJJSignature, resolverURL, opts);
     expect(isValid).to.be.eq(true);
   });
 
