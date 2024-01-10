@@ -252,8 +252,8 @@ export class W3CCredential {
     );
     // root from proof == issuerData.state.сlaimsTreeRoot
     const { hi, hv } = coreClaim.hiHv();
-    const rootFropProof = await rootFromProof(proof.mtp, hi, hv);
-    if (!rootFropProof.equals(proof.issuerData.state.claimsTreeRoot)) {
+    const rootFromProofValue = await rootFromProof(proof.mtp, hi, hv);
+    if (!rootFromProofValue.equals(proof.issuerData.state.claimsTreeRoot)) {
       throw new Error('root from proof not equal to issuer data claims tree root');
     }
     return true;
