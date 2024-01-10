@@ -370,15 +370,19 @@ export class CredentialWallet implements ICredentialWallet {
       case CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023: {
         const issuerId = DID.idFromDID(issuer);
         const chainId = getChainId(DID.blockchainFromId(issuerId), DID.networkIdFromId(issuerId));
+        const searchParams = [
+          ['revocationNonce', request.revocationOpts.nonce?.toString() || ''],
+          ['contractAddress', `${chainId}:${request.revocationOpts.id}`],
+          ['state', request.revocationOpts.issuerState || '']
+        ]
+          .filter(([, value]) => Boolean(value))
+          .map(([key, value]) => `${key}=${value}`)
+          .join('&');
+
         return {
           ...credentialStatus,
           // `[did]:[methodid]:[chain]:[network]:[id]/credentialStatus?(revocationNonce=value)&[contractAddress=[chainID]:[contractAddress]]&(state=issuerState)`
-
-          id: `${issuer.string()}/credentialStatus?revocationNonce=${
-            request.revocationOpts.nonce || ''
-          }&contractAddress=${chainId}:${request.revocationOpts.id}&state=${
-            request.revocationOpts.issuerState || ''
-          }`
+          id: `${issuer.string()}/credentialStatus?${searchParams}`
         };
       }
       default:
