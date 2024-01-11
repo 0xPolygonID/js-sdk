@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof, CredentialStatus, RefreshService } from './proof';
+import {
+  BJJSignatureProof2021,
+  Iden3SparseMerkleTreeProof,
+  CredentialStatus,
+  RefreshService
+} from './proof';
 import { Claim } from '@iden3/js-iden3-core';
 import { ProofType } from './constants';
 import { Proof } from '@iden3/js-merkletree';

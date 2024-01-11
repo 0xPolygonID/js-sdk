@@ -9,7 +9,8 @@ import {
   CredentialStatus,
   RevocationStatus,
   CredentialStatusType,
-  State
+  State,
+  RefreshService
 } from './../verifiable';
 
 import { JSONSchema } from '../schema-processor';
@@ -19,7 +20,6 @@ import { IssuerResolver } from './status/sparse-merkle-tree';
 import { AgentResolver } from './status/agent-revocation';
 import { CredentialStatusResolveOptions } from './status/resolver';
 import { getUserDIDFromCredential } from './utils';
-import { RefreshService } from '../verifiable/refresh-service';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';

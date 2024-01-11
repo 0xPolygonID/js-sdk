@@ -12,7 +12,7 @@ import { randomUUID } from 'crypto';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../iden3comm/constants';
 import { W3CCredential } from './credential';
 import { byteEncoder } from '../utils';
-
+import { RefreshService } from './proof';
 
 /**
  * Interface to work with credential refresh service
