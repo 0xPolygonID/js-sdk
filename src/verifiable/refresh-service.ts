@@ -1,5 +1,4 @@
 import { DID } from '@iden3/js-iden3-core';
-import { PackageManager } from '../iden3comm';
 import { RefreshServiceType } from './constants';
 import {
   CredentialIssuanceMessage,
@@ -12,7 +11,7 @@ import { randomUUID } from 'crypto';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../iden3comm/constants';
 import { W3CCredential } from './credential';
 import { byteEncoder } from '../utils';
-import { RefreshService } from './proof';
+import { IPackageManager } from '../iden3comm/types';
 
 /**
  * Interface to work with credential refresh service
@@ -22,18 +21,12 @@ import { RefreshService } from './proof';
  */
 export interface IRefreshService {
   /**
-   * load circuit keys by id
+   * refresh credential
    *
-   * @param {RefreshService} refreshService - refreshService field from W3C credential
-   * @param {DID} userDID - user DIID
    * @param {Claim} claim - claim to refresh
-   * @returns `{Promise<CircuitData>}`
+   * @returns {Promise<W3CCredential>}
    */
-  refresh(
-    refreshService: RefreshService,
-    userDID: DID,
-    credential: W3CCredential
-  ): Promise<W3CCredential>;
+  refresh(credential: W3CCredential): Promise<W3CCredential>;
 }
 
 /**
@@ -42,34 +35,26 @@ export interface IRefreshService {
  * @interface   RefreshServiceOptions
  */
 export interface RefreshServiceOptions {
-  packageManager: PackageManager;
+  packerManager: IPackageManager;
 }
 
 export class CredentialRefreshService implements IRefreshService {
-  private readonly _opts: RefreshServiceOptions;
-  constructor(options: RefreshServiceOptions) {
-    this._opts = options;
-  }
+  constructor(private readonly options: RefreshServiceOptions) {}
 
-  async refresh(
-    refreshService: RefreshService,
-    userDID: DID,
-    credential: W3CCredential
-  ): Promise<W3CCredential> {
-    if (refreshService.type !== RefreshServiceType.Iden3RefreshService2023) {
-      throw new Error(`refresh service type ${refreshService.type} is not supported`);
+  async refresh(credential: W3CCredential): Promise<W3CCredential> {
+    if (!credential.refreshService) {
+      throw new Error('refreshService not specified for W3CCredential');
+    }
+    if (credential.refreshService.type !== RefreshServiceType.Iden3RefreshService2023) {
+      throw new Error(`refresh service type ${credential.refreshService.type} is not supported`);
     }
 
-    const otherIdentifier = credential.credentialSubject.id;
+    const otherIdentifier = credential.credentialSubject.id as string;
 
-    if (userDID.id !== otherIdentifier) {
-      throw new Error(
-        `userDID id ${userDID.id} does not match claim other identifier ${otherIdentifier}`
-      );
-    }
+    const senderDID = DID.parse(otherIdentifier);
 
     const zkpParams: ZKPPackerParams = {
-      senderDID: userDID,
+      senderDID,
       profileNonce: 0,
       provingMethodAlg: {
         alg: proving.provingMethodGroth16AuthV2Instance.methodAlg.alg,
@@ -91,12 +76,12 @@ export class CredentialRefreshService implements IRefreshService {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(refreshMsg));
-    const jwzToken = await this._opts.packageManager.pack(
+    const jwzToken = await this.options.packerManager.pack(
       MediaType.ZKPMessage,
       msgBytes,
       zkpParams
     );
-    const resp = await fetch(refreshService.id, {
+    const resp = await fetch(credential.refreshService.id, {
       method: 'post',
       headers: {
         'Content-Type': 'application/json'
