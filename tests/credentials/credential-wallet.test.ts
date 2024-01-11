@@ -15,11 +15,25 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { IDataSource, PackageManager } from '../../src';
+import {
+  DataPrepareHandlerFunc,
+  IDataSource,
+  PackageManager,
+  ProvingParams,
+  VerificationHandlerFunc,
+  VerificationParams,
+  ZKPPacker
+} from '../../src';
 import { Claim, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
-import { initZKPPacker } from '../iden3comm/mock/proving';
 import { CredentialRefreshService } from '../../src/verifiable/refresh-service';
+import {
+  mockPrepareAuthInputs,
+  mockVerifyState,
+  ProvingMethodGroth16Authv2
+} from '../iden3comm/mock/proving';
+import { ProvingMethodAlg } from '@iden3/js-jwz';
+import { ProvingMethod, registerProvingMethod } from '@iden3/js-jwz/dist/types/proving';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
@@ -426,7 +440,7 @@ const credentialFlow = async (storage: IDataStorage) => {
 describe('credential-wallet', () => {
   it('run in memory with 3 credential', async () => {
     const packerManager = new PackageManager();
-    packerManager.registerPackers([await initZKPPacker()]);
+    // packerManager.registerPackers([await initZKPPacker()]);
     const storage = {
       credential: new CredentialStorage(
         new InMemoryDataSource<W3CCredential>(),
@@ -437,7 +451,7 @@ describe('credential-wallet', () => {
   });
   it('run in local storage with 4 credential', async () => {
     const packerManager = new PackageManager();
-    packerManager.registerPackers([await initZKPPacker()]);
+    // packerManager.registerPackers([await initZKPPacker()]);
     const storage = {
       credential: new CredentialStorage(
         new BrowserDataSource<W3CCredential>(CredentialStorage.storageKey),
@@ -449,7 +463,7 @@ describe('credential-wallet', () => {
 
   it('Backward compatibility test - hash-as-string-ints', async () => {
     const packerManager = new PackageManager();
-    packerManager.registerPackers([await initZKPPacker()]);
+    // packerManager.registerPackers([await initZKPPacker()]);
     const credentialStorage = new CredentialStorage(
       mockedDataSource,
       new CredentialRefreshService({ packerManager })
@@ -468,3 +482,33 @@ describe('credential-wallet', () => {
     );
   });
 });
+
+// const initZKPPacker = async (): Promise<ZKPPacker> => {
+//   const mockAuthInputsHandler = new DataPrepareHandlerFunc(mockPrepareAuthInputs);
+
+//   const mockProvingMethod = new ProvingMethodGroth16Authv2(
+//     new ProvingMethodAlg('groth16-mock', 'authV2')
+//   );
+
+//   await registerProvingMethod(mockProvingMethod.methodAlg, (): ProvingMethod => {
+//     return mockProvingMethod;
+//   });
+
+//   const verificationFn = new VerificationHandlerFunc(mockVerifyState);
+//   const mapKey = mockProvingMethod.methodAlg.toString();
+
+//   const mockVerificationParamMap: Map<string, VerificationParams> = new Map();
+//   mockVerificationParamMap.set(mapKey, {
+//     key: new Uint8Array([]),
+//     verificationFn
+//   });
+
+//   const mockProvingParamMap: Map<string, ProvingParams> = new Map();
+//   mockProvingParamMap.set(mapKey, {
+//     dataPreparer: mockAuthInputsHandler,
+//     provingKey: new Uint8Array([]),
+//     wasm: new Uint8Array([])
+//   });
+
+//   return new ZKPPacker(mockProvingParamMap, mockVerificationParamMap);
+// };
