@@ -1,5 +1,5 @@
-import { DID, Claim } from '@iden3/js-iden3-core';
-import { PackageManager, ZKPPacker } from '../iden3comm';
+import { DID } from '@iden3/js-iden3-core';
+import { PackageManager } from '../iden3comm';
 import { RefreshServiceType } from './constants';
 import {
   CredentialIssuanceMessage,
@@ -13,15 +13,6 @@ import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../iden3comm/constants';
 import { W3CCredential } from './credential';
 import { byteEncoder } from '../utils';
 
-/**
- * RefreshService contains type and id
- * @public
- * @interface   RefreshService
- */
-export interface RefreshService {
-  id: string;
-  type: RefreshServiceType | string;
-}
 
 /**
  * Interface to work with credential refresh service

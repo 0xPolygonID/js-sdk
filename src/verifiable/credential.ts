@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof, CredentialStatus } from './proof';
+import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof, CredentialStatus, RefreshService } from './proof';
 import { Claim } from '@iden3/js-iden3-core';
-import { ProofType, RefreshServiceType } from './constants';
+import { ProofType } from './constants';
 import { Proof } from '@iden3/js-merkletree';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
-import { RefreshService } from './refresh-service';
 
 /**
  * W3C Verifiable credential
