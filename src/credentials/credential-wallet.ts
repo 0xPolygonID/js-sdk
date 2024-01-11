@@ -19,6 +19,7 @@ import { IssuerResolver } from './status/sparse-merkle-tree';
 import { AgentResolver } from './status/agent-revocation';
 import { CredentialStatusResolveOptions } from './status/resolver';
 import { getUserDIDFromCredential } from './utils';
+import { RefreshService } from '../verifiable/refresh-service';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
@@ -46,6 +47,10 @@ export interface CredentialRequest {
    * expiration time
    */
   expiration?: number;
+  /**
+   * refreshService
+   */
+  refreshService?: RefreshService;
   /**
    * claim version
    */
@@ -327,6 +332,7 @@ export class CredentialWallet implements ICredentialWallet {
     cr['@context'] = context;
     cr.type = credentialType;
     cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
+    cr.refreshService = request.refreshService;
     cr.issuanceDate = new Date().toISOString();
     cr.credentialSubject = credentialSubject;
     cr.issuer = issuer.string();

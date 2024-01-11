@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof, CredentialStatus } from './proof';
 import { Claim } from '@iden3/js-iden3-core';
-import { ProofType } from './constants';
+import { ProofType, RefreshServiceType } from './constants';
 import { Proof } from '@iden3/js-merkletree';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
+import { RefreshService } from './refresh-service';
 
 /**
  * W3C Verifiable credential
@@ -17,6 +18,7 @@ export class W3CCredential {
   '@context': string[] = [];
   type: string[] = [];
   expirationDate?: string;
+  refreshService?: RefreshService;
   issuanceDate?: string;
   credentialSubject: { [key: string]: object | string | number | boolean } = {};
   credentialStatus!: CredentialStatus;
