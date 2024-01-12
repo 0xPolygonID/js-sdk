@@ -15,25 +15,10 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import {
-  DataPrepareHandlerFunc,
-  IDataSource,
-  PackageManager,
-  ProvingParams,
-  VerificationHandlerFunc,
-  VerificationParams,
-  ZKPPacker
-} from '../../src';
+import { IDataSource, PackageManager } from '../../src';
 import { Claim, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 import { CredentialRefreshService } from '../../src/verifiable/refresh-service';
-import {
-  mockPrepareAuthInputs,
-  mockVerifyState,
-  ProvingMethodGroth16Authv2
-} from '../iden3comm/mock/proving';
-import { ProvingMethodAlg } from '@iden3/js-jwz';
-import { ProvingMethod, registerProvingMethod } from '@iden3/js-jwz/dist/types/proving';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
@@ -439,23 +424,20 @@ const credentialFlow = async (storage: IDataStorage) => {
 
 describe('credential-wallet', () => {
   it('run in memory with 3 credential', async () => {
-    const packerManager = new PackageManager();
+    // const packerManager = new PackageManager();
     // packerManager.registerPackers([await initZKPPacker()]);
     const storage = {
       credential: new CredentialStorage(
-        new InMemoryDataSource<W3CCredential>(),
-        new CredentialRefreshService({ packerManager })
-      )
+        new InMemoryDataSource<W3CCredential>())
     } as unknown as IDataStorage;
     await credentialFlow(storage);
   });
   it('run in local storage with 4 credential', async () => {
-    const packerManager = new PackageManager();
+    // const packerManager = new PackageManager();
     // packerManager.registerPackers([await initZKPPacker()]);
     const storage = {
       credential: new CredentialStorage(
         new BrowserDataSource<W3CCredential>(CredentialStorage.storageKey),
-        new CredentialRefreshService({ packerManager })
       )
     } as unknown as IDataStorage;
     await credentialFlow(storage);
