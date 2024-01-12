@@ -38,7 +38,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
     const value: string[][] = [];
 
     for (let i = 0; i < this.queryLength; i++) {
-      if (!this.query) {
+      if (!this.query[i]) {
         enabled.push(0);
         claimPathNotExists.push(0);
         claimPathMtp.push([]);
