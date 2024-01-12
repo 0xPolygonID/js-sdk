@@ -58,8 +58,7 @@ export class CredentialStorage implements ICredentialStorage {
    */
   async findCredentialsByQuery(query: ProofQuery): Promise<W3CCredential[]> {
     let filters = StandardJSONCredentialsQueryFilter(query);
-    const allClaims = await this._dataSource.load();
-    let creds = allClaims.filter((credential) =>
+    const creds = (await this._dataSource.load()).filter((credential) =>
       filters.every((filter) => filter.execute(credential))
     );
 
