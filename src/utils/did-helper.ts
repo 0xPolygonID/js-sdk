@@ -24,7 +24,10 @@ export const validateDIDDocumentAuth = async (did: DID, resolverURL: string, sta
     throw new Error(`can't resolve DID document`);
   }
   // published or genesis
-  if (!(vm as any).published && !isGenesisState(did, state.bigInt())) {
+  if (
+    !(vm as VerificationMethod & { published: string }).published &&
+    !isGenesisState(did, state.bigInt())
+  ) {
     throw new Error(`issuer state not published and not genesis`);
   }
 };
