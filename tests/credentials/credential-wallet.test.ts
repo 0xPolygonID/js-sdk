@@ -15,10 +15,9 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { IDataSource, PackageManager } from '../../src';
+import { IDataSource } from '../../src';
 import { Claim, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
-import { CredentialRefreshService } from '../../src/verifiable/refresh-service';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
@@ -454,33 +453,3 @@ describe('credential-wallet', () => {
     );
   });
 });
-
-// const initZKPPacker = async (): Promise<ZKPPacker> => {
-//   const mockAuthInputsHandler = new DataPrepareHandlerFunc(mockPrepareAuthInputs);
-
-//   const mockProvingMethod = new ProvingMethodGroth16Authv2(
-//     new ProvingMethodAlg('groth16-mock', 'authV2')
-//   );
-
-//   await registerProvingMethod(mockProvingMethod.methodAlg, (): ProvingMethod => {
-//     return mockProvingMethod;
-//   });
-
-//   const verificationFn = new VerificationHandlerFunc(mockVerifyState);
-//   const mapKey = mockProvingMethod.methodAlg.toString();
-
-//   const mockVerificationParamMap: Map<string, VerificationParams> = new Map();
-//   mockVerificationParamMap.set(mapKey, {
-//     key: new Uint8Array([]),
-//     verificationFn
-//   });
-
-//   const mockProvingParamMap: Map<string, ProvingParams> = new Map();
-//   mockProvingParamMap.set(mapKey, {
-//     dataPreparer: mockAuthInputsHandler,
-//     provingKey: new Uint8Array([]),
-//     wasm: new Uint8Array([])
-//   });
-
-//   return new ZKPPacker(mockProvingParamMap, mockVerificationParamMap);
-// };
