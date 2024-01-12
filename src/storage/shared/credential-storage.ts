@@ -1,5 +1,4 @@
-import { ProofQuery, RefreshServiceType, W3CCredential } from '../../verifiable';
-import { CredentialRefreshService } from '../../verifiable/refresh-service';
+import { ProofQuery, W3CCredential } from '../../verifiable';
 import { StandardJSONCredentialsQueryFilter } from '../filters';
 import { ICredentialStorage } from '../interfaces/credentials';
 import { IDataSource } from '../interfaces/data-source';
@@ -57,7 +56,7 @@ export class CredentialStorage implements ICredentialStorage {
    * uses JSON query
    */
   async findCredentialsByQuery(query: ProofQuery): Promise<W3CCredential[]> {
-    let filters = StandardJSONCredentialsQueryFilter(query);
+    const filters = StandardJSONCredentialsQueryFilter(query);
     const creds = (await this._dataSource.load()).filter((credential) =>
       filters.every((filter) => filter.execute(credential))
     );
