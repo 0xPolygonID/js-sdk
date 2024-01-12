@@ -424,32 +424,22 @@ const credentialFlow = async (storage: IDataStorage) => {
 
 describe('credential-wallet', () => {
   it('run in memory with 3 credential', async () => {
-    // const packerManager = new PackageManager();
-    // packerManager.registerPackers([await initZKPPacker()]);
     const storage = {
-      credential: new CredentialStorage(
-        new InMemoryDataSource<W3CCredential>())
+      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>())
     } as unknown as IDataStorage;
     await credentialFlow(storage);
   });
   it('run in local storage with 4 credential', async () => {
-    // const packerManager = new PackageManager();
-    // packerManager.registerPackers([await initZKPPacker()]);
     const storage = {
       credential: new CredentialStorage(
-        new BrowserDataSource<W3CCredential>(CredentialStorage.storageKey),
+        new BrowserDataSource<W3CCredential>(CredentialStorage.storageKey)
       )
     } as unknown as IDataStorage;
     await credentialFlow(storage);
   });
 
   it('Backward compatibility test - hash-as-string-ints', async () => {
-    const packerManager = new PackageManager();
-    // packerManager.registerPackers([await initZKPPacker()]);
-    const credentialStorage = new CredentialStorage(
-      mockedDataSource,
-      new CredentialRefreshService({ packerManager })
-    );
+    const credentialStorage = new CredentialStorage(mockedDataSource);
 
     const cred = await credentialStorage.findCredentialById(cred1.id);
     expect(cred?.proof).not.to.be.undefined;

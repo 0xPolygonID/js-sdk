@@ -22,10 +22,7 @@ export class CredentialStorage implements ICredentialStorage {
    * Creates an instance of CredentialStorage.
    * @param {IDataSource<W3CCredential>} _dataSource - W3CCredential credential KV data source
    */
-  constructor(
-    private readonly _dataSource: IDataSource<W3CCredential>,
-    private readonly _refreshService?: CredentialRefreshService
-  ) {}
+  constructor(private readonly _dataSource: IDataSource<W3CCredential>) {}
 
   /** {@inheritdoc ICredentialStorage.listCredentials } */
   async listCredentials(): Promise<W3CCredential[]> {
@@ -65,44 +62,6 @@ export class CredentialStorage implements ICredentialStorage {
     let creds = allClaims.filter((credential) =>
       filters.every((filter) => filter.execute(credential))
     );
-
-    if (this._refreshService) {
-      let skippedCredSubjectFilter;
-      // if no creds found, let's skip credentialSubject filter and try to refresh expired creds
-      if (!creds.length && query.credentialSubject) {
-        skippedCredSubjectFilter = query.credentialSubject;
-        query.credentialSubject = undefined;
-        filters = StandardJSONCredentialsQueryFilter(query);
-        creds = allClaims.filter((credential) =>
-          filters.every((filter) => filter.execute(credential))
-        );
-      }
-
-      // all expired creds
-      const expiredCreds = creds.filter(
-        (c) =>
-          c.expirationDate &&
-          new Date(c.expirationDate) > new Date() &&
-          c.refreshService &&
-          c.refreshService.type === RefreshServiceType.Iden3RefreshService2023
-      );
-
-      // refresh and update storage
-      for (let i = 0; i < expiredCreds.length; i++) {
-        const refreshedCred = await this._refreshService.refresh(expiredCreds[i]);
-        await this.removeCredential(expiredCreds[i].id);
-        await this.saveCredential(refreshedCred);
-        creds = creds.filter((c) => c.id == expiredCreds[i].id);
-        creds.push(refreshedCred);
-      }
-
-      // apply skipped credentialSubject filter
-      if (skippedCredSubjectFilter) {
-        query.credentialSubject = skippedCredSubjectFilter;
-        filters = StandardJSONCredentialsQueryFilter(query);
-        creds = creds.filter((credential) => filters.every((filter) => filter.execute(credential)));
-      }
-    }
 
     const mappedCreds = creds
       .filter((i) => i !== undefined)
