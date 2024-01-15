@@ -19,7 +19,6 @@ import { IDataSource, PackageManager } from '../../src';
 import { Claim, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 import { CredentialRefreshService } from '../../src/verifiable/refresh-service';
-import { proving } from '@iden3/js-jwz';
 import { initZKPPacker } from '../iden3comm/mock/proving';
 chai.use(chaiAsPromised);
 const { expect } = chai;
