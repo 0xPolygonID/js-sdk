@@ -5,7 +5,8 @@ import { hashElems } from '@iden3/js-merkletree';
 import { ProofNode } from './status/reverse-sparse-merkle-tree';
 import { DID } from '@iden3/js-iden3-core';
 import { TransactionReceipt } from 'ethers';
-import { OnChainRevocationStorage } from '../storage';
+import { OffChainCredentialStatusPublisher } from './status/credential-status-publisher';
+import { CredentialStatusType } from '../verifiable';
 /**
  * Interface to unite contains three trees: claim, revocation and rootOfRoots
  * Also contains the current state of identity
@@ -23,46 +24,14 @@ export interface TreesModel {
  * Options for RhsCommon.
  */
 export type RHSOptions = {
+  credentialStatusType: CredentialStatusType;
   revokedNonces?: number[];
   treeModel?: TreesModel;
   issuerDID?: DID;
   rhsUrl?: string;
   onChain?: {
-    storage: OnChainRevocationStorage;
     txCallback?: (tx: TransactionReceipt) => Promise<void>;
   };
-};
-
-/**
- * Saves the given nodes to the RHS off-chain storage.
- *
- * @param nodes - The nodes to be saved.
- * @param nodeUrl - The URL of the RHS node.
- * @returns A promise that resolves to a boolean indicating whether the nodes were successfully saved.
- */
-export const saveNodesToRHSOffChain = async (
-  nodes: ProofNode[],
-  nodeUrl: string
-): Promise<boolean> => {
-  const nodesJSON = nodes.map((n) => n.toJSON());
-  const resp = await fetch(nodeUrl + '/node', { method: 'post', body: JSON.stringify(nodesJSON) });
-  const status = resp.status;
-  return status === 200;
-};
-
-/**
- * Saves the given nodes to the on-chain revocation storage.
- *
- * @param nodes - The nodes to be saved.
- * @param storage - The on-chain revocation storage.
- * @returns A promise that resolves to the transaction response.
- */
-export const saveNodesToRHSOnChain = async (
-  nodes: ProofNode[],
-  storage: OnChainRevocationStorage
-): Promise<TransactionReceipt> => {
-  const nodesBigInts = nodes.map((n) => n.children.map((c) => c.bigInt()));
-  return storage.saveNodes(nodesBigInts);
 };
 
 /**
@@ -85,10 +54,12 @@ export async function pushHashesToRHS(
   revokedNonces?: number[]
 ): Promise<void> {
   const nodes = await getNodesRepresentation(revokedNonces, trees, state);
-
-  if (nodes.length > 0) {
-    await saveNodesToRHSOffChain(nodes, rhsUrl);
-  }
+  const publisher = new OffChainCredentialStatusPublisher();
+  await publisher.publish({
+    nodes,
+    credentialStatusType: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+    rhsUrl: rhsUrl
+  });
 }
 
 /**

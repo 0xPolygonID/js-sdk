@@ -20,7 +20,9 @@ import {
   ProofService,
   IProofService,
   ICircuitStorage,
-  byteEncoder
+  byteEncoder,
+  CredentialStatusPublisherRegistry,
+  OnChainCredentialStatusPublisher
 } from '../../src';
 
 import {
@@ -219,8 +221,6 @@ describe('onchain revocation checks', () => {
     resolvers.register(CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023, onchainResolver);
 
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(registerBJJIntoInMemoryKMS(), dataStorage, credWallet);
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
 
     signer = new Wallet(WALLET_KEY, new JsonRpcProvider(RPC_URL));
 
@@ -229,15 +229,23 @@ describe('onchain revocation checks', () => {
       RHS_CONTRACT_ADDRESS,
       signer
     );
+
+    const credentialStatusPublisherRegistry = new CredentialStatusPublisherRegistry();
+    credentialStatusPublisherRegistry.register(
+      CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+      new OnChainCredentialStatusPublisher(storage)
+    );
+
+    idWallet = new IdentityWallet(registerBJJIntoInMemoryKMS(), dataStorage, credWallet, {
+      credentialStatusPublisherRegistry
+    });
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
   });
 
   it('issuer has genesis state', async () => {
     const revocationOpts = {
       type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-      id: RHS_CONTRACT_ADDRESS,
-      onChain: {
-        storage
-      }
+      id: RHS_CONTRACT_ADDRESS
     };
 
     const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet, {
@@ -287,7 +295,7 @@ describe('onchain revocation checks', () => {
 
     await idWallet.publishStateToReverseHashService({
       issuerDID,
-      onChain: { storage }
+      credentialStatusType: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023
     });
 
     await proofService.transitState(issuerDID, res.oldTreeState, true, dataStorage.states, signer);
@@ -326,7 +334,6 @@ describe('onchain revocation checks', () => {
               id,
               type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
               onChain: {
-                storage,
                 txCallback: async () => {
                   const { did: userDID, credential: userAuthCredential } = await createIdentity(
                     idWallet,
@@ -336,7 +343,6 @@ describe('onchain revocation checks', () => {
                         id,
                         type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
                         onChain: {
-                          storage,
                           txCallback: async () => {
                             const claimReq: CredentialRequest = createCredRequest(
                               userDID.string(),

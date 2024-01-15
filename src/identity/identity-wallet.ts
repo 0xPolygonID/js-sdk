@@ -24,7 +24,7 @@ import {
   JsonSchemaValidator,
   cacheLoader
 } from '../schema-processor';
-import { IDataStorage, MerkleTreeType, OnChainRevocationStorage, Profile } from '../storage';
+import { IDataStorage, MerkleTreeType, Profile } from '../storage';
 import {
   VerifiableConstants,
   BJJSignatureProof2021,
@@ -45,14 +45,16 @@ import {
   ProofNode,
   pushHashesToRHS,
   RHSOptions,
-  saveNodesToRHSOnChain,
-  saveNodesToRHSOffChain,
   TreesModel
 } from '../credentials';
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
 import { Options } from '@iden3/js-jsonld-merklization';
 import { TransactionReceipt } from 'ethers';
+import {
+  CredentialStatusPublisherRegistry,
+  OffChainCredentialStatusPublisher
+} from '../credentials/status/credential-status-publisher';
 
 /**
  * DID creation options
@@ -70,7 +72,6 @@ export interface IdentityCreationOptions {
     type: CredentialStatusType;
     nonce?: number;
     onChain?: {
-      storage: OnChainRevocationStorage;
       txCallback?: (tx: TransactionReceipt) => Promise<void>;
     };
   };
@@ -337,6 +338,8 @@ export interface IIdentityWallet {
  * @implements implements IIdentityWallet interface
  */
 export class IdentityWallet implements IIdentityWallet {
+  private readonly _credentialStatusPublisherRegistry: CredentialStatusPublisherRegistry;
+
   /**
    * Constructs a new instance of the `IdentityWallet` class
    *
@@ -348,8 +351,22 @@ export class IdentityWallet implements IIdentityWallet {
   public constructor(
     private readonly _kms: KMS,
     private readonly _storage: IDataStorage,
-    private readonly _credentialWallet: ICredentialWallet
-  ) {}
+    private readonly _credentialWallet: ICredentialWallet,
+    private readonly _opts?: {
+      credentialStatusPublisherRegistry?: CredentialStatusPublisherRegistry;
+    }
+  ) {
+    if (!_opts?.credentialStatusPublisherRegistry) {
+      this._credentialStatusPublisherRegistry = new CredentialStatusPublisherRegistry();
+      this._credentialStatusPublisherRegistry.register(
+        CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        new OffChainCredentialStatusPublisher()
+      );
+    } else {
+      this._credentialStatusPublisherRegistry = this._opts
+        ?.credentialStatusPublisherRegistry as CredentialStatusPublisherRegistry;
+    }
+  }
 
   /**
    * {@inheritDoc IIdentityWallet.createIdentity}
@@ -458,25 +475,12 @@ export class IdentityWallet implements IIdentityWallet {
 
     credential.proof = [mtpProof];
 
-    if (opts.revocationOpts.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
-      await this.publishStateToReverseHashService({
-        issuerDID: did,
-        rhsUrl: opts.revocationOpts.id
-      });
-    } else if (
-      opts.revocationOpts.type === CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023
-    ) {
-      if (!opts.revocationOpts.onChain) {
-        throw new Error(
-          `on chain section is not provided for ${CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023} revocation type`
-        );
-      }
-
-      await this.publishStateToReverseHashService({
-        issuerDID: did,
-        onChain: opts.revocationOpts.onChain
-      });
-    }
+    await this.publishStateToReverseHashService({
+      credentialStatusType: opts.revocationOpts.type,
+      issuerDID: did,
+      rhsUrl: opts.revocationOpts.id,
+      onChain: opts.revocationOpts.onChain
+    });
 
     await this._storage.identity.saveIdentity({
       did: did.string(),
@@ -492,6 +496,7 @@ export class IdentityWallet implements IIdentityWallet {
       credential
     };
   }
+
   /** {@inheritDoc IIdentityWallet.getGenesisDIDMetadata} */
   async getGenesisDIDMetadata(did: DID): Promise<{ nonce: number; genesisDID: DID }> {
     // check if it is a genesis identity
@@ -904,9 +909,18 @@ export class IdentityWallet implements IIdentityWallet {
     );
   }
 
+  /** {@inheritDoc IIdentityWallet.publishStateToReverseHashService} */
   async publishStateToReverseHashService(opts: RHSOptions): Promise<void> {
     if (!opts.issuerDID && !opts.treeModel) {
       throw new Error('either issuerDID or treeModel must be provided');
+    }
+
+    const revStatusType = opts.credentialStatusType;
+    const rhsPublishers = this._credentialStatusPublisherRegistry.get(revStatusType);
+    if (!rhsPublishers) {
+      throw new Error(
+        `there is no registered publisher to save  hash is not registered for ${revStatusType} is not registered`
+      );
     }
 
     let nodes: ProofNode[] = [];
@@ -922,9 +936,7 @@ export class IdentityWallet implements IIdentityWallet {
         },
         treeState.state
       );
-    }
-
-    if (opts.treeModel) {
+    } else if (opts.treeModel) {
       nodes = await getNodesRepresentation(
         opts.revokedNonces,
         {
@@ -941,25 +953,9 @@ export class IdentityWallet implements IIdentityWallet {
       return;
     }
 
-    if (opts.rhsUrl) {
-      await saveNodesToRHSOffChain(nodes, opts.rhsUrl);
-      return;
+    for (const publisher of rhsPublishers) {
+      await publisher.publish({ nodes, ...opts });
     }
-
-    if (opts.onChain) {
-      const txPromise = saveNodesToRHSOnChain(nodes, opts.onChain.storage);
-
-      if (opts.onChain.txCallback) {
-        const cb = opts.onChain.txCallback;
-        txPromise.then((receipt) => cb(receipt));
-        return;
-      }
-
-      await txPromise;
-      return;
-    }
-
-    throw new Error('either rhsUrl or rpcUrl must be provided');
   }
 
   public async getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim> {
