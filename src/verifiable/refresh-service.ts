@@ -35,7 +35,7 @@ export interface IRefreshService {
  * @interface   RefreshServiceOptions
  */
 export interface RefreshServiceOptions {
-  packerManager: IPackageManager;
+  packageManager: IPackageManager;
 }
 
 export class CredentialRefreshService implements IRefreshService {
@@ -76,7 +76,7 @@ export class CredentialRefreshService implements IRefreshService {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(refreshMsg));
-    const jwzToken = await this.options.packerManager.pack(
+    const jwzToken = await this.options.packageManager.pack(
       MediaType.ZKPMessage,
       msgBytes,
       zkpParams

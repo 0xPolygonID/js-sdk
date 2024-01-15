@@ -22,7 +22,6 @@ import { AgentResolver } from './status/agent-revocation';
 import { CredentialStatusResolveOptions } from './status/resolver';
 import { getUserDIDFromCredential } from './utils';
 import { CredentialRefreshService } from '../verifiable/refresh-service';
-import { FilterQuery, StandardJSONCredentialsQueryFilter } from '../storage';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
