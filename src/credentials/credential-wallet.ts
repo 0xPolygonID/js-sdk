@@ -444,7 +444,7 @@ export class CredentialWallet implements ICredentialWallet {
     const expiredCreds = creds.filter(
       (c) =>
         c.expirationDate &&
-        new Date(c.expirationDate) > new Date() &&
+        new Date(c.expirationDate) < new Date() &&
         c.refreshService &&
         c.refreshService.type === RefreshServiceType.Iden3RefreshService2023
     );
@@ -454,7 +454,7 @@ export class CredentialWallet implements ICredentialWallet {
       const refreshedCred = await this._refreshService.refresh(expiredCreds[i]);
       await this.remove(expiredCreds[i].id);
       await this.save(refreshedCred);
-      creds = creds.filter((c) => c.id == expiredCreds[i].id);
+      creds = creds.filter((c) => c.id !== expiredCreds[i].id);
       creds.push(refreshedCred);
     }
 

@@ -1,9 +1,17 @@
 import { CircuitId } from './../../../src/circuits/models';
-import { ProvingMethod, ProvingMethodAlg, ZKProof } from '@iden3/js-jwz';
+import { ProvingMethod, ProvingMethodAlg, ZKProof, proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { Eddsa } from '@iden3/js-crypto';
 import { newBigIntFromBytes } from '@iden3/js-merkletree';
-import { byteEncoder } from '../../../src';
+import {
+  byteEncoder,
+  DataPrepareHandlerFunc,
+  ProvingParams,
+  VerificationHandlerFunc,
+  VerificationParams,
+  ZKPPacker
+} from '../../../src';
+const { registerProvingMethod } = proving;
 
 export class ProvingMethodGroth16Authv2 implements ProvingMethod {
   constructor(public readonly methodAlg: ProvingMethodAlg) {}
@@ -70,3 +78,33 @@ export const mockVerifyState = async (
   id: string, //eslint-disable-line @typescript-eslint/no-unused-vars
   signals: Array<string> //eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<boolean> => true;
+
+export const initZKPPacker = async (opts?: { alg: string }): Promise<ZKPPacker> => {
+  const mockAuthInputsHandler = new DataPrepareHandlerFunc(mockPrepareAuthInputs);
+
+  const mockProvingMethod = new ProvingMethodGroth16Authv2(
+    new ProvingMethodAlg(opts?.alg ?? 'groth16-mock', 'authV2')
+  );
+
+  await registerProvingMethod(mockProvingMethod.methodAlg, (): ProvingMethod => {
+    return mockProvingMethod;
+  });
+
+  const verificationFn = new VerificationHandlerFunc(mockVerifyState);
+  const mapKey = mockProvingMethod.methodAlg.toString();
+
+  const mockVerificationParamMap: Map<string, VerificationParams> = new Map();
+  mockVerificationParamMap.set(mapKey, {
+    key: new Uint8Array([]),
+    verificationFn
+  });
+
+  const mockProvingParamMap: Map<string, ProvingParams> = new Map();
+  mockProvingParamMap.set(mapKey, {
+    dataPreparer: mockAuthInputsHandler,
+    provingKey: new Uint8Array([]),
+    wasm: new Uint8Array([])
+  });
+
+  return new ZKPPacker(mockProvingParamMap, mockVerificationParamMap);
+};
