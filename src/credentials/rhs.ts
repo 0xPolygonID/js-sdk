@@ -5,7 +5,7 @@ import { hashElems } from '@iden3/js-merkletree';
 import { ProofNode } from './status/reverse-sparse-merkle-tree';
 import { DID } from '@iden3/js-iden3-core';
 import { TransactionReceipt } from 'ethers';
-import { OffChainCredentialStatusPublisher } from './status/credential-status-publisher';
+import { Iden3SmtRhsCredentialStatusPublisher } from './status/credential-status-publisher';
 import { CredentialStatusType } from '../verifiable';
 /**
  * Interface to unite contains three trees: claim, revocation and rootOfRoots
@@ -54,7 +54,7 @@ export async function pushHashesToRHS(
   revokedNonces?: number[]
 ): Promise<void> {
   const nodes = await getNodesRepresentation(revokedNonces, trees, state);
-  const publisher = new OffChainCredentialStatusPublisher();
+  const publisher = new Iden3SmtRhsCredentialStatusPublisher();
   await publisher.publish({
     nodes,
     credentialStatusType: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,

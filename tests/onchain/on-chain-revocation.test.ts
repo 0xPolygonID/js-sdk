@@ -22,7 +22,7 @@ import {
   ICircuitStorage,
   byteEncoder,
   CredentialStatusPublisherRegistry,
-  OnChainCredentialStatusPublisher
+  Iden3OnchainSmtCredentialStatusPublisher
 } from '../../src';
 
 import {
@@ -233,7 +233,7 @@ describe('onchain revocation checks', () => {
     const credentialStatusPublisherRegistry = new CredentialStatusPublisherRegistry();
     credentialStatusPublisherRegistry.register(
       CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-      new OnChainCredentialStatusPublisher(storage)
+      new Iden3OnchainSmtCredentialStatusPublisher(storage)
     );
 
     idWallet = new IdentityWallet(registerBJJIntoInMemoryKMS(), dataStorage, credWallet, {

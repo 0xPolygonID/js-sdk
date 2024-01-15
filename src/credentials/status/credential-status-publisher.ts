@@ -46,7 +46,7 @@ export class CredentialStatusPublisherRegistry {
 /**
  * Implementation of the ICredentialStatusPublisher interface for publishing on-chain credential status.
  */
-export class OnChainCredentialStatusPublisher implements ICredentialStatusPublisher {
+export class Iden3OnchainSmtCredentialStatusPublisher implements ICredentialStatusPublisher {
   constructor(private readonly _storage: OnChainRevocationStorage) {}
 
   /**
@@ -84,7 +84,7 @@ export class OnChainCredentialStatusPublisher implements ICredentialStatusPublis
 /**
  * Implementation of the ICredentialStatusPublisher interface for publishing off-chain credential status.
  */
-export class OffChainCredentialStatusPublisher implements ICredentialStatusPublisher {
+export class Iden3SmtRhsCredentialStatusPublisher implements ICredentialStatusPublisher {
   /**
    * Publishes the credential status to a specified node URL.
    * @param params - The parameters for publishing the credential status.

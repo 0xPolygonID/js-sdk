@@ -53,7 +53,7 @@ import { Options } from '@iden3/js-jsonld-merklization';
 import { TransactionReceipt } from 'ethers';
 import {
   CredentialStatusPublisherRegistry,
-  OffChainCredentialStatusPublisher
+  Iden3SmtRhsCredentialStatusPublisher
 } from '../credentials/status/credential-status-publisher';
 
 /**
@@ -360,7 +360,7 @@ export class IdentityWallet implements IIdentityWallet {
       this._credentialStatusPublisherRegistry = new CredentialStatusPublisherRegistry();
       this._credentialStatusPublisherRegistry.register(
         CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        new OffChainCredentialStatusPublisher()
+        new Iden3SmtRhsCredentialStatusPublisher()
       );
     } else {
       this._credentialStatusPublisherRegistry = this._opts
