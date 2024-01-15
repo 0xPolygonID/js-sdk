@@ -104,7 +104,7 @@ export enum SubjectPosition {
 /**
  * RefreshServiceType type for refreshService
  *
- * @enum {number}
+ * @enum {string}
  */
 export enum RefreshServiceType {
   Iden3RefreshService2023 = 'Iden3RefreshService2023'

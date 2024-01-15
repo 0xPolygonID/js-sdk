@@ -27,6 +27,19 @@ import { CredentialRefreshService } from '../verifiable/refresh-service';
 const ErrAllClaimsRevoked = 'all claims are revoked';
 
 /**
+ * CredentialWalletOptions represents credential wallet options
+ *
+ * @public
+ * @interface CredentialWalletOptions
+ */
+export interface CredentialWalletOptions {
+  /**
+   * Refresh service
+   */
+  refreshService?: CredentialRefreshService;
+}
+
+/**
  * Request to core library to create Core Claim from W3C Verifiable Credential
  *
  * @public
@@ -218,12 +231,12 @@ export class CredentialWallet implements ICredentialWallet {
    * @param {IDataStorage} _storage - data storage to access credential / identity / Merkle tree data
    * @param {CredentialStatusResolverRegistry} _credentialStatusResolverRegistry - list of credential status resolvers
    * if _credentialStatusResolverRegistry is not provided, default resolvers will be used
-   * @param {CredentialRefreshService} _refreshService - credential refresh service
+   * @param {CredentialWalletOptions} _options - credential wallet options
    */
   constructor(
     private readonly _storage: IDataStorage,
     private readonly _credentialStatusResolverRegistry?: CredentialStatusResolverRegistry,
-    private readonly _refreshService?: CredentialRefreshService
+    private readonly _options?: CredentialWalletOptions
   ) {
     // if no credential status resolvers are provided
     // register default issuer resolver
@@ -428,7 +441,7 @@ export class CredentialWallet implements ICredentialWallet {
       return creds;
     }
 
-    if (!this._refreshService) {
+    if (!this._options?.refreshService) {
       throw new Error('please provide credential refresh service');
     }
 
@@ -445,17 +458,22 @@ export class CredentialWallet implements ICredentialWallet {
       (c) =>
         c.expirationDate &&
         new Date(c.expirationDate) < new Date() &&
-        c.refreshService &&
-        c.refreshService.type === RefreshServiceType.Iden3RefreshService2023
+        c.refreshService?.type === RefreshServiceType.Iden3RefreshService2023
     );
 
-    // refresh and update storage
-    for (let i = 0; i < expiredCreds.length; i++) {
-      const refreshedCred = await this._refreshService.refresh(expiredCreds[i]);
-      await this.remove(expiredCreds[i].id);
-      await this.save(refreshedCred);
-      creds = creds.filter((c) => c.id !== expiredCreds[i].id);
-      creds.push(refreshedCred);
+    const refreshCredPromises: Array<Promise<W3CCredential>> = [];
+    expiredCreds.forEach((i) => {
+      refreshCredPromises.push(this._options!.refreshService!.refresh(i));
+    });
+
+    const refreshedCreds = await Promise.all(refreshCredPromises);
+
+    // update storage
+    for (let i = 0; i < refreshedCreds.length; i++) {
+      await this.remove(refreshedCreds[i].id);
+      await this.save(refreshedCreds[i]);
+      creds = creds.filter((c) => c.id !== refreshedCreds[i].id);
+      creds.push(refreshedCreds[i]);
     }
 
     // apply skipped credentialSubject filter

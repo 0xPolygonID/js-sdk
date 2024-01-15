@@ -23,7 +23,7 @@ export interface IRefreshService {
   /**
    * refresh credential
    *
-   * @param {Claim} claim - claim to refresh
+   * @param {W3CCredential} credential - credential to refresh
    * @returns {Promise<W3CCredential>}
    */
   refresh(credential: W3CCredential): Promise<W3CCredential>;
@@ -93,14 +93,12 @@ export class CredentialRefreshService implements IRefreshService {
       throw new Error(`could not refresh W3C credential, return status ${resp.status}`);
     }
 
-    const respBody = await resp.json();
+    const respBody: CredentialIssuanceMessage = await resp.json();
 
-    const credIssuanceMsg = respBody as unknown as CredentialIssuanceMessage;
-
-    if (!credIssuanceMsg.body?.credential) {
+    if (!respBody.body?.credential) {
       throw new Error('no credential in CredentialIssuanceMessage response');
     }
 
-    return W3CCredential.fromJSON(credIssuanceMsg.body.credential);
+    return W3CCredential.fromJSON(respBody.body.credential);
   }
 }

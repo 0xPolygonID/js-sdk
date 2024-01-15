@@ -436,7 +436,7 @@ const credentialFlowRefreshService = async (storage: IDataStorage) => {
     CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
     new RHSResolver(storage.states)
   );
-  const credentialWallet = new CredentialWallet(storage, resolvers, refreshService);
+  const credentialWallet = new CredentialWallet(storage, resolvers, { refreshService });
 
   await credentialWallet.saveAll([credWithRefreshService, cred2]);
 
@@ -474,6 +474,10 @@ const credentialFlowRefreshService = async (storage: IDataStorage) => {
     expect(credsIds).to.have.members(expectedIds);
     expect(new Date(credWithRefreshService.expirationDate || 0)).to.be.lessThan(new Date());
     expect(new Date(creds[0].expirationDate || 0)).to.be.greaterThan(new Date());
+
+    const credsAfterRefresh = await credentialWallet.findByQuery(item.query);
+    expect(new Date(credsAfterRefresh[0].expirationDate || 0)).to.be.greaterThan(new Date());
+    expect(credsAfterRefresh.length).to.be.eq(1);
   }
 };
 
