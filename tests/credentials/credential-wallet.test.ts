@@ -442,14 +442,12 @@ const credentialFlowRefreshService = async (storage: IDataStorage) => {
 
   const queries: {
     query: ProofQuery;
-    expected: W3CCredential[];
   }[] = [
     {
       query: {
         allowedIssuers: ['*'],
         type: 'type1_1'
-      },
-      expected: [credWithRefreshService]
+      }
     }
   ];
 
@@ -469,24 +467,15 @@ const credentialFlowRefreshService = async (storage: IDataStorage) => {
   });
 
   for (const item of queries) {
-    let creds = await credentialWallet.findByQuery(item.query, { autoRefresh: true, removeExpired: true });
-    const expectedIds = item.expected.map(({ id }) => id);
-    expectedIds.push(refreshedId);
+    let creds = await credentialWallet.findByQuery(item.query, {
+      autoRefresh: true,
+      removeExpired: true
+    });
     const credsIds = creds.map(({ id }) => id);
-    expect(creds.length).to.be.eq(2);
-    expect(credsIds).to.have.members(expectedIds);
+    expect(creds.length).to.be.eq(1);
+    expect(credsIds).to.have.members([refreshedId]);
     expect(new Date(credWithRefreshService.expirationDate || 0)).to.be.lessThan(new Date());
-    expect(new Date(creds[1].expirationDate || 0)).to.be.greaterThan(new Date());
-
-    const credsAfterRefresh = await credentialWallet.findByQuery(item.query);
-    expect(new Date(credsAfterRefresh[1].expirationDate || 0)).to.be.greaterThan(new Date());
-    expect(credsAfterRefresh.length).to.be.eq(2);
-
-    // removeExpired = true
-    // creds = await credentialWallet.findByQuery(item.query, { autoRefresh: true, removeExpired: true });
-    // console.log(JSON.stringify(creds.map(i => i.id)));
-    // expect(creds.length).to.be.eq(1);
-    // expect(new Date(creds[0].expirationDate || 0)).to.be.greaterThan(new Date());
+    expect(new Date(creds[0].expirationDate || 0)).to.be.greaterThan(new Date());
   }
 };
 
