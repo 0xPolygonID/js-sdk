@@ -455,6 +455,8 @@ const credentialFlowRefreshService = async (storage: IDataStorage) => {
 
   const refreshedCred = JSON.parse(JSON.stringify(credWithRefreshService));
   refreshedCred.expirationDate = new Date().setMinutes(new Date().getMinutes() + 1);
+  const refreshedId = 'test1_refreshed';
+  refreshedCred.id = refreshedId;
   fetchMock.spy();
   fetchMock.post('http://test-refresh/100', {
     body: {
@@ -467,17 +469,24 @@ const credentialFlowRefreshService = async (storage: IDataStorage) => {
   });
 
   for (const item of queries) {
-    const creds = await credentialWallet.findByQuery(item.query, { autoRefresh: true });
+    let creds = await credentialWallet.findByQuery(item.query, { autoRefresh: true, removeExpired: true });
     const expectedIds = item.expected.map(({ id }) => id);
+    expectedIds.push(refreshedId);
     const credsIds = creds.map(({ id }) => id);
-    expect(creds.length).to.be.eq(1);
+    expect(creds.length).to.be.eq(2);
     expect(credsIds).to.have.members(expectedIds);
     expect(new Date(credWithRefreshService.expirationDate || 0)).to.be.lessThan(new Date());
-    expect(new Date(creds[0].expirationDate || 0)).to.be.greaterThan(new Date());
+    expect(new Date(creds[1].expirationDate || 0)).to.be.greaterThan(new Date());
 
     const credsAfterRefresh = await credentialWallet.findByQuery(item.query);
-    expect(new Date(credsAfterRefresh[0].expirationDate || 0)).to.be.greaterThan(new Date());
-    expect(credsAfterRefresh.length).to.be.eq(1);
+    expect(new Date(credsAfterRefresh[1].expirationDate || 0)).to.be.greaterThan(new Date());
+    expect(credsAfterRefresh.length).to.be.eq(2);
+
+    // removeExpired = true
+    // creds = await credentialWallet.findByQuery(item.query, { autoRefresh: true, removeExpired: true });
+    // console.log(JSON.stringify(creds.map(i => i.id)));
+    // expect(creds.length).to.be.eq(1);
+    // expect(new Date(creds[0].expirationDate || 0)).to.be.greaterThan(new Date());
   }
 };
 

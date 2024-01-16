@@ -24,9 +24,19 @@ export interface IRefreshService {
    * refresh credential
    *
    * @param {W3CCredential} credential - credential to refresh
+   * @param {RefreshOptions} opts - options
    * @returns {Promise<W3CCredential>}
    */
-  refresh(credential: W3CCredential): Promise<W3CCredential>;
+  refresh(credential: W3CCredential, opts?: RefreshOptions): Promise<W3CCredential>;
+}
+
+/**
+ * RefreshOptions contains options for refresh call
+ * @public
+ * @interface   RefreshOptions
+ */
+export interface RefreshOptions {
+  reason?: string;
 }
 
 /**
@@ -41,7 +51,7 @@ export interface RefreshServiceOptions {
 export class CredentialRefreshService implements IRefreshService {
   constructor(private readonly options: RefreshServiceOptions) {}
 
-  async refresh(credential: W3CCredential): Promise<W3CCredential> {
+  async refresh(credential: W3CCredential, opts?: RefreshOptions): Promise<W3CCredential> {
     if (!credential.refreshService) {
       throw new Error('refreshService not specified for W3CCredential');
     }
@@ -50,6 +60,10 @@ export class CredentialRefreshService implements IRefreshService {
     }
 
     const otherIdentifier = credential.credentialSubject.id as string;
+
+    if (!otherIdentifier) {
+      throw new Error('self credentials do not support refresh');
+    }
 
     const senderDID = DID.parse(otherIdentifier);
 
@@ -69,7 +83,7 @@ export class CredentialRefreshService implements IRefreshService {
       thid: randomUUID(),
       body: {
         id: otherIdentifier,
-        reason: 'expired'
+        reason: opts?.reason ?? 'credential is expired'
       },
       from: otherIdentifier,
       to: credential.issuer

@@ -434,7 +434,7 @@ export class CredentialWallet implements ICredentialWallet {
   /**
    * {@inheritDoc ICredentialWallet.findByQuery}
    */
-  async findByQuery(query: ProofQuery, opts?: { autoRefresh?: boolean }): Promise<W3CCredential[]> {
+  async findByQuery(query: ProofQuery, opts?: { autoRefresh?: boolean, removeExpired?: boolean }): Promise<W3CCredential[]> {
     let creds = await this._storage.credential.findCredentialsByQuery(query);
 
     if (!opts?.autoRefresh) {
@@ -442,7 +442,7 @@ export class CredentialWallet implements ICredentialWallet {
     }
 
     if (!this._options?.refreshService) {
-      throw new Error('please provide credential refresh service');
+      throw new Error('authomatic refresh is set to true, but refresh service is not setup in the wallet');
     }
 
     let skippedCredSubjectFilter;
@@ -470,9 +470,11 @@ export class CredentialWallet implements ICredentialWallet {
 
     // update storage
     for (let i = 0; i < refreshedCreds.length; i++) {
-      await this.remove(refreshedCreds[i].id);
+      if (opts.removeExpired) {
+        await this.remove(refreshedCreds[i].id);
+        creds = creds.filter((c) => c.id !== refreshedCreds[i].id);
+      }
       await this.save(refreshedCreds[i]);
-      creds = creds.filter((c) => c.id !== refreshedCreds[i].id);
       creds.push(refreshedCreds[i]);
     }
 
