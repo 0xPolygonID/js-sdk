@@ -3,8 +3,6 @@ import { Hash, testBit, Merkletree, NodeLeaf, Siblings } from '@iden3/js-merklet
 import { NODE_TYPE_LEAF } from '@iden3/js-merkletree';
 import { hashElems } from '@iden3/js-merkletree';
 import { ProofNode } from './status/reverse-sparse-merkle-tree';
-import { DID } from '@iden3/js-iden3-core';
-import { TransactionReceipt } from 'ethers';
 import { Iden3SmtRhsCredentialStatusPublisher } from './status/credential-status-publisher';
 import { CredentialStatusType } from '../verifiable';
 /**
@@ -19,20 +17,6 @@ export interface TreesModel {
   rootsTree: Merkletree;
   state: Hash;
 }
-
-/**
- * Options for RhsCommon.
- */
-export type RHSOptions = {
-  credentialStatusType: CredentialStatusType;
-  revokedNonces?: number[];
-  treeModel?: TreesModel;
-  issuerDID?: DID;
-  rhsUrl?: string;
-  onChain?: {
-    txCallback?: (tx: TransactionReceipt) => Promise<void>;
-  };
-};
 
 /**
  * Pushes identity state information to a reverse hash service.

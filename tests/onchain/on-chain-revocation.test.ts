@@ -293,10 +293,10 @@ describe('onchain revocation checks', () => {
 
     const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
 
-    await idWallet.publishStateToReverseHashService({
+    await idWallet.publishRevocationInfoByCredentialStatusType(
       issuerDID,
-      credentialStatusType: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023
-    });
+      CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023
+    );
 
     await proofService.transitState(issuerDID, res.oldTreeState, true, dataStorage.states, signer);
 

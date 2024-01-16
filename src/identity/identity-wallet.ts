@@ -44,7 +44,6 @@ import {
   ICredentialWallet,
   ProofNode,
   pushHashesToRHS,
-  RHSOptions,
   TreesModel
 } from '../credentials';
 import { TreeState } from '../circuits';
@@ -61,9 +60,9 @@ import {
  * seed - seed to generate BJJ key pair
  * revocationOpts -
 
- * @interface IdentityCreationOptions
+ * @type IdentityCreationOptions
  */
-export interface IdentityCreationOptions {
+export type IdentityCreationOptions = {
   method?: string;
   blockchain?: string;
   networkId?: string;
@@ -76,7 +75,19 @@ export interface IdentityCreationOptions {
     };
   };
   seed?: Uint8Array;
-}
+};
+
+/**
+ * Options for RevocationInfoOptions.
+ */
+export type RevocationInfoOptions = {
+  revokedNonces?: number[];
+  treeModel?: TreesModel;
+  rhsUrl?: string;
+  onChain?: {
+    txCallback?: (tx: TransactionReceipt) => Promise<void>;
+  };
+};
 
 /**
  *  Proof creation result
@@ -233,7 +244,7 @@ export interface IIdentityWallet {
   /**
    * Publishes issuer state to the reverse hash service by given URL
    *
-   * @deprecated use publishStateToReverseHashService instead with the same arguments in opts
+   * @deprecated use publishRevocationInfoByCredentialStatusType instead with the same arguments in opts
    * @param {DID} issuerDID - issuer did
    * @param {string} rhsURL - reverse hash service URL
    * @param {number[]} [revokedNonces] - revoked nonces for the period from the last published
@@ -248,7 +259,7 @@ export interface IIdentityWallet {
 
   /**
    * Publishes specific state to the reverse hash service by given URL
-   * @deprecated use publishStateToReverseHashService instead with the same arguments in opts
+   * @deprecated use publishRevocationInfoByCredentialStatusType instead with the same arguments in opts
    * @param {TreesModel} treeModel - trees model to publish
    * @param {string} rhsURL - reverse hash service URL
    * @param {number[]} [revokedNonces] - revoked nonces for the period from the last published
@@ -262,13 +273,17 @@ export interface IIdentityWallet {
   ): Promise<void>;
 
   /**
-   * Publishes state to the reverse hash service by given options
+   * Publishes revocation info by credential status predefined publishers
    *
-   * @param {(RHSOptions)} opts
+   * @param {(RevocationInfoOptions)} opts
    * @returns {Promise<void>}
    * @memberof IIdentityWallet
    */
-  publishStateToReverseHashService(opts: RHSOptions): Promise<void>;
+  publishRevocationInfoByCredentialStatusType(
+    issuerDID: DID,
+    credentialStatusType: CredentialStatusType,
+    opts?: RevocationInfoOptions
+  ): Promise<void>;
 
   /**
    * Extracts core claim from signature or merkle tree proof. If both proof persists core claim must be the same
@@ -475,9 +490,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     credential.proof = [mtpProof];
 
-    await this.publishStateToReverseHashService({
-      credentialStatusType: opts.revocationOpts.type,
-      issuerDID: did,
+    await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
       rhsUrl: opts.revocationOpts.id,
       onChain: opts.revocationOpts.onChain
     });
@@ -909,34 +922,21 @@ export class IdentityWallet implements IIdentityWallet {
     );
   }
 
-  /** {@inheritDoc IIdentityWallet.publishStateToReverseHashService} */
-  async publishStateToReverseHashService(opts: RHSOptions): Promise<void> {
-    if (!opts.issuerDID && !opts.treeModel) {
-      throw new Error('either issuerDID or treeModel must be provided');
-    }
-
-    const revStatusType = opts.credentialStatusType;
-    const rhsPublishers = this._credentialStatusPublisherRegistry.get(revStatusType);
+  /** {@inheritDoc IIdentityWallet.publishRevocationInfoByCredentialStatusType} */
+  async publishRevocationInfoByCredentialStatusType(
+    issuerDID: DID,
+    credentialStatusType: CredentialStatusType,
+    opts?: RevocationInfoOptions
+  ): Promise<void> {
+    const rhsPublishers = this._credentialStatusPublisherRegistry.get(credentialStatusType);
     if (!rhsPublishers) {
       throw new Error(
-        `there is no registered publisher to save  hash is not registered for ${revStatusType} is not registered`
+        `there is no registered publisher to save  hash is not registered for ${credentialStatusType} is not registered`
       );
     }
 
     let nodes: ProofNode[] = [];
-    if (opts.issuerDID) {
-      const treeState = await this.getDIDTreeModel(opts.issuerDID);
-      nodes = await getNodesRepresentation(
-        opts.revokedNonces,
-        {
-          revocationTree: treeState.revocationTree,
-          claimsTree: treeState.claimsTree,
-          state: treeState.state,
-          rootsTree: treeState.rootsTree
-        },
-        treeState.state
-      );
-    } else if (opts.treeModel) {
+    if (opts?.treeModel) {
       nodes = await getNodesRepresentation(
         opts.revokedNonces,
         {
@@ -947,15 +947,29 @@ export class IdentityWallet implements IIdentityWallet {
         },
         opts.treeModel.state
       );
+    } else {
+      const treeState = await this.getDIDTreeModel(issuerDID);
+      nodes = await getNodesRepresentation(
+        opts?.revokedNonces,
+        {
+          revocationTree: treeState.revocationTree,
+          claimsTree: treeState.claimsTree,
+          state: treeState.state,
+          rootsTree: treeState.rootsTree
+        },
+        treeState.state
+      );
     }
 
     if (!nodes.length) {
       return;
     }
 
-    for (const publisher of rhsPublishers) {
-      await publisher.publish({ nodes, ...opts });
-    }
+    const rhsPublishersTask = rhsPublishers.map((publisher) =>
+      publisher.publish({ nodes, ...opts, credentialStatusType, issuerDID })
+    );
+
+    await Promise.all(rhsPublishersTask);
   }
 
   public async getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim> {
