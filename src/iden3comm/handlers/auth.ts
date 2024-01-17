@@ -64,6 +64,10 @@ export interface IAuthHandler {
 export interface AuthHandlerOptions {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
+  selectCredentialCallback?: () => Promise<{
+    cred: W3CCredential;
+    revStatus?: RevocationStatus | undefined;
+  }>;
 }
 
 /**
@@ -219,14 +223,20 @@ export class AuthHandler implements IAuthHandler {
         }
       }
 
-      const credWithRevStatus = groupedCredentialsCache.get(groupId as number);
+      let credWithRevStatus = groupedCredentialsCache.get(groupId as number);
+      credWithRevStatus =
+        credWithRevStatus ?? (await this._proofService.findCredentialByProofQuery(did, query));
+
+      credWithRevStatus = opts.selectCredentialCallback
+        ? await opts.selectCredentialCallback()
+        : credWithRevStatus;
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
         proofReq,
         did,
         {
           skipRevocation: Boolean(query.skipClaimRevocationCheck),
-          credential: credWithRevStatus?.cred,
+          credential: credWithRevStatus.cred,
           credentialRevocationStatus: credWithRevStatus?.revStatus,
           linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
         }
