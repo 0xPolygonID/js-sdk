@@ -53,12 +53,12 @@ export const QueryOperators = {
 const allOperations = Object.values(QueryOperators);
 
 export const availableTypesOperators: Map<string, Operators[]> = new Map([
-  [XSDNS.Boolean, [QueryOperators.$eq, QueryOperators.$ne]],
+  [XSDNS.Boolean, [QueryOperators.$eq, QueryOperators.$ne, QueryOperators.$sd]],
   [XSDNS.Integer, allOperations],
   [XSDNS.NonNegativeInteger, allOperations],
   [XSDNS.PositiveInteger, allOperations],
-  [XSDNS.Double, [QueryOperators.$eq, QueryOperators.$ne, QueryOperators.$in, QueryOperators.$nin]],
-  [XSDNS.String, [QueryOperators.$eq, QueryOperators.$ne, QueryOperators.$in, QueryOperators.$nin]],
+  [XSDNS.Double, [QueryOperators.$eq, QueryOperators.$ne, QueryOperators.$in, QueryOperators.$nin, QueryOperators.$sd]],
+  [XSDNS.String, [QueryOperators.$eq, QueryOperators.$ne, QueryOperators.$in, QueryOperators.$nin, QueryOperators.$sd]],
   [XSDNS.DateTime, allOperations]
 ]);
 
