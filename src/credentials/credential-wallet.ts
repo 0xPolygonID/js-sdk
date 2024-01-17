@@ -1,4 +1,4 @@
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getChainId } from '@iden3/js-iden3-core';
 import { IDataStorage } from '../storage/interfaces';
 import {
   W3CCredential,
@@ -335,7 +335,7 @@ export class CredentialWallet implements ICredentialWallet {
       type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
     };
 
-    cr.credentialStatus = this.buildCredentialStatus(request);
+    cr.credentialStatus = this.buildCredentialStatus(request, issuer);
 
     return cr;
   };
@@ -345,7 +345,7 @@ export class CredentialWallet implements ICredentialWallet {
    * @param {CredentialRequest} request
    * @returns `CredentialStatus`
    */
-  private buildCredentialStatus(request: CredentialRequest): CredentialStatus {
+  private buildCredentialStatus(request: CredentialRequest, issuer: DID): CredentialStatus {
     const credentialStatus: CredentialStatus = {
       id: request.revocationOpts.id,
       type: request.revocationOpts.type,
@@ -367,6 +367,24 @@ export class CredentialWallet implements ICredentialWallet {
               }`
             : `${credentialStatus.id.replace(/\/$/, '')}`
         };
+      case CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023: {
+        const issuerId = DID.idFromDID(issuer);
+        const chainId = getChainId(DID.blockchainFromId(issuerId), DID.networkIdFromId(issuerId));
+        const searchParams = [
+          ['revocationNonce', request.revocationOpts.nonce?.toString() || ''],
+          ['contractAddress', `${chainId}:${request.revocationOpts.id}`],
+          ['state', request.revocationOpts.issuerState || '']
+        ]
+          .filter(([, value]) => Boolean(value))
+          .map(([key, value]) => `${key}=${value}`)
+          .join('&');
+
+        return {
+          ...credentialStatus,
+          // `[did]:[methodid]:[chain]:[network]:[id]/credentialStatus?(revocationNonce=value)&[contractAddress=[chainID]:[contractAddress]]&(state=issuerState)`
+          id: `${issuer.string()}/credentialStatus?${searchParams}`
+        };
+      }
       default:
         return credentialStatus;
     }

@@ -1,5 +1,5 @@
 import { RevocationStatus, Issuer } from '../../verifiable';
-import { Contract, JsonRpcProvider } from 'ethers';
+import { Contract, JsonRpcProvider, Signer, TransactionReceipt, TransactionRequest } from 'ethers';
 import { Proof, NodeAuxJSON, Hash } from '@iden3/js-merkletree';
 import { EthConnectionConfig } from './state';
 import abi from '../blockchain/abi/CredentialStatusResolver.json';
@@ -12,8 +12,8 @@ import abi from '../blockchain/abi/CredentialStatusResolver.json';
  * @class OnChainIssuer
  */
 export class OnChainRevocationStorage {
-  private readonly onchainContract: Contract;
-  private readonly provider: JsonRpcProvider;
+  private readonly _contract: Contract;
+  private readonly _provider: JsonRpcProvider;
 
   /**
    *
@@ -23,9 +23,18 @@ export class OnChainRevocationStorage {
    * @param {string} - rpc url to connect to the blockchain
    */
 
-  constructor(config: EthConnectionConfig, contractAddress: string) {
-    this.provider = new JsonRpcProvider(config.url);
-    this.onchainContract = new Contract(contractAddress, abi, this.provider);
+  constructor(
+    private readonly _config: EthConnectionConfig,
+    contractAddress: string,
+    private _signer?: Signer
+  ) {
+    this._provider = new JsonRpcProvider(_config.url);
+    let contract = new Contract(contractAddress, abi, this._provider);
+    if (this._signer) {
+      this._signer = this._signer.connect(this._provider);
+      contract = contract.connect(this._signer) as Contract;
+    }
+    this._contract = contract;
   }
 
   /**
@@ -38,11 +47,7 @@ export class OnChainRevocationStorage {
     state: bigint,
     nonce: number
   ): Promise<RevocationStatus> {
-    const response = await this.onchainContract.getRevocationStatusByIdAndState(
-      issuerID,
-      state,
-      nonce
-    );
+    const response = await this._contract.getRevocationStatusByIdAndState(issuerID, state, nonce);
 
     const issuer = OnChainRevocationStorage.convertIssuerInfo(response.issuer);
     const mtp = OnChainRevocationStorage.convertSmtProofToProof(response.mtp);
@@ -59,7 +64,7 @@ export class OnChainRevocationStorage {
    * @returns Promise<RevocationStatus>
    */
   public async getRevocationStatus(issuerID: bigint, nonce: number): Promise<RevocationStatus> {
-    const response = await this.onchainContract.getRevocationStatus(issuerID, nonce);
+    const response = await this._contract.getRevocationStatus(issuerID, nonce);
 
     const issuer = OnChainRevocationStorage.convertIssuerInfo(response.issuer);
     const mtp = OnChainRevocationStorage.convertSmtProofToProof(response.mtp);
@@ -68,6 +73,46 @@ export class OnChainRevocationStorage {
       issuer,
       mtp
     };
+  }
+
+  public async saveNodes(payload: bigint[][]): Promise<TransactionReceipt> {
+    if (!this._signer) {
+      throw new Error('No signer provided');
+    }
+    const feeData = await this._provider.getFeeData();
+
+    const maxFeePerGas = this._config.maxFeePerGas
+      ? BigInt(this._config.maxFeePerGas)
+      : feeData.maxFeePerGas;
+    const maxPriorityFeePerGas = this._config.maxPriorityFeePerGas
+      ? BigInt(this._config.maxPriorityFeePerGas)
+      : feeData.maxPriorityFeePerGas;
+
+    const gasLimit = await this._contract.saveNodes.estimateGas(payload);
+    const txData = await this._contract.saveNodes.populateTransaction(payload);
+
+    const request: TransactionRequest = {
+      to: txData.to,
+      data: txData.data,
+      gasLimit,
+      maxFeePerGas,
+      maxPriorityFeePerGas
+    };
+
+    const tx = await this._signer.sendTransaction(request);
+    return tx.wait().then((txReceipt) => {
+      if (!txReceipt) {
+        throw new Error(`transaction: ${tx.hash} failed to mine`);
+      }
+      const status: number | null = txReceipt.status;
+      const txnHash: string = txReceipt.hash;
+
+      if (!status) {
+        throw new Error(`transaction: ${txnHash} failed to mine`);
+      }
+
+      return txReceipt;
+    });
   }
 
   private static convertIssuerInfo(issuer: bigint[]): Issuer {

@@ -24,9 +24,7 @@ import {
   JsonSchemaValidator,
   cacheLoader
 } from '../schema-processor';
-import { IDataStorage } from '../storage/interfaces/data-storage';
-import { MerkleTreeType } from '../storage/entities/mt';
-import { keyPath } from '../kms/provider-helpers';
+import { IDataStorage, MerkleTreeType, Profile } from '../storage';
 import {
   VerifiableConstants,
   BJJSignatureProof2021,
@@ -39,20 +37,32 @@ import {
   CredentialStatusType,
   ProofQuery
 } from '../verifiable';
-import { CredentialRequest, ICredentialWallet, pushHashesToRHS, TreesModel } from '../credentials';
+import {
+  CredentialRequest,
+  getKMSIdByAuthCredential,
+  getNodesRepresentation,
+  ICredentialWallet,
+  ProofNode,
+  pushHashesToRHS,
+  TreesModel
+} from '../credentials';
 import { TreeState } from '../circuits';
 import { byteEncoder } from '../utils';
 import { Options } from '@iden3/js-jsonld-merklization';
-import { Profile } from '../storage';
+import { TransactionReceipt } from 'ethers';
+import {
+  CredentialStatusPublisherRegistry,
+  Iden3SmtRhsCredentialStatusPublisher
+} from '../credentials/status/credential-status-publisher';
 
 /**
  * DID creation options
- * seed - seed to generate BJJ keypair
+ * seed - seed to generate BJJ key pair
  * revocationOpts -
 
- * @interface IdentityCreationOptions
+ * @type IdentityCreationOptions
  */
-export interface IdentityCreationOptions {
+export type IdentityCreationOptions = {
   method?: string;
   blockchain?: string;
   networkId?: string;
@@ -60,9 +70,24 @@ export interface IdentityCreationOptions {
     id: string;
     type: CredentialStatusType;
     nonce?: number;
+    onChain?: {
+      txCallback?: (tx: TransactionReceipt) => Promise<void>;
+    };
   };
   seed?: Uint8Array;
-}
+};
+
+/**
+ * Options for RevocationInfoOptions.
+ */
+export type RevocationInfoOptions = {
+  revokedNonces?: number[];
+  treeModel?: TreesModel;
+  rhsUrl?: string;
+  onChain?: {
+    txCallback?: (tx: TransactionReceipt) => Promise<void>;
+  };
+};
 
 /**
  *  Proof creation result
@@ -217,18 +242,24 @@ export interface IIdentityWallet {
   ): Promise<Iden3ProofCreationResult>;
 
   /**
+   * Publishes issuer state to the reverse hash service by given URL
    *
-   *
+   * @deprecated use publishRevocationInfoByCredentialStatusType instead with the same arguments in opts
    * @param {DID} issuerDID - issuer did
    * @param {string} rhsURL - reverse hash service URL
    * @param {number[]} [revokedNonces] - revoked nonces for the period from the last published
    * @returns `Promise<void>`
    */
-  publishStateToRHS(issuerDID: DID, rhsURL: string, revokedNonces?: number[]): Promise<void>;
+  publishStateToRHS(
+    issuerDID: DID,
+    rhsURL: string,
+    revokedNonces?: number[],
+    opts?: object
+  ): Promise<void>;
 
   /**
-   *
-   *
+   * Publishes specific state to the reverse hash service by given URL
+   * @deprecated use publishRevocationInfoByCredentialStatusType instead with the same arguments in opts
    * @param {TreesModel} treeModel - trees model to publish
    * @param {string} rhsURL - reverse hash service URL
    * @param {number[]} [revokedNonces] - revoked nonces for the period from the last published
@@ -237,7 +268,21 @@ export interface IIdentityWallet {
   publishSpecificStateToRHS(
     treeModel: TreesModel,
     rhsURL: string,
-    revokedNonces?: number[]
+    revokedNonces?: number[],
+    opts?: object
+  ): Promise<void>;
+
+  /**
+   * Publishes revocation info by credential status predefined publishers
+   *
+   * @param {(RevocationInfoOptions)} opts
+   * @returns {Promise<void>}
+   * @memberof IIdentityWallet
+   */
+  publishRevocationInfoByCredentialStatusType(
+    issuerDID: DID,
+    credentialStatusType: CredentialStatusType,
+    opts?: RevocationInfoOptions
   ): Promise<void>;
 
   /**
@@ -308,6 +353,8 @@ export interface IIdentityWallet {
  * @implements implements IIdentityWallet interface
  */
 export class IdentityWallet implements IIdentityWallet {
+  private readonly _credentialStatusPublisherRegistry: CredentialStatusPublisherRegistry;
+
   /**
    * Constructs a new instance of the `IdentityWallet` class
    *
@@ -319,8 +366,22 @@ export class IdentityWallet implements IIdentityWallet {
   public constructor(
     private readonly _kms: KMS,
     private readonly _storage: IDataStorage,
-    private readonly _credentialWallet: ICredentialWallet
-  ) {}
+    private readonly _credentialWallet: ICredentialWallet,
+    private readonly _opts?: {
+      credentialStatusPublisherRegistry?: CredentialStatusPublisherRegistry;
+    }
+  ) {
+    if (!_opts?.credentialStatusPublisherRegistry) {
+      this._credentialStatusPublisherRegistry = new CredentialStatusPublisherRegistry();
+      this._credentialStatusPublisherRegistry.register(
+        CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        new Iden3SmtRhsCredentialStatusPublisher()
+      );
+    } else {
+      this._credentialStatusPublisherRegistry = this._opts
+        ?.credentialStatusPublisherRegistry as CredentialStatusPublisherRegistry;
+    }
+  }
 
   /**
    * {@inheritDoc IIdentityWallet.createIdentity}
@@ -429,9 +490,10 @@ export class IdentityWallet implements IIdentityWallet {
 
     credential.proof = [mtpProof];
 
-    if (opts.revocationOpts.type === CredentialStatusType.Iden3ReverseSparseMerkleTreeProof) {
-      await this.publishStateToRHS(did, opts.revocationOpts.id);
-    }
+    await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
+      rhsUrl: opts.revocationOpts.id,
+      onChain: opts.revocationOpts.onChain
+    });
 
     await this._storage.identity.saveIdentity({
       did: did.string(),
@@ -447,6 +509,7 @@ export class IdentityWallet implements IIdentityWallet {
       credential
     };
   }
+
   /** {@inheritDoc IIdentityWallet.getGenesisDIDMetadata} */
   async getGenesisDIDMetadata(did: DID): Promise<{ nonce: number; genesisDID: DID }> {
     // check if it is a genesis identity
@@ -508,19 +571,20 @@ export class IdentityWallet implements IIdentityWallet {
   }
   /** {@inheritDoc IIdentityWallet.getDIDTreeModel} */
   async getDIDTreeModel(did: DID): Promise<TreesModel> {
+    const didStr = did.string();
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.string(),
+      didStr,
       MerkleTreeType.Claims
     );
     const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.string(),
+      didStr,
       MerkleTreeType.Revocations
     );
     const rootsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.string(),
+      didStr,
       MerkleTreeType.Roots
     );
-    const state = await hashElems([
+    const state = hashElems([
       (await claimsTree.root()).bigInt(),
       (await revocationTree.root()).bigInt(),
       (await rootsTree.root()).bigInt()
@@ -607,7 +671,7 @@ export class IdentityWallet implements IIdentityWallet {
 
   /** {@inheritDoc IIdentityWallet.sign} */
   async sign(message: Uint8Array, credential: W3CCredential): Promise<Signature> {
-    const keyKMSId = this.getKMSIdByAuthCredential(credential);
+    const keyKMSId = getKMSIdByAuthCredential(credential);
     const payload = poseidon.hashBytes(message);
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(payload));
@@ -617,7 +681,7 @@ export class IdentityWallet implements IIdentityWallet {
 
   /** {@inheritDoc IIdentityWallet.signChallenge} */
   async signChallenge(challenge: bigint, credential: W3CCredential): Promise<Signature> {
-    const keyKMSId = this.getKMSIdByAuthCredential(credential);
+    const keyKMSId = getKMSIdByAuthCredential(credential);
 
     const signature = await this._kms.sign(keyKMSId, BytesHelper.intToBytes(challenge));
 
@@ -858,16 +922,54 @@ export class IdentityWallet implements IIdentityWallet {
     );
   }
 
-  private getKMSIdByAuthCredential(credential: W3CCredential): KmsKeyId {
-    if (credential.type.indexOf('AuthBJJCredential') === -1) {
-      throw new Error("can't sign with not AuthBJJCredential credential");
+  /** {@inheritDoc IIdentityWallet.publishRevocationInfoByCredentialStatusType} */
+  async publishRevocationInfoByCredentialStatusType(
+    issuerDID: DID,
+    credentialStatusType: CredentialStatusType,
+    opts?: RevocationInfoOptions
+  ): Promise<void> {
+    const rhsPublishers = this._credentialStatusPublisherRegistry.get(credentialStatusType);
+    if (!rhsPublishers) {
+      throw new Error(
+        `there is no registered publisher to save  hash is not registered for ${credentialStatusType} is not registered`
+      );
     }
-    const x = credential.credentialSubject['x'] as unknown as string;
-    const y = credential.credentialSubject['y'] as unknown as string;
 
-    const pb: PublicKey = new PublicKey([BigInt(x), BigInt(y)]);
-    const kp = keyPath(KmsKeyType.BabyJubJub, pb.hex());
-    return { type: KmsKeyType.BabyJubJub, id: kp };
+    let nodes: ProofNode[] = [];
+    if (opts?.treeModel) {
+      nodes = await getNodesRepresentation(
+        opts.revokedNonces,
+        {
+          revocationTree: opts.treeModel.revocationTree,
+          claimsTree: opts.treeModel.claimsTree,
+          state: opts.treeModel.state,
+          rootsTree: opts.treeModel.rootsTree
+        },
+        opts.treeModel.state
+      );
+    } else {
+      const treeState = await this.getDIDTreeModel(issuerDID);
+      nodes = await getNodesRepresentation(
+        opts?.revokedNonces,
+        {
+          revocationTree: treeState.revocationTree,
+          claimsTree: treeState.claimsTree,
+          state: treeState.state,
+          rootsTree: treeState.rootsTree
+        },
+        treeState.state
+      );
+    }
+
+    if (!nodes.length) {
+      return;
+    }
+
+    const rhsPublishersTask = rhsPublishers.map((publisher) =>
+      publisher.publish({ nodes, ...opts, credentialStatusType, issuerDID })
+    );
+
+    await Promise.all(rhsPublishersTask);
   }
 
   public async getCoreClaimFromCredential(credential: W3CCredential): Promise<Claim> {
