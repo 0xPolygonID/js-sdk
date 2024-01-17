@@ -18,11 +18,8 @@ import { RHSResolver } from '../../src/credentials';
 import { IDataSource, PackageManager } from '../../src';
 import { Claim, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
-import { CredentialRefreshService } from '../../src/verifiable/refresh-service';
-import { initZKPPacker } from '../iden3comm/mock/proving';
 chai.use(chaiAsPromised);
 const { expect } = chai;
-import fetchMock from '@gr2m/fetch-mock';
 
 class LocalStorageMock {
   store: object;
@@ -424,61 +421,6 @@ const credentialFlow = async (storage: IDataStorage) => {
   expect(finalList.length).to.equal(3);
 };
 
-const credentialFlowRefreshService = async (storage: IDataStorage) => {
-  const packageManager = new PackageManager();
-  const zkpPacker = await initZKPPacker({ alg: 'groth16' });
-  packageManager.registerPackers([zkpPacker]);
-  const refreshService = new CredentialRefreshService({
-    packageManager
-  });
-  const resolvers = new CredentialStatusResolverRegistry();
-  resolvers.register(
-    CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-    new RHSResolver(storage.states)
-  );
-  const credentialWallet = new CredentialWallet(storage, resolvers, { refreshService });
-
-  await credentialWallet.saveAll([credWithRefreshService, cred2]);
-
-  const queries: {
-    query: ProofQuery;
-  }[] = [
-    {
-      query: {
-        allowedIssuers: ['*'],
-        type: 'type1_1'
-      }
-    }
-  ];
-
-  const refreshedCred = JSON.parse(JSON.stringify(credWithRefreshService));
-  refreshedCred.expirationDate = new Date().setMinutes(new Date().getMinutes() + 1);
-  const refreshedId = 'test1_refreshed';
-  refreshedCred.id = refreshedId;
-  fetchMock.spy();
-  fetchMock.post('http://test-refresh/100', {
-    body: {
-      // CredentialIssuanceMessage
-      id: 'uuid',
-      body: {
-        credential: refreshedCred
-      }
-    }
-  });
-
-  for (const item of queries) {
-    let creds = await credentialWallet.findByQuery(item.query, {
-      autoRefresh: true,
-      removeExpired: true
-    });
-    const credsIds = creds.map(({ id }) => id);
-    expect(creds.length).to.be.eq(1);
-    expect(credsIds).to.have.members([refreshedId]);
-    expect(new Date(credWithRefreshService.expirationDate || 0)).to.be.lessThan(new Date());
-    expect(new Date(creds[0].expirationDate || 0)).to.be.greaterThan(new Date());
-  }
-};
-
 describe('credential-wallet', () => {
   it('run in memory with 3 credential', async () => {
     const storage = {
@@ -509,12 +451,5 @@ describe('credential-wallet', () => {
     expect(proof.issuerData.state.claimsTreeRoot.bigInt().toString()).to.equal(
       mockedProof.issuerData.state.claimsTreeRoot.bigInt().toString()
     );
-  });
-
-  it('run in memory with Credential Refresh Service', async () => {
-    const storage = {
-      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>())
-    } as unknown as IDataStorage;
-    await credentialFlowRefreshService(storage);
   });
 });

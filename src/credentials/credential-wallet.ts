@@ -10,8 +10,7 @@ import {
   RevocationStatus,
   CredentialStatusType,
   State,
-  RefreshService,
-  RefreshServiceType
+  RefreshService
 } from './../verifiable';
 
 import { JSONSchema } from '../schema-processor';
@@ -21,23 +20,9 @@ import { IssuerResolver } from './status/sparse-merkle-tree';
 import { AgentResolver } from './status/agent-revocation';
 import { CredentialStatusResolveOptions } from './status/resolver';
 import { getUserDIDFromCredential } from './utils';
-import { CredentialRefreshService } from '../verifiable/refresh-service';
 
 // ErrAllClaimsRevoked all claims are revoked.
 const ErrAllClaimsRevoked = 'all claims are revoked';
-
-/**
- * CredentialWalletOptions represents credential wallet options
- *
- * @public
- * @interface CredentialWalletOptions
- */
-export interface CredentialWalletOptions {
-  /**
-   * Refresh service
-   */
-  refreshService?: CredentialRefreshService;
-}
 
 /**
  * Request to core library to create Core Claim from W3C Verifiable Credential
@@ -235,8 +220,7 @@ export class CredentialWallet implements ICredentialWallet {
    */
   constructor(
     private readonly _storage: IDataStorage,
-    private readonly _credentialStatusResolverRegistry?: CredentialStatusResolverRegistry,
-    private readonly _options?: CredentialWalletOptions
+    private readonly _credentialStatusResolverRegistry?: CredentialStatusResolverRegistry
   ) {
     // if no credential status resolvers are provided
     // register default issuer resolver
@@ -434,64 +418,8 @@ export class CredentialWallet implements ICredentialWallet {
   /**
    * {@inheritDoc ICredentialWallet.findByQuery}
    */
-  async findByQuery(
-    query: ProofQuery,
-    opts?: { autoRefresh?: boolean; removeExpired?: boolean }
-  ): Promise<W3CCredential[]> {
-    let creds = await this._storage.credential.findCredentialsByQuery(query);
-
-    if (!opts?.autoRefresh) {
-      return creds;
-    }
-
-    if (!this._options?.refreshService) {
-      throw new Error(
-        'authomatic refresh is set to true, but refresh service is not setup in the wallet'
-      );
-    }
-
-    let skippedCredSubjectFilter;
-    // if no creds found, let's skip credentialSubject filter and try to refresh expired creds
-    if (!creds.length && query.credentialSubject) {
-      skippedCredSubjectFilter = query.credentialSubject;
-      query.credentialSubject = undefined;
-      creds = await this._storage.credential.findCredentialsByQuery(query);
-    }
-
-    // all expired creds
-    const expiredCreds = creds.filter(
-      (c) =>
-        c.expirationDate &&
-        new Date(c.expirationDate) < new Date() &&
-        c.refreshService?.type === RefreshServiceType.Iden3RefreshService2023
-    );
-
-    const refreshCredPromises: Array<Promise<W3CCredential>> = [];
-    expiredCreds.forEach((i) => {
-      refreshCredPromises.push(this._options!.refreshService!.refresh(i));
-    });
-
-    const refreshedCreds = await Promise.all(refreshCredPromises);
-
-    // update storage
-    for (let i = 0; i < refreshedCreds.length; i++) {
-      await this.save(refreshedCreds[i]);
-      creds.push(refreshedCreds[i]);
-    }
-
-    if (opts.removeExpired) {
-      for (let i = 0; i < expiredCreds.length; i++) {
-        await this.remove(expiredCreds[i].id);
-        creds = creds.filter((c) => c.id !== expiredCreds[i].id);
-      }
-    }
-
-    // apply skipped credentialSubject filter
-    if (skippedCredSubjectFilter) {
-      query.credentialSubject = skippedCredSubjectFilter;
-      creds = await this._storage.credential.findCredentialsByQuery(query);
-    }
-    return creds;
+  async findByQuery(query: ProofQuery): Promise<W3CCredential[]> {
+    return this._storage.credential.findCredentialsByQuery(query);
   }
 
   /**

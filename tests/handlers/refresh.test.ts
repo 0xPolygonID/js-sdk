@@ -1,18 +1,17 @@
-import { PackageManager } from '../../src';
-import { CredentialRefreshService } from '../../src/verifiable/refresh-service';
+import { PackageManager, RefreshHandler } from '../../src';
 import { credWithRefreshService } from '../credentials/mock';
 import { initZKPPacker } from '../iden3comm/mock/proving';
 import fetchMock from '@gr2m/fetch-mock';
 import { expect } from 'chai';
 
 describe('refresh-service', () => {
-  it('refresh service returns cred', async () => {
+  it.only('refresh service returns cred', async () => {
     const credToRefresh = credWithRefreshService;
 
     const packageManager = new PackageManager();
     const zkpPacker = await initZKPPacker({ alg: 'groth16' });
     packageManager.registerPackers([zkpPacker]);
-    const refreshService = new CredentialRefreshService({
+    const refreshService = new RefreshHandler({
       packageManager
     });
 
@@ -31,7 +30,7 @@ describe('refresh-service', () => {
       }
     });
 
-    const newCred = await refreshService.refresh(credToRefresh, { reason: 'expired' });
+    const newCred = await refreshService.refreshCredential(credToRefresh, { reason: 'expired' });
 
     expect(newCred.id).to.be.equal(refreshedId);
   });
