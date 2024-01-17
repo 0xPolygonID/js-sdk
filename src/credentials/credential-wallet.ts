@@ -216,7 +216,6 @@ export class CredentialWallet implements ICredentialWallet {
    * @param {IDataStorage} _storage - data storage to access credential / identity / Merkle tree data
    * @param {CredentialStatusResolverRegistry} _credentialStatusResolverRegistry - list of credential status resolvers
    * if _credentialStatusResolverRegistry is not provided, default resolvers will be used
-   * @param {CredentialWalletOptions} _options - credential wallet options
    */
   constructor(
     private readonly _storage: IDataStorage,

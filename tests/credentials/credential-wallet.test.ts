@@ -3,7 +3,7 @@ import { CredentialStorage } from './../../src/storage/shared/credential-storage
 import { IDataStorage } from './../../src/storage/interfaces/data-storage';
 import { CredentialWallet } from '../../src/credentials';
 import { SearchError } from '../../src/storage/filters/jsonQuery';
-import { MockedLegacyCredential, cred1, cred2, cred3, cred4, credWithRefreshService } from './mock';
+import { MockedLegacyCredential, cred1, cred2, cred3, cred4 } from './mock';
 import {
   ProofQuery,
   W3CCredential,
@@ -15,7 +15,7 @@ import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { IDataSource, PackageManager } from '../../src';
+import { IDataSource } from '../../src';
 import { Claim, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 chai.use(chaiAsPromised);

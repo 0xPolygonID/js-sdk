@@ -23,7 +23,7 @@ import { randomUUID } from 'crypto';
  */
 export interface RefreshHandlerOptions {
   packageManager: IPackageManager;
-  credentialWaller?: ICredentialWallet;
+  credentialWallet?: ICredentialWallet;
 }
 
 /**

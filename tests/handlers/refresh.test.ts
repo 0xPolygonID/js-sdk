@@ -5,7 +5,7 @@ import fetchMock from '@gr2m/fetch-mock';
 import { expect } from 'chai';
 
 describe('refresh-service', () => {
-  it.only('refresh service returns cred', async () => {
+  it('refresh service returns cred', async () => {
     const credToRefresh = credWithRefreshService;
 
     const packageManager = new PackageManager();
