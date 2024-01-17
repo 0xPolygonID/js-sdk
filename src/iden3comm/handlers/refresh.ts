@@ -1,25 +1,49 @@
-import { DID } from '@iden3/js-iden3-core';
-import { RefreshServiceType } from './constants';
+import { MediaType } from '../constants';
+import { PROTOCOL_MESSAGE_TYPE } from '../constants';
+
 import {
   CredentialIssuanceMessage,
   CredentialRefreshMessage,
+  IPackageManager,
   ZKPPackerParams
-} from '../../src/iden3comm/types';
+} from '../types';
+
+import { RefreshServiceType, W3CCredential } from '../../verifiable';
+import { byteEncoder } from '../../utils';
 import { proving, ProvingMethodAlg } from '@iden3/js-jwz';
-import { CircuitId } from '../circuits';
+import { DID } from '@iden3/js-iden3-core';
+import { ICredentialWallet } from '../../credentials';
+import { CircuitId } from '../../circuits';
 import { randomUUID } from 'crypto';
-import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../iden3comm/constants';
-import { W3CCredential } from './credential';
-import { byteEncoder } from '../utils';
-import { IPackageManager } from '../iden3comm/types';
 
 /**
- * Interface to work with credential refresh service
+ * RefreshHandlerOptions contains options for RefreshHandler
+ * @public
+ * @interface   RefreshHandlerOptions
+ */
+export interface RefreshHandlerOptions {
+  packageManager: IPackageManager;
+  credentialWaller?: ICredentialWallet;
+}
+
+/**
+ *
+ * RefreshOptions contains options for refreshCredential call
  *
  * @public
- * @interface   IRefreshService
+ * @interface RefreshOptions
  */
-export interface IRefreshService {
+export interface RefreshOptions {
+  reason?: string;
+}
+
+/**
+ * Interface to work with credential refresh handler
+ *
+ * @public
+ * @interface IRefreshHandler
+ */
+export interface IRefreshHandler {
   /**
    * refresh credential
    *
@@ -27,31 +51,28 @@ export interface IRefreshService {
    * @param {RefreshOptions} opts - options
    * @returns {Promise<W3CCredential>}
    */
-  refresh(credential: W3CCredential, opts?: RefreshOptions): Promise<W3CCredential>;
+  refreshCredential(credential: W3CCredential, opts?: RefreshOptions): Promise<W3CCredential>;
 }
-
 /**
- * RefreshOptions contains options for refresh call
+ *
+ * Allows to refresh credential from refresh service and return refreshed credential
+ *
  * @public
- * @interface   RefreshOptions
+
+ * @class RefreshHandler
+ * @implements implements RefreshHandler interface
  */
-export interface RefreshOptions {
-  reason?: string;
-}
+export class RefreshHandler implements IRefreshHandler {
+  /**
+   * Creates an instance of RefreshHandler.
+   * @param {RefreshHandlerOptions} _options - refresh handler options
+   */
+  constructor(private readonly _options: RefreshHandlerOptions) {}
 
-/**
- * RefreshServiceOptions contains options for CredentialRefreshService
- * @public
- * @interface   RefreshServiceOptions
- */
-export interface RefreshServiceOptions {
-  packageManager: IPackageManager;
-}
-
-export class CredentialRefreshService implements IRefreshService {
-  constructor(private readonly options: RefreshServiceOptions) {}
-
-  async refresh(credential: W3CCredential, opts?: RefreshOptions): Promise<W3CCredential> {
+  async refreshCredential(
+    credential: W3CCredential,
+    opts?: RefreshOptions
+  ): Promise<W3CCredential> {
     if (!credential.refreshService) {
       throw new Error('refreshService not specified for W3CCredential');
     }
@@ -90,7 +111,7 @@ export class CredentialRefreshService implements IRefreshService {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(refreshMsg));
-    const jwzToken = await this.options.packageManager.pack(
+    const jwzToken = await this._options.packageManager.pack(
       MediaType.ZKPMessage,
       msgBytes,
       zkpParams
