@@ -1,13 +1,11 @@
 import { DID } from '@iden3/js-iden3-core';
-import { Token, ProvingMethodAlg, ProvingMethod, proving } from '@iden3/js-jwz';
-import { DataPrepareHandlerFunc, VerificationHandlerFunc, ZKPPacker } from '../../src/iden3comm';
-import { mockPrepareAuthInputs, mockVerifyState, ProvingMethodGroth16Authv2 } from './mock/proving';
-import { ProvingParams, VerificationParams, ZKPPackerParams } from '../../src/iden3comm/types';
+import { Token, ProvingMethodAlg } from '@iden3/js-jwz';
+import { ZKPPackerParams } from '../../src/iden3comm/types';
 import { AuthV2PubSignals } from '../../src/circuits';
 import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { byteDecoder, byteEncoder } from '../../src';
 import { expect } from 'chai';
-const { registerProvingMethod } = proving;
+import { initZKPPacker } from './mock/proving';
 describe('zkp packer tests', () => {
   it('test zkp packer pack', async () => {
     const p = await initZKPPacker();
@@ -44,33 +42,3 @@ describe('zkp packer tests', () => {
     expect(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE).to.deep.equal(iden3msg.type);
   });
 });
-
-const initZKPPacker = async (): Promise<ZKPPacker> => {
-  const mockAuthInputsHandler = new DataPrepareHandlerFunc(mockPrepareAuthInputs);
-
-  const mockProvingMethod = new ProvingMethodGroth16Authv2(
-    new ProvingMethodAlg('groth16-mock', 'authV2')
-  );
-
-  await registerProvingMethod(mockProvingMethod.methodAlg, (): ProvingMethod => {
-    return mockProvingMethod;
-  });
-
-  const verificationFn = new VerificationHandlerFunc(mockVerifyState);
-  const mapKey = mockProvingMethod.methodAlg.toString();
-
-  const mockVerificationParamMap: Map<string, VerificationParams> = new Map();
-  mockVerificationParamMap.set(mapKey, {
-    key: new Uint8Array([]),
-    verificationFn
-  });
-
-  const mockProvingParamMap: Map<string, ProvingParams> = new Map();
-  mockProvingParamMap.set(mapKey, {
-    dataPreparer: mockAuthInputsHandler,
-    provingKey: new Uint8Array([]),
-    wasm: new Uint8Array([])
-  });
-
-  return new ZKPPacker(mockProvingParamMap, mockVerificationParamMap);
-};

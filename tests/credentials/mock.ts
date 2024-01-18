@@ -112,6 +112,29 @@ export const cred5 = createTestCredential({
   issuanceDate: '2022-11-11'
 });
 
+export const credWithRefreshService = createTestCredential({
+  id: 'test1',
+  '@context': ['context1', 'context2', 'context3'],
+  credentialSchema: {
+    id: 'credentialSchemaId',
+    type: 'credentialSchemaType'
+  },
+  proof: [],
+  type: ['type1_1', 'type1_2', 'type1_3'],
+  credentialStatus: {},
+  issuer: 'issuer1',
+  credentialSubject: {
+    birthday: 20000101,
+    id: 'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
+  },
+  expirationDate: '2023-11-11',
+  issuanceDate: '2022-11-11',
+  refreshService: {
+    id: 'http://test-refresh/100',
+    type: 'Iden3RefreshService2023'
+  }
+});
+
 export const MockedLegacyCredential = {
   id: 'urn:fa4f7b0f-284d-4a24-9bff-023246582d76',
   '@context': [

@@ -100,3 +100,12 @@ export enum SubjectPosition {
   // Value save subject in value part of claim.
   Value = 'value'
 }
+
+/**
+ * RefreshServiceType type for refreshService
+ *
+ * @enum {string}
+ */
+export enum RefreshServiceType {
+  Iden3RefreshService2023 = 'Iden3RefreshService2023'
+}

@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { BJJSignatureProof2021, Iden3SparseMerkleTreeProof, CredentialStatus } from './proof';
+import {
+  BJJSignatureProof2021,
+  Iden3SparseMerkleTreeProof,
+  CredentialStatus,
+  RefreshService
+} from './proof';
 import { Claim, DID } from '@iden3/js-iden3-core';
 import { ProofType } from './constants';
 import { Proof, Hash, rootFromProof, verifyProof } from '@iden3/js-merkletree';
@@ -21,6 +26,7 @@ export class W3CCredential {
   '@context': string[] = [];
   type: string[] = [];
   expirationDate?: string;
+  refreshService?: RefreshService;
   issuanceDate?: string;
   credentialSubject: { [key: string]: object | string | number | boolean } = {};
   credentialStatus!: CredentialStatus;

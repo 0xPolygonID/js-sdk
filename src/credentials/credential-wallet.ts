@@ -9,7 +9,8 @@ import {
   CredentialStatus,
   RevocationStatus,
   CredentialStatusType,
-  State
+  State,
+  RefreshService
 } from './../verifiable';
 
 import { JSONSchema } from '../schema-processor';
@@ -46,6 +47,10 @@ export interface CredentialRequest {
    * expiration time
    */
   expiration?: number;
+  /**
+   * refreshService
+   */
+  refreshService?: RefreshService;
   /**
    * claim version
    */
@@ -327,6 +332,7 @@ export class CredentialWallet implements ICredentialWallet {
     cr['@context'] = context;
     cr.type = credentialType;
     cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
+    cr.refreshService = request.refreshService;
     cr.issuanceDate = new Date().toISOString();
     cr.credentialSubject = credentialSubject;
     cr.issuer = issuer.string();

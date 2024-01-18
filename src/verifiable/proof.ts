@@ -1,5 +1,5 @@
 import { Hash, Proof } from '@iden3/js-merkletree';
-import { ProofType, CredentialStatusType } from './constants';
+import { ProofType, CredentialStatusType, RefreshServiceType } from './constants';
 import { TreeState } from '../circuits';
 import { Hex, Signature } from '@iden3/js-crypto';
 import { Claim, DID } from '@iden3/js-iden3-core';
@@ -245,4 +245,14 @@ export interface CredentialStatus {
   type: CredentialStatusType;
   revocationNonce?: number;
   statusIssuer?: CredentialStatus;
+}
+
+/**
+ * RefreshService contains type and id
+ * @public
+ * @interface   RefreshService
+ */
+export interface RefreshService {
+  id: string;
+  type: RefreshServiceType | string;
 }

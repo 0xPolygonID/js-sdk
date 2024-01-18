@@ -60,7 +60,7 @@ export interface IFetchHandler {
  */
 export class FetchHandler implements IFetchHandler {
   /**
-   * Creates an instance of AuthHandler.
+   * Creates an instance of FetchHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    */
   constructor(private readonly _packerMgr: IPackageManager) {}
@@ -72,7 +72,7 @@ export class FetchHandler implements IFetchHandler {
    *     offer: Uint8Array; offer - raw offer message
    *     opts
    *   }) options how to fetch credential
-   * @returns `Promise<W3CCredential>`
+   * @returns `Promise<W3CCredential[]>`
    */
   async handleCredentialOffer(
     offer: Uint8Array,

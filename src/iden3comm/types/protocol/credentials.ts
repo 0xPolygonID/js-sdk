@@ -81,3 +81,20 @@ export type Schema = {
   url: string;
   type: string;
 };
+
+/** CredentialRefreshMessage represent Iden3message for credential refresh request */
+export type CredentialRefreshMessage = {
+  id: string;
+  typ?: MediaType;
+  type: ProtocolMessage;
+  thid?: string;
+  body?: CredentialRefreshMessageBody;
+  from?: string;
+  to?: string;
+};
+
+/** CredentialRefreshMessageBody is msg body for refresh request */
+export type CredentialRefreshMessageBody = {
+  id: string;
+  reason: string;
+};

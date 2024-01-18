@@ -15,6 +15,8 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   CREDENTIAL_OFFER_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/1.0/offer',
   // CredentialIssuanceResponseMessageType is type for message with a credential issuance
   CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/1.0/issuance-response',
+  // CredentialRefreshMessageType is type for message with a credential issuance
+  CREDENTIAL_REFRESH_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/1.0/refresh',
   // DeviceRegistrationRequestMessageType defines device registration request type of the communication protocol
   DEVICE_REGISTRATION_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'devices/1.0/registration',
   // MessageFetMessageFetchRequestMessageType defines message fetch request type of the communication protocol.
