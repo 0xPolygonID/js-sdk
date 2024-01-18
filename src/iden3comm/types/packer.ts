@@ -44,7 +44,7 @@ export type PackerParams = {
 export type ZKPPackerParams = PackerParams & {
   senderDID: DID;
   /** @deprecated */
-  profileNonce: number;
+  profileNonce?: number;
   provingMethodAlg: ProvingMethodAlg;
 };
 

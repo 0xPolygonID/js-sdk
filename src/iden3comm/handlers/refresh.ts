@@ -90,7 +90,6 @@ export class RefreshHandler implements IRefreshHandler {
 
     const zkpParams: ZKPPackerParams = {
       senderDID,
-      profileNonce: 0,
       provingMethodAlg: new ProvingMethodAlg(
         proving.provingMethodGroth16AuthV2Instance.methodAlg.alg,
         CircuitId.AuthV2
