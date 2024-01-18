@@ -40,7 +40,7 @@ import {
   WALLET_KEY
 } from '../helpers';
 
-describe.only('auth', () => {
+describe('auth', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
