@@ -247,7 +247,7 @@ describe('auth', () => {
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
-    const id = crypto.randomUUID();
+    const id = globalThis.crypto.randomUUID();
     const authReq: AuthorizationRequestMessage = {
       id,
       typ: MediaType.PlainMessage,
@@ -336,7 +336,7 @@ describe('auth', () => {
     };
 
     const verifierDID = 'did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw';
-    const id = crypto.randomUUID();
+    const id = globalThis.crypto.randomUUID();
     const authReq: AuthorizationRequestMessage = {
       id,
       typ: MediaType.PlainMessage,
@@ -520,7 +520,7 @@ describe('auth', () => {
       scope: proofReqs
     };
 
-    const id = crypto.randomUUID();
+    const id = globalThis.crypto.randomUUID();
     const authReq: AuthorizationRequestMessage = {
       id,
       typ: MediaType.PlainMessage,
