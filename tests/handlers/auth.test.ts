@@ -42,7 +42,6 @@ import {
   ZKPPacker
 } from '../../src/iden3comm';
 import { proving } from '@iden3/js-jwz';
-import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -248,7 +247,7 @@ describe('auth', () => {
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
-    const id = uuid.v4();
+    const id = crypto.randomUUID();
     const authReq: AuthorizationRequestMessage = {
       id,
       typ: MediaType.PlainMessage,
@@ -337,7 +336,7 @@ describe('auth', () => {
     };
 
     const verifierDID = 'did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw';
-    const id = uuid.v4();
+    const id = crypto.randomUUID();
     const authReq: AuthorizationRequestMessage = {
       id,
       typ: MediaType.PlainMessage,
@@ -494,7 +493,7 @@ describe('auth', () => {
       },
       {
         id: 3,
-        circuitId: CircuitId.AtomicQueryV3,
+        circuitId: CircuitId.LinkedMultiQuery10,
         optional: false,
         query: {
           groupId: 1,
@@ -521,7 +520,7 @@ describe('auth', () => {
       scope: proofReqs
     };
 
-    const id = uuid.v4();
+    const id = crypto.randomUUID();
     const authReq: AuthorizationRequestMessage = {
       id,
       typ: MediaType.PlainMessage,

@@ -41,7 +41,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
       if (!this.query[i]) {
         enabled.push(0);
         claimPathNotExists.push(0);
-        claimPathMtp.push([]);
+        claimPathMtp.push(new Array(this.getMTLevelsClaim()).fill('0'));
 
         claimPathMtpNoAux.push('0');
         claimPathMtpAuxHi.push('0');
