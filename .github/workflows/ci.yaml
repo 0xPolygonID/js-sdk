@@ -4,7 +4,7 @@ jobs:
   build:
     strategy:
       matrix:
-        version: [18.16.1]
+        version: [20.11.0]
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:

@@ -1,9 +1,13 @@
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import {
+  AuthDataPrepareFunc,
   BjjProvider,
+  CircuitData,
   CredentialStatusType,
   CredentialStorage,
+  DataPrepareHandlerFunc,
   IIdentityWallet,
+  IPackageManager,
   IStateStorage,
   Identity,
   IdentityCreationOptions,
@@ -13,13 +17,21 @@ import {
   InMemoryPrivateKeyStore,
   KMS,
   KmsKeyType,
+  PackageManager,
+  PlainPacker,
   Profile,
+  ProvingParams,
   RootInfo,
   StateProof,
+  StateVerificationFunc,
   VerifiableConstants,
+  VerificationHandlerFunc,
+  VerificationParams,
   W3CCredential,
+  ZKPPacker,
   byteEncoder
 } from '../src';
+import { proving } from '@iden3/js-jwz';
 
 export const SEED_ISSUER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 export const SEED_USER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -28,6 +40,7 @@ export const RHS_CONTRACT_ADDRESS = process.env.RHS_CONTRACT_ADDRESS as string;
 export const STATE_CONTRACT = process.env.STATE_CONTRACT_ADDRESS as string;
 export const RPC_URL = process.env.RPC_URL as string;
 export const WALLET_KEY = process.env.WALLET_KEY as string;
+export const IPFS_URL = process.env.IPFS_URL as string;
 
 export const createIdentity = async (
   wallet: IIdentityWallet,
@@ -95,4 +108,48 @@ export const getInMemoryDataStorage = (states: IStateStorage) => {
     mt: new InMemoryMerkleTreeStorage(40),
     states
   };
+};
+
+export const getPackageMgr = async (
+  circuitData: CircuitData,
+  prepareFn: AuthDataPrepareFunc,
+  stateVerificationFn: StateVerificationFunc
+): Promise<IPackageManager> => {
+  const authInputsHandler = new DataPrepareHandlerFunc(prepareFn);
+
+  const verificationFn = new VerificationHandlerFunc(stateVerificationFn);
+  const mapKey = proving.provingMethodGroth16AuthV2Instance.methodAlg.toString();
+
+  if (!circuitData.verificationKey) {
+    throw new Error(`verification key doesn't exist for ${circuitData.circuitId}`);
+  }
+  const verificationParamMap: Map<string, VerificationParams> = new Map([
+    [
+      mapKey,
+      {
+        key: circuitData.verificationKey,
+        verificationFn
+      }
+    ]
+  ]);
+
+  if (!circuitData.provingKey) {
+    throw new Error(`proving doesn't exist for ${circuitData.circuitId}`);
+  }
+  if (!circuitData.wasm) {
+    throw new Error(`wasm file doesn't exist for ${circuitData.circuitId}`);
+  }
+  const provingParamMap: Map<string, ProvingParams> = new Map();
+  provingParamMap.set(mapKey, {
+    dataPreparer: authInputsHandler,
+    provingKey: circuitData.provingKey,
+    wasm: circuitData.wasm
+  });
+
+  const mgr: IPackageManager = new PackageManager();
+  const packer = new ZKPPacker(provingParamMap, verificationParamMap);
+  const plainPacker = new PlainPacker();
+  mgr.registerPackers([packer, plainPacker]);
+
+  return mgr;
 };
