@@ -1,7 +1,7 @@
 import { DID } from '@iden3/js-iden3-core';
 import { DocumentLoader } from '@iden3/js-jsonld-merklization';
 import { CircuitId, Query } from '../../circuits';
-import { Circuits } from '../../circuits/pub-signal-verifier';
+import { Circuits } from '../../circuits/supported-verifiers';
 import { IProofService } from '../../proof';
 import { StateResolvers } from '../../storage/interfaces/resolver';
 import {
