@@ -34,7 +34,6 @@ import {
 import * as uuid from 'uuid';
 import { expect } from 'chai';
 import fetchMock from '@gr2m/fetch-mock';
-import { after } from 'mocha';
 
 describe('fetch', () => {
   let idWallet: IdentityWallet;
@@ -136,15 +135,11 @@ describe('fetch', () => {
     fetchHandler = new FetchHandler(packageMgr, {
       credentialWallet: credWallet
     });
-    fetchMock.spy();
-    fetchMock.post(agentUrl, JSON.parse(mockedCredResponse));
-  });
-
-  after(() => {
-    fetchMock.restore();
   });
 
   it('fetch credential issued to genesis did', async () => {
+    fetchMock.spy();
+    fetchMock.post(agentUrl, JSON.parse(mockedCredResponse));
     const { did: userDID, credential: cred } = await createIdentity(idWallet, {
       seed: SEED_USER
     });
@@ -182,6 +177,7 @@ describe('fetch', () => {
     const w3cCred = W3CCredential.fromJSON(JSON.parse(mockedCredResponse).body.credential);
 
     expect(Object.entries(res[0]).toString()).to.equal(Object.entries(w3cCred).toString());
+    fetchMock.restore();
   });
 
   it('handle credential fetch and issuance requests', async () => {
