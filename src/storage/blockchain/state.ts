@@ -81,6 +81,22 @@ export class EthStateStorage implements IStateStorage {
     return stateInfo;
   }
 
+  /** {@inheritdoc IStateStorage.getStateInfoByIdAndState} */
+  async getStateInfoByIdAndState(id: bigint, state: bigint): Promise<StateInfo> {
+    const rawData = await this.stateContract.getStateInfoByIdAndState(id, state);
+    const stateInfo: StateInfo = {
+      id: BigInt(rawData[0]),
+      state: BigInt(rawData[1]),
+      replacedByState: BigInt(rawData[2]),
+      createdAtTimestamp: BigInt(rawData[3]),
+      replacedAtTimestamp: BigInt(rawData[4]),
+      createdAtBlock: BigInt(rawData[5]),
+      replacedAtBlock: BigInt(rawData[6])
+    };
+
+    return stateInfo;
+  }
+
   /** {@inheritdoc IStateStorage.publishState} */
   async publishState(proof: ZKProof, signer: Signer): Promise<string> {
     const contract = this.stateContract.connect(signer) as Contract;

@@ -1,9 +1,12 @@
 import { Hash, newHashFromString, Proof } from '@iden3/js-merkletree';
-import { Claim, Id } from '@iden3/js-iden3-core';
+import { Claim, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { CircuitError, GISTProof, TreeState } from './models';
-import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
+import { BaseConfig, getNodeAuxValue, getResolverByID, prepareSiblingsStr } from './common';
 import { Signature } from '@iden3/js-crypto';
 import { byteDecoder, byteEncoder } from '../utils';
+import { PubSignalsVerifier, VerifyOpts } from './pub-signal-verifier';
+import { IDOwnershipPubSignals } from './ownership-verifier';
+import { StateResolvers } from '../storage/interfaces/resolver';
 
 /**
  * Auth v2 circuit representation
@@ -110,6 +113,8 @@ interface AuthV2CircuitInputs {
   gistMtpNoAux: string;
 }
 
+const defaultAuthVerifyOpts = 5 * 60 * 1000; // 5 minutes
+
 // AuthV2PubSignals auth.circom public signals
 /**
  * public signals
@@ -117,7 +122,7 @@ interface AuthV2CircuitInputs {
  * @public
  * @class AuthV2PubSignals
  */
-export class AuthV2PubSignals {
+export class AuthV2PubSignals extends IDOwnershipPubSignals implements PubSignalsVerifier {
   userID!: Id;
   challenge!: bigint;
   GISTRoot!: Hash;
@@ -142,5 +147,34 @@ export class AuthV2PubSignals {
 
     this.GISTRoot = newHashFromString(sVals[2]);
     return this;
+  }
+
+  verifyQuery(): Promise<BaseConfig> {
+    return Promise.resolve(new BaseConfig());
+  }
+
+  async verifyStates(resolvers: StateResolvers, opts?: VerifyOpts): Promise<void> {
+    const resolver = getResolverByID(resolvers, this.userId);
+    if (!resolver) {
+      throw new Error(`state resolver not found for id ${this.userId.string()}`);
+    }
+    const gist = await resolver.rootResolve(this.GISTRoot.bigInt());
+
+    let acceptedStateTransitionDelay = defaultAuthVerifyOpts;
+    if (opts?.acceptedStateTransitionDelay) {
+      acceptedStateTransitionDelay = opts.acceptedStateTransitionDelay;
+    }
+
+    if (!gist.latest) {
+      const timeDiff =
+        Date.now() - getDateFromUnixTimestamp(Number(gist.transitionTimestamp)).getTime();
+      if (timeDiff > acceptedStateTransitionDelay) {
+        throw new Error('global state is outdated');
+      }
+    }
+  }
+
+  verifyIdOwnership(sender: string, challenge: bigint): Promise<void> {
+    return super.verifyIdOwnership(sender, challenge);
   }
 }

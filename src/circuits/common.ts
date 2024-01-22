@@ -1,5 +1,7 @@
 import { Hex } from '@iden3/js-crypto';
+import { DID, Id } from '@iden3/js-iden3-core';
 import { Hash, ZERO_HASH, Proof, swapEndianness } from '@iden3/js-merkletree';
+import { IStateResolver, StateResolvers } from '../storage/interfaces/resolver';
 import { TreeState } from './models';
 
 export const defaultMTLevels = 40; // max MT levels, default value for identity circuits
@@ -225,4 +227,14 @@ export function getProperties(obj: object): object {
     }
   }
   return result;
+}
+
+export function getResolverByID(resolvers: StateResolvers, id: Id): IStateResolver {
+  const userDID = DID.parseFromId(id);
+  return getResolverByDID(resolvers, userDID);
+}
+
+export function getResolverByDID(resolvers: StateResolvers, did: DID): IStateResolver {
+  const { blockchain, networkId } = DID.decodePartsFromId(DID.idFromDID(did));
+  return resolvers[`${blockchain}:${networkId}`];
 }
