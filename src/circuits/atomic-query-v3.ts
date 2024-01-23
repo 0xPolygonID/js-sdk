@@ -468,6 +468,14 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
 
 const defaultProofVerifyOpts = 1 * 60 * 60 * 1000; // 1 hour
 
+/**
+ * Atomic query v3 pub signals verifier
+ *
+ * @public
+ * @class AtomicQueryV3PubSignalsVerifier
+ * @extends {IDOwnershipPubSignals}
+ * @implements {PubSignalsVerifier}
+ */
 export class AtomicQueryV3PubSignalsVerifier
   extends IDOwnershipPubSignals
   implements PubSignalsVerifier
@@ -523,28 +531,28 @@ export class AtomicQueryV3PubSignalsVerifier
         throw new Error('invalid proof type');
     }
 
-    const nullifierSessionIDparam = params?.nullifierSessionId;
+    const nSessionId = BigInt((params?.nullifierSessionId as string) ?? 0);
 
-    if (nullifierSessionIDparam) {
-      if (nullifier && BigInt(nullifier) !== 0n) {
-        // verify nullifier information
-        const verifierDIDParam = params?.verifierDid;
-        if (!verifierDIDParam) {
-          throw new Error('verifierDid is required');
-        }
+    if (nSessionId !== 0n) {
+      if (BigInt(nullifier ?? 0) === 0n) {
+        throw new Error('nullifier should be provided for nullification and should not be 0');
+      }
+      // verify nullifier information
+      const verifierDIDParam = params?.verifierDid;
+      if (!verifierDIDParam) {
+        throw new Error('verifierDid is required');
+      }
 
-        const id = DID.idFromDID(verifierDIDParam as DID);
+      const id = DID.idFromDID(verifierDIDParam as DID);
 
-        if (verifierID.bigInt() != id.bigInt()) {
-          throw new Error('wrong verifier is used for nullification');
-        }
-        const nSessionId = BigInt(nullifierSessionIDparam as string);
+      if (verifierID.bigInt() != id.bigInt()) {
+        throw new Error('wrong verifier is used for nullification');
+      }
 
-        if (nullifierSessionID !== nSessionId) {
-          throw new Error(
-            `wrong verifier session id is used for nullification, expected ${nSessionId}, got ${nullifierSessionID}`
-          );
-        }
+      if (nullifierSessionID !== nSessionId) {
+        throw new Error(
+          `wrong verifier session id is used for nullification, expected ${nSessionId}, got ${nullifierSessionID}`
+        );
       }
     } else if (nullifierSessionID !== 0n) {
       throw new Error(`Nullifier id is generated but wasn't requested`);

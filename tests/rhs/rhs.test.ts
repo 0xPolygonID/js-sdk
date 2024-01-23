@@ -32,7 +32,7 @@ describe('rhs', () => {
     getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
     },
-    getStateInfoByIdAndState: async (id, state) => {
+    getStateInfoByIdAndState: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
     },
     publishState: async () => {
@@ -74,7 +74,7 @@ describe('rhs', () => {
         replacedAtBlock: 0n
       };
     },
-    getStateInfoByIdAndState: async (id, state) => {
+    getStateInfoByIdAndState: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
     },
     publishState: async () => {
@@ -115,7 +115,7 @@ describe('rhs', () => {
         replacedAtBlock: 0n
       };
     },
-    getStateInfoByIdAndState: async (id, state) => {
+    getStateInfoByIdAndState: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
     },
     publishState: async () => {

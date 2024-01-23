@@ -8,6 +8,7 @@ import {
   IPackageManager,
   JSONObject,
   JWSPackerParams,
+  ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
 import { DID } from '@iden3/js-iden3-core';
@@ -17,7 +18,7 @@ import * as uuid from 'uuid';
 import { ProofQuery, RevocationStatus, W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
 import { getRandomBytes } from '@iden3/js-crypto';
-import { CircuitId, Circuits, Query } from '../../circuits';
+import { CircuitId, Circuits } from '../../circuits';
 import { DocumentLoader } from '@iden3/js-jsonld-merklization';
 import { StateResolvers } from '../../storage';
 import { PROTOCOL_CONSTANTS } from '..';
@@ -360,9 +361,14 @@ export class AuthHandler implements IAuthHandler {
       );
     }
 
+    this.verifyAuthRequest(request);
     const requestScope = request.body.scope;
 
+    const groupIdToLinkIdMap = new Map<number, { linkID: number; requestId: number }[]>();
+    // group requests by query group id
     for (const proofRequest of requestScope) {
+      const groupId = proofRequest.query.groupId as number;
+
       const proofResp = response.body.scope.find((resp) => resp.id === proofRequest.id);
       if (!proofResp) {
         throw new Error(`proof is not given for requestId ${proofRequest.id}`);
@@ -374,7 +380,6 @@ export class AuthHandler implements IAuthHandler {
           `proof is not given for requested circuit expected: ${proofRequest.circuitId}, given ${circuitId}`
         );
       }
-
       const isValid = await this._proofService.verifyProof(proofResp, circuitId as CircuitId);
       if (!isValid) {
         throw new Error(
@@ -390,6 +395,7 @@ export class AuthHandler implements IAuthHandler {
       const params = proofRequest.params ?? {};
 
       params.verifierDid = DID.parse(request.from);
+
       // verify query
       const verifier = new CircuitVerifier(proofResp.pub_signals);
 
@@ -401,8 +407,16 @@ export class AuthHandler implements IAuthHandler {
         params
       );
 
-      // verify states
+      // write linkId to the proof response
+      const pubSig = pubSignals as unknown as { linkID?: number };
 
+      if (pubSig.linkID && groupId) {
+        groupIdToLinkIdMap.set(groupId, [
+          ...(groupIdToLinkIdMap.get(groupId) ?? []),
+          { linkID: pubSig.linkID, requestId: proofResp.id }
+        ]);
+      }
+      // verify states
       await verifier.verifyStates(this._opts.stateResolvers, opts);
 
       if (!response.from) {
@@ -413,6 +427,52 @@ export class AuthHandler implements IAuthHandler {
       await verifier.verifyIdOwnership(response.from, BigInt(proofResp.id));
     }
 
+    // verify grouping links
+    for (const [groupId, metas] of groupIdToLinkIdMap.entries()) {
+      // check that all linkIds are the same
+      if (metas.some((meta) => meta.linkID !== metas[0].linkID)) {
+        throw new Error(
+          `Link id validation failed for group ${groupId}, request linkID to requestIds info: ${JSON.stringify(
+            metas
+          )}`
+        );
+      }
+    }
+
     return Promise.resolve({ request, response });
+  }
+
+  private verifyAuthRequest(request: AuthorizationRequestMessage) {
+    const groupIdValidationMap: { [k: string]: ZeroKnowledgeProofRequest[] } = {};
+    const requestScope = request.body.scope;
+    for (const proofRequest of requestScope) {
+      const groupId = proofRequest.query.groupId as number;
+      if (groupId) {
+        const existingRequests = groupIdValidationMap[groupId] ?? [];
+
+        //validate that all requests in the group have the same schema, issuer and circuit
+        for (const existingRequest of existingRequests) {
+          if (existingRequest.query.type !== proofRequest.query.type) {
+            throw new Error(`all requests in the group should have the same type`);
+          }
+
+          if (existingRequest.query.context !== proofRequest.query.context) {
+            throw new Error(`all requests in the group should have the same context`);
+          }
+
+          const allowedIssuers = proofRequest.query.allowedIssuers as string[];
+          const existingRequestAllowedIssuers = existingRequest.query.allowedIssuers as string[];
+          if (
+            !(
+              allowedIssuers.includes('*') ||
+              allowedIssuers.every((issuer) => existingRequestAllowedIssuers.includes(issuer))
+            )
+          ) {
+            throw new Error(`all requests in the group should have the same issuer`);
+          }
+        }
+        groupIdValidationMap[groupId] = [...(groupIdValidationMap[groupId] ?? []), proofRequest];
+      }
+    }
   }
 }

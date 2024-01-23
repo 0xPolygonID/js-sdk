@@ -156,6 +156,14 @@ export class AuthV2PubSignals {
   }
 }
 
+/**
+ * Auth v2 pub signals verifier
+ *
+ * @public
+ * @class AuthPubSignalsV2
+ * @extends {IDOwnershipPubSignals}
+ * @implements {PubSignalsVerifier}
+ */
 export class AuthPubSignalsV2 extends IDOwnershipPubSignals implements PubSignalsVerifier {
   pubSignals = new AuthV2PubSignals();
   constructor(pubSignals: string[]) {

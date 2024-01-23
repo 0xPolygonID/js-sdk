@@ -13,6 +13,9 @@ const linkedMultiQuery10 = LinkedMultiQueryVerifier;
 
 export type VerifierType = PubSignalsVerifier & PubSignals;
 
+/**
+ * Supported circuits for handle authorization response
+ */
 const supportedCircuits: { [key: string]: unknown } = {
   authV2,
   credentialAtomicQueryMTPV2,

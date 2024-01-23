@@ -63,7 +63,7 @@ export const MOCK_STATE_STORAGE: IStateStorage = {
   getLatestStateById: async () => {
     throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
   },
-  getStateInfoByIdAndState: async (id, state) => {
+  getStateInfoByIdAndState: async () => {
     throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
   },
   publishState: async () => {

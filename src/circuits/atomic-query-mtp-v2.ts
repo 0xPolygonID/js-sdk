@@ -292,6 +292,15 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
 }
 
 const defaultProofVerifyOpts = 1 * 60 * 60 * 1000; // 1 hour
+
+/**
+ * MTP v2 pub signals verifier
+ *
+ * @public
+ * @class AtomicQueryMTPV2PubSignalsVerifier
+ * @extends {IDOwnershipPubSignals}
+ * @implements {PubSignalsVerifier}
+ */
 export class AtomicQueryMTPV2PubSignalsVerifier
   extends IDOwnershipPubSignals
   implements PubSignalsVerifier

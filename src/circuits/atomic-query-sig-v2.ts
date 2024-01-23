@@ -349,6 +349,15 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
 }
 
 const defaultProofVerifyOpts = 1 * 60 * 60 * 1000; // 1 hour
+
+/**
+ * Sig v2 pub signals verifier
+ *
+ * @public
+ * @class AtomicQuerySigV2PubSignalsVerifier
+ * @extends {IDOwnershipPubSignals}
+ * @implements {PubSignalsVerifier}
+ */
 export class AtomicQuerySigV2PubSignalsVerifier
   extends IDOwnershipPubSignals
   implements PubSignalsVerifier

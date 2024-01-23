@@ -193,6 +193,14 @@ export class LinkedMultiQueryPubSignals {
   }
 }
 
+/**
+ * Linked multi query pub signals verifier
+ *
+ * @public
+ * @class LinkedMultiQueryVerifier
+ * @extends {IDOwnershipPubSignals}
+ * @implements {PubSignalsVerifier}
+ */
 export class LinkedMultiQueryVerifier implements PubSignalsVerifier {
   readonly pubSignals = new LinkedMultiQueryPubSignals();
 

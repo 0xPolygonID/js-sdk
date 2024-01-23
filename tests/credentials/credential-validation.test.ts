@@ -44,7 +44,7 @@ const mockStateStorage: IStateStorage = {
     }
     return stateInfo;
   },
-  getStateInfoByIdAndState: async (id, state) => {
+  getStateInfoByIdAndState: async () => {
     throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
   },
   publishState: async () => {

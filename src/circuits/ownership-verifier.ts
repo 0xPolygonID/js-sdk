@@ -1,5 +1,11 @@
 import { DID, Id } from '@iden3/js-iden3-core';
 
+/**
+ *
+ * IDOwnershipPubSignals provides verifyIdOwnership base implementation
+ * @public
+ * @abstract class   IDOwnershipPubSignals
+ */
 export abstract class IDOwnershipPubSignals {
   userId!: Id;
   challenge!: bigint;
