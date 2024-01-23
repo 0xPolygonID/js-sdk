@@ -1,7 +1,13 @@
-import { Hash, newHashFromString, Proof } from '@iden3/js-merkletree';
+import { Hash, Proof } from '@iden3/js-merkletree';
 import { Claim, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { CircuitError, GISTProof, TreeState } from './models';
-import { BaseConfig, getNodeAuxValue, getResolverByID, prepareSiblingsStr } from './common';
+import {
+  BaseConfig,
+  checkGlobalState,
+  getNodeAuxValue,
+  getResolverByID,
+  prepareSiblingsStr
+} from './common';
 import { Signature } from '@iden3/js-crypto';
 import { byteDecoder, byteEncoder } from '../utils';
 import { PubSignalsVerifier, VerifyOpts } from './pub-signal-verifier';
@@ -122,7 +128,7 @@ const defaultAuthVerifyOpts = 5 * 60 * 1000; // 5 minutes
  * @public
  * @class AuthV2PubSignals
  */
-export class AuthV2PubSignals extends IDOwnershipPubSignals implements PubSignalsVerifier {
+export class AuthV2PubSignals {
   userID!: Id;
   challenge!: bigint;
   GISTRoot!: Hash;
@@ -145,8 +151,21 @@ export class AuthV2PubSignals extends IDOwnershipPubSignals implements PubSignal
 
     this.challenge = BigInt(sVals[1]);
 
-    this.GISTRoot = newHashFromString(sVals[2]);
+    this.GISTRoot = Hash.fromString(sVals[2]);
     return this;
+  }
+}
+
+export class AuthPubSignalsV2 extends IDOwnershipPubSignals implements PubSignalsVerifier {
+  pubSignals = new AuthV2PubSignals();
+  constructor(pubSignals: string[]) {
+    super();
+    this.pubSignals = this.pubSignals.pubSignalsUnmarshal(
+      byteEncoder.encode(JSON.stringify(pubSignals))
+    );
+
+    this.userId = this.pubSignals.userID;
+    this.challenge = this.pubSignals.challenge;
   }
 
   verifyQuery(): Promise<BaseConfig> {
@@ -156,9 +175,9 @@ export class AuthV2PubSignals extends IDOwnershipPubSignals implements PubSignal
   async verifyStates(resolvers: StateResolvers, opts?: VerifyOpts): Promise<void> {
     const resolver = getResolverByID(resolvers, this.userId);
     if (!resolver) {
-      throw new Error(`state resolver not found for id ${this.userId.string()}`);
+      throw new Error(`resolver not found for id ${this.userId.string()}`);
     }
-    const gist = await resolver.rootResolve(this.GISTRoot.bigInt());
+    const gist = await checkGlobalState(resolver, this.pubSignals.GISTRoot);
 
     let acceptedStateTransitionDelay = defaultAuthVerifyOpts;
     if (opts?.acceptedStateTransitionDelay) {

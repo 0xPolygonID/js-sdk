@@ -17,6 +17,69 @@ import * as uuid from 'uuid';
 import { RevocationStatus, W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
 import { getRandomBytes } from '@iden3/js-crypto';
+import { CircuitId, Circuits, Query } from '../../circuits';
+import { DocumentLoader } from '@iden3/js-jsonld-merklization';
+import { StateResolvers } from '../../storage';
+import { PROTOCOL_CONSTANTS } from '..';
+
+/**
+ *  createAuthorizationRequest is a function to create protocol authorization request
+ * @param {string} reason - reason to request proof
+ * @param {string} sender - sender did
+ * @param {string} callbackUrl - callback that user should use to send response
+ * @returns `Promise<AuthorizationRequestMessage>`
+ */
+export function createAuthorizationRequest(
+  reason: string,
+  sender: string,
+  callbackUrl: string
+): AuthorizationRequestMessage {
+  return createAuthorizationRequestWithMessage(reason, '', sender, callbackUrl);
+}
+/**
+ *  createAuthorizationRequestWithMessage is a function to create protocol authorization request with explicit message to sign
+ * @param {string} reason - reason to request proof
+ * @param {string} message - message to sign in the response
+ * @param {string} sender - sender did
+ * @param {string} callbackUrl - callback that user should use to send response
+ * @returns `Promise<AuthorizationRequestMessage>`
+ */
+export function createAuthorizationRequestWithMessage(
+  reason: string,
+  message: string,
+  sender: string,
+  callbackUrl: string
+): AuthorizationRequestMessage {
+  const uuidv4 = uuid.v4();
+  const request: AuthorizationRequestMessage = {
+    id: uuidv4,
+    thid: uuidv4,
+    from: sender,
+    typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+    type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+    body: {
+      reason: reason,
+      message: message,
+      callbackUrl: callbackUrl,
+      scope: []
+    }
+  };
+  return request;
+}
+
+/**
+ *
+ * Options to pass to auth response handler
+ *
+ * @public
+ * @interface AuthResponseHandlerOptions
+ */
+export interface AuthResponseHandlerOptions {
+  // acceptedStateTransitionDelay is the period of time in milliseconds that a revoked state remains valid.
+  acceptedStateTransitionDelay?: number;
+  // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
+  acceptedProofGenerationDelay?: number;
+}
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
@@ -53,6 +116,26 @@ export interface IAuthHandler {
     authRequest: AuthorizationRequestMessage;
     authResponse: AuthorizationResponseMessage;
   }>;
+
+  /**
+     * handle authorization response
+     * @public
+     * @param {AuthorizationResponseMessage} response  - auth response
+     * @param {AuthorizationRequestMessage} request  - auth request
+     * @param {AuthResponseHandlerOptions} opts - options
+     * @returns `Promise<{
+      request: AuthorizationRequestMessage;
+      response: AuthorizationResponseMessage;
+    }>`
+     */
+  handleAuthorizationResponse(
+    response: AuthorizationResponseMessage,
+    request: AuthorizationRequestMessage,
+    opts?: AuthResponseHandlerOptions
+  ): Promise<{
+    request: AuthorizationRequestMessage;
+    response: AuthorizationResponseMessage;
+  }>;
 }
 /**
  *
@@ -84,7 +167,11 @@ export class AuthHandler implements IAuthHandler {
    */
   constructor(
     private readonly _packerMgr: IPackageManager,
-    private readonly _proofService: IProofService
+    private readonly _proofService: IProofService,
+    private readonly _opts?: {
+      documentLoader?: DocumentLoader;
+      stateResolvers?: StateResolvers;
+    }
   ) {}
 
   /**
@@ -252,5 +339,98 @@ export class AuthHandler implements IAuthHandler {
     );
 
     return { authRequest, authResponse, token };
+  }
+
+  /**
+     * handle authorization response
+     * @public
+     * @param {AuthorizationResponseMessage} response  - auth response
+     * @param {AuthorizationRequestMessage} request  - auth request
+     * @param {AuthResponseHandlerOptions} opts - options
+     * @returns `Promise<{
+      request: AuthorizationRequestMessage;
+      response: AuthorizationResponseMessage;
+    }>`
+     */
+  async handleAuthorizationResponse(
+    response: AuthorizationResponseMessage,
+    request: AuthorizationRequestMessage,
+    opts?: AuthResponseHandlerOptions | undefined
+  ): Promise<{
+    request: AuthorizationRequestMessage;
+    response: AuthorizationResponseMessage;
+  }> {
+    if (!this._opts?.documentLoader) {
+      throw new Error('please provide schema loader in options');
+    }
+
+    if (!this._opts?.stateResolvers) {
+      throw new Error('please provide state resolver in options');
+    }
+
+    if ((request.body.message ?? '') !== (response.body.message ?? '')) {
+      throw new Error('message for signing from request is not presented in response');
+    }
+
+    if (request.from !== response.to) {
+      throw new Error(
+        `sender of the request is not a target of response - expected ${request.from}, given ${response.to}`
+      );
+    }
+
+    const requestScope = request.body.scope;
+
+    for (const proofRequest of requestScope) {
+      const proofResp = response.body.scope.find((resp) => resp.id === proofRequest.id);
+      if (!proofResp) {
+        throw new Error(`proof is not given for requestId ${proofRequest.id}`);
+      }
+
+      const circuitId = proofResp.circuitId;
+      if (circuitId !== proofRequest.circuitId) {
+        throw new Error(
+          `proof is not given for requested circuit expected: ${proofRequest.circuitId}, given ${circuitId}`
+        );
+      }
+
+      const isValid = await this._proofService.verifyProof(proofResp, circuitId as CircuitId);
+      if (!isValid) {
+        throw new Error(
+          `Proof with circuit id ${circuitId} and request id ${proofResp.id} is not valid`
+        );
+      }
+
+      const CircuitVerifier = Circuits.getCircuitPubSignals(circuitId);
+      if (!CircuitVerifier) {
+        throw new Error(`circuit ${circuitId} is not supported by the library`);
+      }
+
+      const params = proofRequest.params ?? {};
+
+      params.verifierDid = DID.parse(request.from);
+      // verify query
+      const verifier = new CircuitVerifier(proofResp.pub_signals);
+
+      const pubSignals = await verifier.verifyQuery(
+        proofRequest.query as unknown as Query,
+        this._opts.documentLoader,
+        proofResp.vp as JSON,
+        opts,
+        params
+      );
+
+      // verify states
+
+      await verifier.verifyStates(this._opts.stateResolvers, opts);
+
+      if (!response.from) {
+        throw new Error(`proof response doesn't contain from field`);
+      }
+
+      // verify id ownership
+      await verifier.verifyIdOwnership(response.from, BigInt(proofResp.id));
+    }
+
+    return Promise.resolve({ request, response });
   }
 }

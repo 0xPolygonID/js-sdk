@@ -1,17 +1,25 @@
-import { newHashFromString } from '@iden3/js-merkletree';
-import { Id, SchemaHash } from '@iden3/js-iden3-core';
+import { getDateFromUnixTimestamp, Id, SchemaHash } from '@iden3/js-iden3-core';
 import { Query, ValueProof, CircuitError, ClaimWithSigProof } from './models';
 import { Hash } from '@iden3/js-merkletree';
 import {
   BaseConfig,
   bigIntArrayToStringArray,
+  checkIssuerNonRevState,
+  checkUserState,
   existenceToInt,
   getNodeAuxValue,
+  getResolverByID,
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
 import { QueryOperators } from './comparer';
 import { byteDecoder, byteEncoder } from '../utils';
+import { IDOwnershipPubSignals } from './ownership-verifier';
+import { PubSignalsVerifier, VerifyOpts } from './pub-signal-verifier';
+import { ProofQuery } from '../verifiable';
+import { DocumentLoader } from '@iden3/js-jsonld-merklization';
+import { checkQueryRequest, ClaimOutputs } from './query';
+import { StateResolvers } from '../storage';
 
 /**
  * AtomicQuerySigV2Inputs representation for credentialAtomicQuerySig.circom
@@ -287,7 +295,7 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
     fieldIdx++;
 
     // - issuerAuthState
-    this.issuerAuthState = newHashFromString(sVals[fieldIdx]);
+    this.issuerAuthState = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     // - requestID
@@ -303,7 +311,7 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
     fieldIdx++;
 
     // - issuerClaimNonRevState
-    this.issuerClaimNonRevState = newHashFromString(sVals[fieldIdx]);
+    this.issuerClaimNonRevState = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     //  - timestamp
@@ -337,5 +345,79 @@ export class AtomicQuerySigV2PubSignals extends BaseConfig {
     }
 
     return this;
+  }
+}
+
+const defaultProofVerifyOpts = 1 * 60 * 60 * 1000; // 1 hour
+export class AtomicQuerySigV2PubSignalsVerifier
+  extends IDOwnershipPubSignals
+  implements PubSignalsVerifier
+{
+  pubSignals = new AtomicQuerySigV2PubSignals();
+
+  constructor(pubSignals: string[]) {
+    super();
+    this.pubSignals = this.pubSignals.pubSignalsUnmarshal(
+      byteEncoder.encode(JSON.stringify(pubSignals))
+    );
+
+    this.userId = this.pubSignals.userID;
+    this.challenge = this.pubSignals.requestID;
+  }
+
+  async verifyQuery(
+    query: ProofQuery,
+    schemaLoader?: DocumentLoader,
+    verifiablePresentation?: JSON,
+    opts?: VerifyOpts
+  ): Promise<BaseConfig> {
+    const outs: ClaimOutputs = {
+      issuerId: this.pubSignals.issuerID,
+      schemaHash: this.pubSignals.claimSchema,
+      slotIndex: this.pubSignals.slotIndex,
+      operator: this.pubSignals.operator,
+      value: this.pubSignals.value,
+      timestamp: this.pubSignals.timestamp,
+      merklized: this.pubSignals.merklized,
+      claimPathKey: this.pubSignals.claimPathKey,
+      claimPathNotExists: this.pubSignals.claimPathNotExists,
+      valueArraySize: this.pubSignals.getValueArrSize(),
+      isRevocationChecked: this.pubSignals.isRevocationChecked
+    };
+    await checkQueryRequest(query, outs, schemaLoader, verifiablePresentation, opts);
+
+    return this.pubSignals;
+  }
+  async verifyStates(resolvers: StateResolvers, opts?: VerifyOpts): Promise<void> {
+    const resolver = getResolverByID(resolvers, this.pubSignals.issuerID);
+    if (!resolver) {
+      throw new Error(`resolver not found for issuerID ${this.pubSignals.issuerID.string()}`);
+    }
+
+    await checkUserState(resolver, this.pubSignals.issuerID, this.pubSignals.issuerAuthState);
+
+    if (this.pubSignals.isRevocationChecked === 0) {
+      return;
+    }
+
+    const issuerNonRevStateResolved = await checkIssuerNonRevState(
+      resolver,
+      this.pubSignals.issuerID,
+      this.pubSignals.issuerClaimNonRevState
+    );
+
+    let acceptedStateTransitionDelay = defaultProofVerifyOpts;
+    if (opts?.acceptedStateTransitionDelay) {
+      acceptedStateTransitionDelay = opts.acceptedStateTransitionDelay;
+    }
+
+    if (!issuerNonRevStateResolved.latest) {
+      const timeDiff =
+        Date.now() -
+        getDateFromUnixTimestamp(Number(issuerNonRevStateResolved.transitionTimestamp)).getTime();
+      if (timeDiff > acceptedStateTransitionDelay) {
+        throw new Error('issuer state is outdated');
+      }
+    }
   }
 }

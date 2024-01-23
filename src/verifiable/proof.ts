@@ -221,6 +221,8 @@ export interface ProofQuery {
   context?: string;
   type?: string;
   skipClaimRevocationCheck?: boolean;
+  proofType?: string;
+  groupId?: number;
 }
 
 /**
