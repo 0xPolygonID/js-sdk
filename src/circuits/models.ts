@@ -38,7 +38,6 @@ export class Query {
   values!: bigint[];
   operator!: number;
   valueProof!: ValueProof;
-  allowedIssuers!: string[];
 
   /**
    * Validates Query instance

@@ -14,7 +14,7 @@ import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
-import { RevocationStatus, W3CCredential } from '../../verifiable';
+import { ProofQuery, RevocationStatus, W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
 import { getRandomBytes } from '@iden3/js-crypto';
 import { CircuitId, Circuits, Query } from '../../circuits';
@@ -412,7 +412,7 @@ export class AuthHandler implements IAuthHandler {
       const verifier = new CircuitVerifier(proofResp.pub_signals);
 
       const pubSignals = await verifier.verifyQuery(
-        proofRequest.query as unknown as Query,
+        proofRequest.query as unknown as ProofQuery,
         this._opts.documentLoader,
         proofResp.vp as JSON,
         opts,
