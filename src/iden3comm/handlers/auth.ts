@@ -301,6 +301,7 @@ export class AuthHandler implements IAuthHandler {
         proofReq,
         did,
         {
+          verifierDid: DID.parse(authRequest.from),
           skipRevocation: Boolean(query.skipClaimRevocationCheck),
           credential: credWithRevStatus?.cred,
           credentialRevocationStatus: credWithRevStatus?.revStatus,
