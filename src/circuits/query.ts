@@ -9,7 +9,7 @@ import {
 import { Proof } from '@iden3/js-merkletree';
 import { createSchemaHash, Parser } from '../schema-processor';
 import { byteDecoder, byteEncoder } from '../utils';
-import { ProofQuery } from './../verifiable';
+import { ProofQuery, VerifiableConstants } from './../verifiable';
 import { isValidOperation, Operators, QueryOperators } from './comparer';
 import { VerifyOpts } from './pub-signal-verifier';
 
@@ -127,7 +127,7 @@ export async function checkQueryRequest(
         documentLoader: schemaLoader
       }
     );
-    path.prepend(['https://www.w3.org/2018/credentials#credentialSubject']);
+    path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
     const claimPathKey = await path.mtEntry();
 
     if (outputs.claimPathKey !== claimPathKey) {
@@ -229,7 +229,7 @@ async function validateEmptyCredentialSubject(cq: CircuitQuery, outputs: ClaimOu
       throw new Error(`empty credentialSubject request not available for array of values`);
     }
   }
-  const path = await Path.newPath(['https://www.w3.org/2018/credentials#credentialSubject']);
+  const path = await Path.newPath([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   const subjectEntry = await path.mtEntry();
   if (outputs.claimPathKey !== subjectEntry) {
     throw new Error(`proof doesn't contain credentialSubject in claimPathKey`);
