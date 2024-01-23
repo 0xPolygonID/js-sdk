@@ -175,10 +175,7 @@ export class AuthHandler implements IAuthHandler {
   ) {}
 
   /**
-   * unpacks authorization request
-   * @public
-   * @param {Uint8Array} request - raw byte message
-   * @returns `Promise<AuthorizationRequestMessage>`
+   * @inheritdoc IAuthHandler#parseAuthorizationRequest
    */
   async parseAuthorizationRequest(request: Uint8Array): Promise<AuthorizationRequestMessage> {
     const { unpackedMessage: message } = await this._packerMgr.unpack(request);
@@ -190,15 +187,7 @@ export class AuthHandler implements IAuthHandler {
   }
 
   /**
-   * unpacks authorization request and packs authorization response
-   * @public
-   * @param {did} did  - sender DID
-   * @param {Uint8Array} request - raw byte message
-   * @returns `Promise<{
-    token: string;
-    authRequest: AuthorizationRequestMessage;
-    authResponse: AuthorizationResponseMessage;
-  }>`
+   * @inheritdoc IAuthHandler#handleAuthorizationRequest
    */
   async handleAuthorizationRequest(
     did: DID,
@@ -342,16 +331,8 @@ export class AuthHandler implements IAuthHandler {
   }
 
   /**
-     * handle authorization response
-     * @public
-     * @param {AuthorizationResponseMessage} response  - auth response
-     * @param {AuthorizationRequestMessage} request  - auth request
-     * @param {AuthResponseHandlerOptions} opts - options
-     * @returns `Promise<{
-      request: AuthorizationRequestMessage;
-      response: AuthorizationResponseMessage;
-    }>`
-     */
+   * @inheritdoc IAuthHandler#handleAuthorizationResponse
+   */
   async handleAuthorizationResponse(
     response: AuthorizationResponseMessage,
     request: AuthorizationRequestMessage,
