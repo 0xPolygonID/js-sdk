@@ -1,7 +1,7 @@
 import { DocumentLoader } from '@iden3/js-jsonld-merklization';
-import { StateResolvers } from '../storage/interfaces/resolver';
-import { ProofQuery } from '../verifiable';
-import { BaseConfig } from './common';
+import { StateResolvers } from '../../storage/interfaces/resolver';
+import { ProofQuery } from '../../verifiable';
+import { BaseConfig } from '../common';
 
 /**
  * Options to verify state

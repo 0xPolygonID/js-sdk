@@ -7,10 +7,10 @@ import {
   Path
 } from '@iden3/js-jsonld-merklization';
 import { Proof } from '@iden3/js-merkletree';
-import { createSchemaHash, Parser } from '../schema-processor';
-import { byteDecoder, byteEncoder } from '../utils';
-import { ProofQuery, VerifiableConstants } from './../verifiable';
-import { isValidOperation, Operators, QueryOperators } from './comparer';
+import { createSchemaHash, Parser } from '../../schema-processor';
+import { byteDecoder, byteEncoder } from '../../utils';
+import { ProofQuery, VerifiableConstants } from '../../verifiable';
+import { isValidOperation, Operators, QueryOperators } from '../comparer';
 import { VerifyOpts } from './pub-signal-verifier';
 
 const defaultProofGenerationDelayOpts = 24 * 60 * 60 * 1000; // 24 hours

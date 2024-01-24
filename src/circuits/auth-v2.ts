@@ -1,18 +1,9 @@
 import { Hash, Proof } from '@iden3/js-merkletree';
-import { Claim, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
+import { Claim, Id } from '@iden3/js-iden3-core';
 import { CircuitError, GISTProof, TreeState } from './models';
-import {
-  BaseConfig,
-  checkGlobalState,
-  getNodeAuxValue,
-  getResolverByID,
-  prepareSiblingsStr
-} from './common';
+import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
 import { Signature } from '@iden3/js-crypto';
 import { byteDecoder, byteEncoder } from '../utils';
-import { PubSignalsVerifier, VerifyOpts } from './pub-signal-verifier';
-import { IDOwnershipPubSignals } from './ownership-verifier';
-import { StateResolvers } from '../storage/interfaces/resolver';
 
 /**
  * Auth v2 circuit representation
@@ -119,8 +110,6 @@ interface AuthV2CircuitInputs {
   gistMtpNoAux: string;
 }
 
-const defaultAuthVerifyOpts = 5 * 60 * 1000; // 5 minutes
-
 // AuthV2PubSignals auth.circom public signals
 /**
  * public signals
@@ -153,55 +142,5 @@ export class AuthV2PubSignals {
 
     this.GISTRoot = Hash.fromString(sVals[2]);
     return this;
-  }
-}
-
-/**
- * Auth v2 pub signals verifier
- *
- * @public
- * @class AuthPubSignalsV2
- * @extends {IDOwnershipPubSignals}
- * @implements {PubSignalsVerifier}
- */
-export class AuthPubSignalsV2 extends IDOwnershipPubSignals implements PubSignalsVerifier {
-  pubSignals = new AuthV2PubSignals();
-  constructor(pubSignals: string[]) {
-    super();
-    this.pubSignals = this.pubSignals.pubSignalsUnmarshal(
-      byteEncoder.encode(JSON.stringify(pubSignals))
-    );
-
-    this.userId = this.pubSignals.userID;
-    this.challenge = this.pubSignals.challenge;
-  }
-
-  verifyQuery(): Promise<BaseConfig> {
-    return Promise.resolve(new BaseConfig());
-  }
-
-  async verifyStates(resolvers: StateResolvers, opts?: VerifyOpts): Promise<void> {
-    const resolver = getResolverByID(resolvers, this.userId);
-    if (!resolver) {
-      throw new Error(`resolver not found for id ${this.userId.string()}`);
-    }
-    const gist = await checkGlobalState(resolver, this.pubSignals.GISTRoot);
-
-    let acceptedStateTransitionDelay = defaultAuthVerifyOpts;
-    if (opts?.acceptedStateTransitionDelay) {
-      acceptedStateTransitionDelay = opts.acceptedStateTransitionDelay;
-    }
-
-    if (!gist.latest) {
-      const timeDiff =
-        Date.now() - getDateFromUnixTimestamp(Number(gist.transitionTimestamp)).getTime();
-      if (timeDiff > acceptedStateTransitionDelay) {
-        throw new Error('global state is outdated');
-      }
-    }
-  }
-
-  verifyIdOwnership(sender: string, challenge: bigint): Promise<void> {
-    return super.verifyIdOwnership(sender, challenge);
   }
 }

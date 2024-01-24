@@ -12,5 +12,4 @@ export * from './state-transition';
 export * from './linked-nullifier';
 export * from './linked-multi-query';
 export * from './ownership-verifier';
-export * from './pub-signal-verifier';
-export * from './supported-verifiers';
+export * from './verifiers';
