@@ -36,7 +36,7 @@ import { expect } from 'chai';
 import fetchMock from '@gr2m/fetch-mock';
 import path from 'path';
 
-describe.only('fetch', () => {
+describe('fetch', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
