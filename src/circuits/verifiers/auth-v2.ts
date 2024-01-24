@@ -10,14 +10,14 @@ import { PubSignalsVerifier, VerifyOpts } from './pub-signal-verifier';
 const defaultAuthVerifyOpts = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Auth v2 pub signals verifier
+ * Auth V2 pub signals verifier
  *
  * @public
- * @class AuthV2PubSignalsVerifier
+ * @class AuthPubSignalsVerifier
  * @extends {IDOwnershipPubSignals}
  * @implements {PubSignalsVerifier}
  */
-export class AuthV2PubSignalsVerifier extends IDOwnershipPubSignals implements PubSignalsVerifier {
+export class AuthPubSignalsVerifier extends IDOwnershipPubSignals implements PubSignalsVerifier {
   pubSignals = new AuthV2PubSignals();
   constructor(pubSignals: string[]) {
     super();
