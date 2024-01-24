@@ -231,6 +231,9 @@ export class W3CCredential {
     }
 
     const revocationNonce = BigInt(proof.issuerData.credentialStatus.revocationNonce || 0);
+    if (revocationNonce !== proof.issuerData.authCoreClaim.getRevocationNonce()) {
+      throw new Error(`revocation nonce mismatch: credential revocation nonce != proof claim revocation nonce`)
+    }
     const proofValid = await verifyProof(
       Hash.fromHex(credStatus.issuer.revocationTreeRoot),
       credStatus.mtp,
