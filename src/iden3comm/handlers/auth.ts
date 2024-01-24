@@ -344,11 +344,11 @@ export class AuthHandler implements IAuthHandler {
     response: AuthorizationResponseMessage;
   }> {
     if (!this._opts?.documentLoader) {
-      throw new Error('please provide schema loader in options');
+      throw new Error('please, provide schema loader in options');
     }
 
     if (!this._opts?.stateResolvers) {
-      throw new Error('please provide state resolver in options');
+      throw new Error('please, provide state resolver in options');
     }
 
     if ((request.body.message ?? '') !== (response.body.message ?? '')) {
