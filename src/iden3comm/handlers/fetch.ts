@@ -187,10 +187,10 @@ export class FetchHandler implements IFetchHandler {
   /**
    * @inheritdoc IFetchHandler#handleCredentialFetchRequest
    */
-  async handleCredentialFetchRequest(basicMessage: Uint8Array): Promise<Uint8Array> {
+  async handleCredentialFetchRequest(envelope: Uint8Array): Promise<Uint8Array> {
     const msgRequest = await FetchHandler.unpackMessage<CredentialFetchRequestMessage>(
       this._packerMgr,
-      basicMessage,
+      envelope,
       PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE
     );
 
@@ -207,11 +207,11 @@ export class FetchHandler implements IFetchHandler {
 
     const credId = msgRequest.body?.id;
     if (!credId) {
-      throw new Error('invalid claim id in fetch request body');
+      throw new Error('nvalid credential id in fetch request body');
     }
 
     if (!this.opts?.credentialWallet) {
-      throw new Error('please provide credential wallet in options');
+      throw new Error('please, provide credential wallet in options');
     }
 
     const cred = await this.opts.credentialWallet.findById(credId);
@@ -226,26 +226,30 @@ export class FetchHandler implements IFetchHandler {
       throw new Error('credential subject is not a sender DID');
     }
 
-    return byteEncoder.encode(
-      JSON.stringify({
-        id: uuid.v4(),
-        type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE,
-        typ: msgRequest.typ ?? MediaType.PlainMessage,
-        thid: msgRequest.thid ?? uuid.v4(),
-        body: { credential: cred },
-        from: msgRequest.to,
-        to: msgRequest.from
-      })
+    return this._packerMgr.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(
+        JSON.stringify({
+          id: uuid.v4(),
+          type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE,
+          typ: msgRequest.typ ?? MediaType.PlainMessage,
+          thid: msgRequest.thid ?? uuid.v4(),
+          body: { credential: cred },
+          from: msgRequest.to,
+          to: msgRequest.from
+        })
+      ),
+      {}
     );
   }
 
   /**
    * @inheritdoc IFetchHandler#handleIssuanceResponseMessage
    */
-  async handleIssuanceResponseMessage(basicMessage: Uint8Array): Promise<Uint8Array> {
+  async handleIssuanceResponseMessage(envelop: Uint8Array): Promise<Uint8Array> {
     const issuanceMsg = await FetchHandler.unpackMessage<CredentialIssuanceMessage>(
       this._packerMgr,
-      basicMessage,
+      envelop,
       PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE
     );
 
@@ -267,13 +271,13 @@ export class FetchHandler implements IFetchHandler {
    */
   static async unpackMessage<T>(
     packerMgr: IPackageManager,
-    basicMessage: Uint8Array,
+    envelope: Uint8Array,
     messageType: string
   ): Promise<T> {
-    const { unpackedMessage: message } = await packerMgr.unpack(basicMessage);
+    const { unpackedMessage: message } = await packerMgr.unpack(envelope);
     const msgRequest = message as unknown as T;
     if (message.type !== messageType) {
-      throw new Error('Invalid media type');
+      throw new Error('Invalid message type');
     }
     return msgRequest;
   }

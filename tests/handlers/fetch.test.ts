@@ -1,12 +1,8 @@
 import {
-  BasicMessage,
   CredentialsOfferMessage,
-  CredentialsOfferMessageBody,
   FetchHandler,
   IFetchHandler,
   IPackageManager,
-  PackageManager,
-  PlainPacker,
   IDataStorage,
   IdentityWallet,
   CredentialWallet,
@@ -18,7 +14,10 @@ import {
   byteEncoder,
   CredentialFetchRequestMessage,
   CredentialRequest,
-  CredentialIssuanceMessage
+  CredentialIssuanceMessage,
+  FSCircuitStorage,
+  ProofService,
+  CircuitId
 } from '../../src';
 
 import {
@@ -28,14 +27,16 @@ import {
   SEED_USER,
   createIdentity,
   getInMemoryDataStorage,
+  getPackageMgr,
   registerBJJIntoInMemoryKMS
 } from '../helpers';
 
 import * as uuid from 'uuid';
 import { expect } from 'chai';
 import fetchMock from '@gr2m/fetch-mock';
+import path from 'path';
 
-describe('fetch', () => {
+describe.only('fetch', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -44,9 +45,7 @@ describe('fetch', () => {
   let packageMgr: IPackageManager;
   const agentUrl = 'https://testagent.com/';
 
-  const mockedToken = 'jwz token to fetch credential';
-
-  const mockedCredResponse = `{
+  const issuanceResponseMock = `{
     "body": {
         "credential": {
             "@context": [
@@ -115,6 +114,9 @@ describe('fetch', () => {
   beforeEach(async () => {
     const kms = registerBJJIntoInMemoryKMS();
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -123,15 +125,12 @@ describe('fetch', () => {
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    // proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
-    packageMgr = {} as PackageManager;
-    packageMgr.unpack = async function (
-      envelope: Uint8Array
-    ): Promise<{ unpackedMessage: BasicMessage; unpackedMediaType: PROTOCOL_CONSTANTS.MediaType }> {
-      const msg = await new PlainPacker().unpack(envelope);
-      return { unpackedMessage: msg, unpackedMediaType: PROTOCOL_CONSTANTS.MediaType.PlainMessage };
-    };
-    packageMgr.pack = async (): Promise<Uint8Array> => byteEncoder.encode(mockedToken);
+    const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.verifyState.bind(proofService)
+    );
     fetchHandler = new FetchHandler(packageMgr, {
       credentialWallet: credWallet
     });
@@ -139,7 +138,7 @@ describe('fetch', () => {
 
   it('fetch credential issued to genesis did', async () => {
     fetchMock.spy();
-    fetchMock.post(agentUrl, JSON.parse(mockedCredResponse));
+    fetchMock.post(agentUrl, JSON.parse(issuanceResponseMock));
     const { did: userDID, credential: cred } = await createIdentity(idWallet, {
       seed: SEED_USER
     });
@@ -161,7 +160,7 @@ describe('fetch', () => {
       body: {
         url: agentUrl,
         credentials: [{ id: 'https://credentialId', description: 'kyc age credentials' }]
-      } as CredentialsOfferMessageBody,
+      },
       from: issuerDID.string(),
       to: userDID.string()
     };
@@ -174,7 +173,7 @@ describe('fetch', () => {
 
     expect(res).to.be.a('array');
     expect(res).to.have.length(1);
-    const w3cCred = W3CCredential.fromJSON(JSON.parse(mockedCredResponse).body.credential);
+    const w3cCred = W3CCredential.fromJSON(JSON.parse(issuanceResponseMock).body.credential);
 
     expect(Object.entries(res[0]).toString()).to.equal(Object.entries(w3cCred).toString());
     fetchMock.restore();
