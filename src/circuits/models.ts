@@ -39,6 +39,17 @@ export class Query {
   operator!: number;
   valueProof!: ValueProof;
 
+  constructor(obj?: {
+    slotIndex: number;
+    values: bigint[];
+    operator: number;
+    valueProof: ValueProof;
+  }) {
+    if (obj) {
+      Object.assign(this, { ...obj, valueProof: Object.assign(new ValueProof(), obj.valueProof) });
+    }
+  }
+
   /**
    * Validates Query instance
    *

@@ -21,6 +21,7 @@ import {
 import {
   PreparedCredential,
   QueryMetadata,
+  circuitQueryTransformer,
   parseCredentialSubject,
   parseQueryMetadata,
   toGISTProof,
@@ -244,11 +245,12 @@ export class ProofService implements IProofService {
       );
 
       queriesMetadata.push(queryMetadata);
-      const circuitQuery = await this.toCircuitsQuery(
-        preparedCredential.credential,
+      const circuitQuery = await this.toCircuitsQuery({
+        circuitId: proofReq.circuitId as CircuitId,
+        credential: preparedCredential.credential,
         queryMetadata,
-        mk
-      );
+        merklizedCredential: mk
+      });
       circuitQueries.push(circuitQuery);
     }
 
@@ -361,11 +363,17 @@ export class ProofService implements IProofService {
     });
   }
 
-  private async toCircuitsQuery(
-    credential: W3CCredential,
-    queryMetadata: QueryMetadata,
-    merklizedCredential?: Merklizer
-  ): Promise<Query> {
+  private async toCircuitsQuery({
+    circuitId,
+    credential,
+    queryMetadata,
+    merklizedCredential
+  }: {
+    circuitId: CircuitId;
+    credential: W3CCredential;
+    queryMetadata: QueryMetadata;
+    merklizedCredential?: Merklizer;
+  }): Promise<Query> {
     if (queryMetadata.merklizedSchema && !merklizedCredential) {
       throw new Error('merklized root position is set to None for merklized schema');
     }
@@ -408,7 +416,7 @@ export class ProofService implements IProofService {
       query.values = await transformQueryValueToBigInts(v, queryMetadata.datatype);
     }
 
-    return query;
+    return circuitQueryTransformer(circuitId, query);
   }
 
   private async loadLdContext(context: string): Promise<Uint8Array> {

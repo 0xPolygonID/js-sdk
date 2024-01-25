@@ -21,8 +21,8 @@ import {
   Proof
 } from '@iden3/js-merkletree';
 import { Hex, poseidon, PrivateKey, Signature } from '@iden3/js-crypto';
-import { prepareCircuitArrayValues, TreeState } from '../../src/circuits';
 import { Merklizer } from '@iden3/js-jsonld-merklization';
+import { circuitQueryTransformer, CircuitId, Query, TreeState } from '../../src';
 
 const TestClaimDocument = `{
   "@context": [
@@ -348,16 +348,30 @@ export const coreSchemaFromStr = (schemaIntString: string) => {
   return SchemaHash.newSchemaHashFromInt(schemaInt);
 };
 
-export function calculateQueryHash(
-  values: bigint[],
-  schema: string,
-  slotIndex: string | number,
-  operator: string | number,
-  claimPathKey: string | number,
-  claimPathNotExists: string | number
-): bigint {
-  const expValue = prepareCircuitArrayValues(values, 64);
-  const valueHash = poseidon.spongeHashX(expValue, 6);
+export function calculateQueryHash({
+  values,
+  schema,
+  slotIndex,
+  claimPathKey,
+  operator,
+  claimPathNotExists,
+  circuitId
+}: {
+  values: bigint[];
+  schema: string;
+  slotIndex: string | number;
+  operator: string | number;
+  claimPathKey: string | number;
+  claimPathNotExists: string | number;
+  circuitId: CircuitId;
+}): bigint {
+  const query = circuitQueryTransformer(circuitId, {
+    slotIndex,
+    values,
+    operator
+  } as Query);
+
+  const valueHash = poseidon.spongeHashX(query.values, 6);
   const schemaHash = coreSchemaFromStr(schema);
   const queryHash = poseidon.hash([
     schemaHash.bigInt(),

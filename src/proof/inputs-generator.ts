@@ -18,7 +18,6 @@ import {
   LinkedMultiQueryInputs,
   LinkedNullifierInputs,
   MTProof,
-  Operators,
   Query,
   TreeState
 } from '../circuits';
@@ -36,11 +35,17 @@ import {
   getUserDIDFromCredential
 } from '../credentials';
 
+/**
+ * Represents the metadata for a DID profile.
+ */
 export type DIDProfileMetadata = {
   authProfileNonce: number;
   credentialSubjectProfileNonce: number;
 };
 
+/**
+ * Options for generating a proof.
+ */
 export type ProofGenerationOptions = {
   skipRevocation: boolean;
   challenge?: bigint;
@@ -50,6 +55,9 @@ export type ProofGenerationOptions = {
   linkNonce?: bigint;
 };
 
+/**
+ * Represents the parameters for generating proof inputs.
+ */
 export type ProofInputsParams = ProofGenerationOptions & DIDProfileMetadata;
 
 type InputContext = {
@@ -82,6 +90,13 @@ export class InputGenerator {
     private readonly _stateStorage: IStateStorage
   ) {}
 
+  /**
+   * Generates inputs for a given input context.
+   * @param ctx The input context containing the proof request and circuit queries.
+   * @returns A promise that resolves to a Uint8Array of generated inputs.
+   * @throws An error if the number of circuit queries exceeds the maximum allowed for the circuit.
+   * @throws An error if the inputs generator for the circuit is not found.
+   */
   async generateInputs(ctx: InputContext): Promise<Uint8Array> {
     const { circuitId } = ctx.proofReq;
     const fnName = `${circuitId.split('-')[0]}PrepareInputs`;
@@ -107,6 +122,11 @@ export class InputGenerator {
     return fn(ctx);
   }
 
+  /**
+   * Generates a new CircuitClaim based on the provided prepared credential.
+   * @param preparedCredential The prepared credential used to generate the CircuitClaim.
+   * @returns A Promise that resolves to the generated CircuitClaim.
+   */
   async newCircuitClaimData(preparedCredential: PreparedCredential): Promise<CircuitClaim> {
     const smtProof: Iden3SparseMerkleTreeProof | undefined =
       preparedCredential.credential.getIden3SparseMerkleTreeProof();
@@ -223,9 +243,7 @@ export class InputGenerator {
     circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.requestID = BigInt(proofReq.id);
 
-    const query = circuitQueries[0];
-    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
-    circuitInputs.query = query;
+    circuitInputs.query = circuitQueries[0];
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
       claim: circuitClaimData.claim,
@@ -291,9 +309,7 @@ export class InputGenerator {
     circuitInputs.signature = signature;
     circuitInputs.challenge = params.challenge;
 
-    const query = circuitQueries[0];
-    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
-    circuitInputs.query = query;
+    circuitInputs.query = circuitQueries[0];
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
       claim: circuitClaimData.claim,
@@ -308,7 +324,7 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  private credentialAtomicQuerySigV2PrepareInputs = async ({
+  credentialAtomicQuerySigV2PrepareInputs = async ({
     preparedCredential,
     identifier,
     proofReq,
@@ -332,14 +348,12 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    const query = circuitQueries[0];
-    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
-    circuitInputs.query = query;
+    circuitInputs.query = circuitQueries[0];
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
     return circuitInputs.inputsMarshal();
   };
 
-  private credentialAtomicQuerySigV2OnChainPrepareInputs = async ({
+  credentialAtomicQuerySigV2OnChainPrepareInputs = async ({
     preparedCredential,
     identifier,
     proofReq,
@@ -371,9 +385,7 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    const query = circuitQueries[0];
-    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
-    circuitInputs.query = query;
+    circuitInputs.query = circuitQueries[0];
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     if (authClaimData.treeState) {
@@ -408,7 +420,7 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  private credentialAtomicQueryV3PrepareInputs = async ({
+  credentialAtomicQueryV3PrepareInputs = async ({
     preparedCredential,
     identifier,
     proofReq,
@@ -451,22 +463,20 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    const query = circuitQueries[0];
-    query.values = query.operator === Operators.SD ? new Array(64).fill(0) : query.values;
-    circuitInputs.query = query;
+    circuitInputs.query = circuitQueries[0];
 
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
-    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? 0n;
     circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionId
       ? BigInt(proofReq.params?.nullifierSessionId?.toString())
-      : BigInt(0);
+      : 0n;
     return circuitInputs.inputsMarshal();
   };
 
-  private credentialAtomicQueryV3OnChainPrepareInputs = async ({
+  credentialAtomicQueryV3OnChainPrepareInputs = async ({
     preparedCredential,
     identifier,
     proofReq,
@@ -509,17 +519,15 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    const query = circuitQueries[0];
-    query.values = query.operator === Operators.SD ? new Array(64).fill(0) : query.values;
-    circuitInputs.query = query;
+    circuitInputs.query = circuitQueries[0];
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
-    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? 0n;
     circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
       ? BigInt(proofReq.params?.nullifierSessionID?.toString())
-      : BigInt(0);
+      : 0n;
 
     let isEthIdentity = true;
     try {
@@ -560,7 +568,7 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  private linkedNullifierPrepareInputs = async ({
+  linkedNullifierPrepareInputs = async ({
     preparedCredential,
     identifier,
     proofReq,
@@ -571,7 +579,7 @@ export class InputGenerator {
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
 
     const circuitInputs = new LinkedNullifierInputs();
-    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? 0n;
     circuitInputs.issuerClaim = circuitClaimData.claim;
     circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
@@ -579,7 +587,7 @@ export class InputGenerator {
     circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
       ? BigInt(proofReq.params?.nullifierSessionID?.toString())
-      : BigInt(0);
+      : 0n;
 
     return circuitInputs.inputsMarshal();
   };
@@ -594,7 +602,7 @@ export class InputGenerator {
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     const circuitInputs = new LinkedMultiQueryInputs();
-    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? 0n;
 
     circuitInputs.claim = circuitClaimData.claim;
     circuitInputs.query = circuitQueries;

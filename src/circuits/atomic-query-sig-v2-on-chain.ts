@@ -8,7 +8,6 @@ import {
   bigIntArrayToStringArray,
   existenceToInt,
   getNodeAuxValue,
-  prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
 import { byteDecoder, byteEncoder } from '../utils';
@@ -205,8 +204,7 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
     s.claimPathMtpAuxHv = nodAuxJSONLD.value.bigInt().toString();
 
     s.claimPathKey = valueProof.path.toString();
-    const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
-    s.value = bigIntArrayToStringArray(values);
+    s.value = bigIntArrayToStringArray(this.query.values);
 
     const nodeAuxAuth = getNodeAuxValue(this.authClaimNonRevMtp);
     s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key.string();

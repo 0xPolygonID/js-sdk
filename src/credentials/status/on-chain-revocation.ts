@@ -1,13 +1,13 @@
+import { Hash } from '@iden3/js-merkletree';
 import { RevocationStatus, CredentialStatus } from '../../verifiable';
 import { EthConnectionConfig } from '../../storage/blockchain';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revocation';
 import { DID, Id, getChainId } from '@iden3/js-iden3-core';
 import { VerifiableConstants } from '../../verifiable/constants';
-import { isGenesisState } from './utils';
 import { EthStateStorage } from '../../storage/blockchain/state';
 import { IStateStorage, IOnchainRevocationStore } from '../../storage';
-import { Hash } from '@iden3/js-merkletree';
+import { isGenesisState } from '../../utils';
 /**
  * OnChainIssuer is a class that allows to interact with the onchain contract
  * and build the revocation status.

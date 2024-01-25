@@ -1,10 +1,14 @@
 import { NodeAux, Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 import {
   buildTreeState,
+  CircuitId,
   ClaimNonRevStatus,
+  defaultValueArraySize,
   GISTProof,
   isValidOperation,
   Operators,
+  prepareCircuitArrayValues,
+  Query,
   QueryOperators
 } from '../circuits';
 import { StateProof } from '../storage/entities/state';
@@ -198,7 +202,7 @@ export const parseQueryMetadata = async (
       throw new Error(`field does not exist in the schema ${(e as Error).message}`);
     }
   }
-
+  // noop operator
   if (propertyQuery.operatorValue) {
     if (!isValidOperation(datatype, propertyQuery.operator)) {
       throw new Error(
@@ -211,30 +215,76 @@ export const parseQueryMetadata = async (
   return query;
 };
 
-export const parseQueriesMetadata = async (
-  credentialType: string,
-  ldContextJSON: string,
-  credentialSubject: JSONObject,
-  options: Options
-): Promise<QueryMetadata[]> => {
-  const queriesMetadata = parseCredentialSubject(credentialSubject);
-  return Promise.all(
-    queriesMetadata.map((m) => parseQueryMetadata(m, ldContextJSON, credentialType, options))
-  );
-};
-
 export const transformQueryValueToBigInts = async (
   value: unknown,
   ldType: string
 ): Promise<bigint[]> => {
-  const values: bigint[] = new Array<bigint>(64).fill(BigInt(0));
+  const values: bigint[] = [];
 
   if (Array.isArray(value)) {
     for (let index = 0; index < value.length; index++) {
-      values[index] = await Merklizer.hashValue(ldType, value[index]);
+      values.push(await Merklizer.hashValue(ldType, value[index]));
     }
   } else {
     values[0] = await Merklizer.hashValue(ldType, value);
   }
   return values;
+};
+
+const queryTransformV3Circuit = (query: Query): Query => {
+  if (query.operator === Operators.SD) {
+    return new Query({
+      ...query,
+      values: new Array(defaultValueArraySize).fill(0)
+    });
+  }
+
+  const values = prepareCircuitArrayValues(query.values, defaultValueArraySize);
+  if ([Operators.IN, Operators.NIN].includes(query.operator)) {
+    const lastValue = query.values[query.values.length - 1];
+    const valuesLength = query.values.length;
+
+    return new Query({
+      ...query,
+      // values
+      values: [
+        ...values.slice(0, valuesLength),
+        ...new Array(values.length - valuesLength).fill(lastValue)
+      ]
+    });
+  }
+
+  return new Query({ ...query, values });
+};
+
+const queryTransformV2Circuit = (query: Query): Query => {
+  return new Query({
+    ...query,
+    values: prepareCircuitArrayValues(query.values, defaultValueArraySize),
+    operator: query.operator === Operators.SD ? Operators.EQ : query.operator
+  });
+};
+
+/**
+ * Transforms a query based on the circuit ID.
+ * @param circuitId The ID of the circuit.
+ * @param query The query to be transformed.
+ * @returns The transformed query.
+ */
+export const circuitQueryTransformer = (circuitId: CircuitId, query: Query): Query => {
+  switch (circuitId) {
+    case CircuitId.AtomicQueryMTPV2:
+    case CircuitId.AtomicQueryMTPV2OnChain:
+    case CircuitId.AtomicQuerySigV2:
+    case CircuitId.AtomicQuerySigV2OnChain:
+      return queryTransformV2Circuit(query);
+    case CircuitId.AtomicQueryV3:
+    case CircuitId.AtomicQueryV3OnChain:
+      return queryTransformV3Circuit(query);
+    default:
+      return new Query({
+        ...query,
+        values: prepareCircuitArrayValues(query.values, defaultValueArraySize)
+      });
+  }
 };

@@ -1,28 +1,32 @@
 /* eslint-disable no-console */
 import {
-  CredentialStorage,
   FSCircuitStorage,
-  Identity,
-  IdentityStorage,
+  CircuitId,
+  CredentialStatusType,
+  CredentialStatusResolverRegistry,
+  RHSResolver,
+  JSONObject,
+  ZeroKnowledgeProofRequest,
   IdentityWallet,
-  Profile
+  ProofService,
+  CredentialRequest,
+  CredentialWallet,
+  ICircuitStorage,
+  IDataStorage
 } from '../../src';
-import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
-import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { ICircuitStorage, IDataStorage, IStateStorage } from '../../src/storage/interfaces';
-import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { ProofService } from '../../src/proof';
-import { CircuitId } from '../../src/circuits';
-import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
-import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
-import { byteEncoder } from '../../src';
-import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
-import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { DID } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import { CredentialStatusResolverRegistry } from '../../src/credentials';
-import { RHSResolver } from '../../src/credentials';
+import {
+  MOCK_STATE_STORAGE,
+  IPFS_URL,
+  RHS_URL,
+  SEED_ISSUER,
+  SEED_USER,
+  createIdentity,
+  getInMemoryDataStorage,
+  registerBJJIntoInMemoryKMS
+} from '../helpers';
 
 describe('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -30,61 +34,18 @@ describe('sig proofs', () => {
 
   let dataStorage: IDataStorage;
   let proofService: ProofService;
-  const rhsUrl = process.env.RHS_URL as string;
-  const ipfsNodeURL = process.env.IPFS_URL as string;
 
   let userDID: DID;
   let issuerDID: DID;
   let circuitStorage: ICircuitStorage;
-
-  const mockStateStorage: IStateStorage = {
-    getLatestStateById: async () => {
-      throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
-    },
-    publishState: async () => {
-      return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
-    },
-    getGISTProof: (): Promise<StateProof> => {
-      return Promise.resolve({
-        root: 0n,
-        existence: false,
-        siblings: [],
-        index: 0n,
-        value: 0n,
-        auxExistence: false,
-        auxIndex: 0n,
-        auxValue: 0n
-      });
-    },
-    getGISTRootInfo: (): Promise<RootInfo> => {
-      return Promise.resolve({
-        root: 0n,
-        replacedByRoot: 0n,
-        createdAtTimestamp: 0n,
-        replacedAtTimestamp: 0n,
-        createdAtBlock: 0n,
-        replacedAtBlock: 0n
-      });
-    }
-  };
+  let kycAgeCredReq: CredentialRequest;
 
   beforeEach(async () => {
     circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, './testdata')
     });
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
-    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
-    const kms = new KMS();
-    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
-    dataStorage = {
-      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
-      identity: new IdentityStorage(
-        new InMemoryDataSource<Identity>(),
-        new InMemoryDataSource<Profile>()
-      ),
-      mt: new InMemoryMerkleTreeStorage(40),
-      states: mockStateStorage
-    };
+    const kms = registerBJJIntoInMemoryKMS();
+    dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
 
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
@@ -94,28 +55,29 @@ describe('sig proofs', () => {
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      ipfsNodeURL
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE, {
+      ipfsNodeURL: IPFS_URL
     });
 
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
-
-    const opts = (seed: Uint8Array) => ({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
-
-    const { did: user } = await idWallet.createIdentity(opts(seedPhrase));
-    const { did: issuer } = await idWallet.createIdentity(opts(seedPhraseIssuer));
+    const { did: user } = await createIdentity(idWallet, { seed: SEED_USER });
+    const { did: issuer } = await createIdentity(idWallet, { seed: SEED_ISSUER });
     userDID = user;
     issuerDID = issuer;
+    kycAgeCredReq = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
   });
 
   it('sigv2-non-merklized', async () => {
@@ -135,7 +97,7 @@ describe('sig proofs', () => {
       expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
+        id: RHS_URL
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
@@ -184,22 +146,7 @@ describe('sig proofs', () => {
   });
 
   const sigMerklizedTest = async (circuitId: CircuitId) => {
-    const claimReq: CredentialRequest = {
-      credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
-      type: 'KYCAgeCredential',
-      credentialSubject: {
-        id: userDID.string(),
-        birthday: 19960424,
-        documentType: 99
-      },
-      expiration: 2793526400,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, kycAgeCredReq);
 
     await credWallet.save(issuerCred);
 
@@ -209,7 +156,7 @@ describe('sig proofs', () => {
       optional: false,
       query: {
         allowedIssuers: ['*'],
-        type: claimReq.type,
+        type: kycAgeCredReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
         credentialSubject: {
@@ -236,22 +183,7 @@ describe('sig proofs', () => {
   };
 
   it('sigv2-merklized-query-array', async () => {
-    const claimReq: CredentialRequest = {
-      credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
-      type: 'KYCAgeCredential',
-      credentialSubject: {
-        id: userDID.string(),
-        birthday: 19960424,
-        documentType: 99
-      },
-      expiration: 2793526400,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, kycAgeCredReq);
 
     await credWallet.save(issuerCred);
 
@@ -261,7 +193,7 @@ describe('sig proofs', () => {
       optional: false,
       query: {
         allowedIssuers: ['*'],
-        type: claimReq.type,
+        type: kycAgeCredReq.type,
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
         credentialSubject: {
@@ -325,11 +257,11 @@ describe('sig proofs', () => {
       expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
+        id: RHS_URL
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsNodeURL
+      ipfsNodeURL: IPFS_URL
     });
 
     await credWallet.save(issuerCred);
@@ -399,11 +331,11 @@ describe('sig proofs', () => {
       expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
+        id: RHS_URL
       }
     };
     const issuedCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsNodeURL
+      ipfsNodeURL: IPFS_URL
     });
 
     await credWallet.save(issuedCred);
@@ -437,12 +369,12 @@ describe('sig proofs', () => {
       expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
+        id: RHS_URL
       }
     };
 
     const deliveryCred = await idWallet.issueCredential(issuerDID, deliveryClaimReq, {
-      ipfsNodeURL
+      ipfsNodeURL: IPFS_URL
     });
 
     await credWallet.save(deliveryCred);
@@ -515,6 +447,111 @@ describe('sig proofs', () => {
           postalProviderInformation: { insured: false }
         }
       }
+    });
+  });
+
+  describe('edge cases', () => {
+    const zeroDocTypeCredReqFn = (id: string): CredentialRequest => ({
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id,
+        birthday: 19960424,
+        documentType: 0
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    });
+
+    const proofReqFn = (
+      circuitId: CircuitId,
+      did: string,
+      credentialSubject: JSONObject
+    ): ZeroKnowledgeProofRequest => ({
+      id: 1,
+      circuitId,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: zeroDocTypeCredReqFn(did).type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+        credentialSubject
+      }
+    });
+
+    it('should $nin operator work properly for 0 value in credential for V3 compared to V2 circuit', async () => {
+      const issuerCred = await idWallet.issueCredential(
+        issuerDID,
+        zeroDocTypeCredReqFn(userDID.string())
+      );
+      const subj = {
+        documentType: {
+          $nin: [1, 2, 3]
+        }
+      };
+      await expect(
+        proofService.generateProof(
+          proofReqFn(CircuitId.AtomicQuerySigV2, userDID.string(), subj),
+          userDID,
+          {
+            credential: issuerCred,
+            skipRevocation: true
+          }
+        )
+      ).to.be.rejected;
+
+      const zkProof = await proofService.generateProof(
+        proofReqFn(CircuitId.AtomicQueryV3, userDID.string(), subj),
+        userDID,
+        {
+          credential: issuerCred,
+          skipRevocation: true
+        }
+      );
+
+      const valid = await proofService.verifyProof(zkProof, CircuitId.AtomicQueryV3);
+
+      expect(valid).to.be.true;
+    });
+
+    it('should $in operator work properly for 0 value in credential for V3 compared to V2 circuit', async () => {
+      const credential = await idWallet.issueCredential(
+        issuerDID,
+        zeroDocTypeCredReqFn(userDID.string())
+      );
+      const subj = {
+        documentType: {
+          $in: [1, 2, 3]
+        }
+      };
+
+      // will fail because of $nin operator
+      await expect(
+        proofService.generateProof(
+          proofReqFn(CircuitId.AtomicQuerySigV2, userDID.string(), subj),
+          userDID,
+          {
+            credential,
+            skipRevocation: true
+          }
+        )
+      ).not.to.be.rejected;
+
+      await expect(
+        proofService.generateProof(
+          proofReqFn(CircuitId.AtomicQueryV3, userDID.string(), subj),
+          userDID,
+          {
+            credential,
+            skipRevocation: true
+          }
+        )
+      ).to.be.rejected;
     });
   });
 });

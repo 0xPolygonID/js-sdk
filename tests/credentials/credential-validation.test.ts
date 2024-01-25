@@ -1,30 +1,24 @@
-import { InMemoryDataSource } from './../../src/storage/memory/data-source';
-import { CredentialStorage } from './../../src/storage/shared/credential-storage';
-import { AgentResolver } from '../../src/credentials';
+import chaiAsPromised from 'chai-as-promised';
+import chai from 'chai';
+import fetchMock from '@gr2m/fetch-mock';
+import { getInMemoryDataStorage } from '../helpers';
 import {
+  RHSResolver,
+  CredentialStatusResolverRegistry,
+  IStateStorage,
+  AgentResolver,
+  RootInfo,
+  StateInfo,
+  StateProof,
   W3CCredential,
   CredentialStatusType,
   ProofType,
   VerifiableConstants,
   W3CProofVerificationOptions
-} from '../../src/verifiable';
-import chaiAsPromised from 'chai-as-promised';
-import chai from 'chai';
-import { CredentialStatusResolverRegistry } from '../../src/credentials';
-import { RHSResolver } from '../../src/credentials';
-import {
-  Identity,
-  IdentityStorage,
-  InMemoryMerkleTreeStorage,
-  IStateStorage,
-  Profile,
-  RootInfo,
-  StateInfo,
-  StateProof
 } from '../../src';
+
 chai.use(chaiAsPromised);
 const { expect } = chai;
-import fetchMock from '@gr2m/fetch-mock';
 
 const mockStateStorage: IStateStorage = {
   getLatestStateById: async (id: bigint) => {
@@ -71,17 +65,13 @@ const mockStateStorage: IStateStorage = {
   }
 };
 
-const dataStorage = {
-  credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
-  identity: new IdentityStorage(
-    new InMemoryDataSource<Identity>(),
-    new InMemoryDataSource<Profile>()
-  ),
-  mt: new InMemoryMerkleTreeStorage(40),
-  states: mockStateStorage
-};
+const dataStorage = getInMemoryDataStorage(mockStateStorage);
 
 describe('Verify credential proof', () => {
+  afterEach(() => {
+    fetchMock.restore();
+  });
+
   it('Validate BJJ signature proof', async () => {
     const input = `{
         "id": "urn:uuid:3a8d1822-a00e-11ee-8f57-a27b3ddbdc29",

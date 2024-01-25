@@ -7,7 +7,6 @@ import {
   bigIntArrayToStringArray,
   existenceToInt,
   getNodeAuxValue,
-  prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
 import { byteDecoder, byteEncoder } from '../utils';
@@ -144,9 +143,7 @@ export class AtomicQueryMTPV2OnChainInputs extends BaseConfig {
     s.claimPathMtpAuxHv = nodAuxJSONLD.value.bigInt().toString();
 
     s.claimPathKey = valueProof.path.toString();
-    const values =
-      this.query.values && prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
-    s.value = values && bigIntArrayToStringArray(values);
+    s.value = bigIntArrayToStringArray(this.query.values);
 
     const nodeAuxAuth = this.authClaimNonRevMtp && getNodeAuxValue(this.authClaimNonRevMtp);
     s.authClaimNonRevMtpAuxHi = nodeAuxAuth.key.string();

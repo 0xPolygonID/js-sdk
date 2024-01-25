@@ -5,7 +5,6 @@ import {
   bigIntArrayToStringArray,
   existenceToInt,
   getNodeAuxValue,
-  prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
 import { Query } from './models';
@@ -54,8 +53,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
         slotIndex.push(0);
         operator.push(0);
 
-        const valuesArr = prepareCircuitArrayValues([], this.getValueArrSize());
-        value.push(bigIntArrayToStringArray(valuesArr));
+        value.push(bigIntArrayToStringArray(this.query[i].values));
         continue;
       }
       enabled.push(1);
@@ -76,8 +74,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
       slotIndex.push(this.query[i].slotIndex);
       operator.push(this.query[i].operator);
 
-      const valuesArr = prepareCircuitArrayValues(this.query[i].values, this.getValueArrSize());
-      value.push(bigIntArrayToStringArray(valuesArr));
+      value.push(bigIntArrayToStringArray(this.query[i].values));
     }
 
     const s: Partial<LinkedMultiQueryCircuitInputs> = {

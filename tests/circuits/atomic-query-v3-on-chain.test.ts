@@ -3,10 +3,13 @@ import { Hash } from '@iden3/js-merkletree';
 import {
   AtomicQueryV3OnChainInputs,
   AtomicQueryV3OnChainPubSignals,
+  CircuitId,
   Operators,
-  prepareCircuitArrayValues,
-  Query
-} from '../../src/circuits';
+  Query,
+  byteDecoder,
+  byteEncoder,
+  ProofType
+} from '../../src';
 import {
   IdentityTest,
   userPK,
@@ -21,9 +24,8 @@ import {
 import expectedMtpJson from './data/atomic-query-v3-mtp-on-chain.json';
 import expectedSigJson from './data/atomic-query-v3-sig-on-chain.json';
 import { expect } from 'chai';
-import { byteDecoder, byteEncoder, ProofType } from '../../src';
 
-describe('atomic-query-v3', () => {
+describe('atomic-query-v3-onchain', () => {
   it('TestAttrQueryV3OnChain_SigPart_PrepareInputs', async () => {
     const user = await IdentityTest.newIdentity(userPK);
     const issuer = await IdentityTest.newIdentity(issuerPK);
@@ -255,11 +257,18 @@ describe('atomic-query-v3', () => {
       )
     );
 
-    const expValue = prepareCircuitArrayValues([BigInt(10)], 64);
     const schema = '180410020913331409885634153623124536270';
     const slotIndex = 2;
     const operator = 1;
-    const queryHash = calculateQueryHash(expValue, schema, slotIndex, operator, 0, 1);
+    const queryHash = calculateQueryHash({
+      values: [10n],
+      slotIndex,
+      operator,
+      schema,
+      circuitId: CircuitId.AtomicQueryV3OnChain,
+      claimPathKey: 0,
+      claimPathNotExists: 1
+    });
 
     const exp = new AtomicQueryV3OnChainPubSignals();
     exp.requestID = BigInt(23);
@@ -322,11 +331,18 @@ describe('atomic-query-v3', () => {
       )
     );
 
-    const expValue = prepareCircuitArrayValues([BigInt(10)], 64);
     const schema = '180410020913331409885634153623124536270';
     const slotIndex = 2;
     const operator = 1;
-    const queryHash = calculateQueryHash(expValue, schema, slotIndex, operator, 0, 1);
+    const queryHash = calculateQueryHash({
+      values: [10n],
+      slotIndex,
+      operator,
+      schema,
+      circuitId: CircuitId.AtomicQueryV3OnChain,
+      claimPathKey: 0,
+      claimPathNotExists: 1
+    });
 
     const exp = new AtomicQueryV3OnChainPubSignals();
     exp.requestID = BigInt(23);

@@ -4,8 +4,7 @@ import {
   bigIntArrayToStringArray,
   prepareSiblingsStr,
   existenceToInt,
-  getNodeAuxValue,
-  prepareCircuitArrayValues
+  getNodeAuxValue
 } from './common';
 import { CircuitError, GISTProof, Query, TreeState, ValueProof } from './models';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
@@ -308,8 +307,7 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
 
     s.claimPathKey = valueProof.path.toString();
 
-    const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
-    s.value = bigIntArrayToStringArray(values);
+    s.value = bigIntArrayToStringArray(this.query.values);
 
     s.linkNonce = this.linkNonce.toString();
     s.verifierID = this.verifierID?.bigInt().toString() ?? '0';

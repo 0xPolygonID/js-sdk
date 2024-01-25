@@ -131,19 +131,18 @@ export const prepareSiblingsStr = (proof: Proof, levels: number): string[] => {
  * @returns bigint[]
  */
 export const prepareCircuitArrayValues = (arr: bigint[], size: number): bigint[] => {
-  if (!arr) {
-    arr = [];
-  }
+  const result = [...arr];
+
   if (arr.length > size) {
     throw new Error(`array size ${arr.length} is bigger max expected size ${size}`);
   }
 
   // Add the empty values
   for (let i = arr.length; i < size; i++) {
-    arr.push(BigInt(0));
+    result.push(0n);
   }
 
-  return arr;
+  return result;
 };
 
 /**

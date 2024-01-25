@@ -7,7 +7,6 @@ import {
   bigIntArrayToStringArray,
   existenceToInt,
   getNodeAuxValue,
-  prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
 import { byteDecoder, byteEncoder } from '../utils';
@@ -112,10 +111,7 @@ export class AtomicQueryMTPV2Inputs extends BaseConfig {
       s.isRevocationChecked = 1;
     }
 
-    const values =
-      this.query.values && prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
-
-    s.value = bigIntArrayToStringArray(values);
+    s.value = bigIntArrayToStringArray(this.query.values);
 
     return byteEncoder.encode(JSON.stringify(s));
   }
