@@ -324,7 +324,7 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  credentialAtomicQuerySigV2PrepareInputs = async ({
+  private credentialAtomicQuerySigV2PrepareInputs = async ({
     preparedCredential,
     identifier,
     proofReq,
@@ -353,7 +353,7 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  credentialAtomicQuerySigV2OnChainPrepareInputs = async ({
+  private credentialAtomicQuerySigV2OnChainPrepareInputs = async ({
     preparedCredential,
     identifier,
     proofReq,
@@ -420,7 +420,7 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  credentialAtomicQueryV3PrepareInputs = async ({
+  private credentialAtomicQueryV3PrepareInputs = async ({
     preparedCredential,
     identifier,
     proofReq,
@@ -476,7 +476,7 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  credentialAtomicQueryV3OnChainPrepareInputs = async ({
+  private credentialAtomicQueryV3OnChainPrepareInputs = async ({
     preparedCredential,
     identifier,
     proofReq,
@@ -568,7 +568,7 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  linkedNullifierPrepareInputs = async ({
+  private linkedNullifierPrepareInputs = async ({
     preparedCredential,
     identifier,
     proofReq,
@@ -592,7 +592,7 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  linkedMultiQuery10PrepareInputs = async ({
+  private linkedMultiQuery10PrepareInputs = async ({
     preparedCredential,
     proofReq,
     params,

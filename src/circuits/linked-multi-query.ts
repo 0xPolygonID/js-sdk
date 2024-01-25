@@ -5,6 +5,7 @@ import {
   bigIntArrayToStringArray,
   existenceToInt,
   getNodeAuxValue,
+  prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
 import { Query } from './models';
@@ -53,7 +54,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
         slotIndex.push(0);
         operator.push(0);
 
-        value.push(bigIntArrayToStringArray(this.query[i].values));
+        value.push(bigIntArrayToStringArray(prepareCircuitArrayValues([], this.getValueArrSize())));
         continue;
       }
       enabled.push(1);
