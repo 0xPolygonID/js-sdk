@@ -598,7 +598,6 @@ export class InputGenerator {
 
     circuitInputs.claim = circuitClaimData.claim;
     circuitInputs.query = circuitQueries;
-    circuitInputs.queryLength = circuitValidator[proofReq.circuitId as CircuitId].maxQueriesCount;
 
     return circuitInputs.inputsMarshal();
   };

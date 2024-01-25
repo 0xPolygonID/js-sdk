@@ -1,4 +1,5 @@
 import { Claim } from '@iden3/js-iden3-core';
+import { Proof } from '@iden3/js-merkletree';
 import { byteDecoder, byteEncoder } from '../utils';
 import {
   BaseConfig,
@@ -8,7 +9,7 @@ import {
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
-import { Query } from './models';
+import { Query, ValueProof } from './models';
 
 /**
  * LinkedMultiQuery circuit representation
@@ -21,7 +22,6 @@ export class LinkedMultiQueryInputs extends BaseConfig {
   linkNonce!: bigint;
   claim!: Claim;
   query!: Query[];
-  queryLength!: number;
 
   // InputsMarshal returns Circom private inputs for linkedMultiQueryInputs.circom
   inputsMarshal(): Uint8Array {
@@ -37,7 +37,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
     const operator: number[] = [];
     const value: string[][] = [];
 
-    for (let i = 0; i < this.queryLength; i++) {
+    for (let i = 0; i < 10; i++) {
       if (!this.query[i]) {
         enabled.push(0);
         claimPathNotExists.push(0);
@@ -59,7 +59,13 @@ export class LinkedMultiQueryInputs extends BaseConfig {
         continue;
       }
       enabled.push(1);
-      const valueProof = this.query[i].valueProof;
+      let valueProof = this.query[i].valueProof;
+      if (!valueProof) {
+        valueProof = new ValueProof();
+        valueProof.path = 0n;
+        valueProof.value = 0n;
+        valueProof.mtp = new Proof();
+      }
       claimPathNotExists.push(existenceToInt(valueProof.mtp.existence));
       claimPathMtp.push(prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaim()));
 
@@ -121,7 +127,7 @@ interface LinkedMultiQueryCircuitInputs {
   value: string[][];
 }
 
-// LinkedMultiQueryPubSignals linkedMultiQuery.circom public signals
+// LinkedMultiQueryPubSignals linkedMultiQuery10.circom public signals
 /**
  * public signals
  *
@@ -136,14 +142,15 @@ export class LinkedMultiQueryPubSignals {
   enabled!: boolean[];
 
   /**
-   * PubSignalsUnmarshal unmarshal linkedMultiQuery.circom public inputs to LinkedMultiQueryPubSignals
+   * PubSignalsUnmarshal unmarshal linkedMultiQuery10.circom public inputs to LinkedMultiQueryPubSignals
    *
    * @beta
    * @param {Uint8Array} data
    * @returns LinkedMultiQueryPubSignals
    */
-  pubSignalsUnmarshal(data: Uint8Array, queryLength: number): LinkedMultiQueryPubSignals {
-    const len = queryLength * 3 + 2;
+  pubSignalsUnmarshal(data: Uint8Array): LinkedMultiQueryPubSignals {
+    const len = 32;
+    const queryLength = 10;
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
     if (sVals.length !== len) {
