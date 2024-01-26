@@ -558,9 +558,8 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  linkedMultiQuery10PrepareInputs = async ({
+  private linkedMultiQuery10PrepareInputs = async ({
     preparedCredential,
-    proofReq,
     params,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {

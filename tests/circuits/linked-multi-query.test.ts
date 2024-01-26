@@ -90,7 +90,7 @@ describe('linked-multi-query', () => {
     const circuitQueryHash: bigint[] = [];
     const enabled: boolean[] = [];
     for (let i = 1; i <= 10; i++) {
-      let indx = i - 1;
+      const indx = i - 1;
       operatorOutput[indx] = BigInt(i);
       circuitQueryHash[indx] = BigInt(i * 100);
       enabled[indx] = true;
