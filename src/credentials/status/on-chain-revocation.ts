@@ -4,7 +4,7 @@ import { CredentialStatusResolver, CredentialStatusResolveOptions } from './reso
 import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revocation';
 import { DID, Id, getChainId } from '@iden3/js-iden3-core';
 import { VerifiableConstants } from '../../verifiable/constants';
-import { isGenesisState } from './utils';
+import { isGenesisState } from '../../utils';
 import { EthStateStorage } from '../../storage/blockchain/state';
 import { IStateStorage, IOnchainRevocationStore } from '../../storage';
 import { Hash } from '@iden3/js-merkletree';

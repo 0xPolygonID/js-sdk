@@ -14,7 +14,7 @@ import { proving, ProvingMethodAlg } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { ICredentialWallet } from '../../credentials';
 import { CircuitId } from '../../circuits';
-import { randomUUID } from 'crypto';
+import * as uuid from 'uuid';
 
 /**
  * RefreshHandlerOptions contains options for RefreshHandler
@@ -97,10 +97,10 @@ export class RefreshHandler implements IRefreshHandler {
     };
 
     const refreshMsg: CredentialRefreshMessage = {
-      id: randomUUID(),
+      id: uuid.v4(),
       typ: MediaType.ZKPMessage,
       type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_REFRESH_MESSAGE_TYPE,
-      thid: randomUUID(),
+      thid: uuid.v4(),
       body: {
         id: otherIdentifier,
         reason: opts?.reason ?? 'credential is expired'
