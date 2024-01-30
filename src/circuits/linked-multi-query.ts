@@ -19,6 +19,7 @@ import { Query, ValueProof } from './models';
  * @class LinkedMultiQueryInputs
  */
 export class LinkedMultiQueryInputs extends BaseConfig {
+  static queryCount = 10;
   linkNonce!: bigint;
   claim!: Claim;
   query!: Query[];
@@ -37,7 +38,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
     const operator: number[] = [];
     const value: string[][] = [];
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
       if (!this.query[i]) {
         enabled.push(0);
         claimPathNotExists.push(0);
@@ -150,7 +151,7 @@ export class LinkedMultiQueryPubSignals {
    */
   pubSignalsUnmarshal(data: Uint8Array): LinkedMultiQueryPubSignals {
     const len = 32;
-    const queryLength = 10;
+    const queryLength = LinkedMultiQueryInputs.queryCount;
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
     if (sVals.length !== len) {

@@ -70,7 +70,7 @@ const circuitValidator: {
   [CircuitId.AtomicQueryV3OnChain]: { maxQueriesCount: 1 },
   [CircuitId.AuthV2]: { maxQueriesCount: 0 },
   [CircuitId.StateTransition]: { maxQueriesCount: 0 },
-  [CircuitId.LinkedMultiQuery10]: { maxQueriesCount: 10 }
+  [CircuitId.LinkedMultiQuery10]: { maxQueriesCount: LinkedMultiQueryInputs.queryCount }
 };
 
 export class InputGenerator {
