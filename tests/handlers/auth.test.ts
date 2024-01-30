@@ -42,7 +42,7 @@ import {
   RHS_URL,
   WALLET_KEY
 } from '../helpers';
-import { schemaLoader, stateResolvers, testOpts } from './mock';
+import { mockStateResolver, testOpts } from './mock';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -72,7 +72,8 @@ describe('auth', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE, {
-      ipfsNodeURL: IPFS_URL
+      ipfsNodeURL: IPFS_URL,
+      stateResolver: mockStateResolver
     });
 
     packageMgr = await getPackageMgr(
@@ -81,10 +82,7 @@ describe('auth', () => {
       proofService.verifyState.bind(proofService)
     );
 
-    authHandler = new AuthHandler(packageMgr, proofService, {
-      documentLoader: schemaLoader,
-      stateResolvers: stateResolvers
-    });
+    authHandler = new AuthHandler(packageMgr, proofService);
 
     const { did: didUser, credential: userAuthCredential } = await createIdentity(idWallet, {
       seed: SEED_USER
@@ -417,7 +415,7 @@ describe('auth', () => {
     await authHandler.handleAuthorizationResponse(response, request);
   });
 
-  it('auth response: TestVerifyWithAtomicMTPProof', async () => {
+  it.only('auth response: TestVerifyWithAtomicMTPProof', async () => {
     const sender = 'did:polygonid:polygon:mumbai:1125GJqgw6YEsKFwj63GY87MMxPL9kwDKxPUiwMLNZ';
     const callback = 'https://test.com/callback';
     const userId = 'did:polygonid:polygon:mumbai:2qPDLXDaU1xa1ERTb1XKBfPCB3o2wA46q49neiXWwY';
@@ -579,7 +577,7 @@ describe('auth', () => {
     await authHandler.handleAuthorizationResponse(response, request, testOpts);
   });
 
-  it('auth response: TestVerifyWithAtomicSigProofNonMerklized', async () => {
+  it.only('auth response: TestVerifyWithAtomicSigProofNonMerklized', async () => {
     const sender = 'did:polygonid:polygon:mumbai:1125GJqgw6YEsKFwj63GY87MMxPL9kwDKxPUiwMLNZ';
     const callback = 'https://test.com/callback';
     const userId = 'did:polygonid:polygon:mumbai:2qKzaaAewvBVv11iZjJZzjTxBQioZLEujPYTUJp7gQ';
@@ -741,7 +739,7 @@ describe('auth', () => {
     await authHandler.handleAuthorizationResponse(response, request, testOpts);
   });
 
-  it('auth response: TestVerifyV3MessageWithSigProof_NonMerklized', async () => {
+  it.only('auth response: TestVerifyV3MessageWithSigProof_NonMerklized', async () => {
     const request: AuthorizationRequestMessage = {
       id: '28b15cd4-3aa1-4ddc-88a3-c05a0f788065',
       typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,

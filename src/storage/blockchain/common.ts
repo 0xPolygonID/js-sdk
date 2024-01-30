@@ -1,17 +1,7 @@
-import { DID, Id } from '@iden3/js-iden3-core';
+import { Id } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import { ResolvedState } from '../entities';
-import { IStateResolver, StateResolvers } from '../interfaces';
-
-export function getResolverByID(resolvers: StateResolvers, id: Id): IStateResolver {
-  const userDID = DID.parseFromId(id);
-  return getResolverByDID(resolvers, userDID);
-}
-
-export function getResolverByDID(resolvers: StateResolvers, did: DID): IStateResolver {
-  const { blockchain, networkId } = DID.decodePartsFromId(DID.idFromDID(did));
-  return resolvers[`${blockchain}:${networkId}`];
-}
+import { IStateResolver } from '../interfaces';
 
 export const userStateError = new Error(`user state is not valid`);
 

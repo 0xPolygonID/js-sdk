@@ -1,6 +1,6 @@
 import { DocumentLoader } from '@iden3/js-jsonld-merklization';
 import { DIDResolutionResult } from 'did-resolver';
-import { cacheLoader, IStateResolver, ResolvedState, StateResolvers, VerifyOpts } from '../../src';
+import { cacheLoader, IStateResolver, ResolvedState, VerifyOpts } from '../../src';
 
 class MockResolver implements IStateResolver {
   resolve(): Promise<ResolvedState> {
@@ -50,10 +50,10 @@ export const exampleDidDoc = {
   assertionMethod: ['did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020']
 };
 
-const mockStateResolver: MockResolver = new MockResolver();
-export const stateResolvers: StateResolvers = {
-  'polygon:mumbai': mockStateResolver
-};
+export const mockStateResolver: MockResolver = new MockResolver();
+// export const stateResolvers: StateResolvers = {
+//   'polygon:mumbai': mockStateResolver
+// };
 export const resolveDIDDocument = {
   resolve: () => Promise.resolve({ didDocument: exampleDidDoc } as DIDResolutionResult)
 };

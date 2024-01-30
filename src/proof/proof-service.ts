@@ -3,6 +3,7 @@ import { BytesHelper, DID, MerklizedRootPosition } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import {
   AuthV2Inputs,
+  BaseConfig,
   CircuitId,
   Operators,
   Query,
@@ -33,9 +34,14 @@ import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { JSONObject, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
-import { ICircuitStorage, IStateStorage } from '../storage';
+import { EthStateResolver, ICircuitStorage, IStateResolver, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import { InputGenerator, ProofGenerationOptions, ProofInputsParams } from './inputs-generator';
+import {
+  PubSignalsVerifier2,
+  VerifyContext,
+  VerifyOpts
+} from '../circuits/verifiers/pub-signals-verifier';
 
 export interface QueryWithFieldName {
   query: Query;
@@ -48,7 +54,15 @@ export interface QueryWithFieldName {
  */
 export type ProofServiceOptions = Options & {
   prover?: IZKProver;
+  stateResolver?: IStateResolver;
 };
+
+export interface ProofVerifyOpts {
+  query: ProofQuery;
+  sender: string;
+  opts?: VerifyOpts;
+  params?: JSONObject;
+}
 
 export interface IProofService {
   /**
@@ -59,6 +73,19 @@ export interface IProofService {
    * @returns `{Promise<boolean>}`
    */
   verifyProof(zkp: ZKProof, circuitName: CircuitId): Promise<boolean>;
+
+  /**
+   * Verification of zkp proof and pub signals for given circuit id
+   *
+   * @param {ZeroKnowledgeProofResponse} response  - zero knowledge proof response
+   * @param {CircuitId} circuitName - circuit name
+   * @returns `{Promise<boolean>}`
+   */
+  verify(
+    proofResp: ZeroKnowledgeProofResponse,
+    circuitName: CircuitId,
+    opts: ProofVerifyOpts
+  ): Promise<BaseConfig>;
 
   /**
    * Generate proof from given identity and credential for protocol proof request
@@ -133,6 +160,7 @@ export class ProofService implements IProofService {
   private readonly _prover: IZKProver;
   private readonly _ldOptions: Options;
   private readonly _inputsGenerator: InputGenerator;
+  private readonly _pubSignalsVerifier: PubSignalsVerifier2;
   /**
    * Creates an instance of ProofService.
    * @param {IIdentityWallet} _identityWallet - identity wallet
@@ -150,11 +178,38 @@ export class ProofService implements IProofService {
     this._prover = opts?.prover ?? new NativeProver(_circuitStorage);
     this._ldOptions = { ...opts, documentLoader: opts?.documentLoader ?? cacheLoader(opts) };
     this._inputsGenerator = new InputGenerator(_identityWallet, _credentialWallet, _stateStorage);
+    this._pubSignalsVerifier = new PubSignalsVerifier2(
+      opts?.documentLoader ?? cacheLoader(opts),
+      opts?.stateResolver ?? new EthStateResolver(_stateStorage)
+    );
   }
 
   /** {@inheritdoc IProofService.verifyProof} */
   async verifyProof(zkp: ZKProof, circuitId: CircuitId): Promise<boolean> {
     return this._prover.verify(zkp, circuitId);
+  }
+
+  /** {@inheritdoc IProofService.verify} */
+  async verify(
+    proofResp: ZeroKnowledgeProofResponse,
+    circuitId: CircuitId,
+    opts: ProofVerifyOpts
+  ): Promise<BaseConfig> {
+    const proofValid = await this._prover.verify(proofResp, circuitId);
+    if (!proofValid) {
+      throw Error(`Proof with circuit id ${circuitId} and request id ${proofResp.id} is not valid`);
+    }
+
+    const verifyContext: VerifyContext = {
+      pubSignals: proofResp.pub_signals,
+      query: opts.query,
+      verifiablePresentation: proofResp.vp as JSON,
+      sender: opts.sender,
+      challange: BigInt(proofResp.id),
+      opts: opts.opts,
+      params: opts.params
+    };
+    return this._pubSignalsVerifier.verify(circuitId, verifyContext);
   }
 
   /** {@inheritdoc IProofService.generateProof} */

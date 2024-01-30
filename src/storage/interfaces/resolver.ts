@@ -6,6 +6,6 @@ export interface IStateResolver {
   rootResolve(state: bigint): Promise<ResolvedState>;
 }
 
-export type StateResolvers = {
-  [key: string]: IStateResolver;
-};
+// export type StateResolvers = {
+//   [key: string]: IStateResolver;
+// };
