@@ -5,7 +5,7 @@ import { IStateStorage } from '../../storage';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { CredentialStatus, RevocationStatus, State } from '../../verifiable';
 import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
-import { isGenesisState } from './utils';
+import { isGenesisState } from '../../utils';
 import { IssuerResolver } from './sparse-merkle-tree';
 
 /**
