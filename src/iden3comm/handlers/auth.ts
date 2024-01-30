@@ -166,7 +166,7 @@ export class AuthHandler implements IAuthHandler {
    */
   constructor(
     private readonly _packerMgr: IPackageManager,
-    private readonly _proofService: IProofService // private readonly _opts?: { //   documentLoader?: DocumentLoader; //   stateResolvers?: StateResolvers; // }
+    private readonly _proofService: IProofService
   ) {}
 
   /**

@@ -79,6 +79,7 @@ export interface IProofService {
    *
    * @param {ZeroKnowledgeProofResponse} response  - zero knowledge proof response
    * @param {CircuitId} circuitName - circuit name
+   * @param {ProofVerifyOpts} opts - proof verification options
    * @returns `{Promise<boolean>}`
    */
   verify(

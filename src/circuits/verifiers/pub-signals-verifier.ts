@@ -93,11 +93,6 @@ export class PubSignalsVerifier2 {
     };
     await checkQueryRequest(query, outs, this._documentLoader, verifiablePresentation, opts);
     // verify state
-    // const resolver = getResolverByID(this._stateResolvers, mtpv2PubSignals.issuerID);
-    // if (!resolver) {
-    //   throw new Error(`resolver not found for issuerID ${mtpv2PubSignals.issuerID.string()}`);
-    // }
-
     await checkUserState(
       this._stateResolver,
       mtpv2PubSignals.issuerID,
@@ -163,11 +158,6 @@ export class PubSignalsVerifier2 {
     };
     await checkQueryRequest(query, outs, this._documentLoader, verifiablePresentation, opts);
     // verify state
-    // const resolver = getResolverByID(this._stateResolvers, sigV2PubSignals.issuerID);
-    // if (!resolver) {
-    //   throw new Error(`resolver not found for issuerID ${sigV2PubSignals.issuerID.string()}`);
-    // }
-
     await checkUserState(
       this._stateResolver,
       sigV2PubSignals.issuerID,
@@ -285,11 +275,6 @@ export class PubSignalsVerifier2 {
     }
 
     // verify state
-    // const resolver = getResolverByID(this._stateResolvers, v3PubSignals.issuerID);
-    // if (!resolver) {
-    //   throw new Error(`resolver not found for issuerID ${v3PubSignals.issuerID.string()}`);
-    // }
-
     await checkUserState(this._stateResolver, v3PubSignals.issuerID, v3PubSignals.issuerState);
 
     if (v3PubSignals.isRevocationChecked !== 0) {
@@ -333,10 +318,6 @@ export class PubSignalsVerifier2 {
 
     // no query verification
     // verify state
-    // const resolver = getResolverByID(this._stateResolvers, this.userId);
-    // if (!resolver) {
-    //   throw new Error(`resolver not found for id ${this.userId.string()}`);
-    // }
     const gist = await checkGlobalState(this._stateResolver, authV2PubSignals.GISTRoot);
 
     let acceptedStateTransitionDelay = defaultAuthVerifyOpts;
