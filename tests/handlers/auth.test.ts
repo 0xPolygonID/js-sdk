@@ -415,7 +415,7 @@ describe('auth', () => {
     await authHandler.handleAuthorizationResponse(response, request);
   });
 
-  it.only('auth response: TestVerifyWithAtomicMTPProof', async () => {
+  it('auth response: TestVerifyWithAtomicMTPProof', async () => {
     const sender = 'did:polygonid:polygon:mumbai:1125GJqgw6YEsKFwj63GY87MMxPL9kwDKxPUiwMLNZ';
     const callback = 'https://test.com/callback';
     const userId = 'did:polygonid:polygon:mumbai:2qPDLXDaU1xa1ERTb1XKBfPCB3o2wA46q49neiXWwY';
@@ -577,7 +577,7 @@ describe('auth', () => {
     await authHandler.handleAuthorizationResponse(response, request, testOpts);
   });
 
-  it.only('auth response: TestVerifyWithAtomicSigProofNonMerklized', async () => {
+  it('auth response: TestVerifyWithAtomicSigProofNonMerklized', async () => {
     const sender = 'did:polygonid:polygon:mumbai:1125GJqgw6YEsKFwj63GY87MMxPL9kwDKxPUiwMLNZ';
     const callback = 'https://test.com/callback';
     const userId = 'did:polygonid:polygon:mumbai:2qKzaaAewvBVv11iZjJZzjTxBQioZLEujPYTUJp7gQ';
@@ -739,7 +739,7 @@ describe('auth', () => {
     await authHandler.handleAuthorizationResponse(response, request, testOpts);
   });
 
-  it.only('auth response: TestVerifyV3MessageWithSigProof_NonMerklized', async () => {
+  it('auth response: TestVerifyV3MessageWithSigProof_NonMerklized', async () => {
     const request: AuthorizationRequestMessage = {
       id: '28b15cd4-3aa1-4ddc-88a3-c05a0f788065',
       typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,

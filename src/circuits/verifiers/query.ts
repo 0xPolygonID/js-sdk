@@ -11,7 +11,16 @@ import { createSchemaHash, Parser } from '../../schema-processor';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { ProofQuery, VerifiableConstants } from '../../verifiable';
 import { isValidOperation, Operators, QueryOperators } from '../comparer';
-import { VerifyOpts } from './pub-signals-verifier';
+
+/**
+ * Options to verify state
+ */
+export type VerifyOpts = {
+  // acceptedStateTransitionDelay is the period of time in milliseconds that a revoked state remains valid.
+  acceptedStateTransitionDelay?: number;
+  // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
+  acceptedProofGenerationDelay?: number;
+};
 
 const defaultProofGenerationDelayOpts = 24 * 60 * 60 * 1000; // 24 hours
 

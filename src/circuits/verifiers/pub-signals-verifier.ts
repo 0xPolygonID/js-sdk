@@ -18,17 +18,7 @@ import { AtomicQueryV3PubSignals } from '../atomic-query-v3';
 import { AuthV2PubSignals } from '../auth-v2';
 import { BaseConfig } from '../common';
 import { LinkedMultiQueryPubSignals } from '../linked-multi-query';
-import { checkQueryRequest, ClaimOutputs } from './query';
-
-/**
- * Options to verify state
- */
-export type VerifyOpts = {
-  // acceptedStateTransitionDelay is the period of time in milliseconds that a revoked state remains valid.
-  acceptedStateTransitionDelay?: number;
-  // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
-  acceptedProofGenerationDelay?: number;
-};
+import { checkQueryRequest, ClaimOutputs, VerifyOpts } from './query';
 
 export type VerifyContext = {
   pubSignals: string[];

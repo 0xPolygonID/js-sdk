@@ -9,7 +9,8 @@ import {
   Query,
   StateTransitionInputs,
   TreeState,
-  ValueProof
+  ValueProof,
+  VerifyOpts
 } from '../circuits';
 import { ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
@@ -39,8 +40,7 @@ import { byteDecoder, byteEncoder } from '../utils/encoding';
 import { InputGenerator, ProofGenerationOptions, ProofInputsParams } from './inputs-generator';
 import {
   PubSignalsVerifier2,
-  VerifyContext,
-  VerifyOpts
+  VerifyContext
 } from '../circuits/verifiers/pub-signals-verifier';
 
 export interface QueryWithFieldName {
