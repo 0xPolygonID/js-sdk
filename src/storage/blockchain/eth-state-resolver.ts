@@ -4,7 +4,7 @@ import { ResolvedState, RootInfo, StateInfo } from '../entities';
 import { IStateStorage } from '../interfaces';
 import { IStateResolver } from '../interfaces/resolver';
 
-const zeroInt = BigInt(0);
+const zeroInt = 0n;
 export class EthStateResolver implements IStateResolver {
   constructor(private readonly _stateStorage: IStateStorage) {}
 

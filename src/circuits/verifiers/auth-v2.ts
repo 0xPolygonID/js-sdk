@@ -1,10 +1,9 @@
 import { getDateFromUnixTimestamp } from '@iden3/js-iden3-core';
-import { StateResolvers } from '../../storage';
+import { checkGlobalState, getResolverByID, StateResolvers } from '../../storage';
 import { byteEncoder } from '../../utils';
 import { AuthV2PubSignals } from '../auth-v2';
 import { BaseConfig } from '../common';
 import { IDOwnershipPubSignals } from '../ownership-verifier';
-import { checkGlobalState, getResolverByID } from './common';
 import { PubSignalsVerifier, VerifyOpts } from './pub-signal-verifier';
 
 const defaultAuthVerifyOpts = 5 * 60 * 1000; // 5 minutes

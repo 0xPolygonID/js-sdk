@@ -203,7 +203,7 @@ async function parseRequest(
   const [operator, values] = await parsePredicate(predicate, datatype);
   const zeros: Array<bigint> = Array.from({
     length: outputs.valueArraySize - values.length
-  }).fill(BigInt(0)) as Array<bigint>;
+  }).fill(0n) as Array<bigint>;
   const fullArray: Array<bigint> = values.concat(zeros);
 
   const cq: CircuitQuery = {
@@ -225,11 +225,11 @@ async function validateEmptyCredentialSubject(cq: CircuitQuery, outputs: ClaimOu
     throw new Error('empty credentialSubject request available only for equal operation');
   }
   for (let index = 1; index < outputs.value.length; index++) {
-    if (outputs.value[index] !== BigInt(0)) {
+    if (outputs.value[index] !== 0n) {
       throw new Error(`empty credentialSubject request not available for array of values`);
     }
   }
-  const path = await Path.newPath([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
+  const path = Path.newPath([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   const subjectEntry = await path.mtEntry();
   if (outputs.claimPathKey !== subjectEntry) {
     throw new Error(`proof doesn't contain credentialSubject in claimPathKey`);

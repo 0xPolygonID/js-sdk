@@ -1,17 +1,17 @@
 import { DID, getDateFromUnixTimestamp } from '@iden3/js-iden3-core';
 import { DocumentLoader } from '@iden3/js-jsonld-merklization';
 import { JSONObject } from '../../iden3comm';
-import { StateResolvers } from '../../storage';
+import { checkIssuerNonRevState, checkUserState, getResolverByID, StateResolvers } from '../../storage';
 import { byteEncoder } from '../../utils';
 import { ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryV3PubSignals } from '../atomic-query-v3';
 import { BaseConfig } from '../common';
 import { IDOwnershipPubSignals } from '../ownership-verifier';
-import { checkIssuerNonRevState, checkUserState, getResolverByID } from './common';
+import {
+  defaultProofVerifyOpts,
+} from './common';
 import { PubSignalsVerifier, VerifyOpts } from './pub-signal-verifier';
 import { checkQueryRequest, ClaimOutputs } from './query';
-
-const defaultProofVerifyOpts = 1 * 60 * 60 * 1000; // 1 hour
 
 /**
  * Atomic query v3 pub signals verifier
