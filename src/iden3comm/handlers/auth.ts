@@ -350,6 +350,10 @@ export class AuthHandler implements IAuthHandler {
     this.verifyAuthRequest(request);
     const requestScope = request.body.scope;
 
+    if (!response.from) {
+      throw new Error(`proof response doesn't contain from field`);
+    }
+
     const groupIdToLinkIdMap = new Map<number, { linkID: number; requestId: number }[]>();
     // group requests by query group id
     for (const proofRequest of requestScope) {
@@ -372,7 +376,7 @@ export class AuthHandler implements IAuthHandler {
 
       const pubSignals = await this._proofService.verify(proofResp, circuitId as CircuitId, {
         query: proofRequest.query as unknown as ProofQuery,
-        sender: response.from ?? '',
+        sender: response.from,
         params,
         opts
       });
