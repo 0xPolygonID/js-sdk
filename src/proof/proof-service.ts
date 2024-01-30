@@ -39,7 +39,7 @@ import { EthStateResolver, ICircuitStorage, IStateResolver, IStateStorage } from
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import { InputGenerator, ProofGenerationOptions, ProofInputsParams } from './inputs-generator';
 import {
-  PubSignalsVerifier2,
+  PubSignalsVerifier,
   VerifyContext
 } from '../circuits/verifiers/pub-signals-verifier';
 
@@ -80,7 +80,7 @@ export interface IProofService {
    * @param {ZeroKnowledgeProofResponse} response  - zero knowledge proof response
    * @param {CircuitId} circuitName - circuit name
    * @param {ProofVerifyOpts} opts - proof verification options
-   * @returns `{Promise<boolean>}`
+   * @returns `{Promise<BaseConfig>}`
    */
   verify(
     proofResp: ZeroKnowledgeProofResponse,
@@ -161,7 +161,7 @@ export class ProofService implements IProofService {
   private readonly _prover: IZKProver;
   private readonly _ldOptions: Options;
   private readonly _inputsGenerator: InputGenerator;
-  private readonly _pubSignalsVerifier: PubSignalsVerifier2;
+  private readonly _pubSignalsVerifier: PubSignalsVerifier;
   /**
    * Creates an instance of ProofService.
    * @param {IIdentityWallet} _identityWallet - identity wallet
@@ -179,7 +179,7 @@ export class ProofService implements IProofService {
     this._prover = opts?.prover ?? new NativeProver(_circuitStorage);
     this._ldOptions = { ...opts, documentLoader: opts?.documentLoader ?? cacheLoader(opts) };
     this._inputsGenerator = new InputGenerator(_identityWallet, _credentialWallet, _stateStorage);
-    this._pubSignalsVerifier = new PubSignalsVerifier2(
+    this._pubSignalsVerifier = new PubSignalsVerifier(
       opts?.documentLoader ?? cacheLoader(opts),
       opts?.stateResolver ?? new EthStateResolver(_stateStorage)
     );

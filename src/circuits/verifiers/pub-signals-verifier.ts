@@ -33,7 +33,7 @@ export type VerifyContext = {
 const defaultProofVerifyOpts = 1 * 60 * 60 * 1000; // 1 hour
 const defaultAuthVerifyOpts = 5 * 60 * 1000; // 5 minutes
 
-export class PubSignalsVerifier2 {
+export class PubSignalsVerifier {
   userId!: Id;
   challenge!: bigint;
 
