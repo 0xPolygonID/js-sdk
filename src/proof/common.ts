@@ -215,6 +215,18 @@ export const parseQueryMetadata = async (
   return query;
 };
 
+export const parseQueriesMetadata = async (
+  credentialType: string,
+  ldContextJSON: string,
+  credentialSubject: JSONObject,
+  options: Options
+): Promise<QueryMetadata[]> => {
+  const queriesMetadata = parseCredentialSubject(credentialSubject);
+  return Promise.all(
+    queriesMetadata.map((m) => parseQueryMetadata(m, ldContextJSON, credentialType, options))
+  );
+};
+
 export const transformQueryValueToBigInts = async (
   value: unknown,
   ldType: string

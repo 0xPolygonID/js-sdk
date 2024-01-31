@@ -5,8 +5,8 @@ import { IStateStorage } from '../../storage';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { CredentialStatus, RevocationStatus, State } from '../../verifiable';
 import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
-import { IssuerResolver } from './sparse-merkle-tree';
 import { isGenesisState } from '../../utils';
+import { IssuerResolver } from './sparse-merkle-tree';
 
 /**
  * ProofNode is a partial Reverse Hash Service result
