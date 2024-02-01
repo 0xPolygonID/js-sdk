@@ -1,27 +1,6 @@
 import { DocumentLoader } from '@iden3/js-jsonld-merklization';
 import { DIDResolutionResult } from 'did-resolver';
-import { cacheLoader, IStateResolver, ResolvedState, VerifyOpts } from '../../src';
-
-class MockResolver implements IStateResolver {
-  resolve(): Promise<ResolvedState> {
-    const t: ResolvedState = {
-      latest: true,
-      state: null,
-      genesis: false,
-      transitionTimestamp: 0
-    };
-    return Promise.resolve(t);
-  }
-  rootResolve(): Promise<ResolvedState> {
-    const t: ResolvedState = {
-      latest: true,
-      state: null,
-      genesis: false,
-      transitionTimestamp: 0
-    };
-    return Promise.resolve(t);
-  }
-}
+import { cacheLoader, VerifyOpts } from '../../src';
 
 export const testOpts: VerifyOpts = {
   acceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minutes
@@ -49,8 +28,6 @@ export const exampleDidDoc = {
   authentication: ['did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020'],
   assertionMethod: ['did:pkh:poly:0x7141E4d20F7644DC8c0AdCA8a520EC83C6cABD65#Recovery2020']
 };
-
-export const mockStateResolver: MockResolver = new MockResolver();
 
 export const resolveDIDDocument = {
   resolve: () => Promise.resolve({ didDocument: exampleDidDoc } as DIDResolutionResult)

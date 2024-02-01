@@ -42,7 +42,7 @@ import {
   RHS_URL,
   WALLET_KEY
 } from '../helpers';
-import { mockStateResolver, testOpts } from './mock';
+import { testOpts } from './mock';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -72,8 +72,7 @@ describe('auth', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE, {
-      ipfsNodeURL: IPFS_URL,
-      stateResolver: mockStateResolver
+      ipfsNodeURL: IPFS_URL
     });
 
     packageMgr = await getPackageMgr(

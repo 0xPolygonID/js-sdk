@@ -35,7 +35,7 @@ import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { JSONObject, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
-import { EthStateResolver, ICircuitStorage, IStateResolver, IStateStorage } from '../storage';
+import { ICircuitStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import { InputGenerator, ProofGenerationOptions, ProofInputsParams } from './inputs-generator';
 import { PubSignalsVerifier, VerifyContext } from '../circuits/verifiers/pub-signals-verifier';
@@ -51,7 +51,6 @@ export interface QueryWithFieldName {
  */
 export type ProofServiceOptions = Options & {
   prover?: IZKProver;
-  stateResolver?: IStateResolver;
 };
 
 export interface ProofVerifyOpts {
@@ -178,7 +177,7 @@ export class ProofService implements IProofService {
     this._inputsGenerator = new InputGenerator(_identityWallet, _credentialWallet, _stateStorage);
     this._pubSignalsVerifier = new PubSignalsVerifier(
       opts?.documentLoader ?? cacheLoader(opts),
-      opts?.stateResolver ?? new EthStateResolver(_stateStorage)
+      _stateStorage
     );
   }
 

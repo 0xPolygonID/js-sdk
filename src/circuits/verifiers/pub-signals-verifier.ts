@@ -1,15 +1,12 @@
 import { poseidon } from '@iden3/js-crypto';
 import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { DocumentLoader, Path } from '@iden3/js-jsonld-merklization';
+import { Hash } from '@iden3/js-merkletree';
+import { isGenesisState } from '../../credentials';
 import { JSONObject } from '../../iden3comm';
 import { parseQueriesMetadata } from '../../proof';
 import { createSchemaHash } from '../../schema-processor';
-import {
-  checkGlobalState,
-  checkIssuerNonRevState,
-  checkUserState,
-  IStateResolver
-} from '../../storage';
+import { IStateStorage, RootInfo, StateInfo } from '../../storage';
 import { byteEncoder } from '../../utils';
 import { ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../atomic-query-mtp-v2';
@@ -30,6 +27,8 @@ export type VerifyContext = {
   params?: JSONObject;
 };
 
+export const userStateError = new Error(`user state is not valid`);
+const zeroInt = 0n;
 const defaultProofVerifyOpts = 1 * 60 * 60 * 1000; // 1 hour
 const defaultAuthVerifyOpts = 5 * 60 * 1000; // 5 minutes
 
@@ -39,7 +38,7 @@ export class PubSignalsVerifier {
 
   constructor(
     private readonly _documentLoader: DocumentLoader,
-    private readonly _stateResolver: IStateResolver
+    private readonly _stateStorage: IStateStorage
   ) {}
 
   async verify(circuitId: string, ctx: VerifyContext): Promise<BaseConfig> {
@@ -93,15 +92,10 @@ export class PubSignalsVerifier {
     };
     await checkQueryRequest(query, outs, this._documentLoader, verifiablePresentation, opts);
     // verify state
-    await checkUserState(
-      this._stateResolver,
-      mtpv2PubSignals.issuerID,
-      mtpv2PubSignals.issuerClaimIdenState
-    );
+    await this.checkUserState(mtpv2PubSignals.issuerID, mtpv2PubSignals.issuerClaimIdenState);
 
     if (mtpv2PubSignals.isRevocationChecked !== 0) {
-      const issuerNonRevStateResolved = await checkIssuerNonRevState(
-        this._stateResolver,
+      const issuerNonRevStateResolved = await this.checkIssuerNonRevState(
         mtpv2PubSignals.issuerID,
         mtpv2PubSignals.issuerClaimNonRevState
       );
@@ -158,15 +152,10 @@ export class PubSignalsVerifier {
     };
     await checkQueryRequest(query, outs, this._documentLoader, verifiablePresentation, opts);
     // verify state
-    await checkUserState(
-      this._stateResolver,
-      sigV2PubSignals.issuerID,
-      sigV2PubSignals.issuerAuthState
-    );
+    await this.checkUserState(sigV2PubSignals.issuerID, sigV2PubSignals.issuerAuthState);
 
     if (sigV2PubSignals.isRevocationChecked !== 0) {
-      const issuerNonRevStateResolved = await checkIssuerNonRevState(
-        this._stateResolver,
+      const issuerNonRevStateResolved = await this.checkIssuerNonRevState(
         sigV2PubSignals.issuerID,
         sigV2PubSignals.issuerClaimNonRevState
       );
@@ -275,11 +264,10 @@ export class PubSignalsVerifier {
     }
 
     // verify state
-    await checkUserState(this._stateResolver, v3PubSignals.issuerID, v3PubSignals.issuerState);
+    await this.checkUserState(v3PubSignals.issuerID, v3PubSignals.issuerState);
 
     if (v3PubSignals.isRevocationChecked !== 0) {
-      const issuerNonRevStateResolved = await checkIssuerNonRevState(
-        this._stateResolver,
+      const issuerNonRevStateResolved = await this.checkIssuerNonRevState(
         v3PubSignals.issuerID,
         v3PubSignals.issuerClaimNonRevState
       );
@@ -318,7 +306,7 @@ export class PubSignalsVerifier {
 
     // no query verification
     // verify state
-    const gist = await checkGlobalState(this._stateResolver, authV2PubSignals.GISTRoot);
+    const gist = await this.checkGlobalState(authV2PubSignals.GISTRoot);
 
     let acceptedStateTransitionDelay = defaultAuthVerifyOpts;
     if (opts?.acceptedStateTransitionDelay) {
@@ -385,16 +373,11 @@ export class PubSignalsVerifier {
       ]);
     });
 
-    multiQueryPubSignals.circuitQueryHash.sort(this.bigIntCompare);
-
-    const zeros: Array<bigint> = Array.from({
-      length: multiQueryPubSignals.circuitQueryHash.length - queryHashes.length
-    }).fill(BigInt(0)) as Array<bigint>;
-    queryHashes = queryHashes.concat(zeros);
+    const circuitQueryHashes = multiQueryPubSignals.circuitQueryHash
+      .filter((i) => i !== 0n)
+      .sort(this.bigIntCompare);
     queryHashes.sort(this.bigIntCompare);
-    if (
-      !queryHashes.every((queryHash, i) => queryHash === multiQueryPubSignals.circuitQueryHash[i])
-    ) {
+    if (!queryHashes.every((queryHash, i) => queryHash === circuitQueryHashes[i])) {
       throw new Error('query hashes do not match');
     }
 
@@ -419,5 +402,114 @@ export class PubSignalsVerifier {
         `challenge is not used for proof creation, expected ${challenge}, challenge from public signals: ${this.challenge}  `
       );
     }
+  };
+
+  private async resolve(
+    id: Id,
+    state: bigint
+  ): Promise<{
+    latest: boolean;
+    transitionTimestamp: number | string;
+  }> {
+    const idBigInt = id.bigInt();
+    const did = DID.parseFromId(id);
+    // check if id is genesis
+    const isGenesis = isGenesisState(did, state);
+    let contractState: StateInfo;
+    try {
+      contractState = await this._stateStorage.getStateInfoByIdAndState(idBigInt, state);
+    } catch (e) {
+      if ((e as { errorArgs: string[] }).errorArgs[0] === 'State does not exist') {
+        if (isGenesis) {
+          return {
+            latest: true,
+            transitionTimestamp: 0
+          };
+        }
+        throw new Error('State is not genesis and not registered in the smart contract');
+      }
+      throw e;
+    }
+
+    if (!contractState.id || contractState.id.toString() !== idBigInt.toString()) {
+      throw new Error(`state was recorded for another identity`);
+    }
+
+    if (!contractState.state || contractState.state.toString() !== state.toString()) {
+      if (
+        !contractState.replacedAtTimestamp ||
+        contractState.replacedAtTimestamp.toString() === zeroInt.toString()
+      ) {
+        throw new Error(`no information about state transition`);
+      }
+      return {
+        latest: false,
+        transitionTimestamp: contractState.replacedAtTimestamp.toString()
+      };
+    }
+
+    return { latest: true, transitionTimestamp: 0 };
+  }
+
+  private async rootResolve(state: bigint): Promise<{
+    latest: boolean;
+    transitionTimestamp: number | string;
+  }> {
+    let globalStateInfo: RootInfo;
+    try {
+      globalStateInfo = await this._stateStorage.getGISTRootInfo(state);
+    } catch (e: unknown) {
+      if ((e as { errorArgs: string[] }).errorArgs[0] === 'Root does not exist') {
+        throw new Error('GIST root does not exist in the smart contract');
+      }
+      throw e;
+    }
+
+    if (globalStateInfo.root.toString() !== state.toString()) {
+      throw new Error(`gist info contains invalid state`);
+    }
+
+    if (globalStateInfo.replacedByRoot.toString() !== zeroInt.toString()) {
+      if (globalStateInfo.replacedAtTimestamp.toString() === zeroInt.toString()) {
+        throw new Error(`state was replaced, but replaced time unknown`);
+      }
+      return {
+        latest: false,
+        transitionTimestamp: globalStateInfo.replacedAtTimestamp.toString()
+      };
+    }
+
+    return {
+      latest: true,
+      transitionTimestamp: 0
+    };
+  }
+
+  private checkUserState = async (userId: Id, userState: Hash): Promise<void> => {
+    const { latest } = await this.resolve(userId, userState.bigInt());
+    if (!latest) {
+      throw userStateError;
+    }
+  };
+
+  private checkGlobalState = async (
+    state: Hash
+  ): Promise<{
+    latest: boolean;
+    transitionTimestamp: number | string;
+  }> => {
+    const gistStateResolved = await this.rootResolve(state.bigInt());
+    return gistStateResolved;
+  };
+
+  private checkIssuerNonRevState = async (
+    issuerId: Id,
+    issuerClaimNonRevState: Hash
+  ): Promise<{
+    latest: boolean;
+    transitionTimestamp: number | string;
+  }> => {
+    const issuerNonRevStateResolved = await this.resolve(issuerId, issuerClaimNonRevState.bigInt());
+    return issuerNonRevStateResolved;
   };
 }
