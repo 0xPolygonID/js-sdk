@@ -51,9 +51,7 @@ export const exampleDidDoc = {
 };
 
 export const mockStateResolver: MockResolver = new MockResolver();
-// export const stateResolvers: StateResolvers = {
-//   'polygon:mumbai': mockStateResolver
-// };
+
 export const resolveDIDDocument = {
   resolve: () => Promise.resolve({ didDocument: exampleDidDoc } as DIDResolutionResult)
 };

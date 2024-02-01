@@ -38,10 +38,7 @@ import { cacheLoader } from '../schema-processor';
 import { EthStateResolver, ICircuitStorage, IStateResolver, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import { InputGenerator, ProofGenerationOptions, ProofInputsParams } from './inputs-generator';
-import {
-  PubSignalsVerifier,
-  VerifyContext
-} from '../circuits/verifiers/pub-signals-verifier';
+import { PubSignalsVerifier, VerifyContext } from '../circuits/verifiers/pub-signals-verifier';
 
 export interface QueryWithFieldName {
   query: Query;

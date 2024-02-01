@@ -5,7 +5,3 @@ export interface IStateResolver {
   resolve(id: Id, state: bigint): Promise<ResolvedState>;
   rootResolve(state: bigint): Promise<ResolvedState>;
 }
-
-// export type StateResolvers = {
-//   [key: string]: IStateResolver;
-// };

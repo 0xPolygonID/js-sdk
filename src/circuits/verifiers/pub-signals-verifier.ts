@@ -373,7 +373,7 @@ export class PubSignalsVerifier {
       ldOpts
     );
 
-    const queryHashes = queriesMetadata.map((queryMeta) => {
+    let queryHashes = queriesMetadata.map((queryMeta) => {
       const valueHash = poseidon.spongeHashX(queryMeta.values, 6);
       return poseidon.hash([
         schemaHash.bigInt(),
@@ -385,6 +385,13 @@ export class PubSignalsVerifier {
       ]);
     });
 
+    multiQueryPubSignals.circuitQueryHash.sort(this.bigIntCompare);
+
+    const zeros: Array<bigint> = Array.from({
+      length: multiQueryPubSignals.circuitQueryHash.length - queryHashes.length
+    }).fill(BigInt(0)) as Array<bigint>;
+    queryHashes = queryHashes.concat(zeros);
+    queryHashes.sort(this.bigIntCompare);
     if (
       !queryHashes.every((queryHash, i) => queryHash === multiQueryPubSignals.circuitQueryHash[i])
     ) {
@@ -392,6 +399,12 @@ export class PubSignalsVerifier {
     }
 
     return multiQueryPubSignals as unknown as BaseConfig;
+  };
+
+  bigIntCompare = (a: bigint, b: bigint): number => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
   };
 
   private verifyIdOwnership = (sender: string, challenge: bigint): void => {
