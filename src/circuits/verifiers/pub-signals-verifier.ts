@@ -361,7 +361,7 @@ export class PubSignalsVerifier {
       ldOpts
     );
 
-    let queryHashes = queriesMetadata.map((queryMeta) => {
+    const queryHashes = queriesMetadata.map((queryMeta) => {
       const valueHash = poseidon.spongeHashX(queryMeta.values, 6);
       return poseidon.hash([
         schemaHash.bigInt(),

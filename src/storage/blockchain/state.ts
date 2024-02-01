@@ -202,8 +202,8 @@ export class EthStateStorage implements IStateStorage {
     id = typeof id === 'bigint' ? Id.fromBigInt(id as bigint) : id;
     if (!Array.isArray(this.ethConfig)) {
       return {
-        stateContract: this.stateContract!,
-        provider: this.provider!
+        stateContract: this.stateContract,
+        provider: this.provider
       };
     }
 
