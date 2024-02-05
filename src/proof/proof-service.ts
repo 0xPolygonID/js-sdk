@@ -74,13 +74,11 @@ export interface IProofService {
    * Verification of zkp proof and pub signals for given circuit id
    *
    * @param {ZeroKnowledgeProofResponse} response  - zero knowledge proof response
-   * @param {CircuitId} circuitName - circuit name
    * @param {ProofVerifyOpts} opts - proof verification options
    * @returns `{Promise<BaseConfig>}`
    */
-  verify(
+  verifyZKPResponse(
     proofResp: ZeroKnowledgeProofResponse,
-    circuitName: CircuitId,
     opts: ProofVerifyOpts
   ): Promise<BaseConfig>;
 
@@ -187,14 +185,13 @@ export class ProofService implements IProofService {
   }
 
   /** {@inheritdoc IProofService.verify} */
-  async verify(
+  async verifyZKPResponse(
     proofResp: ZeroKnowledgeProofResponse,
-    circuitId: CircuitId,
     opts: ProofVerifyOpts
   ): Promise<BaseConfig> {
-    const proofValid = await this._prover.verify(proofResp, circuitId);
+    const proofValid = await this._prover.verify(proofResp, proofResp.circuitId);
     if (!proofValid) {
-      throw Error(`Proof with circuit id ${circuitId} and request id ${proofResp.id} is not valid`);
+      throw Error(`Proof with circuit id ${proofResp.circuitId} and request id ${proofResp.id} is not valid`);
     }
 
     const verifyContext: VerifyContext = {
@@ -206,7 +203,7 @@ export class ProofService implements IProofService {
       opts: opts.opts,
       params: opts.params
     };
-    return this._pubSignalsVerifier.verify(circuitId, verifyContext);
+    return this._pubSignalsVerifier.verify(proofResp.circuitId, verifyContext);
   }
 
   /** {@inheritdoc IProofService.generateProof} */

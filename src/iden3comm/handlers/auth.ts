@@ -374,7 +374,7 @@ export class AuthHandler implements IAuthHandler {
       const params = proofRequest.params ?? {};
       params.verifierDid = DID.parse(request.from);
 
-      const pubSignals = await this._proofService.verify(proofResp, circuitId as CircuitId, {
+      const pubSignals = await this._proofService.verifyZKPResponse(proofResp, {
         query: proofRequest.query as unknown as ProofQuery,
         sender: response.from,
         params,
