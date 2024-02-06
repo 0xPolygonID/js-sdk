@@ -42,7 +42,7 @@ import {
   RHS_URL,
   WALLET_KEY
 } from '../helpers';
-import { schemaLoader, stateResolvers, testOpts } from './mock';
+import { testOpts } from './mock';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -81,10 +81,7 @@ describe('auth', () => {
       proofService.verifyState.bind(proofService)
     );
 
-    authHandler = new AuthHandler(packageMgr, proofService, {
-      documentLoader: schemaLoader,
-      stateResolvers: stateResolvers
-    });
+    authHandler = new AuthHandler(packageMgr, proofService);
 
     const { did: didUser, credential: userAuthCredential } = await createIdentity(idWallet, {
       seed: SEED_USER
@@ -1060,5 +1057,85 @@ describe('auth', () => {
     };
 
     await authHandler.handleAuthorizationResponse(message, request, testOpts);
+  });
+
+  it('auth response: linked multi query', async () => {
+    const authRequest: AuthorizationRequestMessage = {
+      id: 'f5bcdfc9-3819-4052-ad97-c059119e563c',
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: 'https://iden3-communication.io/authorization/1.0/request',
+      thid: 'f5bcdfc9-3819-4052-ad97-c059119e563c',
+      body: {
+        callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+        reason: 'reason',
+        message: 'mesage',
+        did_doc: {},
+        scope: [
+          {
+            id: 1,
+            circuitId: CircuitId.AtomicQueryV3,
+            optional: false,
+            query: {
+              proofType: 'BJJSignature2021',
+              allowedIssuers: ['*'],
+              type: 'KYCAgeCredential',
+              context:
+                'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+              credentialSubject: {
+                documentType: {
+                  $eq: 99
+                }
+              }
+            }
+          },
+          {
+            id: 2,
+            circuitId: CircuitId.LinkedMultiQuery10,
+            optional: false,
+            query: {
+              groupId: 1,
+              proofType: 'Iden3SparseMerkleTreeProof',
+              allowedIssuers: ['*'],
+              type: 'KYCEmployee',
+              context:
+                'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+              credentialSubject: {
+                documentType: {
+                  $eq: 1
+                },
+                position: {
+                  $eq: 'boss',
+                  $ne: 'employee'
+                }
+              }
+            }
+          },
+          {
+            id: 3,
+            circuitId: CircuitId.AtomicQueryV3,
+            optional: false,
+            query: {
+              groupId: 1,
+              proofType: 'BJJSignature2021',
+              allowedIssuers: ['*'],
+              type: 'KYCEmployee',
+              context:
+                'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+              credentialSubject: {
+                hireDate: {
+                  $eq: '2023-12-11'
+                }
+              }
+            }
+          }
+        ]
+      },
+      from: 'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
+    };
+
+    const response = JSON.parse(
+      `{"id":"512da1ee-d087-4a00-a0f3-6c6ffb24f797","typ":"application/iden3-zkp-json","type":"https://iden3-communication.io/authorization/1.0/response","thid":"f5bcdfc9-3819-4052-ad97-c059119e563c","body":{"message":"mesage","scope":[{"id":1,"circuitId":"credentialAtomicQueryV3-beta.0","proof":{"pi_a":["3413003908260381590155343886166144913765220755863556928243958130017993854348","1514706529485579619315780431900519275281252392218584964716545264277856321548","1"],"pi_b":[["14756236323443354919109330423103018848220075832730488354563689695081616368339","13514289658743419546254733540973465326916272784625131451931393511815730563111"],["8394389136612556148330745228711758845811461815843676407870618785331001972739","5164624974988430027996237042962426707274777386856564699059154706345925267219"],["1","0"]],"pi_c":["742754880782585505762512123894161320840357931096706829693174714967970788491","17298175667335324988387347971214653319406657050296111865762433032033469551546","1"],"protocol":"groth16","curve":"bn128"},"pub_signals":["0","21568225469889458305914841490175280093555015071329787375641431262509208065","4487386332479489158003597844990487984925471813907462483907054425759564175341","0","0","0","1","1","25191641634853875207018381290409317860151551336133597267061715643603096065","1","4487386332479489158003597844990487984925471813907462483907054425759564175341","1705600148","198285726510688200335207273836123338699","1","0","3","1","99","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"]},{"id":2,"circuitId":"linkedMultiQuery10-beta.0","proof":{"pi_a":["1536699497273353410685099902628389018227294264175237503887027738802152909403","11158223605675865825778588361957793310890051905844981383099714056652882561134","1"],"pi_b":[["10185499651535185302931022850913559295904582046979344224800514253551700913455","21313604683982670043523178887479284772739910135504158718396732019288183231360"],["13516150242971206391373351233128761798701196372421559543376728092892674915897","20913283651976932483425474427158453059543112071135752762149338274337515295820"],["1","0"]],"pi_c":["16598647072217323344316367029437701980605548411192084596344549070535507262194","3151368472706404066781182842735397442614182278736408711129126310448589857462","1"],"protocol":"groth16","curve":"bn128"},"pub_signals":["6120433703771821665299122863810662358470593393100642669321296433491411060868","1","0","0","0","0","0","0","0","0","0","0","10341574448386485338126212694789224676261798140132046496204730442746707743350","1446076799502047809353314163118306381321986959244703838151188123376062220872","3642773940601972408672993481405628161827511622701580142242691127021119810596","0","0","0","0","0","0","0","1","1","1","0","0","0","0","0","0","0"]},{"id":3,"circuitId":"credentialAtomicQueryV3-beta.0","proof":{"pi_a":["21182854856035378656540724836095571341685988456625980641716904460264263887774","13749548225388134365941510162072675414447202295630057301583758517660449726928","1"],"pi_b":[["15168620574529946286992940990178284733621861463009894965272025064754637536079","13685090535879696419799522382315976862048472565898831906429076612618948522341"],["1070532534220875662105351282793930314063105126624514746047976166918441336307","19708510036534588069865649366072958069166092749604286743930049678307699097577"],["1","0"]],"pi_c":["11788726901783356582606964449373505973295513815348851973362636471165459723159","18737551267845512813640683705671138360350804195783177354139779849175228196273","1"],"protocol":"groth16","curve":"bn128"},"pub_signals":["1","21568225469889458305914841490175280093555015071329787375641431262509208065","4487386332479489158003597844990487984925471813907462483907054425759564175341","6120433703771821665299122863810662358470593393100642669321296433491411060868","0","0","1","3","25191641634853875207018381290409317860151551336133597267061715643603096065","1","4487386332479489158003597844990487984925471813907462483907054425759564175341","1705600171","219578617064540016234161640375755865412","0","1296351758269061173317105041968067077451914386086222931516199194959869463882","0","1","1702252800000000000","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"]}]},"from":"did:iden3:polygon:mumbai:wuw5tydZ7AAd3efwEqPprnqjiNHR24jqruSPKmV1V","to":"did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth"}`
+    ) as AuthorizationResponseMessage;
+    await authHandler.handleAuthorizationResponse(response, authRequest, testOpts);
   });
 });

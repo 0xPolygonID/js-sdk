@@ -45,16 +45,3 @@ export interface RootInfo {
   createdAtBlock: bigint;
   replacedAtBlock: bigint;
 }
-
-/**
- * resolved state
- *
- * @public
- * @interface   ResolvedState
- */
-export interface ResolvedState {
-  latest: boolean;
-  genesis: boolean;
-  state: unknown;
-  transitionTimestamp: number | string;
-}

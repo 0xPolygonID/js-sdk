@@ -18,9 +18,7 @@ import * as uuid from 'uuid';
 import { ProofQuery, RevocationStatus, W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
 import { getRandomBytes } from '@iden3/js-crypto';
-import { CircuitId, Circuits } from '../../circuits';
-import { DocumentLoader } from '@iden3/js-jsonld-merklization';
-import { StateResolvers } from '../../storage';
+import { CircuitId } from '../../circuits';
 import { PROTOCOL_CONSTANTS } from '..';
 
 /**
@@ -168,11 +166,7 @@ export class AuthHandler implements IAuthHandler {
    */
   constructor(
     private readonly _packerMgr: IPackageManager,
-    private readonly _proofService: IProofService,
-    private readonly _opts?: {
-      documentLoader?: DocumentLoader;
-      stateResolvers?: StateResolvers;
-    }
+    private readonly _proofService: IProofService
   ) {}
 
   /**
@@ -343,14 +337,6 @@ export class AuthHandler implements IAuthHandler {
     request: AuthorizationRequestMessage;
     response: AuthorizationResponseMessage;
   }> {
-    if (!this._opts?.documentLoader) {
-      throw new Error('please, provide schema loader in options');
-    }
-
-    if (!this._opts?.stateResolvers) {
-      throw new Error('please, provide state resolver in options');
-    }
-
     if ((request.body.message ?? '') !== (response.body.message ?? '')) {
       throw new Error('message for signing from request is not presented in response');
     }
@@ -363,6 +349,10 @@ export class AuthHandler implements IAuthHandler {
 
     this.verifyAuthRequest(request);
     const requestScope = request.body.scope;
+
+    if (!response.from) {
+      throw new Error(`proof response doesn't contain from field`);
+    }
 
     const groupIdToLinkIdMap = new Map<number, { linkID: number; requestId: number }[]>();
     // group requests by query group id
@@ -380,33 +370,16 @@ export class AuthHandler implements IAuthHandler {
           `proof is not given for requested circuit expected: ${proofRequest.circuitId}, given ${circuitId}`
         );
       }
-      const isValid = await this._proofService.verifyProof(proofResp, circuitId as CircuitId);
-      if (!isValid) {
-        throw new Error(
-          `Proof with circuit id ${circuitId} and request id ${proofResp.id} is not valid`
-        );
-      }
-
-      const CircuitVerifier = Circuits.getCircuitPubSignals(circuitId);
-      if (!CircuitVerifier) {
-        throw new Error(`circuit ${circuitId} is not supported by the library`);
-      }
 
       const params = proofRequest.params ?? {};
-
       params.verifierDid = DID.parse(request.from);
 
-      // verify query
-      const verifier = new CircuitVerifier(proofResp.pub_signals);
-
-      const pubSignals = await verifier.verifyQuery(
-        proofRequest.query as unknown as ProofQuery,
-        this._opts.documentLoader,
-        proofResp.vp as JSON,
-        opts,
-        params
-      );
-
+      const pubSignals = await this._proofService.verifyZKPResponse(proofResp, {
+        query: proofRequest.query as unknown as ProofQuery,
+        sender: response.from,
+        params,
+        opts
+      });
       // write linkId to the proof response
       const pubSig = pubSignals as unknown as { linkID?: number };
 
@@ -416,15 +389,6 @@ export class AuthHandler implements IAuthHandler {
           { linkID: pubSig.linkID, requestId: proofResp.id }
         ]);
       }
-      // verify states
-      await verifier.verifyStates(this._opts.stateResolvers, opts);
-
-      if (!response.from) {
-        throw new Error(`proof response doesn't contain from field`);
-      }
-
-      // verify id ownership
-      await verifier.verifyIdOwnership(response.from, BigInt(proofResp.id));
     }
 
     // verify grouping links
