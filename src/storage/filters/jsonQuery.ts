@@ -227,8 +227,8 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
       case 'claimId':
         return acc.concat(new FilterQuery('id', comparatorOptions.$eq, queryValue));
       case 'allowedIssuers': {
-        const [first] = queryValue || [];
-        if (first && first === '*') {
+        const queryValueParam = queryValue || ['*'];
+        if (queryValueParam.includes('*')) {
           return acc;
         }
         return acc.concat(new FilterQuery('issuer', comparatorOptions.$in, queryValue));

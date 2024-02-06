@@ -379,6 +379,18 @@ const credentialFlow = async (storage: IDataStorage) => {
         }
       },
       expected: []
+    },
+    {
+      query: {
+        allowedIssuers: undefined,
+      },
+      expected: [cred1, cred2, cred3, cred4]
+    },
+    {
+      query: {
+        allowedIssuers: ['issuer1', '*'],
+      },
+      expected: [cred1, cred2, cred3, cred4]
     }
   ];
 
