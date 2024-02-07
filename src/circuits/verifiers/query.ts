@@ -7,6 +7,7 @@ import {
   Path
 } from '@iden3/js-jsonld-merklization';
 import { Proof } from '@iden3/js-merkletree';
+import { transformQueryValueToBigInts } from '../../proof';
 import { createSchemaHash, Parser } from '../../schema-processor';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { ProofQuery, VerifiableConstants } from '../../verifiable';
@@ -338,20 +339,9 @@ async function parsePredicate(
       throw new Error(`operator '${key}' is not supported for '${datatype}' datatype`);
     }
 
-    values = await getValuesAsArray(value, datatype);
+    values = await transformQueryValueToBigInts(value, datatype);
     break;
   }
   return [operator, values];
 }
 
-async function getValuesAsArray(v: unknown, datatype: string): Promise<bigint[]> {
-  const values: Array<bigint> = [];
-  if (Array.isArray(v)) {
-    for (let index = 0; index < v.length; index++) {
-      values[index] = await Merklizer.hashValue(datatype, v[index]);
-    }
-    return values;
-  }
-  values[0] = await Merklizer.hashValue(datatype, v);
-  return values;
-}
