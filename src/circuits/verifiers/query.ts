@@ -100,10 +100,7 @@ export async function checkQueryRequest(
   // validate selective disclosure
   if (cq.isSelectiveDisclosure) {
     try {
-      if (!verifiablePresentation) {
-        throw new Error(`no vp present in selective disclosure request`);
-      }
-      await validateDisclosure(verifiablePresentation, cq, outputs, schemaLoader);
+      await validateDisclosure(cq, outputs,verifiablePresentation, schemaLoader);
     } catch (e) {
       throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
     }
@@ -262,9 +259,9 @@ async function validateOperators(cq: CircuitQuery, outputs: ClaimOutputs) {
 }
 
 async function validateDisclosure(
-  verifiablePresentation: JSON,
   cq: CircuitQuery,
   outputs: ClaimOutputs,
+  verifiablePresentation?: JSON,
   ldLoader?: DocumentLoader
 ) {
   if (!verifiablePresentation) {
@@ -322,8 +319,6 @@ async function validateDisclosure(
   if (bi !== outputs.value[0]) {
     throw new Error(`value that was used is not equal to requested in query`);
   }
-
-  return;
 }
 
 async function parsePredicate(

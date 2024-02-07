@@ -18,7 +18,6 @@ import * as uuid from 'uuid';
 import { ProofQuery, RevocationStatus, W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
 import { getRandomBytes } from '@iden3/js-crypto';
-import { CircuitId } from '../../circuits';
 import { PROTOCOL_CONSTANTS } from '..';
 
 /**
@@ -403,7 +402,7 @@ export class AuthHandler implements IAuthHandler {
       }
     }
 
-    return Promise.resolve({ request, response });
+    return { request, response };
   }
 
   private verifyAuthRequest(request: AuthorizationRequestMessage) {

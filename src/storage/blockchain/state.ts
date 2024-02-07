@@ -68,7 +68,7 @@ export class EthStateStorage implements IStateStorage {
   }
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
-  async getLatestStateById(id: Id | bigint): Promise<StateInfo> {
+  async getLatestStateById(id: bigint): Promise<StateInfo> {
     const { stateContract } = this._getStateContractAndProviderForId(id);
     const rawData = await stateContract.getStateInfoById(id);
     const stateInfo: StateInfo = {
@@ -85,7 +85,7 @@ export class EthStateStorage implements IStateStorage {
   }
 
   /** {@inheritdoc IStateStorage.getStateInfoByIdAndState} */
-  async getStateInfoByIdAndState(id: Id | bigint, state: bigint): Promise<StateInfo> {
+  async getStateInfoByIdAndState(id: bigint, state: bigint): Promise<StateInfo> {
     const { stateContract } = this._getStateContractAndProviderForId(id);
     const rawData = await stateContract.getStateInfoByIdAndState(id, state);
     const stateInfo: StateInfo = {
@@ -161,7 +161,7 @@ export class EthStateStorage implements IStateStorage {
   }
 
   /** {@inheritdoc IStateStorage.getGISTProof} */
-  async getGISTProof(id: Id | bigint): Promise<StateProof> {
+  async getGISTProof(id: bigint): Promise<StateProof> {
     const { stateContract } = this._getStateContractAndProviderForId(id);
     const data = await stateContract.getGISTProof(id);
 
@@ -181,7 +181,7 @@ export class EthStateStorage implements IStateStorage {
   }
 
   /** {@inheritdoc IStateStorage.getGISTRootInfo} */
-  async getGISTRootInfo(id: Id | bigint): Promise<RootInfo> {
+  async getGISTRootInfo(id: bigint): Promise<RootInfo> {
     const { stateContract } = this._getStateContractAndProviderForId(id);
     const data = await stateContract.getGISTRootInfo(id);
 
@@ -195,11 +195,11 @@ export class EthStateStorage implements IStateStorage {
     };
   }
 
-  private _getStateContractAndProviderForId(id: Id | bigint): {
+  private _getStateContractAndProviderForId(id: bigint): {
     stateContract: Contract;
     provider: JsonRpcProvider;
   } {
-    id = typeof id === 'bigint' ? Id.fromBigInt(id as bigint) : id;
+    const idTyped = Id.fromBigInt(id as bigint);
     if (!Array.isArray(this.ethConfig)) {
       return {
         stateContract: this.stateContract,
@@ -207,7 +207,7 @@ export class EthStateStorage implements IStateStorage {
       };
     }
 
-    const chainId = getChainId(DID.blockchainFromId(id), DID.networkIdFromId(id));
+    const chainId = getChainId(DID.blockchainFromId(idTyped), DID.networkIdFromId(idTyped));
     const config = this._networkByChainId(chainId);
 
     const provider = new JsonRpcProvider(config.url);
