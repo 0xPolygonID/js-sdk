@@ -22,7 +22,7 @@ export type VerifyContext = {
   query: ProofQuery;
   verifiablePresentation?: JSON;
   sender: string;
-  challange: bigint;
+  challenge: bigint;
   opts?: VerifyOpts;
   params?: JSONObject;
 };
@@ -56,7 +56,7 @@ export class PubSignalsVerifier {
     query,
     verifiablePresentation,
     sender,
-    challange,
+    challenge,
     pubSignals,
     opts
   }: VerifyContext): Promise<BaseConfig> => {
@@ -116,7 +116,7 @@ export class PubSignalsVerifier {
     }
 
     // verify ID ownership
-    this.verifyIdOwnership(sender, challange);
+    this.verifyIdOwnership(sender, challenge);
     return mtpv2PubSignals;
   };
 
@@ -124,7 +124,7 @@ export class PubSignalsVerifier {
     query,
     verifiablePresentation,
     sender,
-    challange,
+    challenge,
     pubSignals,
     opts
   }: VerifyContext): Promise<BaseConfig> => {
@@ -175,7 +175,7 @@ export class PubSignalsVerifier {
       }
     }
     // verify Id ownership
-    this.verifyIdOwnership(sender, challange);
+    this.verifyIdOwnership(sender, challenge);
 
     return sigV2PubSignals;
   };
@@ -184,7 +184,7 @@ export class PubSignalsVerifier {
     query,
     verifiablePresentation,
     sender,
-    challange,
+    challenge,
     pubSignals,
     opts,
     params
@@ -285,14 +285,14 @@ export class PubSignalsVerifier {
       }
     }
 
-    this.verifyIdOwnership(sender, challange);
+    this.verifyIdOwnership(sender, challenge);
 
     return v3PubSignals;
   };
 
   private authV2Verify = async ({
     sender,
-    challange,
+    challenge,
     pubSignals,
     opts
   }: VerifyContext): Promise<BaseConfig> => {
@@ -322,7 +322,7 @@ export class PubSignalsVerifier {
     }
 
     // verify Id ownership
-    this.verifyIdOwnership(sender, challange);
+    this.verifyIdOwnership(sender, challenge);
     return new BaseConfig();
   };
 

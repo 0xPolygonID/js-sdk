@@ -199,7 +199,7 @@ export class ProofService implements IProofService {
       query: opts.query,
       verifiablePresentation: proofResp.vp as JSON,
       sender: opts.sender,
-      challange: BigInt(proofResp.id),
+      challenge: BigInt(proofResp.id),
       opts: opts.opts,
       params: opts.params
     };
