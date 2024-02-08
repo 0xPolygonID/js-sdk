@@ -3,6 +3,7 @@ import { ProofType, CredentialStatusType, RefreshServiceType } from './constants
 import { TreeState } from '../circuits';
 import { Hex, Signature } from '@iden3/js-crypto';
 import { Claim, DID } from '@iden3/js-iden3-core';
+import { JSONObject } from '../iden3comm';
 
 /**
  * Represents the published state of the issuer
@@ -223,6 +224,7 @@ export interface ProofQuery {
   skipClaimRevocationCheck?: boolean;
   proofType?: string;
   groupId?: number;
+  params?: JSONObject;
 }
 
 /**

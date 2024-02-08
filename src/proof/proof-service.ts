@@ -3,7 +3,6 @@ import { BytesHelper, DID, MerklizedRootPosition } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import {
   AuthV2Inputs,
-  BaseConfig,
   CircuitId,
   Operators,
   Query,
@@ -46,6 +45,15 @@ export interface QueryWithFieldName {
   rawValue?: unknown;
   isSelectiveDisclosure?: boolean;
 }
+
+/**
+ *  Metadata that returns on verification
+ * @type VerificationResultMetadata
+ */
+export type VerificationResultMetadata = {
+  linkID?: number;
+};
+
 /**
  *  List of options to customize ProofService
  */
@@ -75,12 +83,12 @@ export interface IProofService {
    *
    * @param {ZeroKnowledgeProofResponse} response  - zero knowledge proof response
    * @param {ProofVerifyOpts} opts - proof verification options
-   * @returns `{Promise<BaseConfig>}`
+   * @returns `{Promise<VerificationResultMetadata>}`
    */
   verifyZKPResponse(
     proofResp: ZeroKnowledgeProofResponse,
     opts: ProofVerifyOpts
-  ): Promise<BaseConfig>;
+  ): Promise<VerificationResultMetadata>;
 
   /**
    * Generate proof from given identity and credential for protocol proof request
@@ -188,10 +196,12 @@ export class ProofService implements IProofService {
   async verifyZKPResponse(
     proofResp: ZeroKnowledgeProofResponse,
     opts: ProofVerifyOpts
-  ): Promise<BaseConfig> {
+  ): Promise<VerificationResultMetadata> {
     const proofValid = await this._prover.verify(proofResp, proofResp.circuitId);
     if (!proofValid) {
-      throw Error(`Proof with circuit id ${proofResp.circuitId} and request id ${proofResp.id} is not valid`);
+      throw Error(
+        `Proof with circuit id ${proofResp.circuitId} and request id ${proofResp.id} is not valid`
+      );
     }
 
     const verifyContext: VerifyContext = {
@@ -203,7 +213,9 @@ export class ProofService implements IProofService {
       opts: opts.opts,
       params: opts.params
     };
-    return this._pubSignalsVerifier.verify(proofResp.circuitId, verifyContext);
+    const pubSignals = await this._pubSignalsVerifier.verify(proofResp.circuitId, verifyContext);
+
+    return { linkID: (pubSignals as unknown as { linkID?: number }).linkID };
   }
 
   /** {@inheritdoc IProofService.generateProof} */

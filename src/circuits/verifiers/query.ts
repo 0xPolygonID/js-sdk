@@ -10,7 +10,7 @@ import { Proof } from '@iden3/js-merkletree';
 import { transformQueryValueToBigInts } from '../../proof';
 import { createSchemaHash, Parser } from '../../schema-processor';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { ProofQuery, VerifiableConstants } from '../../verifiable';
+import { buildFieldPath, ProofQuery, VerifiableConstants } from '../../verifiable';
 import { isValidOperation, Operators, QueryOperators } from '../comparer';
 
 /**
@@ -58,9 +58,9 @@ export async function checkQueryRequest(
 ): Promise<void> {
   // validate issuer
   const userDID = DID.parseFromId(outputs.issuerId);
-  const issuerAllowed = query.allowedIssuers?.some(
-    (issuer) => issuer === '*' || issuer === userDID.string()
-  );
+  const issuerAllowed =
+    !query.allowedIssuers ||
+    query.allowedIssuers?.some((issuer) => issuer === '*' || issuer === userDID.string());
   if (!issuerAllowed) {
     throw new Error('issuer is not in allowed list');
   }
@@ -74,13 +74,13 @@ export async function checkQueryRequest(
     throw new Error(`can't load schema for request query`);
   }
 
-  const schemaId: string = await Path.getTypeIDFromContext(
-    JSON.stringify(schema),
-    query.type ?? '',
-    {
-      documentLoader: schemaLoader
-    }
-  );
+  if (!query.type) {
+    throw new Error(`proof query type is undefined`);
+  }
+
+  const schemaId: string = await Path.getTypeIDFromContext(JSON.stringify(schema), query.type, {
+    documentLoader: schemaLoader
+  });
   const schemaHash = createSchemaHash(byteEncoder.encode(schemaId));
 
   if (schemaHash.bigInt() !== outputs.schemaHash.bigInt()) {
@@ -101,7 +101,7 @@ export async function checkQueryRequest(
   // validate selective disclosure
   if (cq.isSelectiveDisclosure) {
     try {
-      await validateDisclosure(cq, outputs,verifiablePresentation, schemaLoader);
+      await validateDisclosure(cq, outputs, verifiablePresentation, schemaLoader);
     } catch (e) {
       throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
     }
@@ -126,15 +126,9 @@ export async function checkQueryRequest(
       throw new Error(`proof doesn't contains target query key`);
     }
 
-    const path = await Path.getContextPathKey(
-      JSON.stringify(schema),
-      query.type ?? '',
-      cq.fieldName,
-      {
-        documentLoader: schemaLoader
-      }
-    );
-    path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
+    const path = await buildFieldPath(JSON.stringify(schema), query.type, cq.fieldName, {
+      documentLoader: schemaLoader
+    });
     const claimPathKey = await path.mtEntry();
 
     if (outputs.claimPathKey !== claimPathKey) {
@@ -143,7 +137,7 @@ export async function checkQueryRequest(
   } else {
     const slotIndex = await Parser.getFieldSlotIndex(
       cq.fieldName,
-      query.type ?? '',
+      query.type,
       byteEncoder.encode(JSON.stringify(schema))
     );
 
@@ -286,7 +280,7 @@ async function validateDisclosure(
       documentLoader: ldLoader
     });
   } catch (e) {
-    throw new Error(`can't merkelize verifiablePresentation`);
+    throw new Error(`can't merklize verifiablePresentation`);
   }
 
   let merklizedPath: Path;
@@ -344,4 +338,3 @@ async function parsePredicate(
   }
   return [operator, values];
 }
-

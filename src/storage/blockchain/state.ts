@@ -69,7 +69,7 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
   async getLatestStateById(id: bigint): Promise<StateInfo> {
-    const { stateContract } = this._getStateContractAndProviderForId(id);
+    const { stateContract } = this.getStateContractAndProviderForId(id);
     const rawData = await stateContract.getStateInfoById(id);
     const stateInfo: StateInfo = {
       id: BigInt(rawData[0]),
@@ -86,7 +86,7 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getStateInfoByIdAndState} */
   async getStateInfoByIdAndState(id: bigint, state: bigint): Promise<StateInfo> {
-    const { stateContract } = this._getStateContractAndProviderForId(id);
+    const { stateContract } = this.getStateContractAndProviderForId(id);
     const rawData = await stateContract.getStateInfoByIdAndState(id, state);
     const stateInfo: StateInfo = {
       id: BigInt(rawData[0]),
@@ -109,7 +109,7 @@ export class EthStateStorage implements IStateStorage {
     );
     const { userId, oldUserState, newUserState, isOldStateGenesis } = stateTransitionPubSig;
 
-    const { stateContract, provider } = this._getStateContractAndProviderForId(userId.bigInt());
+    const { stateContract, provider } = this.getStateContractAndProviderForId(userId.bigInt());
     const contract = stateContract.connect(signer) as Contract;
 
     const payload = [
@@ -162,7 +162,7 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getGISTProof} */
   async getGISTProof(id: bigint): Promise<StateProof> {
-    const { stateContract } = this._getStateContractAndProviderForId(id);
+    const { stateContract } = this.getStateContractAndProviderForId(id);
     const data = await stateContract.getGISTProof(id);
 
     return {
@@ -182,7 +182,7 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getGISTRootInfo} */
   async getGISTRootInfo(id: bigint): Promise<RootInfo> {
-    const { stateContract } = this._getStateContractAndProviderForId(id);
+    const { stateContract } = this.getStateContractAndProviderForId(id);
     const data = await stateContract.getGISTRootInfo(id);
 
     return {
@@ -195,7 +195,7 @@ export class EthStateStorage implements IStateStorage {
     };
   }
 
-  private _getStateContractAndProviderForId(id: bigint): {
+  private getStateContractAndProviderForId(id: bigint): {
     stateContract: Contract;
     provider: JsonRpcProvider;
   } {
@@ -208,7 +208,7 @@ export class EthStateStorage implements IStateStorage {
     }
 
     const chainId = getChainId(DID.blockchainFromId(idTyped), DID.networkIdFromId(idTyped));
-    const config = this._networkByChainId(chainId);
+    const config = this.networkByChainId(chainId);
 
     const provider = new JsonRpcProvider(config.url);
     const stateContract = new Contract(config.contractAddress, abi, this.provider);
@@ -216,7 +216,7 @@ export class EthStateStorage implements IStateStorage {
     return { stateContract, provider };
   }
 
-  private _networkByChainId(chainId: number): EthConnectionConfig {
+  private networkByChainId(chainId: number): EthConnectionConfig {
     if (Array.isArray(this.ethConfig)) {
       const network = this.ethConfig.find((c) => c.chainId === chainId);
       if (!network) {

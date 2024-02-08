@@ -373,19 +373,19 @@ export class AuthHandler implements IAuthHandler {
       const params = proofRequest.params ?? {};
       params.verifierDid = DID.parse(request.from);
 
-      const pubSignals = await this._proofService.verifyZKPResponse(proofResp, {
+      const { linkID } = await this._proofService.verifyZKPResponse(proofResp, {
         query: proofRequest.query as unknown as ProofQuery,
         sender: response.from,
         params,
         opts
       });
       // write linkId to the proof response
-      const pubSig = pubSignals as unknown as { linkID?: number };
+      // const pubSig = pubSignals as unknown as { linkID?: number };
 
-      if (pubSig.linkID && groupId) {
+      if (linkID && groupId) {
         groupIdToLinkIdMap.set(groupId, [
           ...(groupIdToLinkIdMap.get(groupId) ?? []),
-          { linkID: pubSig.linkID, requestId: proofResp.id }
+          { linkID: linkID, requestId: proofResp.id }
         ]);
       }
     }

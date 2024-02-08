@@ -7,7 +7,7 @@ import { JSONObject } from '../../iden3comm';
 import { parseQueriesMetadata } from '../../proof';
 import { createSchemaHash } from '../../schema-processor';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
-import { byteEncoder } from '../../utils';
+import { bigIntCompare, byteEncoder } from '../../utils';
 import { ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../atomic-query-sig-v2';
@@ -17,6 +17,10 @@ import { BaseConfig } from '../common';
 import { LinkedMultiQueryPubSignals } from '../linked-multi-query';
 import { checkQueryRequest, ClaimOutputs, VerifyOpts } from './query';
 
+/**
+ *  Verify Context - params for pub signal verification
+ * @type VerifyContext
+ */
 export type VerifyContext = {
   pubSignals: string[];
   query: ProofQuery;
@@ -32,22 +36,40 @@ const zeroInt = 0n;
 const defaultProofVerifyOpts = 1 * 60 * 60 * 1000; // 1 hour
 const defaultAuthVerifyOpts = 5 * 60 * 1000; // 5 minutes
 
+/**
+ * PubSignalsVerifier provides verify method
+ * @public
+ * @class PubSignalsVerifier
+ */
 export class PubSignalsVerifier {
   userId!: Id;
   challenge!: bigint;
+
+  /**
+   * Creates an instance of PubSignalsVerifier.
+   * @param {DocumentLoader} _documentLoader document loader
+   * @param {IStateStorage} _stateStorage state storage
+   */
 
   constructor(
     private readonly _documentLoader: DocumentLoader,
     private readonly _stateStorage: IStateStorage
   ) {}
 
+  /**
+   * verify public signals
+   *
+   * @param {string} circuitId circuit id
+   * @param {VerifyContext} ctx verification parameters
+   * @returns `Promise<BaseConfig>`
+   */
   async verify(circuitId: string, ctx: VerifyContext): Promise<BaseConfig> {
     const fnName = `${circuitId.split('-')[0]}Verify`;
     const fn = (this as unknown as { [k: string]: (ctx: VerifyContext) => Promise<BaseConfig> })[
       fnName
     ];
     if (!fn) {
-      throw new Error(`pub signal verifier for ${circuitId} not found`);
+      throw new Error(`public signals verifier for ${circuitId} not found`);
     }
     return fn(ctx);
   }
@@ -92,10 +114,13 @@ export class PubSignalsVerifier {
     };
     await checkQueryRequest(query, outs, this._documentLoader, verifiablePresentation, opts);
     // verify state
-    await this.checkUserState(mtpv2PubSignals.issuerID, mtpv2PubSignals.issuerClaimIdenState);
+    await this.checkStateExistenceForId(
+      mtpv2PubSignals.issuerID,
+      mtpv2PubSignals.issuerClaimIdenState
+    );
 
     if (mtpv2PubSignals.isRevocationChecked !== 0) {
-      const issuerNonRevStateResolved = await this.checkIssuerNonRevState(
+      const issuerNonRevStateResolved = await this.checkRevocationStateForId(
         mtpv2PubSignals.issuerID,
         mtpv2PubSignals.issuerClaimNonRevState
       );
@@ -152,10 +177,10 @@ export class PubSignalsVerifier {
     };
     await checkQueryRequest(query, outs, this._documentLoader, verifiablePresentation, opts);
     // verify state
-    await this.checkUserState(sigV2PubSignals.issuerID, sigV2PubSignals.issuerAuthState);
+    await this.checkStateExistenceForId(sigV2PubSignals.issuerID, sigV2PubSignals.issuerAuthState);
 
     if (sigV2PubSignals.isRevocationChecked !== 0) {
-      const issuerNonRevStateResolved = await this.checkIssuerNonRevState(
+      const issuerNonRevStateResolved = await this.checkRevocationStateForId(
         sigV2PubSignals.issuerID,
         sigV2PubSignals.issuerClaimNonRevState
       );
@@ -264,10 +289,10 @@ export class PubSignalsVerifier {
     }
 
     // verify state
-    await this.checkUserState(v3PubSignals.issuerID, v3PubSignals.issuerState);
+    await this.checkStateExistenceForId(v3PubSignals.issuerID, v3PubSignals.issuerState);
 
     if (v3PubSignals.isRevocationChecked !== 0) {
-      const issuerNonRevStateResolved = await this.checkIssuerNonRevState(
+      const issuerNonRevStateResolved = await this.checkRevocationStateForId(
         v3PubSignals.issuerID,
         v3PubSignals.issuerClaimNonRevState
       );
@@ -375,19 +400,13 @@ export class PubSignalsVerifier {
 
     const circuitQueryHashes = multiQueryPubSignals.circuitQueryHash
       .filter((i) => i !== 0n)
-      .sort(this.bigIntCompare);
-    queryHashes.sort(this.bigIntCompare);
+      .sort(bigIntCompare);
+    queryHashes.sort(bigIntCompare);
     if (!queryHashes.every((queryHash, i) => queryHash === circuitQueryHashes[i])) {
       throw new Error('query hashes do not match');
     }
 
     return multiQueryPubSignals as unknown as BaseConfig;
-  };
-
-  bigIntCompare = (a: bigint, b: bigint): number => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
   };
 
   private verifyIdOwnership = (sender: string, challenge: bigint): void => {
@@ -485,7 +504,7 @@ export class PubSignalsVerifier {
     };
   }
 
-  private checkUserState = async (userId: Id, userState: Hash): Promise<void> => {
+  private checkStateExistenceForId = async (userId: Id, userState: Hash): Promise<void> => {
     const { latest } = await this.resolve(userId, userState.bigInt());
     if (!latest) {
       throw userStateError;
@@ -502,7 +521,7 @@ export class PubSignalsVerifier {
     return gistStateResolved;
   };
 
-  private checkIssuerNonRevState = async (
+  private checkRevocationStateForId = async (
     issuerId: Id,
     issuerClaimNonRevState: Hash
   ): Promise<{
