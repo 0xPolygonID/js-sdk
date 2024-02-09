@@ -5,14 +5,20 @@ import {
   CredentialStatus,
   RefreshService
 } from './proof';
-import { Claim, DID } from '@iden3/js-iden3-core';
-import { ProofType } from './constants';
+import {
+  Claim,
+  DID,
+  MerklizedRootPosition as MerklizedRootPositionCore,
+  IdPosition
+} from '@iden3/js-iden3-core';
+import { MerklizedRootPosition, ProofType, SubjectPosition } from './constants';
 import { Proof, Hash, rootFromProof, verifyProof } from '@iden3/js-merkletree';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
 import { PublicKey, poseidon } from '@iden3/js-crypto';
 import { CredentialStatusResolverRegistry } from '../credentials';
 import { getUserDIDFromCredential } from '../credentials/utils';
 import { validateDIDDocumentAuth } from '../utils';
+import { Parser, CoreClaimOptions } from '../schema-processor';
 
 /**
  * W3C Verifiable credential
@@ -164,6 +170,8 @@ export class W3CCredential {
       throw new Error(`can't get core claim`);
     }
 
+    await this.verifyCoreClaimMatch(coreClaim, opts?.merklizeOptions);
+
     switch (proofType) {
       case ProofType.BJJSignature: {
         if (!opts?.credStatusResolverRegistry) {
@@ -189,6 +197,51 @@ export class W3CCredential {
       default: {
         throw new Error('invalid proof type');
       }
+    }
+  }
+
+  private async verifyCoreClaimMatch(coreClaim: Claim, merklizeOpts?: Options) {
+    let merklizedRootPosition = '';
+
+    const merklizedPosition = coreClaim.getMerklizedPosition();
+    switch (merklizedPosition) {
+      case MerklizedRootPositionCore.None:
+        merklizedRootPosition = MerklizedRootPosition.None;
+        break;
+      case MerklizedRootPositionCore.Index:
+        merklizedRootPosition = MerklizedRootPosition.Index;
+        break;
+      case MerklizedRootPositionCore.Value:
+        merklizedRootPosition = MerklizedRootPosition.Value;
+        break;
+    }
+
+    let subjectPosition = '';
+    const idPosition = coreClaim.getIdPosition();
+    switch (idPosition) {
+      case IdPosition.None:
+        subjectPosition = SubjectPosition.None;
+        break;
+      case IdPosition.Index:
+        subjectPosition = SubjectPosition.Index;
+        break;
+      case IdPosition.Value:
+        subjectPosition = SubjectPosition.Value;
+        break;
+    }
+
+    const coreClaimOpts: CoreClaimOptions = {
+      revNonce: Number(coreClaim.getRevocationNonce()),
+      version: coreClaim.getVersion(),
+      merklizedRootPosition,
+      subjectPosition,
+      updatable: coreClaim.getFlagUpdatable(),
+      merklizeOpts: merklizeOpts
+    };
+
+    const credentialCoreClaim = await Parser.parseClaim(this, coreClaimOpts);
+    if (coreClaim.hex() != credentialCoreClaim.hex()) {
+      throw new Error('proof generated for another credential');
     }
   }
 
@@ -378,4 +431,5 @@ export interface RevocationStatus {
  */
 export interface W3CProofVerificationOptions {
   credStatusResolverRegistry?: CredentialStatusResolverRegistry;
+  merklizeOptions?: Options;
 }
