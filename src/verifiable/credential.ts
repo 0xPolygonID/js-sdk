@@ -11,14 +11,14 @@ import {
   MerklizedRootPosition as MerklizedRootPositionCore,
   IdPosition
 } from '@iden3/js-iden3-core';
-import { MerklizedRootPosition, ProofType, SubjectPosition } from './constants';
 import { Proof, Hash, rootFromProof, verifyProof } from '@iden3/js-merkletree';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
 import { PublicKey, poseidon } from '@iden3/js-crypto';
 import { CredentialStatusResolverRegistry } from '../credentials';
 import { getUserDIDFromCredential } from '../credentials/utils';
 import { validateDIDDocumentAuth } from '../utils';
-import { Parser, CoreClaimOptions } from '../schema-processor';
+import { Parser, CoreClaimOptions } from '../schema-processor/json';
+import { MerklizedRootPosition, ProofType, SubjectPosition } from './constants';
 
 /**
  * W3C Verifiable credential
