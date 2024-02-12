@@ -15,6 +15,7 @@ import { AtomicQueryV3PubSignals } from '../atomic-query-v3';
 import { AuthV2PubSignals } from '../auth-v2';
 import { BaseConfig } from '../common';
 import { LinkedMultiQueryPubSignals } from '../linked-multi-query';
+import { CircuitId } from '../models';
 import { checkQueryRequest, ClaimOutputs, VerifyOpts } from './query';
 
 /**
@@ -112,7 +113,14 @@ export class PubSignalsVerifier {
       valueArraySize: mtpv2PubSignals.getValueArrSize(),
       isRevocationChecked: mtpv2PubSignals.isRevocationChecked
     };
-    await checkQueryRequest(query, outs, this._documentLoader, verifiablePresentation, opts);
+    await checkQueryRequest(
+      query,
+      outs,
+      CircuitId.AtomicQueryMTPV2,
+      this._documentLoader,
+      verifiablePresentation,
+      opts
+    );
     // verify state
     await this.checkStateExistenceForId(
       mtpv2PubSignals.issuerID,
@@ -175,7 +183,14 @@ export class PubSignalsVerifier {
       valueArraySize: sigV2PubSignals.getValueArrSize(),
       isRevocationChecked: sigV2PubSignals.isRevocationChecked
     };
-    await checkQueryRequest(query, outs, this._documentLoader, verifiablePresentation, opts);
+    await checkQueryRequest(
+      query,
+      outs,
+      CircuitId.AtomicQuerySigV2,
+      this._documentLoader,
+      verifiablePresentation,
+      opts
+    );
     // verify state
     await this.checkStateExistenceForId(sigV2PubSignals.issuerID, sigV2PubSignals.issuerAuthState);
 
@@ -234,7 +249,14 @@ export class PubSignalsVerifier {
       valueArraySize: v3PubSignals.getValueArrSize(),
       isRevocationChecked: v3PubSignals.isRevocationChecked
     };
-    await checkQueryRequest(query, outs, this._documentLoader, verifiablePresentation, opts);
+    await checkQueryRequest(
+      query,
+      outs,
+      CircuitId.AtomicQueryV3,
+      this._documentLoader,
+      verifiablePresentation,
+      opts
+    );
 
     const { proofType, verifierID, nullifier, nullifierSessionID, linkID } = v3PubSignals;
 

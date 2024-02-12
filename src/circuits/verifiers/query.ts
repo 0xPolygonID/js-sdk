@@ -7,11 +7,14 @@ import {
   Path
 } from '@iden3/js-jsonld-merklization';
 import { Proof } from '@iden3/js-merkletree';
-import { transformQueryValueToBigInts } from '../../proof';
+import { JSONObject } from '../../iden3comm';
+import { parseQueriesMetadata, QueryMetadata } from '../../proof';
+import { circuitValidator } from '../../proof/inputs-generator';
 import { createSchemaHash, Parser } from '../../schema-processor';
-import { byteDecoder, byteEncoder } from '../../utils';
+import { byteEncoder } from '../../utils';
 import { buildFieldPath, ProofQuery, VerifiableConstants } from '../../verifiable';
-import { isValidOperation, Operators, QueryOperators } from '../comparer';
+import { Operators } from '../comparer';
+import { CircuitId } from '../models';
 
 /**
  * Options to verify state
@@ -40,18 +43,10 @@ export interface ClaimOutputs {
   isRevocationChecked: number;
 }
 
-type CircuitQuery = {
-  claimPathKey?: bigint;
-  slotIndex?: number;
-  values: bigint[];
-  operator: number;
-  isSelectiveDisclosure: boolean;
-  fieldName: string;
-};
-
 export async function checkQueryRequest(
   query: ProofQuery,
   outputs: ClaimOutputs,
+  circuitId: CircuitId,
   schemaLoader?: DocumentLoader,
   verifiablePresentation?: JSON,
   opts?: VerifyOpts
@@ -91,137 +86,103 @@ export async function checkQueryRequest(
     throw new Error(`check revocation is required`);
   }
 
-  const cq = await parseRequest(
-    query,
-    outputs,
-    byteEncoder.encode(JSON.stringify(schema)),
-    schemaLoader
+  const queriesMetadata = await parseQueriesMetadata(
+    query.type,
+    JSON.stringify(schema),
+    query.credentialSubject as JSONObject,
+    {
+      documentLoader: schemaLoader
+    }
   );
 
-  // validate selective disclosure
-  if (cq.isSelectiveDisclosure) {
-    try {
-      await validateDisclosure(cq, outputs, verifiablePresentation, schemaLoader);
-    } catch (e) {
-      throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
-    }
-  } else if (!cq.fieldName && cq.operator == Operators.NOOP) {
-    try {
-      await validateEmptyCredentialSubject(cq, outputs);
-      return;
-    } catch (e: unknown) {
-      throw new Error(`failed to validate operators: ${(e as Error).message}`);
-    }
-  } else {
-    try {
-      await validateOperators(cq, outputs);
-    } catch (e) {
-      throw new Error(`failed to validate operators: ${(e as Error).message}`);
-    }
-  }
+  const circuitValidationData = circuitValidator[circuitId];
 
-  // verify claim
-  if (outputs.merklized === 1) {
-    if (outputs.claimPathNotExists === 1) {
-      throw new Error(`proof doesn't contains target query key`);
-    }
-
-    const path = await buildFieldPath(JSON.stringify(schema), query.type, cq.fieldName, {
-      documentLoader: schemaLoader
-    });
-    const claimPathKey = await path.mtEntry();
-
-    if (outputs.claimPathKey !== claimPathKey) {
-      throw new Error(`proof was generated for another path`);
-    }
-  } else {
-    const slotIndex = await Parser.getFieldSlotIndex(
-      cq.fieldName,
-      query.type,
-      byteEncoder.encode(JSON.stringify(schema))
+  if (queriesMetadata.length > circuitValidationData.maxQueriesCount) {
+    throw new Error(
+      `circuit ${circuitId} supports only ${
+        circuitValidator[circuitId as CircuitId].maxQueriesCount
+      } queries`
     );
+  }
 
-    if (outputs.slotIndex !== slotIndex) {
-      throw new Error(`wrong claim slot was used in claim`);
+  const notSupportedOpIndx = queriesMetadata.findIndex(
+    (i) => !circuitValidationData.supportedOperations.includes(i.operator)
+  );
+  if (notSupportedOpIndx > -1) {
+    throw new Error(
+      `circuit ${circuitId} not support ${queriesMetadata[notSupportedOpIndx].operator} operator`
+    );
+  }
+
+  queriesMetadata.forEach(async (metadata) => {
+    if (!query.type) {
+      throw new Error(`proof query type is undefined`);
     }
-  }
 
-  // verify timestamp
-  let acceptedProofGenerationDelay = defaultProofGenerationDelayOpts;
-  if (opts?.acceptedProofGenerationDelay) {
-    acceptedProofGenerationDelay = opts.acceptedProofGenerationDelay;
-  }
+    // validate selective disclosure
+    if (metadata.operator === Operators.SD) {
+      try {
+        await validateDisclosure(metadata, outputs, verifiablePresentation, schemaLoader);
+      } catch (e) {
+        throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
+      }
+    } else if (!metadata.fieldName && metadata.operator == Operators.NOOP) {
+      try {
+        await validateEmptyCredentialSubject(metadata, outputs);
+        return;
+      } catch (e: unknown) {
+        throw new Error(`failed to validate operators: ${(e as Error).message}`);
+      }
+    } else {
+      try {
+        await validateOperators(metadata, outputs);
+      } catch (e) {
+        throw new Error(`failed to validate operators: ${(e as Error).message}`);
+      }
+    }
 
-  const timeDiff = Date.now() - getDateFromUnixTimestamp(Number(outputs.timestamp)).getTime();
-  if (timeDiff > acceptedProofGenerationDelay) {
-    throw new Error('generated proof is outdated');
-  }
+    // verify claim
+    if (outputs.merklized === 1) {
+      if (outputs.claimPathNotExists === 1) {
+        throw new Error(`proof doesn't contains target query key`);
+      }
+
+      const path = await buildFieldPath(JSON.stringify(schema), query.type, metadata.fieldName, {
+        documentLoader: schemaLoader
+      });
+      const claimPathKey = await path.mtEntry();
+
+      if (outputs.claimPathKey !== claimPathKey) {
+        throw new Error(`proof was generated for another path`);
+      }
+    } else {
+      const slotIndex = await Parser.getFieldSlotIndex(
+        metadata.fieldName,
+        query.type,
+        byteEncoder.encode(JSON.stringify(schema))
+      );
+
+      if (outputs.slotIndex !== slotIndex) {
+        throw new Error(`wrong claim slot was used in claim`);
+      }
+    }
+
+    // verify timestamp
+    let acceptedProofGenerationDelay = defaultProofGenerationDelayOpts;
+    if (opts?.acceptedProofGenerationDelay) {
+      acceptedProofGenerationDelay = opts.acceptedProofGenerationDelay;
+    }
+
+    const timeDiff = Date.now() - getDateFromUnixTimestamp(Number(outputs.timestamp)).getTime();
+    if (timeDiff > acceptedProofGenerationDelay) {
+      throw new Error('generated proof is outdated');
+    }
+  });
+
   return;
 }
 
-async function parseRequest(
-  query: ProofQuery,
-  outputs: ClaimOutputs,
-  schema: Uint8Array,
-  ldLoader?: DocumentLoader
-): Promise<CircuitQuery> {
-  if (!query.credentialSubject) {
-    return {
-      operator: Operators.NOOP,
-      values: [],
-      slotIndex: 0,
-      isSelectiveDisclosure: false,
-      fieldName: ''
-    };
-  }
-  if (Object.keys(query.credentialSubject).length > 1) {
-    throw new Error(`multiple requests not supported`);
-  }
-
-  const txtSchema = byteDecoder.decode(schema);
-
-  let fieldName = '';
-  let predicate: Map<string, unknown> = new Map();
-
-  for (const [key, value] of Object.entries(query.credentialSubject)) {
-    fieldName = key;
-
-    predicate = value as Map<string, unknown>;
-
-    if (Object.keys(predicate).length > 1) {
-      throw new Error(`multiple predicates for one field not supported`);
-    }
-    break;
-  }
-
-  let datatype = '';
-  if (fieldName !== '') {
-    datatype = await Path.newTypeFromContext(txtSchema, `${query.type}.${fieldName}`, {
-      documentLoader: ldLoader
-    });
-  }
-
-  const [operator, values] = await parsePredicate(predicate, datatype);
-  const zeros: Array<bigint> = Array.from({
-    length: outputs.valueArraySize - values.length
-  }).fill(0n) as Array<bigint>;
-  const fullArray: Array<bigint> = values.concat(zeros);
-
-  const cq: CircuitQuery = {
-    operator,
-    values: fullArray,
-    isSelectiveDisclosure: false,
-    fieldName
-  };
-
-  if (Object.keys(predicate).length === 0) {
-    cq.isSelectiveDisclosure = true;
-  }
-
-  return cq;
-}
-
-async function validateEmptyCredentialSubject(cq: CircuitQuery, outputs: ClaimOutputs) {
+async function validateEmptyCredentialSubject(cq: QueryMetadata, outputs: ClaimOutputs) {
   if (outputs.operator !== Operators.EQ) {
     throw new Error('empty credentialSubject request available only for equal operation');
   }
@@ -237,7 +198,7 @@ async function validateEmptyCredentialSubject(cq: CircuitQuery, outputs: ClaimOu
   }
   return;
 }
-async function validateOperators(cq: CircuitQuery, outputs: ClaimOutputs) {
+async function validateOperators(cq: QueryMetadata, outputs: ClaimOutputs) {
   if (outputs.operator !== cq.operator) {
     throw new Error(`operator that was used is not equal to request`);
   }
@@ -254,7 +215,7 @@ async function validateOperators(cq: CircuitQuery, outputs: ClaimOutputs) {
 }
 
 async function validateDisclosure(
-  cq: CircuitQuery,
+  cq: QueryMetadata,
   outputs: ClaimOutputs,
   verifiablePresentation?: JSON,
   ldLoader?: DocumentLoader
@@ -314,27 +275,4 @@ async function validateDisclosure(
   if (bi !== outputs.value[0]) {
     throw new Error(`value that was used is not equal to requested in query`);
   }
-}
-
-async function parsePredicate(
-  predicate: Map<string, unknown>,
-  datatype: string
-): Promise<[number, bigint[]]> {
-  let operator = 0;
-  let values: bigint[] = [];
-
-  for (const [key, value] of Object.entries(predicate)) {
-    if (!Object.keys(QueryOperators).includes(key)) {
-      throw new Error(`operator is not supported by lib`);
-    }
-    operator = QueryOperators[key as keyof typeof QueryOperators];
-
-    if (!isValidOperation(datatype, operator)) {
-      throw new Error(`operator '${key}' is not supported for '${datatype}' datatype`);
-    }
-
-    values = await transformQueryValueToBigInts(value, datatype);
-    break;
-  }
-  return [operator, values];
 }

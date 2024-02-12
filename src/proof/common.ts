@@ -114,7 +114,7 @@ export type QueryMetadata = PropertyQuery & {
 export const parseCredentialSubject = (credentialSubject?: JSONObject): PropertyQuery[] => {
   // credentialSubject is empty
   if (!credentialSubject) {
-    return [{ operator: QueryOperators.$eq, fieldName: '' }];
+    return [{ operator: QueryOperators.$noop, fieldName: '' }];
   }
 
   const queries: PropertyQuery[] = [];
