@@ -9,16 +9,28 @@ import {
   Claim,
   DID,
   MerklizedRootPosition as MerklizedRootPositionCore,
-  IdPosition
+  IdPosition,
+  ClaimOptions
 } from '@iden3/js-iden3-core';
 import { Proof, Hash, rootFromProof, verifyProof } from '@iden3/js-merkletree';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
 import { PublicKey, poseidon } from '@iden3/js-crypto';
 import { CredentialStatusResolverRegistry } from '../credentials';
 import { getUserDIDFromCredential } from '../credentials/utils';
-import { validateDIDDocumentAuth } from '../utils';
-import { Parser, CoreClaimOptions } from '../schema-processor/json';
+import { byteEncoder, validateDIDDocumentAuth } from '../utils';
 import { MerklizedRootPosition, ProofType, SubjectPosition } from './constants';
+import {
+  CoreClaimOptions,
+  createSchemaHash,
+  fillSlot,
+  findCredentialType,
+  getSerializationAttrFromParsedContext,
+  ParsedSlots,
+  parseSerializationAttr
+} from './core-utils';
+
+import * as jsonld from 'jsonld/lib';
+import * as ldcontext from 'jsonld/lib/context';
 
 /**
  * W3C Verifiable credential
@@ -124,6 +136,153 @@ export class W3CCredential {
     }
     return undefined;
   }
+
+  /**
+   * gets core claim representation from W3CCredential
+   *
+   * @param {CoreClaimOptions} [opts] - options to parse core claim
+   * @returns {*}  {(Promise<Claim>)}
+   */
+  async toCoreClaim(opts?: CoreClaimOptions): Promise<Claim> {
+    if (!opts) {
+      opts = {
+        revNonce: 0,
+        version: 0,
+        subjectPosition: SubjectPosition.Index,
+        merklizedRootPosition: MerklizedRootPosition.None,
+        updatable: false,
+        merklizeOpts: {}
+      };
+    }
+
+    const mz = await this.merklize(opts.merklizeOpts);
+
+    const credentialType = findCredentialType(mz);
+
+    const subjectId = this.credentialSubject['id'];
+
+    const { slots, nonMerklized } = await this.parseSlots(mz, credentialType);
+
+    // if schema is for non merklized credential, root position must be set to none ('')
+    // otherwise default position for merklized position is index.
+    if (nonMerklized && opts.merklizedRootPosition !== MerklizedRootPosition.None) {
+      throw new Error('merklized root position is not supported for non-merklized claims');
+    }
+    if (!nonMerklized && opts.merklizedRootPosition === MerklizedRootPosition.None) {
+      opts.merklizedRootPosition = MerklizedRootPosition.Index;
+    }
+
+    const schemaHash = createSchemaHash(byteEncoder.encode(credentialType));
+    const claim = Claim.newClaim(
+      schemaHash,
+      ClaimOptions.withIndexDataBytes(slots.indexA, slots.indexB),
+      ClaimOptions.withValueDataBytes(slots.valueA, slots.valueB),
+      ClaimOptions.withRevocationNonce(BigInt(opts.revNonce)),
+      ClaimOptions.withVersion(opts.version)
+    );
+
+    if (opts.updatable) {
+      claim.setFlagUpdatable(opts.updatable);
+    }
+    if (this.expirationDate) {
+      claim.setExpirationDate(new Date(this.expirationDate));
+    }
+    if (subjectId) {
+      const did = DID.parse(subjectId.toString());
+      const id = DID.idFromDID(did);
+
+      switch (opts.subjectPosition) {
+        case '':
+        case SubjectPosition.Index:
+          claim.setIndexId(id);
+          break;
+        case SubjectPosition.Value:
+          claim.setValueId(id);
+          break;
+        default:
+          throw new Error('unknown subject position');
+      }
+    }
+
+    switch (opts.merklizedRootPosition) {
+      case MerklizedRootPosition.Index: {
+        const mk = await this.merklize(opts.merklizeOpts);
+        claim.setIndexMerklizedRoot((await mk.root()).bigInt());
+        break;
+      }
+      case MerklizedRootPosition.Value: {
+        const mk = await this.merklize(opts.merklizeOpts);
+        claim.setValueMerklizedRoot((await mk.root()).bigInt());
+        break;
+      }
+      case MerklizedRootPosition.None:
+        break;
+      default:
+        throw new Error('unknown merklized root position');
+    }
+
+    return claim;
+  }
+
+  /**
+   * ParseSlots converts payload to claim slots using provided schema
+   *
+   * @param {Merklizer} mz - Merklizer
+   * @param {W3CCredential} credential - Verifiable Credential
+   * @param {string} credentialType - credential type
+   * @returns `ParsedSlots`
+   */
+  async parseSlots(
+    mz: Merklizer,
+    credentialType: string
+  ): Promise<{ slots: ParsedSlots; nonMerklized: boolean }> {
+    // parseSlots converts payload to claim slots using provided schema
+
+    const slots = {
+      indexA: new Uint8Array(32),
+      indexB: new Uint8Array(32),
+      valueA: new Uint8Array(32),
+      valueB: new Uint8Array(32)
+    };
+
+    const jsonLDOpts = mz.options;
+    const serAttr = await this.getSerializationAttr(jsonLDOpts, credentialType);
+
+    if (!serAttr) {
+      return { slots, nonMerklized: false };
+    }
+
+    const sPaths = parseSerializationAttr(serAttr);
+    const isSPathEmpty = !Object.values(sPaths).some(Boolean);
+    if (isSPathEmpty) {
+      return { slots, nonMerklized: true };
+    }
+
+    await fillSlot(slots.indexA, mz, sPaths.indexAPath);
+
+    await fillSlot(slots.indexB, mz, sPaths.indexBPath);
+
+    await fillSlot(slots.valueA, mz, sPaths.valueAPath);
+
+    await fillSlot(slots.valueB, mz, sPaths.valueBPath);
+
+    return { slots, nonMerklized: true };
+  }
+
+  // Get `iden3_serialization` attr definition from context document either using
+  // type name like DeliverAddressMultiTestForked or by type id like
+  // urn:uuid:ac2ede19-b3b9-454d-b1a9-a7b3d5763100.
+
+  async getSerializationAttr(opts: Options, tp: string): Promise<string> {
+    const ldCtx = await jsonld.processContext(
+      ldcontext.getInitialContext({}),
+      this['@context'],
+      opts
+    );
+
+    return getSerializationAttrFromParsedContext(ldCtx, tp);
+  }
+
   /**
    * checks BJJSignatureProof2021 in W3C VC
    *
@@ -239,7 +398,7 @@ export class W3CCredential {
       merklizeOpts: merklizeOpts
     };
 
-    const credentialCoreClaim = await Parser.parseClaim(this, coreClaimOpts);
+    const credentialCoreClaim = await this.toCoreClaim(coreClaimOpts);
     if (coreClaim.hex() != credentialCoreClaim.hex()) {
       throw new Error('proof generated for another credential');
     }

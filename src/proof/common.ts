@@ -12,10 +12,11 @@ import {
   MerkleTreeProofWithTreeState,
   RevocationStatus,
   W3CCredential,
-  buildFieldPath
+  buildFieldPath,
+  getSerializationAttrFromContext,
+  getFieldSlotIndex
 } from '../verifiable';
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
-import { Parser } from '../schema-processor/json';
 import { byteEncoder } from '../utils';
 import { JSONObject } from '../iden3comm';
 import { Claim } from '@iden3/js-iden3-core';
@@ -166,7 +167,7 @@ export const parseQueryMetadata = async (
     path: new Path()
   };
 
-  const serAttr = await Parser.getSerializationAttrFromContext(
+  const serAttr = await getSerializationAttrFromContext(
     JSON.parse(ldContextJSON),
     options,
     credentialType
@@ -179,7 +180,7 @@ export const parseQueryMetadata = async (
   // it has no influence on check in the off-chain circuits, but it aligns with onchain verification standard
 
   if (!query.merklizedSchema) {
-    query.slotIndex = await Parser.getFieldSlotIndex(
+    query.slotIndex = await getFieldSlotIndex(
       propertyQuery.fieldName,
       credentialType,
       byteEncoder.encode(ldContextJSON)

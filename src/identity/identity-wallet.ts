@@ -17,13 +17,7 @@ import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
-import {
-  JSONSchema,
-  Parser,
-  CoreClaimOptions,
-  JsonSchemaValidator,
-  cacheLoader
-} from '../schema-processor';
+import { JSONSchema, Parser, JsonSchemaValidator, cacheLoader } from '../schema-processor';
 import { IDataStorage, MerkleTreeType, Profile } from '../storage';
 import {
   VerifiableConstants,
@@ -35,7 +29,8 @@ import {
   Iden3SparseMerkleTreeProof,
   ProofType,
   CredentialStatusType,
-  ProofQuery
+  ProofQuery,
+  CoreClaimOptions
 } from '../verifiable';
 import {
   CredentialRequest,
