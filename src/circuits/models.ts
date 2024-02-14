@@ -84,11 +84,6 @@ export enum CircuitId {
   /**
    * @beta
    */
-  // LinkedNullifier is a type for linkedNullifier.circom
-  LinkedNullifier = 'linkedNullifier-beta.0',
-  /**
-   * @beta
-   */
   // LinkedMultiQuery is a type for linkedMultiQuery.circom
   LinkedMultiQuery10 = 'linkedMultiQuery10-beta.0'
 }

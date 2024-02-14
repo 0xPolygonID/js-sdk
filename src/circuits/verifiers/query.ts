@@ -147,22 +147,11 @@ export async function checkQueryRequest(
         throw new Error(`proof doesn't contains target query key`);
       }
 
-      const path = await buildFieldPath(JSON.stringify(schema), query.type, metadata.fieldName, {
-        documentLoader: schemaLoader
-      });
-      const claimPathKey = await path.mtEntry();
-
-      if (outputs.claimPathKey !== claimPathKey) {
+      if (outputs.claimPathKey !== metadata.claimPathKey) {
         throw new Error(`proof was generated for another path`);
       }
     } else {
-      const slotIndex = await Parser.getFieldSlotIndex(
-        metadata.fieldName,
-        query.type,
-        byteEncoder.encode(JSON.stringify(schema))
-      );
-
-      if (outputs.slotIndex !== slotIndex) {
+      if (outputs.slotIndex !== metadata.slotIndex) {
         throw new Error(`wrong claim slot was used in claim`);
       }
     }
