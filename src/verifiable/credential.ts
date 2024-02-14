@@ -225,12 +225,11 @@ export class W3CCredential {
   }
 
   /**
-   * ParseSlots converts payload to claim slots using provided schema
+   * parseSlots converts payload to claim slots using provided schema
    *
    * @param {Merklizer} mz - Merklizer
-   * @param {W3CCredential} credential - Verifiable Credential
    * @param {string} credentialType - credential type
-   * @returns `ParsedSlots`
+   * @returns `Promise<{ slots: ParsedSlots; nonMerklized: boolean }>`
    */
   async parseSlots(
     mz: Merklizer,
@@ -269,10 +268,17 @@ export class W3CCredential {
     return { slots, nonMerklized: true };
   }
 
-  // Get `iden3_serialization` attr definition from context document either using
-  // type name like DeliverAddressMultiTestForked or by type id like
-  // urn:uuid:ac2ede19-b3b9-454d-b1a9-a7b3d5763100.
-
+  /**
+   * getSerializationAttr returns serialization attributes
+   *
+   * @param {Options} opts - Options
+   * @param {string} tp - credential type
+   * @returns `Promise<string>`
+   *
+   *  Get `iden3_serialization` attr definition from context document either using
+   *  type name like DeliverAddressMultiTestForked or by type id like
+   *  urn:uuid:ac2ede19-b3b9-454d-b1a9-a7b3d5763100.
+   */
   async getSerializationAttr(opts: Options, tp: string): Promise<string> {
     const ldCtx = await jsonld.processContext(
       ldcontext.getInitialContext({}),
