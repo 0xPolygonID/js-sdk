@@ -67,6 +67,7 @@ export class MessageBus {
 
   /**
    * Subscribes to a specific topic and registers a callback function to be executed when a message is published.
+   * The callback function is executed only once.
    *
    * @param topic - The topic to subscribe to.
    * @param callback - The callback function to be executed when a message is published.
