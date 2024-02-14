@@ -1,15 +1,39 @@
 import {
   W3CCredential,
-  CoreClaimOptions,
   getSerializationAttrFromContext,
   parseSerializationAttr,
-  SlotsPaths,
-  ParsedSlots,
   getFieldSlotIndex,
-  findCredentialType
+  findCredentialType,
+  CoreClaimParsingOptions,
+  CoreClaimParsedSlots,
+  CoreClaimSlotsPaths
 } from '../../verifiable';
 import { Claim as CoreClaim } from '@iden3/js-iden3-core';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
+
+/**
+ *
+ * @deprecated The interface should not be used. Use CoreClaimParsingOptions from verifiable package instead.
+ * CoreClaimOptions is params for core claim parsing
+ *
+ * @public
+ * @interface   CoreClaimOptions
+ */
+export type CoreClaimOptions = CoreClaimParsingOptions;
+
+/**
+ * @deprecated The interface should not be used. Use CoreClaimParsedSlots from verifiable package instead.
+ * Parsed slots of core.Claim
+ *
+ * @public
+ * @interface   ParsedSlots
+ */
+export type ParsedSlots = CoreClaimParsedSlots;
+
+/**
+ * @deprecated The interface should not be used. Use CoreClaimSlotsPaths from verifiable package instead.
+ */
+export type SlotsPaths = CoreClaimSlotsPaths;
 
 /**
  * Serialization of data slots for the fields non-merklized claims

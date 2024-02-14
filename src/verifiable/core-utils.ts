@@ -7,7 +7,7 @@ import { byteDecoder } from '../utils';
 import * as jsonld from 'jsonld/lib';
 import * as ldcontext from 'jsonld/lib/context';
 
-const credentialSubjectKey = 'credentialSubject';
+export const credentialSubjectKey = 'credentialSubject';
 const contextFullKey = '@context';
 const serializationFullKey = 'iden3_serialization';
 const fieldPrefix = 'iden3:v1:';
@@ -21,7 +21,7 @@ const typeFullKey = '@type';
  * @public
  * @interface   CoreClaimOptions
  */
-export interface CoreClaimOptions {
+export interface CoreClaimParsingOptions {
   revNonce: number;
   version: number;
   subjectPosition: string;
@@ -34,16 +34,22 @@ export interface CoreClaimOptions {
  * Parsed slots of core.Claim
  *
  * @public
- * @interface   ParsedSlots
+ * @interface   CoreClaimParsedSlots
  */
-export interface ParsedSlots {
+export interface CoreClaimParsedSlots {
   indexA: Uint8Array;
   indexB: Uint8Array;
   valueA: Uint8Array;
   valueB: Uint8Array;
 }
 
-export interface SlotsPaths {
+/**
+ * Slots paths of core.Claim
+ *
+ * @public
+ * @interface   CoreClaimSlotsPaths
+ */
+export interface CoreClaimSlotsPaths {
   indexAPath: string;
   indexBPath: string;
   valueAPath: string;
@@ -176,7 +182,7 @@ export const getSerializationAttrFromParsedContext = async (
   return serStr;
 };
 
-export const parseSerializationAttr = (serAttr: string): SlotsPaths => {
+export const parseSerializationAttr = (serAttr: string): CoreClaimSlotsPaths => {
   if (!serAttr.startsWith(fieldPrefix)) {
     throw new Error('serialization attribute does not have correct prefix');
   }
@@ -185,7 +191,7 @@ export const parseSerializationAttr = (serAttr: string): SlotsPaths => {
     throw new Error('serialization attribute has too many parts');
   }
 
-  const paths = {} as SlotsPaths;
+  const paths = {} as CoreClaimSlotsPaths;
   for (const part of parts) {
     const kv = part.split('=');
     if (kv.length !== 2) {

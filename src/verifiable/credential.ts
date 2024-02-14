@@ -20,12 +20,12 @@ import { getUserDIDFromCredential } from '../credentials/utils';
 import { byteEncoder, validateDIDDocumentAuth } from '../utils';
 import { MerklizedRootPosition, ProofType, SubjectPosition } from './constants';
 import {
-  CoreClaimOptions,
+  CoreClaimParsingOptions,
   createSchemaHash,
   fillSlot,
   findCredentialType,
   getSerializationAttrFromParsedContext,
-  ParsedSlots,
+  CoreClaimParsedSlots,
   parseSerializationAttr
 } from './core-utils';
 
@@ -140,10 +140,10 @@ export class W3CCredential {
   /**
    * gets core claim representation from W3CCredential
    *
-   * @param {CoreClaimOptions} [opts] - options to parse core claim
+   * @param {CoreClaimParsingOptions} [opts] - options to parse core claim
    * @returns {*}  {(Promise<Claim>)}
    */
-  async toCoreClaim(opts?: CoreClaimOptions): Promise<Claim> {
+  async toCoreClaim(opts?: CoreClaimParsingOptions): Promise<Claim> {
     if (!opts) {
       opts = {
         revNonce: 0,
@@ -234,7 +234,7 @@ export class W3CCredential {
   async parseSlots(
     mz: Merklizer,
     credentialType: string
-  ): Promise<{ slots: ParsedSlots; nonMerklized: boolean }> {
+  ): Promise<{ slots: CoreClaimParsedSlots; nonMerklized: boolean }> {
     // parseSlots converts payload to claim slots using provided schema
 
     const slots = {
@@ -395,7 +395,7 @@ export class W3CCredential {
         break;
     }
 
-    const coreClaimOpts: CoreClaimOptions = {
+    const coreClaimOpts: CoreClaimParsingOptions = {
       revNonce: Number(coreClaim.getRevocationNonce()),
       version: coreClaim.getVersion(),
       merklizedRootPosition,
