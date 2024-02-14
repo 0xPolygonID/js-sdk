@@ -3,6 +3,7 @@ import { JSONObject } from '../../iden3comm';
 import { OnChainRevocationStorage } from '../../storage';
 import { CredentialStatusType } from '../../verifiable';
 import { ProofNode } from './reverse-sparse-merkle-tree';
+import { MessageBus, SDK_EVENTS } from '../../utils';
 
 /**
  * Represents a credential status publisher.
@@ -56,7 +57,10 @@ export class Iden3OnchainSmtCredentialStatusPublisher implements ICredentialStat
   public async publish(params: {
     nodes: ProofNode[];
     credentialStatusType: CredentialStatusType;
-    onChain?: { txCallback?: (tx: TransactionReceipt) => Promise<void> };
+    onChain?: {
+      txCallback?: (tx: TransactionReceipt) => Promise<void>;
+      publishMode?: 'sync' | 'async' | 'callback';
+    };
   }): Promise<void> {
     if (
       ![CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023].includes(
@@ -71,13 +75,33 @@ export class Iden3OnchainSmtCredentialStatusPublisher implements ICredentialStat
 
     const txPromise = this._storage.saveNodes(nodesBigInts);
 
+    let publishMode = params.onChain?.publishMode ?? 'sync';
     if (params.onChain?.txCallback) {
-      const cb = params.onChain?.txCallback;
-      txPromise.then((receipt) => cb(receipt));
-      return;
+      publishMode = 'callback';
     }
 
-    await txPromise;
+    switch (publishMode) {
+      case 'sync':
+        await txPromise;
+        break;
+      case 'callback': {
+        if (!params.onChain?.txCallback) {
+          throw new Error('txCallback is required for publishMode "callback"');
+        }
+        const cb = params.onChain?.txCallback;
+        txPromise.then((receipt) => cb(receipt));
+        break;
+      }
+      case 'async': {
+        const mb = MessageBus.getInstance();
+        txPromise.then((receipt) => mb.publish(SDK_EVENTS.TX_RECEIPT_ACCEPTED, receipt));
+        break;
+      }
+      default:
+        // sync by default
+        await txPromise;
+        break;
+    }
   }
 }
 
