@@ -1,4 +1,8 @@
-import { BytesHelper, checkBigIntInField } from '@iden3/js-iden3-core';
+import { Hex } from '@iden3/js-crypto';
+import { BytesHelper, checkBigIntInField, SchemaHash } from '@iden3/js-iden3-core';
+import { Merklizer } from '@iden3/js-jsonld-merklization';
+import { keccak256 } from 'ethers';
+import { fillCoreClaimSlot } from '../verifiable';
 
 /**
  * SwapEndianness swaps the endianness of the value encoded in buf. If buf is
@@ -48,3 +52,34 @@ export function dataFillsSlot(slot: Uint8Array, newData: Uint8Array): boolean {
 export function checkDataInField(data: Uint8Array): boolean {
   return checkBigIntInField(BytesHelper.bytesToInt(data));
 }
+
+/**
+ *
+ * Calculates schema hash
+ *
+ * @param {Uint8Array} schemaId
+ * @returns {*}  {SchemaHash}
+ */
+export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
+  const sHash = Hex.decodeString(keccak256(schemaId));
+
+  return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
+};
+
+/**
+ * checks if data can fill the slot
+ *
+ * @param {Uint8Array} slotData - slot data
+ * @param {Merklizer} mz - merklizer
+ * @param {string} path - path
+ * @returns {void}
+ */
+export const fillSlot = async (
+  slotData: Uint8Array,
+  mz: Merklizer,
+  path: string
+): Promise<void> => {
+  return fillCoreClaimSlot(slotData, mz, path);
+};
+
+export const credentialSubjectKey = 'credentialSubject';

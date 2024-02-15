@@ -4,12 +4,17 @@ import {
   parseSerializationAttr,
   getFieldSlotIndex,
   findCredentialType,
-  CoreClaimParsingOptions,
+  CoreClaimCreationOptions,
   CoreClaimParsedSlots,
-  CoreClaimSlotsPaths
+  CoreClaimSlotsPaths,
+  getSerializationAttrFromParsedContext,
+  parseCoreClaimSlots
 } from '../../verifiable';
 import { Claim as CoreClaim } from '@iden3/js-iden3-core';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
+
+import * as jsonld from 'jsonld/lib';
+import * as ldcontext from 'jsonld/lib/context';
 
 /**
  *
@@ -19,7 +24,7 @@ import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
  * @public
  * @interface   CoreClaimOptions
  */
-export type CoreClaimOptions = CoreClaimParsingOptions;
+export type CoreClaimOptions = CoreClaimCreationOptions;
 
 /**
  * @deprecated The interface should not be used. Use CoreClaimParsedSlots from verifiable package instead.
@@ -109,7 +114,13 @@ export class Parser {
     opts: Options,
     tp: string
   ): Promise<string> {
-    return credential.getSerializationAttr(opts, tp);
+    const ldCtx = await jsonld.processContext(
+      ldcontext.getInitialContext({}),
+      credential['@context'],
+      opts
+    );
+
+    return Parser.getSerializationAttrFromParsedContext(ldCtx, tp);
   }
 
   /**
@@ -126,6 +137,17 @@ export class Parser {
     tp: string
   ): Promise<string> {
     return getSerializationAttrFromContext(context, opts, tp);
+  }
+
+  /**
+   * @deprecated The method should not be used. Use getSerializationAttrFromParsedContext from verifiable.
+   *
+   * */
+  static async getSerializationAttrFromParsedContext(
+    ldCtx: { mappings: Map<string, Record<string, unknown>> },
+    tp: string
+  ): Promise<string> {
+    return getSerializationAttrFromParsedContext(ldCtx, tp);
   }
 
   /**
@@ -151,7 +173,13 @@ export class Parser {
     credential: W3CCredential,
     credentialType: string
   ): Promise<{ slots: ParsedSlots; nonMerklized: boolean }> {
-    return credential.parseSlots(mz, credentialType);
+    const ldCtx = await jsonld.processContext(
+      ldcontext.getInitialContext({}),
+      credential['@context'],
+      mz.options
+    );
+
+    return parseCoreClaimSlots(ldCtx, mz, credentialType);
   }
 
   /**

@@ -30,7 +30,7 @@ import {
   ProofType,
   CredentialStatusType,
   ProofQuery,
-  CoreClaimParsingOptions
+  CoreClaimCreationOptions
 } from '../verifiable';
 import {
   CredentialRequest,
@@ -726,7 +726,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const issuerAuthBJJCredential = await this._credentialWallet.getAuthBJJCredential(issuerDID);
 
-    const coreClaimOpts: CoreClaimParsingOptions = {
+    const coreClaimOpts: CoreClaimCreationOptions = {
       revNonce: req.revocationOpts.nonce,
       subjectPosition: req.subjectPosition,
       merklizedRootPosition: req.merklizedRootPosition ?? MerklizedRootPosition.None,

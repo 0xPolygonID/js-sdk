@@ -1,13 +1,11 @@
-import { Hex } from '@iden3/js-crypto';
-import { BytesHelper, SchemaHash } from '@iden3/js-iden3-core';
+import { BytesHelper } from '@iden3/js-iden3-core';
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
-import { keccak256 } from 'js-sha3';
 import { byteDecoder } from '../utils';
 
 import * as jsonld from 'jsonld/lib';
 import * as ldcontext from 'jsonld/lib/context';
 
-export const credentialSubjectKey = 'credentialSubject';
+const credentialSubjectKey = 'credentialSubject';
 const contextFullKey = '@context';
 const serializationFullKey = 'iden3_serialization';
 const fieldPrefix = 'iden3:v1:';
@@ -16,12 +14,12 @@ const verifiableCredentialFullKey = 'https://www.w3.org/2018/credentials#Verifia
 const typeFullKey = '@type';
 
 /**
- * CoreClaimOptions is params for core claim parsing
+ * CoreClaimCreationOptions is params for core claim creation
  *
  * @public
- * @interface   CoreClaimOptions
+ * @interface   CoreClaimCreationOptions
  */
-export interface CoreClaimParsingOptions {
+export interface CoreClaimCreationOptions {
   revNonce: number;
   version: number;
   subjectPosition: string;
@@ -55,18 +53,6 @@ export interface CoreClaimSlotsPaths {
   valueAPath: string;
   valueBPath: string;
 }
-
-/**
- * Calculates schema hash
- *
- * @param {Uint8Array} schemaId
- * @returns {*}  {SchemaHash}
- */
-export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
-  const sHash = Hex.decodeString(keccak256(schemaId));
-
-  return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
-};
 
 /**
  * GetFieldSlotIndex return index of slot from 0 to 7 (each claim has by default 8 slots) for non-merklized claims
@@ -113,11 +99,12 @@ export const getFieldSlotIndex = async (
 /**
  * checks if data can fill the slot
  *
- * @param {*} data - object that contains field
- * @param {string} fieldName - field name
- * @returns Uint8Array - filled slot
+ * @param {Uint8Array} slotData - slot data
+ * @param {Merklizer} mz - merklizer
+ * @param {string} path - path
+ * @returns {void}
  */
-export const fillSlot = async (
+export const fillCoreClaimSlot = async (
   slotData: Uint8Array,
   mz: Merklizer,
   path: string
@@ -249,4 +236,49 @@ export const findCredentialType = (mz: Merklizer): string => {
         throw new Error('@type(s) are expected to contain VerifiableCredential type');
     }
   }
+};
+
+/**
+ * parseCoreClaimSlots converts payload to claim slots using provided schema
+ *
+ * @param { { mappings: Map<string, Record<string, unknown>> } } ldCtx - ldCtx
+ * @param {Merklizer} mz - Merklizer
+ * @param {string} credentialType - credential type
+ * @returns `Promise<{ slots: ParsedSlots; nonMerklized: boolean }>`
+ */
+export const parseCoreClaimSlots = async (
+  ldCtx: { mappings: Map<string, Record<string, unknown>> },
+  mz: Merklizer,
+  credentialType: string
+): Promise<{ slots: CoreClaimParsedSlots; nonMerklized: boolean }> => {
+  // parseSlots converts payload to claim slots using provided schema
+
+  const slots = {
+    indexA: new Uint8Array(32),
+    indexB: new Uint8Array(32),
+    valueA: new Uint8Array(32),
+    valueB: new Uint8Array(32)
+  };
+
+  const serAttr = await getSerializationAttrFromParsedContext(ldCtx, credentialType);
+
+  if (!serAttr) {
+    return { slots, nonMerklized: false };
+  }
+
+  const sPaths = parseSerializationAttr(serAttr);
+  const isSPathEmpty = !Object.values(sPaths).some(Boolean);
+  if (isSPathEmpty) {
+    return { slots, nonMerklized: true };
+  }
+
+  await fillCoreClaimSlot(slots.indexA, mz, sPaths.indexAPath);
+
+  await fillCoreClaimSlot(slots.indexB, mz, sPaths.indexBPath);
+
+  await fillCoreClaimSlot(slots.valueA, mz, sPaths.valueAPath);
+
+  await fillCoreClaimSlot(slots.valueB, mz, sPaths.valueBPath);
+
+  return { slots, nonMerklized: true };
 };

@@ -10,27 +10,21 @@ import {
   DID,
   MerklizedRootPosition as MerklizedRootPositionCore,
   IdPosition,
-  ClaimOptions
+  ClaimOptions,
+  SchemaHash
 } from '@iden3/js-iden3-core';
 import { Proof, Hash, rootFromProof, verifyProof } from '@iden3/js-merkletree';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
-import { PublicKey, poseidon } from '@iden3/js-crypto';
+import { PublicKey, poseidon, Hex } from '@iden3/js-crypto';
 import { CredentialStatusResolverRegistry } from '../credentials';
 import { getUserDIDFromCredential } from '../credentials/utils';
 import { byteEncoder, validateDIDDocumentAuth } from '../utils';
 import { MerklizedRootPosition, ProofType, SubjectPosition } from './constants';
-import {
-  CoreClaimParsingOptions,
-  createSchemaHash,
-  fillSlot,
-  findCredentialType,
-  getSerializationAttrFromParsedContext,
-  CoreClaimParsedSlots,
-  parseSerializationAttr
-} from './core-utils';
+import { CoreClaimCreationOptions, findCredentialType, parseCoreClaimSlots } from './core-utils';
 
 import * as jsonld from 'jsonld/lib';
 import * as ldcontext from 'jsonld/lib/context';
+import { keccak256 } from 'ethers';
 
 /**
  * W3C Verifiable credential
@@ -140,10 +134,10 @@ export class W3CCredential {
   /**
    * gets core claim representation from W3CCredential
    *
-   * @param {CoreClaimParsingOptions} [opts] - options to parse core claim
+   * @param {CoreClaimParsingOptions} [opts] - options to create core claim
    * @returns {*}  {(Promise<Claim>)}
    */
-  async toCoreClaim(opts?: CoreClaimParsingOptions): Promise<Claim> {
+  async toCoreClaim(opts?: CoreClaimCreationOptions): Promise<Claim> {
     if (!opts) {
       opts = {
         revNonce: 0,
@@ -161,7 +155,13 @@ export class W3CCredential {
 
     const subjectId = this.credentialSubject['id'];
 
-    const { slots, nonMerklized } = await this.parseSlots(mz, credentialType);
+    const ldCtx = await jsonld.processContext(
+      ldcontext.getInitialContext({}),
+      this['@context'],
+      mz.options
+    );
+
+    const { slots, nonMerklized } = await parseCoreClaimSlots(ldCtx, mz, credentialType);
 
     // if schema is for non merklized credential, root position must be set to none ('')
     // otherwise default position for merklized position is index.
@@ -172,7 +172,7 @@ export class W3CCredential {
       opts.merklizedRootPosition = MerklizedRootPosition.Index;
     }
 
-    const schemaHash = createSchemaHash(byteEncoder.encode(credentialType));
+    const schemaHash = this.createSchemaHash(byteEncoder.encode(credentialType));
     const claim = Claim.newClaim(
       schemaHash,
       ClaimOptions.withIndexDataBytes(slots.indexA, slots.indexB),
@@ -222,71 +222,6 @@ export class W3CCredential {
     }
 
     return claim;
-  }
-
-  /**
-   * parseSlots converts payload to claim slots using provided schema
-   *
-   * @param {Merklizer} mz - Merklizer
-   * @param {string} credentialType - credential type
-   * @returns `Promise<{ slots: ParsedSlots; nonMerklized: boolean }>`
-   */
-  async parseSlots(
-    mz: Merklizer,
-    credentialType: string
-  ): Promise<{ slots: CoreClaimParsedSlots; nonMerklized: boolean }> {
-    // parseSlots converts payload to claim slots using provided schema
-
-    const slots = {
-      indexA: new Uint8Array(32),
-      indexB: new Uint8Array(32),
-      valueA: new Uint8Array(32),
-      valueB: new Uint8Array(32)
-    };
-
-    const jsonLDOpts = mz.options;
-    const serAttr = await this.getSerializationAttr(jsonLDOpts, credentialType);
-
-    if (!serAttr) {
-      return { slots, nonMerklized: false };
-    }
-
-    const sPaths = parseSerializationAttr(serAttr);
-    const isSPathEmpty = !Object.values(sPaths).some(Boolean);
-    if (isSPathEmpty) {
-      return { slots, nonMerklized: true };
-    }
-
-    await fillSlot(slots.indexA, mz, sPaths.indexAPath);
-
-    await fillSlot(slots.indexB, mz, sPaths.indexBPath);
-
-    await fillSlot(slots.valueA, mz, sPaths.valueAPath);
-
-    await fillSlot(slots.valueB, mz, sPaths.valueBPath);
-
-    return { slots, nonMerklized: true };
-  }
-
-  /**
-   * getSerializationAttr returns serialization attributes
-   *
-   * @param {Options} opts - Options
-   * @param {string} tp - credential type
-   * @returns `Promise<string>`
-   *
-   *  Get `iden3_serialization` attr definition from context document either using
-   *  type name like DeliverAddressMultiTestForked or by type id like
-   *  urn:uuid:ac2ede19-b3b9-454d-b1a9-a7b3d5763100.
-   */
-  async getSerializationAttr(opts: Options, tp: string): Promise<string> {
-    const ldCtx = await jsonld.processContext(
-      ldcontext.getInitialContext({}),
-      this['@context'],
-      opts
-    );
-
-    return getSerializationAttrFromParsedContext(ldCtx, tp);
   }
 
   /**
@@ -395,7 +330,7 @@ export class W3CCredential {
         break;
     }
 
-    const coreClaimOpts: CoreClaimParsingOptions = {
+    const coreClaimOpts: CoreClaimCreationOptions = {
       revNonce: Number(coreClaim.getRevocationNonce()),
       version: coreClaim.getVersion(),
       merklizedRootPosition,
@@ -497,6 +432,18 @@ export class W3CCredential {
       return this.proof;
     }
     return undefined;
+  }
+
+  /**
+   * Calculates schema hash
+   *
+   * @private
+   * @param {Uint8Array} schemaId
+   * @returns {*}  {SchemaHash}
+   */
+  private createSchemaHash(schemaId: Uint8Array): SchemaHash {
+    const sHash = Hex.decodeString(keccak256(schemaId));
+    return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
   }
 }
 
