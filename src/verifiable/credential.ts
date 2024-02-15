@@ -24,7 +24,7 @@ import { CoreClaimCreationOptions, findCredentialType, parseCoreClaimSlots } fro
 
 import * as jsonld from 'jsonld/lib';
 import * as ldcontext from 'jsonld/lib/context';
-import { keccak256 } from 'ethers';
+import { keccak256 } from 'js-sha3';
 
 /**
  * W3C Verifiable credential

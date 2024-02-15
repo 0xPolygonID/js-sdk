@@ -1,7 +1,7 @@
 import { Hex } from '@iden3/js-crypto';
 import { BytesHelper, checkBigIntInField, SchemaHash } from '@iden3/js-iden3-core';
 import { Merklizer } from '@iden3/js-jsonld-merklization';
-import { keccak256 } from 'ethers';
+import { keccak256 } from 'js-sha3';
 import { fillCoreClaimSlot } from '../verifiable';
 
 /**
