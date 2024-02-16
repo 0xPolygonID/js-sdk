@@ -7,14 +7,7 @@ import {
   prepareCircuitArrayValues,
   Query
 } from '../../src/circuits';
-import {
-  IdentityTest,
-  userPK,
-  issuerPK,
-  defaultUserClaim,
-  timestamp,
-  prepareIntArray
-} from './utils';
+import { IdentityTest, userPK, issuerPK, defaultUserClaim, timestamp } from './utils';
 
 import expectedMtpJson from './data/atomic-query-v3-mtp.json';
 import expectedSigJson from './data/atomic-query-v3-sig.json';
@@ -85,7 +78,7 @@ describe('atomic-query-v3', () => {
     const query = new Query();
     query.operator = Operators.EQ;
     query.slotIndex = 2;
-    query.values = prepareIntArray([BigInt(10)], 64);
+    query.values = [BigInt(10)];
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
     inputs.proofType = ProofType.BJJSignature;
@@ -151,7 +144,7 @@ describe('atomic-query-v3', () => {
     const query = new Query();
     query.operator = Operators.EQ;
     query.slotIndex = 2;
-    query.values = prepareIntArray([BigInt(10)], 64);
+    query.values = [BigInt(10)];
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
     inputs.proofType = ProofType.Iden3SparseMerkleTreeProof;
@@ -254,6 +247,7 @@ describe('atomic-query-v3', () => {
           "0",
           "0",
           "0",
+          "1",
           "21929109382993718606847853573861987353620810345503358891473103689157378049",
           "32"
           ]`
@@ -283,6 +277,7 @@ describe('atomic-query-v3', () => {
     exp.slotIndex = 2;
     exp.operator = 1;
     exp.value = expValue;
+    exp.valueArraySize = 1;
     exp.timestamp = timestamp;
     exp.merklized = 0;
     exp.claimPathKey = BigInt(0);
@@ -385,6 +380,7 @@ describe('atomic-query-v3', () => {
           "0",
           "0",
           "0",
+          "1",
           "21929109382993718606847853573861987353620810345503358891473103689157378049",
           "32"
           ]`
@@ -414,6 +410,7 @@ describe('atomic-query-v3', () => {
     exp.slotIndex = 2;
     exp.operator = 1;
     exp.value = expValue;
+    exp.valueArraySize = 1;
     exp.timestamp = timestamp;
     exp.merklized = 0;
     exp.claimPathKey = BigInt(0);

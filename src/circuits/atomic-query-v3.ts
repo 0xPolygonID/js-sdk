@@ -55,6 +55,8 @@ export class AtomicQueryV3Inputs extends BaseConfig {
       throw new Error(CircuitError.EmptyQueryValue);
     }
 
+    this.query.validateValueArraySize(this.getValueArrSize());
+
     if (!this.proofType) {
       throw new Error(CircuitError.InvalidProofType);
     }
@@ -228,7 +230,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     s.claimPathMtpAuxHv = nodAuxJSONLD.value.bigInt().toString();
 
     s.claimPathKey = valueProof.path.toString();
-
+    s.valueArraySize = this.query.values.length;
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
     s.value = bigIntArrayToStringArray(values);
 
@@ -292,6 +294,7 @@ interface AtomicQueryV3CircuitInputs {
   slotIndex: number;
   timestamp: number;
   value: string[];
+  valueArraySize: number;
 
   issuerClaimMtp: string[];
   issuerClaimClaimsTreeRoot: string;
@@ -320,6 +323,7 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
   slotIndex!: number;
   operator!: number;
   value: bigint[] = [];
+  valueArraySize!: number;
   timestamp!: number;
   merklized!: number;
   claimPathKey!: bigint;
@@ -353,13 +357,14 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     // slotIndex
     // operator
     // value
+    // valueArraySize
     // verifierID
     // nullifierSessionID
 
-    // 19 is a number of fields in AtomicQueryV3PubSignals before values, values is last element in the proof and
+    // 20 is a number of fields in AtomicQueryV3PubSignals before values, values is last element in the proof and
     // it is length could be different base on the circuit configuration. The length could be modified by set value
     // in ValueArraySize
-    const fieldLength = 19;
+    const fieldLength = 20;
 
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
@@ -446,6 +451,10 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
       this.value.push(BigInt(sVals[fieldIdx]));
       fieldIdx++;
     }
+
+    // - valueArraySize
+    this.valueArraySize = parseInt(sVals[fieldIdx]);
+    fieldIdx++;
 
     // - verifierID
     if (sVals[fieldIdx] !== '0') {

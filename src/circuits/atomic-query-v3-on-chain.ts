@@ -61,6 +61,8 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
       throw new Error(CircuitError.EmptyQueryValue);
     }
 
+    this.query.validateValueArraySize(this.getValueArrSize());
+
     if (!this.proofType) {
       throw new Error(CircuitError.InvalidProofType);
     }
@@ -308,6 +310,7 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
 
     s.claimPathKey = valueProof.path.toString();
 
+    s.valueArraySize = this.query.values.length;
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
     s.value = bigIntArrayToStringArray(values);
 
@@ -373,6 +376,7 @@ interface AtomicQueryV3OnChainCircuitInputs {
   slotIndex: number;
   timestamp: number;
   value: string[];
+  valueArraySize: number;
 
   issuerClaimMtp: string[];
   issuerClaimClaimsTreeRoot: string;

@@ -13,7 +13,6 @@ import {
   issuerPK,
   defaultUserClaim,
   timestamp,
-  prepareIntArray,
   calculateQueryHash,
   globalTree
 } from './utils';
@@ -97,7 +96,7 @@ describe('atomic-query-v3', () => {
     const query = new Query();
     query.operator = Operators.EQ;
     query.slotIndex = 2;
-    query.values = prepareIntArray([BigInt(10)], 64);
+    query.values = [BigInt(10)];
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
     inputs.proofType = ProofType.BJJSignature;
@@ -192,7 +191,7 @@ describe('atomic-query-v3', () => {
     const query = new Query();
     query.operator = Operators.EQ;
     query.slotIndex = 2;
-    query.values = prepareIntArray([BigInt(10)], 64);
+    query.values = [BigInt(10)];
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
     inputs.proofType = ProofType.Iden3SparseMerkleTreeProof;
@@ -235,7 +234,7 @@ describe('atomic-query-v3', () => {
         `[
           "0",
           "26109404700696283154998654512117952420503675471097392618762221546565140481",
-          "7002038488948284767652984010448061038733120594540539539730565455904340350321",
+          "21290882558588413185318640632869355965175070327539756875516642621267708162856",
           "2943483356559152311923412925436024635269538717812859789851139200242297094",
           "0",
           "0",
@@ -259,7 +258,7 @@ describe('atomic-query-v3', () => {
     const schema = '180410020913331409885634153623124536270';
     const slotIndex = 2;
     const operator = 1;
-    const queryHash = calculateQueryHash(expValue, schema, slotIndex, operator, 0, 1);
+    const queryHash = calculateQueryHash(expValue, schema, slotIndex, operator, 0, 1, 1);
 
     const exp = new AtomicQueryV3OnChainPubSignals();
     exp.requestID = BigInt(23);
@@ -302,7 +301,7 @@ describe('atomic-query-v3', () => {
         `[
           "0",
           "26109404700696283154998654512117952420503675471097392618762221546565140481",
-          "7002038488948284767652984010448061038733120594540539539730565455904340350321",
+          "21290882558588413185318640632869355965175070327539756875516642621267708162856",
           "2943483356559152311923412925436024635269538717812859789851139200242297094",
           "0",
           "0",
@@ -326,7 +325,7 @@ describe('atomic-query-v3', () => {
     const schema = '180410020913331409885634153623124536270';
     const slotIndex = 2;
     const operator = 1;
-    const queryHash = calculateQueryHash(expValue, schema, slotIndex, operator, 0, 1);
+    const queryHash = calculateQueryHash(expValue, schema, slotIndex, operator, 0, 1, 1);
 
     const exp = new AtomicQueryV3OnChainPubSignals();
     exp.requestID = BigInt(23);

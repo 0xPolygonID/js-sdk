@@ -354,7 +354,8 @@ export function calculateQueryHash(
   slotIndex: string | number,
   operator: string | number,
   claimPathKey: string | number,
-  claimPathNotExists: string | number
+  claimPathNotExists: string | number,
+  valueArraySize: string | number
 ): bigint {
   const expValue = prepareCircuitArrayValues(values, 64);
   const valueHash = poseidon.spongeHashX(expValue, 6);
@@ -365,7 +366,8 @@ export function calculateQueryHash(
     BigInt(operator),
     BigInt(claimPathKey),
     BigInt(claimPathNotExists),
-    valueHash
+    valueHash,
+    BigInt(valueArraySize)
   ]);
   return queryHash;
 }

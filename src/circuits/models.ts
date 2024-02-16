@@ -1,7 +1,7 @@
 import { Signature } from '@iden3/js-crypto';
 import { Claim, Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import { Hash, Proof } from '@iden3/js-merkletree';
-import { QueryOperators } from './comparer';
+import { Operators, QueryOperators } from './comparer';
 
 /**
  * TreeState is model for merkle tree roots
@@ -50,6 +50,47 @@ export class Query {
       this.values?.some((v) => typeof v !== 'bigint')
     )
       throw new Error(CircuitError.EmptyQueryValue);
+  }
+
+  validateValueArraySize(maxArrSize: number): void {
+    const oneArrSizeOps = [
+      Operators.EQ,
+      Operators.LT,
+      Operators.GT,
+      Operators.NE,
+      Operators.LTE,
+      Operators.GTE
+    ];
+    const twoArrSizeOps = [Operators.BETWEEN];
+    const maxArrSizeOps = [Operators.IN, Operators.NIN];
+
+    if (oneArrSizeOps.includes(this.operator)) {
+      if (this.values.length !== 1) {
+        throw new Error(CircuitError.InvalidValuesArrSize);
+      } else {
+        return;
+      }
+    }
+
+    if (twoArrSizeOps.includes(this.operator)) {
+      if (this.values.length !== 2) {
+        throw new Error(CircuitError.InvalidValuesArrSize);
+      } else {
+        return;
+      }
+    }
+
+    if (maxArrSizeOps.includes(this.operator)) {
+      if (this.values.length === 0 || this.values.length > maxArrSize) {
+        throw new Error(CircuitError.InvalidValuesArrSize);
+      } else {
+        return;
+      }
+    }
+
+    if (this.values.length !== 0) {
+      throw new Error(CircuitError.InvalidValuesArrSize);
+    }
   }
 }
 
@@ -188,7 +229,8 @@ export enum CircuitError {
   EmptyGISTProof = 'empty GIST merkle tree proof',
   EmptyTreeState = 'empty tree state',
   EmptyRequestID = 'empty request ID',
-  InvalidProofType = 'invalid proof type'
+  InvalidProofType = 'invalid proof type',
+  InvalidValuesArrSize = 'invalid query Values array size'
 }
 
 /**
