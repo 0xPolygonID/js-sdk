@@ -1,8 +1,6 @@
-import { Hex } from '@iden3/js-crypto';
 import { BytesHelper, checkBigIntInField, SchemaHash } from '@iden3/js-iden3-core';
 import { Merklizer } from '@iden3/js-jsonld-merklization';
-import { keccak256 } from 'js-sha3';
-import { fillCoreClaimSlot } from '../verifiable';
+import { caclulateCoreSchemaHash, fillCoreClaimSlot } from '../verifiable';
 
 /**
  * SwapEndianness swaps the endianness of the value encoded in buf. If buf is
@@ -55,18 +53,19 @@ export function checkDataInField(data: Uint8Array): boolean {
 
 /**
  *
+ * @deprecated The method should not be used. Use caclulateCoreSchemaHash from verifiable.
  * Calculates schema hash
  *
  * @param {Uint8Array} schemaId
  * @returns {*}  {SchemaHash}
  */
 export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
-  const sHash = Hex.decodeString(keccak256(schemaId));
-
-  return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
+  return caclulateCoreSchemaHash(schemaId);
 };
 
 /**
+ *
+ * @deprecated The method should not be used. Use fillCoreClaimSlot from verifiable.
  * checks if data can fill the slot
  *
  * @param {Uint8Array} slotData - slot data

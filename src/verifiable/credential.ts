@@ -10,21 +10,24 @@ import {
   DID,
   MerklizedRootPosition as MerklizedRootPositionCore,
   IdPosition,
-  ClaimOptions,
-  SchemaHash
+  ClaimOptions
 } from '@iden3/js-iden3-core';
 import { Proof, Hash, rootFromProof, verifyProof } from '@iden3/js-merkletree';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
-import { PublicKey, poseidon, Hex } from '@iden3/js-crypto';
+import { PublicKey, poseidon } from '@iden3/js-crypto';
 import { CredentialStatusResolverRegistry } from '../credentials';
 import { getUserDIDFromCredential } from '../credentials/utils';
 import { byteEncoder, validateDIDDocumentAuth } from '../utils';
 import { MerklizedRootPosition, ProofType, SubjectPosition } from './constants';
-import { CoreClaimCreationOptions, findCredentialType, parseCoreClaimSlots } from './core-utils';
+import {
+  caclulateCoreSchemaHash,
+  CoreClaimCreationOptions,
+  findCredentialType,
+  parseCoreClaimSlots
+} from './core-utils';
 
 import * as jsonld from 'jsonld/lib';
 import * as ldcontext from 'jsonld/lib/context';
-import { keccak256 } from 'js-sha3';
 
 /**
  * W3C Verifiable credential
@@ -172,7 +175,7 @@ export class W3CCredential {
       opts.merklizedRootPosition = MerklizedRootPosition.Index;
     }
 
-    const schemaHash = this.createSchemaHash(byteEncoder.encode(credentialType));
+    const schemaHash = caclulateCoreSchemaHash(byteEncoder.encode(credentialType));
     const claim = Claim.newClaim(
       schemaHash,
       ClaimOptions.withIndexDataBytes(slots.indexA, slots.indexB),
@@ -432,18 +435,6 @@ export class W3CCredential {
       return this.proof;
     }
     return undefined;
-  }
-
-  /**
-   * Calculates schema hash
-   *
-   * @private
-   * @param {Uint8Array} schemaId
-   * @returns {*}  {SchemaHash}
-   */
-  private createSchemaHash(schemaId: Uint8Array): SchemaHash {
-    const sHash = Hex.decodeString(keccak256(schemaId));
-    return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
   }
 }
 

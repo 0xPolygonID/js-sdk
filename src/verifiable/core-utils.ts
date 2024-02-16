@@ -1,9 +1,11 @@
-import { BytesHelper } from '@iden3/js-iden3-core';
+import { BytesHelper, SchemaHash } from '@iden3/js-iden3-core';
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { byteDecoder } from '../utils';
 
 import * as jsonld from 'jsonld/lib';
 import * as ldcontext from 'jsonld/lib/context';
+import { Hex } from '@iden3/js-crypto';
+import { keccak256 } from 'js-sha3';
 
 const credentialSubjectKey = 'credentialSubject';
 const contextFullKey = '@context';
@@ -281,4 +283,15 @@ export const parseCoreClaimSlots = async (
   await fillCoreClaimSlot(slots.valueB, mz, sPaths.valueBPath);
 
   return { slots, nonMerklized: true };
+};
+
+/**
+ * Calculates core schema hash
+ *
+ * @param {Uint8Array} schemaId
+ * @returns {*}  {SchemaHash}
+ */
+export const caclulateCoreSchemaHash = (schemaId: Uint8Array): SchemaHash => {
+  const sHash = Hex.decodeString(keccak256(schemaId));
+  return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
 };
