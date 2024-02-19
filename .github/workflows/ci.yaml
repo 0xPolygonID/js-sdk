@@ -50,11 +50,11 @@ jobs:
         id: branch-name
         uses: tj-actions/branch-names@v5
 
-      - name: Download regular circuits for CI 'latest.zip' from S3
+      - name: Download regular circuits for CI '${{steps.branch-name.outputs.current_branch}}.zip' from S3
         run: mkdir ./tests/proofs/testdata && wget https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/${{steps.branch-name.outputs.current_branch}}.zip -P ./tests/proofs/testdata
 
       - name: Unzip circuits to folder
-        run: cd ./tests/proofs/testdata && unzip latest.zip && cd - && pwd
+        run: cd ./tests/proofs/testdata && unzip ${{steps.branch-name.outputs.current_branch}}.zip && cd - && pwd
 
       - name: Run Tests
         env:
