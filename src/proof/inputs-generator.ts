@@ -15,6 +15,7 @@ import {
   AtomicQueryV3OnChainInputs,
   CircuitClaim,
   CircuitId,
+  defaultValueArraySize,
   LinkedMultiQueryInputs,
   MTProof,
   Operators,
@@ -234,10 +235,7 @@ export class InputGenerator {
     circuitInputs.requestID = BigInt(proofReq.id);
 
     const query = circuitQueries[0];
-    query.operator =
-      query.operator === Operators.SD || query.operator === Operators.NOOP
-        ? Operators.EQ
-        : query.operator;
+    query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
@@ -305,10 +303,7 @@ export class InputGenerator {
     circuitInputs.challenge = params.challenge;
 
     const query = circuitQueries[0];
-    query.operator =
-      query.operator === Operators.SD || query.operator === Operators.NOOP
-        ? Operators.EQ
-        : query.operator;
+    query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
@@ -349,10 +344,7 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.operator =
-      query.operator === Operators.SD || query.operator === Operators.NOOP
-        ? Operators.EQ
-        : query.operator;
+    query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
     return circuitInputs.inputsMarshal();
@@ -391,10 +383,7 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.operator =
-      query.operator === Operators.SD || query.operator === Operators.NOOP
-        ? Operators.EQ
-        : query.operator;
+    query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
@@ -476,7 +465,7 @@ export class InputGenerator {
     const query = circuitQueries[0];
     query.values =
       query.operator === Operators.SD || query.operator === Operators.NOOP
-        ? new Array(64).fill(0)
+        ? new Array(defaultValueArraySize).fill(0)
         : query.values;
     circuitInputs.query = query;
 
@@ -537,7 +526,7 @@ export class InputGenerator {
     const query = circuitQueries[0];
     query.values =
       query.operator === Operators.SD || query.operator === Operators.NOOP
-        ? new Array(64).fill(0)
+        ? new Array(defaultValueArraySize).fill(0)
         : query.values;
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -606,4 +595,8 @@ export class InputGenerator {
 
     return circuitInputs.inputsMarshal();
   };
+
+  private transformV2QueryOperator(operator: number): number {
+    return operator === Operators.SD || operator === Operators.NOOP ? Operators.EQ : operator;
+  }
 }

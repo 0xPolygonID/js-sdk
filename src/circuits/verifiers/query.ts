@@ -10,9 +10,9 @@ import { Proof } from '@iden3/js-merkletree';
 import { JSONObject } from '../../iden3comm';
 import { parseQueriesMetadata, QueryMetadata } from '../../proof';
 import { circuitValidator } from '../../proof/inputs-generator';
-import { createSchemaHash, Parser } from '../../schema-processor';
+import { createSchemaHash } from '../../schema-processor';
 import { byteEncoder } from '../../utils';
-import { buildFieldPath, ProofQuery, VerifiableConstants } from '../../verifiable';
+import { ProofQuery, VerifiableConstants } from '../../verifiable';
 import { Operators } from '../comparer';
 import { CircuitId } from '../models';
 

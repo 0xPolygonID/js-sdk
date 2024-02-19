@@ -128,24 +128,11 @@ export class PubSignalsVerifier {
     );
 
     if (mtpv2PubSignals.isRevocationChecked !== 0) {
-      const issuerNonRevStateResolved = await this.checkRevocationStateForId(
+      await this.checkRevocationState(
         mtpv2PubSignals.issuerID,
-        mtpv2PubSignals.issuerClaimNonRevState
+        mtpv2PubSignals.issuerClaimNonRevState,
+        opts
       );
-
-      let acceptedStateTransitionDelay = defaultProofVerifyOpts;
-      if (opts?.acceptedStateTransitionDelay) {
-        acceptedStateTransitionDelay = opts.acceptedStateTransitionDelay;
-      }
-
-      if (!issuerNonRevStateResolved.latest) {
-        const timeDiff =
-          Date.now() -
-          getDateFromUnixTimestamp(Number(issuerNonRevStateResolved.transitionTimestamp)).getTime();
-        if (timeDiff > acceptedStateTransitionDelay) {
-          throw new Error('issuer state is outdated');
-        }
-      }
     }
 
     // verify ID ownership
@@ -195,24 +182,11 @@ export class PubSignalsVerifier {
     await this.checkStateExistenceForId(sigV2PubSignals.issuerID, sigV2PubSignals.issuerAuthState);
 
     if (sigV2PubSignals.isRevocationChecked !== 0) {
-      const issuerNonRevStateResolved = await this.checkRevocationStateForId(
+      await this.checkRevocationState(
         sigV2PubSignals.issuerID,
-        sigV2PubSignals.issuerClaimNonRevState
+        sigV2PubSignals.issuerClaimNonRevState,
+        opts
       );
-
-      let acceptedStateTransitionDelay = defaultProofVerifyOpts;
-      if (opts?.acceptedStateTransitionDelay) {
-        acceptedStateTransitionDelay = opts.acceptedStateTransitionDelay;
-      }
-
-      if (!issuerNonRevStateResolved.latest) {
-        const timeDiff =
-          Date.now() -
-          getDateFromUnixTimestamp(Number(issuerNonRevStateResolved.transitionTimestamp)).getTime();
-        if (timeDiff > acceptedStateTransitionDelay) {
-          throw new Error('issuer state is outdated');
-        }
-      }
     }
     // verify Id ownership
     this.verifyIdOwnership(sender, challenge);
@@ -314,22 +288,11 @@ export class PubSignalsVerifier {
     await this.checkStateExistenceForId(v3PubSignals.issuerID, v3PubSignals.issuerState);
 
     if (v3PubSignals.isRevocationChecked !== 0) {
-      const issuerNonRevStateResolved = await this.checkRevocationStateForId(
+      await this.checkRevocationState(
         v3PubSignals.issuerID,
-        v3PubSignals.issuerClaimNonRevState
+        v3PubSignals.issuerClaimNonRevState,
+        opts
       );
-
-      const acceptedStateTransitionDelay =
-        opts?.acceptedStateTransitionDelay ?? defaultProofVerifyOpts;
-
-      if (!issuerNonRevStateResolved.latest) {
-        const timeDiff =
-          Date.now() -
-          getDateFromUnixTimestamp(Number(issuerNonRevStateResolved.transitionTimestamp)).getTime();
-        if (timeDiff > acceptedStateTransitionDelay) {
-          throw new Error('issuer state is outdated');
-        }
-      }
     }
 
     this.verifyIdOwnership(sender, challenge);
@@ -552,5 +515,28 @@ export class PubSignalsVerifier {
   }> => {
     const issuerNonRevStateResolved = await this.resolve(issuerId, issuerClaimNonRevState.bigInt());
     return issuerNonRevStateResolved;
+  };
+
+  private checkRevocationState = async (
+    issuerID: Id,
+    issuerClaimNonRevState: Hash,
+    opts: VerifyOpts | undefined
+  ) => {
+    const issuerNonRevStateResolved = await this.checkRevocationStateForId(
+      issuerID,
+      issuerClaimNonRevState
+    );
+
+    const acceptedStateTransitionDelay =
+      opts?.acceptedStateTransitionDelay ?? defaultProofVerifyOpts;
+
+    if (!issuerNonRevStateResolved.latest) {
+      const timeDiff =
+        Date.now() -
+        getDateFromUnixTimestamp(Number(issuerNonRevStateResolved.transitionTimestamp)).getTime();
+      if (timeDiff > acceptedStateTransitionDelay) {
+        throw new Error('issuer state is outdated');
+      }
+    }
   };
 }
