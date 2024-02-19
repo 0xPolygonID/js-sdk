@@ -8,13 +8,12 @@ import {
 } from '@iden3/js-jsonld-merklization';
 import { Proof } from '@iden3/js-merkletree';
 import { JSONObject } from '../../iden3comm';
-import { parseQueriesMetadata, QueryMetadata } from '../../proof';
-import { circuitValidator } from '../../proof/inputs-generator';
-import { createSchemaHash } from '../../schema-processor';
 import { byteEncoder } from '../../utils';
-import { ProofQuery, VerifiableConstants } from '../../verifiable';
-import { Operators } from '../comparer';
-import { CircuitId } from '../models';
+import { Operators } from '../../circuits/comparer';
+import { CircuitId } from '../../circuits/models';
+import { caclulateCoreSchemaHash, ProofQuery, VerifiableConstants } from '../../verifiable';
+import { parseQueriesMetadata, QueryMetadata } from '../common';
+import { circuitValidator } from '../provers';
 
 /**
  * Options to verify state
@@ -76,7 +75,7 @@ export async function checkQueryRequest(
   const schemaId: string = await Path.getTypeIDFromContext(JSON.stringify(schema), query.type, {
     documentLoader: schemaLoader
   });
-  const schemaHash = createSchemaHash(byteEncoder.encode(schemaId));
+  const schemaHash = caclulateCoreSchemaHash(byteEncoder.encode(schemaId));
 
   if (schemaHash.bigInt() !== outputs.schemaHash.bigInt()) {
     throw new Error(`schema that was used is not equal to requested in query`);

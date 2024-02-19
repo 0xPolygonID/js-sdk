@@ -8,8 +8,7 @@ import {
   Query,
   StateTransitionInputs,
   TreeState,
-  ValueProof,
-  VerifyOpts
+  ValueProof
 } from '../circuits';
 import { ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
@@ -27,7 +26,7 @@ import {
   toGISTProof,
   transformQueryValueToBigInts
 } from './common';
-import { IZKProver, NativeProver } from './prover';
+import { IZKProver, NativeProver } from './provers/prover';
 
 import { Merklizer, Options, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 import { ZKProof } from '@iden3/js-jwz';
@@ -36,8 +35,13 @@ import { JSONObject, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } fro
 import { cacheLoader } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
-import { InputGenerator, ProofGenerationOptions, ProofInputsParams } from './inputs-generator';
-import { PubSignalsVerifier, VerifyContext } from '../circuits/verifiers/pub-signals-verifier';
+import {
+  InputGenerator,
+  ProofGenerationOptions,
+  ProofInputsParams
+} from './provers/inputs-generator';
+import { PubSignalsVerifier, VerifyContext } from './verifiers/pub-signals-verifier';
+import { VerifyOpts } from './verifiers';
 
 export interface QueryWithFieldName {
   query: Query;

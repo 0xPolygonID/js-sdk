@@ -3,18 +3,18 @@ import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { DocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
 import { JSONObject } from '../../iden3comm';
-import { parseQueriesMetadata } from '../../proof';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
 import { bigIntCompare, byteEncoder, isGenesisState } from '../../utils';
 import { caclulateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
-import { AtomicQueryMTPV2PubSignals } from '../atomic-query-mtp-v2';
-import { AtomicQuerySigV2PubSignals } from '../atomic-query-sig-v2';
-import { AtomicQueryV3PubSignals } from '../atomic-query-v3';
-import { AuthV2PubSignals } from '../auth-v2';
-import { BaseConfig } from '../common';
-import { LinkedMultiQueryPubSignals } from '../linked-multi-query';
-import { CircuitId } from '../models';
+import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
+import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
+import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
+import { AuthV2PubSignals } from '../../circuits/auth-v2';
+import { BaseConfig } from '../../circuits/common';
+import { LinkedMultiQueryPubSignals } from '../../circuits/linked-multi-query';
+import { CircuitId } from '../../circuits/models';
 import { checkQueryRequest, ClaimOutputs, VerifyOpts } from './query';
+import { parseQueriesMetadata } from '../common';
 
 /**
  *  Verify Context - params for pub signal verification

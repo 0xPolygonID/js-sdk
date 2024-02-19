@@ -4,8 +4,8 @@ import {
   ProofType,
   RevocationStatus,
   W3CCredential
-} from '../verifiable';
-import { ZeroKnowledgeProofRequest } from '../iden3comm';
+} from '../../verifiable';
+import { ZeroKnowledgeProofRequest } from '../../iden3comm';
 import {
   AtomicQueryMTPV2Inputs,
   AtomicQueryMTPV2OnChainInputs,
@@ -22,20 +22,20 @@ import {
   Query,
   QueryOperators,
   TreeState
-} from '../circuits';
+} from '../../circuits';
 import {
   PreparedAuthBJJCredential,
   PreparedCredential,
   toClaimNonRevStatus,
   toGISTProof
-} from './common';
-import { IIdentityWallet } from '../identity';
-import { IStateStorage } from '../storage';
+} from '../common';
+import { IIdentityWallet } from '../../identity';
+import { IStateStorage } from '../../storage';
 import {
   CredentialStatusResolveOptions,
   ICredentialWallet,
   getUserDIDFromCredential
-} from '../credentials';
+} from '../../credentials';
 
 export type DIDProfileMetadata = {
   authProfileNonce: number;

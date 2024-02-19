@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { ZKProof } from '@iden3/js-jwz';
-import { CircuitId } from '../circuits';
-import { ICircuitStorage } from '../storage/interfaces/circuits';
 import { witnessBuilder } from './witness_calculator';
-import { byteDecoder } from '../utils';
 import { groth16 } from 'snarkjs';
 import { getCurveFromName } from 'ffjavascript';
+import { ICircuitStorage } from '../../storage';
+import { CircuitId } from '../../circuits';
+import { byteDecoder } from '../../utils';
 
 /**
  * ZKProver is responsible for proof generation and verification

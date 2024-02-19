@@ -10,4 +10,3 @@ export * from './atomic-query-sig-v2-on-chain';
 export * from './auth-v2';
 export * from './state-transition';
 export * from './linked-multi-query';
-export * from './verifiers';

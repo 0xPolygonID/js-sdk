@@ -18,7 +18,6 @@ import * as uuid from 'uuid';
 import { ProofQuery, RevocationStatus, W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
 import { getRandomBytes } from '@iden3/js-crypto';
-import { PROTOCOL_CONSTANTS } from '..';
 
 /**
  *  createAuthorizationRequest is a function to create protocol authorization request
@@ -53,8 +52,8 @@ export function createAuthorizationRequestWithMessage(
     id: uuidv4,
     thid: uuidv4,
     from: sender,
-    typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
-    type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+    typ: MediaType.PlainMessage,
+    type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
     body: {
       reason: reason,
       message: message,
