@@ -2,13 +2,11 @@ import { poseidon } from '@iden3/js-crypto';
 import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { DocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
-import { isGenesisState } from '../../credentials';
 import { JSONObject } from '../../iden3comm';
 import { parseQueriesMetadata } from '../../proof';
-import { createSchemaHash } from '../../schema-processor';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
-import { bigIntCompare, byteEncoder } from '../../utils';
-import { ProofQuery, ProofType } from '../../verifiable';
+import { bigIntCompare, byteEncoder, isGenesisState } from '../../utils';
+import { caclulateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../atomic-query-sig-v2';
 import { AtomicQueryV3PubSignals } from '../atomic-query-v3';
@@ -343,8 +341,7 @@ export class PubSignalsVerifier {
     let multiQueryPubSignals = new LinkedMultiQueryPubSignals();
 
     multiQueryPubSignals = multiQueryPubSignals.pubSignalsUnmarshal(
-      byteEncoder.encode(JSON.stringify(pubSignals)),
-      10
+      byteEncoder.encode(JSON.stringify(pubSignals))
     );
 
     // verify query
@@ -362,7 +359,7 @@ export class PubSignalsVerifier {
       query.type || '',
       ldOpts
     );
-    const schemaHash = createSchemaHash(byteEncoder.encode(schemaId));
+    const schemaHash = caclulateCoreSchemaHash(byteEncoder.encode(schemaId));
 
     const queriesMetadata = await parseQueriesMetadata(
       query.type || '',
