@@ -227,8 +227,8 @@ export const transformQueryValueToBigInts = async (
   value: unknown,
   ldType: string
 ): Promise<bigint[]> => {
-  const values: bigint[] = new Array<bigint>(64).fill(BigInt(0));
-
+  const values: bigint[] = []; // = new Array<bigint>(64).fill(BigInt(0));
+  
   if (Array.isArray(value)) {
     for (let index = 0; index < value.length; index++) {
       values[index] = await Merklizer.hashValue(ldType, value[index]);

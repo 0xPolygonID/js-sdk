@@ -450,7 +450,7 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.values = query.operator === Operators.SD ? new Array(64).fill(0) : query.values;
+    query.values = query.operator === Operators.SD ? new Array(0) : query.values;
     circuitInputs.query = query;
 
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -508,7 +508,7 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.values = query.operator === Operators.SD ? new Array(64).fill(0) : query.values;
+    query.values = query.operator === Operators.SD ? new Array(0) : query.values;
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
