@@ -54,7 +54,7 @@ jobs:
         run: mkdir ./tests/proofs/testdata && wget https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/${{steps.branch-name.outputs.current_branch}}.zip -P ./tests/proofs/testdata
 
       - name: Unzip circuits to folder
-        run: cd ./tests/proofs/testdata && unzip ${{steps.branch-name.outputs.current_branch}}.zip && cd - && pwd
+        run: cd ./tests/proofs/testdata && unzip value-arr-size-input.zip && cd - && pwd
 
       - name: Run Tests
         env:
