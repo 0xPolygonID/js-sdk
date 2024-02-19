@@ -15,11 +15,12 @@ import {
   AtomicQueryV3OnChainInputs,
   CircuitClaim,
   CircuitId,
+  defaultValueArraySize,
   LinkedMultiQueryInputs,
-  LinkedNullifierInputs,
   MTProof,
   Operators,
   Query,
+  QueryOperators,
   TreeState
 } from '../circuits';
 import {
@@ -60,19 +61,29 @@ type InputContext = {
   circuitQueries: Query[];
 };
 
-const circuitValidator: {
-  [k in CircuitId]: { maxQueriesCount: number };
+const allOperations = Object.values(QueryOperators);
+const v2Operations = [
+  Operators.NOOP,
+  Operators.EQ,
+  Operators.LT,
+  Operators.GT,
+  Operators.IN,
+  Operators.NIN,
+  Operators.NE
+];
+
+export const circuitValidator: {
+  [k in CircuitId]: { maxQueriesCount: number; supportedOperations: Operators[] };
 } = {
-  [CircuitId.AtomicQueryMTPV2]: { maxQueriesCount: 1 },
-  [CircuitId.AtomicQueryMTPV2OnChain]: { maxQueriesCount: 1 },
-  [CircuitId.AtomicQuerySigV2]: { maxQueriesCount: 1 },
-  [CircuitId.AtomicQuerySigV2OnChain]: { maxQueriesCount: 1 },
-  [CircuitId.AtomicQueryV3]: { maxQueriesCount: 1 },
-  [CircuitId.AtomicQueryV3OnChain]: { maxQueriesCount: 1 },
-  [CircuitId.AuthV2]: { maxQueriesCount: 0 },
-  [CircuitId.StateTransition]: { maxQueriesCount: 0 },
-  [CircuitId.LinkedNullifier]: { maxQueriesCount: 1 },
-  [CircuitId.LinkedMultiQuery10]: { maxQueriesCount: 10 }
+  [CircuitId.AtomicQueryMTPV2]: { maxQueriesCount: 1, supportedOperations: v2Operations },
+  [CircuitId.AtomicQueryMTPV2OnChain]: { maxQueriesCount: 1, supportedOperations: v2Operations },
+  [CircuitId.AtomicQuerySigV2]: { maxQueriesCount: 1, supportedOperations: v2Operations },
+  [CircuitId.AtomicQuerySigV2OnChain]: { maxQueriesCount: 1, supportedOperations: v2Operations },
+  [CircuitId.AtomicQueryV3]: { maxQueriesCount: 1, supportedOperations: allOperations },
+  [CircuitId.AtomicQueryV3OnChain]: { maxQueriesCount: 1, supportedOperations: allOperations },
+  [CircuitId.AuthV2]: { maxQueriesCount: 0, supportedOperations: [] },
+  [CircuitId.StateTransition]: { maxQueriesCount: 0, supportedOperations: [] },
+  [CircuitId.LinkedMultiQuery10]: { maxQueriesCount: 10, supportedOperations: allOperations }
 };
 
 export class InputGenerator {
@@ -224,7 +235,7 @@ export class InputGenerator {
     circuitInputs.requestID = BigInt(proofReq.id);
 
     const query = circuitQueries[0];
-    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
+    query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
@@ -292,7 +303,7 @@ export class InputGenerator {
     circuitInputs.challenge = params.challenge;
 
     const query = circuitQueries[0];
-    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
+    query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
@@ -333,7 +344,7 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
+    query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
     return circuitInputs.inputsMarshal();
@@ -372,7 +383,7 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.operator = query.operator === Operators.SD ? Operators.EQ : query.operator;
+    query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
@@ -452,7 +463,10 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.values = query.operator === Operators.SD ? new Array(64).fill(0) : query.values;
+    query.values =
+      query.operator === Operators.SD || query.operator === Operators.NOOP
+        ? new Array(defaultValueArraySize).fill(0)
+        : query.values;
     circuitInputs.query = query;
 
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -510,7 +524,10 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.values = query.operator === Operators.SD ? new Array(64).fill(0) : query.values;
+    query.values =
+      query.operator === Operators.SD || query.operator === Operators.NOOP
+        ? new Array(defaultValueArraySize).fill(0)
+        : query.values;
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
@@ -560,30 +577,6 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  private linkedNullifierPrepareInputs = async ({
-    preparedCredential,
-    identifier,
-    proofReq,
-    params
-  }: InputContext): Promise<Uint8Array> => {
-    const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
-
-    circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
-
-    const circuitInputs = new LinkedNullifierInputs();
-    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
-    circuitInputs.issuerClaim = circuitClaimData.claim;
-    circuitInputs.id = DID.idFromDID(identifier);
-    circuitInputs.claimSubjectProfileNonce = BigInt(params.credentialSubjectProfileNonce);
-
-    circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
-    circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
-      ? BigInt(proofReq.params?.nullifierSessionID?.toString())
-      : BigInt(0);
-
-    return circuitInputs.inputsMarshal();
-  };
-
   linkedMultiQuery10PrepareInputs = async ({
     preparedCredential,
     proofReq,
@@ -602,4 +595,8 @@ export class InputGenerator {
 
     return circuitInputs.inputsMarshal();
   };
+
+  private transformV2QueryOperator(operator: number): number {
+    return operator === Operators.SD || operator === Operators.NOOP ? Operators.EQ : operator;
+  }
 }
