@@ -577,9 +577,8 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  linkedMultiQuery10PrepareInputs = async ({
+  private linkedMultiQuery10PrepareInputs = async ({
     preparedCredential,
-    proofReq,
     params,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {
@@ -591,7 +590,6 @@ export class InputGenerator {
 
     circuitInputs.claim = circuitClaimData.claim;
     circuitInputs.query = circuitQueries;
-    circuitInputs.queryLength = circuitValidator[proofReq.circuitId as CircuitId].maxQueriesCount;
 
     return circuitInputs.inputsMarshal();
   };

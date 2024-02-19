@@ -165,34 +165,37 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     }
 
     if (this.proofType === ProofType.BJJSignature) {
+      const sigProof = this.claim.signatureProof as BJJSignatureProof;
       s.proofType = '1';
 
-      s.issuerClaimSignatureR8x = this.claim.signatureProof?.signature.R8[0].toString();
-      s.issuerClaimSignatureR8y = this.claim.signatureProof?.signature.R8[1].toString();
-      s.issuerClaimSignatureS = this.claim.signatureProof?.signature.S.toString();
-      s.issuerAuthClaim = this.claim.signatureProof?.issuerAuthClaim?.marshalJson();
+      s.issuerClaimSignatureR8x = sigProof.signature.R8[0].toString();
+      s.issuerClaimSignatureR8y = sigProof.signature.R8[1].toString();
+      s.issuerClaimSignatureS = sigProof.signature.S.toString();
+      s.issuerAuthClaim = sigProof.issuerAuthClaim?.marshalJson();
       s.issuerAuthClaimMtp = prepareSiblingsStr(
-        this.claim.signatureProof?.issuerAuthIncProof.proof as Proof,
+        sigProof.issuerAuthIncProof.proof as Proof,
         this.getMTLevel()
       );
 
-      s.issuerAuthClaimsTreeRoot = treeState.claimsRoot.bigInt().toString();
-      s.issuerAuthRevTreeRoot = treeState.revocationRoot.bigInt().toString();
-      s.issuerAuthRootsTreeRoot = treeState.rootOfRoots.bigInt().toString();
+      s.issuerAuthClaimsTreeRoot = sigProof.issuerAuthIncProof.treeState?.claimsRoot
+        .bigInt()
+        .toString();
+      s.issuerAuthRevTreeRoot = sigProof.issuerAuthIncProof.treeState?.revocationRoot
+        .bigInt()
+        .toString();
+      s.issuerAuthRootsTreeRoot = sigProof.issuerAuthIncProof.treeState?.rootOfRoots
+        .bigInt()
+        .toString();
       s.issuerAuthClaimNonRevMtp = prepareSiblingsStr(
-        this.claim.signatureProof?.issuerAuthNonRevProof.proof as Proof,
+        sigProof.issuerAuthNonRevProof.proof as Proof,
         this.getMTLevel()
       );
 
-      const nodeAuxIssuerAuthNonRev = getNodeAuxValue(
-        this.claim.signatureProof?.issuerAuthNonRevProof.proof
-      );
+      const nodeAuxIssuerAuthNonRev = getNodeAuxValue(sigProof.issuerAuthNonRevProof.proof);
       s.issuerAuthClaimNonRevMtpAuxHi = nodeAuxIssuerAuthNonRev.key.bigInt().toString();
       s.issuerAuthClaimNonRevMtpAuxHv = nodeAuxIssuerAuthNonRev.value.bigInt().toString();
       s.issuerAuthClaimNonRevMtpNoAux = nodeAuxIssuerAuthNonRev.noAux;
-      s.issuerAuthState = this.claim.signatureProof?.issuerAuthIncProof.treeState?.state
-        .bigInt()
-        .toString();
+      s.issuerAuthState = sigProof.issuerAuthIncProof.treeState?.state.bigInt().toString();
 
       this.fillMTPProofsWithZero(s);
     } else if (this.proofType === ProofType.Iden3SparseMerkleTreeProof) {

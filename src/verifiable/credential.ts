@@ -5,14 +5,29 @@ import {
   CredentialStatus,
   RefreshService
 } from './proof';
-import { Claim, DID } from '@iden3/js-iden3-core';
-import { ProofType } from './constants';
+import {
+  Claim,
+  DID,
+  MerklizedRootPosition as MerklizedRootPositionCore,
+  IdPosition,
+  ClaimOptions
+} from '@iden3/js-iden3-core';
 import { Proof, Hash, rootFromProof, verifyProof } from '@iden3/js-merkletree';
 import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
 import { PublicKey, poseidon } from '@iden3/js-crypto';
 import { CredentialStatusResolverRegistry } from '../credentials';
 import { getUserDIDFromCredential } from '../credentials/utils';
-import { validateDIDDocumentAuth } from '../utils';
+import { byteEncoder, validateDIDDocumentAuth } from '../utils';
+import { MerklizedRootPosition, ProofType, SubjectPosition } from './constants';
+import {
+  caclulateCoreSchemaHash,
+  CoreClaimCreationOptions,
+  findCredentialType,
+  parseCoreClaimSlots
+} from './core-utils';
+
+import * as jsonld from 'jsonld/lib';
+import * as ldcontext from 'jsonld/lib/context';
 
 /**
  * W3C Verifiable credential
@@ -118,6 +133,100 @@ export class W3CCredential {
     }
     return undefined;
   }
+
+  /**
+   * gets core claim representation from W3CCredential
+   *
+   * @param {CoreClaimParsingOptions} [opts] - options to create core claim
+   * @returns {*}  {(Promise<Claim>)}
+   */
+  async toCoreClaim(opts?: CoreClaimCreationOptions): Promise<Claim> {
+    if (!opts) {
+      opts = {
+        revNonce: 0,
+        version: 0,
+        subjectPosition: SubjectPosition.Index,
+        merklizedRootPosition: MerklizedRootPosition.None,
+        updatable: false,
+        merklizeOpts: {}
+      };
+    }
+
+    const mz = await this.merklize(opts.merklizeOpts);
+
+    const credentialType = findCredentialType(mz);
+
+    const subjectId = this.credentialSubject['id'];
+
+    const ldCtx = await jsonld.processContext(
+      ldcontext.getInitialContext({}),
+      this['@context'],
+      mz.options
+    );
+
+    const { slots, nonMerklized } = await parseCoreClaimSlots(ldCtx, mz, credentialType);
+
+    // if schema is for non merklized credential, root position must be set to none ('')
+    // otherwise default position for merklized position is index.
+    if (nonMerklized && opts.merklizedRootPosition !== MerklizedRootPosition.None) {
+      throw new Error('merklized root position is not supported for non-merklized claims');
+    }
+    if (!nonMerklized && opts.merklizedRootPosition === MerklizedRootPosition.None) {
+      opts.merklizedRootPosition = MerklizedRootPosition.Index;
+    }
+
+    const schemaHash = caclulateCoreSchemaHash(byteEncoder.encode(credentialType));
+    const claim = Claim.newClaim(
+      schemaHash,
+      ClaimOptions.withIndexDataBytes(slots.indexA, slots.indexB),
+      ClaimOptions.withValueDataBytes(slots.valueA, slots.valueB),
+      ClaimOptions.withRevocationNonce(BigInt(opts.revNonce)),
+      ClaimOptions.withVersion(opts.version)
+    );
+
+    if (opts.updatable) {
+      claim.setFlagUpdatable(opts.updatable);
+    }
+    if (this.expirationDate) {
+      claim.setExpirationDate(new Date(this.expirationDate));
+    }
+    if (subjectId) {
+      const did = DID.parse(subjectId.toString());
+      const id = DID.idFromDID(did);
+
+      switch (opts.subjectPosition) {
+        case '':
+        case SubjectPosition.Index:
+          claim.setIndexId(id);
+          break;
+        case SubjectPosition.Value:
+          claim.setValueId(id);
+          break;
+        default:
+          throw new Error('unknown subject position');
+      }
+    }
+
+    switch (opts.merklizedRootPosition) {
+      case MerklizedRootPosition.Index: {
+        const mk = await this.merklize(opts.merklizeOpts);
+        claim.setIndexMerklizedRoot((await mk.root()).bigInt());
+        break;
+      }
+      case MerklizedRootPosition.Value: {
+        const mk = await this.merklize(opts.merklizeOpts);
+        claim.setValueMerklizedRoot((await mk.root()).bigInt());
+        break;
+      }
+      case MerklizedRootPosition.None:
+        break;
+      default:
+        throw new Error('unknown merklized root position');
+    }
+
+    return claim;
+  }
+
   /**
    * checks BJJSignatureProof2021 in W3C VC
    *
@@ -164,6 +273,8 @@ export class W3CCredential {
       throw new Error(`can't get core claim`);
     }
 
+    await this.verifyCoreClaimMatch(coreClaim, opts?.merklizeOptions);
+
     switch (proofType) {
       case ProofType.BJJSignature: {
         if (!opts?.credStatusResolverRegistry) {
@@ -189,6 +300,51 @@ export class W3CCredential {
       default: {
         throw new Error('invalid proof type');
       }
+    }
+  }
+
+  private async verifyCoreClaimMatch(coreClaim: Claim, merklizeOpts?: Options) {
+    let merklizedRootPosition = '';
+
+    const merklizedPosition = coreClaim.getMerklizedPosition();
+    switch (merklizedPosition) {
+      case MerklizedRootPositionCore.None:
+        merklizedRootPosition = MerklizedRootPosition.None;
+        break;
+      case MerklizedRootPositionCore.Index:
+        merklizedRootPosition = MerklizedRootPosition.Index;
+        break;
+      case MerklizedRootPositionCore.Value:
+        merklizedRootPosition = MerklizedRootPosition.Value;
+        break;
+    }
+
+    let subjectPosition = '';
+    const idPosition = coreClaim.getIdPosition();
+    switch (idPosition) {
+      case IdPosition.None:
+        subjectPosition = SubjectPosition.None;
+        break;
+      case IdPosition.Index:
+        subjectPosition = SubjectPosition.Index;
+        break;
+      case IdPosition.Value:
+        subjectPosition = SubjectPosition.Value;
+        break;
+    }
+
+    const coreClaimOpts: CoreClaimCreationOptions = {
+      revNonce: Number(coreClaim.getRevocationNonce()),
+      version: coreClaim.getVersion(),
+      merklizedRootPosition,
+      subjectPosition,
+      updatable: coreClaim.getFlagUpdatable(),
+      merklizeOpts: merklizeOpts
+    };
+
+    const credentialCoreClaim = await this.toCoreClaim(coreClaimOpts);
+    if (coreClaim.hex() != credentialCoreClaim.hex()) {
+      throw new Error('proof generated for another credential');
     }
   }
 
@@ -378,4 +534,5 @@ export interface RevocationStatus {
  */
 export interface W3CProofVerificationOptions {
   credStatusResolverRegistry?: CredentialStatusResolverRegistry;
+  merklizeOptions?: Options;
 }
