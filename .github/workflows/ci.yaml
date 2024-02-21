@@ -46,15 +46,11 @@ jobs:
       - name: Circular dependency check
         run: npm run deps:check
 
-      - name: Get current branch name
-        id: branch-name
-        uses: tj-actions/branch-names@v5
-
-      - name: Download regular circuits for CI '${{steps.branch-name.outputs.current_branch}}.zip' from S3
-        run: mkdir ./tests/proofs/testdata && wget https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/${{steps.branch-name.outputs.current_branch}}.zip -P ./tests/proofs/testdata
+      - name: Download regular circuits for CI 'latest.zip.zip' from S3
+        run: mkdir ./tests/proofs/testdata && wget https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/latest.zip -P ./tests/proofs/testdata
 
       - name: Unzip circuits to folder
-        run: cd ./tests/proofs/testdata && unzip value-arr-size-input.zip && cd - && pwd
+        run: cd ./tests/proofs/testdata && unzip latest.zip && cd - && pwd
 
       - name: Run Tests
         env:
