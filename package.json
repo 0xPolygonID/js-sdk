@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.7.6",
+  "version": "1.8.0",
   "description": "SDK to work with Polygon ID",
   "main": "dist/node/cjs/index.js",
   "module": "dist/node/esm/index.js",
@@ -33,8 +33,7 @@
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"strict\": false, \"module\": \"CommonJS\"}' mocha",
     "lint": "eslint --fix --ext .ts src/** tests/**",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "deps:check": "madge --circular --extensions ts ./"
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
   },
   "repository": {
     "type": "git",
@@ -76,7 +75,6 @@
     "chokidar": "^3.5.3",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "madge": "^6.1.0",
     "mocha": "10.2.0",
     "prettier": "^2.7.1",
     "rimraf": "^5.0.5",
@@ -89,11 +87,11 @@
     "@iden3/js-crypto": "1.0.3",
     "@iden3/js-iden3-core": "1.2.1",
     "@iden3/js-jsonld-merklization": "1.1.2",
-    "@iden3/js-jwz": "1.2.1",
+    "@iden3/js-jwz": "1.3.0",
     "@iden3/js-merkletree": "1.1.2",
-    "ffjavascript": "0.2.62",
+    "ffjavascript": "0.2.63",
     "rfc4648": "1.5.3",
-    "snarkjs": "0.7.2"
+    "snarkjs": "0.7.3"
   },
   "dependencies": {
     "ajv": "8.12.0",
@@ -103,7 +101,7 @@
     "elliptic": "6.5.4",
     "ethers": "6.8.0",
     "idb-keyval": "6.2.0",
-    "js-sha3": "0.9.2",
+    "js-sha3": "0.9.3",
     "jsonld": "8.3.1",
     "pubsub-js": "1.9.4",
     "uuid": "9.0.1"
