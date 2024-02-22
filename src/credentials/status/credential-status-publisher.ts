@@ -4,6 +4,7 @@ import { OnChainRevocationStorage } from '../../storage';
 import { CredentialStatusType } from '../../verifiable';
 import { ProofNode } from './reverse-sparse-merkle-tree';
 import { MessageBus, SDK_EVENTS } from '../../utils';
+import { PublishMode } from '../models';
 
 /**
  * Represents a credential status publisher.
@@ -59,7 +60,7 @@ export class Iden3OnchainSmtCredentialStatusPublisher implements ICredentialStat
     credentialStatusType: CredentialStatusType;
     onChain?: {
       txCallback?: (tx: TransactionReceipt) => Promise<void>;
-      publishMode?: 'sync' | 'async' | 'callback';
+      publishMode?: PublishMode;
     };
   }): Promise<void> {
     if (
@@ -98,9 +99,7 @@ export class Iden3OnchainSmtCredentialStatusPublisher implements ICredentialStat
         break;
       }
       default:
-        // sync by default
-        await txPromise;
-        break;
+        throw new Error(`Invalid publishMode: ${publishMode}`);
     }
   }
 }

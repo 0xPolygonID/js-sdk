@@ -4,13 +4,10 @@ import {
   W3CCredential,
   ProofQuery,
   VerifiableConstants,
-  SubjectPosition,
-  MerklizedRootPosition,
   CredentialStatus,
   RevocationStatus,
   CredentialStatusType,
-  State,
-  RefreshService
+  State
 } from './../verifiable';
 
 import { JSONSchema } from '../schema-processor';
@@ -20,69 +17,7 @@ import { IssuerResolver } from './status/sparse-merkle-tree';
 import { AgentResolver } from './status/agent-revocation';
 import { CredentialStatusResolveOptions } from './status/resolver';
 import { getUserDIDFromCredential } from './utils';
-
-// ErrAllClaimsRevoked all claims are revoked.
-const ErrAllClaimsRevoked = 'all claims are revoked';
-
-/**
- * Request to core library to create Core Claim from W3C Verifiable Credential
- *
- * @public
- * @interface CredentialRequest
- */
-export interface CredentialRequest {
-  /**
-   * JSON credential schema
-   */
-  credentialSchema: string;
-  /**
-   * Credential type
-   */
-  type: string;
-  /**
-   * Credential subject, usually contains claims and identifier
-   */
-  credentialSubject: { [key: string]: string | object | number | boolean };
-  /**
-   * expiration time
-   */
-  expiration?: number;
-  /**
-   * refreshService
-   */
-  refreshService?: RefreshService;
-  /**
-   * claim version
-   */
-  version?: number;
-
-  /**
-   * subject position (index / value / none)
-   */
-  subjectPosition?: SubjectPosition;
-  /**
-   * merklizedRootPosition (index / value / none)
-   */
-  merklizedRootPosition?: MerklizedRootPosition;
-
-  /**
-   * Revocation options
-   *
-   * @type {{
-   *     id: string;
-   *     nonce?: number;
-   *     type: CredentialStatusType;
-   *     issuerState?: string;
-   *   }}
-   * @memberof CredentialRequest
-   */
-  revocationOpts: {
-    id: string;
-    nonce?: number;
-    type: CredentialStatusType;
-    issuerState?: string;
-  };
-}
+import { CredentialRequest } from './models';
 
 /**
  * Interface to work with credential wallets
@@ -461,6 +396,6 @@ export class CredentialWallet implements ICredentialWallet {
       }
       return { cred, revStatus };
     }
-    throw new Error(ErrAllClaimsRevoked);
+    throw new Error('all claims are revoked');
   }
 }

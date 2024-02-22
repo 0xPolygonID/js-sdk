@@ -38,6 +38,7 @@ import {
   getNodesRepresentation,
   ICredentialWallet,
   ProofNode,
+  PublishMode,
   pushHashesToRHS,
   TreesModel
 } from '../credentials';
@@ -49,15 +50,6 @@ import {
   CredentialStatusPublisherRegistry,
   Iden3SmtRhsCredentialStatusPublisher
 } from '../credentials/status/credential-status-publisher';
-
-/**
- * Represents the publish mode for identity wallet.
- * It can be one of the following values: 'sync', 'async', or 'callback'.
- * 'sync' - publish the status synchronously
- * 'async' - publish the status asynchronously via message bus
- * 'callback' - publish the status with a txCallback
- */
-export type PublishMode = 'sync' | 'async' | 'callback';
 
 /**
  * DID creation options
