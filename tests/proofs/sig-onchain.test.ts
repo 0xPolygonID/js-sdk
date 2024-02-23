@@ -182,16 +182,9 @@ describe('sig onchain proofs', () => {
 
     expect(vp).to.be.undefined;
 
-    // query hash test
-    if (circuitId === CircuitId.AtomicQueryV3OnChain) {
-      expect(pub_signals[2]).to.be.equal(
-        '18468550633535771068949762992816231069500626754311319668523269632496468385060'
-      );
-    } else {
-      expect(pub_signals[2]).to.be.equal(
-        '15045271939084694661437431358729281571840804299863053791890179002991342242959'
-      );
-    }
+    expect(pub_signals[2]).to.be.equal(
+      '15045271939084694661437431358729281571840804299863053791890179002991342242959'
+    );
 
     const isValid = await proofService.verifyProof({ proof, pub_signals }, circuitId);
     expect(isValid).to.be.true;

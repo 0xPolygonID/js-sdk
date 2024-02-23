@@ -4,7 +4,7 @@ import {
   Operators,
   Query
 } from '../../src/circuits';
-import { IdentityTest, defaultUserClaim, userPK, prepareIntArray } from './utils';
+import { IdentityTest, defaultUserClaim, userPK } from './utils';
 import expectedJson from './data/linked-multi-query-inputs.json';
 import { expect } from 'chai';
 import { byteDecoder, byteEncoder } from '../../src';
@@ -18,17 +18,17 @@ describe('linked-multi-query', () => {
     const query1 = new Query();
     query1.operator = Operators.EQ;
     query1.slotIndex = 2;
-    query1.values = prepareIntArray([BigInt(10)], 64);
+    query1.values = [BigInt(10)];
 
     const query2 = new Query();
     query2.operator = Operators.LT;
     query2.slotIndex = 2;
-    query2.values = prepareIntArray([BigInt(133)], 64);
+    query2.values = [BigInt(133)];
 
     const query3 = new Query();
     query3.operator = Operators.LTE;
     query3.slotIndex = 2;
-    query3.values = prepareIntArray([BigInt(555)], 64);
+    query3.values = [BigInt(555)];
 
     const inputs = new LinkedMultiQueryInputs();
     inputs.linkNonce = BigInt('35346346369657418');
@@ -75,6 +75,16 @@ describe('linked-multi-query', () => {
 			"0",
 			"0",
 			"0",
+			"0",
+      "1",
+			"1",
+			"1",
+			"1",
+			"1",
+			"0",
+			"0",
+			"0",
+			"0",
 			"0"
 		]`
     );
@@ -89,22 +99,26 @@ describe('linked-multi-query', () => {
     const operatorOutput: bigint[] = [];
     const circuitQueryHash: bigint[] = [];
     const enabled: boolean[] = [];
+    const valueArraySize: number[] = [];
     for (let i = 1; i <= 10; i++) {
       const indx = i - 1;
       operatorOutput[indx] = BigInt(i);
       circuitQueryHash[indx] = BigInt(i * 100);
       enabled[indx] = true;
+      valueArraySize[indx] = 1;
 
       if (i > 5) {
         operatorOutput[indx] = BigInt(0);
         circuitQueryHash[indx] = BigInt(0);
         enabled[indx] = false;
+        valueArraySize[indx] = 0;
       }
     }
 
     exp.operatorOutput = operatorOutput;
     exp.circuitQueryHash = circuitQueryHash;
     exp.enabled = enabled;
+    exp.valueArraySize = valueArraySize;
 
     const expJson = JSON.stringify(exp, (_, value) =>
       typeof value === 'bigint' ? value.toString() : value

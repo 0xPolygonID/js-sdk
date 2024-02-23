@@ -37,6 +37,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
     const slotIndex: number[] = [];
     const operator: number[] = [];
     const value: string[][] = [];
+    const valueArraySize: number[] = [];
 
     for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
       if (!this.query[i]) {
@@ -57,6 +58,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
 
         const valuesArr = prepareCircuitArrayValues([], this.getValueArrSize());
         value.push(bigIntArrayToStringArray(valuesArr));
+        valueArraySize.push(0);
         continue;
       }
       enabled.push(1);
@@ -83,6 +85,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
       slotIndex.push(this.query[i].slotIndex);
       operator.push(this.query[i].operator);
 
+      valueArraySize.push(this.query[i].values.length);
       const valuesArr = prepareCircuitArrayValues(this.query[i].values, this.getValueArrSize());
       value.push(bigIntArrayToStringArray(valuesArr));
     }
@@ -101,7 +104,8 @@ export class LinkedMultiQueryInputs extends BaseConfig {
       claimPathValue,
       slotIndex,
       operator,
-      value
+      value,
+      valueArraySize
     };
 
     return byteEncoder.encode(JSON.stringify(s));
@@ -126,6 +130,7 @@ interface LinkedMultiQueryCircuitInputs {
   slotIndex: number[];
   operator: number[];
   value: string[][];
+  valueArraySize: number[];
 }
 
 // LinkedMultiQueryPubSignals linkedMultiQuery10.circom public signals
@@ -141,6 +146,7 @@ export class LinkedMultiQueryPubSignals {
   operatorOutput!: bigint[];
   circuitQueryHash!: bigint[];
   enabled!: boolean[];
+  valueArraySize!: number[];
 
   /**
    * PubSignalsUnmarshal unmarshal linkedMultiQuery10.circom public inputs to LinkedMultiQueryPubSignals
@@ -150,7 +156,7 @@ export class LinkedMultiQueryPubSignals {
    * @returns LinkedMultiQueryPubSignals
    */
   pubSignalsUnmarshal(data: Uint8Array): LinkedMultiQueryPubSignals {
-    const len = 32;
+    const len = 42;
     const queryLength = LinkedMultiQueryInputs.queryCount;
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
@@ -187,6 +193,13 @@ export class LinkedMultiQueryPubSignals {
     for (let i = 0; i < queryLength; i++) {
       const enabledNum = parseInt(sVals[fieldIdx]);
       this.enabled.push(enabledNum === 1);
+      fieldIdx++;
+    }
+
+    // - valueArraySize
+    this.valueArraySize = [];
+    for (let i = 0; i < queryLength; i++) {
+      this.valueArraySize.push(parseInt(sVals[fieldIdx]));
       fieldIdx++;
     }
 
