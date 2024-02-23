@@ -24,7 +24,7 @@
     "build": "npm run clean && npm run build:node && npm run build:browser",
     "build:node": "npm run build:tsc && npm run build:esm",
     "build:esm": "tsc --outDir dist/node/esm  --declaration --declarationDir dist/types",
-    "build:browser": "rollup -c rollup.config.mjs",
+    "build:browser": "rollup -c rollup.config.mjs --failAfterWarnings",
     "build:tsc": "tsc --module commonjs --outDir dist/node/cjs",
     "doc:extract": "ts-node ./scripts/doc-extract.ts",
     "doc:documenter": "ts-node ./scripts/doc-documenter.ts",

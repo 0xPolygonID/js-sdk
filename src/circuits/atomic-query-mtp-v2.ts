@@ -1,4 +1,3 @@
-import { newHashFromString } from '@iden3/js-merkletree';
 import { Id, SchemaHash } from '@iden3/js-iden3-core';
 import { Query, ClaimWithMTPProof, ValueProof, CircuitError } from './models';
 import { Hash } from '@iden3/js-merkletree';
@@ -238,7 +237,7 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
     fieldIdx++;
 
     // - issuerClaimIdenState
-    this.issuerClaimIdenState = newHashFromString(sVals[fieldIdx]);
+    this.issuerClaimIdenState = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     // - isRevocationChecked
@@ -246,7 +245,7 @@ export class AtomicQueryMTPV2PubSignals extends BaseConfig {
     fieldIdx++;
 
     // - issuerClaimNonRevState
-    this.issuerClaimNonRevState = newHashFromString(sVals[fieldIdx]);
+    this.issuerClaimNonRevState = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     //  - timestamp

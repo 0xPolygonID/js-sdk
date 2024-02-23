@@ -6,6 +6,7 @@ import { StateInfo } from '../entities/state';
 import { StateTransitionPubSignals } from '../../circuits';
 import { byteEncoder } from '../../utils';
 import abi from './abi/State.json';
+import { DID, getChainId, Id } from '@iden3/js-iden3-core';
 
 /**
  * Configuration of ethereum based blockchain connection
@@ -60,14 +61,33 @@ export class EthStateStorage implements IStateStorage {
    * Creates an instance of EthStateStorage.
    * @param {EthConnectionConfig} [ethConfig=defaultEthConnectionConfig]
    */
-  constructor(private readonly ethConfig: EthConnectionConfig = defaultEthConnectionConfig) {
-    this.provider = new JsonRpcProvider(this.ethConfig.url);
-    this.stateContract = new Contract(this.ethConfig.contractAddress, abi, this.provider);
+  constructor(private readonly ethConfig: EthConnectionConfig | EthConnectionConfig[]) {
+    const config = Array.isArray(ethConfig) ? ethConfig[0] : ethConfig;
+    this.provider = new JsonRpcProvider(config.url);
+    this.stateContract = new Contract(config.contractAddress, abi, this.provider);
   }
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
   async getLatestStateById(id: bigint): Promise<StateInfo> {
-    const rawData = await this.stateContract.getStateInfoById(id);
+    const { stateContract } = this.getStateContractAndProviderForId(id);
+    const rawData = await stateContract.getStateInfoById(id);
+    const stateInfo: StateInfo = {
+      id: BigInt(rawData[0]),
+      state: BigInt(rawData[1]),
+      replacedByState: BigInt(rawData[2]),
+      createdAtTimestamp: BigInt(rawData[3]),
+      replacedAtTimestamp: BigInt(rawData[4]),
+      createdAtBlock: BigInt(rawData[5]),
+      replacedAtBlock: BigInt(rawData[6])
+    };
+
+    return stateInfo;
+  }
+
+  /** {@inheritdoc IStateStorage.getStateInfoByIdAndState} */
+  async getStateInfoByIdAndState(id: bigint, state: bigint): Promise<StateInfo> {
+    const { stateContract } = this.getStateContractAndProviderForId(id);
+    const rawData = await stateContract.getStateInfoByIdAndState(id, state);
     const stateInfo: StateInfo = {
       id: BigInt(rawData[0]),
       state: BigInt(rawData[1]),
@@ -83,13 +103,14 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.publishState} */
   async publishState(proof: ZKProof, signer: Signer): Promise<string> {
-    const contract = this.stateContract.connect(signer) as Contract;
-
     const stateTransitionPubSig = new StateTransitionPubSignals();
     stateTransitionPubSig.pubSignalsUnmarshal(
       byteEncoder.encode(JSON.stringify(proof.pub_signals))
     );
     const { userId, oldUserState, newUserState, isOldStateGenesis } = stateTransitionPubSig;
+
+    const { stateContract, provider } = this.getStateContractAndProviderForId(userId.bigInt());
+    const contract = stateContract.connect(signer) as Contract;
 
     const payload = [
       userId.bigInt().toString(),
@@ -104,7 +125,7 @@ export class EthStateStorage implements IStateStorage {
       proof.proof.pi_c.slice(0, 2)
     ];
 
-    const feeData = await this.provider.getFeeData();
+    const feeData = await provider.getFeeData();
 
     const maxFeePerGas = defaultEthConnectionConfig.maxFeePerGas
       ? BigInt(defaultEthConnectionConfig.maxFeePerGas)
@@ -141,7 +162,8 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getGISTProof} */
   async getGISTProof(id: bigint): Promise<StateProof> {
-    const data = await this.stateContract.getGISTProof(id);
+    const { stateContract } = this.getStateContractAndProviderForId(id);
+    const data = await stateContract.getGISTProof(id);
 
     return {
       root: BigInt(data.root.toString()),
@@ -160,7 +182,8 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getGISTRootInfo} */
   async getGISTRootInfo(id: bigint): Promise<RootInfo> {
-    const data = await this.stateContract.getGISTRootInfo(id);
+    const { stateContract } = this.getStateContractAndProviderForId(id);
+    const data = await stateContract.getGISTRootInfo(id);
 
     return {
       root: BigInt(data.root.toString()),
@@ -170,5 +193,38 @@ export class EthStateStorage implements IStateStorage {
       createdAtBlock: BigInt(data.createdAtBlock.toString()),
       replacedAtBlock: BigInt(data.replacedAtBlock.toString())
     };
+  }
+
+  private getStateContractAndProviderForId(id: bigint): {
+    stateContract: Contract;
+    provider: JsonRpcProvider;
+  } {
+    const idTyped = Id.fromBigInt(id as bigint);
+    if (!Array.isArray(this.ethConfig)) {
+      return {
+        stateContract: this.stateContract,
+        provider: this.provider
+      };
+    }
+
+    const chainId = getChainId(DID.blockchainFromId(idTyped), DID.networkIdFromId(idTyped));
+    const config = this.networkByChainId(chainId);
+
+    const provider = new JsonRpcProvider(config.url);
+    const stateContract = new Contract(config.contractAddress, abi, this.provider);
+
+    return { stateContract, provider };
+  }
+
+  private networkByChainId(chainId: number): EthConnectionConfig {
+    if (Array.isArray(this.ethConfig)) {
+      const network = this.ethConfig.find((c) => c.chainId === chainId);
+      if (!network) {
+        throw new Error(`chainId "${chainId}" not supported`);
+      }
+      return network;
+    }
+
+    return this.ethConfig as EthConnectionConfig;
   }
 }

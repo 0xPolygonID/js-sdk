@@ -24,7 +24,7 @@ import { ethers } from 'ethers';
 import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
-import { CredentialStatusType, W3CCredential } from '../../src/verifiable';
+import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
@@ -51,6 +51,9 @@ describe('mtp onchain proofs', () => {
         createdAtBlock: 30258020n,
         replacedAtBlock: 0n
       };
+    },
+    getStateInfoByIdAndState: async () => {
+      throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
     },
     publishState: async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
