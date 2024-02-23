@@ -1,6 +1,7 @@
 import { W3CCredential } from '../../../verifiable';
 import { MediaType } from '../../constants';
 import { JSONObject, ProtocolMessage } from '../packer';
+import { ContractInvokeTransactionData } from './contract-request';
 
 /** CredentialIssuanceRequestMessageBody represents data for credential issuance request */
 export type CredentialIssuanceRequestMessageBody = {
@@ -35,6 +36,23 @@ export type CredentialsOfferMessage = {
 export type CredentialsOfferMessageBody = {
   url: string;
   credentials: Array<CredentialOffer>;
+};
+
+/** CredentialsOnchainOfferMessage represent Iden3message for credential onhcain offer message */
+export type CredentialsOnchainOfferMessage = {
+  id: string;
+  typ: MediaType;
+  type: ProtocolMessage;
+  thid?: string;
+  body: CredentialsOnchainOfferMessageBody;
+  from: string;
+  to: string;
+};
+
+/** CredentialsOnchainOfferMessageBody is struct the represents onchain offer message body */
+export type CredentialsOnchainOfferMessageBody = {
+  credentials: Array<CredentialOffer>;
+  transaction_data: ContractInvokeTransactionData;
 };
 
 /** CredentialOffer is structure to fetch credential */

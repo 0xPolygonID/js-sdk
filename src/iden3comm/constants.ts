@@ -30,7 +30,9 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   // RevocationStatusResponseMessageType is type for response with a revocation status
   REVOCATION_STATUS_RESPONSE_MESSAGE_TYPE: IDEN3_PROTOCOL + 'revocation/1.0/status',
   // ContractInvokeRequestMessageType is type for request of contract invoke request
-  CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'proofs/1.0/contract-invoke-request'
+  CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'proofs/1.0/contract-invoke-request',
+  // CredentialOnchainOfferMessageType is type of message with credential onchain offering
+  CREDENTIAL_ONCHAIN_OFFER_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/1.0/onchain-offer'
 });
 
 /**
