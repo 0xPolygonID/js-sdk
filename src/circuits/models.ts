@@ -126,7 +126,7 @@ export enum CircuitId {
    * @beta
    */
   // LinkedMultiQuery is a type for linkedMultiQuery.circom
-  LinkedMultiQuery10 = 'linkedMultiQuery10-beta.0'
+  LinkedMultiQuery10 = 'linkedMultiQuery10-beta.1'
 }
 
 /**
