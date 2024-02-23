@@ -16,6 +16,15 @@ export interface IStateStorage {
    * @returns `Promise<StateInfo>`
    */
   getLatestStateById(id: bigint): Promise<StateInfo>;
+
+  /**
+   * gets state info of identity by id and state
+   *
+   * @param {bigint} id - id to check
+   * @param {bigint} state - state to check
+   * @returns `Promise<StateInfo>`
+   */
+  getStateInfoByIdAndState(id: bigint, state: bigint): Promise<StateInfo>;
   /**
    * method to publish state onchain
    *

@@ -8,15 +8,75 @@ import {
   IPackageManager,
   JSONObject,
   JWSPackerParams,
+  ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
-import { RevocationStatus, W3CCredential } from '../../verifiable';
+import { ProofQuery, RevocationStatus, W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
 import { getRandomBytes } from '@iden3/js-crypto';
+
+/**
+ *  createAuthorizationRequest is a function to create protocol authorization request
+ * @param {string} reason - reason to request proof
+ * @param {string} sender - sender did
+ * @param {string} callbackUrl - callback that user should use to send response
+ * @returns `Promise<AuthorizationRequestMessage>`
+ */
+export function createAuthorizationRequest(
+  reason: string,
+  sender: string,
+  callbackUrl: string
+): AuthorizationRequestMessage {
+  return createAuthorizationRequestWithMessage(reason, '', sender, callbackUrl);
+}
+/**
+ *  createAuthorizationRequestWithMessage is a function to create protocol authorization request with explicit message to sign
+ * @param {string} reason - reason to request proof
+ * @param {string} message - message to sign in the response
+ * @param {string} sender - sender did
+ * @param {string} callbackUrl - callback that user should use to send response
+ * @returns `Promise<AuthorizationRequestMessage>`
+ */
+export function createAuthorizationRequestWithMessage(
+  reason: string,
+  message: string,
+  sender: string,
+  callbackUrl: string
+): AuthorizationRequestMessage {
+  const uuidv4 = uuid.v4();
+  const request: AuthorizationRequestMessage = {
+    id: uuidv4,
+    thid: uuidv4,
+    from: sender,
+    typ: MediaType.PlainMessage,
+    type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+    body: {
+      reason: reason,
+      message: message,
+      callbackUrl: callbackUrl,
+      scope: []
+    }
+  };
+  return request;
+}
+
+/**
+ *
+ * Options to pass to auth response handler
+ *
+ * @public
+ * @interface AuthResponseHandlerOptions
+ */
+export interface AuthResponseHandlerOptions {
+  // acceptedStateTransitionDelay is the period of time in milliseconds that a revoked state remains valid.
+  acceptedStateTransitionDelay?: number;
+  // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
+  acceptedProofGenerationDelay?: number;
+}
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
@@ -53,6 +113,26 @@ export interface IAuthHandler {
     authRequest: AuthorizationRequestMessage;
     authResponse: AuthorizationResponseMessage;
   }>;
+
+  /**
+     * handle authorization response
+     * @public
+     * @param {AuthorizationResponseMessage} response  - auth response
+     * @param {AuthorizationRequestMessage} request  - auth request
+     * @param {AuthResponseHandlerOptions} opts - options
+     * @returns `Promise<{
+      request: AuthorizationRequestMessage;
+      response: AuthorizationResponseMessage;
+    }>`
+     */
+  handleAuthorizationResponse(
+    response: AuthorizationResponseMessage,
+    request: AuthorizationRequestMessage,
+    opts?: AuthResponseHandlerOptions
+  ): Promise<{
+    request: AuthorizationRequestMessage;
+    response: AuthorizationResponseMessage;
+  }>;
 }
 /**
  *
@@ -88,10 +168,7 @@ export class AuthHandler implements IAuthHandler {
   ) {}
 
   /**
-   * unpacks authorization request
-   * @public
-   * @param {Uint8Array} request - raw byte message
-   * @returns `Promise<AuthorizationRequestMessage>`
+   * @inheritdoc IAuthHandler#parseAuthorizationRequest
    */
   async parseAuthorizationRequest(request: Uint8Array): Promise<AuthorizationRequestMessage> {
     const { unpackedMessage: message } = await this._packerMgr.unpack(request);
@@ -103,15 +180,7 @@ export class AuthHandler implements IAuthHandler {
   }
 
   /**
-   * unpacks authorization request and packs authorization response
-   * @public
-   * @param {did} did  - sender DID
-   * @param {Uint8Array} request - raw byte message
-   * @returns `Promise<{
-    token: string;
-    authRequest: AuthorizationRequestMessage;
-    authResponse: AuthorizationResponseMessage;
-  }>`
+   * @inheritdoc IAuthHandler#handleAuthorizationRequest
    */
   async handleAuthorizationRequest(
     did: DID,
@@ -253,5 +322,119 @@ export class AuthHandler implements IAuthHandler {
     );
 
     return { authRequest, authResponse, token };
+  }
+
+  /**
+   * @inheritdoc IAuthHandler#handleAuthorizationResponse
+   */
+  async handleAuthorizationResponse(
+    response: AuthorizationResponseMessage,
+    request: AuthorizationRequestMessage,
+    opts?: AuthResponseHandlerOptions | undefined
+  ): Promise<{
+    request: AuthorizationRequestMessage;
+    response: AuthorizationResponseMessage;
+  }> {
+    if ((request.body.message ?? '') !== (response.body.message ?? '')) {
+      throw new Error('message for signing from request is not presented in response');
+    }
+
+    if (request.from !== response.to) {
+      throw new Error(
+        `sender of the request is not a target of response - expected ${request.from}, given ${response.to}`
+      );
+    }
+
+    this.verifyAuthRequest(request);
+    const requestScope = request.body.scope;
+
+    if (!response.from) {
+      throw new Error(`proof response doesn't contain from field`);
+    }
+
+    const groupIdToLinkIdMap = new Map<number, { linkID: number; requestId: number }[]>();
+    // group requests by query group id
+    for (const proofRequest of requestScope) {
+      const groupId = proofRequest.query.groupId as number;
+
+      const proofResp = response.body.scope.find((resp) => resp.id === proofRequest.id);
+      if (!proofResp) {
+        throw new Error(`proof is not given for requestId ${proofRequest.id}`);
+      }
+
+      const circuitId = proofResp.circuitId;
+      if (circuitId !== proofRequest.circuitId) {
+        throw new Error(
+          `proof is not given for requested circuit expected: ${proofRequest.circuitId}, given ${circuitId}`
+        );
+      }
+
+      const params = proofRequest.params ?? {};
+      params.verifierDid = DID.parse(request.from);
+
+      const { linkID } = await this._proofService.verifyZKPResponse(proofResp, {
+        query: proofRequest.query as unknown as ProofQuery,
+        sender: response.from,
+        params,
+        opts
+      });
+      // write linkId to the proof response
+      // const pubSig = pubSignals as unknown as { linkID?: number };
+
+      if (linkID && groupId) {
+        groupIdToLinkIdMap.set(groupId, [
+          ...(groupIdToLinkIdMap.get(groupId) ?? []),
+          { linkID: linkID, requestId: proofResp.id }
+        ]);
+      }
+    }
+
+    // verify grouping links
+    for (const [groupId, metas] of groupIdToLinkIdMap.entries()) {
+      // check that all linkIds are the same
+      if (metas.some((meta) => meta.linkID !== metas[0].linkID)) {
+        throw new Error(
+          `Link id validation failed for group ${groupId}, request linkID to requestIds info: ${JSON.stringify(
+            metas
+          )}`
+        );
+      }
+    }
+
+    return { request, response };
+  }
+
+  private verifyAuthRequest(request: AuthorizationRequestMessage) {
+    const groupIdValidationMap: { [k: string]: ZeroKnowledgeProofRequest[] } = {};
+    const requestScope = request.body.scope;
+    for (const proofRequest of requestScope) {
+      const groupId = proofRequest.query.groupId as number;
+      if (groupId) {
+        const existingRequests = groupIdValidationMap[groupId] ?? [];
+
+        //validate that all requests in the group have the same schema, issuer and circuit
+        for (const existingRequest of existingRequests) {
+          if (existingRequest.query.type !== proofRequest.query.type) {
+            throw new Error(`all requests in the group should have the same type`);
+          }
+
+          if (existingRequest.query.context !== proofRequest.query.context) {
+            throw new Error(`all requests in the group should have the same context`);
+          }
+
+          const allowedIssuers = proofRequest.query.allowedIssuers as string[];
+          const existingRequestAllowedIssuers = existingRequest.query.allowedIssuers as string[];
+          if (
+            !(
+              allowedIssuers.includes('*') ||
+              allowedIssuers.every((issuer) => existingRequestAllowedIssuers.includes(issuer))
+            )
+          ) {
+            throw new Error(`all requests in the group should have the same issuer`);
+          }
+        }
+        groupIdValidationMap[groupId] = [...(groupIdValidationMap[groupId] ?? []), proofRequest];
+      }
+    }
   }
 }
