@@ -1,5 +1,13 @@
 import { expect } from 'chai';
-import { JSONObject, mergeObjects } from '../../src';
+import {
+  AbstractPrivateKeyStore,
+  InMemoryPrivateKeyStore,
+  JSONObject,
+  KmsKeyType,
+  Sec256k1Provider,
+  mergeObjects
+} from '../../src';
+import { getRandomBytes } from '@iden3/js-crypto';
 
 describe('merge credential subjects to create query', () => {
   it('should merge two valid JSONObjects correctly', () => {
@@ -147,5 +155,23 @@ describe('merge credential subjects to create query', () => {
         mergeObjects(testCase.subj1 as JSONObject, testCase.subj2 as JSONObject)
       ).to.deep.equal(testCase.expectedResult);
     }
+  });
+});
+
+describe('secp256k1 tests', () => {
+  it('should sec256k1 signatures be equal for the same data and private key', async () => {
+    const keyStore: AbstractPrivateKeyStore = new InMemoryPrivateKeyStore();
+    const secp256k1 = new Sec256k1Provider(KmsKeyType.Secp256k1, keyStore);
+    const seed = getRandomBytes(32);
+    const dataToSign = getRandomBytes(32);
+    const [keyId1, keyId2] = await Promise.all([
+      secp256k1.newPrivateKeyFromSeed(seed),
+      secp256k1.newPrivateKeyFromSeed(seed)
+    ]);
+    const [signature1, signature2] = await Promise.all([
+      secp256k1.sign(keyId1, dataToSign),
+      secp256k1.sign(keyId2, dataToSign)
+    ]);
+    expect(signature1).to.deep.equal(signature2);
   });
 });
