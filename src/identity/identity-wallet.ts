@@ -38,6 +38,7 @@ import {
   getNodesRepresentation,
   ICredentialWallet,
   ProofNode,
+  PublishMode,
   pushHashesToRHS,
   TreesModel
 } from '../credentials';
@@ -67,6 +68,7 @@ export type IdentityCreationOptions = {
     nonce?: number;
     onChain?: {
       txCallback?: (tx: TransactionReceipt) => Promise<void>;
+      publishMode?: PublishMode;
     };
   };
   seed?: Uint8Array;
@@ -81,6 +83,7 @@ export type RevocationInfoOptions = {
   rhsUrl?: string;
   onChain?: {
     txCallback?: (tx: TransactionReceipt) => Promise<void>;
+    publishMode?: PublishMode;
   };
 };
 

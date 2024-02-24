@@ -31,6 +31,7 @@ describe('refresh-service', () => {
     });
 
     const newCred = await refreshService.refreshCredential(credToRefresh, { reason: 'expired' });
+    fetchMock.restore();
 
     expect(newCred.id).to.be.equal(refreshedId);
   });

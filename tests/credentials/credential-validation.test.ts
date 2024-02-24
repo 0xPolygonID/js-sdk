@@ -85,6 +85,9 @@ const dataStorage = {
 };
 
 describe('Verify credential proof', () => {
+  afterEach(() => {
+    fetchMock.restore();
+  });
   it('Validate BJJ signature proof', async () => {
     const input = `{
         "id": "urn:uuid:3a8d1822-a00e-11ee-8f57-a27b3ddbdc29",
