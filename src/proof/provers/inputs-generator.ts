@@ -15,7 +15,6 @@ import {
   AtomicQueryV3OnChainInputs,
   CircuitClaim,
   CircuitId,
-  defaultValueArraySize,
   LinkedMultiQueryInputs,
   MTProof,
   Operators,

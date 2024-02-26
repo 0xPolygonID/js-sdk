@@ -10,11 +10,19 @@ import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
 import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
 import { AuthV2PubSignals } from '../../circuits/auth-v2';
-import { BaseConfig } from '../../circuits/common';
-import { LinkedMultiQueryPubSignals } from '../../circuits/linked-multi-query';
+import {
+  BaseConfig,
+  defaultValueArraySize,
+  prepareCircuitArrayValues
+} from '../../circuits/common';
+import {
+  LinkedMultiQueryPubSignals,
+  LinkedMultiQueryInputs
+} from '../../circuits/linked-multi-query';
 import { CircuitId } from '../../circuits/models';
 import { checkQueryRequest, ClaimOutputs, VerifyOpts } from './query';
 import { parseQueriesMetadata } from '../common';
+import { Operators } from '../../circuits';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -367,21 +375,29 @@ export class PubSignalsVerifier {
       ldOpts
     );
 
-    const queryHashes = queriesMetadata.map((queryMeta) => {
-      const valueHash = poseidon.spongeHashX(queryMeta.values, 6);
-      return poseidon.hash([
+    const queryHashes: bigint[] = [];
+    const merklized = queriesMetadata[0]?.merklizedSchema ? 1n : 0n;
+    for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
+      const queryMeta = queriesMetadata[i];
+      const values = queryMeta?.values ?? [];
+      const valArrSize = values.length;
+      const circuitValues = prepareCircuitArrayValues(values, defaultValueArraySize);
+      const claimPathNotExists =
+        queryMeta?.operator === Operators.EXISTS && circuitValues[0] === 0n;
+      const valueHash = poseidon.spongeHashX(circuitValues, 6);
+      const firstParh = poseidon.hash([
         schemaHash.bigInt(),
-        BigInt(queryMeta.slotIndex),
-        BigInt(queryMeta.operator),
-        BigInt(queryMeta.claimPathKey),
-        queryMeta.merklizedSchema ? 0n : 1n,
+        BigInt(queryMeta?.slotIndex ?? 0),
+        BigInt(queryMeta?.operator ?? 0),
+        BigInt(queryMeta?.claimPathKey ?? 0),
+        BigInt(claimPathNotExists),
         valueHash
       ]);
-    });
 
-    const circuitQueryHashes = multiQueryPubSignals.circuitQueryHash
-      .filter((i) => i !== 0n)
-      .sort(bigIntCompare);
+      queryHashes.push(poseidon.hash([firstParh, BigInt(valArrSize), merklized, 0n, 0n, 0n]));
+    }
+
+    const circuitQueryHashes = multiQueryPubSignals.circuitQueryHash.sort(bigIntCompare);
     queryHashes.sort(bigIntCompare);
     if (!queryHashes.every((queryHash, i) => queryHash === circuitQueryHashes[i])) {
       throw new Error('query hashes do not match');
