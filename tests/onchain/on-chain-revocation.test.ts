@@ -22,7 +22,9 @@ import {
   ICircuitStorage,
   byteEncoder,
   CredentialStatusPublisherRegistry,
-  Iden3OnchainSmtCredentialStatusPublisher
+  Iden3OnchainSmtCredentialStatusPublisher,
+  SDK_EVENTS,
+  MessageBus
 } from '../../src';
 
 import {
@@ -324,56 +326,60 @@ describe('onchain revocation checks', () => {
 
   it('issueCredential and generate proofs with onchain RHS status with tx callbacks', async () => {
     const id = RHS_CONTRACT_ADDRESS;
-    return new Promise((resolve) => {
+    const msgBus = MessageBus.getInstance();
+    const msgBusUseCase = new Promise((resolve) => {
+      msgBus.subscribeOnce(SDK_EVENTS.TX_RECEIPT_ACCEPTED, (receipt) => {
+        expect(receipt).to.exist;
+        resolve(true);
+      });
+    });
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet, {
+      seed: byteEncoder.encode('soedseedseedseedseedseedseedseed'),
+      revocationOpts: {
+        id,
+        type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+        onChain: {
+          publishMode: 'async'
+        }
+      }
+    });
+
+    await msgBusUseCase;
+
+    const callBackUseCase = new Promise((resolve) => {
       (async () => {
-        const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(
-          idWallet,
-          {
-            seed: byteEncoder.encode('soedseedseedseedseedseedseedseed'),
-            revocationOpts: {
-              id,
-              type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-              onChain: {
-                txCallback: async () => {
-                  const { did: userDID, credential: userAuthCredential } = await createIdentity(
-                    idWallet,
-                    {
-                      seed: byteEncoder.encode('seedseedseedseedseedseedseedseex'),
-                      revocationOpts: {
-                        id,
-                        type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-                        onChain: {
-                          txCallback: async () => {
-                            const claimReq: CredentialRequest = createCredRequest(
-                              userDID.string(),
-                              {
-                                revocationOpts: {
-                                  type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-                                  id
-                                }
-                              }
-                            );
+        const { did: userDID, credential: userAuthCredential } = await createIdentity(idWallet, {
+          seed: byteEncoder.encode('seedseedseedseedseedseedseedseex'),
+          revocationOpts: {
+            id,
+            type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+            onChain: {
+              txCallback: async () => {
+                const claimReq: CredentialRequest = createCredRequest(userDID.string(), {
+                  revocationOpts: {
+                    type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
+                    id
+                  }
+                });
 
-                            const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+                const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
 
-                            expect(issuerCred.credentialSubject.id).to.equal(userDID.string());
+                expect(issuerCred.credentialSubject.id).to.equal(userDID.string());
 
-                            await credWallet.save(issuerCred);
-                            resolve();
-                          }
-                        }
-                      }
-                    }
-                  );
+                await credWallet.save(issuerCred);
 
-                  expect(userAuthCredential.credentialStatus.id).to.contain(RHS_CONTRACT_ADDRESS);
-                }
+                expect(userAuthCredential.credentialStatus.id).to.contain(RHS_CONTRACT_ADDRESS);
+
+                expect(issuerAuthCredential.credentialStatus.id).to.contain(RHS_CONTRACT_ADDRESS);
+                resolve(true);
               }
             }
           }
-        );
-        expect(issuerAuthCredential.credentialStatus.id).to.contain(RHS_CONTRACT_ADDRESS);
+        });
       })();
     });
+
+    await callBackUseCase;
   });
 });

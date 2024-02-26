@@ -44,6 +44,9 @@ const mockStateStorage: IStateStorage = {
     }
     return stateInfo;
   },
+  getStateInfoByIdAndState: async () => {
+    throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
+  },
   publishState: async () => {
     return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
   },
@@ -82,6 +85,9 @@ const dataStorage = {
 };
 
 describe('Verify credential proof', () => {
+  afterEach(() => {
+    fetchMock.restore();
+  });
   it('Validate BJJ signature proof', async () => {
     const input = `{
         "id": "urn:uuid:3a8d1822-a00e-11ee-8f57-a27b3ddbdc29",

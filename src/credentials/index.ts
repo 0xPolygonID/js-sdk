@@ -7,3 +7,4 @@ export * from './status/credential-status-publisher';
 export * from './credential-wallet';
 export * from './rhs';
 export * from './utils';
+export * from './models';

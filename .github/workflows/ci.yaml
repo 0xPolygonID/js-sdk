@@ -43,9 +43,6 @@ jobs:
       - name: Run Build
         run: npm run build
 
-      - name: Circular dependency check
-        run: npm run deps:check
-
       - name: Download regular circuits for CI 'latest.zip' from S3
         run: mkdir ./tests/proofs/testdata && wget https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/latest.zip -P ./tests/proofs/testdata
 

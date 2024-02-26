@@ -1,4 +1,4 @@
-import { Hash, newHashFromString, Proof } from '@iden3/js-merkletree';
+import { Hash, Proof } from '@iden3/js-merkletree';
 import { Claim, Id } from '@iden3/js-iden3-core';
 import { CircuitError, GISTProof, TreeState } from './models';
 import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
@@ -140,7 +140,7 @@ export class AuthV2PubSignals {
 
     this.challenge = BigInt(sVals[1]);
 
-    this.GISTRoot = newHashFromString(sVals[2]);
+    this.GISTRoot = Hash.fromString(sVals[2]);
     return this;
   }
 }

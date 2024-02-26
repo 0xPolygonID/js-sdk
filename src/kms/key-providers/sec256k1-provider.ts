@@ -35,8 +35,11 @@ export class Sec256k1Provider implements IKeyProvider {
    * @param {Uint8Array} seed - byte array seed
    * @returns kms key identifier
    */
-  async newPrivateKeyFromSeed(): Promise<KmsKeyId> {
-    const keyPair = this._ec.genKeyPair();
+  async newPrivateKeyFromSeed(seed: Uint8Array): Promise<KmsKeyId> {
+    if (seed.length !== 32) {
+      throw new Error('Seed should be 32 bytes');
+    }
+    const keyPair = this._ec.keyFromPrivate(seed);
     const kmsId = {
       type: this.keyType,
       id: providerHelpers.keyPath(this.keyType, keyPair.getPublic().encode('hex', false))
