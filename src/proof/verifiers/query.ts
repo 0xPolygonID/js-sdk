@@ -208,10 +208,6 @@ async function validateDisclosure(
   verifiablePresentation?: JSON,
   ldLoader?: DocumentLoader
 ) {
-  if (!verifiablePresentation) {
-    throw new Error(`verifiablePresentation is required for selective disclosure request`);
-  }
-
   if (outputs.operator !== Operators.EQ) {
     throw new Error(`operator for selective disclosure must be $eq`);
   }
@@ -220,6 +216,25 @@ async function validateDisclosure(
     if (outputs.value[index] !== 0n) {
       throw new Error(`selective disclosure not available for array of values`);
     }
+  }
+
+  const bi = await fieldValueFromVerifiablePresentation(
+    cq.fieldName,
+    verifiablePresentation,
+    ldLoader
+  );
+  if (bi !== outputs.value[0]) {
+    throw new Error(`value that was used is not equal to requested in query`);
+  }
+}
+
+export const fieldValueFromVerifiablePresentation = async (
+  fieldName: string,
+  verifiablePresentation?: JSON,
+  ldLoader?: DocumentLoader
+): Promise<bigint> => {
+  if (!verifiablePresentation) {
+    throw new Error(`verifiablePresentation is required for selective disclosure request`);
   }
 
   let mz: Merklizer;
@@ -234,12 +249,12 @@ async function validateDisclosure(
 
   let merklizedPath: Path;
   try {
-    const p = `verifiableCredential.credentialSubject.${cq.fieldName}`;
+    const p = `verifiableCredential.credentialSubject.${fieldName}`;
     merklizedPath = await Path.fromDocument(null, strVerifiablePresentation, p, {
       documentLoader: ldLoader
     });
   } catch (e) {
-    throw new Error(`can't build path to '${cq.fieldName}' key`);
+    throw new Error(`can't build path to '${fieldName}' key`);
   }
 
   let proof: Proof;
@@ -247,10 +262,10 @@ async function validateDisclosure(
   try {
     ({ proof, value } = await mz.proof(merklizedPath));
   } catch (e) {
-    throw new Error(`can't get value by path '${cq.fieldName}'`);
+    throw new Error(`can't get value by path '${fieldName}'`);
   }
   if (!value) {
-    throw new Error(`can't get merkle value for field '${cq.fieldName}'`);
+    throw new Error(`can't get merkle value for field '${fieldName}'`);
   }
 
   if (!proof.existence) {
@@ -259,8 +274,5 @@ async function validateDisclosure(
     );
   }
 
-  const bi = await value.mtEntry();
-  if (bi !== outputs.value[0]) {
-    throw new Error(`value that was used is not equal to requested in query`);
-  }
-}
+  return await value.mtEntry();
+};

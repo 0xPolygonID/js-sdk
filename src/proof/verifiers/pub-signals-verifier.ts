@@ -4,7 +4,7 @@ import { DocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
 import { JSONObject } from '../../iden3comm';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
-import { bigIntCompare, byteEncoder, isGenesisState } from '../../utils';
+import { byteEncoder, isGenesisState } from '../../utils';
 import { caclulateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
@@ -20,8 +20,13 @@ import {
   LinkedMultiQueryInputs
 } from '../../circuits/linked-multi-query';
 import { CircuitId } from '../../circuits/models';
-import { checkQueryRequest, ClaimOutputs, VerifyOpts } from './query';
-import { parseQueriesMetadata } from '../common';
+import {
+  checkQueryRequest,
+  ClaimOutputs,
+  VerifyOpts,
+  fieldValueFromVerifiablePresentation
+} from './query';
+import { parseQueriesMetadata, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
 
 /**
@@ -343,6 +348,7 @@ export class PubSignalsVerifier {
 
   private linkedMultiQuery10Verify = async ({
     query,
+    verifiablePresentation,
     pubSignals
   }: VerifyContext): Promise<BaseConfig> => {
     let multiQueryPubSignals = new LinkedMultiQueryPubSignals();
@@ -375,7 +381,7 @@ export class PubSignalsVerifier {
       ldOpts
     );
 
-    const queryHashes: bigint[] = [];
+    const request: { queryHash: bigint; queryMeta: QueryMetadata }[] = [];
     const merklized = queriesMetadata[0]?.merklizedSchema ? 1n : 0n;
     for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
       const queryMeta = queriesMetadata[i];
@@ -394,13 +400,39 @@ export class PubSignalsVerifier {
         valueHash
       ]);
 
-      queryHashes.push(poseidon.hash([firstParh, BigInt(valArrSize), merklized, 0n, 0n, 0n]));
+      const queryHash = poseidon.hash([firstParh, BigInt(valArrSize), merklized, 0n, 0n, 0n]);
+      request.push({ queryHash, queryMeta });
     }
 
-    const circuitQueryHashes = multiQueryPubSignals.circuitQueryHash.sort(bigIntCompare);
-    queryHashes.sort(bigIntCompare);
-    if (!queryHashes.every((queryHash, i) => queryHash === circuitQueryHashes[i])) {
-      throw new Error('query hashes do not match');
+    const queryHashCompare = (a: { queryHash: bigint }, b: { queryHash: bigint }): number => {
+      if (a.queryHash < b.queryHash) return -1;
+      if (a.queryHash > b.queryHash) return 1;
+      return 0;
+    };
+
+    const pubSignalsMeta = multiQueryPubSignals.circuitQueryHash.map((queryHash, index) => ({
+      queryHash,
+      operatorOutput: multiQueryPubSignals.operatorOutput[index]
+    }));
+
+    pubSignalsMeta.sort(queryHashCompare);
+    request.sort(queryHashCompare);
+
+    for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
+      if (request[i].queryHash != pubSignalsMeta[i].queryHash) {
+        throw new Error('query hashes do not match');
+      }
+
+      if (request[i].queryMeta?.operator === Operators.SD) {
+        const disclosedValue = await fieldValueFromVerifiablePresentation(
+          request[i].queryMeta.fieldName,
+          verifiablePresentation,
+          this._documentLoader
+        );
+        if (disclosedValue != pubSignalsMeta[i].operatorOutput) {
+          throw new Error('disclosed value is not in the proof outputs');
+        }
+      }
     }
 
     return multiQueryPubSignals as unknown as BaseConfig;
