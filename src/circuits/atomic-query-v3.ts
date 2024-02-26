@@ -3,7 +3,6 @@ import {
   BaseConfig,
   bigIntArrayToStringArray,
   prepareSiblingsStr,
-  existenceToInt,
   getNodeAuxValue,
   prepareCircuitArrayValues
 } from './common';
@@ -39,7 +38,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
   currentTimeStamp!: number;
   proofType!: ProofType;
   linkNonce!: bigint;
-  verifierID?: Id;
+  verifierID?: bigint;
   nullifierSessionID!: bigint;
 
   validate(): void {
@@ -223,7 +222,6 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev.value.bigInt().toString();
     s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev.noAux;
 
-    s.claimPathNotExists = existenceToInt(valueProof.mtp.existence);
     const nodAuxJSONLD = getNodeAuxValue(valueProof.mtp);
     s.claimPathMtpNoAux = nodAuxJSONLD.noAux;
     s.claimPathMtpAuxHi = nodAuxJSONLD.key.bigInt().toString();
@@ -235,7 +233,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     s.value = bigIntArrayToStringArray(values);
 
     s.linkNonce = this.linkNonce.toString();
-    s.verifierID = this.verifierID?.bigInt().toString() ?? '0';
+    s.verifierID = this.verifierID?.toString() ?? '0';
     s.nullifierSessionID = this.nullifierSessionID.toString();
 
     return byteEncoder.encode(JSON.stringify(s));
@@ -282,7 +280,6 @@ interface AtomicQueryV3CircuitInputs {
   isRevocationChecked: number;
   // Query
   // JSON path
-  claimPathNotExists: number; // 0 for inclusion, 1 for non-inclusion
   claimPathMtp: string[];
   claimPathMtpNoAux: string; // 1 if aux node is empty, 0 if non-empty or for inclusion proofs
   claimPathMtpAuxHi: string; // 0 for inclusion proof
@@ -327,13 +324,12 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
   timestamp!: number;
   merklized!: number;
   claimPathKey!: bigint;
-  claimPathNotExists!: number;
   isRevocationChecked!: number;
   proofType!: number;
   linkID!: bigint;
   nullifier!: bigint;
   operatorOutput!: bigint;
-  verifierID!: Id;
+  verifierID!: bigint;
   nullifierSessionID!: bigint;
 
   // PubSignalsUnmarshal unmarshal credentialAtomicQueryV3.circom public signals
@@ -352,7 +348,6 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     // issuerClaimNonRevState
     // timestamp
     // claimSchema
-    // claimPathNotExists
     // claimPathKey
     // slotIndex
     // operator
@@ -361,10 +356,10 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     // verifierID
     // nullifierSessionID
 
-    // 20 is a number of fields in AtomicQueryV3PubSignals before values, values is last element in the proof and
+    // 19 is a number of fields in AtomicQueryV3PubSignals before values, values is last element in the proof and
     // it is length could be different base on the circuit configuration. The length could be modified by set value
     // in ValueArraySize
-    const fieldLength = 20;
+    const fieldLength = 19;
 
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
@@ -430,10 +425,6 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     this.claimSchema = SchemaHash.newSchemaHashFromInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
 
-    // - ClaimPathNotExists
-    this.claimPathNotExists = parseInt(sVals[fieldIdx]);
-    fieldIdx++;
-
     // - ClaimPathKey
     this.claimPathKey = BigInt(sVals[fieldIdx]);
     fieldIdx++;
@@ -458,7 +449,7 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
 
     // - verifierID
     if (sVals[fieldIdx] !== '0') {
-      this.verifierID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
+      this.verifierID = BigInt(sVals[fieldIdx]);
     }
     fieldIdx++;
 

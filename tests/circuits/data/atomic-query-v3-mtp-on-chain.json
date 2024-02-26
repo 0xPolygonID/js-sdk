@@ -111,7 +111,6 @@
   "issuerClaimNonRevMtpNoAux": "1",
   "isRevocationChecked": 1,
   "claimSchema": "180410020913331409885634153623124536270",
-  "claimPathNotExists": 1,
   "claimPathMtp": [
     "0",
     "0",
@@ -495,5 +494,5 @@
   "linkNonce": "0",
   "verifierID": "21929109382993718606847853573861987353620810345503358891473103689157378049",
   "nullifierSessionID": "32",
-  "authEnabled": "1"
+  "isBJJAuthEnabled": "1"
 }

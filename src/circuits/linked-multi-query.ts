@@ -4,7 +4,6 @@ import { byteDecoder, byteEncoder } from '../utils';
 import {
   BaseConfig,
   bigIntArrayToStringArray,
-  existenceToInt,
   getNodeAuxValue,
   prepareCircuitArrayValues,
   prepareSiblingsStr
@@ -26,8 +25,6 @@ export class LinkedMultiQueryInputs extends BaseConfig {
 
   // InputsMarshal returns Circom private inputs for linkedMultiQueryInputs.circom
   inputsMarshal(): Uint8Array {
-    const enabled: number[] = [];
-    const claimPathNotExists: number[] = [];
     const claimPathMtp: string[][] = [];
     const claimPathMtpNoAux: string[] = [];
     const claimPathMtpAuxHi: string[] = [];
@@ -41,8 +38,6 @@ export class LinkedMultiQueryInputs extends BaseConfig {
 
     for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
       if (!this.query[i]) {
-        enabled.push(0);
-        claimPathNotExists.push(0);
         claimPathMtp.push(new Array(this.getMTLevelsClaim()).fill('0'));
 
         claimPathMtpNoAux.push('0');
@@ -61,7 +56,6 @@ export class LinkedMultiQueryInputs extends BaseConfig {
         valueArraySize.push(0);
         continue;
       }
-      enabled.push(1);
       let valueProof = this.query[i].valueProof;
       if (!valueProof) {
         valueProof = new ValueProof();
@@ -69,7 +63,6 @@ export class LinkedMultiQueryInputs extends BaseConfig {
         valueProof.value = 0n;
         valueProof.mtp = new Proof();
       }
-      claimPathNotExists.push(existenceToInt(valueProof.mtp.existence));
       claimPathMtp.push(prepareSiblingsStr(valueProof.mtp, this.getMTLevelsClaim()));
 
       const nodAuxJSONLD = getNodeAuxValue(valueProof.mtp);
@@ -93,9 +86,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
     const s: Partial<LinkedMultiQueryCircuitInputs> = {
       linkNonce: this.linkNonce.toString(),
       issuerClaim: this.claim.marshalJson(),
-      enabled,
       claimSchema: this.claim.getSchemaHash().bigInt().toString(),
-      claimPathNotExists,
       claimPathMtp,
       claimPathMtpNoAux,
       claimPathMtpAuxHi,
@@ -118,9 +109,7 @@ export class LinkedMultiQueryInputs extends BaseConfig {
 interface LinkedMultiQueryCircuitInputs {
   linkNonce: string;
   issuerClaim: string[];
-  enabled: number[];
   claimSchema: string;
-  claimPathNotExists: number[];
   claimPathMtp: string[][];
   claimPathMtpNoAux: string[];
   claimPathMtpAuxHi: string[];
@@ -145,7 +134,6 @@ export class LinkedMultiQueryPubSignals {
   merklized!: number;
   operatorOutput!: bigint[];
   circuitQueryHash!: bigint[];
-  enabled!: boolean[];
   valueArraySize!: number[];
 
   /**
@@ -156,7 +144,7 @@ export class LinkedMultiQueryPubSignals {
    * @returns LinkedMultiQueryPubSignals
    */
   pubSignalsUnmarshal(data: Uint8Array): LinkedMultiQueryPubSignals {
-    const len = 42;
+    const len = 32;
     const queryLength = LinkedMultiQueryInputs.queryCount;
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
@@ -185,14 +173,6 @@ export class LinkedMultiQueryPubSignals {
     this.circuitQueryHash = [];
     for (let i = 0; i < queryLength; i++) {
       this.circuitQueryHash.push(BigInt(sVals[fieldIdx]));
-      fieldIdx++;
-    }
-
-    // - enabled
-    this.enabled = [];
-    for (let i = 0; i < queryLength; i++) {
-      const enabledNum = parseInt(sVals[fieldIdx]);
-      this.enabled.push(enabledNum === 1);
       fieldIdx++;
     }
 

@@ -169,7 +169,6 @@
   "issuerAuthRootsTreeRoot": "0",
   "issuerAuthState": "20177832565449474772630743317224985532862797657496372535616634430055981993180",
   "isRevocationChecked": 1,
-  "claimPathNotExists": 1,
   "claimPathMtp": [
     "0",
     "0",
@@ -504,5 +503,5 @@
   "linkNonce": "0",
   "verifierID": "21929109382993718606847853573861987353620810345503358891473103689157378049",
   "nullifierSessionID": "32",
-  "authEnabled": "1"
+  "isBJJAuthEnabled": "1"
 }

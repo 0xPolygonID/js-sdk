@@ -3,7 +3,6 @@ import {
   BaseConfig,
   bigIntArrayToStringArray,
   prepareSiblingsStr,
-  existenceToInt,
   getNodeAuxValue,
   prepareCircuitArrayValues
 } from './common';
@@ -44,9 +43,9 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
   currentTimeStamp!: number;
   proofType!: ProofType;
   linkNonce!: bigint;
-  verifierID?: Id;
+  verifierID?: bigint;
   nullifierSessionID!: bigint;
-  authEnabled!: number;
+  isBJJAuthEnabled!: number;
 
   validate(): void {
     if (!this.requestID) {
@@ -71,7 +70,7 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
       throw new Error(CircuitError.EmptyChallenge);
     }
 
-    if (this.authEnabled === 1) {
+    if (this.isBJJAuthEnabled === 1) {
       if (!this.authClaimIncMtp) {
         throw new Error(CircuitError.EmptyAuthClaimProof);
       }
@@ -213,7 +212,7 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
     };
 
     s.challenge = this.challenge?.toString();
-    if (this.authEnabled === 1) {
+    if (this.isBJJAuthEnabled === 1) {
       s.authClaim = this.authClaim?.marshalJson();
       s.userClaimsTreeRoot = this.treeState.claimsRoot?.bigInt().toString();
       s.userRevTreeRoot = this.treeState.revocationRoot?.bigInt().toString();
@@ -302,7 +301,6 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
     s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev.value.bigInt().toString();
     s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev.noAux;
 
-    s.claimPathNotExists = existenceToInt(valueProof.mtp.existence);
     const nodAuxJSONLD = getNodeAuxValue(valueProof.mtp);
     s.claimPathMtpNoAux = nodAuxJSONLD.noAux;
     s.claimPathMtpAuxHi = nodAuxJSONLD.key.bigInt().toString();
@@ -315,10 +313,10 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
     s.value = bigIntArrayToStringArray(values);
 
     s.linkNonce = this.linkNonce.toString();
-    s.verifierID = this.verifierID?.bigInt().toString() ?? '0';
+    s.verifierID = this.verifierID?.toString() ?? '0';
     s.nullifierSessionID = this.nullifierSessionID.toString();
 
-    s.authEnabled = this.authEnabled.toString();
+    s.isBJJAuthEnabled = this.isBJJAuthEnabled.toString();
 
     return byteEncoder.encode(JSON.stringify(s));
   }
@@ -364,7 +362,6 @@ interface AtomicQueryV3OnChainCircuitInputs {
   isRevocationChecked: number;
   // Query
   // JSON path
-  claimPathNotExists: number; // 0 for inclusion, 1 for non-inclusion
   claimPathMtp: string[];
   claimPathMtpNoAux: string; // 1 if aux node is empty, 0 if non-empty or for inclusion proofs
   claimPathMtpAuxHi: string; // 0 for inclusion proof
@@ -410,7 +407,7 @@ interface AtomicQueryV3OnChainCircuitInputs {
   linkNonce: string;
   verifierID: string;
   nullifierSessionID: string;
-  authEnabled: string;
+  isBJJAuthEnabled: string;
 }
 
 /**
@@ -424,8 +421,6 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
   issuerState!: Hash;
   issuerClaimNonRevState!: Hash;
   timestamp!: number;
-  merklized!: number;
-  isRevocationChecked!: number;
   circuitQueryHash!: bigint;
   challenge!: bigint;
   gistRoot!: Hash;
@@ -433,14 +428,11 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
   linkID!: bigint;
   nullifier!: bigint;
   operatorOutput!: bigint;
-  verifierID!: Id;
-  nullifierSessionID!: bigint;
-  authEnabled!: number;
+  isBJJAuthEnabled!: number;
 
   // PubSignalsUnmarshal unmarshal credentialAtomicQueryV3.circom public signals
   pubSignalsUnmarshal(data: Uint8Array): AtomicQueryV3OnChainPubSignals {
     // expected order:
-    // merklized
     // userID
     // circuitQueryHash
     // issuerState
@@ -452,20 +444,13 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
     // challenge
     // gistRoot
     // issuerID
-    // isRevocationChecked
     // issuerClaimNonRevState
     // timestamp
-    // verifierID
-    // nullifierSessionID
-    // authEnabled
+    // isBJJAuthEnabled
 
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
     let fieldIdx = 0;
-
-    // -- merklized
-    this.merklized = parseInt(sVals[fieldIdx]);
-    fieldIdx++;
 
     //  - userID
     this.userID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
@@ -511,10 +496,6 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
     this.issuerID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
 
-    // - isRevocationChecked
-    this.isRevocationChecked = parseInt(sVals[fieldIdx]);
-    fieldIdx++;
-
     // - issuerClaimNonRevState
     this.issuerClaimNonRevState = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
@@ -523,18 +504,8 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
     this.timestamp = parseInt(sVals[fieldIdx]);
     fieldIdx++;
 
-    // - verifierID
-    if (sVals[fieldIdx] !== '0') {
-      this.verifierID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
-    }
-    fieldIdx++;
-
-    // - nullifierSessionID
-    this.nullifierSessionID = BigInt(sVals[fieldIdx]);
-    fieldIdx++;
-
-    // - authEnabled
-    this.authEnabled = parseInt(sVals[fieldIdx]);
+    // - isBJJAuthEnabled
+    this.isBJJAuthEnabled = parseInt(sVals[fieldIdx]);
 
     return this;
   }

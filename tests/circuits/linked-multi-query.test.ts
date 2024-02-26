@@ -66,16 +66,6 @@ describe('linked-multi-query', () => {
 			"0",
 			"0",
 			"0",
-			"1",
-			"1",
-			"1",
-			"1",
-			"1",
-			"0",
-			"0",
-			"0",
-			"0",
-			"0",
       "1",
 			"1",
 			"1",
@@ -98,26 +88,22 @@ describe('linked-multi-query', () => {
 
     const operatorOutput: bigint[] = [];
     const circuitQueryHash: bigint[] = [];
-    const enabled: boolean[] = [];
     const valueArraySize: number[] = [];
     for (let i = 1; i <= 10; i++) {
       const indx = i - 1;
       operatorOutput[indx] = BigInt(i);
       circuitQueryHash[indx] = BigInt(i * 100);
-      enabled[indx] = true;
       valueArraySize[indx] = 1;
 
       if (i > 5) {
         operatorOutput[indx] = BigInt(0);
         circuitQueryHash[indx] = BigInt(0);
-        enabled[indx] = false;
         valueArraySize[indx] = 0;
       }
     }
 
     exp.operatorOutput = operatorOutput;
     exp.circuitQueryHash = circuitQueryHash;
-    exp.enabled = enabled;
     exp.valueArraySize = valueArraySize;
 
     const expJson = JSON.stringify(exp, (_, value) =>

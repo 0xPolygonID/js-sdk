@@ -148,7 +148,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
         {
           skipRevocation: query.skipClaimRevocationCheck ?? false,
           challenge: opts.challenge,
-          verifierDid
+          verifier: DID.idFromDID(verifierDid).bigInt()
         }
       );
 

@@ -45,7 +45,7 @@ export type ProofGenerationOptions = {
   challenge?: bigint;
   credential?: W3CCredential;
   credentialRevocationStatus?: RevocationStatus;
-  verifierDid?: DID;
+  verifier?: bigint;
   linkNonce?: bigint;
 };
 
@@ -457,7 +457,7 @@ export class InputGenerator {
 
     circuitInputs.proofType = proofType;
     circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
-    circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
+    circuitInputs.verifierID = params.verifier;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionId
       ? BigInt(proofReq.params?.nullifierSessionId?.toString())
       : BigInt(0);
@@ -514,7 +514,7 @@ export class InputGenerator {
 
     circuitInputs.proofType = proofType;
     circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
-    circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
+    circuitInputs.verifierID = params.verifier;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
       ? BigInt(proofReq.params?.nullifierSessionID?.toString())
       : BigInt(0);
@@ -525,7 +525,7 @@ export class InputGenerator {
     } catch {
       isEthIdentity = false;
     }
-    circuitInputs.authEnabled = isEthIdentity ? 0 : 1;
+    circuitInputs.isBJJAuthEnabled = isEthIdentity ? 0 : 1;
 
     circuitInputs.challenge = BigInt(params.challenge ?? 0);
     const { nonce: authProfileNonce, genesisDID } =
@@ -535,7 +535,7 @@ export class InputGenerator {
     const gistProof = toGISTProof(stateProof);
     circuitInputs.gistProof = gistProof;
     // auth inputs
-    if (circuitInputs.authEnabled === 1) {
+    if (circuitInputs.isBJJAuthEnabled === 1) {
       const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
 
       const authClaimData = await this.newCircuitClaimData({

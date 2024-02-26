@@ -371,3 +371,39 @@ export function calculateQueryHash(
   ]);
   return queryHash;
 }
+
+export function calculateQueryHashV3(
+  values: bigint[],
+  schema: string,
+  slotIndex: string | number,
+  operator: string | number,
+  claimPathKey: string | number,
+  claimPathNotExists: string | number,
+  valueArraySize: string | number,
+  merklized: string | number,
+  isRevocationChecked: string | number,
+  verifierID: string | number,
+  nullifierSessionID: string | number
+): bigint {
+  const expValue = prepareCircuitArrayValues(values, 64);
+  const valueHash = poseidon.spongeHashX(expValue, 6);
+  const schemaHash = coreSchemaFromStr(schema);
+  const firstPartQueryHash = poseidon.hash([
+    schemaHash.bigInt(),
+    BigInt(slotIndex),
+    BigInt(operator),
+    BigInt(claimPathKey),
+    BigInt(claimPathNotExists),
+    valueHash
+  ]);
+
+  const queryHash = poseidon.hash([
+    firstPartQueryHash,
+    BigInt(valueArraySize),
+    BigInt(merklized),
+    BigInt(isRevocationChecked),
+    BigInt(verifierID),
+    BigInt(nullifierSessionID)
+  ]);
+  return queryHash;
+}

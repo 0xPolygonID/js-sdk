@@ -30,6 +30,8 @@ export enum Operators {
   LTE = 7,
   GTE = 8,
   BETWEEN = 9,
+  NOTBETWEEN = 10,
+  EXISTS = 11,
   SD = 16,
   NULLIFY = 17
 }
@@ -46,6 +48,8 @@ export const QueryOperators = {
   $lte: Operators.LTE,
   $gte: Operators.GTE,
   $between: Operators.BETWEEN,
+  $notbetween: Operators.NOTBETWEEN,
+  $exists: Operators.EXISTS,
   $sd: Operators.SD,
   $nullify: Operators.NULLIFY
 };
