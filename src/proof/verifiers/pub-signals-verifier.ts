@@ -217,7 +217,6 @@ export class PubSignalsVerifier {
       timestamp: v3PubSignals.timestamp,
       merklized: v3PubSignals.merklized,
       claimPathKey: v3PubSignals.claimPathKey,
-      claimPathNotExists: v3PubSignals.claimPathNotExists,
       valueArraySize: v3PubSignals.getValueArrSize(),
       isRevocationChecked: v3PubSignals.isRevocationChecked
     };
@@ -261,7 +260,7 @@ export class PubSignalsVerifier {
 
       const id = DID.idFromDID(verifierDIDParam as DID);
 
-      if (verifierID.bigInt() != id.bigInt()) {
+      if (verifierID != id.bigInt()) {
         throw new Error('wrong verifier is used for nullification');
       }
 
