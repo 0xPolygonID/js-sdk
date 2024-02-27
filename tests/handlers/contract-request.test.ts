@@ -17,7 +17,7 @@ import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { ProofService } from '../../src/proof';
+import { IProofService, ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
@@ -50,14 +50,15 @@ import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, Signer } from 'ethers';
+import { RHS_URL, WALLET_KEY } from '../helpers';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
   let dataStorage: IDataStorage;
-  let proofService: ProofService;
-  let contractRequest: IContractRequestHandler;
+  let proofService: IProofService;
+  let contractRequestHandler: IContractRequestHandler;
   let packageMgr: IPackageManager;
   const rhsUrl = process.env.RHS_URL as string;
   const rpcUrl = process.env.RPC_URL as string;
@@ -191,7 +192,7 @@ describe('contract-request', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
   });
 
   it('contract request flow', async () => {
@@ -284,7 +285,7 @@ describe('contract-request', () => {
       challenge: BigInt(112312)
     };
     const msgBytes = byteEncoder.encode(JSON.stringify(ciRequest));
-    const ciResponse = await contractRequest.handleContractInvokeRequest(
+    const ciResponse = await contractRequestHandler.handleContractInvokeRequest(
       userDID,
       msgBytes,
       options
@@ -332,7 +333,6 @@ describe('contract-request', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
 
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
@@ -402,7 +402,7 @@ describe('contract-request', () => {
     conf.chainId = 80001;
 
     const zkpVerifier = new OnChainZKPVerifier([conf]);
-    contractRequest = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: contractAddress,
@@ -434,7 +434,7 @@ describe('contract-request', () => {
       challenge
     };
     const msgBytes = byteEncoder.encode(JSON.stringify(ciRequest));
-    const ciResponse = await contractRequest.handleContractInvokeRequest(
+    const ciResponse = await contractRequestHandler.handleContractInvokeRequest(
       userDID,
       msgBytes,
       options
@@ -484,7 +484,6 @@ describe('contract-request', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    contractRequest = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
 
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
@@ -531,7 +530,7 @@ describe('contract-request', () => {
     await credWallet.save(issuerCred);
 
     const proofReq: ZeroKnowledgeProofRequest = {
-      id: 1,
+      id: 200,
       circuitId: CircuitId.AtomicQueryV3OnChain,
       optional: false,
       query: {
@@ -547,14 +546,14 @@ describe('contract-request', () => {
       }
     };
 
-    const contractAddress = '0x6Ee102705DD27c1025fc03E5Db375BAe1c237432';
+    const contractAddress = '0xD0Fd3E9fDF448e5B86Cc0f73E5Ee7D2F284884c0';
     const conf = defaultEthConnectionConfig;
     conf.contractAddress = contractAddress;
     conf.url = rpcUrl;
     conf.chainId = 80001;
 
     const zkpVerifier = new OnChainZKPVerifier([conf]);
-    contractRequest = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: contractAddress,
@@ -586,7 +585,7 @@ describe('contract-request', () => {
       challenge
     };
     const msgBytes = byteEncoder.encode(JSON.stringify(ciRequest));
-    const ciResponse = await contractRequest.handleContractInvokeRequest(
+    const ciResponse = await contractRequestHandler.handleContractInvokeRequest(
       userDID,
       msgBytes,
       options
