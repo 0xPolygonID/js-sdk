@@ -20,7 +20,8 @@ import {
   Operators,
   Query,
   QueryOperators,
-  TreeState
+  TreeState,
+  ValueProof
 } from '../../circuits';
 import {
   PreparedAuthBJJCredential,
@@ -462,9 +463,12 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.values = query.operator === Operators.SD ? new Array(0) : query.values;
-    circuitInputs.query = query;
+    query.values = [Operators.SD, Operators.NOOP].includes(query.operator)
+      ? new Array(0)
+      : query.values;
+    query.valueProof = query.operator === Operators.NOOP ? new ValueProof() : query.valueProof;
 
+    circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
@@ -520,7 +524,11 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.values = query.operator === Operators.SD ? new Array(0) : query.values;
+    query.values = [Operators.SD, Operators.NOOP].includes(query.operator)
+      ? new Array(0)
+      : query.values;
+    query.valueProof = query.operator === Operators.NOOP ? new ValueProof() : query.valueProof;
+
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 

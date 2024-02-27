@@ -22,7 +22,8 @@ export type FilterOperatorMethod =
   | '$ne'
   | '$gte'
   | '$lte'
-  | '$sd';
+  | '$sd'
+  | '$exists';
 
 /** filter function type */
 export type FilterOperatorFunction = (a: any, b: any) => boolean;
@@ -125,6 +126,20 @@ const lessThanOrEqual = (
   return a <= b;
 };
 
+// a - field value
+// b - true / false (exists operator values)
+const existsComparator = (a: ComparableType | ComparableType[] | undefined, b: ComparableType) => {
+  if (truthyValues.includes(b) && (a || a === 0)) {
+    // if exists val is true , a field val exists
+    return true;
+  }
+  // if exists val is false , a field val doesn't exist
+  if (falsyValues.includes(b) && (a === undefined || (Array.isArray(a) && !a.length))) {
+    return true;
+  }
+  return false;
+};
+
 const inOperator = (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) => {
   if (Array.isArray(a) && Array.isArray(b)) {
     return a.every((val) => b.includes(val));
@@ -141,6 +156,7 @@ const inOperator = (a: ComparableType | ComparableType[], b: ComparableType | Co
 export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFunction } = {
   $noop: () => true,
   $sd: () => true,
+  $exists: (a, b) => existsComparator(a, b),
   $eq: (a, b) => equalsComparator(a, b),
   $in: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     inOperator(a, b),
@@ -204,7 +220,10 @@ export class FilterQuery implements IFilterQuery {
       throw new Error(SearchError.NotDefinedComparator);
     }
     const credentialPathValue = resolvePath(credential, this.path);
-    if (credentialPathValue === null || credentialPathValue === undefined) {
+    if (
+      (credentialPathValue === null || credentialPathValue === undefined) &&
+      this.operatorFunc !== existsComparator
+    ) {
       return false;
     }
     if (this.isReverseParams) {
