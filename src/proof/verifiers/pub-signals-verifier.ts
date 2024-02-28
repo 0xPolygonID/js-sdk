@@ -3,7 +3,7 @@ import { DocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
 import { JSONObject } from '../../iden3comm';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
-import { byteEncoder, calculateQueryHash, isGenesisState } from '../../utils';
+import { byteEncoder, isGenesisState } from '../../utils';
 import { caclulateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
@@ -23,6 +23,7 @@ import {
 } from './query';
 import { parseQueriesMetadata, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
+import { calculateQueryHash } from './query-hash';
 
 /**
  *  Verify Context - params for pub signal verification
