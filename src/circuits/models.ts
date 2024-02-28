@@ -54,7 +54,14 @@ export class Query {
 
   validateValueArraySize(maxArrSize: number): void {
     switch (this.values.length) {
-      case 1:
+      case 0: {
+        const zeroArrSizeOps = [Operators.NOOP, Operators.SD, Operators.NULLIFY];
+        if (!zeroArrSizeOps.includes(this.operator)) {
+          throw new Error(CircuitError.InvalidValuesArrSize);
+        }
+        return;
+      }
+      case 1: {
         const oneArrSizeOps = [
           Operators.EQ,
           Operators.LT,
@@ -68,22 +75,23 @@ export class Query {
           throw new Error(CircuitError.InvalidValuesArrSize);
         }
         return;
-      case 2:
+      }
+      case 2: {
         const twoArrSizeOps = [Operators.BETWEEN, Operators.NONBETWEEN];
         if (!twoArrSizeOps.includes(this.operator)) {
           throw new Error(CircuitError.InvalidValuesArrSize);
         }
         return;
-      default:
+      }
+      default: {
         const maxArrSizeOps = [Operators.IN, Operators.NIN];
-        if (maxArrSizeOps.includes(this.operator)) {
-          if (this.values.length === 0 || this.values.length > maxArrSize) {
-            throw new Error(CircuitError.InvalidValuesArrSize);
-          }
+        if (!maxArrSizeOps.includes(this.operator)) {
+          throw new Error(CircuitError.InvalidOperationType);
         }
-        if (this.values.length !== 0) {
+        if (!this.values.length || this.values.length > maxArrSize) {
           throw new Error(CircuitError.InvalidValuesArrSize);
         }
+      }
     }
   }
 }
@@ -224,7 +232,8 @@ export enum CircuitError {
   EmptyTreeState = 'empty tree state',
   EmptyRequestID = 'empty request ID',
   InvalidProofType = 'invalid proof type',
-  InvalidValuesArrSize = 'invalid query Values array size'
+  InvalidValuesArrSize = 'invalid query Values array size',
+  InvalidOperationType = 'invalid operation type'
 }
 
 /**

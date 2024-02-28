@@ -1,6 +1,6 @@
 import { poseidon } from '@iden3/js-crypto';
 import { SchemaHash } from '@iden3/js-iden3-core';
-import { defaultValueArraySize, Operators, prepareCircuitArrayValues } from '../../circuits';
+import { defaultValueArraySize, prepareCircuitArrayValues } from '../../circuits';
 
 export function calculateQueryHash(
   values: bigint[],
