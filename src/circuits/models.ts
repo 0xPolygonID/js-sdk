@@ -53,30 +53,29 @@ export class Query {
   }
 
   validateValueArraySize(maxArrSize: number): void {
-    const oneArrSizeOps = [
-      Operators.EQ,
-      Operators.LT,
-      Operators.GT,
-      Operators.NE,
-      Operators.LTE,
-      Operators.GTE,
-      Operators.EXISTS
-    ];
-    const twoArrSizeOps = [Operators.BETWEEN, Operators.NONBETWEEN];
-    const maxArrSizeOps = [Operators.IN, Operators.NIN];
-
     switch (this.values.length) {
       case 1:
+        const oneArrSizeOps = [
+          Operators.EQ,
+          Operators.LT,
+          Operators.GT,
+          Operators.NE,
+          Operators.LTE,
+          Operators.GTE,
+          Operators.EXISTS
+        ];
         if (!oneArrSizeOps.includes(this.operator)) {
           throw new Error(CircuitError.InvalidValuesArrSize);
         }
         return;
       case 2:
+        const twoArrSizeOps = [Operators.BETWEEN, Operators.NONBETWEEN];
         if (!twoArrSizeOps.includes(this.operator)) {
           throw new Error(CircuitError.InvalidValuesArrSize);
         }
         return;
       default:
+        const maxArrSizeOps = [Operators.IN, Operators.NIN];
         if (maxArrSizeOps.includes(this.operator)) {
           if (this.values.length === 0 || this.values.length > maxArrSize) {
             throw new Error(CircuitError.InvalidValuesArrSize);
