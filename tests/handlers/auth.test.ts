@@ -23,7 +23,8 @@ import {
   PROTOCOL_CONSTANTS,
   createAuthorizationRequestWithMessage,
   AuthorizationResponseMessage,
-  ZeroKnowledgeProofResponse
+  ZeroKnowledgeProofResponse,
+  ProofType
 } from '../../src';
 import { Token } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
@@ -303,7 +304,7 @@ describe('auth', () => {
         circuitId: CircuitId.AtomicQueryV3,
         optional: false,
         query: {
-          proofType: 'BJJSignature2021',
+          proofType: ProofType.BJJSignature,
           allowedIssuers: ['*'],
           type: 'KYCAgeCredential',
           context:
@@ -321,7 +322,7 @@ describe('auth', () => {
         optional: false,
         query: {
           groupId: 1,
-          proofType: 'Iden3SparseMerkleTreeProof',
+          proofType: ProofType.Iden3SparseMerkleTreeProof,
           allowedIssuers: ['*'],
           type: 'KYCEmployee',
           context:
@@ -343,7 +344,7 @@ describe('auth', () => {
         optional: false,
         query: {
           groupId: 1,
-          proofType: 'BJJSignature2021',
+          proofType: ProofType.BJJSignature,
           allowedIssuers: ['*'],
           type: 'KYCEmployee',
           context:
@@ -756,7 +757,7 @@ describe('auth', () => {
               context:
                 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
               credentialSubject: { documentType: { $eq: 99 } },
-              proofType: 'BJJSignature2021',
+              proofType: ProofType.BJJSignature,
               type: 'KYCAgeCredential'
             }
           }
@@ -1072,7 +1073,7 @@ describe('auth', () => {
             circuitId: CircuitId.AtomicQueryV3,
             optional: false,
             query: {
-              proofType: 'BJJSignature2021',
+              proofType: ProofType.BJJSignature,
               allowedIssuers: ['*'],
               type: 'KYCAgeCredential',
               context:
@@ -1090,7 +1091,7 @@ describe('auth', () => {
             optional: false,
             query: {
               groupId: 1,
-              proofType: 'Iden3SparseMerkleTreeProof',
+              proofType: ProofType.Iden3SparseMerkleTreeProof,
               allowedIssuers: ['*'],
               type: 'KYCEmployee',
               context:
@@ -1112,7 +1113,7 @@ describe('auth', () => {
             optional: false,
             query: {
               groupId: 1,
-              proofType: 'BJJSignature2021',
+              proofType: ProofType.BJJSignature,
               allowedIssuers: ['*'],
               type: 'KYCEmployee',
               context:

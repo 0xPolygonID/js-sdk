@@ -463,9 +463,7 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.values = [Operators.SD, Operators.NOOP].includes(query.operator)
-      ? new Array(0)
-      : query.values;
+    query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
     query.valueProof = query.operator === Operators.NOOP ? new ValueProof() : query.valueProof;
 
     circuitInputs.query = query;
@@ -524,9 +522,7 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.values = [Operators.SD, Operators.NOOP].includes(query.operator)
-      ? new Array(0)
-      : query.values;
+    query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
     query.valueProof = query.operator === Operators.NOOP ? new ValueProof() : query.valueProof;
 
     circuitInputs.query = query;

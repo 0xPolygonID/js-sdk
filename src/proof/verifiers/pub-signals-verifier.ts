@@ -1,20 +1,15 @@
-import { poseidon } from '@iden3/js-crypto';
 import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { DocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
 import { JSONObject } from '../../iden3comm';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
-import { byteEncoder, isGenesisState } from '../../utils';
+import { byteEncoder, calculateQueryHash, isGenesisState } from '../../utils';
 import { caclulateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
 import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
 import { AuthV2PubSignals } from '../../circuits/auth-v2';
-import {
-  BaseConfig,
-  defaultValueArraySize,
-  prepareCircuitArrayValues
-} from '../../circuits/common';
+import { BaseConfig } from '../../circuits/common';
 import {
   LinkedMultiQueryPubSignals,
   LinkedMultiQueryInputs
@@ -368,7 +363,7 @@ export class PubSignalsVerifier {
     const ldContextJSON = JSON.stringify(schema);
     const credentialSubject = query.credentialSubject as JSONObject;
     const schemaId: string = await Path.getTypeIDFromContext(
-      JSON.stringify(schema),
+      ldContextJSON,
       query.type || '',
       ldOpts
     );
@@ -382,25 +377,24 @@ export class PubSignalsVerifier {
     );
 
     const request: { queryHash: bigint; queryMeta: QueryMetadata }[] = [];
-    const merklized = queriesMetadata[0]?.merklizedSchema ? 1n : 0n;
+    const merklized = queriesMetadata[0]?.merklizedSchema ? 1 : 0;
     for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
       const queryMeta = queriesMetadata[i];
       const values = queryMeta?.values ?? [];
       const valArrSize = values.length;
-      const circuitValues = prepareCircuitArrayValues(values, defaultValueArraySize);
-      const claimPathNotExists =
-        queryMeta?.operator === Operators.EXISTS && circuitValues[0] === 0n;
-      const valueHash = poseidon.spongeHashX(circuitValues, 6);
-      const firstParh = poseidon.hash([
-        schemaHash.bigInt(),
-        BigInt(queryMeta?.slotIndex ?? 0),
-        BigInt(queryMeta?.operator ?? 0),
-        BigInt(queryMeta?.claimPathKey ?? 0),
-        BigInt(claimPathNotExists),
-        valueHash
-      ]);
 
-      const queryHash = poseidon.hash([firstParh, BigInt(valArrSize), merklized, 0n, 0n, 0n]);
+      const queryHash = calculateQueryHash(
+        values,
+        schemaHash,
+        queryMeta?.slotIndex ?? 0,
+        queryMeta?.operator ?? 0,
+        queryMeta?.claimPathKey.toString() ?? 0,
+        valArrSize,
+        merklized,
+        0,
+        0,
+        0
+      );
       request.push({ queryHash, queryMeta });
     }
 

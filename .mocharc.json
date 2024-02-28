@@ -5,5 +5,5 @@
     "spec": "tests/**/*.test.ts",
     "require": "ts-node/register",
     "timeout": "240000",
-    "maxDiffSize": "0"
+    "maxDiffSize": "10000"
 }

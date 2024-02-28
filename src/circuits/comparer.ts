@@ -30,7 +30,7 @@ export enum Operators {
   LTE = 7,
   GTE = 8,
   BETWEEN = 9,
-  NOTBETWEEN = 10,
+  NONBETWEEN = 10,
   EXISTS = 11,
   SD = 16,
   NULLIFY = 17
@@ -48,7 +48,7 @@ export const QueryOperators = {
   $lte: Operators.LTE,
   $gte: Operators.GTE,
   $between: Operators.BETWEEN,
-  $notbetween: Operators.NOTBETWEEN,
+  $nonbetween: Operators.NONBETWEEN,
   $exists: Operators.EXISTS,
   $sd: Operators.SD,
   $nullify: Operators.NULLIFY
@@ -57,7 +57,10 @@ export const QueryOperators = {
 const allOperations = Object.values(QueryOperators);
 
 export const availableTypesOperators: Map<string, Operators[]> = new Map([
-  [XSDNS.Boolean, [QueryOperators.$eq, QueryOperators.$ne, QueryOperators.$sd]],
+  [
+    XSDNS.Boolean,
+    [QueryOperators.$eq, QueryOperators.$ne, QueryOperators.$sd, QueryOperators.$exists]
+  ],
   [XSDNS.Integer, allOperations],
   [XSDNS.NonNegativeInteger, allOperations],
   [XSDNS.PositiveInteger, allOperations],
@@ -68,7 +71,8 @@ export const availableTypesOperators: Map<string, Operators[]> = new Map([
       QueryOperators.$ne,
       QueryOperators.$in,
       QueryOperators.$nin,
-      QueryOperators.$sd
+      QueryOperators.$sd,
+      QueryOperators.$exists
     ]
   ],
   [
@@ -78,7 +82,8 @@ export const availableTypesOperators: Map<string, Operators[]> = new Map([
       QueryOperators.$ne,
       QueryOperators.$in,
       QueryOperators.$nin,
-      QueryOperators.$sd
+      QueryOperators.$sd,
+      QueryOperators.$exists
     ]
   ],
   [XSDNS.DateTime, allOperations]
@@ -172,6 +177,16 @@ export class Vector implements IComparer {
         return this.y.includes(this.x);
       case Operators.NIN:
         return !this.y.includes(this.x);
+      case Operators.BETWEEN:
+        if (this.y.length !== 2) {
+          return false;
+        }
+        return this.x >= this.y[0] && this.x <= this.y[1];
+      case Operators.NONBETWEEN:
+        if (this.y.length !== 2) {
+          return false;
+        }
+        return this.x < this.y[0] || this.x > this.y[1];
       default:
         throw new Error('unknown compare type for vector');
     }

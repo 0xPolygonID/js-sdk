@@ -62,7 +62,7 @@ export class Query {
       Operators.GTE,
       Operators.EXISTS
     ];
-    const twoArrSizeOps = [Operators.BETWEEN, Operators.NOTBETWEEN];
+    const twoArrSizeOps = [Operators.BETWEEN, Operators.NONBETWEEN];
     const maxArrSizeOps = [Operators.IN, Operators.NIN];
 
     if (oneArrSizeOps.includes(this.operator)) {

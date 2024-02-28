@@ -129,7 +129,7 @@ const lessThanOrEqual = (
 // a - field value
 // b - true / false (exists operator values)
 const existsComparator = (a: ComparableType | ComparableType[] | undefined, b: ComparableType) => {
-  if (truthyValues.includes(b) && (a || a === 0)) {
+  if (truthyValues.includes(b) && typeof a !== 'undefined') {
     // if exists val is true , a field val exists
     return true;
   }

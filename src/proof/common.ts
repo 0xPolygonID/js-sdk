@@ -214,14 +214,8 @@ export const parseQueryMetadata = async (
       );
     }
 
-    if (propertyQuery.operator == Operators.EXISTS) {
-      query.values = await transformQueryValueToBigInts(propertyQuery.operatorValue, XSDNS.Boolean);
-    } else {
-      query.values = await transformQueryValueToBigInts(
-        propertyQuery.operatorValue,
-        query.datatype
-      );
-    }
+    const datatype = propertyQuery.operator === Operators.EXISTS ? XSDNS.Boolean : query.datatype;
+    query.values = await transformQueryValueToBigInts(propertyQuery.operatorValue, datatype);
   }
   return query;
 };
