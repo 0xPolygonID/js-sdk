@@ -14,7 +14,6 @@ export function calculateQueryHash(
   verifierID: string | number,
   nullifierSessionID: string | number
 ): bigint {
-  const claimPathNotExists = operator === Operators.EXISTS && values[0] === BigInt(0);
   const expValue = prepareCircuitArrayValues(values, defaultValueArraySize);
   const valueHash = poseidon.spongeHashX(expValue, 6);
   const firstPartQueryHash = poseidon.hash([
@@ -22,17 +21,17 @@ export function calculateQueryHash(
     BigInt(slotIndex),
     BigInt(operator),
     BigInt(claimPathKey),
-    BigInt(claimPathNotExists),
+    BigInt(merklized),
     valueHash
   ]);
 
   const queryHash = poseidon.hash([
     firstPartQueryHash,
     BigInt(valueArraySize),
-    BigInt(merklized),
     BigInt(isRevocationChecked),
     BigInt(verifierID),
-    BigInt(nullifierSessionID)
+    BigInt(nullifierSessionID),
+    0n
   ]);
   return queryHash;
 }
