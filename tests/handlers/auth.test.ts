@@ -354,6 +354,9 @@ describe('auth', () => {
               $eq: '2023-12-11'
             }
           }
+        },
+        params: {
+          nullifierSessionId: '12345'
         }
       }
     ];
