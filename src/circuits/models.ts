@@ -65,32 +65,26 @@ export class Query {
     const twoArrSizeOps = [Operators.BETWEEN, Operators.NONBETWEEN];
     const maxArrSizeOps = [Operators.IN, Operators.NIN];
 
-    if (oneArrSizeOps.includes(this.operator)) {
-      if (this.values.length !== 1) {
-        throw new Error(CircuitError.InvalidValuesArrSize);
-      } else {
+    switch (this.values.length) {
+      case 1:
+        if (!oneArrSizeOps.includes(this.operator)) {
+          throw new Error(CircuitError.InvalidValuesArrSize);
+        }
         return;
-      }
-    }
-
-    if (twoArrSizeOps.includes(this.operator)) {
-      if (this.values.length !== 2) {
-        throw new Error(CircuitError.InvalidValuesArrSize);
-      } else {
+      case 2:
+        if (!twoArrSizeOps.includes(this.operator)) {
+          throw new Error(CircuitError.InvalidValuesArrSize);
+        }
         return;
-      }
-    }
-
-    if (maxArrSizeOps.includes(this.operator)) {
-      if (this.values.length === 0 || this.values.length > maxArrSize) {
-        throw new Error(CircuitError.InvalidValuesArrSize);
-      } else {
-        return;
-      }
-    }
-
-    if (this.values.length !== 0) {
-      throw new Error(CircuitError.InvalidValuesArrSize);
+      default:
+        if (maxArrSizeOps.includes(this.operator)) {
+          if (this.values.length === 0 || this.values.length > maxArrSize) {
+            throw new Error(CircuitError.InvalidValuesArrSize);
+          }
+        }
+        if (this.values.length !== 0) {
+          throw new Error(CircuitError.InvalidValuesArrSize);
+        }
     }
   }
 }
