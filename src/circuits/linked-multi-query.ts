@@ -134,7 +134,6 @@ export class LinkedMultiQueryPubSignals {
   merklized!: number;
   operatorOutput!: bigint[];
   circuitQueryHash!: bigint[];
-  valueArraySize!: number[];
 
   /**
    * PubSignalsUnmarshal unmarshal linkedMultiQuery10.circom public inputs to LinkedMultiQueryPubSignals
@@ -144,7 +143,7 @@ export class LinkedMultiQueryPubSignals {
    * @returns LinkedMultiQueryPubSignals
    */
   pubSignalsUnmarshal(data: Uint8Array): LinkedMultiQueryPubSignals {
-    const len = 32;
+    const len = 22;
     const queryLength = LinkedMultiQueryInputs.queryCount;
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
@@ -173,13 +172,6 @@ export class LinkedMultiQueryPubSignals {
     this.circuitQueryHash = [];
     for (let i = 0; i < queryLength; i++) {
       this.circuitQueryHash.push(BigInt(sVals[fieldIdx]));
-      fieldIdx++;
-    }
-
-    // - valueArraySize
-    this.valueArraySize = [];
-    for (let i = 0; i < queryLength; i++) {
-      this.valueArraySize.push(parseInt(sVals[fieldIdx]));
       fieldIdx++;
     }
 

@@ -65,16 +65,6 @@ describe('linked-multi-query', () => {
 			"0",
 			"0",
 			"0",
-			"0",
-      "1",
-			"1",
-			"1",
-			"1",
-			"1",
-			"0",
-			"0",
-			"0",
-			"0",
 			"0"
 		]`
     );
@@ -104,7 +94,6 @@ describe('linked-multi-query', () => {
 
     exp.operatorOutput = operatorOutput;
     exp.circuitQueryHash = circuitQueryHash;
-    exp.valueArraySize = valueArraySize;
 
     const expJson = JSON.stringify(exp, (_, value) =>
       typeof value === 'bigint' ? value.toString() : value
