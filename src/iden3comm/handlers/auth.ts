@@ -5,6 +5,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
+  BasicMessage,
   IPackageManager,
   JSONObject,
   JWSPackerParams,
@@ -146,6 +147,23 @@ export interface AuthHandlerOptions {
   packerOptions?: JWSPackerParams;
 }
 
+type AuthRequestProtocolMessagePayload = {
+  params: Partial<AuthHandlerOptions> & {
+    did: DID;
+  };
+  message: AuthorizationRequestMessage;
+};
+
+type AuthResponseProtocolMessagePayload = {
+  params: AuthResponseHandlerOptions & {
+    request: AuthorizationRequestMessage;
+  };
+  message: AuthorizationResponseMessage;
+};
+
+export type AuthProtocolMessagePayload =
+  | AuthRequestProtocolMessagePayload
+  | AuthResponseProtocolMessagePayload;
 /**
  *
  * Allows to process AuthorizationRequest protocol message and produce JWZ response.
@@ -193,6 +211,33 @@ export class AuthHandler implements IAuthHandler {
   }> {
     const authRequest = await this.parseAuthorizationRequest(request);
 
+    const authResponse = await this.handleAuthRequest(authRequest, did, opts);
+
+    const packerOpts =
+      opts?.mediaType === MediaType.SignedMessage
+        ? opts.packerOptions
+        : {
+            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+          };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
+
+    const mediaType = opts?.mediaType ?? MediaType.ZKPMessage;
+    const token = byteDecoder.decode(
+      await this._packerMgr.pack(mediaType, msgBytes, {
+        senderDID: did,
+        ...packerOpts
+      })
+    );
+
+    return { authRequest, authResponse, token };
+  }
+
+  public async handleAuthRequest(
+    authRequest: AuthorizationRequestMessage,
+    did: DID,
+    opts: AuthHandlerOptions | undefined
+  ) {
     if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for authorization request');
     }
@@ -305,23 +350,7 @@ export class AuthHandler implements IAuthHandler {
       authResponse.body.scope.push(zkpRes);
     }
 
-    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
-
-    const packerOpts =
-      opts.mediaType === MediaType.SignedMessage
-        ? opts.packerOptions
-        : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-          };
-
-    const token = byteDecoder.decode(
-      await this._packerMgr.pack(opts.mediaType, msgBytes, {
-        senderDID: did,
-        ...packerOpts
-      })
-    );
-
-    return { authRequest, authResponse, token };
+    return authResponse;
   }
 
   /**
@@ -435,6 +464,28 @@ export class AuthHandler implements IAuthHandler {
         }
         groupIdValidationMap[groupId] = [...(groupIdValidationMap[groupId] ?? []), proofRequest];
       }
+    }
+  }
+
+  async handle(msgPayload: AuthProtocolMessagePayload): Promise<BasicMessage | null> {
+    switch (msgPayload.message.type) {
+      case PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE: {
+        const payload = msgPayload as AuthRequestProtocolMessagePayload;
+        return (await this.handleAuthRequest(payload.message, payload.params.did, {
+          mediaType: payload.params?.mediaType ?? MediaType.ZKPMessage,
+          packerOptions: payload.params.packerOptions
+        })) as BasicMessage;
+      }
+      case PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE: {
+        const payload = msgPayload as AuthResponseProtocolMessagePayload;
+        await this.handleAuthorizationResponse(payload.message, payload.params.request, {
+          acceptedStateTransitionDelay: payload.params.acceptedStateTransitionDelay,
+          acceptedProofGenerationDelay: payload.params.acceptedProofGenerationDelay
+        });
+        return null;
+      }
+      default:
+        throw new Error(`Invalid message type ${msgPayload.message.type}`);
     }
   }
 }

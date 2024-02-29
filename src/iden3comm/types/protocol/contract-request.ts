@@ -13,7 +13,7 @@ export type ContractInvokeRequest = {
 export type ContractInvokeRequestBody = {
   reason: string;
   transaction_data: ContractInvokeTransactionData;
-  scope: Array<ZeroKnowledgeProofRequest>;
+  scope: ZeroKnowledgeProofRequest[];
 };
 
 /** ContractInvokeTransactionData represents structure of contract invoke transaction data object */

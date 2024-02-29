@@ -4,6 +4,7 @@ export * from './protocol/messages';
 export * from './protocol/proof';
 export * from './protocol/revocation';
 export * from './protocol/contract-request';
+export * from './protocol/common';
 
 export * from './packer';
 export * from './packageManager';

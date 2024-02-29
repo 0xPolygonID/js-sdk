@@ -35,7 +35,7 @@ export type CredentialsOfferMessage = {
 /** CredentialsOfferMessageBody is struct the represents offer message */
 export type CredentialsOfferMessageBody = {
   url: string;
-  credentials: Array<CredentialOffer>;
+  credentials: CredentialOffer[];
 };
 
 /** CredentialsOnchainOfferMessage represent Iden3message for credential onhcain offer message */
@@ -51,7 +51,7 @@ export type CredentialsOnchainOfferMessage = {
 
 /** CredentialsOnchainOfferMessageBody is struct the represents onchain offer message body */
 export type CredentialsOnchainOfferMessageBody = {
-  credentials: Array<CredentialOffer>;
+  credentials: CredentialOffer[];
   transaction_data: ContractInvokeTransactionData;
 };
 
@@ -66,7 +66,7 @@ export type CredentialIssuanceMessage = {
   id: string;
   typ?: MediaType;
   type: ProtocolMessage;
-  threadID?: string;
+  thid?: string;
   body?: IssuanceMessageBody;
   from?: string;
   to?: string;

@@ -50,7 +50,18 @@ import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, Signer } from 'ethers';
-import { RHS_URL, WALLET_KEY } from '../helpers';
+
+export const mockZKPVerifier: IOnChainZKPVerifier = {
+  submitZKPResponse: async (
+    signer: Signer,
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ) => {
+    const response = new Map<string, ZeroKnowledgeProofResponse>();
+    response.set('txhash1', zkProofResponses[0]);
+    return response;
+  }
+};
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -99,18 +110,6 @@ describe('contract-request', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
-    }
-  };
-
-  const mockZKPVerifier: IOnChainZKPVerifier = {
-    submitZKPResponse: async (
-      signer: Signer,
-      txData: ContractInvokeTransactionData,
-      zkProofResponses: ZeroKnowledgeProofResponse[]
-    ) => {
-      const response = new Map<string, ZeroKnowledgeProofResponse>();
-      response.set('txhash1', zkProofResponses[0]);
-      return response;
     }
   };
 

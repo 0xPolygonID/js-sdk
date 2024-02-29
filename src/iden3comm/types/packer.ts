@@ -5,6 +5,7 @@ import { CircuitId } from '../../circuits';
 import { MediaType } from '../constants';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
 import { Signer } from 'did-jwt';
+import { BasicMessage } from './protocol/common';
 /**
  *  Protocol message type
  */
@@ -20,16 +21,6 @@ export type JSONValue = string | number | boolean | object | Array<object>;
  */
 export type JSONObject = {
   [x: string]: JSONValue;
-};
-
-export type BasicMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
-  body?: unknown;
-  from?: string;
-  to?: string;
 };
 
 /**

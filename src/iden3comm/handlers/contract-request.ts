@@ -2,7 +2,7 @@ import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
-import { IPackageManager, ZeroKnowledgeProofResponse } from '../types';
+import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 
 import { ProofQuery } from '../../verifiable';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
@@ -45,6 +45,13 @@ export interface IContractRequestHandler {
 export type ContractInvokeHandlerOptions = {
   ethSigner: Signer;
   challenge?: bigint;
+};
+
+export type ProofProtocolMessagePayload = {
+  params: ContractInvokeHandlerOptions & {
+    did: DID;
+  };
+  message: ContractInvokeRequest;
 };
 
 /**
@@ -110,10 +117,23 @@ export class ContractRequestHandler implements IContractRequestHandler {
     if (ciRequest.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for contract invoke request');
     }
+    return this.handleContactInvokeRequestInternal({
+      params: { did, ...opts },
+      message: ciRequest
+    });
+  }
 
-    if (!opts.ethSigner) {
+  private async handleContactInvokeRequestInternal(
+    msgPayload: ProofProtocolMessagePayload
+  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
+    if (!msgPayload.params.ethSigner) {
       throw new Error("Can't sign transaction. Provide Signer in options.");
     }
+
+    const {
+      params: { did, ethSigner, challenge },
+      message: ciRequest
+    } = msgPayload;
 
     const zkRequests = [];
     const { contract_address, chain_id } = ciRequest.body.transaction_data;
@@ -147,7 +167,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
         did,
         {
           skipRevocation: query.skipClaimRevocationCheck ?? false,
-          challenge: opts.challenge,
+          challenge,
           verifierDid
         }
       );
@@ -156,9 +176,20 @@ export class ContractRequestHandler implements IContractRequestHandler {
     }
 
     return this._zkpVerifier.submitZKPResponse(
-      opts.ethSigner,
+      ethSigner,
       ciRequest.body.transaction_data,
       zkRequests
     );
+  }
+
+  async handle(msgPayload: ProofProtocolMessagePayload): Promise<BasicMessage | null> {
+    switch (msgPayload.message.type) {
+      case PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE: {
+        await this.handleContactInvokeRequestInternal(msgPayload);
+        return null;
+      }
+      default:
+        throw new Error(`Invalid message type ${msgPayload.message.type}`);
+    }
   }
 }
