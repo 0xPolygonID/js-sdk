@@ -12,7 +12,7 @@ export function calculateQueryHashV2(
 ): bigint {
   const expValue = prepareCircuitArrayValues(values, 64);
   const valueHash = poseidon.spongeHashX(expValue, 6);
-  const quaryHash = poseidon.hash([
+  return poseidon.hash([
     schema.bigInt(),
     BigInt(slotIndex),
     BigInt(operator),
@@ -20,7 +20,6 @@ export function calculateQueryHashV2(
     BigInt(claimPathNotExists),
     valueHash
   ]);
-  return quaryHash;
 }
 
 export function calculateQueryHashV3(
