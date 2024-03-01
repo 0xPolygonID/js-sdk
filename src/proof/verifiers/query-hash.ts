@@ -2,7 +2,28 @@ import { poseidon } from '@iden3/js-crypto';
 import { SchemaHash } from '@iden3/js-iden3-core';
 import { defaultValueArraySize, prepareCircuitArrayValues } from '../../circuits';
 
-export function calculateQueryHash(
+export function calculateQueryHashV2(
+  values: bigint[],
+  schema: SchemaHash,
+  slotIndex: string | number,
+  operator: string | number,
+  claimPathKey: string | number,
+  claimPathNotExists: string | number
+): bigint {
+  const expValue = prepareCircuitArrayValues(values, 64);
+  const valueHash = poseidon.spongeHashX(expValue, 6);
+  const quaryHash = poseidon.hash([
+    schema.bigInt(),
+    BigInt(slotIndex),
+    BigInt(operator),
+    BigInt(claimPathKey),
+    BigInt(claimPathNotExists),
+    valueHash
+  ]);
+  return quaryHash;
+}
+
+export function calculateQueryHashV3(
   values: bigint[],
   schema: SchemaHash,
   slotIndex: string | number,

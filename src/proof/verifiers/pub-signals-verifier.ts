@@ -23,7 +23,7 @@ import {
 } from './query';
 import { parseQueriesMetadata, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
-import { calculateQueryHash } from './query-hash';
+import { calculateQueryHashV3 } from './query-hash';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -384,7 +384,7 @@ export class PubSignalsVerifier {
       const values = queryMeta?.values ?? [];
       const valArrSize = values.length;
 
-      const queryHash = calculateQueryHash(
+      const queryHash = calculateQueryHashV3(
         values,
         schemaHash,
         queryMeta?.slotIndex ?? 0,

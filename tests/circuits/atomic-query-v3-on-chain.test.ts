@@ -20,7 +20,7 @@ import {
 import expectedMtpJson from './data/atomic-query-v3-mtp-on-chain.json';
 import expectedSigJson from './data/atomic-query-v3-sig-on-chain.json';
 import { expect } from 'chai';
-import { byteDecoder, byteEncoder, calculateQueryHash, ProofType } from '../../src';
+import { byteDecoder, byteEncoder, calculateQueryHashV3, ProofType } from '../../src';
 
 describe('atomic-query-v3', () => {
   it('TestAttrQueryV3OnChain_SigPart_PrepareInputs', async () => {
@@ -254,7 +254,7 @@ describe('atomic-query-v3', () => {
     const schema = '180410020913331409885634153623124536270';
     const slotIndex = 2;
     const operator = 1;
-    const queryHash = calculateQueryHash(
+    const queryHash = calculateQueryHashV3(
       expValue,
       coreSchemaFromStr(schema),
       slotIndex,
@@ -321,7 +321,7 @@ describe('atomic-query-v3', () => {
     const schema = '180410020913331409885634153623124536270';
     const slotIndex = 2;
     const operator = 1;
-    const queryHash = calculateQueryHash(
+    const queryHash = calculateQueryHashV3(
       expValue,
       coreSchemaFromStr(schema),
       slotIndex,
