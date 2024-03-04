@@ -290,13 +290,11 @@ export class AuthHandler implements IAuthHandler {
 
       const credWithRevStatus = groupedCredentialsCache.get(groupId as number);
 
-      const verifierDid = DID.parse(authRequest.from);
-
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
         proofReq,
         did,
         {
-          verifier: DID.idFromDID(verifierDid).bigInt(),
+          verifierDid: DID.parse(authRequest.from),
           skipRevocation: Boolean(query.skipClaimRevocationCheck),
           credential: credWithRevStatus?.cred,
           credentialRevocationStatus: credWithRevStatus?.revStatus,

@@ -83,8 +83,8 @@ describe('atomic-query-v3', () => {
     inputs.currentTimeStamp = timestamp;
     inputs.proofType = ProofType.BJJSignature;
     inputs.linkNonce = BigInt(0);
-    inputs.verifierID = BigInt(
-      '21929109382993718606847853573861987353620810345503358891473103689157378049'
+    inputs.verifierID = Id.fromBigInt(
+      BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
     inputs.nullifierSessionID = BigInt(32);
 
@@ -149,8 +149,8 @@ describe('atomic-query-v3', () => {
     inputs.currentTimeStamp = timestamp;
     inputs.proofType = ProofType.Iden3SparseMerkleTreeProof;
     inputs.linkNonce = BigInt(0);
-    inputs.verifierID = BigInt(
-      '21929109382993718606847853573861987353620810345503358891473103689157378049'
+    inputs.verifierID = Id.fromBigInt(
+      BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
     inputs.nullifierSessionID = BigInt(32);
 
@@ -285,8 +285,8 @@ describe('atomic-query-v3', () => {
     exp.linkID = BigInt(0);
     exp.nullifier = BigInt(0);
     exp.operatorOutput = BigInt(0);
-    exp.verifierID = BigInt(
-      '21929109382993718606847853573861987353620810345503358891473103689157378049'
+    exp.verifierID = Id.fromBigInt(
+      BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
     exp.nullifierSessionID = BigInt(32);
     expect(exp).to.deep.equal(out);
@@ -416,8 +416,8 @@ describe('atomic-query-v3', () => {
     exp.linkID = BigInt(0);
     exp.nullifier = BigInt(0);
     exp.operatorOutput = BigInt(0);
-    exp.verifierID = BigInt(
-      '21929109382993718606847853573861987353620810345503358891473103689157378049'
+    exp.verifierID = Id.fromBigInt(
+      BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
     exp.nullifierSessionID = BigInt(32);
     expect(exp).to.deep.equal(out);

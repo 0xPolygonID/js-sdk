@@ -9,8 +9,6 @@ import { ContractInvokeRequest } from '../types/protocol/contract-request';
 import { DID, ChainIds } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
-import { swapEndianness } from '@iden3/js-merkletree';
-import { Hex } from '@iden3/js-crypto';
 
 /**
  * Interface that allows the processing of the contract request
@@ -117,7 +115,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
     }
 
     const zkRequests = [];
-    const { contract_address, chain_id } = ciRequest.body.transaction_data;
+    const { chain_id } = ciRequest.body.transaction_data;
     const networkFlag = Object.keys(ChainIds).find((key) => ChainIds[key] === chain_id);
 
     if (!networkFlag) {
@@ -132,15 +130,13 @@ export class ContractRequestHandler implements IContractRequestHandler {
       }
 
       const query = proofReq.query as ProofQuery;
-      const verifier = this.verifierFromContractAddr(contract_address);
-
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
         proofReq,
         did,
         {
           skipRevocation: query.skipClaimRevocationCheck ?? false,
           challenge: opts.challenge,
-          verifier
+          verifierDid: ciRequest.from ? DID.parse(ciRequest.from) : undefined
         }
       );
 
@@ -151,12 +147,6 @@ export class ContractRequestHandler implements IContractRequestHandler {
       opts.ethSigner,
       ciRequest.body.transaction_data,
       zkRequests
-    );
-  }
-
-  private verifierFromContractAddr(address: string): bigint {
-    return BigInt(
-      '0x' + Hex.encodeString(swapEndianness(Hex.decodeString(address.replace('0x', ''))))
     );
   }
 }

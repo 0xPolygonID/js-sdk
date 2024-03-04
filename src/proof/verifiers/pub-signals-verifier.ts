@@ -269,7 +269,7 @@ export class PubSignalsVerifier {
 
       const id = DID.idFromDID(verifierDIDParam as DID);
 
-      if (verifierID != id.bigInt()) {
+      if (verifierID.bigInt() != id.bigInt()) {
         throw new Error('wrong verifier is used for nullification');
       }
 

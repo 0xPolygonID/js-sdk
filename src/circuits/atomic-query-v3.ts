@@ -38,7 +38,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
   currentTimeStamp!: number;
   proofType!: ProofType;
   linkNonce!: bigint;
-  verifierID?: bigint;
+  verifierID?: Id;
   nullifierSessionID!: bigint;
 
   validate(): void {
@@ -233,7 +233,7 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     s.value = bigIntArrayToStringArray(values);
 
     s.linkNonce = this.linkNonce.toString();
-    s.verifierID = this.verifierID?.toString() ?? '0';
+    s.verifierID = this.verifierID?.bigInt().toString() ?? '0';
     s.nullifierSessionID = this.nullifierSessionID.toString();
 
     return byteEncoder.encode(JSON.stringify(s));
@@ -329,7 +329,7 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
   linkID!: bigint;
   nullifier!: bigint;
   operatorOutput!: bigint;
-  verifierID!: bigint;
+  verifierID!: Id;
   nullifierSessionID!: bigint;
 
   // PubSignalsUnmarshal unmarshal credentialAtomicQueryV3.circom public signals
@@ -449,7 +449,7 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
 
     // - verifierID
     if (sVals[fieldIdx] !== '0') {
-      this.verifierID = BigInt(sVals[fieldIdx]);
+      this.verifierID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
     }
     fieldIdx++;
 
