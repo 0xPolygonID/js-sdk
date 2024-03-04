@@ -1,5 +1,5 @@
-import { Poseidon } from '@iden3/js-crypto';
-import { BytesHelper, DID, MerklizedRootPosition } from '@iden3/js-iden3-core';
+import { Poseidon, poseidon } from '@iden3/js-crypto';
+import { BytesHelper, DID, Id, MerklizedRootPosition, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import {
   AuthV2Inputs,
@@ -8,7 +8,8 @@ import {
   Query,
   StateTransitionInputs,
   TreeState,
-  ValueProof
+  ValueProof,
+  prepareCircuitArrayValues
 } from '../circuits';
 import { ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
@@ -42,6 +43,7 @@ import {
 } from './provers/inputs-generator';
 import { PubSignalsVerifier, VerifyContext } from './verifiers/pub-signals-verifier';
 import { VerifyOpts } from './verifiers';
+import { MessageBus } from '../utils/message-bus';
 
 export interface QueryWithFieldName {
   query: Query;
@@ -342,6 +344,38 @@ export class ProofService implements IProofService {
     }
 
     const { proof, pub_signals } = await this._prover.generate(inputs, proofReq.circuitId);
+    const inp = JSON.parse(byteDecoder.decode(inputs));
+
+    const queryHash = calculateQueryHashV3(
+      queriesMetadata[0].values,
+      inp.claimSchema,
+      queriesMetadata[0].slotIndex,
+      queriesMetadata[0].operator,
+      queriesMetadata[0].claimPathKey.toString(),
+      queriesMetadata[0].values.length,
+      queriesMetadata[0].merklizedSchema ? 1 : 0,
+      opts.skipRevocation ? 1 : 0,
+      DID.idFromDID(opts.verifierDid!).bigInt().toString() ?? '0',
+      proofReq.params?.nullifierSessionID.toString() ?? '0'
+    );
+
+    const request = {
+      schema: queriesMetadata[0].merklizedSchema,
+      claimPathKey: queriesMetadata[0].claimPathKey,
+      operator: queriesMetadata[0].operator,
+      slotIndex: queriesMetadata[0].slotIndex,
+      value: inp.value,
+      queryHash,
+      allowedIssuers: [],
+      circuitIds: ['credentialAtomicQueryV3OnChain-beta.1'],
+      skipClaimRevocationCheck: proofReq.query.skipClaimRevocationCheck,
+      groupID: groupId,
+      nullifierSessionID: proofReq.params?.nullifierSessionID ?? 0n,
+      proofType: proofReq.query.proofType,
+      verifierID: DID.idFromDID(opts.verifierDid!) ?? 0n
+    };
+
+    MessageBus.getInstance().publish('generated-proof', { proof, pub_signals, request });
 
     return {
       id: proofReq.id,
@@ -404,6 +438,8 @@ export class ProofService implements IProofService {
     const proof = await this._prover.generate(inputs, CircuitId.StateTransition);
 
     const txId = await stateStorage.publishState(proof, ethSigner);
+
+    MessageBus.getInstance().publish('stateTransition', proof);
 
     await this._identityWallet.updateIdentityState(did, true, newTreeState);
 
@@ -572,4 +608,40 @@ export class ProofService implements IProofService {
 
     return credential;
   }
+}
+
+export function calculateQueryHashV3(
+  values: bigint[],
+  schema: string,
+  slotIndex: string | number,
+  operator: string | number,
+  claimPathKey: string | number,
+  valueArraySize: string | number,
+  merklized: string | number,
+  isRevocationChecked: string | number,
+  verifierID: string | number,
+  nullifierSessionID: string | number
+): bigint {
+  const expValue = prepareCircuitArrayValues(values, 64);
+  const valueHash = poseidon.spongeHashX(expValue, 6);
+  const schemaHash = SchemaHash.newSchemaHashFromInt(BigInt(schema));
+
+  const firstPartQueryHash = poseidon.hash([
+    schemaHash.bigInt(),
+    BigInt(slotIndex),
+    BigInt(operator),
+    BigInt(claimPathKey),
+    BigInt(merklized),
+    valueHash
+  ]);
+
+  const queryHash = poseidon.hash([
+    firstPartQueryHash,
+    BigInt(valueArraySize),
+    BigInt(isRevocationChecked),
+    BigInt(verifierID),
+    BigInt(nullifierSessionID),
+    BigInt(0n)
+  ]);
+  return queryHash;
 }
