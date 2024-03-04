@@ -213,6 +213,8 @@ export const factoryComparer = (x: bigint, y: bigint[], operator: Operators): IC
       return new Scalar(x, y[0]);
     case Operators.IN:
     case Operators.NIN:
+    case Operators.BETWEEN:
+    case Operators.NONBETWEEN:
       return new Vector(x, y);
     default:
       throw new Error('unknown compare type');

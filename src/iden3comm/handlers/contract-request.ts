@@ -6,10 +6,11 @@ import { IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 
 import { ProofQuery } from '../../verifiable';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
-import { DID, ChainIds, DidMethod } from '@iden3/js-iden3-core';
+import { DID, ChainIds } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
-import { buildVerifierId } from '../../utils';
+import { swapEndianness } from '@iden3/js-merkletree';
+import { Hex } from '@iden3/js-crypto';
 
 /**
  * Interface that allows the processing of the contract request
@@ -122,16 +123,6 @@ export class ContractRequestHandler implements IContractRequestHandler {
     if (!networkFlag) {
       throw new Error(`Invalid chain id ${chain_id}`);
     }
-    const [blockchain, networkId] = networkFlag.split(':');
-
-    const verifierId = buildVerifierId(contract_address, {
-      blockchain,
-      networkId,
-      // DidMethod.Iden3 is used based on discussions: all onchain issuers have iden3 did method by default. This can be changed in the release of v3 circuit.
-      method: DidMethod.Iden3
-    });
-
-    const verifierDid = DID.parseFromId(verifierId);
 
     for (const proofReq of ciRequest.body.scope) {
       if (!this._allowedCircuits.includes(proofReq.circuitId as CircuitId)) {
@@ -141,6 +132,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
       }
 
       const query = proofReq.query as ProofQuery;
+      const verifier = this.verifierFromContractAddr(contract_address);
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
         proofReq,
@@ -148,7 +140,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
         {
           skipRevocation: query.skipClaimRevocationCheck ?? false,
           challenge: opts.challenge,
-          verifier: DID.idFromDID(verifierDid).bigInt()
+          verifier
         }
       );
 
@@ -159,6 +151,12 @@ export class ContractRequestHandler implements IContractRequestHandler {
       opts.ethSigner,
       ciRequest.body.transaction_data,
       zkRequests
+    );
+  }
+
+  private verifierFromContractAddr(address: string): bigint {
+    return BigInt(
+      '0x' + Hex.encodeString(swapEndianness(Hex.decodeString(address.replace('0x', ''))))
     );
   }
 }

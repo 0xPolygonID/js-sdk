@@ -23,7 +23,9 @@ export type FilterOperatorMethod =
   | '$gte'
   | '$lte'
   | '$sd'
-  | '$exists';
+  | '$exists'
+  | '$between'
+  | '$nonbetween';
 
 /** filter function type */
 export type FilterOperatorFunction = (a: any, b: any) => boolean;
@@ -153,6 +155,21 @@ const inOperator = (a: ComparableType | ComparableType[], b: ComparableType | Co
   return false;
 };
 
+const betweenOperator = (
+  a: ComparableType | ComparableType[],
+  b: ComparableType | ComparableType[]
+) => {
+  if (!Array.isArray(b) || b.length !== 2) {
+    throw new Error('$between/$nonbetween operator value should be 2 elements array');
+  }
+
+  if (Array.isArray(a)) {
+    return a.every((val) => val >= b[0] && val <= b[1]);
+  }
+
+  return a >= b[0] && a <= b[1];
+};
+
 export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFunction } = {
   $noop: () => true,
   $sd: () => true,
@@ -170,7 +187,11 @@ export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFun
   $gte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     greaterThanOrEqual(a, b),
   $lte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
-    lessThanOrEqual(a, b)
+    lessThanOrEqual(a, b),
+  $between: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
+    betweenOperator(a, b),
+  $nonbetween: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
+    !betweenOperator(a, b)
 };
 
 /**
