@@ -113,7 +113,8 @@ export async function checkQueryRequest(
     );
   }
 
-  queriesMetadata.forEach(async (metadata) => {
+  for (let i = 0; i < queriesMetadata.length; i++) {
+    const metadata = queriesMetadata[i];
     if (!query.type) {
       throw new Error(`proof query type is undefined`);
     }
@@ -165,7 +166,7 @@ export async function checkQueryRequest(
     if (timeDiff > acceptedProofGenerationDelay) {
       throw new Error('generated proof is outdated');
     }
-  });
+  };
 
   return;
 }
@@ -197,6 +198,9 @@ async function validateOperators(cq: QueryMetadata, outputs: ClaimOutputs) {
 
   for (let index = 0; index < outputs.value.length; index++) {
     if (outputs.value[index] !== cq.values[index]) {
+      if (outputs.value[index] === 0n && cq.values[index] === undefined) {
+        continue;
+      }
       throw new Error(`comparison value that was used is not equal to requested in query`);
     }
   }
