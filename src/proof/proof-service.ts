@@ -1,14 +1,17 @@
-import { Poseidon } from '@iden3/js-crypto';
-import { BytesHelper, DID, MerklizedRootPosition } from '@iden3/js-iden3-core';
+import { Poseidon, poseidon } from '@iden3/js-crypto';
+import { BytesHelper, DID, MerklizedRootPosition, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import {
+  AtomicQueryMTPV2OnChainPubSignals,
+  AtomicQueryV3OnChainPubSignals,
   AuthV2Inputs,
   CircuitId,
   Operators,
   Query,
   StateTransitionInputs,
   TreeState,
-  ValueProof
+  ValueProof,
+  prepareCircuitArrayValues
 } from '../circuits';
 import { ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
@@ -41,7 +44,9 @@ import {
   ProofInputsParams
 } from './provers/inputs-generator';
 import { PubSignalsVerifier, VerifyContext } from './verifiers/pub-signals-verifier';
-import { VerifyOpts } from './verifiers';
+import { VerifyOpts, calculateQueryHashV3 } from './verifiers';
+import { MessageBus } from '../utils';
+import { coreSchemaFromStr } from '../../tests/circuits/utils';
 
 export interface QueryWithFieldName {
   query: Query;
@@ -343,6 +348,39 @@ export class ProofService implements IProofService {
 
     const { proof, pub_signals } = await this._prover.generate(inputs, proofReq.circuitId);
 
+    const inp = JSON.parse(byteDecoder.decode(inputs));
+
+    const queryHash = calculateQueryHashV3(
+      inp.value,
+      coreSchemaFromStr(inp.claimSchema),
+      inp.slotIndex,
+      inp.operator,
+      inp.claimPathKey.toString(),
+      inp.valueArraySize,
+      queriesMetadata[0]?.merklizedSchema ? 1 : 0,
+      inp.isRevocationChecked,
+      inp.verifierID,
+      inp.nullifierSessionID
+    );
+
+    const request = {
+      schema: inp.claimSchema,
+      claimPathKey: inp.claimPathKey.toString(),
+      operator: inp.operator,
+      slotIndex: inp.slotIndex,
+      value: inp.value,
+      queryHash: queryHash.toString(),
+      allowedIssuers: [],
+      circuitIds: ['credentialAtomicQueryV3OnChain-beta.1'],
+      skipClaimRevocationCheck: proofReq.query.skipClaimRevocationCheck ?? false,
+      groupID: groupId,
+      nullifierSessionID: proofReq.params?.nullifierSessionID?.toString() ?? '0',
+      proofType: inp.proofType,
+      verifierID: opts.verifier?.toString() ?? '0'
+    };
+
+    MessageBus.getInstance().publish('proof-generated', { proof, pub_signals, request });
+
     return {
       id: proofReq.id,
       circuitId: proofReq.circuitId,
@@ -406,6 +444,8 @@ export class ProofService implements IProofService {
     const txId = await stateStorage.publishState(proof, ethSigner);
 
     await this._identityWallet.updateIdentityState(did, true, newTreeState);
+
+    MessageBus.getInstance().publish('stateTransition', proof);
 
     return txId;
   }

@@ -96,7 +96,10 @@ export class NativeProver implements IZKProver {
     if (!circuitData.provingKey) {
       throw new Error(`proving file doesn't exist for circuit ${circuitId}`);
     }
+    console.time('snarkjs generate');
+
     const { proof, publicSignals } = await groth16.prove(circuitData.provingKey, wtnsBytes);
+    console.timeEnd('snarkjs generate');
 
     // we need to terminate curve manually
     await this.terminateCurve();

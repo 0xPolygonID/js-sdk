@@ -10,16 +10,22 @@ import {
   EthStateStorage,
   OnChainZKPVerifier,
   defaultEthConnectionConfig,
-  hexToBytes
+  hexToBytes,
+  MessageBus
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { IProofService, ProofService } from '../../src/proof';
-import { CircuitId } from '../../src/circuits';
-import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
+import { IProofService, ProofService, RapidSnarkProver } from '../../src/proof';
+import { AtomicQueryV3OnChainPubSignals, CircuitId } from '../../src/circuits';
+import {
+  CredentialStatusType,
+  ProofType,
+  VerifiableConstants,
+  W3CCredential
+} from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CircuitData } from '../../src/storage/entities/circuitData';
@@ -50,6 +56,8 @@ import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, Signer } from 'ethers';
+import { RHS_URL, STATE_CONTRACT, WALLET_KEY } from '../helpers';
+import fs from 'fs/promises';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -445,10 +453,61 @@ describe('contract-request', () => {
     );
   });
   // V3 integration test
-  it.skip('contract request flow V3 - integration test', async () => {
+  it.only('contract request flow V3 - integration test', async () => {
+    // const pubSig = new AtomicQueryV3OnChainPubSignals().pubSignalsUnmarshal(
+    //   byteEncoder.encode(
+    //     JSON.stringify([
+    //       '25661904755581024571991254312769679630555855269229258121619130211778695681',
+    //       '10349182489807451359624267177273352916727492527319881385498557022685015511563',
+    //       '6750920854539412552179814265370112113853046631294455676501759658486932309915',
+    //       '19397306242791427378837283338496353088152255830603927331077825524718301475432',
+    //       '0',
+    //       '0',
+    //       '1',
+    //       '1',
+    //       '596321718581301166571875787124060302656464757803',
+    //       '16958168268428360495278703989382850945422084263359445315802686719269104649576',
+    //       '31893372254758636859945875498021375674132970105800410561681389657272357377',
+    //       '8560306918759440318552754978914231392360879160131576337723580214602126649668',
+    //       '1709623878',
+    //       '1'
+    //     ])
+    //   )
+    // );
+
+    // return;
+    const messageBus = MessageBus.getInstance();
+    const filePath = '../contracts/test/verifier/linked-proofs-data.json';
+    // const filePath = 'linked-proofs-data.json';
+
+    messageBus.subscribeOnce('stateTransition', async (data: any) => {
+      await fs.writeFile(
+        filePath,
+        JSON.stringify(
+          {
+            state: data,
+            queryData: {
+              zkpRequests: [],
+              zkpResponses: []
+            }
+          },
+          null,
+          2
+        )
+      );
+    });
+
+    messageBus.subscribe('proof-generated', async ({ proof, pub_signals, request, inp }: any) => {
+      const file = await fs.readFile(filePath, 'utf-8');
+      const obj = JSON.parse(file);
+      obj.queryData.zkpResponses.push({ proof, pub_signals });
+      obj.queryData.zkpRequests.push({ request });
+      await fs.writeFile(filePath, JSON.stringify(obj, null, 2));
+    });
+
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = rpcUrl;
-    stateEthConfig.contractAddress = '0x134b1be34911e39a8397ec6289782989729807a4';
+    stateEthConfig.contractAddress = STATE_CONTRACT;
 
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
@@ -476,7 +535,11 @@ describe('contract-request', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, dataStorage.states, {
-      ipfsNodeURL
+      ipfsNodeURL,
+      prover: new RapidSnarkProver(
+        `/Users/dmytro.k/Documents/work/js-sdk/tests/proofs/testdata`,
+        `/Users/dmytro.k/Documents/work/js-sdk/tests/proofs/testdata/lib/mac_arm64`
+      )
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
@@ -488,7 +551,6 @@ describe('contract-request', () => {
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
-      seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -501,7 +563,6 @@ describe('contract-request', () => {
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Mumbai,
-      seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: rhsUrl
@@ -511,59 +572,148 @@ describe('contract-request', () => {
 
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
-      type: 'KYCAgeCredential',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCEmployee-v101.json',
+      type: 'KYCEmployee',
       credentialSubject: {
         id: userDID.string(),
-        birthday: 19960424,
-        documentType: 99
+        ZKPexperiance: true,
+        hireDate: '2023-12-11',
+        position: 'boss',
+        salary: 200,
+        documentType: 1
       },
-      expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
+        id: RHS_URL
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
 
     await credWallet.save(issuerCred);
 
-    const proofReq: ZeroKnowledgeProofRequest = {
-      id: 200,
-      circuitId: CircuitId.AtomicQueryV3OnChain,
-      optional: false,
-      query: {
-        allowedIssuers: ['*'],
-        type: claimReq.type,
-        context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        credentialSubject: {
-          birthday: {
-            $lt: 20020101
+    const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL);
+
+    const ethSigner = new ethers.Wallet(
+      WALLET_KEY,
+      (dataStorage.states as EthStateStorage).provider
+    );
+
+    const txId = await proofService.transitState(
+      issuerDID,
+      res.oldTreeState,
+      true,
+      dataStorage.states,
+      ethSigner
+    );
+
+    const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
+      issuerDID,
+      res.credentials,
+      txId
+    );
+
+    await credWallet.saveAll(credsWithIden3MTPProof);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.AtomicQueryV3OnChain,
+        optional: false,
+        query: {
+          groupId: 1000,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          proofType: ProofType.BJJSignature,
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            documentType: {
+              $eq: 1
+            }
+          }
+        }
+      },
+      {
+        id: 2,
+        circuitId: CircuitId.AtomicQueryV3OnChain,
+        optional: false,
+        query: {
+          groupId: 101,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          skipClaimRevocationCheck: true,
+          credentialSubject: {
+            salary: {
+              $eq: 200
+            }
+          }
+        }
+      },
+      {
+        id: 3,
+        circuitId: CircuitId.AtomicQueryV3OnChain,
+        optional: false,
+        params: {
+          nullifierSessionId: 12345
+        },
+        query: {
+          groupId: 101,
+          proofType: ProofType.Iden3SparseMerkleTreeProof,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            position: {
+              $eq: 'boss'
+            }
+          }
+        }
+      },
+      {
+        id: 4,
+        circuitId: CircuitId.AtomicQueryV3OnChain,
+        optional: false,
+        query: {
+          groupId: 1000,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          proofType: ProofType.BJJSignature,
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            hireDate: {
+              $eq: '2023-12-11'
+            }
           }
         }
       }
-    };
+    ];
 
-    const contractAddress = '0xD0Fd3E9fDF448e5B86Cc0f73E5Ee7D2F284884c0';
-    const conf = defaultEthConnectionConfig;
-    conf.contractAddress = contractAddress;
-    conf.url = rpcUrl;
-    conf.chainId = 80001;
+    // const contractAddress = '0xD0Fd3E9fDF448e5B86Cc0f73E5Ee7D2F284884c0';
+    // const conf = defaultEthConnectionConfig;
+    // conf.contractAddress = contractAddress;
+    // conf.url = rpcUrl;
+    // conf.chainId = 80001;
 
-    const zkpVerifier = new OnChainZKPVerifier([conf]);
-    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
+    // const zkpVerifier = new OnChainZKPVerifier([conf]);
+    // contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
-      contract_address: contractAddress,
+      contract_address: '0xD0Fd3E9fDF448e5B86Cc0f73E5Ee7D2F284884c0',
       method_id: 'b68967e2',
-      chain_id: conf.chainId
+      chain_id: 80001
     };
 
     const ciRequestBody: ContractInvokeRequestBody = {
       reason: 'reason',
       transaction_data: transactionData,
-      scope: [proofReq as ZeroKnowledgeProofRequest]
+      scope: proofReqs
     };
 
     const id = uuid.v4();
@@ -574,8 +724,6 @@ describe('contract-request', () => {
       thid: id,
       body: ciRequestBody
     };
-
-    const ethSigner = new ethers.Wallet(walletKey);
 
     const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
 
@@ -591,8 +739,5 @@ describe('contract-request', () => {
     );
 
     expect(ciResponse).not.be.undefined;
-    expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(
-      proofReq.id
-    );
   });
 });

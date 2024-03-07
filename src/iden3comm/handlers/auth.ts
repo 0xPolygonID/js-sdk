@@ -18,6 +18,7 @@ import * as uuid from 'uuid';
 import { ProofQuery, RevocationStatus, W3CCredential } from '../../verifiable';
 import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
 import { getRandomBytes } from '@iden3/js-crypto';
+import { findCombinedQueries } from './utils';
 
 /**
  *  createAuthorizationRequest is a function to create protocol authorization request
@@ -227,38 +228,7 @@ export class AuthHandler implements IAuthHandler {
     };
 
     const requestScope = authRequest.body.scope;
-    const combinedQueries = requestScope.reduce((acc, proofReq) => {
-      const groupId = proofReq.query.groupId as number | undefined;
-      if (!groupId) {
-        return acc;
-      }
-
-      const existedData = acc.get(groupId);
-      if (!existedData) {
-        const seed = getRandomBytes(12);
-        const dataView = new DataView(seed.buffer);
-        const linkNonce = dataView.getUint32(0);
-        acc.set(groupId, { query: proofReq.query, linkNonce });
-        return acc;
-      }
-
-      const credentialSubject = mergeObjects(
-        existedData.query.credentialSubject as JSONObject,
-        proofReq.query.credentialSubject as JSONObject
-      );
-
-      acc.set(groupId, {
-        ...existedData,
-        query: {
-          skipClaimRevocationCheck:
-            existedData.query.skipClaimRevocationCheck || proofReq.query.skipClaimRevocationCheck,
-          ...(existedData.query as JSONObject),
-          credentialSubject
-        }
-      });
-
-      return acc;
-    }, new Map<number, { query: JSONObject; linkNonce: number }>());
+    const combinedQueries = findCombinedQueries(requestScope);
 
     const groupedCredentialsCache = new Map<
       number,

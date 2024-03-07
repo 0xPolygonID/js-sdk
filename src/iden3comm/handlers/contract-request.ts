@@ -4,13 +4,14 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
 import { IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 
-import { ProofQuery } from '../../verifiable';
+import { RevocationStatus, W3CCredential } from '../../verifiable';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
 import { DID, ChainIds } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { swapEndianness } from '@iden3/js-merkletree';
 import { Hex } from '@iden3/js-crypto';
+import { findCombinedQueries } from './utils';
 
 /**
  * Interface that allows the processing of the contract request
@@ -124,23 +125,56 @@ export class ContractRequestHandler implements IContractRequestHandler {
       throw new Error(`Invalid chain id ${chain_id}`);
     }
 
-    for (const proofReq of ciRequest.body.scope) {
+    const requestScope = ciRequest.body.scope;
+    const combinedQueries = findCombinedQueries(requestScope);
+    const groupedCredentialsCache = new Map<
+      number,
+      { cred: W3CCredential; revStatus?: RevocationStatus }
+    >();
+
+    for (const proofReq of requestScope) {
       if (!this._allowedCircuits.includes(proofReq.circuitId as CircuitId)) {
         throw new Error(
           `Can't handle circuit ${proofReq.circuitId}. Only onchain circuits are allowed.`
         );
       }
+      const query = proofReq.query;
+      const groupId = query.groupId as number | undefined;
+      const combinedQueryData = combinedQueries.get(groupId as number);
 
-      const query = proofReq.query as ProofQuery;
+      if (groupId) {
+        if (!combinedQueryData) {
+          throw new Error(`Invalid group id ${query.groupId}`);
+        }
+        const combinedQuery = combinedQueryData.query;
+
+        if (!groupedCredentialsCache.has(groupId)) {
+          const credWithRevStatus = await this._proofService.findCredentialByProofQuery(
+            did,
+            combinedQueryData.query
+          );
+          if (!credWithRevStatus.cred) {
+            throw new Error(`Credential not found for query ${JSON.stringify(combinedQuery)}`);
+          }
+
+          groupedCredentialsCache.set(groupId, credWithRevStatus);
+        }
+      }
+
+      const credWithRevStatus = groupedCredentialsCache.get(groupId as number);
+
       const verifier = this.verifierFromContractAddr(contract_address);
 
       const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
         proofReq,
         did,
         {
-          skipRevocation: query.skipClaimRevocationCheck ?? false,
+          verifier,
+          skipRevocation: Boolean(query.skipClaimRevocationCheck),
           challenge: opts.challenge,
-          verifier
+          credential: credWithRevStatus?.cred,
+          credentialRevocationStatus: credWithRevStatus?.revStatus,
+          linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
         }
       );
 
