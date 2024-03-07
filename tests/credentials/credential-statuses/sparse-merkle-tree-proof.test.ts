@@ -1,17 +1,15 @@
-import { FSCircuitStorage, IdentityWallet, ProofService } from '../../../src';
+import { IdentityWallet } from '../../../src';
 import { IDataStorage } from '../../../src/storage/interfaces';
 import { CredentialRequest, CredentialWallet } from '../../../src/credentials';
 import { CredentialStatusType } from '../../../src/verifiable';
 import { expect } from 'chai';
 import {
-  IPFS_URL,
   MOCK_STATE_STORAGE,
   SEED_USER,
   createIdentity,
   getInMemoryDataStorage,
   registerBJJIntoInMemoryKMS
 } from '../../helpers';
-import path from 'path';
 import { DID } from '@iden3/js-iden3-core';
 import fetchMock from '@gr2m/fetch-mock';
 import { Proof, ZERO_HASH } from '@iden3/js-merkletree';
@@ -21,7 +19,6 @@ describe('SparseMerkleTreeProof', () => {
   let credWallet: CredentialWallet;
 
   let dataStorage: IDataStorage;
-  let proofService: ProofService;
 
   let userDID: DID;
   let issuerDID: DID;
@@ -31,16 +28,9 @@ describe('SparseMerkleTreeProof', () => {
   beforeEach(async () => {
     const kms = registerBJJIntoInMemoryKMS();
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
-    const circuitStorage = new FSCircuitStorage({
-      dirname: path.join(__dirname, '../proofs/testdata')
-    });
 
     credWallet = new CredentialWallet(dataStorage);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
-
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE, {
-      ipfsNodeURL: IPFS_URL
-    });
 
     const { did: didUser, credential: userAuthCredential } = await createIdentity(idWallet, {
       seed: SEED_USER,

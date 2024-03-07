@@ -190,7 +190,7 @@ describe('onchain revocation checks', () => {
 
   beforeEach(async () => {
     circuitStorage = new FSCircuitStorage({
-      dirname: path.join(__dirname, '../proofs/testdata')
+      dirname: path.join(__dirname, '../../proofs/testdata')
     });
 
     const ethStorage = new EthStateStorage({
