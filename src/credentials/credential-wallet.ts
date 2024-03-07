@@ -84,12 +84,20 @@ export interface ICredentialWallet {
    */
   filterByCredentialSubject(credentials: W3CCredential[], subject: DID): Promise<W3CCredential[]>;
   /**
-   * Finds Auth BJJ credential for given user
+   * Finds first non-revoked Auth BJJ credential for given user
    *
    * @param {DID} did - the issuer of Auth BJJ credential
    * @returns `Promise<W3CCredential>` W3CCredential with AuthBJJCredential type
    */
   getAuthBJJCredential(did: DID): Promise<W3CCredential>;
+
+  /**
+   * Finds all Auth BJJ credential for given user
+   *
+   * @param {DID} did - the issuer of Auth BJJ credential
+   * @returns `Promise<W3CCredential[]>` W3CCredentials with AuthBJJCredential type
+   */
+  getAllAuthBJJCredentials(did: DID): Promise<W3CCredential[]>;
 
   /**
    * Fetches or Builds a revocation status for a given credential
@@ -196,6 +204,17 @@ export class CredentialWallet implements ICredentialWallet {
       }
     }
     throw new Error('all auth bjj credentials are revoked');
+  }
+
+  /**
+   * {@inheritDoc ICredentialWallet.getAllAuthBJJCredentials}
+   */
+  async getAllAuthBJJCredentials(did: DID): Promise<W3CCredential[]> {
+    return this._storage.credential.findCredentialsByQuery({
+      context: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD_URL,
+      type: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_TYPE,
+      allowedIssuers: [did.string()]
+    });
   }
 
   /**
