@@ -344,7 +344,11 @@ export interface IIdentityWallet {
    *
    * @param {DID} issuerDID -  identifier of the issuer
    * @param {TreeState} treeStateInfo -  optional, state for retrieval
-   * @returns `{Promise<W3CCredential>}`
+   * @returns `{Promise<{
+      authCredential: W3CCredential;
+      incProof: MerkleTreeProofWithTreeState;
+      nonRevProof: MerkleTreeProofWithTreeState;
+    }>}`
    */
   getActualAuthCredential(
     did: DID,
