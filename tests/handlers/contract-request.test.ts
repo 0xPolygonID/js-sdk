@@ -50,7 +50,6 @@ import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, Signer } from 'ethers';
-import { RHS_URL, WALLET_KEY } from '../helpers';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
