@@ -369,15 +369,26 @@ export class IdentityWallet implements IIdentityWallet {
       credentialStatusPublisherRegistry?: CredentialStatusPublisherRegistry;
     }
   ) {
+    this._credentialStatusPublisherRegistry = this.getCredentialStatusPublisherRegistry(_opts);
+  }
+
+  private getCredentialStatusPublisherRegistry(
+    _opts:
+      | { credentialStatusPublisherRegistry?: CredentialStatusPublisherRegistry | undefined }
+      | undefined
+  ): CredentialStatusPublisherRegistry {
     if (!_opts?.credentialStatusPublisherRegistry) {
-      this._credentialStatusPublisherRegistry = new CredentialStatusPublisherRegistry();
-      this._credentialStatusPublisherRegistry.register(
+      const registry = new CredentialStatusPublisherRegistry();
+      const emptyPublisher = { publish: () => Promise.resolve() };
+      registry.register(
         CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         new Iden3SmtRhsCredentialStatusPublisher()
       );
+      registry.register(CredentialStatusType.SparseMerkleTreeProof, emptyPublisher);
+      registry.register(CredentialStatusType.Iden3commRevocationStatusV1, emptyPublisher);
+      return registry;
     } else {
-      this._credentialStatusPublisherRegistry = this._opts
-        ?.credentialStatusPublisherRegistry as CredentialStatusPublisherRegistry;
+      return this._opts?.credentialStatusPublisherRegistry as CredentialStatusPublisherRegistry;
     }
   }
 
