@@ -17,7 +17,7 @@ import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
-import { JSONSchema, Parser, JsonSchemaValidator, cacheLoader } from '../schema-processor';
+import { JSONSchema, JsonSchemaValidator, cacheLoader } from '../schema-processor';
 import { IDataStorage, MerkleTreeType, Profile } from '../storage';
 import {
   VerifiableConstants,
@@ -337,6 +337,27 @@ export interface IIdentityWallet {
    * @returns `{Promise<void>}`
    */
   updateIdentityState(issuerDID: DID, published: boolean, treeState?: TreeState): Promise<void>;
+
+  /**
+   *
+   * gets actual auth credential with proofs for provided tree state or latest from the trees.
+   *
+   * @param {DID} issuerDID -  identifier of the issuer
+   * @param {TreeState} treeStateInfo -  optional, state for retrieval
+   * @returns `{Promise<{
+      authCredential: W3CCredential;
+      incProof: MerkleTreeProofWithTreeState;
+      nonRevProof: MerkleTreeProofWithTreeState;
+    }>}`
+   */
+  getActualAuthCredential(
+    did: DID,
+    treeStateInfo?: TreeState
+  ): Promise<{
+    authCredential: W3CCredential;
+    incProof: MerkleTreeProofWithTreeState;
+    nonRevProof: MerkleTreeProofWithTreeState;
+  }>;
 }
 
 /**
@@ -738,7 +759,9 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error(`Error create w3c credential ${(e as Error).message}`);
     }
 
-    const issuerAuthBJJCredential = await this._credentialWallet.getAuthBJJCredential(issuerDID);
+    const { authCredential: issuerAuthBJJCredential } = await this.getActualAuthCredential(
+      issuerDID
+    );
 
     const coreClaimOpts: CoreClaimCreationOptions = {
       revNonce: req.revocationOpts.nonce,
@@ -749,7 +772,7 @@ export class IdentityWallet implements IIdentityWallet {
       merklizeOpts: { ...opts, documentLoader: loader }
     };
 
-    const coreClaim = await Parser.parseClaim(credential, coreClaimOpts);
+    const coreClaim = await credential.toCoreClaim(coreClaimOpts);
 
     const { hi, hv } = coreClaim.hiHv();
 
@@ -780,6 +803,41 @@ export class IdentityWallet implements IIdentityWallet {
     credential.proof = [sigProof];
 
     return credential;
+  }
+
+  /** {@inheritDoc IIdentityWallet.getActualAuthCredential} */
+  async getActualAuthCredential(
+    did: DID,
+    treeStateInfo?: TreeState
+  ): Promise<{
+    authCredential: W3CCredential;
+    incProof: MerkleTreeProofWithTreeState;
+    nonRevProof: MerkleTreeProofWithTreeState;
+  }> {
+    const authCredentials = await this._credentialWallet.getAllAuthBJJCredentials(did);
+    for (let i = 0; i < authCredentials.length; i++) {
+      const incProof = await this.generateCredentialMtp(did, authCredentials[i], treeStateInfo);
+
+      if (!incProof.proof.existence) {
+        continue;
+      }
+
+      const nonRevProof = await this.generateNonRevocationMtp(
+        did,
+        authCredentials[i],
+        treeStateInfo
+      );
+
+      if (!nonRevProof.proof.existence) {
+        return {
+          authCredential: authCredentials[i],
+          incProof,
+          nonRevProof
+        };
+      }
+    }
+
+    throw new Error('no auth credentials found');
   }
 
   /** {@inheritDoc IIdentityWallet.revokeCredential} */
