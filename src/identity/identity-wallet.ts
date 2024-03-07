@@ -343,7 +343,7 @@ export interface IIdentityWallet {
    * gets actual auth credential with proofs for provided tree state or latest from the trees.
    *
    * @param {DID} issuerDID -  identifier of the issuer
-   * @param {TreeState} treeStateInfo -  optional, contains state to retrieve
+   * @param {TreeState} treeStateInfo -  optional, state for retrieval
    * @returns `{Promise<W3CCredential>}`
    */
   getActualAuthCredential(

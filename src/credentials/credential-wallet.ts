@@ -92,7 +92,7 @@ export interface ICredentialWallet {
   getAuthBJJCredential(did: DID): Promise<W3CCredential>;
 
   /**
-   * Finds all Auth BJJ credential for given user
+   * Finds all Auth BJJ credentials for given user
    *
    * @param {DID} did - the issuer of Auth BJJ credential
    * @returns `Promise<W3CCredential[]>` W3CCredentials with AuthBJJCredential type
