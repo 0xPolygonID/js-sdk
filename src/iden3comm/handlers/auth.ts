@@ -226,7 +226,7 @@ export class AuthHandler implements IAuthHandler {
       to: authRequest.from
     };
 
-    const requestScope = authRequest.body.scope;
+    const requestScope = authRequest.body.scope || [];
     const combinedQueries = requestScope.reduce((acc, proofReq) => {
       const groupId = proofReq.query.groupId as number | undefined;
       if (!groupId) {
