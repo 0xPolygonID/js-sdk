@@ -1,15 +1,13 @@
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
-
-import { IPackageManager, ZeroKnowledgeProofResponse } from '../types';
-
-import { ProofQuery } from '../../verifiable';
+import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
 import { DID, ChainIds, DidMethod } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { buildVerifierId } from '../../utils';
+import { processProtocolRequests } from './common';
 
 /**
  * Interface that allows the processing of the contract request
@@ -115,7 +113,6 @@ export class ContractRequestHandler implements IContractRequestHandler {
       throw new Error("Can't sign transaction. Provide Signer in options.");
     }
 
-    const zkRequests = [];
     const { contract_address, chain_id } = ciRequest.body.transaction_data;
     const networkFlag = Object.keys(ChainIds).find((key) => ChainIds[key] === chain_id);
 
@@ -133,32 +130,17 @@ export class ContractRequestHandler implements IContractRequestHandler {
 
     const verifierDid = DID.parseFromId(verifierId);
 
-    for (const proofReq of ciRequest.body.scope) {
-      if (!this._allowedCircuits.includes(proofReq.circuitId as CircuitId)) {
-        throw new Error(
-          `Can't handle circuit ${proofReq.circuitId}. Only onchain circuits are allowed.`
-        );
-      }
-
-      const query = proofReq.query as ProofQuery;
-
-      const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
-        proofReq,
-        did,
-        {
-          skipRevocation: query.skipClaimRevocationCheck ?? false,
-          challenge: opts.challenge,
-          verifierDid
-        }
-      );
-
-      zkRequests.push(zkpRes);
-    }
+    const zkpResponses = await processProtocolRequests(
+      did,
+      ciRequest as BasicMessage,
+      this._proofService,
+      { allowedCircuits: this._allowedCircuits, verifierDid }
+    );
 
     return this._zkpVerifier.submitZKPResponse(
       opts.ethSigner,
       ciRequest.body.transaction_data,
-      zkRequests
+      zkpResponses
     );
   }
 }
