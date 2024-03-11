@@ -87,6 +87,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid media type');
     }
+    ciRequest.body.scope = ciRequest.body.scope || [];
     return ciRequest;
   }
 
