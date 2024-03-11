@@ -135,7 +135,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
       did,
       ciRequest as BasicMessage,
       this._proofService,
-      { allowedCircuits: this._allowedCircuits, verifierDid }
+      { ...opts, allowedCircuits: this._allowedCircuits, verifierDid }
     );
 
     return this._zkpVerifier.submitZKPResponse(

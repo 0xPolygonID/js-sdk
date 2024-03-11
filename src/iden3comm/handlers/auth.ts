@@ -159,7 +159,8 @@ export class AuthHandler implements IAuthHandler {
   private readonly _allowedCircuits = [
     CircuitId.AtomicQueryV3,
     CircuitId.AtomicQuerySigV2,
-    CircuitId.AtomicQueryMTPV2
+    CircuitId.AtomicQueryMTPV2,
+    CircuitId.LinkedMultiQuery10
   ];
   /**
    * Creates an instance of AuthHandler.
@@ -223,7 +224,7 @@ export class AuthHandler implements IAuthHandler {
       did,
       authRequest as unknown as BasicMessage,
       this._proofService,
-      { allowedCircuits: this._allowedCircuits }
+      { ...opts, allowedCircuits: this._allowedCircuits }
     );
 
     const authResponse: AuthorizationResponseMessage = {

@@ -2,6 +2,7 @@ import { getRandomBytes } from '@iden3/js-crypto';
 import {
   BasicMessage,
   JSONObject,
+  JWSPackerParams,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
@@ -10,6 +11,8 @@ import { RevocationStatus, W3CCredential } from '../../verifiable';
 import { DID } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
+import { MediaType } from '../constants';
+import { Signer } from 'ethers';
 
 /**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.
@@ -68,7 +71,14 @@ export const processProtocolRequests = async (
   senderIdentifier: DID,
   request: BasicMessage,
   proofService: IProofService,
-  opts: { allowedCircuits: CircuitId[]; verifierDid?: DID }
+  opts: {
+    mediaType?: MediaType;
+    packerOptions?: JWSPackerParams;
+    allowedCircuits: CircuitId[];
+    verifierDid?: DID;
+    ethSigner?: Signer;
+    challenge?: bigint;
+  }
 ): Promise<ZeroKnowledgeProofResponse[]> => {
   const requestScope = request.body?.scope ?? [];
 
@@ -126,6 +136,7 @@ export const processProtocolRequests = async (
       senderIdentifier,
       {
         verifierDid,
+        challenge: opts.challenge,
         skipRevocation: Boolean(query.skipClaimRevocationCheck),
         credential: credWithRevStatus?.cred,
         credentialRevocationStatus: credWithRevStatus?.revStatus,
