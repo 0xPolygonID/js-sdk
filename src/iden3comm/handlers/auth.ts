@@ -176,6 +176,7 @@ export class AuthHandler implements IAuthHandler {
     if (message.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid media type');
     }
+    authRequest.body.scope = authRequest.body.scope || [];
     return authRequest;
   }
 
@@ -226,7 +227,7 @@ export class AuthHandler implements IAuthHandler {
       to: authRequest.from
     };
 
-    const requestScope = authRequest.body.scope || [];
+    const requestScope = authRequest.body.scope;
     const combinedQueries = requestScope.reduce((acc, proofReq) => {
       const groupId = proofReq.query.groupId as number | undefined;
       if (!groupId) {
@@ -346,7 +347,8 @@ export class AuthHandler implements IAuthHandler {
     }
 
     this.verifyAuthRequest(request);
-    const requestScope = request.body.scope;
+    const requestScope = request.body.scope || [];
+    const responseScope = response.body.scope || [];
 
     if (!response.from) {
       throw new Error(`proof response doesn't contain from field`);
@@ -357,7 +359,7 @@ export class AuthHandler implements IAuthHandler {
     for (const proofRequest of requestScope) {
       const groupId = proofRequest.query.groupId as number;
 
-      const proofResp = response.body.scope.find((resp) => resp.id === proofRequest.id);
+      const proofResp = responseScope.find((resp) => resp.id === proofRequest.id);
       if (!proofResp) {
         throw new Error(`proof is not given for requestId ${proofRequest.id}`);
       }
@@ -406,7 +408,7 @@ export class AuthHandler implements IAuthHandler {
 
   private verifyAuthRequest(request: AuthorizationRequestMessage) {
     const groupIdValidationMap: { [k: string]: ZeroKnowledgeProofRequest[] } = {};
-    const requestScope = request.body.scope;
+    const requestScope = request.body.scope || [];
     for (const proofRequest of requestScope) {
       const groupId = proofRequest.query.groupId as number;
       if (groupId) {
