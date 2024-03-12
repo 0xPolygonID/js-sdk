@@ -5,7 +5,6 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
-  BasicMessage,
   IPackageManager,
   JWSPackerParams,
   ZeroKnowledgeProofRequest
@@ -16,7 +15,7 @@ import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { processProtocolRequests } from './common';
+import { processZeroKnowledgeProofRequests } from './common';
 import { CircuitId } from '../../circuits';
 
 /**
@@ -156,7 +155,7 @@ export interface AuthHandlerOptions {
  * @implements implements IAuthHandler interface
  */
 export class AuthHandler implements IAuthHandler {
-  private readonly _allowedCircuits = [
+  private readonly _supportedCircuits = [
     CircuitId.AtomicQueryV3,
     CircuitId.AtomicQuerySigV2,
     CircuitId.AtomicQueryMTPV2,
@@ -220,11 +219,12 @@ export class AuthHandler implements IAuthHandler {
     }
     const guid = uuid.v4();
 
-    const responseScope = await processProtocolRequests(
+    const responseScope = await processZeroKnowledgeProofRequests(
       did,
-      authRequest as unknown as BasicMessage,
+      authRequest?.body.scope,
+      authRequest.from,
       this._proofService,
-      { ...opts, allowedCircuits: this._allowedCircuits }
+      { ...opts, supportedCircuits: this._supportedCircuits }
     );
 
     const authResponse: AuthorizationResponseMessage = {

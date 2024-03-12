@@ -1,13 +1,13 @@
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
-import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
+import { IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
 import { DID, ChainIds, DidMethod } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { buildVerifierId } from '../../utils';
-import { processProtocolRequests } from './common';
+import { processZeroKnowledgeProofRequests } from './common';
 
 /**
  * Interface that allows the processing of the contract request
@@ -55,7 +55,7 @@ export type ContractInvokeHandlerOptions = {
  * @implements implements IContractRequestHandler interface
  */
 export class ContractRequestHandler implements IContractRequestHandler {
-  private readonly _allowedCircuits = [
+  private readonly _supportedCircuits = [
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
     CircuitId.AtomicQueryV3OnChain
@@ -131,11 +131,12 @@ export class ContractRequestHandler implements IContractRequestHandler {
 
     const verifierDid = DID.parseFromId(verifierId);
 
-    const zkpResponses = await processProtocolRequests(
+    const zkpResponses = await processZeroKnowledgeProofRequests(
       did,
-      ciRequest as BasicMessage,
+      ciRequest?.body?.scope,
+      null,
       this._proofService,
-      { ...opts, allowedCircuits: this._allowedCircuits, verifierDid }
+      { ...opts, supportedCircuits: this._supportedCircuits, verifierDid }
     );
 
     return this._zkpVerifier.submitZKPResponse(

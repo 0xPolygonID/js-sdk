@@ -1,6 +1,5 @@
 import { getRandomBytes } from '@iden3/js-crypto';
 import {
-  BasicMessage,
   JSONObject,
   JWSPackerParams,
   ZeroKnowledgeProofRequest,
@@ -21,7 +20,7 @@ import { Signer } from 'ethers';
  * @param requestScope - An array of ZeroKnowledgeProofRequest objects.
  * @returns A Map<number, { query: JSONObject; linkNonce: number }> representing the grouped queries.
  */
-export const getGroupedQueries = (
+const getGroupedQueries = (
   requestScope: ZeroKnowledgeProofRequest[]
 ): Map<number, { query: JSONObject; linkNonce: number }> =>
   requestScope.reduce((acc, proofReq) => {
@@ -67,20 +66,21 @@ export const getGroupedQueries = (
  * @param opts.verifierDid - verifierDid is the DID of the verifier.
  * @returns A promise that resolves to an array of zero-knowledge proof responses.
  */
-export const processProtocolRequests = async (
+export const processZeroKnowledgeProofRequests = async (
   senderIdentifier: DID,
-  request: BasicMessage,
+  requests: ZeroKnowledgeProofRequest[] | undefined,
+  from: string | null,
   proofService: IProofService,
   opts: {
     mediaType?: MediaType;
     packerOptions?: JWSPackerParams;
-    allowedCircuits: CircuitId[];
+    supportedCircuits: CircuitId[];
     verifierDid?: DID;
     ethSigner?: Signer;
     challenge?: bigint;
   }
 ): Promise<ZeroKnowledgeProofResponse[]> => {
-  const requestScope = request.body?.scope ?? [];
+  const requestScope = requests ?? [];
 
   const combinedQueries = getGroupedQueries(requestScope);
 
@@ -92,7 +92,7 @@ export const processProtocolRequests = async (
   const zkpResponses = [];
 
   for (const proofReq of requestScope) {
-    if (!opts.allowedCircuits.includes(proofReq.circuitId as CircuitId)) {
+    if (!opts.supportedCircuits.includes(proofReq.circuitId as CircuitId)) {
       throw new Error(`Circuit ${proofReq.circuitId} is not allowed`);
     }
 
@@ -101,10 +101,10 @@ export const processProtocolRequests = async (
     if (opts.verifierDid) {
       verifierDid = opts.verifierDid;
     } else {
-      if (!request.from) {
+      if (!from) {
         throw new Error('please provide verifier DID');
       }
-      verifierDid = DID.parse(request.from);
+      verifierDid = DID.parse(from);
     }
 
     const query = proofReq.query;

@@ -5,7 +5,6 @@ import { CircuitId } from '../../circuits';
 import { MediaType } from '../constants';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
 import { Signer } from 'did-jwt';
-import { ZeroKnowledgeProofRequest } from './protocol/auth';
 /**
  *  Protocol message type
  */
@@ -28,7 +27,7 @@ export type BasicMessage = {
   typ?: MediaType;
   type: ProtocolMessage;
   thid?: string;
-  body?: { scope?: ZeroKnowledgeProofRequest[] };
+  body?: unknown;
   from?: string;
   to?: string;
 };
