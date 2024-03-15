@@ -4,7 +4,7 @@ import { Hash } from '@iden3/js-merkletree';
 import { JSONObject } from '../../iden3comm';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
 import { byteEncoder, isGenesisState } from '../../utils';
-import { caclulateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
+import { calculateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
 import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
@@ -368,7 +368,7 @@ export class PubSignalsVerifier {
       query.type || '',
       ldOpts
     );
-    const schemaHash = caclulateCoreSchemaHash(byteEncoder.encode(schemaId));
+    const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
 
     const queriesMetadata = await parseQueriesMetadata(
       query.type || '',

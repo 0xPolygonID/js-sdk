@@ -11,7 +11,7 @@ import { JSONObject } from '../../iden3comm';
 import { byteEncoder } from '../../utils';
 import { Operators } from '../../circuits/comparer';
 import { CircuitId } from '../../circuits/models';
-import { caclulateCoreSchemaHash, ProofQuery, VerifiableConstants } from '../../verifiable';
+import { calculateCoreSchemaHash, ProofQuery, VerifiableConstants } from '../../verifiable';
 import { parseQueriesMetadata, QueryMetadata } from '../common';
 import { circuitValidator } from '../provers';
 
@@ -75,7 +75,7 @@ export async function checkQueryRequest(
   const schemaId: string = await Path.getTypeIDFromContext(JSON.stringify(schema), query.type, {
     documentLoader: schemaLoader
   });
-  const schemaHash = caclulateCoreSchemaHash(byteEncoder.encode(schemaId));
+  const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
 
   if (schemaHash.bigInt() !== outputs.schemaHash.bigInt()) {
     throw new Error(`schema that was used is not equal to requested in query`);
@@ -166,7 +166,7 @@ export async function checkQueryRequest(
     if (timeDiff > acceptedProofGenerationDelay) {
       throw new Error('generated proof is outdated');
     }
-  };
+  }
 
   return;
 }

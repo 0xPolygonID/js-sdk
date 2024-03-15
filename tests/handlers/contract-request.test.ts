@@ -395,7 +395,7 @@ describe('contract-request', () => {
       }
     };
 
-    const contractAddress = '0x3a4d4E47bFfF6bD0EF3cd46580D9e36F3367da03'
+    const contractAddress = '0x3a4d4E47bFfF6bD0EF3cd46580D9e36F3367da03';
     const conf = defaultEthConnectionConfig;
     conf.contractAddress = contractAddress;
     conf.url = rpcUrl;
@@ -547,8 +547,14 @@ describe('contract-request', () => {
     };
 
     const erc20Verifier = '0x36eB0E70a456c310D8d8d15ae01F6D5A7C15309A';
-    const verifierDid = "did:polygonid:polygon:mumbai:2qCU58EJgrELdThzMyykDwT5kWff6XSbpSWtTQ7oS8";
-    const calcId = DID.parseFromId(buildVerifierId( erc20Verifier,{method:DidMethod.PolygonId, blockchain: Blockchain.Polygon, networkId: NetworkId.Mumbai})).string();
+    const verifierDid = 'did:polygonid:polygon:mumbai:2qCU58EJgrELdThzMyykDwT5kWff6XSbpSWtTQ7oS8';
+    const calcId = DID.parseFromId(
+      buildVerifierId(erc20Verifier, {
+        method: DidMethod.PolygonId,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai
+      })
+    ).string();
     expect(calcId).to.be.equal(verifierDid);
     const conf = defaultEthConnectionConfig;
     conf.contractAddress = erc20Verifier;
