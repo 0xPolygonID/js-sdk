@@ -3,7 +3,6 @@ import {
   BaseConfig,
   bigIntArrayToStringArray,
   prepareSiblingsStr,
-  existenceToInt,
   getNodeAuxValue,
   prepareCircuitArrayValues
 } from './common';
@@ -54,6 +53,8 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     if (!this.query.values) {
       throw new Error(CircuitError.EmptyQueryValue);
     }
+
+    this.query.validateValueArraySize(this.getValueArrSize());
 
     if (!this.proofType) {
       throw new Error(CircuitError.InvalidProofType);
@@ -221,14 +222,13 @@ export class AtomicQueryV3Inputs extends BaseConfig {
     s.issuerClaimNonRevMtpAuxHv = nodeAuxNonRev.value.bigInt().toString();
     s.issuerClaimNonRevMtpNoAux = nodeAuxNonRev.noAux;
 
-    s.claimPathNotExists = existenceToInt(valueProof.mtp.existence);
     const nodAuxJSONLD = getNodeAuxValue(valueProof.mtp);
     s.claimPathMtpNoAux = nodAuxJSONLD.noAux;
     s.claimPathMtpAuxHi = nodAuxJSONLD.key.bigInt().toString();
     s.claimPathMtpAuxHv = nodAuxJSONLD.value.bigInt().toString();
 
     s.claimPathKey = valueProof.path.toString();
-
+    s.valueArraySize = this.query.values.length;
     const values = prepareCircuitArrayValues(this.query.values, this.getValueArrSize());
     s.value = bigIntArrayToStringArray(values);
 
@@ -280,7 +280,6 @@ interface AtomicQueryV3CircuitInputs {
   isRevocationChecked: number;
   // Query
   // JSON path
-  claimPathNotExists: number; // 0 for inclusion, 1 for non-inclusion
   claimPathMtp: string[];
   claimPathMtpNoAux: string; // 1 if aux node is empty, 0 if non-empty or for inclusion proofs
   claimPathMtpAuxHi: string; // 0 for inclusion proof
@@ -292,6 +291,7 @@ interface AtomicQueryV3CircuitInputs {
   slotIndex: number;
   timestamp: number;
   value: string[];
+  valueArraySize: number;
 
   issuerClaimMtp: string[];
   issuerClaimClaimsTreeRoot: string;
@@ -320,10 +320,10 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
   slotIndex!: number;
   operator!: number;
   value: bigint[] = [];
+  valueArraySize!: number;
   timestamp!: number;
   merklized!: number;
   claimPathKey!: bigint;
-  claimPathNotExists!: number;
   isRevocationChecked!: number;
   proofType!: number;
   linkID!: bigint;
@@ -348,11 +348,11 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     // issuerClaimNonRevState
     // timestamp
     // claimSchema
-    // claimPathNotExists
     // claimPathKey
     // slotIndex
     // operator
     // value
+    // valueArraySize
     // verifierID
     // nullifierSessionID
 
@@ -425,10 +425,6 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     this.claimSchema = SchemaHash.newSchemaHashFromInt(BigInt(sVals[fieldIdx]));
     fieldIdx++;
 
-    // - ClaimPathNotExists
-    this.claimPathNotExists = parseInt(sVals[fieldIdx]);
-    fieldIdx++;
-
     // - ClaimPathKey
     this.claimPathKey = BigInt(sVals[fieldIdx]);
     fieldIdx++;
@@ -446,6 +442,10 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
       this.value.push(BigInt(sVals[fieldIdx]));
       fieldIdx++;
     }
+
+    // - valueArraySize
+    this.valueArraySize = parseInt(sVals[fieldIdx]);
+    fieldIdx++;
 
     // - verifierID
     if (sVals[fieldIdx] !== '0') {

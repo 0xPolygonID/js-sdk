@@ -1,7 +1,7 @@
 import { Signature } from '@iden3/js-crypto';
 import { Claim, Claim as CoreClaim, Id } from '@iden3/js-iden3-core';
 import { Hash, Proof } from '@iden3/js-merkletree';
-import { QueryOperators } from './comparer';
+import { Operators, QueryOperators } from './comparer';
 
 /**
  * TreeState is model for merkle tree roots
@@ -51,6 +51,49 @@ export class Query {
     )
       throw new Error(CircuitError.EmptyQueryValue);
   }
+
+  validateValueArraySize(maxArrSize: number): void {
+    switch (this.values.length) {
+      case 0: {
+        const zeroArrSizeOps = [Operators.NOOP, Operators.SD, Operators.NULLIFY];
+        if (!zeroArrSizeOps.includes(this.operator)) {
+          throw new Error(CircuitError.InvalidValuesArrSize);
+        }
+        return;
+      }
+      case 1: {
+        const oneArrSizeOps = [
+          Operators.EQ,
+          Operators.LT,
+          Operators.GT,
+          Operators.NE,
+          Operators.LTE,
+          Operators.GTE,
+          Operators.EXISTS
+        ];
+        if (!oneArrSizeOps.includes(this.operator)) {
+          throw new Error(CircuitError.InvalidValuesArrSize);
+        }
+        return;
+      }
+      case 2: {
+        const twoArrSizeOps = [Operators.BETWEEN, Operators.NONBETWEEN];
+        if (!twoArrSizeOps.includes(this.operator)) {
+          throw new Error(CircuitError.InvalidValuesArrSize);
+        }
+        return;
+      }
+      default: {
+        const maxArrSizeOps = [Operators.IN, Operators.NIN];
+        if (!maxArrSizeOps.includes(this.operator)) {
+          throw new Error(CircuitError.InvalidOperationType);
+        }
+        if (!this.values.length || this.values.length > maxArrSize) {
+          throw new Error(CircuitError.InvalidValuesArrSize);
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -75,17 +118,17 @@ export enum CircuitId {
    * @beta
    */
   // AtomicQueryV3CircuitID is a type for credentialAtomicQueryV3.circom
-  AtomicQueryV3 = 'credentialAtomicQueryV3-beta.0',
+  AtomicQueryV3 = 'credentialAtomicQueryV3-beta.1',
   /**
    * @beta
    */
   // AtomicQueryV3OnChainCircuitID is a type for credentialAtomicQueryV3OnChain.circom
-  AtomicQueryV3OnChain = 'credentialAtomicQueryV3OnChain-beta.0',
+  AtomicQueryV3OnChain = 'credentialAtomicQueryV3OnChain-beta.1',
   /**
    * @beta
    */
   // LinkedMultiQuery is a type for linkedMultiQuery.circom
-  LinkedMultiQuery10 = 'linkedMultiQuery10-beta.0'
+  LinkedMultiQuery10 = 'linkedMultiQuery10-beta.1'
 }
 
 /**
@@ -188,7 +231,9 @@ export enum CircuitError {
   EmptyGISTProof = 'empty GIST merkle tree proof',
   EmptyTreeState = 'empty tree state',
   EmptyRequestID = 'empty request ID',
-  InvalidProofType = 'invalid proof type'
+  InvalidProofType = 'invalid proof type',
+  InvalidValuesArrSize = 'invalid query Values array size',
+  InvalidOperationType = 'invalid operation type'
 }
 
 /**
