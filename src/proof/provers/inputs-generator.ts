@@ -191,19 +191,8 @@ export class InputGenerator {
     did: DID,
     treeStateInfo?: TreeState
   ): Promise<PreparedAuthBJJCredential> {
-    const authCredential = await this._credentialWallet.getAuthBJJCredential(did);
-
-    const incProof = await this._identityWallet.generateCredentialMtp(
-      did,
-      authCredential,
-      treeStateInfo
-    );
-
-    const nonRevProof = await this._identityWallet.generateNonRevocationMtp(
-      did,
-      authCredential,
-      treeStateInfo
-    );
+    const { authCredential, incProof, nonRevProof } =
+      await this._identityWallet.getActualAuthCredential(did, treeStateInfo);
 
     const authCoreClaim = authCredential.getCoreClaimFromProof(
       ProofType.Iden3SparseMerkleTreeProof
@@ -531,8 +520,8 @@ export class InputGenerator {
     circuitInputs.proofType = proofType;
     circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
     circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
-    circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionID
-      ? BigInt(proofReq.params?.nullifierSessionID?.toString())
+    circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionId
+      ? BigInt(proofReq.params?.nullifierSessionId?.toString())
       : BigInt(0);
 
     let isEthIdentity = true;

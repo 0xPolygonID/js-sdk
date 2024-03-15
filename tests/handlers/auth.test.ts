@@ -1142,4 +1142,16 @@ describe('auth', () => {
     ) as AuthorizationResponseMessage;
     await authHandler.handleAuthorizationResponse(response, authRequest, testOpts);
   });
+
+  it('null scope auth requst', async () => {
+    const msgBytes = byteEncoder.encode(
+      '{"id":"f3688b54-248d-4a75-b743-39f99a49adb8","typ":"application/iden3comm-plain-json","type":"https://iden3-communication.io/authorization/1.0/request","thid":"f3688b54-248d-4a75-b743-39f99a49adb8","body":{"callbackUrl":"https://issuer-admin.polygonid.me/v1/credentials/links/callback?sessionID=1bd6b1cb-cfc1-4817-8b77-3bc150435e29\u0026linkID=880face8-43b7-428b-80b1-adb6da0632ac","reason":"authentication","scope":null},"from":"did:polygonid:polygon:mumbai:2qMLpQ5py1YzBTTuLEeX2yr6pDGQ7gyXAfygaPakzq"}'
+    );
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+
+    const tokenStr = authRes.token;
+    expect(tokenStr).to.be.a('string');
+    const token = await Token.parse(tokenStr);
+    expect(token).to.be.a('object');
+  });
 });
