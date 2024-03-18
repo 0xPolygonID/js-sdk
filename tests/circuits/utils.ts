@@ -21,7 +21,7 @@ import {
   Proof
 } from '@iden3/js-merkletree';
 import { Hex, poseidon, PrivateKey, Signature } from '@iden3/js-crypto';
-import { prepareCircuitArrayValues, TreeState } from '../../src/circuits';
+import { TreeState } from '../../src/circuits';
 import { Merklizer } from '@iden3/js-jsonld-merklization';
 
 const TestClaimDocument = `{
@@ -347,25 +347,3 @@ export const coreSchemaFromStr = (schemaIntString: string) => {
   const schemaInt = BigInt(schemaIntString);
   return SchemaHash.newSchemaHashFromInt(schemaInt);
 };
-
-export function calculateQueryHash(
-  values: bigint[],
-  schema: string,
-  slotIndex: string | number,
-  operator: string | number,
-  claimPathKey: string | number,
-  claimPathNotExists: string | number
-): bigint {
-  const expValue = prepareCircuitArrayValues(values, 64);
-  const valueHash = poseidon.spongeHashX(expValue, 6);
-  const schemaHash = coreSchemaFromStr(schema);
-  const queryHash = poseidon.hash([
-    schemaHash.bigInt(),
-    BigInt(slotIndex),
-    BigInt(operator),
-    BigInt(claimPathKey),
-    BigInt(claimPathNotExists),
-    valueHash
-  ]);
-  return queryHash;
-}

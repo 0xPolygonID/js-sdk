@@ -160,7 +160,6 @@
   "issuerAuthRootsTreeRoot": "0",
   "issuerAuthState": "0",
   "isRevocationChecked": 1,
-  "claimPathNotExists": 1,
   "claimPathMtp": [
     "0",
     "0",
@@ -269,6 +268,7 @@
     "0",
     "0"
   ],
+  "valueArraySize": 1,
   "issuerClaimMtp": [
     "0",
     "10304430946970870697981400054531724100803206948489006715521525892274350097449",

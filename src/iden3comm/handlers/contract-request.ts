@@ -3,10 +3,9 @@ import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
-import { DID, ChainIds, DidMethod } from '@iden3/js-iden3-core';
+import { DID, ChainIds } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
-import { buildVerifierId } from '../../utils';
 import { processZeroKnowledgeProofRequests } from './common';
 
 /**
@@ -114,29 +113,19 @@ export class ContractRequestHandler implements IContractRequestHandler {
       throw new Error("Can't sign transaction. Provide Signer in options.");
     }
 
-    const { contract_address, chain_id } = ciRequest.body.transaction_data;
+    const { chain_id } = ciRequest.body.transaction_data;
     const networkFlag = Object.keys(ChainIds).find((key) => ChainIds[key] === chain_id);
 
     if (!networkFlag) {
       throw new Error(`Invalid chain id ${chain_id}`);
     }
-    const [blockchain, networkId] = networkFlag.split(':');
-
-    const verifierId = buildVerifierId(contract_address, {
-      blockchain,
-      networkId,
-      // DidMethod.Iden3 is used based on discussions: all onchain issuers have iden3 did method by default. This can be changed in the release of v3 circuit.
-      method: DidMethod.Iden3
-    });
-
-    const verifierDid = DID.parseFromId(verifierId);
-
+    const verifierDid = ciRequest.from ? DID.parse(ciRequest.from) : undefined
     const zkpResponses = await processZeroKnowledgeProofRequests(
       did,
       ciRequest?.body?.scope,
-      null,
+      verifierDid,
       this._proofService,
-      { ...opts, supportedCircuits: this._supportedCircuits, verifierDid }
+      { ...opts, supportedCircuits: this._supportedCircuits  }
     );
 
     return this._zkpVerifier.submitZKPResponse(

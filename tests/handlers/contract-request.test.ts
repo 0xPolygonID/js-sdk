@@ -10,7 +10,8 @@ import {
   EthStateStorage,
   OnChainZKPVerifier,
   defaultEthConnectionConfig,
-  hexToBytes
+  hexToBytes,
+  buildVerifierId
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -45,7 +46,7 @@ import {
 import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { Blockchain, BytesHelper, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, BytesHelper, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
@@ -394,7 +395,7 @@ describe('contract-request', () => {
       }
     };
 
-    const contractAddress = '0xE826f870852D7eeeB79B2C030298f9B5DAA8C8a3';
+    const contractAddress = '0x3a4d4E47bFfF6bD0EF3cd46580D9e36F3367da03';
     const conf = defaultEthConnectionConfig;
     conf.contractAddress = contractAddress;
     conf.url = rpcUrl;
@@ -545,9 +546,18 @@ describe('contract-request', () => {
       }
     };
 
-    const contractAddress = '0xD0Fd3E9fDF448e5B86Cc0f73E5Ee7D2F284884c0';
+    const erc20Verifier = '0x36eB0E70a456c310D8d8d15ae01F6D5A7C15309A';
+    const verifierDid = 'did:polygonid:polygon:mumbai:2qCU58EJgrELdThzMyykDwT5kWff6XSbpSWtTQ7oS8';
+    const calcId = DID.parseFromId(
+      buildVerifierId(erc20Verifier, {
+        method: DidMethod.PolygonId,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai
+      })
+    ).string();
+    expect(calcId).to.be.equal(verifierDid);
     const conf = defaultEthConnectionConfig;
-    conf.contractAddress = contractAddress;
+    conf.contractAddress = erc20Verifier;
     conf.url = rpcUrl;
     conf.chainId = 80001;
 
@@ -555,7 +565,7 @@ describe('contract-request', () => {
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
-      contract_address: contractAddress,
+      contract_address: erc20Verifier,
       method_id: 'b68967e2',
       chain_id: conf.chainId
     };
@@ -572,6 +582,7 @@ describe('contract-request', () => {
       typ: MediaType.PlainMessage,
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
       thid: id,
+      from: verifierDid,
       body: ciRequestBody
     };
 

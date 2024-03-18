@@ -219,10 +219,16 @@ export class AuthHandler implements IAuthHandler {
     }
     const guid = uuid.v4();
 
+    if (!authRequest.from) {
+      throw new Error('auth request should contain from field');
+    }
+
+    const from = DID.parse(authRequest.from);
+
     const responseScope = await processZeroKnowledgeProofRequests(
       did,
       authRequest?.body.scope,
-      authRequest.from,
+      from,
       this._proofService,
       { ...opts, supportedCircuits: this._supportedCircuits }
     );

@@ -69,13 +69,12 @@ const getGroupedQueries = (
 export const processZeroKnowledgeProofRequests = async (
   senderIdentifier: DID,
   requests: ZeroKnowledgeProofRequest[] | undefined,
-  from: string | null,
+  from: DID | undefined,
   proofService: IProofService,
   opts: {
     mediaType?: MediaType;
     packerOptions?: JWSPackerParams;
     supportedCircuits: CircuitId[];
-    verifierDid?: DID;
     ethSigner?: Signer;
     challenge?: bigint;
   }
@@ -94,17 +93,6 @@ export const processZeroKnowledgeProofRequests = async (
   for (const proofReq of requestScope) {
     if (!opts.supportedCircuits.includes(proofReq.circuitId as CircuitId)) {
       throw new Error(`Circuit ${proofReq.circuitId} is not allowed`);
-    }
-
-    let verifierDid: DID;
-
-    if (opts.verifierDid) {
-      verifierDid = opts.verifierDid;
-    } else {
-      if (!from) {
-        throw new Error('please provide verifier DID');
-      }
-      verifierDid = DID.parse(from);
     }
 
     const query = proofReq.query;
@@ -135,7 +123,7 @@ export const processZeroKnowledgeProofRequests = async (
       proofReq,
       senderIdentifier,
       {
-        verifierDid,
+        verifierDid: from,
         challenge: opts.challenge,
         skipRevocation: Boolean(query.skipClaimRevocationCheck),
         credential: credWithRevStatus?.cred,

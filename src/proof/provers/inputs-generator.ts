@@ -15,13 +15,13 @@ import {
   AtomicQueryV3OnChainInputs,
   CircuitClaim,
   CircuitId,
-  defaultValueArraySize,
   LinkedMultiQueryInputs,
   MTProof,
   Operators,
   Query,
   QueryOperators,
-  TreeState
+  TreeState,
+  ValueProof
 } from '../../circuits';
 import {
   PreparedAuthBJJCredential,
@@ -452,12 +452,10 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.values =
-      query.operator === Operators.SD || query.operator === Operators.NOOP
-        ? new Array(defaultValueArraySize).fill(0)
-        : query.values;
-    circuitInputs.query = query;
+    query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
+    query.valueProof = query.operator === Operators.NOOP ? new ValueProof() : query.valueProof;
 
+    circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
@@ -513,10 +511,9 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.values =
-      query.operator === Operators.SD || query.operator === Operators.NOOP
-        ? new Array(defaultValueArraySize).fill(0)
-        : query.values;
+    query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
+    query.valueProof = query.operator === Operators.NOOP ? new ValueProof() : query.valueProof;
+
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
@@ -533,7 +530,7 @@ export class InputGenerator {
     } catch {
       isEthIdentity = false;
     }
-    circuitInputs.authEnabled = isEthIdentity ? 0 : 1;
+    circuitInputs.isBJJAuthEnabled = isEthIdentity ? 0 : 1;
 
     circuitInputs.challenge = BigInt(params.challenge ?? 0);
     const { nonce: authProfileNonce, genesisDID } =
@@ -543,7 +540,7 @@ export class InputGenerator {
     const gistProof = toGISTProof(stateProof);
     circuitInputs.gistProof = gistProof;
     // auth inputs
-    if (circuitInputs.authEnabled === 1) {
+    if (circuitInputs.isBJJAuthEnabled === 1) {
       const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
 
       const authClaimData = await this.newCircuitClaimData({

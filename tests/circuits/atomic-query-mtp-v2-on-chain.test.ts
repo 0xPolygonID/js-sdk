@@ -136,7 +136,7 @@ describe('atomic-query-mtp-v2-on-chain', () => {
     const schema = coreSchemaFromStr('180410020913331409885634153623124536270');
     const slotIndex = 2;
     const operator = 1;
-    const quaryHash = poseidon.hash([
+    const queryHash = poseidon.hash([
       schema.bigInt(),
       BigInt(slotIndex),
       BigInt(operator),
@@ -159,7 +159,7 @@ describe('atomic-query-mtp-v2-on-chain', () => {
     exp.issuerClaimNonRevState = newHashFromString(
       '19157496396839393206871475267813888069926627705277243727237933406423274512449'
     );
-    exp.circuitQueryHash = quaryHash;
+    exp.circuitQueryHash = queryHash;
     exp.timestamp = timestamp;
     exp.merklized = 0;
     exp.isRevocationChecked = 1;
