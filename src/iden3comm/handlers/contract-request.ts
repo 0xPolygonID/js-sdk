@@ -119,13 +119,13 @@ export class ContractRequestHandler implements IContractRequestHandler {
     if (!networkFlag) {
       throw new Error(`Invalid chain id ${chain_id}`);
     }
-    const verifierDid = ciRequest.from ? DID.parse(ciRequest.from) : undefined
+    const verifierDid = ciRequest.from ? DID.parse(ciRequest.from) : undefined;
     const zkpResponses = await processZeroKnowledgeProofRequests(
       did,
       ciRequest?.body?.scope,
       verifierDid,
       this._proofService,
-      { ...opts, supportedCircuits: this._supportedCircuits  }
+      { ...opts, supportedCircuits: this._supportedCircuits }
     );
 
     return this._zkpVerifier.submitZKPResponse(

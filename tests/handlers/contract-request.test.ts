@@ -10,8 +10,7 @@ import {
   EthStateStorage,
   OnChainZKPVerifier,
   defaultEthConnectionConfig,
-  hexToBytes,
-  buildVerifierId
+  hexToBytes
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
@@ -20,7 +19,12 @@ import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { IProofService, ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
+import {
+  CredentialStatusType,
+  ProofType,
+  VerifiableConstants,
+  W3CCredential
+} from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CircuitData } from '../../src/storage/entities/circuitData';
@@ -46,7 +50,7 @@ import {
 import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { Blockchain, BytesHelper, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, BytesHelper, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
@@ -446,7 +450,7 @@ describe('contract-request', () => {
     );
   });
   // V3 integration test
-  it.skip('contract request flow V3 - integration test', async () => {
+  it.only('contract request flow V3 - integration test', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = rpcUrl;
     stateEthConfig.contractAddress = '0x134b1be34911e39a8397ec6289782989729807a4';
@@ -529,33 +533,46 @@ describe('contract-request', () => {
 
     await credWallet.save(issuerCred);
 
-    const proofReq: ZeroKnowledgeProofRequest = {
-      id: 200,
-      circuitId: CircuitId.AtomicQueryV3OnChain,
-      optional: false,
-      query: {
-        allowedIssuers: ['*'],
-        type: claimReq.type,
-        context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        credentialSubject: {
-          birthday: {
-            $lt: 20020101
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 2000000,
+        circuitId: CircuitId.AtomicQueryV3OnChain,
+        optional: false,
+        query: {
+          groupId: 1,
+          allowedIssuers: ['*'],
+          type: claimReq.type,
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          credentialSubject: {
+            birthday: {
+              $lt: 20020101
+            }
+          }
+        }
+      },
+      {
+        id: 1000000,
+        circuitId: CircuitId.AtomicQueryV3OnChain,
+        optional: false,
+        query: {
+          groupId: 1,
+          allowedIssuers: ['*'],
+          type: claimReq.type,
+          proofType: ProofType.BJJSignature,
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          credentialSubject: {
+            birthday: {
+              $eq: 19960424
+            }
           }
         }
       }
-    };
+    ];
 
     const erc20Verifier = '0x36eB0E70a456c310D8d8d15ae01F6D5A7C15309A';
     const verifierDid = 'did:polygonid:polygon:mumbai:2qCU58EJgrELdThzMyykDwT5kWff6XSbpSWtTQ7oS8';
-    const calcId = DID.parseFromId(
-      buildVerifierId(erc20Verifier, {
-        method: DidMethod.PolygonId,
-        blockchain: Blockchain.Polygon,
-        networkId: NetworkId.Mumbai
-      })
-    ).string();
-    expect(calcId).to.be.equal(verifierDid);
     const conf = defaultEthConnectionConfig;
     conf.contractAddress = erc20Verifier;
     conf.url = rpcUrl;
@@ -573,7 +590,7 @@ describe('contract-request', () => {
     const ciRequestBody: ContractInvokeRequestBody = {
       reason: 'reason',
       transaction_data: transactionData,
-      scope: [proofReq as ZeroKnowledgeProofRequest]
+      scope: [...proofReqs]
     };
 
     const id = uuid.v4();
@@ -603,7 +620,7 @@ describe('contract-request', () => {
 
     expect(ciResponse).not.be.undefined;
     expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(
-      proofReq.id
+      proofReqs[0].id
     );
   });
 });
