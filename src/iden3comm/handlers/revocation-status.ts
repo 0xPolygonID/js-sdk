@@ -1,6 +1,11 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
-import { IPackageManager, JWSPackerParams, RevocationStatusRequestMessage } from '../types';
+import {
+  IPackageManager,
+  JWSPackerParams,
+  RevocationStatusRequestMessage,
+  RevocationStatusResponseMessage
+} from '../types';
 
 import { DID } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
@@ -136,23 +141,20 @@ export class RevocationStatusHandler implements IRevocationStatusHandler {
 
     const senderDID = DID.parse(rsRequest.to);
     const guid = uuid.v4();
-    return this._packerMgr.pack(
-      opts.mediaType,
-      byteEncoder.encode(
-        JSON.stringify({
-          id: guid,
-          typ: MediaType.PlainMessage,
-          type: PROTOCOL_MESSAGE_TYPE.REVOCATION_STATUS_RESPONSE_MESSAGE_TYPE,
-          thid: rsRequest.thid ?? guid,
-          body: revStatus,
-          from: did.string(),
-          to: rsRequest.from
-        })
-      ),
-      {
-        senderDID,
-        ...packerOpts
-      }
-    );
+
+    const response: RevocationStatusResponseMessage = {
+      id: guid,
+      typ: MediaType.PlainMessage,
+      type: PROTOCOL_MESSAGE_TYPE.REVOCATION_STATUS_RESPONSE_MESSAGE_TYPE,
+      thid: rsRequest.thid ?? guid,
+      body: revStatus,
+      from: did.string(),
+      to: rsRequest.from
+    };
+
+    return this._packerMgr.pack(opts.mediaType, byteEncoder.encode(JSON.stringify(response)), {
+      senderDID,
+      ...packerOpts
+    });
   }
 }
