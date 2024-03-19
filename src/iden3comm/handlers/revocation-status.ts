@@ -1,6 +1,6 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
-import { IPackageManager, RevocationStatusRequestMessage } from '../types';
+import { IPackageManager, JWSPackerParams, RevocationStatusRequestMessage } from '../types';
 
 import { DID } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
@@ -9,17 +9,16 @@ import { IMerkleTreeStorage, MerkleTreeType } from '../../storage';
 import { hashElems } from '@iden3/js-merkletree';
 import { TreeState } from '../../circuits';
 import { byteEncoder } from '../../utils';
+import { proving } from '@iden3/js-jwz';
 
 /**
  * Interface that allows the processing of the revocation status
  *
- * @beta
  * @interface IRevocationStatusHandler
  */
 export interface IRevocationStatusHandler {
   /**
    * unpacks revocation status request
-   * @beta
    * @param {Uint8Array} request - raw byte message
    * @returns `Promise<RevocationStatusRequestMessage>`
    */
@@ -27,7 +26,6 @@ export interface IRevocationStatusHandler {
 
   /**
    * handle revocation status request
-   * @beta
    * @param {did} did  - sender DID
    * @param {Uint8Array} request - raw byte message
    * @param {RevocationStatusHandlerOptions} opts - handler options
@@ -42,6 +40,8 @@ export interface IRevocationStatusHandler {
 
 /** RevocationStatusHandlerOptions represents revocation status handler options */
 export type RevocationStatusHandlerOptions = {
+  mediaType: MediaType;
+  packerOptions?: JWSPackerParams;
   treeState?: TreeState;
 };
 
@@ -49,7 +49,6 @@ export type RevocationStatusHandlerOptions = {
  *
  * Allows to process RevocationStatusRequest protocol message
  *
- * @beta
 
  * @class RevocationStatusHandler
  * @implements implements IRevocationStatusHandler interface
@@ -87,6 +86,16 @@ export class RevocationStatusHandler implements IRevocationStatusHandler {
     request: Uint8Array,
     opts?: RevocationStatusHandlerOptions
   ): Promise<Uint8Array> {
+    if (!opts) {
+      opts = {
+        mediaType: MediaType.PlainMessage
+      };
+    }
+
+    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
+      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
+    }
+
     const rsRequest = await this.parseRevocationStatusRequest(request);
 
     if (!rsRequest.to) {
@@ -109,10 +118,17 @@ export class RevocationStatusHandler implements IRevocationStatusHandler {
       opts?.treeState
     );
 
-    const guid = uuid.v4();
+    const packerOpts =
+      opts.mediaType === MediaType.SignedMessage
+        ? opts.packerOptions
+        : {
+            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+          };
 
+    const senderDID = DID.parse(rsRequest.to);
+    const guid = uuid.v4();
     return this._packerMgr.pack(
-      MediaType.PlainMessage,
+      opts.mediaType,
       byteEncoder.encode(
         JSON.stringify({
           id: guid,
@@ -124,7 +140,10 @@ export class RevocationStatusHandler implements IRevocationStatusHandler {
           to: rsRequest.from
         })
       ),
-      {}
+      {
+        senderDID,
+        ...packerOpts
+      }
     );
   }
 
