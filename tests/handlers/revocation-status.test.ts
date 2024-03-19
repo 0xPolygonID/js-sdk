@@ -29,7 +29,7 @@ import * as uuid from 'uuid';
 import { expect } from 'chai';
 import path from 'path';
 
-describe.only('revocation status', () => {
+describe('revocation status', () => {
   let packageMgr: IPackageManager;
   let rsHandlerr: IRevocationStatusHandler;
   let idWallet: IdentityWallet;
