@@ -6,18 +6,17 @@ import {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
   IPackageManager,
-  JSONObject,
   JWSPackerParams,
-  ZeroKnowledgeProofRequest,
-  ZeroKnowledgeProofResponse
+  ZeroKnowledgeProofRequest
 } from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
-import { ProofQuery, RevocationStatus, W3CCredential } from '../../verifiable';
-import { byteDecoder, byteEncoder, mergeObjects } from '../../utils';
-import { getRandomBytes } from '@iden3/js-crypto';
+import { ProofQuery } from '../../verifiable';
+import { byteDecoder, byteEncoder } from '../../utils';
+import { processZeroKnowledgeProofRequests } from './common';
+import { CircuitId } from '../../circuits';
 
 /**
  *  createAuthorizationRequest is a function to create protocol authorization request
@@ -156,6 +155,12 @@ export interface AuthHandlerOptions {
  * @implements implements IAuthHandler interface
  */
 export class AuthHandler implements IAuthHandler {
+  private readonly _supportedCircuits = [
+    CircuitId.AtomicQueryV3,
+    CircuitId.AtomicQuerySigV2,
+    CircuitId.AtomicQueryMTPV2,
+    CircuitId.LinkedMultiQuery10
+  ];
   /**
    * Creates an instance of AuthHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
@@ -214,6 +219,20 @@ export class AuthHandler implements IAuthHandler {
     }
     const guid = uuid.v4();
 
+    if (!authRequest.from) {
+      throw new Error('auth request should contain from field');
+    }
+
+    const from = DID.parse(authRequest.from);
+
+    const responseScope = await processZeroKnowledgeProofRequests(
+      did,
+      authRequest?.body.scope,
+      from,
+      this._proofService,
+      { ...opts, supportedCircuits: this._supportedCircuits }
+    );
+
     const authResponse: AuthorizationResponseMessage = {
       id: guid,
       typ: opts.mediaType,
@@ -221,90 +240,11 @@ export class AuthHandler implements IAuthHandler {
       thid: authRequest.thid ?? guid,
       body: {
         message: authRequest?.body?.message,
-        scope: []
+        scope: responseScope
       },
       from: did.string(),
       to: authRequest.from
     };
-
-    const requestScope = authRequest.body.scope;
-    const combinedQueries = requestScope.reduce((acc, proofReq) => {
-      const groupId = proofReq.query.groupId as number | undefined;
-      if (!groupId) {
-        return acc;
-      }
-
-      const existedData = acc.get(groupId);
-      if (!existedData) {
-        const seed = getRandomBytes(12);
-        const dataView = new DataView(seed.buffer);
-        const linkNonce = dataView.getUint32(0);
-        acc.set(groupId, { query: proofReq.query, linkNonce });
-        return acc;
-      }
-
-      const credentialSubject = mergeObjects(
-        existedData.query.credentialSubject as JSONObject,
-        proofReq.query.credentialSubject as JSONObject
-      );
-
-      acc.set(groupId, {
-        ...existedData,
-        query: {
-          skipClaimRevocationCheck:
-            existedData.query.skipClaimRevocationCheck || proofReq.query.skipClaimRevocationCheck,
-          ...(existedData.query as JSONObject),
-          credentialSubject
-        }
-      });
-
-      return acc;
-    }, new Map<number, { query: JSONObject; linkNonce: number }>());
-
-    const groupedCredentialsCache = new Map<
-      number,
-      { cred: W3CCredential; revStatus?: RevocationStatus }
-    >();
-
-    for (const proofReq of requestScope) {
-      const query = proofReq.query;
-      const groupId = query.groupId as number | undefined;
-      const combinedQueryData = combinedQueries.get(groupId as number);
-      if (groupId) {
-        if (!combinedQueryData) {
-          throw new Error(`Invalid group id ${query.groupId}`);
-        }
-        const combinedQuery = combinedQueryData.query;
-
-        if (!groupedCredentialsCache.has(groupId)) {
-          const credWithRevStatus = await this._proofService.findCredentialByProofQuery(
-            did,
-            combinedQueryData.query
-          );
-          if (!credWithRevStatus.cred) {
-            throw new Error(`Credential not found for query ${JSON.stringify(combinedQuery)}`);
-          }
-
-          groupedCredentialsCache.set(groupId, credWithRevStatus);
-        }
-      }
-
-      const credWithRevStatus = groupedCredentialsCache.get(groupId as number);
-
-      const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
-        proofReq,
-        did,
-        {
-          verifierDid: DID.parse(authRequest.from),
-          skipRevocation: Boolean(query.skipClaimRevocationCheck),
-          credential: credWithRevStatus?.cred,
-          credentialRevocationStatus: credWithRevStatus?.revStatus,
-          linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
-        }
-      );
-
-      authResponse.body.scope.push(zkpRes);
-    }
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
 
