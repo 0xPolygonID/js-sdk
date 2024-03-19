@@ -167,7 +167,7 @@ export interface IIdentityWallet {
   ): Promise<MerkleTreeProofWithTreeState>;
 
   /**
-   * Generates proof of credential revocation nonce inclusion / non-inclusion to the given revocation tree
+   * Generates proof of credential revocation nonce (with credential as a param) inclusion / non-inclusion to the given revocation tree
    * and its root or to the current root of the Revocation tree in the given Merkle tree storage.
    *
    * @param {DID} did
@@ -178,6 +178,21 @@ export interface IIdentityWallet {
   generateNonRevocationMtp(
     did: DID,
     credential: W3CCredential,
+    treeState?: TreeState
+  ): Promise<MerkleTreeProofWithTreeState>;
+
+  /**
+   * Generates proof of credential revocation nonce (with revNonce as a param) inclusion / non-inclusion to the given revocation tree
+   * and its root or to the current root of the Revocation tree in the given Merkle tree storage.
+   *
+   * @param {DID} did
+   * @param {bigint} revNonce
+   * @param {TreeState} [treeState]
+   * @returns `Promise<MerkleTreeProofWithTreeState>` -  MerkleTreeProof and TreeState on which proof has been generated
+   */
+  generateNonRevocationMtpWithNonce(
+    did: DID,
+    revNonce: bigint,
     treeState?: TreeState
   ): Promise<MerkleTreeProofWithTreeState>;
 
@@ -672,7 +687,15 @@ export class IdentityWallet implements IIdentityWallet {
     const coreClaim = await this.getCoreClaimFromCredential(credential);
 
     const revNonce = coreClaim.getRevocationNonce();
+    return this.generateNonRevocationMtpWithNonce(did, revNonce, treeState);
+  }
 
+  /** {@inheritDoc IIdentityWallet.generateNonRevocationMtpWithNonce} */
+  async generateNonRevocationMtpWithNonce(
+    did: DID,
+    revNonce: bigint,
+    treeState?: TreeState
+  ): Promise<MerkleTreeProofWithTreeState> {
     const treesModel = await this.getDIDTreeModel(did);
 
     const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(

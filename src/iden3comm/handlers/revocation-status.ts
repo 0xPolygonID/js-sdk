@@ -5,11 +5,10 @@ import { IPackageManager, JWSPackerParams, RevocationStatusRequestMessage } from
 import { DID } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
 import { RevocationStatus } from '../../verifiable';
-import { IMerkleTreeStorage, MerkleTreeType } from '../../storage';
-import { hashElems } from '@iden3/js-merkletree';
 import { TreeState } from '../../circuits';
 import { byteEncoder } from '../../utils';
 import { proving } from '@iden3/js-jwz';
+import { IIdentityWallet } from '../../identity';
 
 /**
  * Interface that allows the processing of the revocation status
@@ -63,7 +62,7 @@ export class RevocationStatusHandler implements IRevocationStatusHandler {
 
   constructor(
     private readonly _packerMgr: IPackageManager,
-    private readonly _mt: IMerkleTreeStorage
+    private readonly _identityWallet: IIdentityWallet
   ) {}
 
   /**
@@ -112,11 +111,21 @@ export class RevocationStatusHandler implements IRevocationStatusHandler {
 
     const issuerDID = DID.parse(rsRequest.to);
 
-    const revStatus = await this.getRevocationNonceMTP(
+    const mtpWithTreeState = await this._identityWallet.generateNonRevocationMtpWithNonce(
       issuerDID,
-      rsRequest.body?.revocation_nonce,
+      BigInt(rsRequest.body?.revocation_nonce),
       opts?.treeState
     );
+    const treeState = mtpWithTreeState.treeState;
+    const revStatus: RevocationStatus = {
+      issuer: {
+        state: treeState?.state.string(),
+        claimsTreeRoot: treeState.claimsRoot.string(),
+        revocationTreeRoot: treeState.revocationRoot.string(),
+        rootOfRoots: treeState.rootOfRoots.string()
+      },
+      mtp: mtpWithTreeState.proof
+    };
 
     const packerOpts =
       opts.mediaType === MediaType.SignedMessage
@@ -145,49 +154,5 @@ export class RevocationStatusHandler implements IRevocationStatusHandler {
         ...packerOpts
       }
     );
-  }
-
-  private async getRevocationNonceMTP(
-    did: DID,
-    nonce: number,
-    treeState?: TreeState
-  ): Promise<RevocationStatus> {
-    const didStr = did.string();
-
-    const claimsTree = await this._mt.getMerkleTreeByIdentifierAndType(
-      didStr,
-      MerkleTreeType.Claims
-    );
-    const revocationTree = await this._mt.getMerkleTreeByIdentifierAndType(
-      didStr,
-      MerkleTreeType.Revocations
-    );
-    const rootsTree = await this._mt.getMerkleTreeByIdentifierAndType(didStr, MerkleTreeType.Roots);
-
-    const claimsTreeRoot = await claimsTree.root();
-    const revocationTreeRoot = await revocationTree.root();
-    const rootsTreeRoot = await rootsTree.root();
-
-    const state = hashElems([
-      claimsTreeRoot.bigInt(),
-      revocationTreeRoot.bigInt(),
-      rootsTreeRoot.bigInt()
-    ]);
-
-    const { proof } = await revocationTree.generateProof(
-      BigInt(nonce),
-      treeState ? treeState.revocationRoot : revocationTreeRoot
-    );
-
-    const revStatus: RevocationStatus = {
-      issuer: {
-        state: state?.toString(),
-        claimsTreeRoot: claimsTreeRoot.string(),
-        revocationTreeRoot: revocationTreeRoot.string(),
-        rootOfRoots: rootsTreeRoot.string()
-      },
-      mtp: proof
-    };
-    return revStatus;
   }
 }

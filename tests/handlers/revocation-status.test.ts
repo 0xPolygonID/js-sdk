@@ -54,7 +54,7 @@ describe('revocation status', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    rsHandlerr = new RevocationStatusHandler(packageMgr, dataStorage.mt);
+    rsHandlerr = new RevocationStatusHandler(packageMgr, idWallet);
   });
 
   it('revocation status works', async () => {
