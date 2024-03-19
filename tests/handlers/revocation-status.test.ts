@@ -114,10 +114,10 @@ describe.only('revocation status', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(rsReq));
 
     try {
-      await rsHandlerr.handleRevocationStatusRequest(userDID, msgBytes)
+      await rsHandlerr.handleRevocationStatusRequest(userDID, msgBytes);
       expect.fail();
-    } catch (err: any) {
-      expect(err.message).to.be.equal(`failed request. empty 'from' field`);
+    } catch (err: unknown) {
+      expect((err as Error).message).to.be.equal(`failed request. empty 'from' field`);
     }
   });
 });
