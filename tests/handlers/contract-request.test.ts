@@ -450,7 +450,7 @@ describe('contract-request', () => {
     );
   });
   // V3 integration test
-  it.only('contract request flow V3 - integration test', async () => {
+  it.skip('contract request flow V3 - integration test', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = rpcUrl;
     stateEthConfig.contractAddress = '0x134b1be34911e39a8397ec6289782989729807a4';

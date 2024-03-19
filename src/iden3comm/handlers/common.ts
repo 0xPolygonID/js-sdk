@@ -56,15 +56,16 @@ const getGroupedQueries = (
     return acc;
   }, new Map<number, { query: JSONObject; linkNonce: number }>());
 
+
 /**
- * Processes protocol requests and generates zero-knowledge proof responses.
- *
- * @param senderIdentifier - The DID identifier.
- * @param request - protocol message.
- * @param opts - additional options.  verifierDid is the DID of the verifier.
- * @param opts.allowedCircuits - allowedCircuits is a list of allowed circuits.
- * @param opts.verifierDid - verifierDid is the DID of the verifier.
- * @returns A promise that resolves to an array of zero-knowledge proof responses.
+ * Processes zero knowledge proof requests.
+ * 
+ * @param senderIdentifier - The identifier of the sender.
+ * @param requests - An array of zero knowledge proof requests.
+ * @param from - The identifier of the sender.
+ * @param proofService - The proof service.
+ * @param opts - Additional options for processing the requests.
+ * @returns A promise that resolves to an array of zero knowledge proof responses.
  */
 export const processZeroKnowledgeProofRequests = async (
   senderIdentifier: DID,
