@@ -61,7 +61,7 @@ export class RevocationStatusHandler implements IRevocationStatusHandler {
   /**
    * Creates an instance of RevocationStatusHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
-   * @param {IMerkleTreeStorage} _mt - merkle tree storage
+   * @param {IIdentityWallet} _identityWallet - identity wallet
    *
    */
 
