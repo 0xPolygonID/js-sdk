@@ -118,7 +118,7 @@ export class RevocationStatusHandler implements IRevocationStatusHandler {
 
     const mtpWithTreeState = await this._identityWallet.generateNonRevocationMtpWithNonce(
       issuerDID,
-      BigInt(rsRequest.body?.revocation_nonce),
+      BigInt(rsRequest.body.revocation_nonce),
       opts?.treeState
     );
     const treeState = mtpWithTreeState.treeState;
