@@ -22,6 +22,7 @@ import {
   Profile,
   ProvingParams,
   RootInfo,
+  Sec256k1Provider,
   StateProof,
   StateVerificationFunc,
   VerifiableConstants,
@@ -104,11 +105,13 @@ export const MOCK_STATE_STORAGE: IStateStorage = {
   }
 };
 
-export const registerBJJIntoInMemoryKMS = (): KMS => {
+export const registerKeyProvidersInMemoryKMS = (): KMS => {
   const memoryKeyStore = new InMemoryPrivateKeyStore();
   const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
   const kms = new KMS();
   kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+  const sec256k1Provider = new Sec256k1Provider(KmsKeyType.Secp256k1, memoryKeyStore);
+  kms.registerKeyProvider(KmsKeyType.Secp256k1, sec256k1Provider);
   return kms;
 };
 

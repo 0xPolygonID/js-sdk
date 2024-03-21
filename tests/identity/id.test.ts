@@ -9,7 +9,8 @@ import {
   CredentialWallet,
   CredentialStatusResolverRegistry,
   RHSResolver,
-  CredentialStatusType
+  CredentialStatusType,
+  KmsKeyType
 } from '../../src';
 import {
   MOCK_STATE_STORAGE,
@@ -17,7 +18,7 @@ import {
   createIdentity,
   RHS_URL,
   getInMemoryDataStorage,
-  registerBJJIntoInMemoryKMS
+  registerKeyProvidersInMemoryKMS
 } from '../helpers';
 import { expect } from 'chai';
 
@@ -58,7 +59,7 @@ describe('identity', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(registerBJJIntoInMemoryKMS(), dataStorage, credWallet);
+    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet);
   });
   it('createIdentity', async () => {
     const { did, credential } = await createIdentity(idWallet);
@@ -166,5 +167,22 @@ describe('identity', () => {
     issuerCred.credentialStatus.id = RHS_URL;
 
     await credWallet.getRevocationStatusFromCredential(issuerCred);
+  });
+
+  it('createIdentity Secp256k1', async () => {
+    const { did, credential } = await createIdentity(idWallet, { keyType: KmsKeyType.Secp256k1 });
+
+    expect(did.string()).to.equal(
+      'did:iden3:polygon:mumbai:wuL2hHjCC1L1XzC2bdyFwU5KxYGdkXiA8ChDSM2dF'
+    );
+    const dbCred = await dataStorage.credential.findCredentialById(credential.id);
+    expect(credential).to.deep.equal(dbCred);
+
+    const claimsTree = await dataStorage.mt.getMerkleTreeByIdentifierAndType(
+      did.string(),
+      MerkleTreeType.Claims
+    );
+
+    expect((await claimsTree.root()).bigInt()).not.to.equal(0);
   });
 });

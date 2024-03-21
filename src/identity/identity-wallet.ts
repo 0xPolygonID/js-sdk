@@ -7,13 +7,14 @@ import {
   ClaimOptions,
   DID,
   DidMethod,
+  genesisFromEthAddress,
   getUnixTimestamp,
   Id,
   NetworkId,
   SchemaHash
 } from '@iden3/js-iden3-core';
 import { poseidon, PublicKey, sha256, Signature, Hex, getRandomBytes } from '@iden3/js-crypto';
-import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
+import { Hash, hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
@@ -72,6 +73,7 @@ export type IdentityCreationOptions = {
     };
   };
   seed?: Uint8Array;
+  keyType?: KmsKeyType;
 };
 
 /**
@@ -434,20 +436,24 @@ export class IdentityWallet implements IIdentityWallet {
   async createIdentity(
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
-    const tmpIdentifier = opts.seed ? uuid.v5(Hex.encode(sha256(opts.seed)), uuid.NIL) : uuid.v4();
+    opts.keyType = opts.keyType ?? KmsKeyType.BabyJubJub;
 
-    opts.method = opts.method ?? DidMethod.Iden3;
-    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
-    opts.networkId = opts.networkId ?? NetworkId.Amoy;
+    switch (opts.keyType) {
+      case KmsKeyType.BabyJubJub:
+        return this.createBabyJubJubIdentity(opts);
+      case KmsKeyType.Secp256k1:
+        return this.createEthereumIdentity(opts);
+      default:
+        throw new Error(`Invalid KmsKeyType ${opts.keyType}`);
+    }
+  }
 
-    await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
-
-    opts.seed = opts.seed ?? getRandomBytes(32);
-
-    const keyId = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, opts.seed);
-
+  private async createAuthClaim(
+    revNonce: number,
+    seed: Uint8Array
+  ): Promise<{ authClaim: Claim; pubKey: PublicKey }> {
+    const keyId = await this._kms.createKeyFromSeed(KmsKeyType.BabyJubJub, seed);
     const pubKeyHex = await this._kms.publicKey(keyId);
-
     const pubKey = PublicKey.newFromHex(pubKeyHex);
 
     const schemaHash = SchemaHash.authSchemaHash;
@@ -457,34 +463,22 @@ export class IdentityWallet implements IIdentityWallet {
       ClaimOptions.withIndexDataInts(pubKey.p[0], pubKey.p[1]),
       ClaimOptions.withRevocationNonce(BigInt(0))
     );
-    const revNonce = opts.revocationOpts.nonce ?? 0;
     authClaim.setRevocationNonce(BigInt(revNonce));
 
-    await this._storage.mt.addToMerkleTree(
-      tmpIdentifier,
-      MerkleTreeType.Claims,
-      authClaim.hiHv().hi,
-      authClaim.hiHv().hv
-    );
+    return { authClaim, pubKey };
+  }
 
+  private async createAuthCredential(
+    did: DID,
+    pubKey: PublicKey,
+    authClaim: Claim,
+    currentState: Hash,
+    revocationOpts: { id: string; type: CredentialStatusType }
+  ): Promise<W3CCredential> {
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      tmpIdentifier,
+      did.string(),
       MerkleTreeType.Claims
     );
-
-    const currentState = hashElems([
-      (await claimsTree.root()).bigInt(),
-      ZERO_HASH.bigInt(),
-      ZERO_HASH.bigInt()
-    ]);
-
-    const didType = buildDIDType(opts.method, opts.blockchain, opts.networkId);
-    const identifier = Id.idGenesisFromIdenState(didType, currentState.bigInt());
-    const did = DID.parseFromId(identifier);
-
-    await this._storage.mt.bindMerkleTreeToNewIdentifier(tmpIdentifier, did.string());
-
-    const schema = JSON.parse(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSON);
 
     const authData = authClaim.getExpirationDate();
     const expiration = authData ? getUnixTimestamp(authData) : 0;
@@ -500,13 +494,14 @@ export class IdentityWallet implements IIdentityWallet {
       version: 0,
       expiration,
       revocationOpts: {
-        nonce: revNonce,
-        id: opts.revocationOpts.id.replace(/\/$/, ''),
-        type: opts.revocationOpts.type,
+        nonce: Number(authClaim.getRevocationNonce()),
+        id: revocationOpts.id.replace(/\/$/, ''),
+        type: revocationOpts.type,
         issuerState: currentState.hex()
       }
     };
 
+    const schema = JSON.parse(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSON);
     let credential: W3CCredential = new W3CCredential();
     try {
       credential = this._credentialWallet.createCredential(did, request, schema);
@@ -535,6 +530,64 @@ export class IdentityWallet implements IIdentityWallet {
 
     credential.proof = [mtpProof];
 
+    return credential;
+  }
+
+  /**
+   *
+   * creates Baby JubJub based identity
+   *
+   * @param {IdentityCreationOptions} opts - options for the creation of the identity
+   * @returns `{did,credential>}` - returns did and Auth BJJ credential
+   */
+  private async createBabyJubJubIdentity(
+    opts: IdentityCreationOptions
+  ): Promise<{ did: DID; credential: W3CCredential }> {
+    const tmpIdentifier = opts.seed ? uuid.v5(Hex.encode(sha256(opts.seed)), uuid.NIL) : uuid.v4();
+
+    opts.method = opts.method ?? DidMethod.Iden3;
+    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
+    opts.networkId = opts.networkId ?? NetworkId.Mumbai;
+    opts.seed = opts.seed ?? getRandomBytes(32);
+
+    await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
+
+    const revNonce = opts.revocationOpts.nonce ?? 0;
+
+    const { authClaim, pubKey } = await this.createAuthClaim(revNonce, opts.seed);
+
+    await this._storage.mt.addToMerkleTree(
+      tmpIdentifier,
+      MerkleTreeType.Claims,
+      authClaim.hiHv().hi,
+      authClaim.hiHv().hv
+    );
+
+    const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      tmpIdentifier,
+      MerkleTreeType.Claims
+    );
+
+    const currentState = hashElems([
+      (await claimsTree.root()).bigInt(),
+      ZERO_HASH.bigInt(),
+      ZERO_HASH.bigInt()
+    ]);
+
+    const didType = buildDIDType(opts.method, opts.blockchain, opts.networkId);
+    const identifier = Id.idGenesisFromIdenState(didType, currentState.bigInt());
+    const did = DID.parseFromId(identifier);
+
+    await this._storage.mt.bindMerkleTreeToNewIdentifier(tmpIdentifier, did.string());
+
+    const credential = await this.createAuthCredential(
+      did,
+      pubKey,
+      authClaim,
+      currentState,
+      opts.revocationOpts
+    );
+
     await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
       rhsUrl: opts.revocationOpts.id,
       onChain: opts.revocationOpts.onChain
@@ -545,6 +598,76 @@ export class IdentityWallet implements IIdentityWallet {
       state: currentState,
       isStatePublished: false,
       isStateGenesis: true
+    });
+
+    await this._credentialWallet.save(credential);
+
+    return {
+      did,
+      credential
+    };
+  }
+
+  /**
+   *
+   * creates Ethereum based identity
+   *
+   * @param {IdentityCreationOptions} opts - options for the creation of the identity
+   * @returns `{did,credential>}` - returns did and Auth BJJ credential
+   */
+  private async createEthereumIdentity(
+    opts: IdentityCreationOptions
+  ): Promise<{ did: DID; credential: W3CCredential }> {
+    opts.method = opts.method ?? DidMethod.Iden3;
+    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
+    opts.networkId = opts.networkId ?? NetworkId.Mumbai;
+    opts.seed = opts.seed ?? getRandomBytes(32);
+
+    const currentState = ZERO_HASH; // In Ethereum identities we don't have an initial state with the auth credential
+
+    const didType = buildDIDType(opts.method, opts.blockchain, opts.networkId);
+
+    const keyIdEth = await this._kms.createKeyFromSeed(KmsKeyType.Secp256k1, opts.seed);
+    const pubKeyHexEth = await this._kms.publicKey(keyIdEth);
+    const ethAddrBytes = Hex.decodeString(pubKeyHexEth);
+    const ethAddr = ethAddrBytes.slice(0, 20);
+    const genesis = genesisFromEthAddress(ethAddr);
+    const identifier = new Id(didType, genesis);
+    const did = DID.parseFromId(identifier);
+
+    await this._storage.mt.createIdentityMerkleTrees(did.string());
+
+    await this._storage.identity.saveIdentity({
+      did: did.string(),
+      state: currentState,
+      isStatePublished: false,
+      isStateGenesis: true
+    });
+
+    // Add Auth BJJ credential after saving identity for Ethereum identities
+    const { authClaim, pubKey } = await this.createAuthClaim(
+      opts.revocationOpts.nonce ?? 0,
+      opts.seed
+    );
+
+    await this._storage.mt.addToMerkleTree(
+      did.string(),
+      MerkleTreeType.Claims,
+      authClaim.hiHv().hi,
+      authClaim.hiHv().hv
+    );
+
+    const credential = await this.createAuthCredential(
+      did,
+      pubKey,
+      authClaim,
+      currentState,
+      opts.revocationOpts
+    );
+
+    await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
+      rhsUrl: opts.revocationOpts.id,
+      onChain: opts.revocationOpts.onChain
     });
 
     await this._credentialWallet.save(credential);
