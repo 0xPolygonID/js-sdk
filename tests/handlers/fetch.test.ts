@@ -28,7 +28,7 @@ import {
   createIdentity,
   getInMemoryDataStorage,
   getPackageMgr,
-  registerBJJIntoInMemoryKMS
+  registerKeyProvidersInMemoryKMS
 } from '../helpers';
 
 import * as uuid from 'uuid';
@@ -112,7 +112,7 @@ describe('fetch', () => {
 }`;
 
   beforeEach(async () => {
-    const kms = registerBJJIntoInMemoryKMS();
+    const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
     const circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, '../proofs/testdata')
