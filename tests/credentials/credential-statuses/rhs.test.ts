@@ -1,25 +1,25 @@
-import { InMemoryDataSource } from './../../src/storage/memory/data-source';
-import { CredentialStorage } from './../../src/storage/shared/credential-storage';
-import { Identity, IdentityStorage, IdentityWallet, Profile, byteEncoder } from '../../src';
-import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
-import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
-import { InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
+import { InMemoryDataSource } from '../../../src/storage/memory/data-source';
+import { CredentialStorage } from '../../../src/storage/shared/credential-storage';
+import { Identity, IdentityStorage, IdentityWallet, Profile, byteEncoder } from '../../../src';
+import { BjjProvider, KMS, KmsKeyType } from '../../../src/kms';
+import { InMemoryPrivateKeyStore } from '../../../src/kms/store';
+import { IDataStorage, IStateStorage } from '../../../src/storage/interfaces';
+import { InMemoryMerkleTreeStorage } from '../../../src/storage/memory';
+import { CredentialRequest, CredentialWallet } from '../../../src/credentials';
+import { defaultEthConnectionConfig, EthStateStorage } from '../../../src/storage/blockchain/state';
 import {
   CredentialStatus,
   CredentialStatusType,
   RevocationStatus,
   VerifiableConstants,
   W3CCredential
-} from '../../src/verifiable';
+} from '../../../src/verifiable';
 import { Proof } from '@iden3/js-merkletree';
-import { RootInfo, StateProof } from '../../src/storage/entities/state';
+import { RootInfo, StateProof } from '../../../src/storage/entities/state';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import { RHSResolver } from '../../src/credentials';
-import { CredentialStatusResolverRegistry } from '../../src/credentials';
+import { RHSResolver } from '../../../src/credentials';
+import { CredentialStatusResolverRegistry } from '../../../src/credentials';
 
 describe('rhs', () => {
   let idWallet: IdentityWallet;

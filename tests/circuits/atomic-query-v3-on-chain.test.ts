@@ -13,15 +13,14 @@ import {
   issuerPK,
   defaultUserClaim,
   timestamp,
-  prepareIntArray,
-  calculateQueryHash,
-  globalTree
+  globalTree,
+  coreSchemaFromStr
 } from './utils';
 
 import expectedMtpJson from './data/atomic-query-v3-mtp-on-chain.json';
 import expectedSigJson from './data/atomic-query-v3-sig-on-chain.json';
 import { expect } from 'chai';
-import { byteDecoder, byteEncoder, ProofType } from '../../src';
+import { byteDecoder, byteEncoder, calculateQueryHashV3, ProofType } from '../../src';
 
 describe('atomic-query-v3', () => {
   it('TestAttrQueryV3OnChain_SigPart_PrepareInputs', async () => {
@@ -97,7 +96,7 @@ describe('atomic-query-v3', () => {
     const query = new Query();
     query.operator = Operators.EQ;
     query.slotIndex = 2;
-    query.values = prepareIntArray([BigInt(10)], 64);
+    query.values = [BigInt(10)];
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
     inputs.proofType = ProofType.BJJSignature;
@@ -124,7 +123,7 @@ describe('atomic-query-v3', () => {
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
     inputs.nullifierSessionID = BigInt(32);
-    inputs.authEnabled = 1;
+    inputs.isBJJAuthEnabled = 1;
 
     const bytesInputs = inputs.inputsMarshal();
 
@@ -192,7 +191,7 @@ describe('atomic-query-v3', () => {
     const query = new Query();
     query.operator = Operators.EQ;
     query.slotIndex = 2;
-    query.values = prepareIntArray([BigInt(10)], 64);
+    query.values = [BigInt(10)];
     inputs.query = query;
     inputs.currentTimeStamp = timestamp;
     inputs.proofType = ProofType.Iden3SparseMerkleTreeProof;
@@ -219,7 +218,7 @@ describe('atomic-query-v3', () => {
       BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
     );
     inputs.nullifierSessionID = BigInt(32);
-    inputs.authEnabled = 1;
+    inputs.isBJJAuthEnabled = 1;
 
     const bytesInputs = inputs.inputsMarshal();
 
@@ -233,9 +232,8 @@ describe('atomic-query-v3', () => {
     out.pubSignalsUnmarshal(
       byteEncoder.encode(
         `[
-          "0",
           "26109404700696283154998654512117952420503675471097392618762221546565140481",
-          "7002038488948284767652984010448061038733120594540539539730565455904340350321",
+          "11201854731568428813649343955027533519296553922648716989097822045539448852506",
           "2943483356559152311923412925436024635269538717812859789851139200242297094",
           "0",
           "0",
@@ -245,11 +243,8 @@ describe('atomic-query-v3', () => {
           "10",
           "20177832565449474772630743317224985532862797657496372535616634430055981993180",
           "27918766665310231445021466320959318414450284884582375163563581940319453185",
-          "1",
           "20177832565449474772630743317224985532862797657496372535616634430055981993180",
           "1642074362",
-          "21929109382993718606847853573861987353620810345503358891473103689157378049",
-          "32",
           "1"
           ]`
       )
@@ -259,8 +254,18 @@ describe('atomic-query-v3', () => {
     const schema = '180410020913331409885634153623124536270';
     const slotIndex = 2;
     const operator = 1;
-    const queryHash = calculateQueryHash(expValue, schema, slotIndex, operator, 0, 1);
-
+    const queryHash = calculateQueryHashV3(
+      expValue,
+      coreSchemaFromStr(schema),
+      slotIndex,
+      operator,
+      0,
+      1,
+      0,
+      1,
+      '21929109382993718606847853573861987353620810345503358891473103689157378049',
+      32
+    );
     const exp = new AtomicQueryV3OnChainPubSignals();
     exp.requestID = BigInt(23);
     exp.userID = Id.fromBigInt(
@@ -277,8 +282,6 @@ describe('atomic-query-v3', () => {
     );
     exp.circuitQueryHash = queryHash;
     exp.timestamp = timestamp;
-    exp.merklized = 0;
-    exp.isRevocationChecked = 1;
     exp.challenge = BigInt(10);
     exp.gistRoot = Hash.fromString(
       '20177832565449474772630743317224985532862797657496372535616634430055981993180'
@@ -287,11 +290,7 @@ describe('atomic-query-v3', () => {
     exp.linkID = BigInt(0);
     exp.nullifier = BigInt(0);
     exp.operatorOutput = BigInt(0);
-    exp.verifierID = Id.fromBigInt(
-      BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
-    );
-    exp.nullifierSessionID = BigInt(32);
-    exp.authEnabled = 1;
+    exp.isBJJAuthEnabled = 1;
     expect(exp).to.deep.equal(out);
   });
 
@@ -300,9 +299,8 @@ describe('atomic-query-v3', () => {
     out.pubSignalsUnmarshal(
       byteEncoder.encode(
         `[
-          "0",
           "26109404700696283154998654512117952420503675471097392618762221546565140481",
-          "7002038488948284767652984010448061038733120594540539539730565455904340350321",
+          "11201854731568428813649343955027533519296553922648716989097822045539448852506",
           "2943483356559152311923412925436024635269538717812859789851139200242297094",
           "0",
           "0",
@@ -312,11 +310,8 @@ describe('atomic-query-v3', () => {
           "10",
           "20177832565449474772630743317224985532862797657496372535616634430055981993180",
           "27918766665310231445021466320959318414450284884582375163563581940319453185",
-          "1",
           "20177832565449474772630743317224985532862797657496372535616634430055981993180",
           "1642074362",
-          "21929109382993718606847853573861987353620810345503358891473103689157378049",
-          "32",
           "1"
           ]`
       )
@@ -326,8 +321,18 @@ describe('atomic-query-v3', () => {
     const schema = '180410020913331409885634153623124536270';
     const slotIndex = 2;
     const operator = 1;
-    const queryHash = calculateQueryHash(expValue, schema, slotIndex, operator, 0, 1);
-
+    const queryHash = calculateQueryHashV3(
+      expValue,
+      coreSchemaFromStr(schema),
+      slotIndex,
+      operator,
+      0,
+      1,
+      0,
+      1,
+      '21929109382993718606847853573861987353620810345503358891473103689157378049',
+      32
+    );
     const exp = new AtomicQueryV3OnChainPubSignals();
     exp.requestID = BigInt(23);
     exp.userID = Id.fromBigInt(
@@ -341,8 +346,6 @@ describe('atomic-query-v3', () => {
     );
     exp.circuitQueryHash = queryHash;
     exp.timestamp = timestamp;
-    exp.merklized = 0;
-    exp.isRevocationChecked = 1;
     exp.challenge = BigInt(10);
     exp.gistRoot = Hash.fromString(
       '20177832565449474772630743317224985532862797657496372535616634430055981993180'
@@ -354,11 +357,7 @@ describe('atomic-query-v3', () => {
     exp.operatorOutput = BigInt(0);
     exp.linkID = BigInt(0);
     exp.nullifier = BigInt(0);
-    exp.verifierID = Id.fromBigInt(
-      BigInt('21929109382993718606847853573861987353620810345503358891473103689157378049')
-    );
-    exp.nullifierSessionID = BigInt(32);
-    exp.authEnabled = 1;
+    exp.isBJJAuthEnabled = 1;
     expect(exp).to.deep.equal(out);
   });
 });

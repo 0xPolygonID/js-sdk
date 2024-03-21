@@ -160,7 +160,7 @@ describe('auth', () => {
     expect(resp).not.to.be.undefined;
   });
 
-  it.only('handle contract invoke ', async () => {
+  it('handle contract invoke ', async () => {
     const transactionData: ContractInvokeTransactionData = {
       contract_address: '0x134b1be34911e39a8397ec6289782989729807a4',
       method_id: '123',

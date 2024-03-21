@@ -27,7 +27,7 @@ export const ErrorEmptyIssuerAuthClaimNonRevProof =
  */
 export class BaseConfig {
   mtLevel!: number; // Max levels of MT
-  valueArraySize!: number; // Size if( value array in identity circuit)s
+  maxValueArraySize!: number; // Size if( value array in identity circuit)s
   mtLevelOnChain!: number;
   mtLevelClaim!: number; // Max level of JSONLD claim
 
@@ -54,7 +54,7 @@ export class BaseConfig {
    * @returns number
    */
   getValueArrSize(): number {
-    return this.valueArraySize ? this.valueArraySize : defaultValueArraySize;
+    return this.maxValueArraySize ? this.maxValueArraySize : defaultValueArraySize;
   }
 
   /**

@@ -5,7 +5,8 @@ import {
   GISTProof,
   isValidOperation,
   Operators,
-  QueryOperators
+  QueryOperators,
+  XSDNS
 } from '../circuits';
 import { StateProof } from '../storage/entities/state';
 import {
@@ -151,21 +152,27 @@ export const parseQueryMetadata = async (
   credentialType: string,
   options: Options
 ): Promise<QueryMetadata> => {
-  const datatype = await Path.newTypeFromContext(
-    ldContextJSON,
-    `${credentialType}.${propertyQuery.fieldName}`,
-    options
-  );
-
   const query: QueryMetadata = {
     ...propertyQuery,
     slotIndex: 0,
     merklizedSchema: false,
-    datatype: datatype,
+    datatype: '',
     claimPathKey: BigInt(0),
     values: [],
     path: new Path()
   };
+
+  if (!propertyQuery.fieldName && propertyQuery.operator !== Operators.NOOP) {
+    throw new Error('query must have a field name if operator is not $noop');
+  }
+
+  if (propertyQuery.fieldName) {
+    query.datatype = await Path.newTypeFromContext(
+      ldContextJSON,
+      `${credentialType}.${propertyQuery.fieldName}`,
+      options
+    );
+  }
 
   const serAttr = await getSerializationAttrFromContext(
     JSON.parse(ldContextJSON),
@@ -201,12 +208,13 @@ export const parseQueryMetadata = async (
   }
 
   if (propertyQuery.operatorValue) {
-    if (!isValidOperation(datatype, propertyQuery.operator)) {
+    if (!isValidOperation(query.datatype, propertyQuery.operator)) {
       throw new Error(
-        `operator ${propertyQuery.operator} is not supported for datatype ${datatype}`
+        `operator ${propertyQuery.operator} is not supported for datatype ${query.datatype}`
       );
     }
 
+    const datatype = propertyQuery.operator === Operators.EXISTS ? XSDNS.Boolean : query.datatype;
     query.values = await transformQueryValueToBigInts(propertyQuery.operatorValue, datatype);
   }
   return query;
@@ -228,7 +236,7 @@ export const transformQueryValueToBigInts = async (
   value: unknown,
   ldType: string
 ): Promise<bigint[]> => {
-  const values: bigint[] = new Array<bigint>(64).fill(BigInt(0));
+  const values: bigint[] = [];
 
   if (Array.isArray(value)) {
     for (let index = 0; index < value.length; index++) {

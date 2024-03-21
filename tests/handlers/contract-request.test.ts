@@ -14,12 +14,17 @@ import {
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
+import { IDataStorage, IOnChainZKPVerifier, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { IProofService, ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
+import {
+  CredentialStatusType,
+  ProofType,
+  VerifiableConstants,
+  W3CCredential
+} from '../../src/verifiable';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CircuitData } from '../../src/storage/entities/circuitData';
@@ -49,7 +54,7 @@ import { Blockchain, BytesHelper, DidMethod, NetworkId } from '@iden3/js-iden3-c
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { ethers, Signer } from 'ethers';
+import { Signer, ethers } from 'ethers';
 
 export const mockZKPVerifier: IOnChainZKPVerifier = {
   submitZKPResponse: async (
@@ -394,7 +399,7 @@ describe('contract-request', () => {
       }
     };
 
-    const contractAddress = '0xE826f870852D7eeeB79B2C030298f9B5DAA8C8a3';
+    const contractAddress = '0x3a4d4E47bFfF6bD0EF3cd46580D9e36F3367da03';
     const conf = defaultEthConnectionConfig;
     conf.contractAddress = contractAddress;
     conf.url = rpcUrl;
@@ -528,26 +533,48 @@ describe('contract-request', () => {
 
     await credWallet.save(issuerCred);
 
-    const proofReq: ZeroKnowledgeProofRequest = {
-      id: 200,
-      circuitId: CircuitId.AtomicQueryV3OnChain,
-      optional: false,
-      query: {
-        allowedIssuers: ['*'],
-        type: claimReq.type,
-        context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
-        credentialSubject: {
-          birthday: {
-            $lt: 20020101
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 2000000,
+        circuitId: CircuitId.AtomicQueryV3OnChain,
+        optional: false,
+        query: {
+          groupId: 1,
+          allowedIssuers: ['*'],
+          type: claimReq.type,
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          credentialSubject: {
+            birthday: {
+              $lt: 20020101
+            }
+          }
+        }
+      },
+      {
+        id: 1000000,
+        circuitId: CircuitId.AtomicQueryV3OnChain,
+        optional: false,
+        query: {
+          groupId: 1,
+          allowedIssuers: ['*'],
+          type: claimReq.type,
+          proofType: ProofType.BJJSignature,
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          credentialSubject: {
+            birthday: {
+              $eq: 19960424
+            }
           }
         }
       }
-    };
+    ];
 
-    const contractAddress = '0xD0Fd3E9fDF448e5B86Cc0f73E5Ee7D2F284884c0';
+    const erc20Verifier = '0x36eB0E70a456c310D8d8d15ae01F6D5A7C15309A';
+    const verifierDid = 'did:polygonid:polygon:mumbai:2qCU58EJgrELdThzMyykDwT5kWff6XSbpSWtTQ7oS8';
     const conf = defaultEthConnectionConfig;
-    conf.contractAddress = contractAddress;
+    conf.contractAddress = erc20Verifier;
     conf.url = rpcUrl;
     conf.chainId = 80001;
 
@@ -555,7 +582,7 @@ describe('contract-request', () => {
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
-      contract_address: contractAddress,
+      contract_address: erc20Verifier,
       method_id: 'b68967e2',
       chain_id: conf.chainId
     };
@@ -563,7 +590,7 @@ describe('contract-request', () => {
     const ciRequestBody: ContractInvokeRequestBody = {
       reason: 'reason',
       transaction_data: transactionData,
-      scope: [proofReq as ZeroKnowledgeProofRequest]
+      scope: [...proofReqs]
     };
 
     const id = uuid.v4();
@@ -572,6 +599,7 @@ describe('contract-request', () => {
       typ: MediaType.PlainMessage,
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
       thid: id,
+      from: verifierDid,
       body: ciRequestBody
     };
 
@@ -592,7 +620,7 @@ describe('contract-request', () => {
 
     expect(ciResponse).not.be.undefined;
     expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(
-      proofReq.id
+      proofReqs[0].id
     );
   });
 });

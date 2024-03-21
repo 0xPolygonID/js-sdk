@@ -22,7 +22,10 @@ export type FilterOperatorMethod =
   | '$ne'
   | '$gte'
   | '$lte'
-  | '$sd';
+  | '$sd'
+  | '$exists'
+  | '$between'
+  | '$nonbetween';
 
 /** filter function type */
 export type FilterOperatorFunction = (a: any, b: any) => boolean;
@@ -125,6 +128,20 @@ const lessThanOrEqual = (
   return a <= b;
 };
 
+// a - field value
+// b - true / false (exists operator values)
+const existsComparator = (a: ComparableType | ComparableType[] | undefined, b: ComparableType) => {
+  if (truthyValues.includes(b) && typeof a !== 'undefined') {
+    // if exists val is true , a field val exists
+    return true;
+  }
+  // if exists val is false , a field val doesn't exist
+  if (falsyValues.includes(b) && (a === undefined || (Array.isArray(a) && !a.length))) {
+    return true;
+  }
+  return false;
+};
+
 const inOperator = (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) => {
   if (Array.isArray(a) && Array.isArray(b)) {
     return a.every((val) => b.includes(val));
@@ -138,9 +155,25 @@ const inOperator = (a: ComparableType | ComparableType[], b: ComparableType | Co
   return false;
 };
 
+const betweenOperator = (
+  a: ComparableType | ComparableType[],
+  b: ComparableType | ComparableType[]
+) => {
+  if (!Array.isArray(b) || b.length !== 2) {
+    throw new Error('$between/$nonbetween operator value should be 2 elements array');
+  }
+
+  if (Array.isArray(a)) {
+    return a.every((val) => val >= b[0] && val <= b[1]);
+  }
+
+  return a >= b[0] && a <= b[1];
+};
+
 export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFunction } = {
   $noop: () => true,
   $sd: () => true,
+  $exists: (a, b) => existsComparator(a, b),
   $eq: (a, b) => equalsComparator(a, b),
   $in: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     inOperator(a, b),
@@ -154,7 +187,11 @@ export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFun
   $gte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     greaterThanOrEqual(a, b),
   $lte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
-    lessThanOrEqual(a, b)
+    lessThanOrEqual(a, b),
+  $between: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
+    betweenOperator(a, b),
+  $nonbetween: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
+    !betweenOperator(a, b)
 };
 
 /**
@@ -204,7 +241,10 @@ export class FilterQuery implements IFilterQuery {
       throw new Error(SearchError.NotDefinedComparator);
     }
     const credentialPathValue = resolvePath(credential, this.path);
-    if (credentialPathValue === null || credentialPathValue === undefined) {
+    if (
+      (credentialPathValue === null || credentialPathValue === undefined) &&
+      this.operatorFunc !== existsComparator
+    ) {
       return false;
     }
     if (this.isReverseParams) {

@@ -17,7 +17,7 @@ import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
-import { JSONSchema, Parser, JsonSchemaValidator, cacheLoader } from '../schema-processor';
+import { JSONSchema, JsonSchemaValidator, cacheLoader } from '../schema-processor';
 import { IDataStorage, MerkleTreeType, Profile } from '../storage';
 import {
   VerifiableConstants,
@@ -167,7 +167,7 @@ export interface IIdentityWallet {
   ): Promise<MerkleTreeProofWithTreeState>;
 
   /**
-   * Generates proof of credential revocation nonce inclusion / non-inclusion to the given revocation tree
+   * Generates proof of credential revocation nonce (with credential as a param) inclusion / non-inclusion to the given revocation tree
    * and its root or to the current root of the Revocation tree in the given Merkle tree storage.
    *
    * @param {DID} did
@@ -178,6 +178,21 @@ export interface IIdentityWallet {
   generateNonRevocationMtp(
     did: DID,
     credential: W3CCredential,
+    treeState?: TreeState
+  ): Promise<MerkleTreeProofWithTreeState>;
+
+  /**
+   * Generates proof of credential revocation nonce (with revNonce as a param) inclusion / non-inclusion to the given revocation tree
+   * and its root or to the current root of the Revocation tree in the given Merkle tree storage.
+   *
+   * @param {DID} did
+   * @param {bigint} revNonce
+   * @param {TreeState} [treeState]
+   * @returns `Promise<MerkleTreeProofWithTreeState>` -  MerkleTreeProof and TreeState on which proof has been generated
+   */
+  generateNonRevocationMtpWithNonce(
+    did: DID,
+    revNonce: bigint,
     treeState?: TreeState
   ): Promise<MerkleTreeProofWithTreeState>;
 
@@ -337,6 +352,27 @@ export interface IIdentityWallet {
    * @returns `{Promise<void>}`
    */
   updateIdentityState(issuerDID: DID, published: boolean, treeState?: TreeState): Promise<void>;
+
+  /**
+   *
+   * gets actual auth credential with proofs for provided tree state or latest from the trees.
+   *
+   * @param {DID} issuerDID -  identifier of the issuer
+   * @param {TreeState} treeStateInfo -  optional, state for retrieval
+   * @returns `{Promise<{
+      authCredential: W3CCredential;
+      incProof: MerkleTreeProofWithTreeState;
+      nonRevProof: MerkleTreeProofWithTreeState;
+    }>}`
+   */
+  getActualAuthCredential(
+    did: DID,
+    treeStateInfo?: TreeState
+  ): Promise<{
+    authCredential: W3CCredential;
+    incProof: MerkleTreeProofWithTreeState;
+    nonRevProof: MerkleTreeProofWithTreeState;
+  }>;
 }
 
 /**
@@ -369,15 +405,26 @@ export class IdentityWallet implements IIdentityWallet {
       credentialStatusPublisherRegistry?: CredentialStatusPublisherRegistry;
     }
   ) {
+    this._credentialStatusPublisherRegistry = this.getCredentialStatusPublisherRegistry(_opts);
+  }
+
+  private getCredentialStatusPublisherRegistry(
+    _opts:
+      | { credentialStatusPublisherRegistry?: CredentialStatusPublisherRegistry | undefined }
+      | undefined
+  ): CredentialStatusPublisherRegistry {
     if (!_opts?.credentialStatusPublisherRegistry) {
-      this._credentialStatusPublisherRegistry = new CredentialStatusPublisherRegistry();
-      this._credentialStatusPublisherRegistry.register(
+      const registry = new CredentialStatusPublisherRegistry();
+      const emptyPublisher = { publish: () => Promise.resolve() };
+      registry.register(
         CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         new Iden3SmtRhsCredentialStatusPublisher()
       );
+      registry.register(CredentialStatusType.SparseMerkleTreeProof, emptyPublisher);
+      registry.register(CredentialStatusType.Iden3commRevocationStatusV1, emptyPublisher);
+      return registry;
     } else {
-      this._credentialStatusPublisherRegistry = this._opts
-        ?.credentialStatusPublisherRegistry as CredentialStatusPublisherRegistry;
+      return this._opts?.credentialStatusPublisherRegistry as CredentialStatusPublisherRegistry;
     }
   }
 
@@ -640,7 +687,15 @@ export class IdentityWallet implements IIdentityWallet {
     const coreClaim = await this.getCoreClaimFromCredential(credential);
 
     const revNonce = coreClaim.getRevocationNonce();
+    return this.generateNonRevocationMtpWithNonce(did, revNonce, treeState);
+  }
 
+  /** {@inheritDoc IIdentityWallet.generateNonRevocationMtpWithNonce} */
+  async generateNonRevocationMtpWithNonce(
+    did: DID,
+    revNonce: bigint,
+    treeState?: TreeState
+  ): Promise<MerkleTreeProofWithTreeState> {
     const treesModel = await this.getDIDTreeModel(did);
 
     const revocationTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
@@ -727,7 +782,9 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error(`Error create w3c credential ${(e as Error).message}`);
     }
 
-    const issuerAuthBJJCredential = await this._credentialWallet.getAuthBJJCredential(issuerDID);
+    const { authCredential: issuerAuthBJJCredential } = await this.getActualAuthCredential(
+      issuerDID
+    );
 
     const coreClaimOpts: CoreClaimCreationOptions = {
       revNonce: req.revocationOpts.nonce,
@@ -738,7 +795,7 @@ export class IdentityWallet implements IIdentityWallet {
       merklizeOpts: { ...opts, documentLoader: loader }
     };
 
-    const coreClaim = await Parser.parseClaim(credential, coreClaimOpts);
+    const coreClaim = await credential.toCoreClaim(coreClaimOpts);
 
     const { hi, hv } = coreClaim.hiHv();
 
@@ -769,6 +826,41 @@ export class IdentityWallet implements IIdentityWallet {
     credential.proof = [sigProof];
 
     return credential;
+  }
+
+  /** {@inheritDoc IIdentityWallet.getActualAuthCredential} */
+  async getActualAuthCredential(
+    did: DID,
+    treeStateInfo?: TreeState
+  ): Promise<{
+    authCredential: W3CCredential;
+    incProof: MerkleTreeProofWithTreeState;
+    nonRevProof: MerkleTreeProofWithTreeState;
+  }> {
+    const authCredentials = await this._credentialWallet.getAllAuthBJJCredentials(did);
+    for (let i = 0; i < authCredentials.length; i++) {
+      const incProof = await this.generateCredentialMtp(did, authCredentials[i], treeStateInfo);
+
+      if (!incProof.proof.existence) {
+        continue;
+      }
+
+      const nonRevProof = await this.generateNonRevocationMtp(
+        did,
+        authCredentials[i],
+        treeStateInfo
+      );
+
+      if (!nonRevProof.proof.existence) {
+        return {
+          authCredential: authCredentials[i],
+          incProof,
+          nonRevProof
+        };
+      }
+    }
+
+    throw new Error('no auth credentials found');
   }
 
   /** {@inheritDoc IIdentityWallet.revokeCredential} */

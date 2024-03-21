@@ -248,7 +248,7 @@ export interface CredentialStatus {
   id: string;
   type: CredentialStatusType;
   revocationNonce?: number;
-  statusIssuer?: CredentialStatus;
+  statusIssuer?: { id: string; type: CredentialStatusType; revocationNonce?: number };
 }
 
 /**

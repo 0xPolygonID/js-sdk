@@ -1,6 +1,7 @@
 import { ZKProof } from '@iden3/js-jwz';
 import { MediaType } from '../../constants';
 import { JSONObject, ProtocolMessage } from '../packer';
+import { DID } from '@iden3/js-iden3-core';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
 export type AuthorizationResponseMessage = {
@@ -46,7 +47,10 @@ export type ZeroKnowledgeProofRequest = {
   circuitId: string;
   optional?: boolean;
   query: JSONObject;
-  params?: JSONObject;
+  params?: {
+    nullifierSessionId?: string | number;
+    verifierDid?: DID;
+  };
 };
 
 /** ZeroKnowledgeProofResponse represents structure of zkp response */

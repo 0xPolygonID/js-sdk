@@ -1,6 +1,6 @@
 import { BytesHelper, checkBigIntInField, SchemaHash } from '@iden3/js-iden3-core';
 import { Merklizer } from '@iden3/js-jsonld-merklization';
-import { caclulateCoreSchemaHash, fillCoreClaimSlot } from '../verifiable';
+import { calculateCoreSchemaHash, fillCoreClaimSlot } from '../verifiable';
 
 /**
  * SwapEndianness swaps the endianness of the value encoded in buf. If buf is
@@ -53,14 +53,14 @@ export function checkDataInField(data: Uint8Array): boolean {
 
 /**
  *
- * @deprecated The method should not be used. Use caclulateCoreSchemaHash from verifiable.
+ * @deprecated The method should not be used. Use calculateCoreSchemaHash from verifiable.
  * Calculates schema hash
  *
  * @param {Uint8Array} schemaId
  * @returns {*}  {SchemaHash}
  */
 export const createSchemaHash = (schemaId: Uint8Array): SchemaHash => {
-  return caclulateCoreSchemaHash(schemaId);
+  return calculateCoreSchemaHash(schemaId);
 };
 
 /**

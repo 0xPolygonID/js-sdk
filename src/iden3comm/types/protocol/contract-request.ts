@@ -7,6 +7,7 @@ export type ContractInvokeRequest = {
   type: string;
   thid: string;
   body: ContractInvokeRequestBody;
+  from?: string;
 };
 
 /** ContractInvokeRequestBody represents structure of contract invoke request body object */

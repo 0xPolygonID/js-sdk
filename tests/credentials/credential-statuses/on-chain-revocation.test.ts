@@ -25,7 +25,7 @@ import {
   Iden3OnchainSmtCredentialStatusPublisher,
   SDK_EVENTS,
   MessageBus
-} from '../../src';
+} from '../../../src';
 
 import {
   createIdentity,
@@ -34,7 +34,7 @@ import {
   RPC_URL,
   WALLET_KEY,
   RHS_CONTRACT_ADDRESS
-} from '../helpers';
+} from '../../helpers';
 
 import chai from 'chai';
 import path from 'path';
@@ -190,7 +190,7 @@ describe('onchain revocation checks', () => {
 
   beforeEach(async () => {
     circuitStorage = new FSCircuitStorage({
-      dirname: path.join(__dirname, '../proofs/testdata')
+      dirname: path.join(__dirname, '../../proofs/testdata')
     });
 
     const ethStorage = new EthStateStorage({
