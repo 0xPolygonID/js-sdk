@@ -156,7 +156,6 @@ export class EthStateStorage implements IStateStorage {
             BigInt(1),
             []
           ];
-          console.log('Calling transitStateGeneric!!!!!', payload);
           gasLimit = await contract.transitStateGeneric.estimateGas(...payload);
           txData = await contract.transitStateGeneric.populateTransaction(...payload);
         }
