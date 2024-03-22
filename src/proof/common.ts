@@ -214,8 +214,7 @@ export const parseQueryMetadata = async (
       );
     }
 
-    const datatype = propertyQuery.operator === Operators.EXISTS ? XSDNS.Boolean : query.datatype;
-    query.values = await transformQueryValueToBigInts(propertyQuery.operatorValue, datatype);
+    query.values = Operators.EXISTS ? transformExistsValue(propertyQuery.operatorValue): await transformQueryValueToBigInts(propertyQuery.operatorValue, query.datatype);
   }
   return query;
 };
@@ -247,3 +246,11 @@ export const transformQueryValueToBigInts = async (
   }
   return values;
 };
+
+const transformExistsValue = (value : unknown): bigint[] =>{
+
+  if (typeof value == "boolean") {
+    return [BigInt(value)];
+ }
+ throw new Error("exists operator value must be true or false")
+}
