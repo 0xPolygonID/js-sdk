@@ -207,15 +207,17 @@ export const parseQueryMetadata = async (
     }
   }
 
-  if (propertyQuery.operatorValue) {
+  if (propertyQuery.operatorValue !== undefined) {
     if (!isValidOperation(query.datatype, propertyQuery.operator)) {
       throw new Error(
         `operator ${propertyQuery.operator} is not supported for datatype ${query.datatype}`
       );
     }
 
-    const datatype = propertyQuery.operator === Operators.EXISTS ? XSDNS.Boolean : query.datatype;
-    query.values = await transformQueryValueToBigInts(propertyQuery.operatorValue, datatype);
+    query.values =
+      propertyQuery.operator === Operators.EXISTS
+        ? transformExistsValue(propertyQuery.operatorValue)
+        : await transformQueryValueToBigInts(propertyQuery.operatorValue, query.datatype);
   }
   return query;
 };
@@ -246,4 +248,11 @@ export const transformQueryValueToBigInts = async (
     values[0] = await Merklizer.hashValue(ldType, value);
   }
   return values;
+};
+
+const transformExistsValue = (value: unknown): bigint[] => {
+  if (typeof value == 'boolean') {
+    return [BigInt(value)];
+  }
+  throw new Error('exists operator value must be true or false');
 };
