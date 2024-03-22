@@ -243,7 +243,7 @@ export class FilterQuery implements IFilterQuery {
     const credentialPathValue = resolvePath(credential, this.path);
     if (
       (credentialPathValue === null || credentialPathValue === undefined) &&
-      this.operatorFunc !== existsComparator
+      this.operatorFunc !== comparatorOptions.$exists
     ) {
       return false;
     }
