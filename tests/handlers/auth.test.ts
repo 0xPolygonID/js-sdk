@@ -24,7 +24,8 @@ import {
   createAuthorizationRequestWithMessage,
   AuthorizationResponseMessage,
   ZeroKnowledgeProofResponse,
-  ProofType
+  ProofType,
+  KmsKeyType
 } from '../../src';
 import { Token } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
@@ -391,7 +392,8 @@ describe('auth', () => {
 
   it('auth flow Ethereum identity with circuits V3', async () => {
     const { did: ethereumDID } = await createIdentity(idWallet, {
-      seed: SEED_USER
+      seed: SEED_USER,
+      keyType: KmsKeyType.Secp256k1
     });
 
     const claimReq: CredentialRequest = {
@@ -537,7 +539,7 @@ describe('auth', () => {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    const authRes = await authHandler.handleAuthorizationRequest(ethereumDID, msgBytes);
     // console.log(JSON.stringify(authRes.authResponse));
     const tokenStr = authRes.token;
     // console.log(tokenStr);
