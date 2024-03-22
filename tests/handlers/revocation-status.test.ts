@@ -19,7 +19,7 @@ import {
   MOCK_STATE_STORAGE,
   getInMemoryDataStorage,
   getPackageMgr,
-  registerBJJIntoInMemoryKMS,
+  registerKeyProvidersInMemoryKMS,
   createIdentity,
   SEED_USER,
   SEED_ISSUER
@@ -35,7 +35,7 @@ describe('revocation status', () => {
   let idWallet: IdentityWallet;
 
   beforeEach(async () => {
-    const kms = registerBJJIntoInMemoryKMS();
+    const kms = registerKeyProvidersInMemoryKMS();
     const dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
     const circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, '../proofs/testdata')
