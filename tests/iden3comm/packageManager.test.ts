@@ -61,7 +61,7 @@ describe('tests packageManager with ZKP Packer', () => {
     );
 
     const e = await pm.pack(MediaType.ZKPMessage, msgBytes, {
-      senderID: senderDID,
+      senderDID,
       provingMethodAlg: new ProvingMethodAlg('groth16-mock', 'authV2')
     });
 
