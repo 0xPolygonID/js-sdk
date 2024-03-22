@@ -18,7 +18,7 @@ describe('zkp packer tests', () => {
     const senderDID = DID.parse(identifier);
 
     const b = await p.pack(msgBytes, {
-      senderID: senderDID,
+      senderDID: senderDID,
       profileNonce: 0, // if it's genesis identity
       provingMethodAlg: new ProvingMethodAlg('groth16-mock', 'authV2')
     } as unknown as ZKPPackerParams);
