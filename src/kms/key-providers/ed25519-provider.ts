@@ -10,14 +10,15 @@ import { ed25519 } from '@noble/curves/ed25519';
  * @implements IKeyProvider interface
  */
 export class Ed25519Provider implements IKeyProvider {
-
   /**
    * Creates an instance of Ed25519Provider.
    * @param {KmsKeyType} keyType - kms key type
    * @param {AbstractPrivateKeyStore} keyStore - key store for kms
    */
-  constructor(public readonly keyType: KmsKeyType, private readonly _keyStore: AbstractPrivateKeyStore) {
-  }
+  constructor(
+    public readonly keyType: KmsKeyType,
+    private readonly _keyStore: AbstractPrivateKeyStore
+  ) {}
 
   /**
    * generates a ed25519 key from a seed phrase
@@ -29,8 +30,7 @@ export class Ed25519Provider implements IKeyProvider {
       throw new Error('Seed should be 32 bytes');
     }
 
-    const privateKey = seed;
-    const publicKey = ed25519.getPublicKey(privateKey);
+    const publicKey = ed25519.getPublicKey(seed);
     const kmsId = {
       type: this.keyType,
       id: providerHelpers.keyPath(this.keyType, Buffer.from(publicKey).toString('hex'))
@@ -38,7 +38,7 @@ export class Ed25519Provider implements IKeyProvider {
 
     await this._keyStore.importKey({
       alias: kmsId.id,
-      key: Buffer.from(privateKey).toString('hex')
+      key: Buffer.from(seed).toString('hex')
     });
 
     return kmsId;
