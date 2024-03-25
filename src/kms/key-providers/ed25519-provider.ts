@@ -10,21 +10,13 @@ import { ed25519 } from '@noble/curves/ed25519';
  * @implements IKeyProvider interface
  */
 export class Ed25519Provider implements IKeyProvider {
-  /**
-   * key type that is handled by Ed25519Provider
-   * @type {KmsKeyType}
-   */
-  keyType: KmsKeyType;
-  private _keyStore: AbstractPrivateKeyStore;
 
   /**
    * Creates an instance of Ed25519Provider.
    * @param {KmsKeyType} keyType - kms key type
    * @param {AbstractPrivateKeyStore} keyStore - key store for kms
    */
-  constructor(keyType: KmsKeyType, keyStore: AbstractPrivateKeyStore) {
-    this.keyType = keyType;
-    this._keyStore = keyStore;
+  constructor(public readonly keyType: KmsKeyType, private readonly _keyStore: AbstractPrivateKeyStore) {
   }
 
   /**
