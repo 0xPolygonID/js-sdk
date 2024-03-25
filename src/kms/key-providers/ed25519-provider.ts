@@ -65,13 +65,7 @@ export class Ed25519Provider implements IKeyProvider {
    */
   async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {
     const privateKeyHex = await this.privateKey(keyId);
-    const signature = await ed25519.sign(data, privateKeyHex);
-    const publicKey = ed25519.getPublicKey(privateKeyHex);
-    const isValid = await ed25519.verify(signature, data, publicKey);
-    if (!isValid) {
-      throw new Error('Signature is invalid');
-    }
-    return signature;
+    return ed25519.sign(data, privateKeyHex);
   }
 
   /**
