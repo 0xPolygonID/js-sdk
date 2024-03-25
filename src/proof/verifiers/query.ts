@@ -9,7 +9,7 @@ import {
 import { Proof } from '@iden3/js-merkletree';
 import { JSONObject } from '../../iden3comm';
 import { byteEncoder } from '../../utils';
-import { Operators } from '../../circuits/comparer';
+import { Operators, QueryOperators } from '../../circuits/comparer';
 import { CircuitId } from '../../circuits/models';
 import { calculateCoreSchemaHash, ProofQuery, VerifiableConstants } from '../../verifiable';
 import { parseQueriesMetadata, QueryMetadata } from '../common';
@@ -33,6 +33,7 @@ export interface ClaimOutputs {
   schemaHash: SchemaHash;
   slotIndex?: number;
   operator: number;
+  operatorOutput?: bigint;
   value: bigint[];
   timestamp: number;
   merklized: number;
@@ -122,13 +123,27 @@ export async function checkQueryRequest(
     // validate selective disclosure
     if (metadata.operator === Operators.SD) {
       try {
-        await validateDisclosure(metadata, outputs, verifiablePresentation, schemaLoader);
+        [CircuitId.AtomicQuerySigV2, CircuitId.AtomicQueryMTPV2].includes(circuitId)
+          ? await validateDisclosureV2Circuit(
+              metadata,
+              outputs,
+              verifiablePresentation,
+              schemaLoader
+            )
+          : validateDisclosureNativeSDSupport(
+              metadata,
+              outputs,
+              verifiablePresentation,
+              schemaLoader
+            );
       } catch (e) {
         throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
       }
     } else if (!metadata.fieldName && metadata.operator == Operators.NOOP) {
       try {
-        await validateEmptyCredentialSubject(metadata, outputs);
+        [CircuitId.AtomicQuerySigV2, CircuitId.AtomicQueryMTPV2].includes(circuitId)
+          ? await validateEmptyCredentialSubjectV2Circuit(metadata, outputs)
+          : validateEmptyCredentialSubjectNoopNativeSupport(metadata, outputs);
         return;
       } catch (e: unknown) {
         throw new Error(`failed to validate operators: ${(e as Error).message}`);
@@ -142,19 +157,9 @@ export async function checkQueryRequest(
     }
 
     // verify claim
-    if (outputs.merklized === 1) {
-      if (outputs.claimPathNotExists === 1) {
-        throw new Error(`proof doesn't contains target query key`);
-      }
-
-      if (outputs.claimPathKey !== metadata.claimPathKey) {
-        throw new Error(`proof was generated for another path`);
-      }
-    } else {
-      if (outputs.slotIndex !== metadata.slotIndex) {
-        throw new Error(`wrong claim slot was used in claim`);
-      }
-    }
+    [CircuitId.AtomicQuerySigV2, CircuitId.AtomicQueryMTPV2].includes(circuitId)
+      ? verifyFieldValueInclusionV2(outputs, metadata)
+      : verifyFieldValueInclusionNativeExistsSupport(outputs, metadata);
 
     // verify timestamp
     let acceptedProofGenerationDelay = defaultProofGenerationDelayOpts;
@@ -171,7 +176,46 @@ export async function checkQueryRequest(
   return;
 }
 
-async function validateEmptyCredentialSubject(cq: QueryMetadata, outputs: ClaimOutputs) {
+function verifyFieldValueInclusionV2(outputs: ClaimOutputs, metadata: QueryMetadata) {
+  if (outputs.operator == QueryOperators.$noop) {
+    return;
+  }
+  if (outputs.merklized === 1) {
+    if (outputs.claimPathNotExists === 1) {
+      throw new Error(`proof doesn't contains target query key`);
+    }
+
+    if (outputs.claimPathKey !== metadata.claimPathKey) {
+      throw new Error(`proof was generated for another path`);
+    }
+  } else {
+    if (outputs.slotIndex !== metadata.slotIndex) {
+      throw new Error(`wrong claim slot was used in claim`);
+    }
+  }
+}
+function verifyFieldValueInclusionNativeExistsSupport(
+  outputs: ClaimOutputs,
+  metadata: QueryMetadata
+) {
+  if (outputs.operator == Operators.NOOP) {
+    return;
+  }
+  if (outputs.operator === Operators.EXISTS && !outputs.merklized) {
+    throw new Error('$exists operator is not supported for non-merklized credential');
+  }
+  if (outputs.merklized === 1) {
+    if (outputs.claimPathKey !== metadata.claimPathKey) {
+      throw new Error(`proof was generated for another path`);
+    }
+  } else {
+    if (outputs.slotIndex !== metadata.slotIndex) {
+      throw new Error(`wrong claim slot was used in claim`);
+    }
+  }
+}
+
+async function validateEmptyCredentialSubjectV2Circuit(cq: QueryMetadata, outputs: ClaimOutputs) {
   if (outputs.operator !== Operators.EQ) {
     throw new Error('empty credentialSubject request available only for equal operation');
   }
@@ -206,12 +250,21 @@ async function validateOperators(cq: QueryMetadata, outputs: ClaimOutputs) {
   }
 }
 
-async function validateDisclosure(
+async function validateDisclosureV2Circuit(
   cq: QueryMetadata,
   outputs: ClaimOutputs,
   verifiablePresentation?: JSON,
   ldLoader?: DocumentLoader
 ) {
+  const bi = await fieldValueFromVerifiablePresentation(
+    cq.fieldName,
+    verifiablePresentation,
+    ldLoader
+  );
+  if (bi !== outputs.value[0]) {
+    throw new Error(`value that was used is not equal to requested in query`);
+  }
+
   if (outputs.operator !== Operators.EQ) {
     throw new Error(`operator for selective disclosure must be $eq`);
   }
@@ -221,15 +274,46 @@ async function validateDisclosure(
       throw new Error(`selective disclosure not available for array of values`);
     }
   }
+}
 
+async function validateDisclosureNativeSDSupport(
+  cq: QueryMetadata,
+  outputs: ClaimOutputs,
+  verifiablePresentation?: JSON,
+  ldLoader?: DocumentLoader
+) {
   const bi = await fieldValueFromVerifiablePresentation(
     cq.fieldName,
     verifiablePresentation,
     ldLoader
   );
-  if (bi !== outputs.value[0]) {
-    throw new Error(`value that was used is not equal to requested in query`);
+  if (bi !== outputs.operatorOutput) {
+    throw new Error(`operator output should be equal to disclosed value`);
   }
+
+  if (outputs.operator !== Operators.SD) {
+    throw new Error(`operator for selective disclosure must be $eq`);
+  }
+
+  for (let index = 0; index < outputs.value.length; index++) {
+    if (outputs.value[index] !== 0n) {
+      throw new Error(`public signal values must be zero`);
+    }
+  }
+}
+async function validateEmptyCredentialSubjectNoopNativeSupport(
+  cq: QueryMetadata,
+  outputs: ClaimOutputs
+) {
+  if (outputs.operator !== Operators.NOOP) {
+    throw new Error('empty credentialSubject request available only for equal operation');
+  }
+  for (let index = 1; index < outputs.value.length; index++) {
+    if (outputs.value[index] !== 0n) {
+      throw new Error(`empty credentialSubject request not available for array of values`);
+    }
+  }
+  return;
 }
 
 export const fieldValueFromVerifiablePresentation = async (

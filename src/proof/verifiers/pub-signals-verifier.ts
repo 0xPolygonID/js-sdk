@@ -227,6 +227,7 @@ export class PubSignalsVerifier {
       merklized: v3PubSignals.merklized,
       claimPathKey: v3PubSignals.claimPathKey,
       valueArraySize: v3PubSignals.getValueArrSize(),
+      operatorOutput: v3PubSignals.operatorOutput,
       isRevocationChecked: v3PubSignals.isRevocationChecked
     };
     await checkQueryRequest(

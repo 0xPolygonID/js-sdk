@@ -5,8 +5,7 @@ import {
   GISTProof,
   isValidOperation,
   Operators,
-  QueryOperators,
-  XSDNS
+  QueryOperators
 } from '../circuits';
 import { StateProof } from '../storage/entities/state';
 import {

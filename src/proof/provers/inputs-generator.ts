@@ -21,7 +21,8 @@ import {
   Query,
   QueryOperators,
   TreeState,
-  ValueProof
+  ValueProof,
+  getOperatorNameByValue
 } from '../../circuits';
 import {
   PreparedAuthBJJCredential,
@@ -106,6 +107,14 @@ export class InputGenerator {
         } queries`
       );
     }
+    const supportedOperators = circuitValidator[circuitId as CircuitId].supportedOperations;
+    ctx.circuitQueries.forEach((query) => {
+      if (!supportedOperators.includes(query.operator)) {
+        throw new Error(
+          `operator ${getOperatorNameByValue(query.operator)} is not supported by ${circuitId}`
+        );
+      }
+    });
 
     const fn = (this as unknown as { [k: string]: (ctx: InputContext) => Promise<Uint8Array> })[
       fnName

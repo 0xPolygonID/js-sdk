@@ -56,10 +56,9 @@ const getGroupedQueries = (
     return acc;
   }, new Map<number, { query: JSONObject; linkNonce: number }>());
 
-
 /**
  * Processes zero knowledge proof requests.
- * 
+ *
  * @param senderIdentifier - The identifier of the sender.
  * @param requests - An array of zero knowledge proof requests.
  * @param from - The identifier of the sender.
