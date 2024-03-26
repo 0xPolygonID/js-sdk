@@ -1,5 +1,5 @@
 import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
-import { DocumentLoader, Path } from '@iden3/js-jsonld-merklization';
+import { DocumentLoader, getDocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
 import { JSONObject } from '../../iden3comm';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
@@ -19,11 +19,19 @@ import {
   checkQueryRequest,
   ClaimOutputs,
   VerifyOpts,
-  fieldValueFromVerifiablePresentation
+  fieldValueFromVerifiablePresentation,
+  validateDisclosureV2Circuit,
+  validateEmptyCredentialSubjectV2Circuit,
+  validateOperators,
+  verifyFieldValueInclusionV2,
+  validateDisclosureNativeSDSupport,
+  validateEmptyCredentialSubjectNoopNativeSupport,
+  verifyFieldValueInclusionNativeExistsSupport
 } from './query';
 import { parseQueriesMetadata, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
 import { calculateQueryHashV3 } from './query-hash';
+import { JsonLd } from 'jsonld/jsonld-spec';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -120,14 +128,15 @@ export class PubSignalsVerifier {
       valueArraySize: mtpv2PubSignals.getValueArrSize(),
       isRevocationChecked: mtpv2PubSignals.isRevocationChecked
     };
-    await checkQueryRequest(
+
+    await this.checkQueryV2Circuits(
+      CircuitId.AtomicQueryMTPV2,
       query,
       outs,
-      CircuitId.AtomicQueryMTPV2,
-      this._documentLoader,
-      verifiablePresentation,
-      opts
+      opts,
+      verifiablePresentation
     );
+
     // verify state
     await this.checkStateExistenceForId(
       mtpv2PubSignals.issuerID,
@@ -177,14 +186,15 @@ export class PubSignalsVerifier {
       valueArraySize: sigV2PubSignals.getValueArrSize(),
       isRevocationChecked: sigV2PubSignals.isRevocationChecked
     };
-    await checkQueryRequest(
+
+    await this.checkQueryV2Circuits(
+      CircuitId.AtomicQuerySigV2,
       query,
       outs,
-      CircuitId.AtomicQuerySigV2,
-      this._documentLoader,
-      verifiablePresentation,
-      opts
+      opts,
+      verifiablePresentation
     );
+
     // verify state
     await this.checkStateExistenceForId(sigV2PubSignals.issuerID, sigV2PubSignals.issuerAuthState);
 
@@ -230,14 +240,71 @@ export class PubSignalsVerifier {
       operatorOutput: v3PubSignals.operatorOutput,
       isRevocationChecked: v3PubSignals.isRevocationChecked
     };
+
+    if (!query.type) {
+      throw new Error(`proof query type is undefined`);
+    }
+
+    const loader = this._documentLoader ?? getDocumentLoader();
+
+    // validate schema
+    let context: JsonLd;
+    try {
+      context = (await loader(query.context ?? '')).document;
+    } catch (e) {
+      throw new Error(`can't load schema for request query`);
+    }
+
+    const queriesMetadata = await parseQueriesMetadata(
+      query.type,
+      JSON.stringify(context),
+      query.credentialSubject as JSONObject,
+      {
+        documentLoader: loader
+      }
+    );
+
     await checkQueryRequest(
       query,
+      queriesMetadata,
+      context,
       outs,
       CircuitId.AtomicQueryV3,
       this._documentLoader,
-      verifiablePresentation,
       opts
     );
+
+    const queryMetadata = queriesMetadata[0]; // only one query is supported
+
+    // validate selective disclosure
+    if (queryMetadata.operator === Operators.SD) {
+      try {
+        await validateDisclosureNativeSDSupport(
+          queryMetadata,
+          outs,
+          verifiablePresentation,
+          loader
+        );
+      } catch (e) {
+        throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
+      }
+    } else if (!queryMetadata.fieldName && queryMetadata.operator == Operators.NOOP) {
+      try {
+        await validateEmptyCredentialSubjectNoopNativeSupport(queryMetadata, outs);
+      } catch (e: unknown) {
+        throw new Error(`failed to validate operators: ${(e as Error).message}`);
+      }
+    } else {
+      try {
+        await validateOperators(queryMetadata, outs);
+      } catch (e) {
+        throw new Error(`failed to validate operators: ${(e as Error).message}`);
+      }
+    }
+
+    // verify field inclusion / non-inclusion
+
+    verifyFieldValueInclusionNativeExistsSupport(outs, queryMetadata);
 
     const { proofType, verifierID, nullifier, nullifierSessionID, linkID } = v3PubSignals;
 
@@ -447,6 +514,73 @@ export class PubSignalsVerifier {
       );
     }
   };
+
+  private async checkQueryV2Circuits(
+    circuitId: CircuitId.AtomicQueryMTPV2 | CircuitId.AtomicQuerySigV2,
+    query: ProofQuery,
+    outs: ClaimOutputs,
+    opts: VerifyOpts | undefined,
+    verifiablePresentation: JSON | undefined
+  ) {
+    if (!query.type) {
+      throw new Error(`proof query type is undefined`);
+    }
+
+    const loader = this._documentLoader ?? getDocumentLoader();
+
+    // validate schema
+    let context: JsonLd;
+    try {
+      context = (await loader(query.context ?? '')).document;
+    } catch (e) {
+      throw new Error(`can't load schema for request query`);
+    }
+
+    const queriesMetadata = await parseQueriesMetadata(
+      query.type,
+      JSON.stringify(context),
+      query.credentialSubject as JSONObject,
+      {
+        documentLoader: loader
+      }
+    );
+
+    await checkQueryRequest(
+      query,
+      queriesMetadata,
+      context,
+      outs,
+      circuitId,
+      this._documentLoader,
+      opts
+    );
+
+    const queryMetadata = queriesMetadata[0]; // only one query is supported
+
+    // validate selective disclosure
+    if (queryMetadata.operator === Operators.SD) {
+      try {
+        await validateDisclosureV2Circuit(queryMetadata, outs, verifiablePresentation, loader);
+      } catch (e) {
+        throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
+      }
+    } else if (!queryMetadata.fieldName && queryMetadata.operator == Operators.NOOP) {
+      try {
+        await validateEmptyCredentialSubjectV2Circuit(queryMetadata, outs);
+      } catch (e: unknown) {
+        throw new Error(`failed to validate operators: ${(e as Error).message}`);
+      }
+    } else {
+      try {
+        await validateOperators(queryMetadata, outs);
+      } catch (e) {
+        throw new Error(`failed to validate operators: ${(e as Error).message}`);
+      }
+    }
+
+    // verify field inclusion
+    verifyFieldValueInclusionV2(outs, queryMetadata);
+  }
 
   private async resolve(
     id: Id,

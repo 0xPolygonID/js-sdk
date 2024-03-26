@@ -1,19 +1,13 @@
 import { DID, getDateFromUnixTimestamp, Id, SchemaHash } from '@iden3/js-iden3-core';
-import {
-  DocumentLoader,
-  getDocumentLoader,
-  Merklizer,
-  MtValue,
-  Path
-} from '@iden3/js-jsonld-merklization';
+import { DocumentLoader, Merklizer, MtValue, Path } from '@iden3/js-jsonld-merklization';
 import { Proof } from '@iden3/js-merkletree';
-import { JSONObject } from '../../iden3comm';
 import { byteEncoder } from '../../utils';
 import { Operators, QueryOperators } from '../../circuits/comparer';
 import { CircuitId } from '../../circuits/models';
 import { calculateCoreSchemaHash, ProofQuery, VerifiableConstants } from '../../verifiable';
-import { parseQueriesMetadata, QueryMetadata } from '../common';
+import { QueryMetadata } from '../common';
 import { circuitValidator } from '../provers';
+import { JsonLd } from 'jsonld/jsonld-spec';
 
 /**
  * Options to verify state
@@ -45,10 +39,11 @@ export interface ClaimOutputs {
 
 export async function checkQueryRequest(
   query: ProofQuery,
+  queriesMetadata: QueryMetadata[],
+  ldContext: JsonLd,
   outputs: ClaimOutputs,
   circuitId: CircuitId,
   schemaLoader?: DocumentLoader,
-  verifiablePresentation?: JSON,
   opts?: VerifyOpts
 ): Promise<void> {
   // validate issuer
@@ -59,21 +54,11 @@ export async function checkQueryRequest(
   if (!issuerAllowed) {
     throw new Error('issuer is not in allowed list');
   }
-
-  // validate schema
-  let schema: object;
-  try {
-    const loader = schemaLoader ?? getDocumentLoader();
-    schema = (await loader(query.context ?? '')).document;
-  } catch (e) {
-    throw new Error(`can't load schema for request query`);
-  }
-
   if (!query.type) {
-    throw new Error(`proof query type is undefined`);
+    throw new Error('query type is missing');
   }
 
-  const schemaId: string = await Path.getTypeIDFromContext(JSON.stringify(schema), query.type, {
+  const schemaId: string = await Path.getTypeIDFromContext(JSON.stringify(ldContext), query.type, {
     documentLoader: schemaLoader
   });
   const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
@@ -85,15 +70,6 @@ export async function checkQueryRequest(
   if (!query.skipClaimRevocationCheck && outputs.isRevocationChecked === 0) {
     throw new Error(`check revocation is required`);
   }
-
-  const queriesMetadata = await parseQueriesMetadata(
-    query.type,
-    JSON.stringify(schema),
-    query.credentialSubject as JSONObject,
-    {
-      documentLoader: schemaLoader
-    }
-  );
 
   const circuitValidationData = circuitValidator[circuitId];
 
@@ -114,69 +90,21 @@ export async function checkQueryRequest(
     );
   }
 
-  for (let i = 0; i < queriesMetadata.length; i++) {
-    const metadata = queriesMetadata[i];
-    if (!query.type) {
-      throw new Error(`proof query type is undefined`);
-    }
+  // verify timestamp
+  let acceptedProofGenerationDelay = defaultProofGenerationDelayOpts;
+  if (opts?.acceptedProofGenerationDelay) {
+    acceptedProofGenerationDelay = opts.acceptedProofGenerationDelay;
+  }
 
-    // validate selective disclosure
-    if (metadata.operator === Operators.SD) {
-      try {
-        [CircuitId.AtomicQuerySigV2, CircuitId.AtomicQueryMTPV2].includes(circuitId)
-          ? await validateDisclosureV2Circuit(
-              metadata,
-              outputs,
-              verifiablePresentation,
-              schemaLoader
-            )
-          : validateDisclosureNativeSDSupport(
-              metadata,
-              outputs,
-              verifiablePresentation,
-              schemaLoader
-            );
-      } catch (e) {
-        throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
-      }
-    } else if (!metadata.fieldName && metadata.operator == Operators.NOOP) {
-      try {
-        [CircuitId.AtomicQuerySigV2, CircuitId.AtomicQueryMTPV2].includes(circuitId)
-          ? await validateEmptyCredentialSubjectV2Circuit(metadata, outputs)
-          : validateEmptyCredentialSubjectNoopNativeSupport(metadata, outputs);
-        return;
-      } catch (e: unknown) {
-        throw new Error(`failed to validate operators: ${(e as Error).message}`);
-      }
-    } else {
-      try {
-        await validateOperators(metadata, outputs);
-      } catch (e) {
-        throw new Error(`failed to validate operators: ${(e as Error).message}`);
-      }
-    }
-
-    // verify claim
-    [CircuitId.AtomicQuerySigV2, CircuitId.AtomicQueryMTPV2].includes(circuitId)
-      ? verifyFieldValueInclusionV2(outputs, metadata)
-      : verifyFieldValueInclusionNativeExistsSupport(outputs, metadata);
-
-    // verify timestamp
-    let acceptedProofGenerationDelay = defaultProofGenerationDelayOpts;
-    if (opts?.acceptedProofGenerationDelay) {
-      acceptedProofGenerationDelay = opts.acceptedProofGenerationDelay;
-    }
-
-    const timeDiff = Date.now() - getDateFromUnixTimestamp(Number(outputs.timestamp)).getTime();
-    if (timeDiff > acceptedProofGenerationDelay) {
-      throw new Error('generated proof is outdated');
-    }
+  const timeDiff = Date.now() - getDateFromUnixTimestamp(Number(outputs.timestamp)).getTime();
+  if (timeDiff > acceptedProofGenerationDelay) {
+    throw new Error('generated proof is outdated');
   }
 
   return;
 }
 
-function verifyFieldValueInclusionV2(outputs: ClaimOutputs, metadata: QueryMetadata) {
+export function verifyFieldValueInclusionV2(outputs: ClaimOutputs, metadata: QueryMetadata) {
   if (outputs.operator == QueryOperators.$noop) {
     return;
   }
@@ -194,7 +122,7 @@ function verifyFieldValueInclusionV2(outputs: ClaimOutputs, metadata: QueryMetad
     }
   }
 }
-function verifyFieldValueInclusionNativeExistsSupport(
+export function verifyFieldValueInclusionNativeExistsSupport(
   outputs: ClaimOutputs,
   metadata: QueryMetadata
 ) {
@@ -215,7 +143,10 @@ function verifyFieldValueInclusionNativeExistsSupport(
   }
 }
 
-async function validateEmptyCredentialSubjectV2Circuit(cq: QueryMetadata, outputs: ClaimOutputs) {
+export async function validateEmptyCredentialSubjectV2Circuit(
+  cq: QueryMetadata,
+  outputs: ClaimOutputs
+) {
   if (outputs.operator !== Operators.EQ) {
     throw new Error('empty credentialSubject request available only for equal operation');
   }
@@ -231,7 +162,7 @@ async function validateEmptyCredentialSubjectV2Circuit(cq: QueryMetadata, output
   }
   return;
 }
-async function validateOperators(cq: QueryMetadata, outputs: ClaimOutputs) {
+export async function validateOperators(cq: QueryMetadata, outputs: ClaimOutputs) {
   if (outputs.operator !== cq.operator) {
     throw new Error(`operator that was used is not equal to request`);
   }
@@ -250,7 +181,7 @@ async function validateOperators(cq: QueryMetadata, outputs: ClaimOutputs) {
   }
 }
 
-async function validateDisclosureV2Circuit(
+export async function validateDisclosureV2Circuit(
   cq: QueryMetadata,
   outputs: ClaimOutputs,
   verifiablePresentation?: JSON,
@@ -276,7 +207,7 @@ async function validateDisclosureV2Circuit(
   }
 }
 
-async function validateDisclosureNativeSDSupport(
+export async function validateDisclosureNativeSDSupport(
   cq: QueryMetadata,
   outputs: ClaimOutputs,
   verifiablePresentation?: JSON,
@@ -301,7 +232,7 @@ async function validateDisclosureNativeSDSupport(
     }
   }
 }
-async function validateEmptyCredentialSubjectNoopNativeSupport(
+export async function validateEmptyCredentialSubjectNoopNativeSupport(
   cq: QueryMetadata,
   outputs: ClaimOutputs
 ) {

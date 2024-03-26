@@ -107,14 +107,6 @@ export class InputGenerator {
         } queries`
       );
     }
-    const supportedOperators = circuitValidator[circuitId as CircuitId].supportedOperations;
-    ctx.circuitQueries.forEach((query) => {
-      if (!supportedOperators.includes(query.operator)) {
-        throw new Error(
-          `operator ${getOperatorNameByValue(query.operator)} is not supported by ${circuitId}`
-        );
-      }
-    });
 
     const fn = (this as unknown as { [k: string]: (ctx: InputContext) => Promise<Uint8Array> })[
       fnName
@@ -246,6 +238,8 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
+    this.checkOperatorSupport(CircuitId.AtomicQueryMTPV2, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -314,6 +308,8 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
+    this.checkOperatorSupport(CircuitId.AtomicQueryMTPV2OnChain, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -345,6 +341,9 @@ export class InputGenerator {
     query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
+
+    this.checkOperatorSupport(CircuitId.AtomicQuerySigV2, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -414,6 +413,8 @@ export class InputGenerator {
     circuitInputs.signature = signature;
     circuitInputs.challenge = params.challenge;
 
+    this.checkOperatorSupport(CircuitId.AtomicQuerySigV2OnChain, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -473,6 +474,9 @@ export class InputGenerator {
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionId
       ? BigInt(proofReq.params?.nullifierSessionId?.toString())
       : BigInt(0);
+
+    this.checkOperatorSupport(CircuitId.AtomicQueryV3, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -569,6 +573,9 @@ export class InputGenerator {
       circuitInputs.treeState = authClaimData.treeState;
       circuitInputs.signature = signature;
     }
+
+    this.checkOperatorSupport(CircuitId.AtomicQueryV3OnChain, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -586,10 +593,22 @@ export class InputGenerator {
     circuitInputs.claim = circuitClaimData.claim;
     circuitInputs.query = circuitQueries;
 
+    circuitQueries.forEach((query) => {
+      this.checkOperatorSupport(CircuitId.LinkedMultiQuery10, query.operator);
+    });
+
     return circuitInputs.inputsMarshal();
   };
 
   private transformV2QueryOperator(operator: number): number {
     return operator === Operators.SD || operator === Operators.NOOP ? Operators.EQ : operator;
+  }
+  private checkOperatorSupport(circuitId: string, operator: number) {
+    const supportedOperators = circuitValidator[circuitId as CircuitId].supportedOperations;
+    if (!supportedOperators.includes(operator)) {
+      throw new Error(
+        `operator ${getOperatorNameByValue(operator)} is not supported by ${circuitId}`
+      );
+    }
   }
 }
