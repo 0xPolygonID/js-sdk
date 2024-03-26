@@ -223,7 +223,7 @@ export async function validateDisclosureNativeSDSupport(
   }
 
   if (outputs.operator !== Operators.SD) {
-    throw new Error(`operator for selective disclosure must be $eq`);
+    throw new Error(`operator for selective disclosure must be $sd`);
   }
 
   for (let index = 0; index < outputs.value.length; index++) {
@@ -237,7 +237,7 @@ export async function validateEmptyCredentialSubjectNoopNativeSupport(
   outputs: ClaimOutputs
 ) {
   if (outputs.operator !== Operators.NOOP) {
-    throw new Error('empty credentialSubject request available only for equal operation');
+    throw new Error('empty credentialSubject request available only for $noop operation');
   }
   for (let index = 1; index < outputs.value.length; index++) {
     if (outputs.value[index] !== 0n) {
