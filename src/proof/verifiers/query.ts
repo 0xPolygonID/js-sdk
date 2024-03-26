@@ -232,10 +232,7 @@ export async function validateDisclosureNativeSDSupport(
     }
   }
 }
-export async function validateEmptyCredentialSubjectNoopNativeSupport(
-  cq: QueryMetadata,
-  outputs: ClaimOutputs
-) {
+export async function validateEmptyCredentialSubjectNoopNativeSupport(outputs: ClaimOutputs) {
   if (outputs.operator !== Operators.NOOP) {
     throw new Error('empty credentialSubject request available only for $noop operation');
   }
@@ -244,7 +241,6 @@ export async function validateEmptyCredentialSubjectNoopNativeSupport(
       throw new Error(`empty credentialSubject request not available for array of values`);
     }
   }
-  return;
 }
 
 export const fieldValueFromVerifiablePresentation = async (

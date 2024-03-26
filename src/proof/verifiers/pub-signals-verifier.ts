@@ -290,7 +290,7 @@ export class PubSignalsVerifier {
       }
     } else if (!queryMetadata.fieldName && queryMetadata.operator == Operators.NOOP) {
       try {
-        await validateEmptyCredentialSubjectNoopNativeSupport(queryMetadata, outs);
+        await validateEmptyCredentialSubjectNoopNativeSupport(outs);
       } catch (e: unknown) {
         throw new Error(`failed to validate operators: ${(e as Error).message}`);
       }

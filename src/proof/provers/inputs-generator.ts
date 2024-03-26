@@ -238,7 +238,7 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    this.checkOperatorSupport(CircuitId.AtomicQueryMTPV2, query.operator);
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
 
     return circuitInputs.inputsMarshal();
   };
@@ -308,7 +308,7 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
-    this.checkOperatorSupport(CircuitId.AtomicQueryMTPV2OnChain, query.operator);
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
 
     return circuitInputs.inputsMarshal();
   };
@@ -342,7 +342,7 @@ export class InputGenerator {
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
-    this.checkOperatorSupport(CircuitId.AtomicQuerySigV2, query.operator);
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
 
     return circuitInputs.inputsMarshal();
   };
@@ -413,7 +413,7 @@ export class InputGenerator {
     circuitInputs.signature = signature;
     circuitInputs.challenge = params.challenge;
 
-    this.checkOperatorSupport(CircuitId.AtomicQuerySigV2OnChain, query.operator);
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
 
     return circuitInputs.inputsMarshal();
   };
@@ -475,7 +475,7 @@ export class InputGenerator {
       ? BigInt(proofReq.params?.nullifierSessionId?.toString())
       : BigInt(0);
 
-    this.checkOperatorSupport(CircuitId.AtomicQueryV3, query.operator);
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
 
     return circuitInputs.inputsMarshal();
   };
@@ -574,7 +574,7 @@ export class InputGenerator {
       circuitInputs.signature = signature;
     }
 
-    this.checkOperatorSupport(CircuitId.AtomicQueryV3OnChain, query.operator);
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
 
     return circuitInputs.inputsMarshal();
   };
@@ -582,6 +582,7 @@ export class InputGenerator {
   private linkedMultiQuery10PrepareInputs = async ({
     preparedCredential,
     params,
+    proofReq,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {
     const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
@@ -594,7 +595,7 @@ export class InputGenerator {
     circuitInputs.query = circuitQueries;
 
     circuitQueries.forEach((query) => {
-      this.checkOperatorSupport(CircuitId.LinkedMultiQuery10, query.operator);
+      this.checkOperatorSupport(proofReq.circuitId, query.operator);
     });
 
     return circuitInputs.inputsMarshal();
