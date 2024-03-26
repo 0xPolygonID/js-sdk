@@ -1,19 +1,13 @@
 import { DID, getDateFromUnixTimestamp, Id, SchemaHash } from '@iden3/js-iden3-core';
-import {
-  DocumentLoader,
-  getDocumentLoader,
-  Merklizer,
-  MtValue,
-  Path
-} from '@iden3/js-jsonld-merklization';
+import { DocumentLoader, Merklizer, MtValue, Path } from '@iden3/js-jsonld-merklization';
 import { Proof } from '@iden3/js-merkletree';
-import { JSONObject } from '../../iden3comm';
 import { byteEncoder } from '../../utils';
-import { Operators } from '../../circuits/comparer';
+import { Operators, QueryOperators } from '../../circuits/comparer';
 import { CircuitId } from '../../circuits/models';
 import { calculateCoreSchemaHash, ProofQuery, VerifiableConstants } from '../../verifiable';
-import { parseQueriesMetadata, QueryMetadata } from '../common';
+import { QueryMetadata } from '../common';
 import { circuitValidator } from '../provers';
+import { JsonLd } from 'jsonld/jsonld-spec';
 
 /**
  * Options to verify state
@@ -33,6 +27,7 @@ export interface ClaimOutputs {
   schemaHash: SchemaHash;
   slotIndex?: number;
   operator: number;
+  operatorOutput?: bigint;
   value: bigint[];
   timestamp: number;
   merklized: number;
@@ -44,10 +39,11 @@ export interface ClaimOutputs {
 
 export async function checkQueryRequest(
   query: ProofQuery,
+  queriesMetadata: QueryMetadata[],
+  ldContext: JsonLd,
   outputs: ClaimOutputs,
   circuitId: CircuitId,
   schemaLoader?: DocumentLoader,
-  verifiablePresentation?: JSON,
   opts?: VerifyOpts
 ): Promise<void> {
   // validate issuer
@@ -58,21 +54,11 @@ export async function checkQueryRequest(
   if (!issuerAllowed) {
     throw new Error('issuer is not in allowed list');
   }
-
-  // validate schema
-  let schema: object;
-  try {
-    const loader = schemaLoader ?? getDocumentLoader();
-    schema = (await loader(query.context ?? '')).document;
-  } catch (e) {
-    throw new Error(`can't load schema for request query`);
-  }
-
   if (!query.type) {
-    throw new Error(`proof query type is undefined`);
+    throw new Error('query type is missing');
   }
 
-  const schemaId: string = await Path.getTypeIDFromContext(JSON.stringify(schema), query.type, {
+  const schemaId: string = await Path.getTypeIDFromContext(JSON.stringify(ldContext), query.type, {
     documentLoader: schemaLoader
   });
   const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
@@ -84,15 +70,6 @@ export async function checkQueryRequest(
   if (!query.skipClaimRevocationCheck && outputs.isRevocationChecked === 0) {
     throw new Error(`check revocation is required`);
   }
-
-  const queriesMetadata = await parseQueriesMetadata(
-    query.type,
-    JSON.stringify(schema),
-    query.credentialSubject as JSONObject,
-    {
-      documentLoader: schemaLoader
-    }
-  );
 
   const circuitValidationData = circuitValidator[circuitId];
 
@@ -113,65 +90,63 @@ export async function checkQueryRequest(
     );
   }
 
-  for (let i = 0; i < queriesMetadata.length; i++) {
-    const metadata = queriesMetadata[i];
-    if (!query.type) {
-      throw new Error(`proof query type is undefined`);
-    }
+  // verify timestamp
+  let acceptedProofGenerationDelay = defaultProofGenerationDelayOpts;
+  if (opts?.acceptedProofGenerationDelay) {
+    acceptedProofGenerationDelay = opts.acceptedProofGenerationDelay;
+  }
 
-    // validate selective disclosure
-    if (metadata.operator === Operators.SD) {
-      try {
-        await validateDisclosure(metadata, outputs, verifiablePresentation, schemaLoader);
-      } catch (e) {
-        throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
-      }
-    } else if (!metadata.fieldName && metadata.operator == Operators.NOOP) {
-      try {
-        await validateEmptyCredentialSubject(metadata, outputs);
-        return;
-      } catch (e: unknown) {
-        throw new Error(`failed to validate operators: ${(e as Error).message}`);
-      }
-    } else {
-      try {
-        await validateOperators(metadata, outputs);
-      } catch (e) {
-        throw new Error(`failed to validate operators: ${(e as Error).message}`);
-      }
-    }
-
-    // verify claim
-    if (outputs.merklized === 1) {
-      if (outputs.claimPathNotExists === 1) {
-        throw new Error(`proof doesn't contains target query key`);
-      }
-
-      if (outputs.claimPathKey !== metadata.claimPathKey) {
-        throw new Error(`proof was generated for another path`);
-      }
-    } else {
-      if (outputs.slotIndex !== metadata.slotIndex) {
-        throw new Error(`wrong claim slot was used in claim`);
-      }
-    }
-
-    // verify timestamp
-    let acceptedProofGenerationDelay = defaultProofGenerationDelayOpts;
-    if (opts?.acceptedProofGenerationDelay) {
-      acceptedProofGenerationDelay = opts.acceptedProofGenerationDelay;
-    }
-
-    const timeDiff = Date.now() - getDateFromUnixTimestamp(Number(outputs.timestamp)).getTime();
-    if (timeDiff > acceptedProofGenerationDelay) {
-      throw new Error('generated proof is outdated');
-    }
+  const timeDiff = Date.now() - getDateFromUnixTimestamp(Number(outputs.timestamp)).getTime();
+  if (timeDiff > acceptedProofGenerationDelay) {
+    throw new Error('generated proof is outdated');
   }
 
   return;
 }
 
-async function validateEmptyCredentialSubject(cq: QueryMetadata, outputs: ClaimOutputs) {
+export function verifyFieldValueInclusionV2(outputs: ClaimOutputs, metadata: QueryMetadata) {
+  if (outputs.operator == QueryOperators.$noop) {
+    return;
+  }
+  if (outputs.merklized === 1) {
+    if (outputs.claimPathNotExists === 1) {
+      throw new Error(`proof doesn't contains target query key`);
+    }
+
+    if (outputs.claimPathKey !== metadata.claimPathKey) {
+      throw new Error(`proof was generated for another path`);
+    }
+  } else {
+    if (outputs.slotIndex !== metadata.slotIndex) {
+      throw new Error(`wrong claim slot was used in claim`);
+    }
+  }
+}
+export function verifyFieldValueInclusionNativeExistsSupport(
+  outputs: ClaimOutputs,
+  metadata: QueryMetadata
+) {
+  if (outputs.operator == Operators.NOOP) {
+    return;
+  }
+  if (outputs.operator === Operators.EXISTS && !outputs.merklized) {
+    throw new Error('$exists operator is not supported for non-merklized credential');
+  }
+  if (outputs.merklized === 1) {
+    if (outputs.claimPathKey !== metadata.claimPathKey) {
+      throw new Error(`proof was generated for another path`);
+    }
+  } else {
+    if (outputs.slotIndex !== metadata.slotIndex) {
+      throw new Error(`wrong claim slot was used in claim`);
+    }
+  }
+}
+
+export async function validateEmptyCredentialSubjectV2Circuit(
+  cq: QueryMetadata,
+  outputs: ClaimOutputs
+) {
   if (outputs.operator !== Operators.EQ) {
     throw new Error('empty credentialSubject request available only for equal operation');
   }
@@ -187,7 +162,7 @@ async function validateEmptyCredentialSubject(cq: QueryMetadata, outputs: ClaimO
   }
   return;
 }
-async function validateOperators(cq: QueryMetadata, outputs: ClaimOutputs) {
+export async function validateOperators(cq: QueryMetadata, outputs: ClaimOutputs) {
   if (outputs.operator !== cq.operator) {
     throw new Error(`operator that was used is not equal to request`);
   }
@@ -206,12 +181,21 @@ async function validateOperators(cq: QueryMetadata, outputs: ClaimOutputs) {
   }
 }
 
-async function validateDisclosure(
+export async function validateDisclosureV2Circuit(
   cq: QueryMetadata,
   outputs: ClaimOutputs,
   verifiablePresentation?: JSON,
   ldLoader?: DocumentLoader
 ) {
+  const bi = await fieldValueFromVerifiablePresentation(
+    cq.fieldName,
+    verifiablePresentation,
+    ldLoader
+  );
+  if (bi !== outputs.value[0]) {
+    throw new Error(`value that was used is not equal to requested in query`);
+  }
+
   if (outputs.operator !== Operators.EQ) {
     throw new Error(`operator for selective disclosure must be $eq`);
   }
@@ -221,14 +205,41 @@ async function validateDisclosure(
       throw new Error(`selective disclosure not available for array of values`);
     }
   }
+}
 
+export async function validateDisclosureNativeSDSupport(
+  cq: QueryMetadata,
+  outputs: ClaimOutputs,
+  verifiablePresentation?: JSON,
+  ldLoader?: DocumentLoader
+) {
   const bi = await fieldValueFromVerifiablePresentation(
     cq.fieldName,
     verifiablePresentation,
     ldLoader
   );
-  if (bi !== outputs.value[0]) {
-    throw new Error(`value that was used is not equal to requested in query`);
+  if (bi !== outputs.operatorOutput) {
+    throw new Error(`operator output should be equal to disclosed value`);
+  }
+
+  if (outputs.operator !== Operators.SD) {
+    throw new Error(`operator for selective disclosure must be $sd`);
+  }
+
+  for (let index = 0; index < outputs.value.length; index++) {
+    if (outputs.value[index] !== 0n) {
+      throw new Error(`public signal values must be zero`);
+    }
+  }
+}
+export async function validateEmptyCredentialSubjectNoopNativeSupport(outputs: ClaimOutputs) {
+  if (outputs.operator !== Operators.NOOP) {
+    throw new Error('empty credentialSubject request available only for $noop operation');
+  }
+  for (let index = 1; index < outputs.value.length; index++) {
+    if (outputs.value[index] !== 0n) {
+      throw new Error(`empty credentialSubject request not available for array of values`);
+    }
   }
 }
 

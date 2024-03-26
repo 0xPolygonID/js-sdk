@@ -54,6 +54,11 @@ export const QueryOperators = {
   $nullify: Operators.NULLIFY
 };
 
+export const getOperatorNameByValue = (operator: number): string => {
+  const ops = Object.entries(QueryOperators).find(([, queryOp]) => queryOp === operator);
+  return ops ? ops[0] : 'unknown';
+};
+
 const allOperations = Object.values(QueryOperators);
 
 export const availableTypesOperators: Map<string, Operators[]> = new Map([

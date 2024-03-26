@@ -21,7 +21,8 @@ import {
   Query,
   QueryOperators,
   TreeState,
-  ValueProof
+  ValueProof,
+  getOperatorNameByValue
 } from '../../circuits';
 import {
   PreparedAuthBJJCredential,
@@ -237,6 +238,8 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -305,6 +308,8 @@ export class InputGenerator {
     circuitInputs.profileNonce = BigInt(params.authProfileNonce);
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -336,6 +341,9 @@ export class InputGenerator {
     query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
+
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -405,6 +413,8 @@ export class InputGenerator {
     circuitInputs.signature = signature;
     circuitInputs.challenge = params.challenge;
 
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -464,6 +474,9 @@ export class InputGenerator {
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionId
       ? BigInt(proofReq.params?.nullifierSessionId?.toString())
       : BigInt(0);
+
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
@@ -560,12 +573,16 @@ export class InputGenerator {
       circuitInputs.treeState = authClaimData.treeState;
       circuitInputs.signature = signature;
     }
+
+    this.checkOperatorSupport(proofReq.circuitId, query.operator);
+
     return circuitInputs.inputsMarshal();
   };
 
   private linkedMultiQuery10PrepareInputs = async ({
     preparedCredential,
     params,
+    proofReq,
     circuitQueries
   }: InputContext): Promise<Uint8Array> => {
     const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
@@ -577,10 +594,22 @@ export class InputGenerator {
     circuitInputs.claim = circuitClaimData.claim;
     circuitInputs.query = circuitQueries;
 
+    circuitQueries.forEach((query) => {
+      this.checkOperatorSupport(proofReq.circuitId, query.operator);
+    });
+
     return circuitInputs.inputsMarshal();
   };
 
   private transformV2QueryOperator(operator: number): number {
     return operator === Operators.SD || operator === Operators.NOOP ? Operators.EQ : operator;
+  }
+  private checkOperatorSupport(circuitId: string, operator: number) {
+    const supportedOperators = circuitValidator[circuitId as CircuitId].supportedOperations;
+    if (!supportedOperators.includes(operator)) {
+      throw new Error(
+        `operator ${getOperatorNameByValue(operator)} is not supported by ${circuitId}`
+      );
+    }
   }
 }
