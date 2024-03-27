@@ -265,7 +265,6 @@ export class PubSignalsVerifier {
       }
     );
 
-
     await checkQueryRequest(
       query,
       queriesMetadata,
@@ -278,8 +277,7 @@ export class PubSignalsVerifier {
 
     const queryMetadata = queriesMetadata[0]; // only one query is supported
 
-
-    checkCircuitOperator(CircuitId.AtomicQueryV3,outs.operator);
+    checkCircuitOperator(CircuitId.AtomicQueryV3, outs.operator);
     // validate selective disclosure
     if (queryMetadata.operator === Operators.SD) {
       try {
@@ -561,7 +559,7 @@ export class PubSignalsVerifier {
 
     const queryMetadata = queriesMetadata[0]; // only one query is supported
 
-    checkCircuitOperator(circuitId,outs.operator);
+    checkCircuitOperator(circuitId, outs.operator);
 
     // validate selective disclosure
     if (queryMetadata.operator === Operators.SD) {

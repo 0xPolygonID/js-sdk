@@ -92,10 +92,11 @@ export function checkCircuitQueriesLength(circuitId: CircuitId, queriesMetadata:
 
   if (queriesMetadata.length > circuitValidationData.maxQueriesCount) {
     throw new Error(
-      `circuit ${circuitId} supports only ${circuitValidator[circuitId as CircuitId].maxQueriesCount} queries`
+      `circuit ${circuitId} supports only ${
+        circuitValidator[circuitId as CircuitId].maxQueriesCount
+      } queries`
     );
   }
-
 }
 
 export function checkCircuitOperator(circuitId: CircuitId, operator: number) {

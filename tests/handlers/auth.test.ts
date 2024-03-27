@@ -1275,9 +1275,7 @@ describe('auth', () => {
     await authHandler.handleAuthorizationResponse(authRes.authResponse, authReq, testOpts);
   });
 
-
   it('auth response: TestVerify v2 sig sd', async () => {
-    
     const sender = 'did:polygonid:polygon:mumbai:2qJ689kpoJxcSzB5sAFJtPsSBSrHF5dq722BHMqURL';
     const callback = 'https://test.com/callback';
     const reason = 'age verification';
@@ -1302,7 +1300,6 @@ describe('auth', () => {
       }
     };
     request.body.scope.push(proofRequest);
-
 
     request.id = '28494007-9c49-4f1a-9694-7700c08865bf';
     request.thid = '7f38a193-0918-4a48-9fac-36adfdb8b542'; // because it's used in the response
@@ -1473,12 +1470,6 @@ describe('auth', () => {
       }
   }`) as AuthorizationResponseMessage;
 
-
     await authHandler.handleAuthorizationResponse(response, request, testOpts);
   });
-
-
-
-
-
 });
