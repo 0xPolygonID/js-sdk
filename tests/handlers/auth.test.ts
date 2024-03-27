@@ -1274,4 +1274,211 @@ describe('auth', () => {
 
     await authHandler.handleAuthorizationResponse(authRes.authResponse, authReq, testOpts);
   });
+
+
+  it('auth response: TestVerify v2 sig sd', async () => {
+    
+    const sender = 'did:polygonid:polygon:mumbai:2qJ689kpoJxcSzB5sAFJtPsSBSrHF5dq722BHMqURL';
+    const callback = 'https://test.com/callback';
+    const reason = 'age verification';
+    const request: AuthorizationRequestMessage = createAuthorizationRequestWithMessage(
+      reason,
+      '',
+      sender,
+      callback
+    );
+
+    const proofRequest: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: 'credentialAtomicQuerySigV2',
+      query: {
+        allowedIssuers: ['*'],
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
+        type: 'KYCAgeCredential',
+        credentialSubject: {
+          birthday: {}
+        }
+      }
+    };
+    request.body.scope.push(proofRequest);
+
+
+    request.id = '28494007-9c49-4f1a-9694-7700c08865bf';
+    request.thid = '7f38a193-0918-4a48-9fac-36adfdb8b542'; // because it's used in the response
+
+    const response = JSON.parse(`{
+      "id": "f3f5f3bd-2d8b-4949-a069-9759be7cf50a",
+      "typ": "application/iden3comm-plain-json",
+      "type": "https://iden3-communication.io/authorization/1.0/response",
+      "thid": "7f38a193-0918-4a48-9fac-36adfdb8b542",
+      "from": "did:polygonid:polygon:mumbai:2qJpRqZNRTxkiCUN4VSfLQ7KA4PzHSwwVwnSKSFKtw",
+      "to": "did:polygonid:polygon:mumbai:2qJ689kpoJxcSzB5sAFJtPsSBSrHF5dq722BHMqURL",
+      "body": {
+          "did_doc": {
+              "@context": [
+                  "https://www.w3.org/ns/did/v1"
+              ],
+              "id": "did:polygonid:polygon:mumbai:2qJpRqZNRTxkiCUN4VSfLQ7KA4PzHSwwVwnSKSFKtw",
+              "service": [
+                  {
+                      "id": "did:polygonid:polygon:mumbai:2qJpRqZNRTxkiCUN4VSfLQ7KA4PzHSwwVwnSKSFKtw#push",
+                      "type": "push-notification",
+                      "serviceEndpoint": "https://push-staging.polygonid.com/api/v1",
+                      "metadata": {
+                          "devices": [
+                              {
+                                  "ciphertext": "0I0yYaUj1x91uYozBbrC8nA1jdvC7nb0KprOmSBIjYtZfq/eXUPvmt4vjl9pGd7LhIx6lUYOMMhsIM58VkVXcTXv2wbZL092LVwSWvOv7fvUuhi2m4nUTzojaTuvmuuGmMZafjIZW20Zy4Etu+itiUEw6qc9OPm1fiqY6+ixapaJcuV1CSG3Eo8WXvG5lksJYG8bkBmfIsGiQwiwYGpAVePnk2u6FvGiWiJL5lqfwF7OgI3zmj5JBiM/uJK4eyBVSSprkiYktJNvJAbm3sXkXnu8yS7Igkyjzd+nKKUSOYaS4P6hS7eMCNZgdlMPCjd5PagjxMl5bHpPB4ElzBPnGT7yd8iWEGDjVCnhD4APdTeQUr9WEemBjnibm+S8C8k2xAw8AZo4OmsJHx7Kg5VItarwrLy4CGS5WWea6S488c2r4noVlnmAOrND7LmQ6L/0lzWM1AxGcQ1SsyCcTteuZg56gwiMQ+6cMzAX/f2IN3FlmtplRRKqc2cRL8nsVyIEq0y37QaaAlnotFI3vHNtctVTR5nqZ3zznXDan5jmwKebEPVvdLxWp10DSLnSXiQoET2SrHC1YvlffDAvj+b+1U152qhINgU+Omw2VE2T1oP0UCmbCkGBlC+7CBwtUgrhF7htxL9oAKECPWFHSRQsf8gIkmALyO9VCj1xeappQ9I=",
+                                  "alg": "RSA-OAEP-512"
+                              }
+                          ]
+                      }
+                  }
+              ]
+          },
+          "message": null,
+          "scope": [
+              {
+                  "id": 1,
+                  "circuitId": "credentialAtomicQuerySigV2",
+                  "proof": {
+                      "pi_a": [
+                          "13823044472745786908995378977428468334691339903626253052467645595896751884324",
+                          "14356457032265788557275947130052372307935357245172088694540617048200164735550",
+                          "1"
+                      ],
+                      "pi_b": [
+                          [
+                              "14038837468790150555724321214321987303645407592127362465185807730734687008748",
+                              "16127175500346693425201237491221604626317337533699053876931967535723744623628"
+                          ],
+                          [
+                              "7835726266684299556756486695743627845524382286636757992786728500640304024078",
+                              "12625109860013174660697550528873760592255929049947026704702790117950465030893"
+                          ],
+                          [
+                              "1",
+                              "0"
+                          ]
+                      ],
+                      "pi_c": [
+                          "14831812078422268302721284760494652587846937966905721763323843636407425073891",
+                          "11403849275523392594161040440544799981358458631868290791807186627510321438823",
+                          "1"
+                      ],
+                      "protocol": "groth16",
+                      "curve": "bn128"
+                  },
+                  "pub_signals": [
+                      "1",
+                      "21513140530233921515809235388780134681245612858744900297740490447738573314",
+                      "14172770088602255825733611365398718935371244575253056361307823303028442907950",
+                      "1",
+                      "27752766823371471408248225708681313764866231655187366071881070918984471042",
+                      "1",
+                      "2298258970899685167511194049923695919137720894525468335857057655221098924973",
+                      "1681384483",
+                      "267831521922558027206082390043321796944",
+                      "0",
+                      "20376033832371109177683048456014525905119173674985843915445634726167450989630",
+                      "0",
+                      "1",
+                      "19960424",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0",
+                      "0"
+                  ],
+                  "vp": {
+                      "@type": "VerifiablePresentation",
+                      "@context": [
+                          "https://www.w3.org/2018/credentials/v1"
+                      ],
+                      "verifiableCredential": {
+                          "@context": [
+                              "https://www.w3.org/2018/credentials/v1",
+                              "https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld"
+                          ],
+                          "@type": [
+                              "VerifiableCredential",
+                              "KYCAgeCredential"
+                          ],
+                          "credentialSubject": {
+                              "@type": "KYCAgeCredential",
+                              "birthday": 19960424
+                          }
+                      }
+                  }
+              }
+          ]
+      }
+  }`) as AuthorizationResponseMessage;
+
+
+    await authHandler.handleAuthorizationResponse(response, request, testOpts);
+  });
+
+
+
+
+
 });

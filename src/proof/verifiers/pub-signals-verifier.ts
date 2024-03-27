@@ -26,7 +26,8 @@ import {
   verifyFieldValueInclusionV2,
   validateDisclosureNativeSDSupport,
   validateEmptyCredentialSubjectNoopNativeSupport,
-  verifyFieldValueInclusionNativeExistsSupport
+  verifyFieldValueInclusionNativeExistsSupport,
+  checkCircuitOperator
 } from './query';
 import { parseQueriesMetadata, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
@@ -264,6 +265,7 @@ export class PubSignalsVerifier {
       }
     );
 
+
     await checkQueryRequest(
       query,
       queriesMetadata,
@@ -276,6 +278,8 @@ export class PubSignalsVerifier {
 
     const queryMetadata = queriesMetadata[0]; // only one query is supported
 
+
+    checkCircuitOperator(CircuitId.AtomicQueryV3,outs.operator);
     // validate selective disclosure
     if (queryMetadata.operator === Operators.SD) {
       try {
@@ -556,6 +560,8 @@ export class PubSignalsVerifier {
     );
 
     const queryMetadata = queriesMetadata[0]; // only one query is supported
+
+    checkCircuitOperator(circuitId,outs.operator);
 
     // validate selective disclosure
     if (queryMetadata.operator === Operators.SD) {
