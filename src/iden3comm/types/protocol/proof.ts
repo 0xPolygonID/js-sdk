@@ -24,12 +24,12 @@ export type ProofGenerationResponseMessage = {
   typ?: MediaType;
   type: ProtocolMessage;
   thid?: string;
-  body?: ResponseMessageBody;
+  body?: ProofGenerationResponseMessageBody;
   from?: string;
   to?: string;
 };
 
 /** ResponseMessageBody is struct the represents request for revocation status */
-export type ResponseMessageBody = {
-  scope: Array<ZeroKnowledgeProofResponse>;
+export type ProofGenerationResponseMessageBody = {
+  scope: ZeroKnowledgeProofResponse[];
 };

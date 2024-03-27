@@ -12,7 +12,6 @@ export const basicMessageFactory = (): BasicMessage => {
     typ: '' as MediaType,
     thid: '',
     type: '',
-    body: {},
     from: '',
     to: ''
   };

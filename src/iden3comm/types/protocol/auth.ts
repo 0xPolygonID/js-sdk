@@ -18,7 +18,7 @@ export type AuthorizationResponseMessage = {
 export type AuthorizationMessageResponseBody = {
   did_doc?: JSONObject;
   message?: string;
-  scope: Array<ZeroKnowledgeProofResponse>;
+  scope: ZeroKnowledgeProofResponse[];
 };
 
 /** AuthorizationRequestMessage is struct the represents iden3message authorization request */
@@ -38,7 +38,7 @@ export type AuthorizationRequestMessageBody = {
   reason?: string;
   message?: string;
   did_doc?: JSONObject;
-  scope: Array<ZeroKnowledgeProofRequest>;
+  scope: ZeroKnowledgeProofRequest[];
 };
 
 /** ZeroKnowledgeProofRequest represents structure of zkp request object */

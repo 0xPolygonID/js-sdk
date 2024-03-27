@@ -5,6 +5,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
+  BasicMessage,
   IPackageManager,
   JWSPackerParams,
   ZeroKnowledgeProofRequest
@@ -62,6 +63,28 @@ export function createAuthorizationRequestWithMessage(
   };
   return request;
 }
+
+type AuthRequestProtocolMessagePayload = {
+  params: Partial<AuthHandlerOptions> & {
+    did: DID;
+  };
+  message: AuthorizationRequestMessage;
+};
+
+type AuthResponseProtocolMessagePayload = {
+  params: AuthResponseHandlerOptions & {
+    request: AuthorizationRequestMessage;
+  };
+  message: AuthorizationResponseMessage;
+};
+
+/**
+ * Represents the payload of an authentication protocol message.
+ * It can be either an authentication request or an authentication response.
+ */
+export type AuthProtocolMessagePayload =
+  | AuthRequestProtocolMessagePayload
+  | AuthResponseProtocolMessagePayload;
 
 /**
  *
@@ -172,33 +195,33 @@ export class AuthHandler implements IAuthHandler {
     private readonly _proofService: IProofService
   ) {}
 
-  /**
-   * @inheritdoc IAuthHandler#parseAuthorizationRequest
-   */
-  async parseAuthorizationRequest(request: Uint8Array): Promise<AuthorizationRequestMessage> {
-    const { unpackedMessage: message } = await this._packerMgr.unpack(request);
-    const authRequest = message as unknown as AuthorizationRequestMessage;
-    if (message.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
-      throw new Error('Invalid media type');
+  async handle(msgPayload: AuthProtocolMessagePayload): Promise<BasicMessage | null> {
+    switch (msgPayload.message.type) {
+      case PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE: {
+        const payload = msgPayload as AuthRequestProtocolMessagePayload;
+        return (await this.handleAuthRequest(payload.message, payload.params.did, {
+          mediaType: payload.params?.mediaType ?? MediaType.ZKPMessage,
+          packerOptions: payload.params.packerOptions
+        })) as BasicMessage;
+      }
+      case PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE: {
+        const payload = msgPayload as AuthResponseProtocolMessagePayload;
+        await this.handleAuthorizationResponse(payload.message, payload.params.request, {
+          acceptedStateTransitionDelay: payload.params.acceptedStateTransitionDelay,
+          acceptedProofGenerationDelay: payload.params.acceptedProofGenerationDelay
+        });
+        return null;
+      }
+      default:
+        throw new Error(`Invalid message type ${msgPayload.message.type}`);
     }
-    authRequest.body.scope = authRequest.body.scope || [];
-    return authRequest;
   }
 
-  /**
-   * @inheritdoc IAuthHandler#handleAuthorizationRequest
-   */
-  async handleAuthorizationRequest(
+  private async handleAuthRequest(
+    authRequest: AuthorizationRequestMessage,
     did: DID,
-    request: Uint8Array,
-    opts?: AuthHandlerOptions
-  ): Promise<{
-    token: string;
-    authRequest: AuthorizationRequestMessage;
-    authResponse: AuthorizationResponseMessage;
-  }> {
-    const authRequest = await this.parseAuthorizationRequest(request);
-
+    opts: AuthHandlerOptions | undefined
+  ): Promise<AuthorizationResponseMessage> {
     if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for authorization request');
     }
@@ -233,7 +256,7 @@ export class AuthHandler implements IAuthHandler {
       { ...opts, supportedCircuits: this._supportedCircuits }
     );
 
-    const authResponse: AuthorizationResponseMessage = {
+    return {
       id: guid,
       typ: opts.mediaType,
       type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
@@ -245,18 +268,49 @@ export class AuthHandler implements IAuthHandler {
       from: did.string(),
       to: authRequest.from
     };
+  }
 
-    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
+  /**
+   * @inheritdoc IAuthHandler#parseAuthorizationRequest
+   */
+  async parseAuthorizationRequest(request: Uint8Array): Promise<AuthorizationRequestMessage> {
+    const { unpackedMessage: message } = await this._packerMgr.unpack(request);
+    const authRequest = message as unknown as AuthorizationRequestMessage;
+    if (message.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
+      throw new Error('Invalid media type');
+    }
+    authRequest.body.scope = authRequest.body.scope || [];
+    return authRequest;
+  }
+
+  /**
+   * @inheritdoc IAuthHandler#handleAuthorizationRequest
+   */
+  async handleAuthorizationRequest(
+    did: DID,
+    request: Uint8Array,
+    opts?: AuthHandlerOptions
+  ): Promise<{
+    token: string;
+    authRequest: AuthorizationRequestMessage;
+    authResponse: AuthorizationResponseMessage;
+  }> {
+    const authRequest = await this.parseAuthorizationRequest(request);
+
+    const authResponse = await this.handleAuthRequest(authRequest, did, opts);
 
     const packerOpts =
-      opts.mediaType === MediaType.SignedMessage
+      opts?.mediaType === MediaType.SignedMessage
         ? opts.packerOptions
         : {
             provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
           };
 
+    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
+
+    const mediaType = opts?.mediaType ?? MediaType.ZKPMessage;
     const token = byteDecoder.decode(
-      await this._packerMgr.pack(opts.mediaType, msgBytes, {
+      await this._packerMgr.pack(mediaType, msgBytes, {
         senderDID: did,
         ...packerOpts
       })

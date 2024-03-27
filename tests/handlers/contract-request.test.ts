@@ -14,7 +14,7 @@ import {
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
+import { IDataStorage, IOnChainZKPVerifier, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { IProofService, ProofService } from '../../src/proof';
@@ -54,7 +54,19 @@ import { Blockchain, BytesHelper, DidMethod, NetworkId } from '@iden3/js-iden3-c
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { ethers, Signer } from 'ethers';
+import { Signer, ethers } from 'ethers';
+
+export const mockZKPVerifier: IOnChainZKPVerifier = {
+  submitZKPResponse: async (
+    signer: Signer,
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ) => {
+    const response = new Map<string, ZeroKnowledgeProofResponse>();
+    response.set('txhash1', zkProofResponses[0]);
+    return response;
+  }
+};
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -103,18 +115,6 @@ describe('contract-request', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
-    }
-  };
-
-  const mockZKPVerifier: IOnChainZKPVerifier = {
-    submitZKPResponse: async (
-      signer: Signer,
-      txData: ContractInvokeTransactionData,
-      zkProofResponses: ZeroKnowledgeProofResponse[]
-    ) => {
-      const response = new Map<string, ZeroKnowledgeProofResponse>();
-      response.set('txhash1', zkProofResponses[0]);
-      return response;
     }
   };
 

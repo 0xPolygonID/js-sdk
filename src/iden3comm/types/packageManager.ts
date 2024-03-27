@@ -1,5 +1,6 @@
-import { BasicMessage, IPacker, PackerParams } from './packer';
+import { IPacker, PackerParams } from './packer';
 import { MediaType } from '../constants';
+import { BasicMessage } from './protocol/common';
 
 /**
  * Interface for defining the registry of packers

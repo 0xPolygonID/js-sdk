@@ -1,7 +1,7 @@
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
-import { IPackageManager, ZeroKnowledgeProofResponse } from '../types';
+import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
 import { DID, ChainIds } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
@@ -42,6 +42,16 @@ export interface IContractRequestHandler {
 export type ContractInvokeHandlerOptions = {
   ethSigner: Signer;
   challenge?: bigint;
+};
+
+/**
+ * Represents the payload of a proof protocol message.
+ */
+export type ProofProtocolMessagePayload = {
+  params: ContractInvokeHandlerOptions & {
+    did: DID;
+  };
+  message: ContractInvokeRequest;
 };
 
 /**
@@ -133,5 +143,54 @@ export class ContractRequestHandler implements IContractRequestHandler {
       ciRequest.body.transaction_data,
       zkpResponses
     );
+  }
+
+  private async handleContactInvokeRequestInternal(
+    msgPayload: ProofProtocolMessagePayload
+  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
+    if (!msgPayload.params.ethSigner) {
+      throw new Error("Can't sign transaction. Provide Signer in options.");
+    }
+
+    const {
+      params: { did, ethSigner, challenge },
+      message: ciRequest
+    } = msgPayload;
+
+    if (!ethSigner) {
+      throw new Error("Can't sign transaction. Provide Signer in options.");
+    }
+
+    const { chain_id } = ciRequest.body.transaction_data;
+    const networkFlag = Object.keys(ChainIds).find((key) => ChainIds[key] === chain_id);
+
+    if (!networkFlag) {
+      throw new Error(`Invalid chain id ${chain_id}`);
+    }
+    const verifierDid = ciRequest.from ? DID.parse(ciRequest.from) : undefined;
+    const zkpResponses = await processZeroKnowledgeProofRequests(
+      did,
+      ciRequest?.body?.scope,
+      verifierDid,
+      this._proofService,
+      { ethSigner, challenge, supportedCircuits: this._supportedCircuits }
+    );
+
+    return this._zkpVerifier.submitZKPResponse(
+      ethSigner,
+      ciRequest.body.transaction_data,
+      zkpResponses
+    );
+  }
+
+  async handle(msgPayload: ProofProtocolMessagePayload): Promise<BasicMessage | null> {
+    switch (msgPayload.message.type) {
+      case PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE: {
+        await this.handleContactInvokeRequestInternal(msgPayload);
+        return null;
+      }
+      default:
+        throw new Error(`Invalid message type ${msgPayload.message.type}`);
+    }
   }
 }
