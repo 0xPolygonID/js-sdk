@@ -51,6 +51,8 @@ import {
   CredentialStatusPublisherRegistry,
   Iden3SmtRhsCredentialStatusPublisher
 } from '../credentials/status/credential-status-publisher';
+import { ProofService } from '../proof';
+import { keccak256 } from 'js-sha3';
 
 /**
  * DID creation options
@@ -74,6 +76,8 @@ export type IdentityCreationOptions = {
   };
   seed?: Uint8Array;
   keyType?: KmsKeyType;
+  ethSigner?: any;
+  proofService?: ProofService;
 };
 
 /**
@@ -623,14 +627,22 @@ export class IdentityWallet implements IIdentityWallet {
     opts.networkId = opts.networkId ?? NetworkId.Mumbai;
     opts.seed = opts.seed ?? getRandomBytes(32);
 
+    const proofService = opts.proofService;
+    const ethSigner = opts.ethSigner;
+
     const currentState = ZERO_HASH; // In Ethereum identities we don't have an initial state with the auth credential
 
     const didType = buildDIDType(opts.method, opts.blockchain, opts.networkId);
 
     const keyIdEth = await this._kms.createKeyFromSeed(KmsKeyType.Secp256k1, opts.seed);
-    const pubKeyHexEth = await this._kms.publicKey(keyIdEth);
-    const ethAddrBytes = Hex.decodeString(pubKeyHexEth);
-    const ethAddr = ethAddrBytes.slice(0, 20);
+    const pubKeyHexEth = (await this._kms.publicKey(keyIdEth)).slice(2); // 04 + x + y (uncompressed key)
+    // Use Keccak-256 hash function to get public key hash
+    const hashOfPublicKey = keccak256(Buffer.from(pubKeyHexEth, 'hex'));
+    // Convert hash to buffer
+    const ethAddressBuffer = Buffer.from(hashOfPublicKey, 'hex');
+    // Ethereum Address is '0x' concatenated with last 20 bytes
+    // of the public key hash
+    const ethAddr = ethAddressBuffer.slice(-20);
     const genesis = genesisFromEthAddress(ethAddr);
     const identifier = new Id(didType, genesis);
     const did = DID.parseFromId(identifier);
@@ -664,6 +676,17 @@ export class IdentityWallet implements IIdentityWallet {
       currentState,
       opts.revocationOpts
     );
+
+    // Old tree state genesis state
+    const oldTreeState: TreeState = {
+      revocationRoot: ZERO_HASH,
+      claimsRoot: ZERO_HASH,
+      state: currentState,
+      rootOfRoots: ZERO_HASH
+    };
+
+    // Mandatory transit state after adding auth credential in Ethereum identities
+    await proofService?.transitState(did, oldTreeState, true, this._storage.states, ethSigner);
 
     await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
       rhsUrl: opts.revocationOpts.id,

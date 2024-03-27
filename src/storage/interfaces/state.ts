@@ -1,6 +1,15 @@
 import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { RootInfo, StateInfo, StateProof } from '../entities/state';
+import { Id } from '@iden3/js-iden3-core';
+import { Hash } from '@iden3/js-merkletree';
+
+export interface UserStateTransition {
+  userId: Id;
+  oldUserState: Hash;
+  newUserState: Hash;
+  isOldStateGenesis: boolean;
+}
 
 /**
  * Interface that defines methods for state storage
@@ -32,7 +41,11 @@ export interface IStateStorage {
    * @param {Signer} signer  - signer of transaction
    * @returns `Promise<string>` - transaction identifier
    */
-  publishState(proof: ZKProof, signer: Signer): Promise<string>;
+  publishState(
+    proof: ZKProof | undefined,
+    signer: Signer,
+    userStateTransition?: UserStateTransition
+  ): Promise<string>;
   /**
    * generates proof of inclusion / non-inclusion to global identity state for given identity
    *
