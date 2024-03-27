@@ -1,5 +1,5 @@
 import { Poseidon } from '@iden3/js-crypto';
-import { BytesHelper, DID, MerklizedRootPosition } from '@iden3/js-iden3-core';
+import { BytesHelper, DID, Id, MerklizedRootPosition } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import {
   AuthV2Inputs,
@@ -33,7 +33,7 @@ import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { JSONObject, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
-import { ICircuitStorage, IStateStorage } from '../storage';
+import { ICircuitStorage, IStateStorage, UserStateTransition } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import {
   InputGenerator,
@@ -42,6 +42,7 @@ import {
 } from './provers/inputs-generator';
 import { PubSignalsVerifier, VerifyContext } from './verifiers/pub-signals-verifier';
 import { VerifyOpts } from './verifiers';
+import { KmsKeyType } from '../kms';
 
 export interface QueryWithFieldName {
   query: Query;
@@ -360,8 +361,6 @@ export class ProofService implements IProofService {
     stateStorage: IStateStorage,
     ethSigner: Signer
   ): Promise<string> {
-    const authInfo = await this._inputsGenerator.prepareAuthBJJCredential(did, oldTreeState);
-
     const newTreeModel = await this._identityWallet.getDIDTreeModel(did);
     const claimsRoot = await newTreeModel.claimsTree.root();
     const rootOfRoots = await newTreeModel.rootsTree.root();
@@ -373,38 +372,62 @@ export class ProofService implements IProofService {
       state: newTreeModel.state,
       rootOfRoots
     };
-    const challenge = Poseidon.hash([oldTreeState.state.bigInt(), newTreeState.state.bigInt()]);
 
-    const signature = await this._identityWallet.signChallenge(challenge, authInfo.credential);
+    const userId = DID.idFromDID(did);
 
-    const circuitInputs = new StateTransitionInputs();
-    circuitInputs.id = DID.idFromDID(did);
+    let proof;
+    let generateProof = false; // don't generate proof for ethereum identities
+    try {
+      Id.ethAddressFromId(userId);
+    } catch {
+      // not an ethereum identity
+      generateProof = true;
+    }
 
-    circuitInputs.signature = signature;
-    circuitInputs.isOldStateGenesis = isOldStateGenesis;
+    if (generateProof) {
+      // generate the proof
+      const authInfo = await this._inputsGenerator.prepareAuthBJJCredential(did, oldTreeState);
+      const challenge = Poseidon.hash([oldTreeState.state.bigInt(), newTreeState.state.bigInt()]);
 
-    const authClaimIncProofNewState = await this._identityWallet.generateCredentialMtp(
-      did,
-      authInfo.credential,
-      newTreeState
-    );
+      const signature = await this._identityWallet.signChallenge(challenge, authInfo.credential);
 
-    circuitInputs.newTreeState = authClaimIncProofNewState.treeState;
-    circuitInputs.authClaimNewStateIncProof = authClaimIncProofNewState.proof;
+      const circuitInputs = new StateTransitionInputs();
+      circuitInputs.id = userId;
 
-    circuitInputs.oldTreeState = oldTreeState;
-    circuitInputs.authClaim = {
-      claim: authInfo.coreClaim,
-      incProof: authInfo.incProof,
-      nonRevProof: authInfo.nonRevProof
-    };
+      circuitInputs.signature = signature;
+      circuitInputs.isOldStateGenesis = isOldStateGenesis;
 
-    const inputs = circuitInputs.inputsMarshal();
+      const authClaimIncProofNewState = await this._identityWallet.generateCredentialMtp(
+        did,
+        authInfo.credential,
+        newTreeState
+      );
 
-    const proof = await this._prover.generate(inputs, CircuitId.StateTransition);
+      circuitInputs.newTreeState = authClaimIncProofNewState.treeState;
+      circuitInputs.authClaimNewStateIncProof = authClaimIncProofNewState.proof;
 
-    const txId = await stateStorage.publishState(proof, ethSigner);
+      circuitInputs.oldTreeState = oldTreeState;
+      circuitInputs.authClaim = {
+        claim: authInfo.coreClaim,
+        incProof: authInfo.incProof,
+        nonRevProof: authInfo.nonRevProof
+      };
 
+      const inputs = circuitInputs.inputsMarshal();
+
+      proof = await this._prover.generate(inputs, CircuitId.StateTransition);
+    }
+
+    const oldUserState = oldTreeState.state;
+    const newUserState = newTreeState.state;
+    const userStateTransition: UserStateTransition = {
+      userId,
+      oldUserState,
+      newUserState,
+      isOldStateGenesis
+    } as UserStateTransition;
+
+    const txId = await stateStorage.publishState(proof, ethSigner, userStateTransition);
     await this._identityWallet.updateIdentityState(did, true, newTreeState);
 
     return txId;
