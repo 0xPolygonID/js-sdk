@@ -47,10 +47,8 @@ export const createIdentity = async (
   wallet: IIdentityWallet,
   opts?: Partial<IdentityCreationOptions>
 ) => {
-  // For testing in Mumbai should be "DidMethod.PolygonId" for the State contract already deployed
-  // Otherwise it will throw an error "msg.sender is not owner of the identity" when checking the Id from the sender
   return await wallet.createIdentity({
-    method: DidMethod.PolygonId,
+    method: DidMethod.Iden3,
     blockchain: Blockchain.Polygon,
     networkId: NetworkId.Amoy,
     seed: SEED_ISSUER,
