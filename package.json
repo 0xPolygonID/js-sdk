@@ -11,10 +11,11 @@
         "require": "./dist/node/cjs/index.js"
       },
       "browser": "./dist/browser/esm/index.js",
-      "umd": "./dist/browser/umd/index.js"
+      "umd": "./dist/browser/umd/index.js",
+      "types": "./dist/types/index.d.ts"
     }
   },
-  "typings": "dist/types/index.d.ts",
+  "types": "dist/types/index.d.ts",
   "source": "./src/index.ts",
   "files": [
     "dist"
