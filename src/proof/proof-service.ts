@@ -42,7 +42,6 @@ import {
 } from './provers/inputs-generator';
 import { PubSignalsVerifier, VerifyContext } from './verifiers/pub-signals-verifier';
 import { VerifyOpts } from './verifiers';
-import { KmsKeyType } from '../kms';
 
 export interface QueryWithFieldName {
   query: Query;
