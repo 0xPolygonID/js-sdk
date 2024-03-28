@@ -173,7 +173,17 @@ export class RHSResolver implements CredentialStatusResolver {
         return this.getRevocationStatusFromIssuerData(issuerDID, issuerData, genesisState);
       }
       const currentStateBigInt = Hash.fromHex(stateHex).bigInt();
-      if (!isGenesisState(issuerDID, currentStateBigInt)) {
+
+      const issuerId = DID.idFromDID(issuerDID);
+      let isBjjIdentity = false; // don't generate proof for ethereum identities
+      try {
+        Id.ethAddressFromId(issuerId);
+      } catch {
+        // not an ethereum identity
+        isBjjIdentity = true;
+      }
+
+      if (isBjjIdentity && !isGenesisState(issuerDID, currentStateBigInt)) {
         throw new Error(
           `latest state not found and state parameter ${stateHex} is not genesis state`
         );
