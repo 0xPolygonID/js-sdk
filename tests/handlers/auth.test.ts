@@ -405,7 +405,7 @@ describe('auth', () => {
     expect(token).to.be.a('object');
   });
 
-  it.only('auth flow identity (profile) with ethereum identity issuer with circuits V3', async () => {
+  it('auth flow identity (profile) with ethereum identity issuer with circuits V3', async () => {
     const ethSigner = new ethers.Wallet(
       WALLET_KEY,
       (dataStorage.states as EthStateStorage).provider
