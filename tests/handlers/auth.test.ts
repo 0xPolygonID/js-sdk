@@ -625,9 +625,8 @@ describe('auth', () => {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-    console.log('authReq', authReq);
     const authRes = await authHandler.handleAuthorizationRequest(didUser, msgBytes);
-    console.log('authRes', JSON.stringify(authRes.authResponse));
+    // console.log('authRes', JSON.stringify(authRes.authResponse));
     const tokenStr = authRes.token;
     // console.log(tokenStr);
     expect(tokenStr).to.be.a('string');
