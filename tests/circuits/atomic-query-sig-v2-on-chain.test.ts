@@ -150,7 +150,7 @@ describe('atomic-query-sig-v2-on-chain', () => {
     const schema = coreSchemaFromStr('180410020913331409885634153623124536270');
     const slotIndex = 2;
     const operator = 1;
-    const quaryHash = poseidon.hash([
+    const queryHash = poseidon.hash([
       schema.bigInt(),
       BigInt(slotIndex),
       BigInt(operator),
@@ -173,7 +173,7 @@ describe('atomic-query-sig-v2-on-chain', () => {
     exp.issuerClaimNonRevState = newHashFromString(
       '20177832565449474772630743317224985532862797657496372535616634430055981993180'
     );
-    exp.circuitQueryHash = quaryHash;
+    exp.circuitQueryHash = queryHash;
     exp.timestamp = timestamp;
     exp.merklized = 0;
     exp.isRevocationChecked = 1;

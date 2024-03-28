@@ -485,11 +485,7 @@ export class ProofService implements IProofService {
       query.valueProof.mtp = proof;
       query.valueProof.path = queryMetadata.claimPathKey;
 
-      const mtEntry = await mtValue?.mtEntry();
-      if (!mtEntry) {
-        throw new Error(`can't merklize credential: no merkle tree entry found`);
-      }
-
+      const mtEntry = (await mtValue?.mtEntry()) ?? 0n;
       query.valueProof.value = mtEntry;
       if (!queryMetadata.fieldName) {
         query.values = [mtEntry];

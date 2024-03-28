@@ -20,7 +20,7 @@ import { getUserDIDFromCredential } from '../credentials/utils';
 import { byteEncoder, validateDIDDocumentAuth } from '../utils';
 import { MerklizedRootPosition, ProofType, SubjectPosition } from './constants';
 import {
-  caclulateCoreSchemaHash,
+  calculateCoreSchemaHash,
   CoreClaimCreationOptions,
   findCredentialType,
   parseCoreClaimSlots
@@ -91,7 +91,7 @@ export class W3CCredential {
     }
   };
 
-  static fromJSON(obj: W3CCredential): W3CCredential {
+  static fromJSON(obj: any): W3CCredential {
     const w = new W3CCredential();
     Object.assign(w, obj);
     w.proof = Array.isArray(w.proof)
@@ -175,7 +175,7 @@ export class W3CCredential {
       opts.merklizedRootPosition = MerklizedRootPosition.Index;
     }
 
-    const schemaHash = caclulateCoreSchemaHash(byteEncoder.encode(credentialType));
+    const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(credentialType));
     const claim = Claim.newClaim(
       schemaHash,
       ClaimOptions.withIndexDataBytes(slots.indexA, slots.indexB),

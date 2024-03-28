@@ -1,20 +1,37 @@
-import { poseidon } from '@iden3/js-crypto';
 import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
-import { DocumentLoader, Path } from '@iden3/js-jsonld-merklization';
+import { DocumentLoader, getDocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
 import { JSONObject } from '../../iden3comm';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
-import { bigIntCompare, byteEncoder, isGenesisState } from '../../utils';
-import { caclulateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
+import { byteEncoder, isGenesisState } from '../../utils';
+import { calculateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
 import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
 import { AuthV2PubSignals } from '../../circuits/auth-v2';
 import { BaseConfig } from '../../circuits/common';
-import { LinkedMultiQueryPubSignals } from '../../circuits/linked-multi-query';
+import {
+  LinkedMultiQueryPubSignals,
+  LinkedMultiQueryInputs
+} from '../../circuits/linked-multi-query';
 import { CircuitId } from '../../circuits/models';
-import { checkQueryRequest, ClaimOutputs, VerifyOpts } from './query';
-import { parseQueriesMetadata } from '../common';
+import {
+  checkQueryRequest,
+  ClaimOutputs,
+  VerifyOpts,
+  fieldValueFromVerifiablePresentation,
+  validateDisclosureV2Circuit,
+  validateEmptyCredentialSubjectV2Circuit,
+  validateOperators,
+  verifyFieldValueInclusionV2,
+  validateDisclosureNativeSDSupport,
+  validateEmptyCredentialSubjectNoopNativeSupport,
+  verifyFieldValueInclusionNativeExistsSupport
+} from './query';
+import { parseQueriesMetadata, QueryMetadata } from '../common';
+import { Operators } from '../../circuits';
+import { calculateQueryHashV3 } from './query-hash';
+import { JsonLd } from 'jsonld/jsonld-spec';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -111,14 +128,15 @@ export class PubSignalsVerifier {
       valueArraySize: mtpv2PubSignals.getValueArrSize(),
       isRevocationChecked: mtpv2PubSignals.isRevocationChecked
     };
-    await checkQueryRequest(
+
+    await this.checkQueryV2Circuits(
+      CircuitId.AtomicQueryMTPV2,
       query,
       outs,
-      CircuitId.AtomicQueryMTPV2,
-      this._documentLoader,
-      verifiablePresentation,
-      opts
+      opts,
+      verifiablePresentation
     );
+
     // verify state
     await this.checkStateExistenceForId(
       mtpv2PubSignals.issuerID,
@@ -168,14 +186,15 @@ export class PubSignalsVerifier {
       valueArraySize: sigV2PubSignals.getValueArrSize(),
       isRevocationChecked: sigV2PubSignals.isRevocationChecked
     };
-    await checkQueryRequest(
+
+    await this.checkQueryV2Circuits(
+      CircuitId.AtomicQuerySigV2,
       query,
       outs,
-      CircuitId.AtomicQuerySigV2,
-      this._documentLoader,
-      verifiablePresentation,
-      opts
+      opts,
+      verifiablePresentation
     );
+
     // verify state
     await this.checkStateExistenceForId(sigV2PubSignals.issuerID, sigV2PubSignals.issuerAuthState);
 
@@ -217,18 +236,75 @@ export class PubSignalsVerifier {
       timestamp: v3PubSignals.timestamp,
       merklized: v3PubSignals.merklized,
       claimPathKey: v3PubSignals.claimPathKey,
-      claimPathNotExists: v3PubSignals.claimPathNotExists,
       valueArraySize: v3PubSignals.getValueArrSize(),
+      operatorOutput: v3PubSignals.operatorOutput,
       isRevocationChecked: v3PubSignals.isRevocationChecked
     };
+
+    if (!query.type) {
+      throw new Error(`proof query type is undefined`);
+    }
+
+    const loader = this._documentLoader ?? getDocumentLoader();
+
+    // validate schema
+    let context: JsonLd;
+    try {
+      context = (await loader(query.context ?? '')).document;
+    } catch (e) {
+      throw new Error(`can't load schema for request query`);
+    }
+
+    const queriesMetadata = await parseQueriesMetadata(
+      query.type,
+      JSON.stringify(context),
+      query.credentialSubject as JSONObject,
+      {
+        documentLoader: loader
+      }
+    );
+
     await checkQueryRequest(
       query,
+      queriesMetadata,
+      context,
       outs,
       CircuitId.AtomicQueryV3,
       this._documentLoader,
-      verifiablePresentation,
       opts
     );
+
+    const queryMetadata = queriesMetadata[0]; // only one query is supported
+
+    // validate selective disclosure
+    if (queryMetadata.operator === Operators.SD) {
+      try {
+        await validateDisclosureNativeSDSupport(
+          queryMetadata,
+          outs,
+          verifiablePresentation,
+          loader
+        );
+      } catch (e) {
+        throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
+      }
+    } else if (!queryMetadata.fieldName && queryMetadata.operator == Operators.NOOP) {
+      try {
+        await validateEmptyCredentialSubjectNoopNativeSupport(outs);
+      } catch (e: unknown) {
+        throw new Error(`failed to validate operators: ${(e as Error).message}`);
+      }
+    } else {
+      try {
+        await validateOperators(queryMetadata, outs);
+      } catch (e) {
+        throw new Error(`failed to validate operators: ${(e as Error).message}`);
+      }
+    }
+
+    // verify field inclusion / non-inclusion
+
+    verifyFieldValueInclusionNativeExistsSupport(outs, queryMetadata);
 
     const { proofType, verifierID, nullifier, nullifierSessionID, linkID } = v3PubSignals;
 
@@ -336,6 +412,7 @@ export class PubSignalsVerifier {
 
   private linkedMultiQuery10Verify = async ({
     query,
+    verifiablePresentation,
     pubSignals
   }: VerifyContext): Promise<BaseConfig> => {
     let multiQueryPubSignals = new LinkedMultiQueryPubSignals();
@@ -355,11 +432,11 @@ export class PubSignalsVerifier {
     const ldContextJSON = JSON.stringify(schema);
     const credentialSubject = query.credentialSubject as JSONObject;
     const schemaId: string = await Path.getTypeIDFromContext(
-      JSON.stringify(schema),
+      ldContextJSON,
       query.type || '',
       ldOpts
     );
-    const schemaHash = caclulateCoreSchemaHash(byteEncoder.encode(schemaId));
+    const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
 
     const queriesMetadata = await parseQueriesMetadata(
       query.type || '',
@@ -368,24 +445,57 @@ export class PubSignalsVerifier {
       ldOpts
     );
 
-    const queryHashes = queriesMetadata.map((queryMeta) => {
-      const valueHash = poseidon.spongeHashX(queryMeta.values, 6);
-      return poseidon.hash([
-        schemaHash.bigInt(),
-        BigInt(queryMeta.slotIndex),
-        BigInt(queryMeta.operator),
-        BigInt(queryMeta.claimPathKey),
-        queryMeta.merklizedSchema ? 0n : 1n,
-        valueHash
-      ]);
-    });
+    const request: { queryHash: bigint; queryMeta: QueryMetadata }[] = [];
+    const merklized = queriesMetadata[0]?.merklizedSchema ? 1 : 0;
+    for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
+      const queryMeta = queriesMetadata[i];
+      const values = queryMeta?.values ?? [];
+      const valArrSize = values.length;
 
-    const circuitQueryHashes = multiQueryPubSignals.circuitQueryHash
-      .filter((i) => i !== 0n)
-      .sort(bigIntCompare);
-    queryHashes.sort(bigIntCompare);
-    if (!queryHashes.every((queryHash, i) => queryHash === circuitQueryHashes[i])) {
-      throw new Error('query hashes do not match');
+      const queryHash = calculateQueryHashV3(
+        values,
+        schemaHash,
+        queryMeta?.slotIndex ?? 0,
+        queryMeta?.operator ?? 0,
+        queryMeta?.claimPathKey.toString() ?? 0,
+        valArrSize,
+        merklized,
+        0,
+        0,
+        0
+      );
+      request.push({ queryHash, queryMeta });
+    }
+
+    const queryHashCompare = (a: { queryHash: bigint }, b: { queryHash: bigint }): number => {
+      if (a.queryHash < b.queryHash) return -1;
+      if (a.queryHash > b.queryHash) return 1;
+      return 0;
+    };
+
+    const pubSignalsMeta = multiQueryPubSignals.circuitQueryHash.map((queryHash, index) => ({
+      queryHash,
+      operatorOutput: multiQueryPubSignals.operatorOutput[index]
+    }));
+
+    pubSignalsMeta.sort(queryHashCompare);
+    request.sort(queryHashCompare);
+
+    for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
+      if (request[i].queryHash != pubSignalsMeta[i].queryHash) {
+        throw new Error('query hashes do not match');
+      }
+
+      if (request[i].queryMeta?.operator === Operators.SD) {
+        const disclosedValue = await fieldValueFromVerifiablePresentation(
+          request[i].queryMeta.fieldName,
+          verifiablePresentation,
+          this._documentLoader
+        );
+        if (disclosedValue != pubSignalsMeta[i].operatorOutput) {
+          throw new Error('disclosed value is not in the proof outputs');
+        }
+      }
     }
 
     return multiQueryPubSignals as unknown as BaseConfig;
@@ -404,6 +514,73 @@ export class PubSignalsVerifier {
       );
     }
   };
+
+  private async checkQueryV2Circuits(
+    circuitId: CircuitId.AtomicQueryMTPV2 | CircuitId.AtomicQuerySigV2,
+    query: ProofQuery,
+    outs: ClaimOutputs,
+    opts: VerifyOpts | undefined,
+    verifiablePresentation: JSON | undefined
+  ) {
+    if (!query.type) {
+      throw new Error(`proof query type is undefined`);
+    }
+
+    const loader = this._documentLoader ?? getDocumentLoader();
+
+    // validate schema
+    let context: JsonLd;
+    try {
+      context = (await loader(query.context ?? '')).document;
+    } catch (e) {
+      throw new Error(`can't load schema for request query`);
+    }
+
+    const queriesMetadata = await parseQueriesMetadata(
+      query.type,
+      JSON.stringify(context),
+      query.credentialSubject as JSONObject,
+      {
+        documentLoader: loader
+      }
+    );
+
+    await checkQueryRequest(
+      query,
+      queriesMetadata,
+      context,
+      outs,
+      circuitId,
+      this._documentLoader,
+      opts
+    );
+
+    const queryMetadata = queriesMetadata[0]; // only one query is supported
+
+    // validate selective disclosure
+    if (queryMetadata.operator === Operators.SD) {
+      try {
+        await validateDisclosureV2Circuit(queryMetadata, outs, verifiablePresentation, loader);
+      } catch (e) {
+        throw new Error(`failed to validate selective disclosure: ${(e as Error).message}`);
+      }
+    } else if (!queryMetadata.fieldName && queryMetadata.operator == Operators.NOOP) {
+      try {
+        await validateEmptyCredentialSubjectV2Circuit(queryMetadata, outs);
+      } catch (e: unknown) {
+        throw new Error(`failed to validate operators: ${(e as Error).message}`);
+      }
+    } else {
+      try {
+        await validateOperators(queryMetadata, outs);
+      } catch (e) {
+        throw new Error(`failed to validate operators: ${(e as Error).message}`);
+      }
+    }
+
+    // verify field inclusion
+    verifyFieldValueInclusionV2(outs, queryMetadata);
+  }
 
   private async resolve(
     id: Id,

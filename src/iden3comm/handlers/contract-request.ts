@@ -1,15 +1,12 @@
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
-
 import { IPackageManager, ZeroKnowledgeProofResponse } from '../types';
-
-import { ProofQuery } from '../../verifiable';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
-import { DID, ChainIds, DidMethod } from '@iden3/js-iden3-core';
+import { DID, ChainIds } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
-import { buildVerifierId } from '../../utils';
+import { processZeroKnowledgeProofRequests } from './common';
 
 /**
  * Interface that allows the processing of the contract request
@@ -57,7 +54,7 @@ export type ContractInvokeHandlerOptions = {
  * @implements implements IContractRequestHandler interface
  */
 export class ContractRequestHandler implements IContractRequestHandler {
-  private readonly _allowedCircuits = [
+  private readonly _supportedCircuits = [
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
     CircuitId.AtomicQueryV3OnChain
@@ -89,6 +86,7 @@ export class ContractRequestHandler implements IContractRequestHandler {
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid media type');
     }
+    ciRequest.body.scope = ciRequest.body.scope || [];
     return ciRequest;
   }
 
@@ -115,50 +113,25 @@ export class ContractRequestHandler implements IContractRequestHandler {
       throw new Error("Can't sign transaction. Provide Signer in options.");
     }
 
-    const zkRequests = [];
-    const { contract_address, chain_id } = ciRequest.body.transaction_data;
+    const { chain_id } = ciRequest.body.transaction_data;
     const networkFlag = Object.keys(ChainIds).find((key) => ChainIds[key] === chain_id);
 
     if (!networkFlag) {
       throw new Error(`Invalid chain id ${chain_id}`);
     }
-    const [blockchain, networkId] = networkFlag.split(':');
-
-    const verifierId = buildVerifierId(contract_address, {
-      blockchain,
-      networkId,
-      // DidMethod.Iden3 is used based on discussions: all onchain issuers have iden3 did method by default. This can be changed in the release of v3 circuit.
-      method: DidMethod.Iden3
-    });
-
-    const verifierDid = DID.parseFromId(verifierId);
-
-    for (const proofReq of ciRequest.body.scope) {
-      if (!this._allowedCircuits.includes(proofReq.circuitId as CircuitId)) {
-        throw new Error(
-          `Can't handle circuit ${proofReq.circuitId}. Only onchain circuits are allowed.`
-        );
-      }
-
-      const query = proofReq.query as ProofQuery;
-
-      const zkpRes: ZeroKnowledgeProofResponse = await this._proofService.generateProof(
-        proofReq,
-        did,
-        {
-          skipRevocation: query.skipClaimRevocationCheck ?? false,
-          challenge: opts.challenge,
-          verifierDid
-        }
-      );
-
-      zkRequests.push(zkpRes);
-    }
+    const verifierDid = ciRequest.from ? DID.parse(ciRequest.from) : undefined;
+    const zkpResponses = await processZeroKnowledgeProofRequests(
+      did,
+      ciRequest?.body?.scope,
+      verifierDid,
+      this._proofService,
+      { ...opts, supportedCircuits: this._supportedCircuits }
+    );
 
     return this._zkpVerifier.submitZKPResponse(
       opts.ethSigner,
       ciRequest.body.transaction_data,
-      zkRequests
+      zkpResponses
     );
   }
 }

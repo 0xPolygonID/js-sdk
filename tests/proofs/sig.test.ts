@@ -520,4 +520,149 @@ describe('sig proofs', () => {
       }
     });
   });
+
+  it('sigv3-ipfs-non-exists', async () => {
+    const req = {
+      id: '0d8e91e5-5686-49b5-85e3-2b35538c6a03',
+      typ: 'application/iden3comm-plain-json',
+      type: 'https://iden3-communication.io/authorization/1.0/request',
+      thid: '0d8e91e5-5686-49b5-85e3-2b35538c6a03',
+      body: {
+        callbackUrl: 'https://verifier-v2.polygonid.me/api/callback?sessionId=25269',
+        reason: 'test flow',
+        scope: [
+          {
+            circuitId: 'credentialAtomicQueryV3-beta.1',
+            id: 1711115116,
+            query: {
+              allowedIssuers: ['*'],
+              context: 'ipfs://QmcvoKLc742CyVH2Cnw6X95b4c8VdABqNPvTyAHEeaK1aP',
+              type: 'types123',
+              credentialSubject: {
+                bol: {
+                  $exists: false
+                }
+              }
+            }
+          }
+        ]
+      },
+      from: 'did:polygonid:polygon:mumbai:2qLPqvayNQz9TA2r5VPxUugoF18teGU583zJ859wfy'
+    };
+
+    const claimReq: CredentialRequest = {
+      credentialSchema: 'ipfs://QmTRpn65HN3j6Y5ZC5WDU1orXnWPWMpoPr2qpep8eMCX6e',
+      type: 'types123',
+      credentialSubject: {
+        id: userDID.string(),
+        double: 1.2,
+        int: 1,
+        string: 'test'
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
+      ipfsNodeURL
+    });
+
+    await credWallet.save(issuerCred);
+
+    const creds = await credWallet.findByQuery(req.body.scope[0].query);
+
+    expect(creds.length).to.not.equal(0);
+
+    const { proof, vp, circuitId, pub_signals } = await proofService.generateProof(
+      req.body.scope[0],
+      userDID
+    );
+    expect(proof).not.to.be.undefined;
+    expect(vp).to.be.undefined;
+
+    const isValid = await proofService.verifyProof(
+      {
+        proof,
+        pub_signals
+      },
+      circuitId as CircuitId
+    );
+
+    expect(isValid).to.be.true;
+  });
+
+  it('sigv3-ipfs-exists', async () => {
+    const req = {
+      id: '0d8e91e5-5686-49b5-85e3-2b35538c6a03',
+      typ: 'application/iden3comm-plain-json',
+      type: 'https://iden3-communication.io/authorization/1.0/request',
+      thid: '0d8e91e5-5686-49b5-85e3-2b35538c6a03',
+      body: {
+        callbackUrl: 'https://verifier-v2.polygonid.me/api/callback?sessionId=25269',
+        reason: 'test flow',
+        scope: [
+          {
+            circuitId: 'credentialAtomicQueryV3-beta.1',
+            id: 1711115116,
+            query: {
+              allowedIssuers: ['*'],
+              context: 'ipfs://QmcvoKLc742CyVH2Cnw6X95b4c8VdABqNPvTyAHEeaK1aP',
+              type: 'types123',
+              credentialSubject: {
+                bol: {
+                  $exists: true
+                }
+              }
+            }
+          }
+        ]
+      },
+      from: 'did:polygonid:polygon:mumbai:2qLPqvayNQz9TA2r5VPxUugoF18teGU583zJ859wfy'
+    };
+
+    const claimReq: CredentialRequest = {
+      credentialSchema: 'ipfs://QmTRpn65HN3j6Y5ZC5WDU1orXnWPWMpoPr2qpep8eMCX6e',
+      type: 'types123',
+      credentialSubject: {
+        id: userDID.string(),
+        double: 1.2,
+        int: 1,
+        bol: true,
+        string: 'test'
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
+      ipfsNodeURL
+    });
+
+    await credWallet.save(issuerCred);
+
+    const creds = await credWallet.findByQuery(req.body.scope[0].query);
+
+    expect(creds.length).to.not.equal(0);
+
+    const { proof, vp, circuitId, pub_signals } = await proofService.generateProof(
+      req.body.scope[0],
+      userDID
+    );
+    expect(proof).not.to.be.undefined;
+    expect(vp).to.be.undefined;
+
+    const isValid = await proofService.verifyProof(
+      {
+        proof,
+        pub_signals
+      },
+      circuitId as CircuitId
+    );
+
+    expect(isValid).to.be.true;
+  });
 });

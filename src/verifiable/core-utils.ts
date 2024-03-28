@@ -291,7 +291,7 @@ export const parseCoreClaimSlots = async (
  * @param {Uint8Array} schemaId
  * @returns {*}  {SchemaHash}
  */
-export const caclulateCoreSchemaHash = (schemaId: Uint8Array): SchemaHash => {
+export const calculateCoreSchemaHash = (schemaId: Uint8Array): SchemaHash => {
   const sHash = Hex.decodeString(keccak256(schemaId));
   return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
 };
