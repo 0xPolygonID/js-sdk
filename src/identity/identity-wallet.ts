@@ -669,11 +669,22 @@ export class IdentityWallet implements IIdentityWallet {
       authClaim.hiHv().hv
     );
 
+    const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      did.string(),
+      MerkleTreeType.Claims
+    );
+
+    const stateAuthClaim = hashElems([
+      (await claimsTree.root()).bigInt(),
+      ZERO_HASH.bigInt(),
+      ZERO_HASH.bigInt()
+    ]);
+
     const credential = await this.createAuthCredential(
       did,
       pubKey,
       authClaim,
-      currentState,
+      stateAuthClaim,
       opts.revocationOpts
     );
 
