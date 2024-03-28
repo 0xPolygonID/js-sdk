@@ -1,7 +1,7 @@
 import { RootInfo, StateProof } from './../entities/state';
 import { ZKProof } from '@iden3/js-jwz';
-import { IStateStorage } from '../interfaces/state';
-import { Contract, JsonRpcProvider, Signer, TransactionRequest } from 'ethers';
+import { IStateStorage, UserStateTransition } from '../interfaces/state';
+import { Contract, ContractTransaction, JsonRpcProvider, Signer, TransactionRequest } from 'ethers';
 import { StateInfo } from '../entities/state';
 import { StateTransitionPubSignals } from '../../circuits';
 import { byteEncoder } from '../../utils';
@@ -102,29 +102,14 @@ export class EthStateStorage implements IStateStorage {
   }
 
   /** {@inheritdoc IStateStorage.publishState} */
-  async publishState(proof: ZKProof, signer: Signer): Promise<string> {
-    const stateTransitionPubSig = new StateTransitionPubSignals();
-    stateTransitionPubSig.pubSignalsUnmarshal(
-      byteEncoder.encode(JSON.stringify(proof.pub_signals))
-    );
-    const { userId, oldUserState, newUserState, isOldStateGenesis } = stateTransitionPubSig;
-
+  async publishState(
+    proof: ZKProof,
+    signer: Signer,
+    userStateTranstion: UserStateTransition
+  ): Promise<string> {
+    const { userId, oldUserState, newUserState, isOldStateGenesis } = userStateTranstion;
     const { stateContract, provider } = this.getStateContractAndProviderForId(userId.bigInt());
     const contract = stateContract.connect(signer) as Contract;
-
-    const payload = [
-      userId.bigInt().toString(),
-      oldUserState.bigInt().toString(),
-      newUserState.bigInt().toString(),
-      isOldStateGenesis,
-      proof.proof.pi_a.slice(0, 2),
-      [
-        [proof.proof.pi_b[0][1], proof.proof.pi_b[0][0]],
-        [proof.proof.pi_b[1][1], proof.proof.pi_b[1][0]]
-      ],
-      proof.proof.pi_c.slice(0, 2)
-    ];
-
     const feeData = await provider.getFeeData();
 
     const maxFeePerGas = defaultEthConnectionConfig.maxFeePerGas
@@ -134,8 +119,56 @@ export class EthStateStorage implements IStateStorage {
       ? BigInt(defaultEthConnectionConfig.maxPriorityFeePerGas)
       : feeData.maxPriorityFeePerGas;
 
-    const gasLimit = await contract.transitState.estimateGas(...payload);
-    const txData = await contract.transitState.populateTransaction(...payload);
+    let gasLimit: bigint;
+    let txData: ContractTransaction;
+
+    if (proof) {
+      const stateTransitionPubSig = new StateTransitionPubSignals();
+      stateTransitionPubSig.pubSignalsUnmarshal(
+        byteEncoder.encode(JSON.stringify(proof.pub_signals))
+      );
+      const {
+        userId: userIdPub,
+        oldUserState: oldUserStatePub,
+        newUserState: newUserStatePub,
+        isOldStateGenesis: isOldStateGenesisPub
+      } = stateTransitionPubSig;
+
+      if (
+        userIdPub.bigInt() !== userId.bigInt() ||
+        oldUserStatePub.bigInt() !== oldUserState.bigInt() ||
+        newUserStatePub.bigInt() !== newUserState.bigInt() ||
+        isOldStateGenesisPub !== isOldStateGenesis
+      ) {
+        throw new Error(`public inputs do not match with user state transition`);
+      }
+
+      const payload = [
+        userId.bigInt().toString(),
+        oldUserState.bigInt().toString(),
+        newUserState.bigInt().toString(),
+        isOldStateGenesis,
+        proof.proof.pi_a.slice(0, 2),
+        [
+          [proof.proof.pi_b[0][1], proof.proof.pi_b[0][0]],
+          [proof.proof.pi_b[1][1], proof.proof.pi_b[1][0]]
+        ],
+        proof.proof.pi_c.slice(0, 2)
+      ];
+      gasLimit = await contract.transitState.estimateGas(...payload);
+      txData = await contract.transitState.populateTransaction(...payload);
+    } else {
+      const payload = [
+        userId.bigInt().toString(),
+        oldUserState.bigInt().toString(),
+        newUserState.bigInt().toString(),
+        isOldStateGenesis,
+        BigInt(1),
+        '0x'
+      ];
+      gasLimit = await contract.transitStateGeneric.estimateGas(...payload);
+      txData = await contract.transitStateGeneric.populateTransaction(...payload);
+    }
 
     const request: TransactionRequest = {
       to: txData.to,
@@ -145,7 +178,6 @@ export class EthStateStorage implements IStateStorage {
       maxPriorityFeePerGas
     };
     const tx = await signer.sendTransaction(request);
-
     const txnReceipt = await tx.wait();
     if (!txnReceipt) {
       throw new Error(`transaction: ${tx.hash} failed to mined`);

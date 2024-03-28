@@ -29,7 +29,7 @@ import {
 
 import {
   createIdentity,
-  registerBJJIntoInMemoryKMS,
+  registerKeyProvidersInMemoryKMS,
   STATE_CONTRACT,
   RPC_URL,
   WALLET_KEY,
@@ -238,7 +238,7 @@ describe('onchain revocation checks', () => {
       new Iden3OnchainSmtCredentialStatusPublisher(storage)
     );
 
-    idWallet = new IdentityWallet(registerBJJIntoInMemoryKMS(), dataStorage, credWallet, {
+    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet, {
       credentialStatusPublisherRegistry
     });
     proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
