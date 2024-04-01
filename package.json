@@ -34,7 +34,9 @@
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"strict\": false, \"module\": \"CommonJS\"}' mocha",
     "lint": "eslint --fix --ext .ts src/** tests/**",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
+    "lint:check": "eslint --ext .ts src/** tests/**",
+    "format": "prettier --config .prettierrc './**/*.ts' --write",
+    "format:check": "prettier --config .prettierrc './**/*.ts' --check"
   },
   "repository": {
     "type": "git",
