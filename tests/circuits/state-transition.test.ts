@@ -1,6 +1,6 @@
 import { poseidon } from '@iden3/js-crypto';
 import { Id } from '@iden3/js-iden3-core';
-import { hashElems, newHashFromBigInt, ZERO_HASH } from '@iden3/js-merkletree';
+import { hashElems, Hash, ZERO_HASH } from '@iden3/js-merkletree';
 import { getProperties, TreeState } from '../../src/circuits';
 
 import {
@@ -16,8 +16,8 @@ describe('state-transition', () => {
     const id =
       Id.fromBigInt(28042998099552461593195291926480304872594404846081442121556507376347845121n);
 
-    const newState = newHashFromBigInt(BigInt(1));
-    const oldState = newHashFromBigInt(BigInt(2));
+    const newState = Hash.fromBigInt(1n);
+    const oldState = Hash.fromBigInt(2n);
 
     const sto = new StateTransitionPubSignals();
     sto.newUserState = newState;
