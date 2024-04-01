@@ -68,13 +68,13 @@ describe('proposal-request handler', () => {
     });
 
     expect(issuerAuthCredential).not.to.be.undefined;
-    const proposalRequest = createProposalRequest(userDID.string(), issuerDID.string(), {
+    const proposalRequest = createProposalRequest(userDID, issuerDID, {
       credentials: [{ type: 'KycAgeCredential', context: 'https://test.com' }]
     });
 
     const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
 
-    const proposalResponse = createProposal(issuerDID.string(), userDID.string(), [
+    const proposalResponse = createProposal(issuerDID, userDID, [
       {
         type: 'WebVerificationForm',
         url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
@@ -99,11 +99,11 @@ describe('proposal-request handler', () => {
     });
 
     expect(issuerAuthCredential).not.to.be.undefined;
-    const proposalRequest = createProposalRequest(userDID.string(), issuerDID.string(), {
+    const proposalRequest = createProposalRequest(userDID, issuerDID, {
       credentials: [{ type: 'KycAgeCredential', context: 'https://test.com' }]
     });
 
-    const proposalResponse = createProposal(issuerDID.string(), issuerDID.string(), [
+    const proposalResponse = createProposal(issuerDID, issuerDID, [
       {
         type: 'WebVerificationForm',
         url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',

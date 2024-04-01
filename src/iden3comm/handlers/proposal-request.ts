@@ -14,7 +14,7 @@ import {
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
-  credentials?: ProposalRequestCredential[];
+  credentials: ProposalRequestCredential[];
   metadata?: { type: string; did_doc?: JSONObject };
   did_doc?: JSONObject;
 };
@@ -22,28 +22,28 @@ export type ProposalRequestCreationOptions = {
 /**
  * @beta
  * createProposalRequest is a function to create protocol proposal-request protocol message
- * @param {string} sender - sender did
- * @param {string} receiver - receiver did
+ * @param {DID} sender - sender did
+ * @param {DID} receiver - receiver did
  * @param {ProposalRequestCreationOptions} opts - creation options
  * @returns `Promise<ProposalRequestMessage>`
  */
 export function createProposalRequest(
-  sender: string,
-  receiver: string,
-  opts?: ProposalRequestCreationOptions
+  sender: DID,
+  receiver: DID,
+  opts: ProposalRequestCreationOptions
 ): ProposalRequestMessage {
   const uuidv4 = uuid.v4();
   const request: ProposalRequestMessage = {
     id: uuidv4,
     thid: uuidv4,
-    from: sender,
-    to: receiver,
+    from: sender.string(),
+    to: receiver.string(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
     body: {
-      credentials: opts?.credentials,
-      metadata: opts?.metadata,
-      did_doc: opts?.did_doc
+      credentials: opts.credentials,
+      metadata: opts.metadata,
+      did_doc: opts.did_doc
     }
   };
   return request;
@@ -52,22 +52,22 @@ export function createProposalRequest(
 /**
  * @beta
  * createProposal is a function to create protocol proposal protocol message
- * @param {string} sender - sender did
- * @param {string} receiver - receiver did
+ * @param {DID} sender - sender did
+ * @param {DID} receiver - receiver did
  * @param {Proposal[]} proposals - proposals
  * @returns `Promise<ProposalRequestMessage>`
  */
 export function createProposal(
-  sender: string,
-  receiver: string,
+  sender: DID,
+  receiver: DID,
   proposals?: Proposal[]
 ): ProposalResponseMessage {
   const uuidv4 = uuid.v4();
   const request: ProposalResponseMessage = {
     id: uuidv4,
     thid: uuidv4,
-    from: sender,
-    to: receiver,
+    from: sender.string(),
+    to: receiver.string(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE,
     body: {
@@ -186,6 +186,10 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
 
     if (!proposalRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
+    }
+
+    if (!proposalRequest.body?.credentials?.length) {
+      throw new Error(`failed request. no 'credentials' in body`);
     }
 
     const packerOpts =
