@@ -49,7 +49,7 @@ export const createIdentity = async (
   return await wallet.createIdentity({
     method: DidMethod.Iden3,
     blockchain: Blockchain.Polygon,
-    networkId: NetworkId.Mumbai,
+    networkId: NetworkId.Amoy,
     seed: SEED_ISSUER,
     revocationOpts: {
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,

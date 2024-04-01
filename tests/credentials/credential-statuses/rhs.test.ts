@@ -192,7 +192,7 @@ describe('rhs', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -236,7 +236,7 @@ describe('rhs', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -249,7 +249,7 @@ describe('rhs', () => {
     const { did: userDID } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -311,7 +311,7 @@ describe('rhs', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -324,7 +324,7 @@ describe('rhs', () => {
     const { did: userDID, credential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,

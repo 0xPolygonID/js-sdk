@@ -107,7 +107,7 @@ describe('sig proofs', () => {
     const opts = (seed: Uint8Array) => ({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
