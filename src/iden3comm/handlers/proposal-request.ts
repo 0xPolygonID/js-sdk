@@ -1,6 +1,12 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
-import { IPackageManager, JSONObject, JWSPackerParams } from '../types';
+import {
+  CredentialOffer,
+  CredentialsOfferMessage,
+  IPackageManager,
+  JSONObject,
+  JWSPackerParams
+} from '../types';
 
 import { DID } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
@@ -11,6 +17,8 @@ import {
   ProposalRequestMessage,
   ProposalResponseMessage
 } from '../types/protocol/proposal-request';
+import { IIdentityWallet } from '../../identity';
+import { byteEncoder } from '../../utils';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
@@ -96,13 +104,11 @@ export interface IProposalRequestHandler {
    *  @beta
    * handle proposal-request
    * @param {Uint8Array} request - raw byte message
-   * @param {Uint8Array} response - could be offer/proposal or any other protocol message
    * @param {ProposalRequestHandlerOptions} opts - handler options
    * @returns {Promise<Uint8Array>}` - proposal response message
    */
   handleProposalRequest(
     request: Uint8Array,
-    response: Uint8Array,
     opts?: ProposalRequestHandlerOptions
   ): Promise<Uint8Array>;
 
@@ -129,6 +135,7 @@ export interface IProposalRequestHandler {
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
 export type ProposalRequestHandlerOptions = {
   mediaType: MediaType;
+  agentUrl: string;
   packerOptions?: JWSPackerParams;
 };
 
@@ -143,10 +150,14 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
   /**
    * @beta Creates an instance of ProposalRequestHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
+   * @param {IIdentityWallet} _identityWallet - identity wallet
    *
    */
 
-  constructor(private readonly _packerMgr: IPackageManager) {}
+  constructor(
+    private readonly _packerMgr: IPackageManager,
+    private readonly _identityWallet: IIdentityWallet
+  ) {}
 
   /**
    * @inheritdoc IProposalRequestHandler#parseProposalRequest
@@ -165,12 +176,12 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
    */
   async handleProposalRequest(
     request: Uint8Array,
-    response: Uint8Array,
     opts?: ProposalRequestHandlerOptions
   ): Promise<Uint8Array> {
     if (!opts) {
       opts = {
-        mediaType: MediaType.PlainMessage
+        mediaType: MediaType.PlainMessage,
+        agentUrl: ''
       };
     }
 
@@ -199,7 +210,47 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
             provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
           };
 
-    const senderDID = DID.parse(proposalRequest.to);
+    const senderDID = DID.parse(proposalRequest.from);
+
+    let credOfferMessage: CredentialsOfferMessage | undefined = undefined;
+    for (let i = 0; i < proposalRequest.body.credentials.length; i++) {
+      const cred = proposalRequest.body.credentials[i];
+      const credsFromWallet = await this._identityWallet.findOwnedCredentialsByDID(senderDID, {
+        type: cred.type,
+        context: cred.context
+      });
+
+      if (credsFromWallet?.length) {
+        const guid = uuid.v4();
+        if (!credOfferMessage) {
+          credOfferMessage = {
+            id: guid,
+            typ: opts.mediaType,
+            type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE,
+            thid: proposalRequest.thid ?? guid,
+            body: {
+              url: opts.agentUrl,
+              credentials: []
+            },
+            from: proposalRequest.to,
+            to: proposalRequest.from
+          };
+        }
+
+        credOfferMessage.body.credentials.push(
+          ...credsFromWallet.map<CredentialOffer>((c) => ({
+            id: c.id,
+            description: ''
+          }))
+        );
+      }
+    }
+
+    if (!credOfferMessage) {
+      throw new Error('no credentials found on wallet');
+    }
+
+    const response = byteEncoder.encode(JSON.stringify(credOfferMessage));
 
     return this._packerMgr.pack(opts.mediaType, response, {
       senderDID,

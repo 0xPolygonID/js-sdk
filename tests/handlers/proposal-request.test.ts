@@ -12,7 +12,11 @@ import {
   IProposalRequestHandler,
   ProposalRequestHandler,
   createProposalRequest,
-  createProposal
+  createProposal,
+  CredentialRequest,
+  ICredentialWallet,
+  byteDecoder,
+  CredentialsOfferMessage
 } from '../../src';
 
 import {
@@ -22,15 +26,18 @@ import {
   registerBJJIntoInMemoryKMS,
   createIdentity,
   SEED_USER,
-  SEED_ISSUER
+  SEED_ISSUER,
+  RHS_URL
 } from '../helpers';
 
 import { expect } from 'chai';
 import path from 'path';
+import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 
 describe('proposal-request handler', () => {
   let packageMgr: IPackageManager;
   let idWallet: IdentityWallet;
+  let credWallet: ICredentialWallet;
   let proposalRequestHandler: IProposalRequestHandler;
 
   beforeEach(async () => {
@@ -44,7 +51,7 @@ describe('proposal-request handler', () => {
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       new RHSResolver(dataStorage.states)
     );
-    const credWallet = new CredentialWallet(dataStorage, resolvers);
+    credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
@@ -53,10 +60,10 @@ describe('proposal-request handler', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    proposalRequestHandler = new ProposalRequestHandler(packageMgr);
+    proposalRequestHandler = new ProposalRequestHandler(packageMgr, idWallet);
   });
 
-  it('proposal-request handle request', async () => {
+  it('proposal-request handle request with cred exists in wallet (returns credential offer)', async () => {
     const { did: userDID, credential: cred } = await createIdentity(idWallet, {
       seed: SEED_USER
     });
@@ -68,23 +75,54 @@ describe('proposal-request handler', () => {
     });
 
     expect(issuerAuthCredential).not.to.be.undefined;
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
     const proposalRequest = createProposalRequest(userDID, issuerDID, {
-      credentials: [{ type: 'KycAgeCredential', context: 'https://test.com' }]
+      credentials: [
+        {
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld'
+        }
+      ]
     });
 
     const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
+    // const proposalResponse = createProposal(issuerDID, userDID, [
+    //   {
+    //     type: 'WebVerificationForm',
+    //     url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
+    //     description: 'you can pass the verification on our KYC provider by following the next link'
+    //   }
+    // ]);
 
-    const proposalResponse = createProposal(issuerDID, userDID, [
-      {
-        type: 'WebVerificationForm',
-        url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
-        description: 'you can pass the verification on our KYC provider by following the next link'
-      }
-    ]);
-
-    const msgBytesResponse = byteEncoder.encode(JSON.stringify(proposalResponse));
-
-    await proposalRequestHandler.handleProposalRequest(msgBytesRequest, msgBytesResponse);
+    // const msgBytesResponse = byteEncoder.encode(JSON.stringify(proposalResponse));
+    const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest);
+    expect(response).not.to.be.undefined;
+    const credentialOffer = JSON.parse(
+      byteDecoder.decode(response)
+    ) as unknown as CredentialsOfferMessage;
+    expect(credentialOffer.type).to.be.eq(PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE);
+    expect(credentialOffer.body.credentials.length).to.be.eq(1);
+    expect(credentialOffer.body.credentials[0].id).to.be.eq(issuerCred.id);
   });
 
   it('proposal-request handle response: wrong sender', async () => {
