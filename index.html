@@ -117,7 +117,7 @@
         const { did, credential } = await wallet.createIdentity({
           method: core.DidMethod.Iden3,
           blockchain: core.Blockchain.Polygon,
-          networkId: core.NetworkId.Mumbai,
+          networkId: core.NetworkId.Amoy,
           revocationOpts: {
             type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
             id: 'https://rhs-staging.polygonid.me'
@@ -126,7 +126,7 @@
         const { did: issuerDID, credential: issuerAuthCredential } = await wallet.createIdentity({
           method: core.DidMethod.Iden3,
           blockchain: core.Blockchain.Polygon,
-          networkId: core.NetworkId.Mumbai,
+          networkId: core.NetworkId.Amoy,
           revocationOpts: {
             type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
             id: 'https://rhs-staging.polygonid.me'

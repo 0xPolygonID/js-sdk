@@ -1,5 +1,5 @@
 import { Id, SchemaHash } from '@iden3/js-iden3-core';
-import { newHashFromString } from '@iden3/js-merkletree';
+import { Hash } from '@iden3/js-merkletree';
 import {
   AtomicQuerySigV2Inputs,
   AtomicQuerySigV2PubSignals,
@@ -191,10 +191,10 @@ describe('atomic-query-sig-v2', () => {
     exp.issuerID = Id.fromBigInt(
       BigInt('21933750065545691586450392143787330185992517860945727248803138245838110721')
     );
-    exp.issuerAuthState = newHashFromString(
+    exp.issuerAuthState = Hash.fromString(
       '2943483356559152311923412925436024635269538717812859789851139200242297094'
     );
-    exp.issuerClaimNonRevState = newHashFromString(
+    exp.issuerClaimNonRevState = Hash.fromString(
       '2943483356559152311923412925436024635269538717812859789851139200242297094'
     );
     exp.claimSchema = SchemaHash.newSchemaHashFromInt(

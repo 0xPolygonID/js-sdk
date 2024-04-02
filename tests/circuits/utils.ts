@@ -168,7 +168,7 @@ export async function generate(privKeyHex: string): Promise<{
   const state = poseidon.hash([ctr.bigInt(), BigInt(0), BigInt(0)]);
   // create new identity
   const identity = Id.idGenesisFromIdenState(
-    buildDIDType(DidMethod.Iden3, Blockchain.Polygon, NetworkId.Mumbai),
+    buildDIDType(DidMethod.Iden3, Blockchain.Polygon, NetworkId.Amoy),
     state
   );
 

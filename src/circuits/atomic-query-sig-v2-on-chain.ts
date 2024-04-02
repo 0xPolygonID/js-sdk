@@ -1,8 +1,7 @@
-import { newHashFromString, Proof } from '@iden3/js-merkletree';
 import { Id, Claim } from '@iden3/js-iden3-core';
 import { Signature } from '@iden3/js-crypto';
 import { Query, ValueProof, CircuitError, ClaimWithSigProof, TreeState, GISTProof } from './models';
-import { Hash } from '@iden3/js-merkletree';
+import { Hash, Proof } from '@iden3/js-merkletree';
 import {
   BaseConfig,
   bigIntArrayToStringArray,
@@ -365,7 +364,7 @@ export class AtomicQuerySigV2OnChainPubSignals extends BaseConfig {
     fieldIdx++;
 
     // - issuerAuthState
-    this.issuerAuthState = newHashFromString(sVals[fieldIdx]);
+    this.issuerAuthState = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     // - requestID
@@ -377,7 +376,7 @@ export class AtomicQuerySigV2OnChainPubSignals extends BaseConfig {
     fieldIdx++;
 
     // - gistRoot
-    this.gistRoot = newHashFromString(sVals[fieldIdx]);
+    this.gistRoot = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     // - issuerID
@@ -389,7 +388,7 @@ export class AtomicQuerySigV2OnChainPubSignals extends BaseConfig {
     fieldIdx++;
 
     // - issuerClaimNonRevState
-    this.issuerClaimNonRevState = newHashFromString(sVals[fieldIdx]);
+    this.issuerClaimNonRevState = Hash.fromString(sVals[fieldIdx]);
     fieldIdx++;
 
     //  - timestamp

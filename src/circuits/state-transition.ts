@@ -1,6 +1,6 @@
 import { Signature } from '@iden3/js-crypto';
 import { Id } from '@iden3/js-iden3-core';
-import { Hash, newHashFromString, Proof } from '@iden3/js-merkletree';
+import { Hash, Proof } from '@iden3/js-merkletree';
 import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
 import { ClaimWithMTPProof, TreeState, CircuitError } from './models';
 import { byteDecoder, byteEncoder } from '../utils';
@@ -130,8 +130,8 @@ export class StateTransitionPubSignals {
       );
     }
     this.userId = Id.fromBigInt(BigInt(sVals[0]));
-    this.oldUserState = newHashFromString(sVals[1]);
-    this.newUserState = newHashFromString(sVals[2]);
+    this.oldUserState = Hash.fromString(sVals[1]);
+    this.newUserState = Hash.fromString(sVals[2]);
     this.isOldStateGenesis = BigInt(sVals[3]) === BigInt(1);
 
     return this;

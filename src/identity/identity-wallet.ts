@@ -438,7 +438,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     opts.method = opts.method ?? DidMethod.Iden3;
     opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
-    opts.networkId = opts.networkId ?? NetworkId.Mumbai;
+    opts.networkId = opts.networkId ?? NetworkId.Amoy;
 
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
 

@@ -1217,6 +1217,7 @@ describe('auth', () => {
 
     await authHandler.handleAuthorizationResponse(authRes.authResponse, authReq, testOpts);
   });
+
   it('auth response: TestVerifyV3MessageWithMtpProof_Merklized_noop', async () => {
     const claimReq: CredentialRequest = {
       credentialSchema:

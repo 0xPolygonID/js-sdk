@@ -1,5 +1,5 @@
 import { Id, SchemaHash } from '@iden3/js-iden3-core';
-import { newHashFromString } from '@iden3/js-merkletree';
+import { Hash } from '@iden3/js-merkletree';
 import {
   AtomicQueryMTPV2Inputs,
   AtomicQueryMTPV2PubSignals,
@@ -177,10 +177,10 @@ describe('atomic-query-mtp-v2', () => {
     exp.issuerID = Id.fromBigInt(
       BigInt('23528770672049181535970744460798517976688641688582489375761566420828291073')
     );
-    exp.issuerClaimIdenState = newHashFromString(
+    exp.issuerClaimIdenState = Hash.fromString(
       '5687720250943511874245715094520098014548846873346473635855112185560372332782'
     );
-    exp.issuerClaimNonRevState = newHashFromString(
+    exp.issuerClaimNonRevState = Hash.fromString(
       '5687720250943511874245715094520098014548846873346473635855112185560372332782'
     );
     exp.claimSchema = SchemaHash.newSchemaHashFromInt(
