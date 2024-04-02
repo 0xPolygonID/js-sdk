@@ -15,7 +15,7 @@ import {
   Proposal,
   ProposalRequestCredential,
   ProposalRequestMessage,
-  ProposalResponseMessage
+  ProposalMessage
 } from '../types/protocol/proposal-request';
 import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
@@ -70,9 +70,9 @@ export function createProposal(
   sender: DID,
   receiver: DID,
   proposals?: Proposal[]
-): ProposalResponseMessage {
+): ProposalMessage {
   const uuidv4 = uuid.v4();
-  const request: ProposalResponseMessage = {
+  const request: ProposalMessage = {
     id: uuidv4,
     thid: uuidv4,
     from: sender.string(),
@@ -90,9 +90,9 @@ export function createProposal(
  * @beta
  * Interface that allows the processing of the proposal-request
  *
- * @interface IProposalRequestHandler
+ * @interface ICredentialProposalHandler
  */
-export interface IProposalRequestHandler {
+export interface ICredentialProposalHandler {
   /**
    * @beta
    * unpacks proposal-request
@@ -115,61 +115,57 @@ export interface IProposalRequestHandler {
 
   /**
      * @beta
-     * handle proposal response
-     * @param {AuthorizationResponseMessage} response  - auth response
-     * @param {AuthorizationRequestMessage} request  - auth request
-     * @param {AuthResponseHandlerOptions} opts - options
+     * handle proposal protocol message
+     * @param {ProposalMessage} proposal  - proposal message
+     * @param {ProposalHandlerOptions} opts - options
      * @returns `Promise<{
-      request: AuthorizationRequestMessage;
-      response: AuthorizationResponseMessage;
+      proposal: ProposalMessage;
     }>`
      */
-  handleProposalResponse(
-    response: ProposalResponseMessage,
-    request: ProposalRequestMessage
+  handleProposal(
+    proposal: ProposalMessage,
+    opts?: ProposalHandlerOptions
   ): Promise<{
-    request: ProposalRequestMessage;
-    response: ProposalResponseMessage;
+    proposal: ProposalMessage;
   }>;
 }
-
-/** @beta SupportedCredentialTypes represents supported by the issuer credentials */
-export type SupportedCredentialTypes = {
-  context: string;
-  type: string;
-  proposal: Proposal;
-};
 
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
 export type ProposalRequestHandlerOptions = {
   mediaType: MediaType;
   agentUrl: string;
   packerOptions?: JWSPackerParams;
-  supportedCredentialTypes: SupportedCredentialTypes[];
+};
+
+/** @beta ProposalHandlerOptions represents proposal handler options */
+export type ProposalHandlerOptions = {
+  proposalRequest?: ProposalRequestMessage;
 };
 
 /**
  *
  * Allows to process ProposalRequest protocol message
  * @beta
- * @class ProposalRequestHandler
- * @implements implements IProposalRequestHandler interface
+ * @class CredentialProposalHandler
+ * @implements implements ICredentialProposalHandler interface
  */
-export class ProposalRequestHandler implements IProposalRequestHandler {
+export class CredentialProposalHandler implements ICredentialProposalHandler {
   /**
-   * @beta Creates an instance of ProposalRequestHandler.
+   * @beta Creates an instance of CredentialProposalHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    * @param {IIdentityWallet} _identityWallet - identity wallet
+   * @param {(context: string, type: string) => Promise<Proposal>} _proposalResolverFn - resolves Proposal by context and type
    *
    */
 
   constructor(
     private readonly _packerMgr: IPackageManager,
-    private readonly _identityWallet: IIdentityWallet
+    private readonly _identityWallet: IIdentityWallet,
+    private readonly _proposalResolverFn: (context: string, type: string) => Promise<Proposal>
   ) {}
 
   /**
-   * @inheritdoc IProposalRequestHandler#parseProposalRequest
+   * @inheritdoc ICredentialProposalHandler#parseProposalRequest
    */
   async parseProposalRequest(request: Uint8Array): Promise<ProposalRequestMessage> {
     const { unpackedMessage: message } = await this._packerMgr.unpack(request);
@@ -181,7 +177,7 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
   }
 
   /**
-   * @inheritdoc IProposalRequestHandler#handleProposalRequest
+   * @inheritdoc ICredentialProposalHandler#handleProposalRequest
    */
   async handleProposalRequest(
     request: Uint8Array,
@@ -190,8 +186,7 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
     if (!opts) {
       opts = {
         mediaType: MediaType.PlainMessage,
-        agentUrl: '',
-        supportedCredentialTypes: []
+        agentUrl: ''
       };
     }
 
@@ -216,7 +211,7 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
     const senderDID = DID.parse(proposalRequest.from);
 
     let credOfferMessage: CredentialsOfferMessage | undefined = undefined;
-    let proposalMessage: ProposalResponseMessage | undefined = undefined;
+    let proposalMessage: ProposalMessage | undefined = undefined;
     for (let i = 0; i < proposalRequest.body.credentials.length; i++) {
       const cred = proposalRequest.body.credentials[i];
 
@@ -256,14 +251,13 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
             description: ''
           }))
         );
+        continue;
       }
 
-      // check if the issuer supports requested credential
-      const supportedCredType = opts.supportedCredentialTypes.find(
-        (s) => s.context === cred.context && s.type === cred.type
-      );
-      if (!supportedCredType) {
-        throw new Error(`not supported credential, type: ${cred.type}, context: ${cred.context}`);
+      // credential not found in wallet, prepare proposal protocol message
+      const proposal = await this._proposalResolverFn(cred.context, cred.type);
+      if (!proposal) {
+        throw new Error(`can't resolve Proposal for type: ${cred.type}, context: ${cred.context}`);
       }
       if (!proposalMessage) {
         const guid = uuid.v4();
@@ -279,9 +273,10 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
           to: proposalRequest.from
         };
       }
-      proposalMessage.body?.proposals.push(supportedCredType.proposal);
+      proposalMessage.body?.proposals.push(proposal);
     }
 
+    // if there is credentials in the wallet, return offer protocol message, otherwise proposal
     const response = byteEncoder.encode(JSON.stringify(credOfferMessage ?? proposalMessage));
 
     const packerOpts =
@@ -298,15 +293,14 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
   }
 
   /**
-   * @inheritdoc IProposalRequestHandler#handleProposalResponse
+   * @inheritdoc ICredentialProposalHandler#handleProposal
    */
-  async handleProposalResponse(response: ProposalResponseMessage, request: ProposalRequestMessage) {
-    if (request.from !== response.to) {
+  async handleProposal(proposal: ProposalMessage, opts?: ProposalHandlerOptions) {
+    if (opts?.proposalRequest && opts.proposalRequest.from !== proposal.to) {
       throw new Error(
-        `sender of the request is not a target of response - expected ${request.from}, given ${response.to}`
+        `sender of the request is not a target of response - expected ${opts.proposalRequest.from}, given ${proposal.to}`
       );
     }
-
-    return { request, response };
+    return { proposal };
   }
 }

@@ -19,19 +19,19 @@ export type ProposalRequestMessageBody = {
   did_doc?: JSONObject;
 };
 
-/** @beta  ProposalResponseMessage is struct the represents proposal message */
-export type ProposalResponseMessage = {
+/** @beta  ProposalMessage is struct the represents proposal message */
+export type ProposalMessage = {
   id: string;
   typ?: MediaType;
   type: ProtocolMessage;
   thid?: string;
-  body?: ProposalResponseMessageBody;
+  body?: ProposalMessageBody;
   from?: string;
   to?: string;
 };
 
-/** @beta  ProposalResponseMessageBody is struct the represents body for proposal response */
-export type ProposalResponseMessageBody = {
+/** @beta  ProposalMessageBody is struct the represents body for proposal message */
+export type ProposalMessageBody = {
   proposals: Proposal[];
 };
 

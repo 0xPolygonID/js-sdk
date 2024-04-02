@@ -9,15 +9,16 @@ import {
   ProofService,
   CircuitId,
   byteEncoder,
-  IProposalRequestHandler,
-  ProposalRequestHandler,
+  ICredentialProposalHandler,
+  CredentialProposalHandler,
   createProposalRequest,
   createProposal,
   CredentialRequest,
   ICredentialWallet,
   byteDecoder,
   CredentialsOfferMessage,
-  ProposalResponseMessage
+  ProposalMessage,
+  Proposal
 } from '../../src';
 
 import {
@@ -39,7 +40,29 @@ describe('proposal-request handler', () => {
   let packageMgr: IPackageManager;
   let idWallet: IdentityWallet;
   let credWallet: ICredentialWallet;
-  let proposalRequestHandler: IProposalRequestHandler;
+  let proposalRequestHandler: ICredentialProposalHandler;
+
+  const proposalResolverFn = (context: string, type: string): Promise<Proposal> => {
+    if (
+      context ===
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld' &&
+      type === 'KYCAgeCredential'
+    ) {
+      return Promise.resolve({
+        credentials: [
+          {
+            type,
+            context
+          }
+        ],
+        type: 'WebVerificationForm',
+        url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
+        description: 'you can pass the verification on our KYC provider by following the next link'
+      });
+    }
+
+    throw new Error(`not supported credential, type: ${type}, context: ${context}`);
+  };
 
   beforeEach(async () => {
     const kms = registerBJJIntoInMemoryKMS();
@@ -61,7 +84,11 @@ describe('proposal-request handler', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    proposalRequestHandler = new ProposalRequestHandler(packageMgr, idWallet);
+    proposalRequestHandler = new CredentialProposalHandler(
+      packageMgr,
+      idWallet,
+      proposalResolverFn
+    );
   });
 
   it('proposal-request handle request with cred exists in wallet (returns credential offer)', async () => {
@@ -110,20 +137,7 @@ describe('proposal-request handler', () => {
 
     const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest, {
       mediaType: MediaType.PlainMessage,
-      agentUrl: '',
-      supportedCredentialTypes: [
-        {
-          type: 'KYCAgeCredential',
-          context:
-            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
-          proposal: {
-            type: 'WebVerificationForm',
-            url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
-            description:
-              'you can pass the verification on our KYC provider by following the next link'
-          }
-        }
-      ]
+      agentUrl: ''
     });
     expect(response).not.to.be.undefined;
     const credentialOffer = JSON.parse(
@@ -134,7 +148,7 @@ describe('proposal-request handler', () => {
     expect(credentialOffer.body.credentials[0].id).to.be.eq(issuerCred.id);
   });
 
-  it('proposal-request handle request with cred NOT exists in wallet (returns proposal response)', async () => {
+  it('proposal-request handle request with cred NOT exists in wallet (returns proposal message)', async () => {
     const { did: userDID, credential: cred } = await createIdentity(idWallet, {
       seed: SEED_USER
     });
@@ -161,28 +175,16 @@ describe('proposal-request handler', () => {
 
     const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest, {
       mediaType: MediaType.PlainMessage,
-      agentUrl: '',
-      supportedCredentialTypes: [
-        {
-          type: 'KYCAgeCredential',
-          context:
-            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
-          proposal: {
-            type: 'WebVerificationForm',
-            url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
-            description:
-              'you can pass the verification on our KYC provider by following the next link'
-          }
-        }
-      ]
+      agentUrl: ''
     });
     expect(response).not.to.be.undefined;
-    const credentialOffer = JSON.parse(
-      byteDecoder.decode(response)
-    ) as unknown as ProposalResponseMessage;
+    const credentialOffer = JSON.parse(byteDecoder.decode(response)) as unknown as ProposalMessage;
     expect(credentialOffer.type).to.be.eq(PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE);
     expect(credentialOffer.body?.proposals.length).to.be.eq(1);
     expect(credentialOffer.body?.proposals[0].type).to.be.eq('WebVerificationForm');
+    expect(credentialOffer.body?.proposals[0].url).to.be.eq(
+      'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55'
+    );
   });
 
   it('proposal-request handle not supported credential type in the request', async () => {
@@ -216,22 +218,9 @@ describe('proposal-request handler', () => {
     const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
 
     try {
-      const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest, {
+      await proposalRequestHandler.handleProposalRequest(msgBytesRequest, {
         mediaType: MediaType.PlainMessage,
-        agentUrl: '',
-        supportedCredentialTypes: [
-          {
-            type: 'KYCAgeCredential',
-            context:
-              'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
-            proposal: {
-              type: 'WebVerificationForm',
-              url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
-              description:
-                'you can pass the verification on our KYC provider by following the next link'
-            }
-          }
-        ]
+        agentUrl: ''
       });
       expect.fail();
     } catch (err: unknown) {
@@ -257,7 +246,7 @@ describe('proposal-request handler', () => {
       credentials: [{ type: 'KycAgeCredential', context: 'https://test.com' }]
     });
 
-    const proposalResponse = createProposal(issuerDID, issuerDID, [
+    const proposalMessage = createProposal(issuerDID, issuerDID, [
       {
         type: 'WebVerificationForm',
         url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
@@ -266,7 +255,7 @@ describe('proposal-request handler', () => {
     ]);
 
     try {
-      await proposalRequestHandler.handleProposalResponse(proposalResponse, proposalRequest);
+      await proposalRequestHandler.handleProposal(proposalMessage, { proposalRequest });
       expect.fail();
     } catch (err: unknown) {
       expect((err as Error).message).to.include(
