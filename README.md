@@ -14,7 +14,13 @@ Installation:
 npm install @0xpolygonid/js-sdk
 ```
 
-See [tests](/tests) for examples on how to use SDK.
+## Circuits
+
+And place actual circuits to `test/proofs/testdata`
+
+```bash
+curl -LO https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/latest.zip
+```
 
 ## Tests
 
@@ -35,10 +41,11 @@ export RHS_URL="..reverse hash service url"
 export IPFS_URL="url for ipfs"
 export STATE_CONTRACT_ADDRESS="state contract address"
 export RHS_CONTRACT_ADDRESS="reverse hash service contract address"
-
 ```
 
-And place actual circuits to `test/proofs/testdata`
+## Examples
+
+Please see [examples](https://github.com/0xPolygonID/js-sdk-examples) for visit examples information.
 
 ## Documentation
 
