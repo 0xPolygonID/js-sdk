@@ -34,13 +34,14 @@ import {
 
 import { expect } from 'chai';
 import path from 'path';
-import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
+import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 
 describe('proposal-request handler', () => {
   let packageMgr: IPackageManager;
   let idWallet: IdentityWallet;
   let credWallet: ICredentialWallet;
   let proposalRequestHandler: ICredentialProposalHandler;
+  const agentUrl = 'http://localhost:8001/api/v1/agent';
 
   const proposalResolverFn = (context: string, type: string): Promise<Proposal> => {
     if (
@@ -87,6 +88,7 @@ describe('proposal-request handler', () => {
     proposalRequestHandler = new CredentialProposalHandler(
       packageMgr,
       idWallet,
+      agentUrl,
       proposalResolverFn
     );
   });
@@ -135,10 +137,7 @@ describe('proposal-request handler', () => {
 
     const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
 
-    const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest, {
-      mediaType: MediaType.PlainMessage,
-      agentUrl: ''
-    });
+    const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest);
     expect(response).not.to.be.undefined;
     const credentialOffer = JSON.parse(
       byteDecoder.decode(response)
@@ -173,10 +172,7 @@ describe('proposal-request handler', () => {
 
     const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
 
-    const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest, {
-      mediaType: MediaType.PlainMessage,
-      agentUrl: ''
-    });
+    const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest);
     expect(response).not.to.be.undefined;
     const credentialOffer = JSON.parse(byteDecoder.decode(response)) as unknown as ProposalMessage;
     expect(credentialOffer.type).to.be.eq(PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE);
@@ -218,10 +214,7 @@ describe('proposal-request handler', () => {
     const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
 
     try {
-      await proposalRequestHandler.handleProposalRequest(msgBytesRequest, {
-        mediaType: MediaType.PlainMessage,
-        agentUrl: ''
-      });
+      await proposalRequestHandler.handleProposalRequest(msgBytesRequest);
       expect.fail();
     } catch (err: unknown) {
       expect((err as Error).message).to.be.eq(

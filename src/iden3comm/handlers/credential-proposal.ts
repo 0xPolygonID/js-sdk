@@ -133,7 +133,6 @@ export interface ICredentialProposalHandler {
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
 export type ProposalRequestHandlerOptions = {
   mediaType: MediaType;
-  agentUrl: string;
   packerOptions?: JWSPackerParams;
 };
 
@@ -161,6 +160,7 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
   constructor(
     private readonly _packerMgr: IPackageManager,
     private readonly _identityWallet: IIdentityWallet,
+    private readonly _agentUrl: string,
     private readonly _proposalResolverFn: (context: string, type: string) => Promise<Proposal>
   ) {}
 
@@ -185,8 +185,7 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
   ): Promise<Uint8Array> {
     if (!opts) {
       opts = {
-        mediaType: MediaType.PlainMessage,
-        agentUrl: ''
+        mediaType: MediaType.PlainMessage
       };
     }
 
@@ -237,7 +236,7 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
             type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE,
             thid: proposalRequest.thid ?? guid,
             body: {
-              url: opts.agentUrl,
+              url: this._agentUrl,
               credentials: []
             },
             from: proposalRequest.to,
