@@ -24,7 +24,7 @@ import { W3CCredential } from '../../verifiable';
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; did_doc?: JSONObject };
+  metadata?: { type: string; data?: JSONObject };
   did_doc?: JSONObject;
 };
 
