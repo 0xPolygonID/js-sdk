@@ -115,7 +115,7 @@ export interface IIdentityWallet {
    * adds auth BJJ credential to claims tree and generates mtp of inclusion
    * based on the resulting state it provides an identifier in DID form.
    *
-   * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:mumbai** with generated key.
+   * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:aloy** with generated key.
    * @returns `Promise<{ did: DID; credential: W3CCredential }>` - returns did and Auth BJJ credential
    * @public
    */
@@ -551,7 +551,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     opts.method = opts.method ?? DidMethod.Iden3;
     opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
-    opts.networkId = opts.networkId ?? NetworkId.Mumbai;
+    opts.networkId = opts.networkId ?? NetworkId.Aloy;
     opts.seed = opts.seed ?? getRandomBytes(32);
 
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
@@ -624,7 +624,7 @@ export class IdentityWallet implements IIdentityWallet {
   ): Promise<{ did: DID; credential: W3CCredential }> {
     opts.method = opts.method ?? DidMethod.Iden3;
     opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
-    opts.networkId = opts.networkId ?? NetworkId.Mumbai;
+    opts.networkId = opts.networkId ?? NetworkId.Aloy;
     opts.seed = opts.seed ?? getRandomBytes(32);
 
     const proofService = opts.proofService;
