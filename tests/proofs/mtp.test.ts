@@ -21,12 +21,12 @@ import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
-import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
+import { SEED_USER, createIdentity } from '../helpers';
 
-describe('mtp proofs', () => {
+describe.only('mtp proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -123,30 +123,11 @@ describe('mtp proofs', () => {
   });
 
   const nonMerklizedTest = async (circuitId: CircuitId) => {
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
-
-    const { did: userDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Amoy,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
+    const { did: userDID } = await createIdentity(idWallet, {
+      seed: SEED_USER
     });
 
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Amoy,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
+    const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet);
     await credWallet.save(issuerAuthCredential);
 
     const claimReq: CredentialRequest = {
@@ -231,28 +212,13 @@ describe('mtp proofs', () => {
 
   const merklizedTest = async (circuitId: CircuitId) => {
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedsnew');
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const { did: userDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Amoy,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
+    const { did: userDID } = await createIdentity(idWallet, {
+      seed: SEED_USER
     });
 
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Amoy,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
+    const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet, {
+      seed: seedPhraseIssuer
     });
     await credWallet.save(issuerAuthCredential);
 
