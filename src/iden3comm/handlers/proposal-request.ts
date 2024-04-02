@@ -19,6 +19,7 @@ import {
 } from '../types/protocol/proposal-request';
 import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
+import { W3CCredential } from '../../verifiable';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
@@ -132,11 +133,19 @@ export interface IProposalRequestHandler {
   }>;
 }
 
+/** @beta SupportedCredentialTypes represents supported by the issuer credentials */
+export type SupportedCredentialTypes = {
+  context: string;
+  type: string;
+  proposal: Proposal;
+};
+
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
 export type ProposalRequestHandlerOptions = {
   mediaType: MediaType;
   agentUrl: string;
   packerOptions?: JWSPackerParams;
+  supportedCredentialTypes: SupportedCredentialTypes[];
 };
 
 /**
@@ -181,7 +190,8 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
     if (!opts) {
       opts = {
         mediaType: MediaType.PlainMessage,
-        agentUrl: ''
+        agentUrl: '',
+        supportedCredentialTypes: []
       };
     }
 
@@ -203,22 +213,25 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
       throw new Error(`failed request. no 'credentials' in body`);
     }
 
-    const packerOpts =
-      opts.mediaType === MediaType.SignedMessage
-        ? opts.packerOptions
-        : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-          };
-
     const senderDID = DID.parse(proposalRequest.from);
 
     let credOfferMessage: CredentialsOfferMessage | undefined = undefined;
+    let proposalMessage: ProposalResponseMessage | undefined = undefined;
     for (let i = 0; i < proposalRequest.body.credentials.length; i++) {
       const cred = proposalRequest.body.credentials[i];
-      const credsFromWallet = await this._identityWallet.findOwnedCredentialsByDID(senderDID, {
-        type: cred.type,
-        context: cred.context
-      });
+
+      // check if there is credentials in the wallet
+      let credsFromWallet: W3CCredential[] = [];
+      try {
+        credsFromWallet = await this._identityWallet.findOwnedCredentialsByDID(senderDID, {
+          type: cred.type,
+          context: cred.context
+        });
+      } catch (e) {
+        if ((e as Error).message !== 'no credential satisfied query') {
+          throw e;
+        }
+      }
 
       if (credsFromWallet?.length) {
         const guid = uuid.v4();
@@ -244,13 +257,39 @@ export class ProposalRequestHandler implements IProposalRequestHandler {
           }))
         );
       }
+
+      // check if the issuer supports requested credential
+      const supportedCredType = opts.supportedCredentialTypes.find(
+        (s) => s.context === cred.context && s.type === cred.type
+      );
+      if (!supportedCredType) {
+        throw new Error(`not supported credential, type: ${cred.type}, context: ${cred.context}`);
+      }
+      if (!proposalMessage) {
+        const guid = uuid.v4();
+        proposalMessage = {
+          id: guid,
+          typ: opts.mediaType,
+          type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE,
+          thid: proposalRequest.thid ?? guid,
+          body: {
+            proposals: []
+          },
+          from: proposalRequest.to,
+          to: proposalRequest.from
+        };
+      }
+      proposalMessage.body?.proposals.push(supportedCredType.proposal);
     }
 
-    if (!credOfferMessage) {
-      throw new Error('no credentials found on wallet');
-    }
+    const response = byteEncoder.encode(JSON.stringify(credOfferMessage ?? proposalMessage));
 
-    const response = byteEncoder.encode(JSON.stringify(credOfferMessage));
+    const packerOpts =
+      opts.mediaType === MediaType.SignedMessage
+        ? opts.packerOptions
+        : {
+            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+          };
 
     return this._packerMgr.pack(opts.mediaType, response, {
       senderDID,

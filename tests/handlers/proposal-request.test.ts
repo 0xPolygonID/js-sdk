@@ -16,7 +16,8 @@ import {
   CredentialRequest,
   ICredentialWallet,
   byteDecoder,
-  CredentialsOfferMessage
+  CredentialsOfferMessage,
+  ProposalResponseMessage
 } from '../../src';
 
 import {
@@ -32,7 +33,7 @@ import {
 
 import { expect } from 'chai';
 import path from 'path';
-import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
+import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 
 describe('proposal-request handler', () => {
   let packageMgr: IPackageManager;
@@ -106,16 +107,24 @@ describe('proposal-request handler', () => {
     });
 
     const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
-    // const proposalResponse = createProposal(issuerDID, userDID, [
-    //   {
-    //     type: 'WebVerificationForm',
-    //     url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
-    //     description: 'you can pass the verification on our KYC provider by following the next link'
-    //   }
-    // ]);
 
-    // const msgBytesResponse = byteEncoder.encode(JSON.stringify(proposalResponse));
-    const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest);
+    const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest, {
+      mediaType: MediaType.PlainMessage,
+      agentUrl: '',
+      supportedCredentialTypes: [
+        {
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+          proposal: {
+            type: 'WebVerificationForm',
+            url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
+            description:
+              'you can pass the verification on our KYC provider by following the next link'
+          }
+        }
+      ]
+    });
     expect(response).not.to.be.undefined;
     const credentialOffer = JSON.parse(
       byteDecoder.decode(response)
@@ -123,6 +132,113 @@ describe('proposal-request handler', () => {
     expect(credentialOffer.type).to.be.eq(PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE);
     expect(credentialOffer.body.credentials.length).to.be.eq(1);
     expect(credentialOffer.body.credentials[0].id).to.be.eq(issuerCred.id);
+  });
+
+  it('proposal-request handle request with cred NOT exists in wallet (returns proposal response)', async () => {
+    const { did: userDID, credential: cred } = await createIdentity(idWallet, {
+      seed: SEED_USER
+    });
+
+    expect(cred).not.to.be.undefined;
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet, {
+      seed: SEED_ISSUER
+    });
+
+    expect(issuerAuthCredential).not.to.be.undefined;
+
+    const proposalRequest = createProposalRequest(userDID, issuerDID, {
+      credentials: [
+        {
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld'
+        }
+      ]
+    });
+
+    const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
+
+    const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest, {
+      mediaType: MediaType.PlainMessage,
+      agentUrl: '',
+      supportedCredentialTypes: [
+        {
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+          proposal: {
+            type: 'WebVerificationForm',
+            url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
+            description:
+              'you can pass the verification on our KYC provider by following the next link'
+          }
+        }
+      ]
+    });
+    expect(response).not.to.be.undefined;
+    const credentialOffer = JSON.parse(
+      byteDecoder.decode(response)
+    ) as unknown as ProposalResponseMessage;
+    expect(credentialOffer.type).to.be.eq(PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE);
+    expect(credentialOffer.body?.proposals.length).to.be.eq(1);
+    expect(credentialOffer.body?.proposals[0].type).to.be.eq('WebVerificationForm');
+  });
+
+  it('proposal-request handle not supported credential type in the request', async () => {
+    const { did: userDID, credential: cred } = await createIdentity(idWallet, {
+      seed: SEED_USER
+    });
+
+    expect(cred).not.to.be.undefined;
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet, {
+      seed: SEED_ISSUER
+    });
+
+    expect(issuerAuthCredential).not.to.be.undefined;
+
+    const proposalRequest = createProposalRequest(userDID, issuerDID, {
+      credentials: [
+        {
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld'
+        },
+        {
+          type: 'AnimaProofOfLife',
+          context:
+            'https://raw.githubusercontent.com/anima-protocol/claims-polygonid/main/schemas/json-ld/pol-v1.json-ld'
+        }
+      ]
+    });
+
+    const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
+
+    try {
+      const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest, {
+        mediaType: MediaType.PlainMessage,
+        agentUrl: '',
+        supportedCredentialTypes: [
+          {
+            type: 'KYCAgeCredential',
+            context:
+              'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+            proposal: {
+              type: 'WebVerificationForm',
+              url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
+              description:
+                'you can pass the verification on our KYC provider by following the next link'
+            }
+          }
+        ]
+      });
+      expect.fail();
+    } catch (err: unknown) {
+      expect((err as Error).message).to.be.eq(
+        `not supported credential, type: AnimaProofOfLife, context: https://raw.githubusercontent.com/anima-protocol/claims-polygonid/main/schemas/json-ld/pol-v1.json-ld`
+      );
+    }
   });
 
   it('proposal-request handle response: wrong sender', async () => {
