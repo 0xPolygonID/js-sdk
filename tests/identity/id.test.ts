@@ -173,7 +173,7 @@ describe('identity', () => {
     const { did, credential } = await createIdentity(idWallet, { keyType: KmsKeyType.Secp256k1 });
 
     expect(did.string()).to.equal(
-      'did:iden3:polygon:mumbai:wuL2hHjCC1LQArvVpwTkW6KeJNxAv9PfhCnMK4rnX'
+      'did:iden3:polygon:amoy:x6x5sor7zpxsu478u36QvEgaRUfPjmzqFo5PHHzbM'
     );
     const dbCred = await dataStorage.credential.findCredentialById(credential.id);
     expect(credential).to.deep.equal(dbCred);
