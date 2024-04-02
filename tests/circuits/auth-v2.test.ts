@@ -1,6 +1,6 @@
 import { AuthV2PubSignals } from './../../src/circuits/auth-v2';
 import { Id } from '@iden3/js-iden3-core';
-import { newHashFromBigInt } from '@iden3/js-merkletree';
+import { Hash } from '@iden3/js-merkletree';
 import { AuthV2Inputs } from '../../src/circuits';
 import { IdentityTest, userPK, issuerPK, globalTree } from './utils';
 import expectedJson from './data/auth-v2-inputs.json';
@@ -63,7 +63,7 @@ describe('auth-v2', () => {
     const stateInt = BigInt(
       '18656147546666944484453899241916469544090258810192803949522794490493271005313'
     );
-    const state = newHashFromBigInt(stateInt);
+    const state = Hash.fromBigInt(stateInt);
 
     const out = byteEncoder.encode(
       JSON.stringify([

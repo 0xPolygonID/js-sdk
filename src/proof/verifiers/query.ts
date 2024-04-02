@@ -2,7 +2,7 @@ import { DID, getDateFromUnixTimestamp, Id, SchemaHash } from '@iden3/js-iden3-c
 import { DocumentLoader, Merklizer, MtValue, Path } from '@iden3/js-jsonld-merklization';
 import { Proof } from '@iden3/js-merkletree';
 import { byteEncoder } from '../../utils';
-import { Operators, QueryOperators } from '../../circuits/comparer';
+import { getOperatorNameByValue, Operators, QueryOperators } from '../../circuits/comparer';
 import { CircuitId } from '../../circuits/models';
 import { calculateCoreSchemaHash, ProofQuery, VerifiableConstants } from '../../verifiable';
 import { QueryMetadata } from '../common';
@@ -71,24 +71,7 @@ export async function checkQueryRequest(
     throw new Error(`check revocation is required`);
   }
 
-  const circuitValidationData = circuitValidator[circuitId];
-
-  if (queriesMetadata.length > circuitValidationData.maxQueriesCount) {
-    throw new Error(
-      `circuit ${circuitId} supports only ${
-        circuitValidator[circuitId as CircuitId].maxQueriesCount
-      } queries`
-    );
-  }
-
-  const notSupportedOpIndx = queriesMetadata.findIndex(
-    (i) => !circuitValidationData.supportedOperations.includes(i.operator)
-  );
-  if (notSupportedOpIndx > -1) {
-    throw new Error(
-      `circuit ${circuitId} not support ${queriesMetadata[notSupportedOpIndx].operator} operator`
-    );
-  }
+  checkCircuitQueriesLength(circuitId, queriesMetadata);
 
   // verify timestamp
   let acceptedProofGenerationDelay = defaultProofGenerationDelayOpts;
@@ -102,6 +85,28 @@ export async function checkQueryRequest(
   }
 
   return;
+}
+
+export function checkCircuitQueriesLength(circuitId: CircuitId, queriesMetadata: QueryMetadata[]) {
+  const circuitValidationData = circuitValidator[circuitId];
+
+  if (queriesMetadata.length > circuitValidationData.maxQueriesCount) {
+    throw new Error(
+      `circuit ${circuitId} supports only ${
+        circuitValidator[circuitId as CircuitId].maxQueriesCount
+      } queries`
+    );
+  }
+}
+
+export function checkCircuitOperator(circuitId: CircuitId, operator: number) {
+  const circuitValidationData = circuitValidator[circuitId];
+
+  if (!circuitValidationData.supportedOperations.includes(operator)) {
+    throw new Error(
+      `circuit ${circuitId} not support ${getOperatorNameByValue(operator)} operator`
+    );
+  }
 }
 
 export function verifyFieldValueInclusionV2(outputs: ClaimOutputs, metadata: QueryMetadata) {

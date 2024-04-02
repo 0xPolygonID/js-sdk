@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.9.3",
+  "version": "1.10.0",
   "description": "SDK to work with Polygon ID",
   "main": "dist/node/cjs/index.js",
   "module": "dist/node/esm/index.js",
@@ -34,7 +34,9 @@
     "tsc:declaration:watch": "tsc --watch --module commonjs --emitDeclarationOnly",
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"strict\": false, \"module\": \"CommonJS\"}' mocha",
     "lint": "eslint --fix --ext .ts src/** tests/**",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
+    "lint:check": "eslint --ext .ts src/** tests/**",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --check"
   },
   "repository": {
     "type": "git",
@@ -85,11 +87,11 @@
     "typescript": "^4.8.4"
   },
   "peerDependencies": {
-    "@iden3/js-crypto": "1.0.3",
-    "@iden3/js-iden3-core": "1.2.1",
-    "@iden3/js-jsonld-merklization": "1.1.2",
-    "@iden3/js-jwz": "1.3.0",
-    "@iden3/js-merkletree": "1.1.2",
+    "@iden3/js-crypto": "1.1.0",
+    "@iden3/js-iden3-core": "1.3.1",
+    "@iden3/js-jsonld-merklization": "1.2.0",
+    "@iden3/js-jwz": "1.4.0",
+    "@iden3/js-merkletree": "1.2.0",
     "ffjavascript": "0.2.63",
     "rfc4648": "1.5.3",
     "snarkjs": "0.7.3"
@@ -121,6 +123,6 @@
     ]
   },
   "engines": {
-    "node": ">=18.16.0"
+    "node": ">=20.11.0"
   }
 }

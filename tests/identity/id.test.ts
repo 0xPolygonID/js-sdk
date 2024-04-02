@@ -26,6 +26,8 @@ describe('identity', () => {
   let idWallet: IdentityWallet;
   let dataStorage: IDataStorage;
 
+  const expectedDID = 'did:iden3:polygon:amoy:xCRp75DgAdS63W65fmXHz6p9DwdonuRU9e46DifhX';
+
   const createClaimReq = (
     credentialSubjectId: string,
     opts?: Partial<CredentialRequest>
@@ -61,9 +63,7 @@ describe('identity', () => {
   it('createIdentity', async () => {
     const { did, credential } = await createIdentity(idWallet);
 
-    expect(did.string()).to.equal(
-      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
-    );
+    expect(did.string()).to.equal(expectedDID);
     const dbCred = await dataStorage.credential.findCredentialById(credential.id);
     expect(credential).to.deep.equal(dbCred);
 
@@ -78,13 +78,11 @@ describe('identity', () => {
   it('createProfile', async () => {
     const { did } = await createIdentity(idWallet);
 
-    expect(did.string()).to.equal(
-      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
-    );
+    expect(did.string()).to.equal(expectedDID);
 
     const profileDID = await idWallet.createProfile(did, 10, 'http://polygonissuer.com/');
     expect(profileDID.string()).to.equal(
-      'did:iden3:polygon:mumbai:x2Ld4XmxEo6oGCSr3MsqBa5PmJie6WJ6pFbetzYuq'
+      'did:iden3:polygon:amoy:xHMd1mimHu3Gc1nhe3DXrimqUCNtgYP8gcuGAHgxm'
     );
 
     const dbProfile = await dataStorage.identity.getProfileByVerifier('http://polygonissuer.com/');
@@ -98,9 +96,7 @@ describe('identity', () => {
 
   it('sign', async () => {
     const { did, credential } = await createIdentity(idWallet);
-    expect(did.string()).to.equal(
-      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
-    );
+    expect(did.string()).to.equal(expectedDID);
 
     const enc = byteEncoder; // always utf-8
 
@@ -114,9 +110,7 @@ describe('identity', () => {
 
   it('generateMtp', async () => {
     const { did, credential } = await createIdentity(idWallet);
-    expect(did.string()).to.equal(
-      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
-    );
+    expect(did.string()).to.equal(expectedDID);
 
     const proof = await idWallet.generateCredentialMtp(did, credential);
 
@@ -125,9 +119,7 @@ describe('identity', () => {
 
   it('generateNonRevProof', async () => {
     const { did, credential } = await createIdentity(idWallet);
-    expect(did.string()).to.equal(
-      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
-    );
+    expect(did.string()).to.equal(expectedDID);
 
     const proof = await idWallet.generateNonRevocationMtp(did, credential);
 
@@ -136,9 +128,7 @@ describe('identity', () => {
 
   it('generateNonRevProof', async () => {
     const { did, credential } = await createIdentity(idWallet);
-    expect(did.string()).to.equal(
-      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
-    );
+    expect(did.string()).to.equal(expectedDID);
 
     const proof = await idWallet.generateNonRevocationMtp(did, credential);
 
@@ -148,9 +138,7 @@ describe('identity', () => {
   it('issueCredential', async () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet);
 
-    expect(issuerDID.string()).to.equal(
-      'did:iden3:polygon:mumbai:wzokvZ6kMoocKJuSbftdZxTD6qvayGpJb3m4FVXth'
-    );
+    expect(issuerDID.string()).to.equal(expectedDID);
 
     expect(issuerAuthCredential).not.to.be.undefined;
 

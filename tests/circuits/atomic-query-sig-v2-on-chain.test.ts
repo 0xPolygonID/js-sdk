@@ -1,5 +1,5 @@
 import { Id } from '@iden3/js-iden3-core';
-import { newHashFromString } from '@iden3/js-merkletree';
+import { Hash } from '@iden3/js-merkletree';
 import {
   AtomicQuerySigV2OnChainInputs,
   AtomicQuerySigV2OnChainPubSignals,
@@ -167,10 +167,10 @@ describe('atomic-query-sig-v2-on-chain', () => {
     exp.issuerID = Id.fromBigInt(
       BigInt('27918766665310231445021466320959318414450284884582375163563581940319453185')
     );
-    exp.issuerAuthState = newHashFromString(
+    exp.issuerAuthState = Hash.fromString(
       '20177832565449474772630743317224985532862797657496372535616634430055981993180'
     );
-    exp.issuerClaimNonRevState = newHashFromString(
+    exp.issuerClaimNonRevState = Hash.fromString(
       '20177832565449474772630743317224985532862797657496372535616634430055981993180'
     );
     exp.circuitQueryHash = queryHash;
@@ -178,7 +178,7 @@ describe('atomic-query-sig-v2-on-chain', () => {
     exp.merklized = 0;
     exp.isRevocationChecked = 1;
     (exp.challenge = BigInt(10)),
-      (exp.gistRoot = newHashFromString(
+      (exp.gistRoot = Hash.fromString(
         '11098939821764568131087645431296528907277253709936443029379587475821759259406'
       ));
     expect(exp).to.deep.equal(out);

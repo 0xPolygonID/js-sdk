@@ -203,7 +203,7 @@ describe('contract-request', () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -216,7 +216,7 @@ describe('contract-request', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -302,7 +302,8 @@ describe('contract-request', () => {
   it.skip('contract request flow - integration test', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = rpcUrl;
-    stateEthConfig.contractAddress = '0x134b1be34911e39a8397ec6289782989729807a4';
+    stateEthConfig.contractAddress = '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124';
+    stateEthConfig.chainId = 80002;
 
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
@@ -341,7 +342,7 @@ describe('contract-request', () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -354,7 +355,7 @@ describe('contract-request', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -399,11 +400,11 @@ describe('contract-request', () => {
       }
     };
 
-    const contractAddress = '0x3a4d4E47bFfF6bD0EF3cd46580D9e36F3367da03';
+    const contractAddress = '0x2b23e5cF70D133fFaA7D8ba61E1bAC4637253880';
     const conf = defaultEthConnectionConfig;
     conf.contractAddress = contractAddress;
     conf.url = rpcUrl;
-    conf.chainId = 80001;
+    conf.chainId = 80002;
 
     const zkpVerifier = new OnChainZKPVerifier([conf]);
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
@@ -453,7 +454,7 @@ describe('contract-request', () => {
   it.skip('contract request flow V3 - integration test', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = rpcUrl;
-    stateEthConfig.contractAddress = '0x134b1be34911e39a8397ec6289782989729807a4';
+    stateEthConfig.contractAddress = '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124';
 
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
@@ -492,7 +493,7 @@ describe('contract-request', () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhrase,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -505,7 +506,7 @@ describe('contract-request', () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -571,12 +572,12 @@ describe('contract-request', () => {
       }
     ];
 
-    const erc20Verifier = '0x36eB0E70a456c310D8d8d15ae01F6D5A7C15309A';
-    const verifierDid = 'did:polygonid:polygon:mumbai:2qCU58EJgrELdThzMyykDwT5kWff6XSbpSWtTQ7oS8';
+    const erc20Verifier = '0xc5Cd536cb9Cc3BD24829502A39BE593354986dc4';
+    const verifierDid = 'did:polygonid:polygon:amoy:2qQ68JkRcf3ymy9wtzKyY3Dajst9c6cHCDZyx7NrTz';
     const conf = defaultEthConnectionConfig;
     conf.contractAddress = erc20Verifier;
     conf.url = rpcUrl;
-    conf.chainId = 80001;
+    conf.chainId = 80002;
 
     const zkpVerifier = new OnChainZKPVerifier([conf]);
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
