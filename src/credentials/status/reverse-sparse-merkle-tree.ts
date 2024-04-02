@@ -5,7 +5,7 @@ import { IStateStorage } from '../../storage';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { CredentialStatus, RevocationStatus, State } from '../../verifiable';
 import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
-import { isGenesisState } from '../../utils';
+import { isEthereumIdentity, isGenesisState } from '../../utils';
 import { IssuerResolver } from './sparse-merkle-tree';
 
 /**
@@ -174,20 +174,18 @@ export class RHSResolver implements CredentialStatusResolver {
       }
       const currentStateBigInt = Hash.fromHex(stateHex).bigInt();
 
-      const issuerId = DID.idFromDID(issuerDID);
-      let isBjjIdentity = false; // don't generate proof for ethereum identities
-      try {
-        Id.ethAddressFromId(issuerId);
-      } catch {
-        // not an ethereum identity
-        isBjjIdentity = true;
-      }
+      const isEthIdentity = isEthereumIdentity(issuerDID);
 
-      if (isBjjIdentity && !isGenesisState(issuerDID, currentStateBigInt)) {
+      if (!isEthIdentity && !isGenesisState(issuerDID, currentStateBigInt)) {
         throw new Error(
           `latest state not found and state parameter ${stateHex} is not genesis state`
         );
       }
+
+      if (isEthIdentity) {
+        throw new Error(`State must be published for Ethereum based identity`);
+      }
+
       latestState = currentStateBigInt;
     }
 

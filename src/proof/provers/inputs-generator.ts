@@ -37,6 +37,7 @@ import {
   ICredentialWallet,
   getUserDIDFromCredential
 } from '../../credentials';
+import { isEthereumIdentity } from '../../utils';
 
 export type DIDProfileMetadata = {
   authProfileNonce: number;
@@ -537,12 +538,7 @@ export class InputGenerator {
       ? BigInt(proofReq.params?.nullifierSessionId?.toString())
       : BigInt(0);
 
-    let isEthIdentity = true;
-    try {
-      Id.ethAddressFromId(circuitInputs.id);
-    } catch {
-      isEthIdentity = false;
-    }
+    const isEthIdentity = isEthereumIdentity(identifier);
     circuitInputs.isBJJAuthEnabled = isEthIdentity ? 0 : 1;
 
     circuitInputs.challenge = BigInt(params.challenge ?? 0);

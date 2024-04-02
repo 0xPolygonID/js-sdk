@@ -33,7 +33,7 @@ import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { JSONObject, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
-import { ICircuitStorage, IStateStorage, UserStateTransition } from '../storage';
+import { ICircuitStorage, IStateStorage, UserStateTransitionInfo } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import {
   InputGenerator,
@@ -42,6 +42,7 @@ import {
 } from './provers/inputs-generator';
 import { PubSignalsVerifier, VerifyContext } from './verifiers/pub-signals-verifier';
 import { VerifyOpts } from './verifiers';
+import { isEthereumIdentity } from '../utils';
 
 export interface QueryWithFieldName {
   query: Query;
@@ -375,15 +376,9 @@ export class ProofService implements IProofService {
     const userId = DID.idFromDID(did);
 
     let proof;
-    let generateProof = false; // don't generate proof for ethereum identities
-    try {
-      Id.ethAddressFromId(userId);
-    } catch {
-      // not an ethereum identity
-      generateProof = true;
-    }
+    const isEthIdentity = isEthereumIdentity(did); // don't generate proof for ethereum identities
 
-    if (generateProof) {
+    if (!isEthIdentity) {
       // generate the proof
       const authInfo = await this._inputsGenerator.prepareAuthBJJCredential(did, oldTreeState);
       const challenge = Poseidon.hash([oldTreeState.state.bigInt(), newTreeState.state.bigInt()]);
@@ -419,14 +414,21 @@ export class ProofService implements IProofService {
 
     const oldUserState = oldTreeState.state;
     const newUserState = newTreeState.state;
-    const userStateTransition: UserStateTransition = {
+    const userStateTransitionInfo: UserStateTransitionInfo = {
       userId,
       oldUserState,
       newUserState,
-      isOldStateGenesis
-    } as UserStateTransition;
+      isOldStateGenesis,
+      methodId: BigInt(1),
+      methodParams: '0x'
+    } as UserStateTransitionInfo;
 
-    const txId = await stateStorage.publishState(proof, ethSigner, userStateTransition);
+    let txId;
+    if (!isEthIdentity) {
+      txId = await stateStorage.publishState(proof, ethSigner);
+    } else {
+      txId = await stateStorage.publishStateGeneric(ethSigner, userStateTransitionInfo);
+    }
     await this._identityWallet.updateIdentityState(did, true, newTreeState);
 
     return txId;

@@ -452,7 +452,7 @@ export class IdentityWallet implements IIdentityWallet {
     }
   }
 
-  private async createAuthClaim(
+  private async createAuthCoreClaim(
     revNonce: number,
     seed: Uint8Array
   ): Promise<{ authClaim: Claim; pubKey: PublicKey }> {
@@ -472,7 +472,7 @@ export class IdentityWallet implements IIdentityWallet {
     return { authClaim, pubKey };
   }
 
-  private async createAuthCredential(
+  private async createAuthBJJCredential(
     did: DID,
     pubKey: PublicKey,
     authClaim: Claim,
@@ -558,7 +558,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const revNonce = opts.revocationOpts.nonce ?? 0;
 
-    const { authClaim, pubKey } = await this.createAuthClaim(revNonce, opts.seed);
+    const { authClaim, pubKey } = await this.createAuthCoreClaim(revNonce, opts.seed);
 
     await this._storage.mt.addToMerkleTree(
       tmpIdentifier,
@@ -584,7 +584,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     await this._storage.mt.bindMerkleTreeToNewIdentifier(tmpIdentifier, did.string());
 
-    const credential = await this.createAuthCredential(
+    const credential = await this.createAuthBJJCredential(
       did,
       pubKey,
       authClaim,
@@ -657,7 +657,7 @@ export class IdentityWallet implements IIdentityWallet {
     });
 
     // Add Auth BJJ credential after saving identity for Ethereum identities
-    const { authClaim, pubKey } = await this.createAuthClaim(
+    const { authClaim, pubKey } = await this.createAuthCoreClaim(
       opts.revocationOpts.nonce ?? 0,
       opts.seed
     );
@@ -680,7 +680,7 @@ export class IdentityWallet implements IIdentityWallet {
       ZERO_HASH.bigInt()
     ]);
 
-    const credential = await this.createAuthCredential(
+    const credential = await this.createAuthBJJCredential(
       did,
       pubKey,
       authClaim,
@@ -695,6 +695,10 @@ export class IdentityWallet implements IIdentityWallet {
       state: currentState,
       rootOfRoots: ZERO_HASH
     };
+
+    if (!proofService) {
+      throw new Error('Proof service is required to create Ethereum identities');
+    }
 
     // Mandatory transit state after adding auth credential in Ethereum identities
     await proofService?.transitState(did, oldTreeState, true, this._storage.states, ethSigner);

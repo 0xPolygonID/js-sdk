@@ -22,6 +22,24 @@ export function isGenesisState(did: DID, state: bigint | string): boolean {
   return id.bigInt().toString() === idFromState.bigInt().toString();
 }
 
+/**
+ * Checks if DID is an ethereum identity
+ *
+ * @param {string} did - did
+ * @returns boolean
+ */
+export function isEthereumIdentity(did: DID): boolean {
+  const issuerId = DID.idFromDID(did);
+  try {
+    Id.ethAddressFromId(issuerId);
+    // is an ethereum identity
+    return true;
+  } catch {
+    // not an ethereum identity (BabyJubJub or other)
+    return false;
+  }
+}
+
 export const buildVerifierId = (
   address: string,
   info: { method: string; blockchain: string; networkId: string }
