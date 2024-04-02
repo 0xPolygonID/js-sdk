@@ -26,7 +26,7 @@ import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { SEED_USER, createIdentity } from '../helpers';
 
-describe.only('mtp proofs', () => {
+describe('mtp proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 

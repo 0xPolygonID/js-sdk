@@ -20,13 +20,12 @@ import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { RHSResolver } from '../../../src/credentials';
 import { CredentialStatusResolverRegistry } from '../../../src/credentials';
+import { RHS_URL, SEED_USER, createIdentity } from '../../helpers';
 
 describe('rhs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
   let dataStorage: IDataStorage;
-  const rhsUrl = process.env.RHS_URL as string;
-  const infuraUrl = process.env.RPC_URL as string;
 
   const mockStateStorageForGenesisState: IStateStorage = {
     getLatestStateById: async () => {
@@ -65,12 +64,12 @@ describe('rhs', () => {
   const mockStateStorageForDefinedState: IStateStorage = {
     getLatestStateById: async () => {
       return {
-        id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
-        state: 16074735548090432706010308621156024769148807454202029933745588915345672503542n,
+        id: 25198543381200665770805816046271594885604002445105767653616878167826895617n,
+        state: 20397203454293344824319112126262598089448492524764346423396986451600214023752n,
         replacedByState: 0n,
-        createdAtTimestamp: 1672245326n,
+        createdAtTimestamp: 1712062738n,
         replacedAtTimestamp: 0n,
-        createdAtBlock: 30258020n,
+        createdAtBlock: 5384981n,
         replacedAtBlock: 0n
       };
     },
@@ -106,12 +105,12 @@ describe('rhs', () => {
   const mockStateStorageForSecondState: IStateStorage = {
     getLatestStateById: async () => {
       return {
-        id: 25191641634853875207018381290409317860151551336133597267061715643603096065n,
-        state: 6579597760262775007137624273344484963760596803465690980061360458400178710641n,
+        id: 25198543381200665770805816046271594885604002445105767653616878167826895617n,
+        state: 9825378702528281403624130829967493160346534249838500892034361176934961813026n,
         replacedByState: 0n,
-        createdAtTimestamp: 1672245326n,
+        createdAtTimestamp: 1712064534n,
         replacedAtTimestamp: 0n,
-        createdAtBlock: 30258020n,
+        createdAtBlock: 5385826n,
         replacedAtBlock: 0n
       };
     },
@@ -150,11 +149,7 @@ describe('rhs', () => {
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
-
-    const conf = defaultEthConnectionConfig;
-    conf.url = infuraUrl;
-    conf.contractAddress = '0xf6781AD281d9892Df285cf86dF4F6eBec2042d71';
-    const ethStorage = new EthStateStorage(conf);
+    const ethStorage = new EthStateStorage(defaultEthConnectionConfig);
     ethStorage.publishState = mockStateStorageForGenesisState.publishState;
 
     dataStorage = {
@@ -196,7 +191,7 @@ describe('rhs', () => {
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
+        id: RHS_URL
       }
     });
 
@@ -208,7 +203,7 @@ describe('rhs', () => {
       type: CredentialStatusType.SparseMerkleTreeProof
     };
     const credRHSStatus: CredentialStatus = {
-      id: rhsUrl,
+      id: RHS_URL,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       revocationNonce: 0,
       statusIssuer: credBasicStatus
@@ -229,32 +224,12 @@ describe('rhs', () => {
   });
 
   it('mocked issuer state', async () => {
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
-
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
-
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Amoy,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
+    const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet, {});
 
     await credWallet.save(issuerAuthCredential);
 
-    const { did: userDID } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Amoy,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
+    const { did: userDID } = await createIdentity(idWallet, {
+      seed: SEED_USER
     });
 
     const credBasicStatus: CredentialStatus = {
@@ -264,7 +239,7 @@ describe('rhs', () => {
     };
 
     const credRHSStatus: CredentialStatus = {
-      id: rhsUrl,
+      id: RHS_URL,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       revocationNonce: 0,
       statusIssuer: credBasicStatus
@@ -283,7 +258,7 @@ describe('rhs', () => {
       revocationOpts: {
         nonce: 1000,
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
+        id: RHS_URL
       }
     };
 
@@ -293,7 +268,7 @@ describe('rhs', () => {
 
     const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
 
-    await idWallet.publishStateToRHS(issuerDID, rhsUrl);
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL);
 
     const rhsResolver = new RHSResolver(mockStateStorageForDefinedState);
     const rhsStatus = await rhsResolver.resolve(credRHSStatus, { issuerDID });
@@ -304,32 +279,14 @@ describe('rhs', () => {
     expect(rhsStatus.issuer.rootOfRoots).to.equal(res.newTreeState.rootOfRoots.hex());
     expect(rhsStatus.mtp.existence).to.equal(false);
   });
-  it('two creds. one revoked', async () => {
-    const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Amoy,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
+  it('two creds. one revoked', async () => {
+    const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet);
 
     await credWallet.save(issuerAuthCredential);
 
-    const { did: userDID, credential } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Amoy,
-      seed: seedPhrase,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
+    const { did: userDID, credential } = await createIdentity(idWallet, {
+      seed: SEED_USER
     });
 
     expect(credential).not.to.be.undefined;
@@ -340,7 +297,7 @@ describe('rhs', () => {
       type: CredentialStatusType.SparseMerkleTreeProof
     };
     const credRHSStatus: CredentialStatus = {
-      id: rhsUrl,
+      id: RHS_URL,
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       revocationNonce: 1000,
       statusIssuer: credBasicStatus
@@ -359,7 +316,7 @@ describe('rhs', () => {
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         nonce: 1000,
-        id: rhsUrl
+        id: RHS_URL
       }
     };
 
@@ -383,7 +340,7 @@ describe('rhs', () => {
       expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl,
+        id: RHS_URL,
         nonce: 1001
       }
     };
@@ -398,7 +355,7 @@ describe('rhs', () => {
 
     const latestTree = await idWallet.getDIDTreeModel(issuerDID);
 
-    await idWallet.publishStateToRHS(issuerDID, rhsUrl, [nonce]);
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL, [nonce]);
 
     // state is published to blockchain (2)
     dataStorage.states = mockStateStorageForSecondState;
