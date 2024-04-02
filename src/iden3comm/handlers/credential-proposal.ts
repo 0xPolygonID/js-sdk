@@ -254,7 +254,7 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
         continue;
       }
 
-      // credential not found in wallet, prepare proposal protocol message
+      // credential not found in the wallet, prepare proposal protocol message
       const proposal = await this._proposalResolverFn(cred.context, cred.type);
       if (!proposal) {
         throw new Error(`can't resolve Proposal for type: ${cred.type}, context: ${cred.context}`);
