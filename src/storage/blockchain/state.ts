@@ -163,10 +163,10 @@ export class EthStateStorage implements IStateStorage {
   /** {@inheritdoc IStateStorage.publishStateGeneric} */
   async publishStateGeneric(
     signer: Signer,
-    userStateTranstionInfo: UserStateTransitionInfo
+    userStateTransitionInfo: UserStateTransitionInfo
   ): Promise<string> {
     const { userId, oldUserState, newUserState, isOldStateGenesis, methodId, methodParams } =
-      userStateTranstionInfo;
+      userStateTransitionInfo;
     const { stateContract, provider } = this.getStateContractAndProviderForId(userId.bigInt());
     const contract = stateContract.connect(signer) as Contract;
     const feeData = await provider.getFeeData();
