@@ -44,7 +44,7 @@ import {
 import { TreeState } from '../circuits';
 import { buildDIDFromEthPubKey, byteEncoder } from '../utils';
 import { Options } from '@iden3/js-jsonld-merklization';
-import { TransactionReceipt } from 'ethers';
+import { Signer, TransactionReceipt } from 'ethers';
 import {
   CredentialStatusPublisherRegistry,
   Iden3SmtRhsCredentialStatusPublisher
@@ -73,7 +73,7 @@ export type IdentityCreationOptions = {
   };
   seed?: Uint8Array;
   keyType?: KmsKeyType;
-  ethSigner?: any;
+  ethSigner?: Signer;
   proofService?: ProofService;
 };
 
@@ -112,7 +112,7 @@ export interface IIdentityWallet {
    * adds auth BJJ credential to claims tree and generates mtp of inclusion
    * based on the resulting state it provides an identifier in DID form.
    *
-   * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:aloy** with generated key.
+   * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:amoy** with generated key.
    * @returns `Promise<{ did: DID; credential: W3CCredential }>` - returns did and Auth BJJ credential
    * @public
    */
@@ -438,6 +438,9 @@ export class IdentityWallet implements IIdentityWallet {
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
     opts.keyType = opts.keyType ?? KmsKeyType.BabyJubJub;
+    opts.method = opts.method ?? DidMethod.Iden3;
+    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
+    opts.networkId = opts.networkId ?? NetworkId.Amoy;
 
     switch (opts.keyType) {
       case KmsKeyType.BabyJubJub:
@@ -545,10 +548,6 @@ export class IdentityWallet implements IIdentityWallet {
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
     const tmpIdentifier = opts.seed ? uuid.v5(Hex.encode(sha256(opts.seed)), uuid.NIL) : uuid.v4();
-
-    opts.method = opts.method ?? DidMethod.Iden3;
-    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
-    opts.networkId = opts.networkId ?? NetworkId.Aloy;
     opts.seed = opts.seed ?? getRandomBytes(32);
 
     await this._storage.mt.createIdentityMerkleTrees(tmpIdentifier);
@@ -575,7 +574,8 @@ export class IdentityWallet implements IIdentityWallet {
       ZERO_HASH.bigInt()
     ]);
 
-    const didType = buildDIDType(opts.method, opts.blockchain, opts.networkId);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const didType = buildDIDType(opts.method!, opts.blockchain!, opts.networkId!);
     const identifier = Id.idGenesisFromIdenState(didType, currentState.bigInt());
     const did = DID.parseFromId(identifier);
 
@@ -619,9 +619,6 @@ export class IdentityWallet implements IIdentityWallet {
   private async createEthereumIdentity(
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
-    opts.method = opts.method ?? DidMethod.Iden3;
-    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
-    opts.networkId = opts.networkId ?? NetworkId.Aloy;
     opts.seed = opts.seed ?? getRandomBytes(32);
 
     const proofService = opts.proofService;
@@ -629,7 +626,8 @@ export class IdentityWallet implements IIdentityWallet {
 
     const currentState = ZERO_HASH; // In Ethereum identities we don't have an initial state with the auth credential
 
-    const didType = buildDIDType(opts.method, opts.blockchain, opts.networkId);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const didType = buildDIDType(opts.method!, opts.blockchain!, opts.networkId!);
 
     const keyIdEth = await this._kms.createKeyFromSeed(KmsKeyType.Secp256k1, opts.seed);
     const pubKeyHexEth = (await this._kms.publicKey(keyIdEth)).slice(2); // 04 + x + y (uncompressed key)

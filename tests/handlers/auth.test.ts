@@ -38,7 +38,8 @@ import {
   InMemoryMerkleTreeStorage,
   W3CCredential,
   Sec256k1Provider,
-  StateInfo
+  StateInfo,
+  hexToBytes
 } from '../../src';
 import { Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -663,7 +664,7 @@ describe('auth', () => {
       method: DidMethod.PolygonId,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Amoy,
-      seed: Buffer.from(WALLET_KEY, 'hex'),
+      seed: hexToBytes(WALLET_KEY),
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: RHS_URL

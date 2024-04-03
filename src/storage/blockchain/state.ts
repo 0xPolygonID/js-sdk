@@ -160,7 +160,7 @@ export class EthStateStorage implements IStateStorage {
     return txnHash;
   }
 
-  /** {@inheritdoc IStateStorage.publishState} */
+  /** {@inheritdoc IStateStorage.publishStateGeneric} */
   async publishStateGeneric(
     signer: Signer,
     userStateTranstionInfo: UserStateTransitionInfo

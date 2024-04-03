@@ -3,6 +3,7 @@ import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-co
 import { Hash } from '@iden3/js-merkletree';
 import { DIDResolutionResult, VerificationMethod } from 'did-resolver';
 import { keccak256 } from 'js-sha3';
+import { hexToBytes } from './encoding';
 
 /**
  * Checks if state is genesis state
@@ -87,9 +88,9 @@ export const resolveDIDDocumentAuth = async (
 
 export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): DID => {
   // Use Keccak-256 hash function to get public key hash
-  const hashOfPublicKey = keccak256(Buffer.from(pubKeyEth, 'hex'));
+  const hashOfPublicKey = keccak256(hexToBytes(pubKeyEth));
   // Convert hash to buffer
-  const ethAddressBuffer = Buffer.from(hashOfPublicKey, 'hex');
+  const ethAddressBuffer = hexToBytes(hashOfPublicKey);
   // Ethereum Address is '0x' concatenated with last 20 bytes
   // of the public key hash
   const ethAddr = ethAddressBuffer.slice(-20);
