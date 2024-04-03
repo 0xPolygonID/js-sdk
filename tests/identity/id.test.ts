@@ -12,8 +12,9 @@ import {
   RHSResolver,
   CredentialStatusType,
   KmsKeyType,
-  ProofService,
-  FSCircuitStorage
+  FSCircuitStorage,
+  EthStateStorage,
+  NativeProver
 } from '../../src';
 import {
   MOCK_STATE_STORAGE,
@@ -22,9 +23,10 @@ import {
   RHS_URL,
   getInMemoryDataStorage,
   registerKeyProvidersInMemoryKMS,
-  IPFS_URL
+  WALLET_KEY
 } from '../helpers';
 import { expect } from 'chai';
+import { Wallet } from 'ethers';
 
 describe('identity', () => {
   let credWallet: ICredentialWallet;
@@ -63,8 +65,16 @@ describe('identity', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet);
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+
+    const prover = new NativeProver(circuitStorage);
+    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet, {
+      prover
+    });
   });
+
   it('createIdentity', async () => {
     const { did, credential } = await createIdentity(idWallet);
 
@@ -174,23 +184,11 @@ describe('identity', () => {
   });
 
   it('createIdentity Secp256k1', async () => {
-    const circuitStorage = new FSCircuitStorage({
-      dirname: path.join(__dirname, '../proofs/testdata')
-    });
-
-    const proofService = new ProofService(
-      idWallet,
-      credWallet,
-      circuitStorage,
-      dataStorage.states,
-      {
-        ipfsNodeURL: IPFS_URL
-      }
-    );
+    const ethSigner = new Wallet(WALLET_KEY, (dataStorage.states as EthStateStorage).provider);
 
     const { did, credential } = await createIdentity(idWallet, {
       keyType: KmsKeyType.Secp256k1,
-      proofService
+      ethSigner
     });
 
     expect(did.string()).to.equal(

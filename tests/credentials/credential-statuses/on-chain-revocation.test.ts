@@ -24,7 +24,8 @@ import {
   CredentialStatusPublisherRegistry,
   Iden3OnchainSmtCredentialStatusPublisher,
   SDK_EVENTS,
-  MessageBus
+  MessageBus,
+  NativeProver
 } from '../../../src';
 
 import {
@@ -238,8 +239,10 @@ describe('onchain revocation checks', () => {
       new Iden3OnchainSmtCredentialStatusPublisher(storage)
     );
 
+    const prover = new NativeProver(circuitStorage);
     idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet, {
-      credentialStatusPublisherRegistry
+      credentialStatusPublisherRegistry,
+      prover
     });
     proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
   });
@@ -300,7 +303,7 @@ describe('onchain revocation checks', () => {
       CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023
     );
 
-    await proofService.transitState(issuerDID, res.oldTreeState, true, dataStorage.states, signer);
+    await proofService.transitState(issuerDID, res.oldTreeState, true, signer);
 
     const [ctrHexL, rtrHexL, rorTrHexL] = [
       res.newTreeState.claimsRoot.hex(),

@@ -13,7 +13,7 @@ import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { ProofService } from '../../src/proof';
+import { NativeProver, ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { ethers } from 'ethers';
 import { EthStateStorage } from '../../src/storage/blockchain/state';
@@ -116,7 +116,9 @@ describe('mtp proofs', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+
+    const prover = new NativeProver(circuitStorage);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, { prover });
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });
@@ -166,13 +168,7 @@ describe('mtp proofs', () => {
       walletKey,
       (dataStorage.states as EthStateStorage).provider
     );
-    const txId = await proofService.transitState(
-      issuerDID,
-      res.oldTreeState,
-      true,
-      dataStorage.states,
-      ethSigner
-    );
+    const txId = await proofService.transitState(issuerDID, res.oldTreeState, true, ethSigner);
 
     const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
       issuerDID,
@@ -257,13 +253,7 @@ describe('mtp proofs', () => {
       (dataStorage.states as EthStateStorage).provider
     );
 
-    const txId = await proofService.transitState(
-      issuerDID,
-      res.oldTreeState,
-      true,
-      dataStorage.states,
-      ethSigner
-    );
+    const txId = await proofService.transitState(issuerDID, res.oldTreeState, true, ethSigner);
 
     const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
       issuerDID,
