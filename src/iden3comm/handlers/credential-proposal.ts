@@ -49,11 +49,7 @@ export function createProposalRequest(
     to: receiver.string(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
-    body: {
-      credentials: opts.credentials,
-      metadata: opts.metadata,
-      did_doc: opts.did_doc
-    }
+    body: opts
   };
   return request;
 }
@@ -227,7 +223,7 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
         }
       }
 
-      if (credsFromWallet?.length) {
+      if (credsFromWallet.length) {
         const guid = uuid.v4();
         if (!credOfferMessage) {
           credOfferMessage = {
