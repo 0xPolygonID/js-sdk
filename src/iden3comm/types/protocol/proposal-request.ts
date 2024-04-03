@@ -1,15 +1,8 @@
-import { JSONObject, ProtocolMessage } from '../';
-import { MediaType } from '../../constants';
+import { BasicMessage, JSONObject } from '../';
 
 /** @beta ProposalRequestMessage is struct the represents proposal-request message */
-export type ProposalRequestMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type ProposalRequestMessage = BasicMessage & {
   body?: ProposalRequestMessageBody;
-  from?: string;
-  to?: string;
 };
 
 /** @beta ProposalRequestMessageBody is struct the represents body for proposal-request */
@@ -20,14 +13,8 @@ export type ProposalRequestMessageBody = {
 };
 
 /** @beta  ProposalMessage is struct the represents proposal message */
-export type ProposalMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type ProposalMessage = BasicMessage & {
   body?: ProposalMessageBody;
-  from?: string;
-  to?: string;
 };
 
 /** @beta  ProposalMessageBody is struct the represents body for proposal message */

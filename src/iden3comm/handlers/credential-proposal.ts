@@ -127,7 +127,10 @@ export interface ICredentialProposalHandler {
 }
 
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
-export type ProposalRequestHandlerOptions = {
+export type ProposalRequestHandlerOptions = object;
+
+/** @beta PackerParams represents params for packer */
+export type PackerParams = {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
 };
@@ -135,6 +138,13 @@ export type ProposalRequestHandlerOptions = {
 /** @beta ProposalHandlerOptions represents proposal handler options */
 export type ProposalHandlerOptions = {
   proposalRequest?: ProposalRequestMessage;
+};
+
+/** @beta CredentialProposalHandlerParams represents credential proposal handler params */
+export type CredentialProposalHandlerParams = {
+  agentUrl: string;
+  proposalResolverFn: (context: string, type: string) => Promise<Proposal>;
+  packerParams: PackerParams;
 };
 
 /**
@@ -149,15 +159,14 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
    * @beta Creates an instance of CredentialProposalHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    * @param {IIdentityWallet} _identityWallet - identity wallet
-   * @param {(context: string, type: string) => Promise<Proposal>} _proposalResolverFn - resolves Proposal by context and type
+   * @param {CredentialProposalHandlerParams} _params - credential proposal handler params
    *
    */
 
   constructor(
     private readonly _packerMgr: IPackageManager,
     private readonly _identityWallet: IIdentityWallet,
-    private readonly _agentUrl: string,
-    private readonly _proposalResolverFn: (context: string, type: string) => Promise<Proposal>
+    private readonly _params: CredentialProposalHandlerParams
   ) {}
 
   /**
@@ -177,15 +186,13 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
    */
   async handleProposalRequest(
     request: Uint8Array,
+    //eslint-disable-next-line @typescript-eslint/no-unused-vars
     opts?: ProposalRequestHandlerOptions
   ): Promise<Uint8Array> {
-    if (!opts) {
-      opts = {
-        mediaType: MediaType.PlainMessage
-      };
-    }
-
-    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
+    if (
+      this._params.packerParams.mediaType === MediaType.SignedMessage &&
+      !this._params.packerParams.packerOptions
+    ) {
       throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
     }
 
@@ -228,11 +235,11 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
         if (!credOfferMessage) {
           credOfferMessage = {
             id: guid,
-            typ: opts.mediaType,
+            typ: this._params.packerParams.mediaType,
             type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE,
             thid: proposalRequest.thid ?? guid,
             body: {
-              url: this._agentUrl,
+              url: this._params.agentUrl,
               credentials: []
             },
             from: proposalRequest.to,
@@ -250,7 +257,7 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
       }
 
       // credential not found in the wallet, prepare proposal protocol message
-      const proposal = await this._proposalResolverFn(cred.context, cred.type);
+      const proposal = await this._params.proposalResolverFn(cred.context, cred.type);
       if (!proposal) {
         throw new Error(`can't resolve Proposal for type: ${cred.type}, context: ${cred.context}`);
       }
@@ -258,7 +265,7 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
         const guid = uuid.v4();
         proposalMessage = {
           id: guid,
-          typ: opts.mediaType,
+          typ: this._params.packerParams.mediaType,
           type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE,
           thid: proposalRequest.thid ?? guid,
           body: {
@@ -275,13 +282,13 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
     const response = byteEncoder.encode(JSON.stringify(credOfferMessage ?? proposalMessage));
 
     const packerOpts =
-      opts.mediaType === MediaType.SignedMessage
-        ? opts.packerOptions
+      this._params.packerParams.mediaType === MediaType.SignedMessage
+        ? this._params.packerParams.packerOptions
         : {
             provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
           };
 
-    return this._packerMgr.pack(opts.mediaType, response, {
+    return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
       senderDID,
       ...packerOpts
     });

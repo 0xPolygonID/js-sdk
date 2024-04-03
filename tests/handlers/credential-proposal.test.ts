@@ -34,7 +34,7 @@ import {
 
 import { expect } from 'chai';
 import path from 'path';
-import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
+import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { DID } from '@iden3/js-iden3-core';
 
 describe('proposal-request handler', () => {
@@ -87,12 +87,13 @@ describe('proposal-request handler', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    proposalRequestHandler = new CredentialProposalHandler(
-      packageMgr,
-      idWallet,
+    proposalRequestHandler = new CredentialProposalHandler(packageMgr, idWallet, {
       agentUrl,
-      proposalResolverFn
-    );
+      proposalResolverFn,
+      packerParams: {
+        mediaType: MediaType.PlainMessage
+      }
+    });
 
     const userIdentity = await createIdentity(idWallet, {
       seed: SEED_USER
