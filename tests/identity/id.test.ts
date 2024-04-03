@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import path from 'path';
 import {
   IdentityWallet,
   byteEncoder,
@@ -10,7 +11,9 @@ import {
   CredentialStatusResolverRegistry,
   RHSResolver,
   CredentialStatusType,
-  KmsKeyType
+  KmsKeyType,
+  ProofService,
+  FSCircuitStorage
 } from '../../src';
 import {
   MOCK_STATE_STORAGE,
@@ -18,7 +21,8 @@ import {
   createIdentity,
   RHS_URL,
   getInMemoryDataStorage,
-  registerKeyProvidersInMemoryKMS
+  registerKeyProvidersInMemoryKMS,
+  IPFS_URL
 } from '../helpers';
 import { expect } from 'chai';
 
@@ -170,7 +174,24 @@ describe('identity', () => {
   });
 
   it('createIdentity Secp256k1', async () => {
-    const { did, credential } = await createIdentity(idWallet, { keyType: KmsKeyType.Secp256k1 });
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+
+    const proofService = new ProofService(
+      idWallet,
+      credWallet,
+      circuitStorage,
+      dataStorage.states,
+      {
+        ipfsNodeURL: IPFS_URL
+      }
+    );
+
+    const { did, credential } = await createIdentity(idWallet, {
+      keyType: KmsKeyType.Secp256k1,
+      proofService
+    });
 
     expect(did.string()).to.equal(
       'did:iden3:polygon:amoy:x6x5sor7zpxsu478u36QvEgaRUfPjmzqFo5PHHzbM'

@@ -1,7 +1,7 @@
 import { RootInfo, StateProof } from './../entities/state';
 import { ZKProof } from '@iden3/js-jwz';
 import { IStateStorage, UserStateTransitionInfo } from '../interfaces/state';
-import { Contract, ContractTransaction, JsonRpcProvider, Signer, TransactionRequest } from 'ethers';
+import { Contract, JsonRpcProvider, Signer, TransactionRequest } from 'ethers';
 import { StateInfo } from '../entities/state';
 import { StateTransitionPubSignals } from '../../circuits';
 import { byteEncoder } from '../../utils';
@@ -165,7 +165,8 @@ export class EthStateStorage implements IStateStorage {
     signer: Signer,
     userStateTranstionInfo: UserStateTransitionInfo
   ): Promise<string> {
-    const { userId, oldUserState, newUserState, isOldStateGenesis, methodId, methodParams } = userStateTranstionInfo;
+    const { userId, oldUserState, newUserState, isOldStateGenesis, methodId, methodParams } =
+      userStateTranstionInfo;
     const { stateContract, provider } = this.getStateContractAndProviderForId(userId.bigInt());
     const contract = stateContract.connect(signer) as Contract;
     const feeData = await provider.getFeeData();

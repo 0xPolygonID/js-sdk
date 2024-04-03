@@ -37,7 +37,8 @@ import {
   Profile,
   InMemoryMerkleTreeStorage,
   W3CCredential,
-  Sec256k1Provider
+  Sec256k1Provider,
+  StateInfo
 } from '../../src';
 import { Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -565,8 +566,26 @@ describe('auth', () => {
       from: didIssuer.string()
     };
 
+    // Ethereum identities should have a previous state in state storage. We mock it here.
+    const previousGetLatestStateById = MOCK_STATE_STORAGE.getLatestStateById;
+    MOCK_STATE_STORAGE.getLatestStateById = async (id: bigint): Promise<StateInfo> => {
+      return {
+        id,
+        state: res.oldTreeState.state.bigInt(),
+        replacedByState: 0n,
+        createdAtTimestamp: 1712062738n,
+        replacedAtTimestamp: 0n,
+        createdAtBlock: 5384981n,
+        replacedAtBlock: 0n
+      };
+    };
+
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+
+    // Restore the mock state storage
+    MOCK_STATE_STORAGE.getLatestStateById = previousGetLatestStateById;
+
     // console.log(JSON.stringify(authRes.authResponse));
     const tokenStr = authRes.token;
     // console.log(tokenStr);
@@ -580,7 +599,7 @@ describe('auth', () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = RPC_URL;
     stateEthConfig.contractAddress = STATE_CONTRACT;
-    stateEthConfig.chainId = 80001;
+    stateEthConfig.chainId = 80002; // Amoy
 
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
@@ -625,7 +644,7 @@ describe('auth', () => {
     const { did: didUser, credential: userAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.PolygonId,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: SEED_USER,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -643,7 +662,7 @@ describe('auth', () => {
     const { did: didIssuer, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.PolygonId,
       blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
+      networkId: NetworkId.Amoy,
       seed: Buffer.from(WALLET_KEY, 'hex'),
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -651,7 +670,7 @@ describe('auth', () => {
       },
       keyType: KmsKeyType.Secp256k1,
       ethSigner,
-      proofService: proofService
+      proofService
     });
     expect(issuerAuthCredential).not.to.be.undefined;
 

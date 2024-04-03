@@ -2,6 +2,7 @@ import { Hex } from '@iden3/js-crypto';
 import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import { DIDResolutionResult, VerificationMethod } from 'did-resolver';
+import { keccak256 } from 'js-sha3';
 
 /**
  * Checks if state is genesis state
@@ -82,4 +83,17 @@ export const resolveDIDDocumentAuth = async (
   return didResolutionRes.didDocument?.verificationMethod?.find(
     (i) => i.type === 'Iden3StateInfo2023'
   );
+};
+
+export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): DID => {
+  // Use Keccak-256 hash function to get public key hash
+  const hashOfPublicKey = keccak256(Buffer.from(pubKeyEth, 'hex'));
+  // Convert hash to buffer
+  const ethAddressBuffer = Buffer.from(hashOfPublicKey, 'hex');
+  // Ethereum Address is '0x' concatenated with last 20 bytes
+  // of the public key hash
+  const ethAddr = ethAddressBuffer.slice(-20);
+  const genesis = genesisFromEthAddress(ethAddr);
+  const identifier = new Id(didType, genesis);
+  return DID.parseFromId(identifier);
 };

@@ -7,7 +7,6 @@ import {
   ClaimOptions,
   DID,
   DidMethod,
-  genesisFromEthAddress,
   getUnixTimestamp,
   Id,
   NetworkId,
@@ -15,7 +14,6 @@ import {
 } from '@iden3/js-iden3-core';
 import { poseidon, PublicKey, sha256, Signature, Hex, getRandomBytes } from '@iden3/js-crypto';
 import { Hash, hashElems, ZERO_HASH } from '@iden3/js-merkletree';
-
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
 import { JSONSchema, JsonSchemaValidator, cacheLoader } from '../schema-processor';
@@ -44,7 +42,7 @@ import {
   TreesModel
 } from '../credentials';
 import { TreeState } from '../circuits';
-import { byteEncoder } from '../utils';
+import { buildDIDFromEthPubKey, byteEncoder } from '../utils';
 import { Options } from '@iden3/js-jsonld-merklization';
 import { TransactionReceipt } from 'ethers';
 import {
@@ -52,7 +50,6 @@ import {
   Iden3SmtRhsCredentialStatusPublisher
 } from '../credentials/status/credential-status-publisher';
 import { ProofService } from '../proof';
-import { keccak256 } from 'js-sha3';
 
 /**
  * DID creation options
@@ -636,16 +633,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     const keyIdEth = await this._kms.createKeyFromSeed(KmsKeyType.Secp256k1, opts.seed);
     const pubKeyHexEth = (await this._kms.publicKey(keyIdEth)).slice(2); // 04 + x + y (uncompressed key)
-    // Use Keccak-256 hash function to get public key hash
-    const hashOfPublicKey = keccak256(Buffer.from(pubKeyHexEth, 'hex'));
-    // Convert hash to buffer
-    const ethAddressBuffer = Buffer.from(hashOfPublicKey, 'hex');
-    // Ethereum Address is '0x' concatenated with last 20 bytes
-    // of the public key hash
-    const ethAddr = ethAddressBuffer.slice(-20);
-    const genesis = genesisFromEthAddress(ethAddr);
-    const identifier = new Id(didType, genesis);
-    const did = DID.parseFromId(identifier);
+    const did = buildDIDFromEthPubKey(didType, pubKeyHexEth);
 
     await this._storage.mt.createIdentityMerkleTrees(did.string());
 
