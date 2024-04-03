@@ -624,6 +624,12 @@ export class IdentityWallet implements IIdentityWallet {
     const proofService = opts.proofService;
     const ethSigner = opts.ethSigner;
 
+    if (!ethSigner) {
+      throw new Error(
+        'Ethereum signer is required to create Ethereum identities in order to transit state'
+      );
+    }
+
     const currentState = ZERO_HASH; // In Ethereum identities we don't have an initial state with the auth credential
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
