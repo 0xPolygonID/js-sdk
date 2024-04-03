@@ -5,7 +5,7 @@ import {
   CredentialsOfferMessage,
   IPackageManager,
   JSONObject,
-  JWSPackerParams
+  PackerParams
 } from '../types';
 
 import { DID } from '@iden3/js-iden3-core';
@@ -128,12 +128,6 @@ export interface ICredentialProposalHandler {
 
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
 export type ProposalRequestHandlerOptions = object;
-
-/** @beta PackerParams represents params for packer */
-export type PackerParams = {
-  mediaType: MediaType;
-  packerOptions?: JWSPackerParams;
-};
 
 /** @beta ProposalHandlerOptions represents proposal handler options */
 export type ProposalHandlerOptions = {
