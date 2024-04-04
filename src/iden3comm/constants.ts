@@ -32,7 +32,11 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   // ContractInvokeRequestMessageType is type for request of contract invoke request
   CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'proofs/1.0/contract-invoke-request',
   // CredentialOnchainOfferMessageType is type of message with credential onchain offering
-  CREDENTIAL_ONCHAIN_OFFER_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/1.0/onchain-offer'
+  CREDENTIAL_ONCHAIN_OFFER_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/1.0/onchain-offer',
+  // ProposalRequestMessageType is type for proposal-request message
+  PROPOSAL_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/0.1/proposal-request',
+  // ProposalMessageType is type for proposal message
+  PROPOSAL_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/0.1/proposal'
 });
 
 /**
