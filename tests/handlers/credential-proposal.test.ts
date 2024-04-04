@@ -18,7 +18,9 @@ import {
   byteDecoder,
   CredentialsOfferMessage,
   ProposalMessage,
-  Proposal
+  Proposal,
+  PlainPacker,
+  PackageManager
 } from '../../src';
 
 import {
@@ -44,6 +46,8 @@ describe('proposal-request handler', () => {
   let proposalRequestHandler: ICredentialProposalHandler;
   const agentUrl = 'http://localhost:8001/api/v1/agent';
   let userDID, issuerDID: DID;
+  const packageManager: IPackageManager = new PackageManager();
+  packageManager.registerPackers([new PlainPacker()]);
 
   const proposalResolverFn = (context: string, type: string): Promise<Proposal> => {
     if (
@@ -138,7 +142,11 @@ describe('proposal-request handler', () => {
       ]
     });
 
-    const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(proposalRequest)),
+      {}
+    );
 
     const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest);
     expect(response).not.to.be.undefined;
@@ -159,7 +167,11 @@ describe('proposal-request handler', () => {
       ]
     });
 
-    const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(proposalRequest)),
+      {}
+    );
 
     const response = await proposalRequestHandler.handleProposalRequest(msgBytesRequest);
     expect(response).not.to.be.undefined;
@@ -188,7 +200,11 @@ describe('proposal-request handler', () => {
       ]
     });
 
-    const msgBytesRequest = byteEncoder.encode(JSON.stringify(proposalRequest));
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(proposalRequest)),
+      {}
+    );
 
     try {
       await proposalRequestHandler.handleProposalRequest(msgBytesRequest);

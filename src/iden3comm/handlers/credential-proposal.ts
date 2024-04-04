@@ -273,7 +273,7 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
     }
 
     // if there is credentials in the wallet, return offer protocol message, otherwise proposal
-    const response = byteEncoder.encode(JSON.stringify(credOfferMessage ?? proposalMessage));
+    const response = byteEncoder.encode(JSON.stringify(proposalMessage ?? credOfferMessage));
 
     const packerOpts =
       this._params.packerParams.mediaType === MediaType.SignedMessage
