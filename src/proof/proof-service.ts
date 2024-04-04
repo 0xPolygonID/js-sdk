@@ -1,15 +1,6 @@
-import { Poseidon } from '@iden3/js-crypto';
-import { BytesHelper, DID, Id, MerklizedRootPosition } from '@iden3/js-iden3-core';
+import { BytesHelper, DID, MerklizedRootPosition } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
-import {
-  AuthV2Inputs,
-  CircuitId,
-  Operators,
-  Query,
-  StateTransitionInputs,
-  TreeState,
-  ValueProof
-} from '../circuits';
+import { AuthV2Inputs, CircuitId, Operators, Query, TreeState, ValueProof } from '../circuits';
 import { ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
 import {
@@ -33,7 +24,7 @@ import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
 import { JSONObject, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
-import { ICircuitStorage, IStateStorage, UserStateTransitionInfo } from '../storage';
+import { ICircuitStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import {
   InputGenerator,
@@ -42,7 +33,6 @@ import {
 } from './provers/inputs-generator';
 import { PubSignalsVerifier, VerifyContext } from './verifiers/pub-signals-verifier';
 import { VerifyOpts } from './verifiers';
-import { isEthereumIdentity } from '../utils';
 
 export interface QueryWithFieldName {
   query: Query;

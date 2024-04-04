@@ -408,18 +408,18 @@ describe('auth', () => {
       (dataStorage.states as EthStateStorage).provider
     );
 
-    const { did: didIssuer, credential: issuerAuthCredential } = await idWallet.createIdentity({
-      method: DidMethod.PolygonId,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Mumbai,
-      seed: SEED_ISSUER,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: RHS_URL
-      },
-      keyType: KmsKeyType.Secp256k1,
-      ethSigner
-    });
+    const { did: didIssuer, credential: issuerAuthCredential } =
+      await idWallet.createEthereumBasedIdentity({
+        method: DidMethod.PolygonId,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
+        seed: SEED_ISSUER,
+        revocationOpts: {
+          type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+          id: RHS_URL
+        },
+        ethSigner
+      });
     expect(issuerAuthCredential).not.to.be.undefined;
 
     const profileDID = await idWallet.createProfile(userDID, 777, didIssuer.string());
@@ -650,18 +650,18 @@ describe('auth', () => {
       (dataStorage.states as EthStateStorage).provider
     );
 
-    const { did: didIssuer, credential: issuerAuthCredential } = await idWallet.createIdentity({
-      method: DidMethod.PolygonId,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Amoy,
-      seed: hexToBytes(WALLET_KEY),
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: RHS_URL
-      },
-      keyType: KmsKeyType.Secp256k1,
-      ethSigner
-    });
+    const { did: didIssuer, credential: issuerAuthCredential } =
+      await idWallet.createEthereumBasedIdentity({
+        method: DidMethod.PolygonId,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Amoy,
+        seed: hexToBytes(WALLET_KEY),
+        revocationOpts: {
+          type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+          id: RHS_URL
+        },
+        ethSigner
+      });
     expect(issuerAuthCredential).not.to.be.undefined;
 
     const profileDID = await idWallet.createProfile(didUser, 777, didIssuer.string());

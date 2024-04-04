@@ -144,18 +144,8 @@ export class EthStateStorage implements IStateStorage {
       maxFeePerGas,
       maxPriorityFeePerGas
     };
-    const tx = await signer.sendTransaction(request);
 
-    const txnReceipt = await tx.wait();
-    if (!txnReceipt) {
-      throw new Error(`transaction: ${tx.hash} failed to mined`);
-    }
-    const status: number | null = txnReceipt.status;
-    const txnHash: string = txnReceipt.hash;
-
-    if (!status) {
-      throw new Error(`transaction: ${txnHash} failed to mined`);
-    }
+    const txnHash: string = await this.sendTransactionRequest(signer, request);
 
     return txnHash;
   }
@@ -196,17 +186,8 @@ export class EthStateStorage implements IStateStorage {
       maxFeePerGas,
       maxPriorityFeePerGas
     };
-    const tx = await signer.sendTransaction(request);
-    const txnReceipt = await tx.wait();
-    if (!txnReceipt) {
-      throw new Error(`transaction: ${tx.hash} failed to mined`);
-    }
-    const status: number | null = txnReceipt.status;
-    const txnHash: string = txnReceipt.hash;
 
-    if (!status) {
-      throw new Error(`transaction: ${txnHash} failed to mined`);
-    }
+    const txnHash: string = await this.sendTransactionRequest(signer, request);
 
     return txnHash;
   }
@@ -277,5 +258,24 @@ export class EthStateStorage implements IStateStorage {
     }
 
     return this.ethConfig as EthConnectionConfig;
+  }
+
+  private async sendTransactionRequest(
+    signer: Signer,
+    request: TransactionRequest
+  ): Promise<string> {
+    const tx = await signer.sendTransaction(request);
+    const txnReceipt = await tx.wait();
+    if (!txnReceipt) {
+      throw new Error(`transaction: ${tx.hash} failed to mined`);
+    }
+    const status: number | null = txnReceipt.status;
+    const txnHash: string = txnReceipt.hash;
+
+    if (!status) {
+      throw new Error(`transaction: ${txnHash} failed to mined`);
+    }
+
+    return txnHash;
   }
 }

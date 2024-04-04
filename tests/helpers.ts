@@ -60,6 +60,23 @@ export const createIdentity = async (
   });
 };
 
+export const createEthereumBasedIdentity = async (
+  wallet: IIdentityWallet,
+  opts?: Partial<IdentityCreationOptions>
+) => {
+  return await wallet.createEthereumBasedIdentity({
+    method: DidMethod.Iden3,
+    blockchain: Blockchain.Polygon,
+    networkId: NetworkId.Amoy,
+    seed: SEED_ISSUER,
+    revocationOpts: {
+      type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      id: RHS_URL
+    },
+    ...opts
+  });
+};
+
 export const MOCK_STATE_STORAGE: IStateStorage = {
   getLatestStateById: async () => {
     throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);

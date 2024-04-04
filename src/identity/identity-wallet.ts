@@ -57,7 +57,7 @@ import {
   CredentialStatusPublisherRegistry,
   Iden3SmtRhsCredentialStatusPublisher
 } from '../credentials/status/credential-status-publisher';
-import { InputGenerator, IZKProver, NativeProver } from '../proof';
+import { InputGenerator, IZKProver } from '../proof';
 
 /**
  * DID creation options
@@ -80,7 +80,6 @@ export type IdentityCreationOptions = {
     };
   };
   seed?: Uint8Array;
-  keyType?: KmsKeyType;
   ethSigner?: Signer;
   createBjjCredential?: boolean;
 };
@@ -124,8 +123,16 @@ export interface IIdentityWallet {
    * @returns `Promise<{ did: DID; credential: W3CCredential }>` - returns did and Auth BJJ credential
    * @public
    */
+  createIdentity(opts: IdentityCreationOptions): Promise<{ did: DID; credential: W3CCredential }>;
 
-  createIdentity(
+  /**
+   * Create Identity based in Ethereum address and it provides an identifier in DID form.
+   *
+   * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:amoy** with generated key.
+   * @returns `Promise<{ did: DID; credential: W3CCredential | undefined }>` - returns did and Auth BJJ credential
+   * @public
+   */
+  createEthereumBasedIdentity(
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential | undefined }>;
 
@@ -410,7 +417,7 @@ export interface IIdentityWallet {
    * @param {TreeState} oldTreeState - old tree state of the user
    * @param {Signer} ethSigner - signer to sign the transaction
    */
-  addBjjCredentialAndTransitState(
+  addBJJAuthjjCredential(
     did: DID,
     oldTreeState: TreeState,
     ethSigner: Signer,
@@ -481,9 +488,9 @@ export class IdentityWallet implements IIdentityWallet {
   /**
    * {@inheritDoc IIdentityWallet.createIdentity}
    */
-  async createIdentity(
+  /* async createIdentity(
     opts: IdentityCreationOptions
-  ): Promise<{ did: DID; credential: W3CCredential | undefined }> {
+  ): Promise<{ did: DID; credential: W3CCredential }> {
     opts.keyType = opts.keyType ?? KmsKeyType.BabyJubJub;
     opts.method = opts.method ?? DidMethod.Iden3;
     opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
@@ -497,7 +504,7 @@ export class IdentityWallet implements IIdentityWallet {
       default:
         throw new Error(`Invalid KmsKeyType ${opts.keyType}`);
     }
-  }
+  } */
 
   private async createAuthCoreClaim(
     revNonce: number,
@@ -585,15 +592,15 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   /**
-   *
-   * creates Baby JubJub based identity
-   *
-   * @param {IdentityCreationOptions} opts - options for the creation of the identity
-   * @returns `{did,credential>}` - returns did and Auth BJJ credential
+   * {@inheritDoc IIdentityWallet.createIdentity}
    */
-  private async createBabyJubJubIdentity(
+  async createIdentity(
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
+    opts.method = opts.method ?? DidMethod.Iden3;
+    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
+    opts.networkId = opts.networkId ?? NetworkId.Amoy;
+
     const tmpIdentifier = opts.seed ? uuid.v5(Hex.encode(sha256(opts.seed)), uuid.NIL) : uuid.v4();
     opts.seed = opts.seed ?? getRandomBytes(32);
 
@@ -657,15 +664,15 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   /**
-   *
-   * creates Ethereum based identity
-   *
-   * @param {IdentityCreationOptions} opts - options for the creation of the identity
-   * @returns `{did,credential>}` - returns did and Auth BJJ credential
+   * {@inheritDoc IIdentityWallet.createEthereumBasedIdentity}
    */
-  private async createEthereumIdentity(
+  async createEthereumBasedIdentity(
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential | undefined }> {
+    opts.method = opts.method ?? DidMethod.Iden3;
+    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
+    opts.networkId = opts.networkId ?? NetworkId.Amoy;
+
     opts.seed = opts.seed ?? getRandomBytes(32);
     opts.createBjjCredential = opts.createBjjCredential ?? true;
 
@@ -705,7 +712,7 @@ export class IdentityWallet implements IIdentityWallet {
         rootOfRoots: ZERO_HASH
       };
 
-      credential = await this.addBjjCredentialAndTransitState(did, oldTreeState, ethSigner, opts);
+      credential = await this.addBJJAuthjjCredential(did, oldTreeState, ethSigner, opts);
     }
 
     return {
@@ -1362,8 +1369,8 @@ export class IdentityWallet implements IIdentityWallet {
     return txId;
   }
 
-  /** {@inheritdoc IIdentityWallet.addBjjCredentialAndTransitState} */
-  async addBjjCredentialAndTransitState(
+  /** {@inheritdoc IIdentityWallet.addBJJAuthjjCredential} */
+  async addBJJAuthjjCredential(
     did: DID,
     oldTreeState: TreeState,
     ethSigner: Signer,

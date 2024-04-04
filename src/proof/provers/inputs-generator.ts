@@ -1,4 +1,4 @@
-import { DID, Id, getUnixTimestamp } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import {
   Iden3SparseMerkleTreeProof,
   ProofType,

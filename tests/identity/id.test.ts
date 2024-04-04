@@ -11,7 +11,6 @@ import {
   CredentialStatusResolverRegistry,
   RHSResolver,
   CredentialStatusType,
-  KmsKeyType,
   FSCircuitStorage,
   EthStateStorage,
   NativeProver
@@ -23,7 +22,8 @@ import {
   RHS_URL,
   getInMemoryDataStorage,
   registerKeyProvidersInMemoryKMS,
-  WALLET_KEY
+  WALLET_KEY,
+  createEthereumBasedIdentity
 } from '../helpers';
 import { expect } from 'chai';
 import { Wallet } from 'ethers';
@@ -186,15 +186,16 @@ describe('identity', () => {
   it('createIdentity Secp256k1', async () => {
     const ethSigner = new Wallet(WALLET_KEY, (dataStorage.states as EthStateStorage).provider);
 
-    const { did, credential } = await createIdentity(idWallet, {
-      keyType: KmsKeyType.Secp256k1,
+    const { did, credential } = await createEthereumBasedIdentity(idWallet, {
       ethSigner
     });
 
     expect(did.string()).to.equal(
       'did:iden3:polygon:amoy:x6x5sor7zpxsu478u36QvEgaRUfPjmzqFo5PHHzbM'
     );
-    const dbCred = await dataStorage.credential.findCredentialById(credential.id);
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const dbCred = await dataStorage.credential.findCredentialById(credential!.id);
     expect(credential).to.deep.equal(dbCred);
 
     const claimsTree = await dataStorage.mt.getMerkleTreeByIdentifierAndType(
