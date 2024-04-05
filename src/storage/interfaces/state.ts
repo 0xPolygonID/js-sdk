@@ -40,11 +40,13 @@ export interface IStateStorage {
    * @returns `Promise<StateProof>`
    */
   getGISTProof(id: bigint): Promise<StateProof>;
+
   /**
+   * gets root info of global identity state tree
    *
-   *
-   * @param {bigint} root - returns info about global state root
-   * @returns `{Promise<RootInfo>}`
+   * @param {bigint} root - root to check
+   * @param {bigint} userId - user id
+   * @returns `Promise<RootInfo>`
    */
-  getGISTRootInfo(root: bigint): Promise<RootInfo>;
+  getGISTRootInfo(root: bigint, userId: bigint): Promise<RootInfo>;
 }

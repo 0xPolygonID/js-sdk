@@ -525,12 +525,13 @@ export class ProofService implements IProofService {
     return authInputs.inputsMarshal();
   }
 
-  async verifyState(circuitId: string, pubSignals: Array<string>): Promise<boolean> {
+  async verifyState(circuitId: string, pubSignals: string[]): Promise<boolean> {
     if (circuitId !== CircuitId.AuthV2) {
       throw new Error(`CircuitId is not supported ${circuitId}`);
     }
     const gistRoot = Hash.fromString(pubSignals[2]).bigInt();
-    const globalStateInfo = await this._stateStorage.getGISTRootInfo(gistRoot);
+    const userId = BigInt(pubSignals[0]);
+    const globalStateInfo = await this._stateStorage.getGISTRootInfo(gistRoot, userId);
 
     if (globalStateInfo.createdAtTimestamp === 0n) {
       throw new Error(`gist state doesn't exists in contract`);

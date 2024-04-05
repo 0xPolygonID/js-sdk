@@ -181,9 +181,9 @@ export class EthStateStorage implements IStateStorage {
   }
 
   /** {@inheritdoc IStateStorage.getGISTRootInfo} */
-  async getGISTRootInfo(id: bigint): Promise<RootInfo> {
+  async getGISTRootInfo(root: bigint, id: bigint): Promise<RootInfo> {
     const { stateContract } = this.getStateContractAndProviderForId(id);
-    const data = await stateContract.getGISTRootInfo(id);
+    const data = await stateContract.getGISTRootInfo(root);
 
     return {
       root: BigInt(data.root.toString()),

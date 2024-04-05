@@ -393,7 +393,7 @@ export class PubSignalsVerifier {
 
     // no query verification
     // verify state
-    const gist = await this.checkGlobalState(authV2PubSignals.GISTRoot);
+    const gist = await this.checkGlobalState(authV2PubSignals.GISTRoot, this.userId);
 
     let acceptedStateTransitionDelay = defaultAuthVerifyOpts;
     if (opts?.acceptedStateTransitionDelay) {
@@ -634,13 +634,16 @@ export class PubSignalsVerifier {
     return { latest: true, transitionTimestamp: 0 };
   }
 
-  private async rootResolve(state: bigint): Promise<{
+  private async rootResolve(
+    state: bigint,
+    id: bigint
+  ): Promise<{
     latest: boolean;
     transitionTimestamp: number | string;
   }> {
     let globalStateInfo: RootInfo;
     try {
-      globalStateInfo = await this._stateStorage.getGISTRootInfo(state);
+      globalStateInfo = await this._stateStorage.getGISTRootInfo(state, id);
     } catch (e: unknown) {
       if ((e as { errorArgs: string[] }).errorArgs[0] === 'Root does not exist') {
         throw new Error('GIST root does not exist in the smart contract');
@@ -676,13 +679,13 @@ export class PubSignalsVerifier {
   };
 
   private checkGlobalState = async (
-    state: Hash
+    state: Hash,
+    id: Id
   ): Promise<{
     latest: boolean;
     transitionTimestamp: number | string;
   }> => {
-    const gistStateResolved = await this.rootResolve(state.bigInt());
-    return gistStateResolved;
+    return this.rootResolve(state.bigInt(), id.bigInt());
   };
 
   private checkRevocationStateForId = async (
