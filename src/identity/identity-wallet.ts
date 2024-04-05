@@ -80,12 +80,14 @@ export type IdentityCreationOptions = {
     };
   };
   seed?: Uint8Array;
+};
+
+export type EthereumBasedIdentityCreationOptions = IdentityCreationOptions & {
   ethereumBasedIdentityOpts?: {
     ethSigner?: Signer;
     createBjjCredential?: boolean;
   };
 };
-
 /**
  * Options for RevocationInfoOptions.
  */
@@ -135,7 +137,7 @@ export interface IIdentityWallet {
    * @public
    */
   createEthereumBasedIdentity(
-    opts: IdentityCreationOptions
+    opts: EthereumBasedIdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential | undefined }>;
 
   /**
@@ -640,7 +642,7 @@ export class IdentityWallet implements IIdentityWallet {
    * {@inheritDoc IIdentityWallet.createEthereumBasedIdentity}
    */
   async createEthereumBasedIdentity(
-    opts: IdentityCreationOptions
+    opts: EthereumBasedIdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential | undefined }> {
     opts.seed = opts.seed ?? getRandomBytes(32);
     if (opts.ethereumBasedIdentityOpts) {

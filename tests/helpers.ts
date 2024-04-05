@@ -6,6 +6,7 @@ import {
   CredentialStatusType,
   CredentialStorage,
   DataPrepareHandlerFunc,
+  EthereumBasedIdentityCreationOptions,
   IIdentityWallet,
   IPackageManager,
   IStateStorage,
@@ -62,7 +63,7 @@ export const createIdentity = async (
 
 export const createEthereumBasedIdentity = async (
   wallet: IIdentityWallet,
-  opts?: Partial<IdentityCreationOptions>
+  opts?: Partial<EthereumBasedIdentityCreationOptions>
 ) => {
   return await wallet.createEthereumBasedIdentity({
     method: DidMethod.Iden3,

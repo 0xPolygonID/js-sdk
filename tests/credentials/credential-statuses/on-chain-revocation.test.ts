@@ -24,8 +24,7 @@ import {
   CredentialStatusPublisherRegistry,
   Iden3OnchainSmtCredentialStatusPublisher,
   SDK_EVENTS,
-  MessageBus,
-  NativeProver
+  MessageBus
 } from '../../../src';
 
 import {

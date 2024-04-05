@@ -1,5 +1,4 @@
 /* eslint-disable no-console */
-import path from 'path';
 import {
   IdentityWallet,
   byteEncoder,
@@ -11,9 +10,7 @@ import {
   CredentialStatusResolverRegistry,
   RHSResolver,
   CredentialStatusType,
-  FSCircuitStorage,
-  EthStateStorage,
-  NativeProver
+  EthStateStorage
 } from '../../src';
 import {
   MOCK_STATE_STORAGE,

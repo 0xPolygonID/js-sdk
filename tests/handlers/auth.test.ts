@@ -39,8 +39,7 @@ import {
   W3CCredential,
   Sec256k1Provider,
   StateInfo,
-  hexToBytes,
-  NativeProver
+  hexToBytes
 } from '../../src';
 import { Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';

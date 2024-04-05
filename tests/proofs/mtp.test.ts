@@ -13,7 +13,7 @@ import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { NativeProver, ProofService } from '../../src/proof';
+import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { ethers } from 'ethers';
 import { EthStateStorage } from '../../src/storage/blockchain/state';

@@ -18,7 +18,7 @@ import {
   CredentialWallet,
   RHSResolver
 } from '../../src/credentials';
-import { NativeProver, ProofService } from '../../src/proof';
+import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { ethers } from 'ethers';
 import { EthStateStorage } from '../../src/storage/blockchain/state';
