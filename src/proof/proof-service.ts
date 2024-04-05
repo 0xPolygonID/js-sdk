@@ -135,6 +135,7 @@ export interface IProofService {
     did: DID,
     oldTreeState: TreeState,
     isOldStateGenesis: boolean,
+    stateStorage: IStateStorage,
     ethSigner: Signer
   ): Promise<string>;
 
@@ -346,6 +347,7 @@ export class ProofService implements IProofService {
     did: DID,
     oldTreeState: TreeState,
     isOldStateGenesis: boolean,
+    stateStorage: IStateStorage, // for compatibility with previous versions we leave this parameter
     ethSigner: Signer
   ): Promise<string> {
     return this._identityWallet.transitState(did, oldTreeState, isOldStateGenesis, ethSigner);

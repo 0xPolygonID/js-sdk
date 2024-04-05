@@ -88,7 +88,8 @@ describe('auth', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    const prover = new NativeProver(circuitStorage);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, { prover });
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE, {
       ipfsNodeURL: IPFS_URL
@@ -301,7 +302,13 @@ describe('auth', () => {
       (dataStorage.states as EthStateStorage).provider
     );
 
-    const txId = await proofService.transitState(issuerDID, res.oldTreeState, true, ethSigner);
+    const txId = await proofService.transitState(
+      issuerDID,
+      res.oldTreeState,
+      true,
+      dataStorage.states,
+      ethSigner
+    );
 
     const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
       issuerDID,
@@ -418,7 +425,9 @@ describe('auth', () => {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
           id: RHS_URL
         },
-        ethSigner
+        ethereumBasedIdentityOpts: {
+          ethSigner
+        }
       });
     expect(issuerAuthCredential).not.to.be.undefined;
 
@@ -464,7 +473,13 @@ describe('auth', () => {
     const res = await idWallet.addCredentialsToMerkleTree([employeeCred], didIssuer);
     await idWallet.publishStateToRHS(didIssuer, RHS_URL);
 
-    const txId = await proofService.transitState(didIssuer, res.oldTreeState, true, ethSigner);
+    const txId = await proofService.transitState(
+      didIssuer,
+      res.oldTreeState,
+      true,
+      dataStorage.states,
+      ethSigner
+    );
 
     const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
       didIssuer,
@@ -660,7 +675,9 @@ describe('auth', () => {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
           id: RHS_URL
         },
-        ethSigner
+        ethereumBasedIdentityOpts: {
+          ethSigner
+        }
       });
     expect(issuerAuthCredential).not.to.be.undefined;
 
@@ -706,7 +723,13 @@ describe('auth', () => {
     const res = await idWallet.addCredentialsToMerkleTree([employeeCred], didIssuer);
     await idWallet.publishStateToRHS(didIssuer, RHS_URL);
 
-    const txId = await proofService.transitState(didIssuer, res.oldTreeState, false, ethSigner);
+    const txId = await proofService.transitState(
+      didIssuer,
+      res.oldTreeState,
+      false,
+      dataStorage.states,
+      ethSigner
+    );
 
     const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
       didIssuer,

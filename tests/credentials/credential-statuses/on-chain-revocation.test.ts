@@ -303,7 +303,7 @@ describe('onchain revocation checks', () => {
       CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023
     );
 
-    await proofService.transitState(issuerDID, res.oldTreeState, true, signer);
+    await proofService.transitState(issuerDID, res.oldTreeState, true, dataStorage.states, signer);
 
     const [ctrHexL, rtrHexL, rorTrHexL] = [
       res.newTreeState.claimsRoot.hex(),

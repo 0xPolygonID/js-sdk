@@ -187,7 +187,9 @@ describe('identity', () => {
     const ethSigner = new Wallet(WALLET_KEY, (dataStorage.states as EthStateStorage).provider);
 
     const { did, credential } = await createEthereumBasedIdentity(idWallet, {
-      ethSigner
+      ethereumBasedIdentityOpts: {
+        ethSigner
+      }
     });
 
     expect(did.string()).to.equal(

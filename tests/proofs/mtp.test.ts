@@ -168,7 +168,13 @@ describe('mtp proofs', () => {
       walletKey,
       (dataStorage.states as EthStateStorage).provider
     );
-    const txId = await proofService.transitState(issuerDID, res.oldTreeState, true, ethSigner);
+    const txId = await proofService.transitState(
+      issuerDID,
+      res.oldTreeState,
+      true,
+      dataStorage.states,
+      ethSigner
+    );
 
     const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
       issuerDID,
@@ -253,7 +259,13 @@ describe('mtp proofs', () => {
       (dataStorage.states as EthStateStorage).provider
     );
 
-    const txId = await proofService.transitState(issuerDID, res.oldTreeState, true, ethSigner);
+    const txId = await proofService.transitState(
+      issuerDID,
+      res.oldTreeState,
+      true,
+      dataStorage.states,
+      ethSigner
+    );
 
     const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
       issuerDID,
