@@ -331,7 +331,7 @@ export interface IIdentityWallet {
    *
    * gets profile identity by genesis identifiers
    *
-   * @param {string} did - genesis identifier from which profile has been derived
+   * @param {DID} did - genesis identifier from which profile has been derived
    * @returns `{Promise<Profile[]>}`
    */
   getProfilesByDID(did: DID): Promise<Profile[]>;
@@ -340,7 +340,7 @@ export interface IIdentityWallet {
    *
    * gets profile nonce by it's id. if profile is genesis identifier - 0 is returned
    *
-   * @param {string} did -  profile that has been derived or genesis identity
+   * @param {DID} did -  profile that has been derived or genesis identity
    * @returns `{Promise<{nonce:number, genesisIdentifier: DID}>}`
    */
   getGenesisDIDMetadata(did: DID): Promise<{ nonce: number; genesisDID: DID }>;
@@ -349,7 +349,7 @@ export interface IIdentityWallet {
    *
    * find all credentials that belong to any profile or genesis identity for the given did
    *
-   * @param {string} did -  profile that has been derived or genesis identity
+   * @param {DID} did -  profile that has been derived or genesis identity
    * @returns `{Promise<W3CCredential[]>}`
    */
   findOwnedCredentialsByDID(did: DID, query: ProofQuery): Promise<W3CCredential[]>;
@@ -416,6 +416,7 @@ export interface IIdentityWallet {
    * @param {DID} did - identifier of the user
    * @param {TreeState} oldTreeState - old tree state of the user
    * @param {Signer} ethSigner - signer to sign the transaction
+   * @param {object} opts - additional options
    */
   addBJJAuthjjCredential(
     did: DID,
@@ -484,27 +485,6 @@ export class IdentityWallet implements IIdentityWallet {
       return this._opts?.credentialStatusPublisherRegistry as CredentialStatusPublisherRegistry;
     }
   }
-
-  /**
-   * {@inheritDoc IIdentityWallet.createIdentity}
-   */
-  /* async createIdentity(
-    opts: IdentityCreationOptions
-  ): Promise<{ did: DID; credential: W3CCredential }> {
-    opts.keyType = opts.keyType ?? KmsKeyType.BabyJubJub;
-    opts.method = opts.method ?? DidMethod.Iden3;
-    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
-    opts.networkId = opts.networkId ?? NetworkId.Amoy;
-
-    switch (opts.keyType) {
-      case KmsKeyType.BabyJubJub:
-        return this.createBabyJubJubIdentity(opts);
-      case KmsKeyType.Secp256k1:
-        return this.createEthereumIdentity(opts);
-      default:
-        throw new Error(`Invalid KmsKeyType ${opts.keyType}`);
-    }
-  } */
 
   private async createAuthCoreClaim(
     revNonce: number,
@@ -597,10 +577,6 @@ export class IdentityWallet implements IIdentityWallet {
   async createIdentity(
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential }> {
-    opts.method = opts.method ?? DidMethod.Iden3;
-    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
-    opts.networkId = opts.networkId ?? NetworkId.Amoy;
-
     const tmpIdentifier = opts.seed ? uuid.v5(Hex.encode(sha256(opts.seed)), uuid.NIL) : uuid.v4();
     opts.seed = opts.seed ?? getRandomBytes(32);
 
@@ -610,12 +586,8 @@ export class IdentityWallet implements IIdentityWallet {
 
     const { authClaim, pubKey } = await this.createAuthCoreClaim(revNonce, opts.seed);
 
-    await this._storage.mt.addToMerkleTree(
-      tmpIdentifier,
-      MerkleTreeType.Claims,
-      authClaim.hiHv().hi,
-      authClaim.hiHv().hv
-    );
+    const { hi, hv } = authClaim.hiHv();
+    await this._storage.mt.addToMerkleTree(tmpIdentifier, MerkleTreeType.Claims, hi, hv);
 
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       tmpIdentifier,
@@ -628,8 +600,11 @@ export class IdentityWallet implements IIdentityWallet {
       ZERO_HASH.bigInt()
     ]);
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const didType = buildDIDType(opts.method!, opts.blockchain!, opts.networkId!);
+    const didType = buildDIDType(
+      opts.method || DidMethod.Iden3,
+      opts.blockchain || Blockchain.Polygon,
+      opts.networkId || NetworkId.Amoy
+    );
     const identifier = Id.idGenesisFromIdenState(didType, currentState.bigInt());
     const did = DID.parseFromId(identifier);
 
@@ -669,10 +644,6 @@ export class IdentityWallet implements IIdentityWallet {
   async createEthereumBasedIdentity(
     opts: IdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential | undefined }> {
-    opts.method = opts.method ?? DidMethod.Iden3;
-    opts.blockchain = opts.blockchain ?? Blockchain.Polygon;
-    opts.networkId = opts.networkId ?? NetworkId.Amoy;
-
     opts.seed = opts.seed ?? getRandomBytes(32);
     opts.createBjjCredential = opts.createBjjCredential ?? true;
 
@@ -687,8 +658,11 @@ export class IdentityWallet implements IIdentityWallet {
 
     const currentState = ZERO_HASH; // In Ethereum identities we don't have an initial state with the auth credential
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const didType = buildDIDType(opts.method!, opts.blockchain!, opts.networkId!);
+    const didType = buildDIDType(
+      opts.method || DidMethod.Iden3,
+      opts.blockchain || Blockchain.Polygon,
+      opts.networkId || NetworkId.Amoy
+    );
 
     const keyIdEth = await this._kms.createKeyFromSeed(KmsKeyType.Secp256k1, opts.seed);
     const pubKeyHexEth = (await this._kms.publicKey(keyIdEth)).slice(2); // 04 + x + y (uncompressed key)
@@ -1313,7 +1287,11 @@ export class IdentityWallet implements IIdentityWallet {
     let proof;
     const isEthIdentity = isEthereumIdentity(did); // don't generate proof for ethereum identities
 
-    if (!isEthIdentity && this._prover) {
+    let txId;
+    if (!isEthIdentity) {
+      if (!this._prover) {
+        throw new Error('prover is required to generate proofs for non ethereum identities');
+      }
       // generate the proof
       const authInfo = await this._inputsGenerator.prepareAuthBJJCredential(did, oldTreeState);
       const challenge = Poseidon.hash([oldTreeState.state.bigInt(), newTreeState.state.bigInt()]);
@@ -1345,23 +1323,19 @@ export class IdentityWallet implements IIdentityWallet {
       const inputs = circuitInputs.inputsMarshal();
 
       proof = await this._prover.generate(inputs, CircuitId.StateTransition);
-    }
 
-    const oldUserState = oldTreeState.state;
-    const newUserState = newTreeState.state;
-    const userStateTransitionInfo: UserStateTransitionInfo = {
-      userId,
-      oldUserState,
-      newUserState,
-      isOldStateGenesis,
-      methodId: BigInt(1),
-      methodParams: '0x'
-    } as UserStateTransitionInfo;
-
-    let txId;
-    if (!isEthIdentity) {
       txId = await this._storage.states.publishState(proof, ethSigner);
     } else {
+      const oldUserState = oldTreeState.state;
+      const newUserState = newTreeState.state;
+      const userStateTransitionInfo: UserStateTransitionInfo = {
+        userId,
+        oldUserState,
+        newUserState,
+        isOldStateGenesis,
+        methodId: BigInt(1),
+        methodParams: '0x'
+      } as UserStateTransitionInfo;
       txId = await this._storage.states.publishStateGeneric(ethSigner, userStateTransitionInfo);
     }
     await this.updateIdentityState(did, true, newTreeState);
@@ -1377,18 +1351,14 @@ export class IdentityWallet implements IIdentityWallet {
     opts: IdentityCreationOptions
   ): Promise<W3CCredential> {
     opts.seed = opts.seed ?? getRandomBytes(32);
-    // Add Auth BJJ credential after saving identity for Ethereum identities
+
     const { authClaim, pubKey } = await this.createAuthCoreClaim(
       opts.revocationOpts.nonce ?? 0,
       opts.seed
     );
 
-    await this._storage.mt.addToMerkleTree(
-      did.string(),
-      MerkleTreeType.Claims,
-      authClaim.hiHv().hi,
-      authClaim.hiHv().hv
-    );
+    const { hi, hv } = authClaim.hiHv();
+    await this._storage.mt.addToMerkleTree(did.string(), MerkleTreeType.Claims, hi, hv);
 
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       did.string(),
@@ -1409,7 +1379,6 @@ export class IdentityWallet implements IIdentityWallet {
       opts.revocationOpts
     );
 
-    // Mandatory transit state after adding auth credential in Ethereum identities
     await this.transitState(did, oldTreeState, true, ethSigner);
 
     await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
