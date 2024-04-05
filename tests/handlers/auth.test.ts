@@ -155,8 +155,11 @@ describe('auth', () => {
 
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
-    const token = await Token.parse(tokenStr);
-    expect(token).to.be.a('object');
+    const tokenBytes = byteEncoder.encode(tokenStr);
+
+    const result = await packageMgr.unpack(tokenBytes);
+
+    expect(JSON.stringify(result.unpackedMessage)).to.equal(JSON.stringify(authRes.authResponse));
   });
 
   it('request-response flow profiles', async () => {
