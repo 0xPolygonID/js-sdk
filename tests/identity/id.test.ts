@@ -65,14 +65,7 @@ describe('identity', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    const circuitStorage = new FSCircuitStorage({
-      dirname: path.join(__dirname, '../proofs/testdata')
-    });
-
-    const prover = new NativeProver(circuitStorage);
-    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet, {
-      prover
-    });
+    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet);
   });
 
   it('createIdentity', async () => {

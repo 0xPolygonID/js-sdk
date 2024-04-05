@@ -239,10 +239,8 @@ describe('onchain revocation checks', () => {
       new Iden3OnchainSmtCredentialStatusPublisher(storage)
     );
 
-    const prover = new NativeProver(circuitStorage);
     idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet, {
-      credentialStatusPublisherRegistry,
-      prover
+      credentialStatusPublisherRegistry
     });
     proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
   });

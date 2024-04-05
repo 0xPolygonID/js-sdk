@@ -117,8 +117,7 @@ describe('mtp proofs', () => {
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
 
-    const prover = new NativeProver(circuitStorage);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, { prover });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });

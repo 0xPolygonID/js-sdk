@@ -350,7 +350,13 @@ export class ProofService implements IProofService {
     stateStorage: IStateStorage, // for compatibility with previous versions we leave this parameter
     ethSigner: Signer
   ): Promise<string> {
-    return this._identityWallet.transitState(did, oldTreeState, isOldStateGenesis, ethSigner);
+    return this._identityWallet.transitState(
+      did,
+      oldTreeState,
+      isOldStateGenesis,
+      ethSigner,
+      this._prover
+    );
   }
 
   private async generateInputs(

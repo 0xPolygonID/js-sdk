@@ -409,7 +409,8 @@ export interface IIdentityWallet {
     did: DID,
     oldTreeState: TreeState,
     isOldStateGenesis: boolean,
-    ethSigner: Signer
+    ethSigner: Signer,
+    prover?: IZKProver
   ): Promise<string>;
 
   /**
@@ -420,7 +421,7 @@ export interface IIdentityWallet {
    * @param {Signer} ethSigner - signer to sign the transaction
    * @param {object} opts - additional options
    */
-  addBJJAuthjjCredential(
+  addBJJAuthCredential(
     did: DID,
     oldTreeState: TreeState,
     ethSigner: Signer,
@@ -441,7 +442,6 @@ export interface IIdentityWallet {
  */
 export class IdentityWallet implements IIdentityWallet {
   private readonly _credentialStatusPublisherRegistry: CredentialStatusPublisherRegistry;
-  private readonly _prover: IZKProver | undefined;
   private readonly _inputsGenerator: InputGenerator;
 
   /**
@@ -458,13 +458,9 @@ export class IdentityWallet implements IIdentityWallet {
     private readonly _credentialWallet: ICredentialWallet,
     private readonly _opts?: {
       credentialStatusPublisherRegistry?: CredentialStatusPublisherRegistry;
-      prover?: IZKProver;
     }
   ) {
     this._credentialStatusPublisherRegistry = this.getCredentialStatusPublisherRegistry(_opts);
-    if (_opts?.prover) {
-      this._prover = _opts?.prover;
-    }
     this._inputsGenerator = new InputGenerator(this, _credentialWallet, _storage.states);
   }
 
@@ -691,7 +687,7 @@ export class IdentityWallet implements IIdentityWallet {
         rootOfRoots: ZERO_HASH
       };
 
-      credential = await this.addBJJAuthjjCredential(did, oldTreeState, ethSigner, opts);
+      credential = await this.addBJJAuthCredential(did, oldTreeState, ethSigner, opts);
     }
 
     return {
@@ -1273,7 +1269,8 @@ export class IdentityWallet implements IIdentityWallet {
     did: DID,
     oldTreeState: TreeState,
     isOldStateGenesis: boolean,
-    ethSigner: Signer
+    ethSigner: Signer,
+    prover?: IZKProver
   ): Promise<string> {
     const newTreeModel = await this.getDIDTreeModel(did);
     const claimsRoot = await newTreeModel.claimsTree.root();
@@ -1294,7 +1291,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     let txId;
     if (!isEthIdentity) {
-      if (!this._prover) {
+      if (!prover) {
         throw new Error('prover is required to generate proofs for non ethereum identities');
       }
       // generate the proof
@@ -1327,7 +1324,7 @@ export class IdentityWallet implements IIdentityWallet {
 
       const inputs = circuitInputs.inputsMarshal();
 
-      proof = await this._prover.generate(inputs, CircuitId.StateTransition);
+      proof = await prover.generate(inputs, CircuitId.StateTransition);
 
       txId = await this._storage.states.publishState(proof, ethSigner);
     } else {
@@ -1348,12 +1345,13 @@ export class IdentityWallet implements IIdentityWallet {
     return txId;
   }
 
-  /** {@inheritdoc IIdentityWallet.addBJJAuthjjCredential} */
-  async addBJJAuthjjCredential(
+  /** {@inheritdoc IIdentityWallet.addBJJAuthCredential} */
+  async addBJJAuthCredential(
     did: DID,
     oldTreeState: TreeState,
     ethSigner: Signer,
-    opts: IdentityCreationOptions
+    opts: IdentityCreationOptions,
+    prover?: IZKProver // it will be needed in case of non ethereum identities
   ): Promise<W3CCredential> {
     opts.seed = opts.seed ?? getRandomBytes(32);
 
@@ -1384,7 +1382,7 @@ export class IdentityWallet implements IIdentityWallet {
       opts.revocationOpts
     );
 
-    await this.transitState(did, oldTreeState, true, ethSigner);
+    await this.transitState(did, oldTreeState, true, ethSigner, prover);
 
     await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
       rhsUrl: opts.revocationOpts.id,
