@@ -2085,8 +2085,9 @@ describe('auth', () => {
       }
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
-
     await credWallet.save(issuerCred);
+    const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL);
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
@@ -2188,6 +2189,13 @@ describe('auth', () => {
     // revoke k1 auth credential
     const nonce = await idWallet.revokeCredential(issuerDID, issuerAuthCredential);
     await idWallet.publishStateToRHS(issuerDID, RHS_URL, [nonce]);
+    await proofService.transitState(
+      issuerDID,
+      res.oldTreeState,
+      false,
+      dataStorage.states,
+      ethSigner
+    );
 
     await handleAuthorizationRequest(userDID, authReqBody);
 
@@ -2195,12 +2203,26 @@ describe('auth', () => {
     const { authCredential: issuerAuthCredential2 } = await idWallet.getActualAuthCredential(
       issuerDID
     );
-
     expect(issuerAuthCredential2).to.be.deep.equal(credential2);
+
+    const treesModel2 = await idWallet.getDIDTreeModel(issuerDID);
+    const [ctrHex2, rtrHex2, rorTrHex2] = await Promise.all([
+      treesModel2.claimsTree.root(),
+      treesModel2.revocationTree.root(),
+      treesModel2.rootsTree.root()
+    ]);
+
+    const oldTreeState2 = {
+      state: treesModel2.state,
+      claimsRoot: ctrHex2,
+      revocationRoot: rtrHex2,
+      rootOfRoots: rorTrHex2
+    };
 
     // revoke k2 auth credential
     const nonce2 = await idWallet.revokeCredential(issuerDID, issuerAuthCredential2);
     await idWallet.publishStateToRHS(issuerDID, RHS_URL, [nonce2]);
+    await proofService.transitState(issuerDID, oldTreeState2, false, dataStorage.states, ethSigner);
 
     // check that we don't have auth credentials now
     await expect(idWallet.getActualAuthCredential(issuerDID)).to.rejectedWith(
