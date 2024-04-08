@@ -70,6 +70,14 @@ export type IdentityCreationOptions = {
   method?: string;
   blockchain?: string;
   networkId?: string;
+} & AuthBJJCredentialCreationOptions;
+
+/**
+ * Options for creating Auth BJJ credential
+ * seed - seed to generate BJJ key pair
+ * revocationOpts -
+ */
+export type AuthBJJCredentialCreationOptions = {
   revocationOpts: {
     id: string;
     type: CredentialStatusType;
@@ -82,12 +90,16 @@ export type IdentityCreationOptions = {
   seed?: Uint8Array;
 };
 
+/**
+ * Options for creating Ethereum based identity
+ */
 export type EthereumBasedIdentityCreationOptions = IdentityCreationOptions & {
   ethereumBasedIdentityOpts?: {
     ethSigner?: Signer;
     createBjjCredential?: boolean;
   };
 };
+
 /**
  * Options for RevocationInfoOptions.
  */
@@ -420,12 +432,14 @@ export interface IIdentityWallet {
    *
    * @param {DID} did - identifier of the user
    * @param {TreeState} oldTreeState - old tree state of the user
+   * @param {boolean} isOldTreeState - if the old state is genesis
    * @param {Signer} ethSigner - signer to sign the transaction
    * @param {object} opts - additional options
    */
   addBJJAuthCredential(
     did: DID,
     oldTreeState: TreeState,
+    isOldTreeStateGenesis: boolean,
     ethSigner: Signer,
     opts?: object
   ): Promise<W3CCredential>;
@@ -510,13 +524,21 @@ export class IdentityWallet implements IIdentityWallet {
     did: DID,
     pubKey: PublicKey,
     authClaim: Claim,
-    currentState: Hash,
+    oldTreeState: TreeState,
     revocationOpts: { id: string; type: CredentialStatusType }
   ): Promise<W3CCredential> {
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
       did.string(),
       MerkleTreeType.Claims
     );
+
+    const ctr = await claimsTree.root();
+
+    const currentState = hashElems([
+      ctr.bigInt(),
+      oldTreeState.revocationRoot.bigInt(),
+      oldTreeState.rootOfRoots.bigInt()
+    ]);
 
     const authData = authClaim.getExpirationDate();
     const expiration = authData ? getUnixTimestamp(authData) : 0;
@@ -539,35 +561,40 @@ export class IdentityWallet implements IIdentityWallet {
       }
     };
 
-    const schema = JSON.parse(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSON);
+    // Check if has already an auth credential
+    const authCredentials = await this._credentialWallet.getAllAuthBJJCredentials(did);
+
     let credential: W3CCredential = new W3CCredential();
-    try {
-      credential = this._credentialWallet.createCredential(did, request, schema);
-    } catch (e) {
-      throw new Error(`Error create w3c credential ${(e as Error).message}`);
+    if (authCredentials.length === 0) {
+      const schema = JSON.parse(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSON);
+      try {
+        credential = this._credentialWallet.createCredential(did, request, schema);
+      } catch (e) {
+        throw new Error(`Error create w3c credential ${(e as Error).message}`);
+      }
+
+      const index = authClaim.hIndex();
+      const { proof } = await claimsTree.generateProof(index, ctr);
+
+      const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
+        mtp: proof,
+        issuerData: {
+          id: did,
+          state: {
+            rootOfRoots: oldTreeState.rootOfRoots,
+            revocationTreeRoot: oldTreeState.revocationRoot,
+            claimsTreeRoot: ctr,
+            value: currentState
+          }
+        },
+        coreClaim: authClaim
+      });
+
+      credential.proof = [mtpProof];
+    } else {
+      // credential with sigProof signed with previous auth bjj credential
+      credential = await this.issueCredential(did, request);
     }
-
-    const index = authClaim.hIndex();
-    const ctr = await claimsTree.root();
-
-    const { proof } = await claimsTree.generateProof(index, ctr);
-
-    const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
-      mtp: proof,
-      issuerData: {
-        id: did,
-        state: {
-          rootOfRoots: ZERO_HASH,
-          revocationTreeRoot: ZERO_HASH,
-          claimsTreeRoot: ctr,
-          value: currentState
-        }
-      },
-      coreClaim: authClaim
-    });
-
-    credential.proof = [mtpProof];
-
     return credential;
   }
 
@@ -594,11 +621,9 @@ export class IdentityWallet implements IIdentityWallet {
       MerkleTreeType.Claims
     );
 
-    const currentState = hashElems([
-      (await claimsTree.root()).bigInt(),
-      ZERO_HASH.bigInt(),
-      ZERO_HASH.bigInt()
-    ]);
+    const ctr = await claimsTree.root();
+
+    const currentState = hashElems([ctr.bigInt(), ZERO_HASH.bigInt(), ZERO_HASH.bigInt()]);
 
     const didType = buildDIDType(
       opts.method || DidMethod.Iden3,
@@ -614,7 +639,12 @@ export class IdentityWallet implements IIdentityWallet {
       did,
       pubKey,
       authClaim,
-      currentState,
+      {
+        revocationRoot: ZERO_HASH,
+        claimsRoot: ctr,
+        state: currentState,
+        rootOfRoots: ZERO_HASH
+      },
       opts.revocationOpts
     );
 
@@ -689,7 +719,7 @@ export class IdentityWallet implements IIdentityWallet {
         rootOfRoots: ZERO_HASH
       };
 
-      credential = await this.addBJJAuthCredential(did, oldTreeState, ethSigner, opts);
+      credential = await this.addBJJAuthCredential(did, oldTreeState, true, ethSigner, opts);
     }
 
     return {
@@ -1351,6 +1381,7 @@ export class IdentityWallet implements IIdentityWallet {
   async addBJJAuthCredential(
     did: DID,
     oldTreeState: TreeState,
+    isOldStateGenesis: boolean,
     ethSigner: Signer,
     opts: IdentityCreationOptions,
     prover?: IZKProver // it will be needed in case of non ethereum identities
@@ -1365,33 +1396,33 @@ export class IdentityWallet implements IIdentityWallet {
     const { hi, hv } = authClaim.hiHv();
     await this._storage.mt.addToMerkleTree(did.string(), MerkleTreeType.Claims, hi, hv);
 
-    const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.string(),
-      MerkleTreeType.Claims
-    );
-
-    const stateAuthClaim = hashElems([
-      (await claimsTree.root()).bigInt(),
-      oldTreeState.revocationRoot.bigInt(),
-      oldTreeState.rootOfRoots.bigInt()
-    ]);
-
-    const credential = await this.createAuthBJJCredential(
+    let credential = await this.createAuthBJJCredential(
       did,
       pubKey,
       authClaim,
-      stateAuthClaim,
+      oldTreeState,
       opts.revocationOpts
     );
 
-    await this.transitState(did, oldTreeState, true, ethSigner, prover);
+    const txId = await this.transitState(did, oldTreeState, isOldStateGenesis, ethSigner, prover);
+    const credsWithIden3MTPProof = await this.generateIden3SparseMerkleTreeProof(
+      did,
+      [credential],
+      txId
+    );
+    await this._credentialWallet.saveAll(credsWithIden3MTPProof);
+
+    const credRefreshed = await this._credentialWallet.findById(credential.id);
+    if (!credRefreshed) {
+      throw new Error('Credential not found in credential wallet');
+    }
+    credential = credRefreshed;
 
     await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
       rhsUrl: opts.revocationOpts.id,
       onChain: opts.revocationOpts.onChain
     });
 
-    await this._credentialWallet.save(credential);
     return credential;
   }
 }
