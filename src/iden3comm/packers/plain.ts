@@ -1,4 +1,3 @@
-import { PackerParams, PlainPackerParams } from './../types/packer';
 import { BasicMessage, IPacker } from '../types';
 import { MediaType } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';

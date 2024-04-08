@@ -168,7 +168,10 @@ export interface AuthHandlerOptions {
  * @class AuthHandler
  * @implements implements IAuthHandler interface
  */
-export class AuthHandler extends AbstractMessageHandler implements IAuthHandler, IProtocolMessageHandler {
+export class AuthHandler
+  extends AbstractMessageHandler
+  implements IAuthHandler, IProtocolMessageHandler
+{
   private readonly _supportedCircuits = [
     CircuitId.AtomicQueryV3,
     CircuitId.AtomicQuerySigV2,

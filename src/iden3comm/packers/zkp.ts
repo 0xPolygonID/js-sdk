@@ -2,7 +2,6 @@ import {
   AuthDataPrepareFunc,
   BasicMessage,
   IPacker,
-  PackerParams,
   ProvingParams,
   StateVerificationFunc,
   VerificationParams,
