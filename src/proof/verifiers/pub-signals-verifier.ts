@@ -631,7 +631,12 @@ export class PubSignalsVerifier {
       };
     }
 
-    return { latest: true, transitionTimestamp: 0 };
+    return {
+      latest:
+        !contractState.replacedAtTimestamp ||
+        contractState.replacedAtTimestamp.toString() === zeroInt.toString(),
+      transitionTimestamp: contractState.replacedAtTimestamp?.toString() ?? 0
+    };
   }
 
   private async rootResolve(
