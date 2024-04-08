@@ -136,15 +136,6 @@ describe('identity', () => {
     expect(proof.proof.existence).to.equal(false);
   });
 
-  it('generateNonRevProof', async () => {
-    const { did, credential } = await createIdentity(idWallet);
-    expect(did.string()).to.equal(expectedDID);
-
-    const proof = await idWallet.generateNonRevocationMtp(did, credential);
-
-    expect(proof.proof.existence).to.equal(false);
-  });
-
   it('issueCredential', async () => {
     const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet);
 
@@ -257,5 +248,78 @@ describe('identity', () => {
 
     const proof2 = await idWallet.generateCredentialMtp(did, credential2);
     expect(proof2.proof.existence).to.equal(true);
+  });
+
+  it('rotate identity keys', async () => {
+    const { did, credential } = await createIdentity(idWallet);
+    expect(did.string()).to.equal(expectedDID);
+
+    const proof = await idWallet.generateCredentialMtp(did, credential);
+    expect(proof.proof.existence).to.equal(true);
+
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+    const prover = new NativeProver(circuitStorage);
+
+    const ethSigner = new Wallet(WALLET_KEY, (dataStorage.states as EthStateStorage).provider);
+    const opts = {
+      seed: SEED_USER,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+
+    const treesModel = await idWallet.getDIDTreeModel(did);
+    const [ctrHex, rtrHex, rorTrHex] = await Promise.all([
+      treesModel.claimsTree.root(),
+      treesModel.revocationTree.root(),
+      treesModel.rootsTree.root()
+    ]);
+
+    const oldTreeState = {
+      state: treesModel.state,
+      claimsRoot: ctrHex,
+      revocationRoot: rtrHex,
+      rootOfRoots: rorTrHex
+    };
+
+    expect(credential?.proof).not.to.be.undefined;
+    expect((credential?.proof as unknown[])[0]).to.instanceOf(Iden3SparseMerkleTreeProof);
+    expect((credential?.proof as unknown[]).length).to.equal(1);
+
+    const credential2 = await idWallet.addBJJAuthCredential(
+      did,
+      oldTreeState,
+      false,
+      ethSigner,
+      opts,
+      prover
+    );
+    expect(credential2?.proof).not.to.be.undefined;
+    expect((credential2?.proof as unknown[]).length).to.equal(2);
+    expect((credential2?.proof as unknown[])[0]).to.instanceOf(BJJSignatureProof2021);
+    expect((credential2?.proof as unknown[])[1]).to.instanceOf(Iden3SparseMerkleTreeProof);
+
+    const proof2 = await idWallet.generateCredentialMtp(did, credential2);
+    expect(proof2.proof.existence).to.equal(true);
+
+    const proofNRcredential = await idWallet.generateNonRevocationMtp(did, credential);
+    expect(proofNRcredential.proof.existence).to.equal(false);
+
+    const proofNRcredential2 = await idWallet.generateNonRevocationMtp(did, credential2);
+    expect(proofNRcredential2.proof.existence).to.equal(false);
+
+    const nonce = await idWallet.revokeCredential(did, credential);
+
+    await idWallet.publishStateToRHS(did, RHS_URL, [nonce]);
+
+    const afterRevokeProofNRcredential = await idWallet.generateNonRevocationMtp(did, credential);
+    expect(afterRevokeProofNRcredential.proof.existence).to.equal(true);
+
+    // credential2 was generated with sigproof from credential, so it should be revoked as well
+    const afterRevokeProofNRcredential2 = await idWallet.generateNonRevocationMtp(did, credential2);
+    expect(afterRevokeProofNRcredential2.proof.existence).to.equal(true);
   });
 });

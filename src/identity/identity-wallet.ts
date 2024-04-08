@@ -434,14 +434,14 @@ export interface IIdentityWallet {
    * @param {TreeState} oldTreeState - old tree state of the user
    * @param {boolean} isOldTreeState - if the old state is genesis
    * @param {Signer} ethSigner - signer to sign the transaction
-   * @param {object} opts - additional options
+   * @param {AuthBJJCredentialCreationOptions} opts - additional options
    */
   addBJJAuthCredential(
     did: DID,
     oldTreeState: TreeState,
     isOldTreeStateGenesis: boolean,
     ethSigner: Signer,
-    opts?: object
+    opts?: AuthBJJCredentialCreationOptions
   ): Promise<W3CCredential>;
 }
 
@@ -1040,10 +1040,10 @@ export class IdentityWallet implements IIdentityWallet {
   async revokeCredential(issuerDID: DID, credential: W3CCredential): Promise<number> {
     const issuerTree = await this.getDIDTreeModel(issuerDID);
 
-    const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
+    const coreClaim = await this.getCoreClaimFromCredential(credential);
 
     if (!coreClaim) {
-      throw new Error('credential must have coreClaim representation in the signature proof');
+      throw new Error('credential must have coreClaim representation in proofs');
     }
     const nonce = coreClaim.getRevocationNonce();
 
@@ -1119,7 +1119,8 @@ export class IdentityWallet implements IIdentityWallet {
     txId: string,
     blockNumber?: number,
     blockTimestamp?: number,
-    treeState?: TreeState
+    treeState?: TreeState,
+    opts?: CoreClaimCreationOptions
   ): Promise<W3CCredential[]> {
     for (let index = 0; index < credentials.length; index++) {
       const credential = credentials[index];
@@ -1128,7 +1129,10 @@ export class IdentityWallet implements IIdentityWallet {
 
       // TODO: return coreClaim from generateCredentialMtp and use it below
       // credential must have a bjj signature proof
-      const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
+
+      const coreClaim =
+        credential.getCoreClaimFromProof(ProofType.BJJSignature) ||
+        (await credential.toCoreClaim(opts));
 
       if (!coreClaim) {
         throw new Error('credential must have coreClaim representation in the signature proof');
@@ -1383,7 +1387,7 @@ export class IdentityWallet implements IIdentityWallet {
     oldTreeState: TreeState,
     isOldStateGenesis: boolean,
     ethSigner: Signer,
-    opts: IdentityCreationOptions,
+    opts: AuthBJJCredentialCreationOptions,
     prover?: IZKProver // it will be needed in case of non ethereum identities
   ): Promise<W3CCredential> {
     opts.seed = opts.seed ?? getRandomBytes(32);
@@ -1408,7 +1412,18 @@ export class IdentityWallet implements IIdentityWallet {
     const credsWithIden3MTPProof = await this.generateIden3SparseMerkleTreeProof(
       did,
       [credential],
-      txId
+      txId,
+      0,
+      0,
+      undefined,
+      {
+        revNonce: Number(authClaim.getRevocationNonce()),
+        subjectPosition: SubjectPosition.None,
+        merklizedRootPosition: MerklizedRootPosition.None,
+        updatable: false,
+        version: 0,
+        merklizeOpts: { documentLoader: cacheLoader() }
+      }
     );
     await this._credentialWallet.saveAll(credsWithIden3MTPProof);
 
