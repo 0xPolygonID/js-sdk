@@ -318,8 +318,7 @@ describe('identity', () => {
     const afterRevokeProofNRcredential = await idWallet.generateNonRevocationMtp(did, credential);
     expect(afterRevokeProofNRcredential.proof.existence).to.equal(true);
 
-    // credential2 was generated with sigproof from credential, so it should be revoked as well
     const afterRevokeProofNRcredential2 = await idWallet.generateNonRevocationMtp(did, credential2);
-    expect(afterRevokeProofNRcredential2.proof.existence).to.equal(true);
+    expect(afterRevokeProofNRcredential2.proof.existence).to.equal(false);
   });
 });

@@ -21,7 +21,7 @@ import {
   getRandomBytes,
   Poseidon
 } from '@iden3/js-crypto';
-import { Hash, hashElems, ZERO_HASH } from '@iden3/js-merkletree';
+import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
 import { JSONSchema, JsonSchemaValidator, cacheLoader } from '../schema-processor';
@@ -1391,6 +1391,11 @@ export class IdentityWallet implements IIdentityWallet {
     prover?: IZKProver // it will be needed in case of non ethereum identities
   ): Promise<W3CCredential> {
     opts.seed = opts.seed ?? getRandomBytes(32);
+    opts.revocationOpts.nonce =
+      opts.revocationOpts.nonce ??
+      (isOldStateGenesis
+        ? 0
+        : opts.revocationOpts.nonce ?? new DataView(getRandomBytes(12).buffer).getUint32(0));
 
     const { authClaim, pubKey } = await this.createAuthCoreClaim(
       opts.revocationOpts.nonce ?? 0,
