@@ -2068,7 +2068,7 @@ describe('auth', () => {
     expect(token).to.be.a('object');
   });
 
-  it.only('key rotation use case', async () => {
+  it('key rotation use case', async () => {
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
