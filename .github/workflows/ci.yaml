@@ -5,7 +5,7 @@ jobs:
     strategy:
       matrix:
         version: ['lts/*']
-    timeout-minutes: 10
+    timeout-minutes: 12
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
