@@ -1,6 +1,7 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
 import {
+  BasicMessage,
   CredentialOffer,
   CredentialsOfferMessage,
   IPackageManager,
@@ -20,6 +21,7 @@ import {
 import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
+import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
@@ -148,7 +150,10 @@ export type CredentialProposalHandlerParams = {
  * @class CredentialProposalHandler
  * @implements implements ICredentialProposalHandler interface
  */
-export class CredentialProposalHandler implements ICredentialProposalHandler {
+export class CredentialProposalHandler
+  extends AbstractMessageHandler
+  implements ICredentialProposalHandler, IProtocolMessageHandler
+{
   /**
    * @beta Creates an instance of CredentialProposalHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
@@ -161,7 +166,24 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
     private readonly _packerMgr: IPackageManager,
     private readonly _identityWallet: IIdentityWallet,
     private readonly _params: CredentialProposalHandlerParams
-  ) {}
+  ) {
+    super();
+  }
+
+  public async handle(
+    message: BasicMessage,
+    context: ProposalRequestHandlerOptions
+  ): Promise<BasicMessage | null> {
+    switch (message.type) {
+      case PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE:
+        return (await this.handleProposalRequestMessage(
+          message as unknown as ProposalRequestMessage,
+          context
+        )) as BasicMessage;
+      default:
+        return super.handle(message, context as { [key: string]: unknown });
+    }
+  }
 
   /**
    * @inheritdoc ICredentialProposalHandler#parseProposalRequest
@@ -175,23 +197,11 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
     return proposalRequest;
   }
 
-  /**
-   * @inheritdoc ICredentialProposalHandler#handleProposalRequest
-   */
-  async handleProposalRequest(
-    request: Uint8Array,
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    opts?: ProposalRequestHandlerOptions
-  ): Promise<Uint8Array> {
-    if (
-      this._params.packerParams.mediaType === MediaType.SignedMessage &&
-      !this._params.packerParams.packerOptions
-    ) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
-    const proposalRequest = await this.parseProposalRequest(request);
-
+  private async handleProposalRequestMessage(
+    proposalRequest: ProposalRequestMessage,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ctx?: ProposalRequestHandlerOptions
+  ): Promise<ProposalMessage | CredentialsOfferMessage | undefined> {
     if (!proposalRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
@@ -272,8 +282,32 @@ export class CredentialProposalHandler implements ICredentialProposalHandler {
       proposalMessage.body?.proposals.push(proposal);
     }
 
-    // if there is credentials in the wallet, return offer protocol message, otherwise proposal
-    const response = byteEncoder.encode(JSON.stringify(proposalMessage ?? credOfferMessage));
+    return proposalMessage ?? credOfferMessage;
+  }
+
+  /**
+   * @inheritdoc ICredentialProposalHandler#handleProposalRequest
+   */
+  async handleProposalRequest(
+    request: Uint8Array,
+    //eslint-disable-next-line @typescript-eslint/no-unused-vars
+    opts?: ProposalRequestHandlerOptions
+  ): Promise<Uint8Array> {
+    if (
+      this._params.packerParams.mediaType === MediaType.SignedMessage &&
+      !this._params.packerParams.packerOptions
+    ) {
+      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
+    }
+
+    const proposalRequest = await this.parseProposalRequest(request);
+    if (!proposalRequest.from) {
+      throw new Error(`failed request. empty 'from' field`);
+    }
+
+    const senderDID = DID.parse(proposalRequest.from);
+    const message = await this.handleProposalRequestMessage(proposalRequest);
+    const response = byteEncoder.encode(JSON.stringify(message));
 
     const packerOpts =
       this._params.packerParams.mediaType === MediaType.SignedMessage

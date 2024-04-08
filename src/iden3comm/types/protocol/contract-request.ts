@@ -1,13 +1,9 @@
+import { BasicMessage } from '../packer';
 import { ZeroKnowledgeProofRequest } from './auth';
 
 /** ContractInvokeRequest represents structure of contract invoke request object */
-export type ContractInvokeRequest = {
-  id: string;
-  typ: string;
-  type: string;
-  thid: string;
+export type ContractInvokeRequest = BasicMessage & {
   body: ContractInvokeRequestBody;
-  from?: string;
 };
 
 /** ContractInvokeRequestBody represents structure of contract invoke request body object */

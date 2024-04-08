@@ -34,6 +34,21 @@ export interface IPackageManager {
   pack(mediaType: MediaType, payload: Uint8Array, params: PackerParams): Promise<Uint8Array>;
 
   /**
+   * packs payload with a packer that is assigned to media type
+   * forwards packer params to implementation
+   *
+   * @param {MediaType} mediaType
+   * @param {BasicMessage} protocolMessage
+   * @param {PackerParams} params
+   * @returns `Promise<Uint8Array>`
+   */
+  packMessage(
+    mediaType: MediaType,
+    protocolMessage: BasicMessage,
+    params: PackerParams
+  ): Promise<Uint8Array>;
+
+  /**
    * unpacks packed envelope to basic protocol message and returns media type of the envelope
    *
    * @param {Uint8Array} envelope - bytes envelope

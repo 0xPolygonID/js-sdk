@@ -5,6 +5,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import {
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
+  BasicMessage,
   IPackageManager,
   JWSPackerParams,
   ZeroKnowledgeProofRequest
@@ -17,6 +18,7 @@ import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { processZeroKnowledgeProofRequests } from './common';
 import { CircuitId } from '../../circuits';
+import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 
 /**
  *  createAuthorizationRequest is a function to create protocol authorization request
@@ -62,7 +64,6 @@ export function createAuthorizationRequestWithMessage(
   };
   return request;
 }
-
 /**
  *
  * Options to pass to auth response handler
@@ -133,6 +134,19 @@ export interface IAuthHandler {
     response: AuthorizationResponseMessage;
   }>;
 }
+
+type AuthReqOptions = {
+  did: DID;
+  mediaType?: MediaType;
+};
+
+type AuthRespOptions = {
+  request: AuthorizationRequestMessage;
+  acceptedStateTransitionDelay?: number;
+  acceptedProofGenerationDelay?: number;
+};
+
+export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
 /**
  *
  * Options to pass to auth handler
@@ -154,7 +168,7 @@ export interface AuthHandlerOptions {
  * @class AuthHandler
  * @implements implements IAuthHandler interface
  */
-export class AuthHandler implements IAuthHandler {
+export class AuthHandler extends AbstractMessageHandler implements IAuthHandler, IProtocolMessageHandler {
   private readonly _supportedCircuits = [
     CircuitId.AtomicQueryV3,
     CircuitId.AtomicQuerySigV2,
@@ -170,7 +184,26 @@ export class AuthHandler implements IAuthHandler {
   constructor(
     private readonly _packerMgr: IPackageManager,
     private readonly _proofService: IProofService
-  ) {}
+  ) {
+    super();
+  }
+
+  handle(message: BasicMessage, ctx: AuthMessageHandlerOptions): Promise<BasicMessage | null> {
+    switch (message.type) {
+      case PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE:
+        return this.handleAuthRequest(
+          message as AuthorizationRequestMessage,
+          ctx as AuthReqOptions
+        );
+      case PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE:
+        return this.handleAuthResponse(
+          message as AuthorizationResponseMessage,
+          ctx as AuthRespOptions
+        );
+      default:
+        return super.handle(message, ctx);
+    }
+  }
 
   /**
    * @inheritdoc IAuthHandler#parseAuthorizationRequest
@@ -183,6 +216,47 @@ export class AuthHandler implements IAuthHandler {
     }
     authRequest.body.scope = authRequest.body.scope || [];
     return authRequest;
+  }
+
+  private async handleAuthRequest(
+    authRequest: AuthorizationRequestMessage,
+    ctx: AuthReqOptions
+  ): Promise<AuthorizationResponseMessage> {
+    if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
+      throw new Error('Invalid message type for authorization request');
+    }
+
+    // override sender did if it's explicitly specified in the auth request
+    const did = authRequest.to ? DID.parse(authRequest.to) : ctx.did;
+    const mediaType = ctx.mediaType || MediaType.ZKPMessage;
+    const guid = uuid.v4();
+
+    if (!authRequest.from) {
+      throw new Error('auth request should contain from field');
+    }
+
+    const from = DID.parse(authRequest.from);
+
+    const responseScope = await processZeroKnowledgeProofRequests(
+      did,
+      authRequest?.body.scope,
+      from,
+      this._proofService,
+      { mediaType, supportedCircuits: this._supportedCircuits }
+    );
+
+    return {
+      id: guid,
+      typ: ctx.mediaType,
+      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
+      thid: authRequest.thid ?? guid,
+      body: {
+        message: authRequest?.body?.message,
+        scope: responseScope
+      },
+      from: did.string(),
+      to: authRequest.from
+    };
   }
 
   /**
@@ -199,10 +273,6 @@ export class AuthHandler implements IAuthHandler {
   }> {
     const authRequest = await this.parseAuthorizationRequest(request);
 
-    if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
-      throw new Error('Invalid message type for authorization request');
-    }
-
     if (!opts) {
       opts = {
         mediaType: MediaType.ZKPMessage
@@ -213,38 +283,10 @@ export class AuthHandler implements IAuthHandler {
       throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
     }
 
-    if (authRequest.to) {
-      // override sender did if it's explicitly specified in the auth request
-      did = DID.parse(authRequest.to);
-    }
-    const guid = uuid.v4();
-
-    if (!authRequest.from) {
-      throw new Error('auth request should contain from field');
-    }
-
-    const from = DID.parse(authRequest.from);
-
-    const responseScope = await processZeroKnowledgeProofRequests(
+    const authResponse = await this.handleAuthRequest(authRequest, {
       did,
-      authRequest?.body.scope,
-      from,
-      this._proofService,
-      { ...opts, supportedCircuits: this._supportedCircuits }
-    );
-
-    const authResponse: AuthorizationResponseMessage = {
-      id: guid,
-      typ: opts.mediaType,
-      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
-      thid: authRequest.thid ?? guid,
-      body: {
-        message: authRequest?.body?.message,
-        scope: responseScope
-      },
-      from: did.string(),
-      to: authRequest.from
-    };
+      mediaType: opts.mediaType
+    });
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
 
@@ -265,17 +307,14 @@ export class AuthHandler implements IAuthHandler {
     return { authRequest, authResponse, token };
   }
 
-  /**
-   * @inheritdoc IAuthHandler#handleAuthorizationResponse
-   */
-  async handleAuthorizationResponse(
+  private async handleAuthResponse(
     response: AuthorizationResponseMessage,
-    request: AuthorizationRequestMessage,
-    opts?: AuthResponseHandlerOptions | undefined
-  ): Promise<{
-    request: AuthorizationRequestMessage;
-    response: AuthorizationResponseMessage;
-  }> {
+    ctx: AuthRespOptions
+  ): Promise<BasicMessage | null> {
+    const request = ctx.request;
+    if (response.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE) {
+      throw new Error('Invalid message type for authorization response');
+    }
     if ((request.body.message ?? '') !== (response.body.message ?? '')) {
       throw new Error('message for signing from request is not presented in response');
     }
@@ -314,6 +353,15 @@ export class AuthHandler implements IAuthHandler {
       const params = proofRequest.params ?? {};
       params.verifierDid = DID.parse(request.from);
 
+      const opts = [ctx.acceptedProofGenerationDelay, ctx.acceptedStateTransitionDelay].some(
+        (delay) => delay !== undefined
+      )
+        ? {
+            acceptedProofGenerationDelay: ctx.acceptedProofGenerationDelay,
+            acceptedStateTransitionDelay: ctx.acceptedStateTransitionDelay
+          }
+        : undefined;
+
       const { linkID } = await this._proofService.verifyZKPResponse(proofResp, {
         query: proofRequest.query as unknown as ProofQuery,
         sender: response.from,
@@ -343,7 +391,27 @@ export class AuthHandler implements IAuthHandler {
       }
     }
 
-    return { request, response };
+    return response;
+  }
+
+  /**
+   * @inheritdoc IAuthHandler#handleAuthorizationResponse
+   */
+  async handleAuthorizationResponse(
+    response: AuthorizationResponseMessage,
+    request: AuthorizationRequestMessage,
+    opts?: AuthResponseHandlerOptions | undefined
+  ): Promise<{
+    request: AuthorizationRequestMessage;
+    response: AuthorizationResponseMessage;
+  }> {
+    const authResp = (await this.handleAuthResponse(response, {
+      request,
+      acceptedStateTransitionDelay: opts?.acceptedStateTransitionDelay,
+      acceptedProofGenerationDelay: opts?.acceptedProofGenerationDelay
+    })) as AuthorizationResponseMessage;
+
+    return { request, response: authResp };
   }
 
   private verifyAuthRequest(request: AuthorizationRequestMessage) {

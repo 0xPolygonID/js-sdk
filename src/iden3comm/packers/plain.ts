@@ -1,4 +1,4 @@
-import { PlainPackerParams } from './../types/packer';
+import { PackerParams, PlainPackerParams } from './../types/packer';
 import { BasicMessage, IPacker } from '../types';
 import { MediaType } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
@@ -12,15 +12,25 @@ import { byteDecoder, byteEncoder } from '../../utils';
  */
 export class PlainPacker implements IPacker {
   /**
+   * Packs a basic message using the specified parameters.
+   *
+   * @param msg - The basic message to pack.
+   * @param param - The packer parameters.
+   * @returns A promise that resolves to a Uint8Array representing the packed message.
+   * @throws An error if the method is not implemented.
+   */
+  packMessage(msg: BasicMessage): Promise<Uint8Array> {
+    msg.typ = MediaType.PlainMessage;
+    return Promise.resolve(byteEncoder.encode(JSON.stringify(msg)));
+  }
+  /**
    * Pack returns packed message to transport envelope
    *
    * @param {Uint8Array} payload - json message serialized
    * @param {PlainPackerParams} _params - not used here
    * @returns `Promise<Uint8Array>`
    */
-  //
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async pack(payload: Uint8Array, _params: PlainPackerParams): Promise<Uint8Array> {
+  async pack(payload: Uint8Array): Promise<Uint8Array> {
     const msg = JSON.parse(byteDecoder.decode(payload));
     msg.typ = MediaType.PlainMessage;
     return Promise.resolve(byteEncoder.encode(JSON.stringify(msg)));
