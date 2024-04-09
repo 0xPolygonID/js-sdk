@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import {
   AuthHandler,
   AuthorizationRequestMessage,
+  BasicMessage,
   CircuitId,
   CredentialRequest,
   CredentialStatusResolverRegistry,
@@ -17,7 +18,10 @@ import {
   RHSResolver,
   byteEncoder
 } from '../../src';
-import { MessageHandler } from '../../src/iden3comm/handlers/message-handler';
+import {
+  AbstractMessageHandler,
+  MessageHandler
+} from '../../src/iden3comm/handlers/message-handler';
 import { DID } from '@iden3/js-iden3-core';
 import {
   MOCK_STATE_STORAGE,
@@ -49,6 +53,15 @@ describe('MessageHandler', () => {
     const kms = registerBJJIntoInMemoryKMS();
     const dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
 
+    const dummyHandler = {
+      handle: async (msg: BasicMessage) => {
+        if (msg.type === 'msg-type-req') {
+          return {
+            type: 'msg-type-resp'
+          };
+        }
+      }
+    } as unknown as AbstractMessageHandler;
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -186,7 +199,7 @@ describe('MessageHandler', () => {
     expect(issuerAuthCredential).not.to.be.undefined;
 
     const messageHandler = new MessageHandler({
-      messageHandlers: [authHandler],
+      messageHandlers: [authHandler, dummyHandler],
       packageManager: packageMgr
     });
 
@@ -263,5 +276,15 @@ describe('MessageHandler', () => {
     await messageHandler.handleMessage(authResp!, {
       request: authReq
     });
+
+    const dummyHandlerResponseMsg = await dummyHandler.handle(
+      {
+        type: 'msg-type-req'
+      } as BasicMessage,
+      {}
+    );
+
+    expect(dummyHandlerResponseMsg).not.to.be.null;
+    expect(dummyHandlerResponseMsg!.type).to.be.eq('msg-type-resp');
   });
 });

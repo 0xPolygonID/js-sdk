@@ -25,7 +25,7 @@ export abstract class AbstractMessageHandler implements IProtocolMessageHandler 
 }
 
 export class MessageHandler {
-  private messageHandler?: AbstractMessageHandler;
+  public messageHandler?: AbstractMessageHandler;
 
   constructor(
     private readonly _params: {
