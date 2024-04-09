@@ -2071,7 +2071,7 @@ describe('auth', () => {
   it('key rotation use case', async () => {
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v4.json',
       type: 'KYCAgeCredential',
       credentialSubject: {
         id: userDID.string(),
@@ -2091,18 +2091,19 @@ describe('auth', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQuerySigV2,
+      circuitId: CircuitId.AtomicQueryV3,
       optional: false,
       query: {
         allowedIssuers: ['*'],
         type: claimReq.type,
         context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
         credentialSubject: {
           documentType: {
             $eq: 99
           }
-        }
+        },
+        proofType: ProofType.BJJSignature
       }
     };
 
