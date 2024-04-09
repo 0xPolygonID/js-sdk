@@ -602,7 +602,9 @@ export class PubSignalsVerifier {
     try {
       contractState = await this._stateStorage.getStateInfoByIdAndState(idBigInt, state);
     } catch (e) {
-      if ((e as { errorArgs: string[] }).errorArgs[0] === 'State does not exist') {
+      const stateNotExistErr = ((e as unknown as { errorArgs: string[] })?.errorArgs ?? [])[0];
+      const errMsg = stateNotExistErr || (e as unknown as Error).message;
+      if (errMsg === 'State does not exist') {
         if (isGenesis) {
           return {
             latest: true,
@@ -677,10 +679,7 @@ export class PubSignalsVerifier {
   }
 
   private checkStateExistenceForId = async (userId: Id, userState: Hash): Promise<void> => {
-    const { latest } = await this.resolve(userId, userState.bigInt());
-    if (!latest) {
-      throw userStateError;
-    }
+    await this.resolve(userId, userState.bigInt());
   };
 
   private checkGlobalState = async (
