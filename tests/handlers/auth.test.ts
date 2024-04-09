@@ -2239,7 +2239,34 @@ describe('auth', () => {
       'no auth credentials found'
     );
 
-    // should this work?
+    // this should this work because we haven't revoked user keys
     await handleAuthorizationRequest(userDID, authReqBody);
+
+    // get actual auth credential for user
+    const { authCredential: userAuthCredential } = await idWallet.getActualAuthCredential(userDID);
+
+    const treesModel3 = await idWallet.getDIDTreeModel(userDID);
+    const [ctrHex3, rtrHex3, rorTrHex3] = await Promise.all([
+      treesModel3.claimsTree.root(),
+      treesModel3.revocationTree.root(),
+      treesModel3.rootsTree.root()
+    ]);
+
+    const oldTreeState3 = {
+      state: treesModel3.state,
+      claimsRoot: ctrHex3,
+      revocationRoot: rtrHex3,
+      rootOfRoots: rorTrHex3
+    };
+
+    // revoke user keys
+    const nonce3 = await idWallet.revokeCredential(userDID, userAuthCredential);
+    await idWallet.publishStateToRHS(userDID, RHS_URL, [nonce3]);
+    await proofService.transitState(userDID, oldTreeState3, true, dataStorage.states, ethSigner);
+
+    // this should not work because we revoked user keys
+    await expect(handleAuthorizationRequest(userDID, authReqBody)).to.rejectedWith(
+      'no auth credentials found'
+    );
   });
 });
