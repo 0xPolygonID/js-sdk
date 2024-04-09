@@ -677,8 +677,9 @@ export class PubSignalsVerifier {
   }
 
   private checkStateExistenceForId = async (userId: Id, userState: Hash): Promise<void> => {
-    const { latest } = await this.resolve(userId, userState.bigInt());
-    if (!latest) {
+    try {
+      await this.resolve(userId, userState.bigInt());
+    } catch {
       throw userStateError;
     }
   };
