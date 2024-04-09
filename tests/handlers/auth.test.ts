@@ -2206,6 +2206,10 @@ describe('auth', () => {
     );
     expect(issuerAuthCredential2).to.be.deep.equal(credential2);
 
+    // check we can issue new credential with k2
+    const issuerCred2 = await idWallet.issueCredential(issuerDID, claimReq);
+    expect(issuerCred2).to.be.not.undefined;
+
     const treesModel2 = await idWallet.getDIDTreeModel(issuerDID);
     const [ctrHex2, rtrHex2, rorTrHex2] = await Promise.all([
       treesModel2.claimsTree.root(),
@@ -2227,6 +2231,11 @@ describe('auth', () => {
 
     // check that we don't have auth credentials now
     await expect(idWallet.getActualAuthCredential(issuerDID)).to.rejectedWith(
+      'no auth credentials found'
+    );
+
+    // check that we can't issue new credential
+    await expect(idWallet.issueCredential(issuerDID, claimReq)).to.rejectedWith(
       'no auth credentials found'
     );
 
