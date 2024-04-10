@@ -1168,7 +1168,9 @@ export class IdentityWallet implements IIdentityWallet {
       if (Array.isArray(credentials[index].proof)) {
         (credentials[index].proof as unknown[]).push(mtpProof);
       } else {
-        credentials[index].proof = [credentials[index].proof, mtpProof];
+        credentials[index].proof = credentials[index].proof
+          ? [credentials[index].proof, mtpProof]
+          : [mtpProof];
       }
     }
     return credentials;
