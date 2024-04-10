@@ -21,7 +21,7 @@ import {
   getRandomBytes,
   Poseidon
 } from '@iden3/js-crypto';
-import { hashElems, ZERO_HASH } from '@iden3/js-merkletree';
+import { Hash, hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
 import { JSONSchema, JsonSchemaValidator, cacheLoader } from '../schema-processor';
@@ -524,22 +524,9 @@ export class IdentityWallet implements IIdentityWallet {
     did: DID,
     pubKey: PublicKey,
     authClaim: Claim,
-    oldTreeState: TreeState,
+    currentState: Hash,
     revocationOpts: { id: string; type: CredentialStatusType }
   ): Promise<W3CCredential> {
-    const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.string(),
-      MerkleTreeType.Claims
-    );
-
-    const ctr = await claimsTree.root();
-
-    const currentState = hashElems([
-      ctr.bigInt(),
-      oldTreeState.revocationRoot.bigInt(),
-      oldTreeState.rootOfRoots.bigInt()
-    ]);
-
     const authData = authClaim.getExpirationDate();
     const expiration = authData ? getUnixTimestamp(authData) : 0;
 
@@ -572,25 +559,6 @@ export class IdentityWallet implements IIdentityWallet {
       } catch (e) {
         throw new Error(`Error create w3c credential ${(e as Error).message}`);
       }
-
-      const index = authClaim.hIndex();
-      const { proof } = await claimsTree.generateProof(index, ctr);
-
-      const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
-        mtp: proof,
-        issuerData: {
-          id: did,
-          state: {
-            rootOfRoots: oldTreeState.rootOfRoots,
-            revocationTreeRoot: oldTreeState.revocationRoot,
-            claimsTreeRoot: ctr,
-            value: currentState
-          }
-        },
-        coreClaim: authClaim
-      });
-
-      credential.proof = [mtpProof];
     } else {
       // credential with sigProof signed with previous auth bjj credential
       credential = await this.issueCredential(did, request);
@@ -635,18 +603,39 @@ export class IdentityWallet implements IIdentityWallet {
 
     await this._storage.mt.bindMerkleTreeToNewIdentifier(tmpIdentifier, did.string());
 
+    const oldTreeState = {
+      revocationRoot: ZERO_HASH,
+      claimsRoot: ctr,
+      state: currentState,
+      rootOfRoots: ZERO_HASH
+    };
+
     const credential = await this.createAuthBJJCredential(
       did,
       pubKey,
       authClaim,
-      {
-        revocationRoot: ZERO_HASH,
-        claimsRoot: ctr,
-        state: currentState,
-        rootOfRoots: ZERO_HASH
-      },
+      currentState,
       opts.revocationOpts
     );
+
+    const index = authClaim.hIndex();
+    const { proof } = await claimsTree.generateProof(index, ctr);
+
+    const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
+      mtp: proof,
+      issuerData: {
+        id: did,
+        state: {
+          rootOfRoots: oldTreeState.rootOfRoots,
+          revocationTreeRoot: oldTreeState.revocationRoot,
+          claimsTreeRoot: ctr,
+          value: currentState
+        }
+      },
+      coreClaim: authClaim
+    });
+
+    credential.proof = [mtpProof];
 
     await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
       rhsUrl: opts.revocationOpts.id,
@@ -1405,15 +1394,27 @@ export class IdentityWallet implements IIdentityWallet {
     const { hi, hv } = authClaim.hiHv();
     await this._storage.mt.addToMerkleTree(did.string(), MerkleTreeType.Claims, hi, hv);
 
+    // Calculate current state after adding credential to merkle tree
+    const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      did.string(),
+      MerkleTreeType.Claims
+    );
+    const currentState = hashElems([
+      (await claimsTree.root()).bigInt(),
+      oldTreeState.revocationRoot.bigInt(),
+      oldTreeState.rootOfRoots.bigInt()
+    ]);
+
     let credential = await this.createAuthBJJCredential(
       did,
       pubKey,
       authClaim,
-      oldTreeState,
+      currentState,
       opts.revocationOpts
     );
 
     const txId = await this.transitState(did, oldTreeState, isOldStateGenesis, ethSigner, prover);
+    // TODO: update to get blockNumber and blockTimestamp from function instead of passing 0s
     const credsWithIden3MTPProof = await this.generateIden3SparseMerkleTreeProof(
       did,
       [credential],
