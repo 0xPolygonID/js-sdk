@@ -203,6 +203,21 @@ export interface IIdentityWallet {
   ): Promise<MerkleTreeProofWithTreeState>;
 
   /**
+   * Generates proof of core claim inclusion / non-inclusion to the given claims tree
+   * and its root or to the current root of the Claims tree in the given Merkle tree storage.
+   *
+   * @param {DID} did - issuer did
+   * @param {core.Claim} core - core claim to generate mtp
+   * @param {TreeState} [treeState] - tree state when to generate a proof
+   * @returns `Promise<MerkleTreeProofWithTreeState>` - MerkleTreeProof and TreeState on which proof has been generated
+   */
+  generateCoreClaimMtp(
+    did: DID,
+    coreClaim: Claim,
+    treeState?: TreeState
+  ): Promise<MerkleTreeProofWithTreeState>;
+
+  /**
    * Generates proof of credential revocation nonce (with credential as a param) inclusion / non-inclusion to the given revocation tree
    * and its root or to the current root of the Revocation tree in the given Merkle tree storage.
    *
@@ -812,8 +827,15 @@ export class IdentityWallet implements IIdentityWallet {
     treeState?: TreeState
   ): Promise<MerkleTreeProofWithTreeState> {
     const coreClaim = await this.getCoreClaimFromCredential(credential);
-    // todo: Parser.parseClaim
+    return this.generateCoreClaimMtp(did, coreClaim, treeState);
+  }
 
+  /** {@inheritDoc IIdentityWallet.generateClaimMtp} */
+  async generateCoreClaimMtp(
+    did: DID,
+    coreClaim: Claim,
+    treeState?: TreeState
+  ): Promise<MerkleTreeProofWithTreeState> {
     const treesModel = await this.getDIDTreeModel(did);
 
     const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
@@ -1114,8 +1136,6 @@ export class IdentityWallet implements IIdentityWallet {
     for (let index = 0; index < credentials.length; index++) {
       const credential = credentials[index];
 
-      const mtpWithProof = await this.generateCredentialMtp(issuerDID, credential, treeState);
-
       // TODO: return coreClaim from generateCredentialMtp and use it below
       // credential must have a bjj signature proof
 
@@ -1126,6 +1146,7 @@ export class IdentityWallet implements IIdentityWallet {
       if (!coreClaim) {
         throw new Error('credential must have coreClaim representation in the signature proof');
       }
+      const mtpWithProof = await this.generateCoreClaimMtp(issuerDID, coreClaim, treeState);
 
       const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
         mtp: mtpWithProof.proof,
