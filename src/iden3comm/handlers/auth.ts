@@ -136,7 +136,7 @@ export interface IAuthHandler {
 }
 
 type AuthReqOptions = {
-  did: DID;
+  senderDid: DID;
   mediaType?: MediaType;
 };
 
@@ -230,7 +230,7 @@ export class AuthHandler
     }
 
     // override sender did if it's explicitly specified in the auth request
-    const did = authRequest.to ? DID.parse(authRequest.to) : ctx.did;
+    const did = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
     const mediaType = ctx.mediaType || MediaType.ZKPMessage;
     const guid = uuid.v4();
 
@@ -287,7 +287,7 @@ export class AuthHandler
     }
 
     const authResponse = await this.handleAuthRequest(authRequest, {
-      did,
+      senderDid: did,
       mediaType: opts.mediaType
     });
 

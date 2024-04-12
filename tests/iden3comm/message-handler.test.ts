@@ -16,7 +16,9 @@ import {
   PlainPacker,
   ProofService,
   RHSResolver,
-  byteEncoder
+  byteEncoder,
+  IProtocolMessageHandler,
+  byteDecoder
 } from '../../src';
 import {
   AbstractMessageHandler,
@@ -29,9 +31,28 @@ import {
   SEED_USER,
   createIdentity,
   getInMemoryDataStorage,
-  registerBJJIntoInMemoryKMS
+  registerKeyProvidersInMemoryKMS
 } from '../helpers';
 import { randomUUID } from 'crypto';
+
+class DummyHandler extends AbstractMessageHandler implements IProtocolMessageHandler {
+  constructor(private readonly _type: string) {
+    super();
+  }
+  public async handle(
+    msg: BasicMessage,
+    ctx: { [key: string]: unknown }
+  ): Promise<BasicMessage | null> {
+    if (msg.type === this._type) {
+      return {
+        ...msg,
+        body: ctx
+      } as BasicMessage;
+    }
+
+    return super.handle(msg, ctx);
+  }
+}
 
 describe('MessageHandler', () => {
   it('should throw invalid handle messages', async () => {
@@ -40,17 +61,19 @@ describe('MessageHandler', () => {
       packageManager: {} as IPackageManager
     });
 
-    expect(messageHandler.handleMessage(new Uint8Array(), { did: new DID() })).to.be.rejectedWith(
-      'Message handler not provided'
-    );
+    expect(
+      messageHandler.handleMessage(new Uint8Array(), { senderDid: new DID() })
+    ).to.be.rejectedWith('Message handler not provided');
 
     expect(
-      messageHandler.handleMessage(byteEncoder.encode('{"type":"other-type"}'), { did: new DID() })
+      messageHandler.handleMessage(byteEncoder.encode('{"type":"other-type"}'), {
+        senderDid: new DID()
+      })
     ).to.be.rejectedWith('Message handler not provided');
   });
 
   it('should handle auth req/resp messages', async () => {
-    const kms = registerBJJIntoInMemoryKMS();
+    const kms = registerKeyProvidersInMemoryKMS();
     const dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
 
     const dummyHandler = {
@@ -72,114 +95,9 @@ describe('MessageHandler', () => {
 
     const proofService = {
       generateProof: async () => {
-        return {
-          id: 1,
-          circuitId: 'credentialAtomicQuerySigV2',
-          proof: {
-            pi_a: [
-              '6090318505987607359116982693709498160512347822060118450158275035797244829466',
-              '10624590653441467100050235454358781645745036858579539447945227388470932932596',
-              '1'
-            ],
-            pi_b: [
-              [
-                '15579599033734000552482480659488902457490303622893675003352684240718764814125',
-                '19853179897655798140882806183640277943881334163549025939133177045611827693142'
-              ],
-              [
-                '17956252054758699988777560724871589999140996895310716217662917525735985669808',
-                '4167679433625239489900435862379953507102203954849993146650986670022269249242'
-              ],
-              ['1', '0']
-            ],
-            pi_c: [
-              '15357965579564127675469843845487444552040169552941561049967346379131096661554',
-              '6737190440198712400571200710355589533896053379119710658028067695173227485133',
-              '1'
-            ],
-            protocol: 'groth16',
-            curve: 'bn128'
-          },
-          pub_signals: [
-            '0',
-            '21575127216236248869702276246037557119007466180301957762196593786733007617',
-            '4487386332479489158003597844990487984925471813907462483907054425759564175341',
-            '1',
-            '25198543381200665770805816046271594885604002445105767653616878167826895617',
-            '1',
-            '4487386332479489158003597844990487984925471813907462483907054425759564175341',
-            '1712602611',
-            '198285726510688200335207273836123338699',
-            '1',
-            '0',
-            '3',
-            '1',
-            '99',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0',
-            '0'
-          ]
-        };
+        return JSON.parse(
+          `{"id":1,"circuitId":"credentialAtomicQuerySigV2","proof":{"pi_a":["6090318505987607359116982693709498160512347822060118450158275035797244829466","10624590653441467100050235454358781645745036858579539447945227388470932932596","1"],"pi_b":[["15579599033734000552482480659488902457490303622893675003352684240718764814125","19853179897655798140882806183640277943881334163549025939133177045611827693142"],["17956252054758699988777560724871589999140996895310716217662917525735985669808","4167679433625239489900435862379953507102203954849993146650986670022269249242"],["1","0"]],"pi_c":["15357965579564127675469843845487444552040169552941561049967346379131096661554","6737190440198712400571200710355589533896053379119710658028067695173227485133","1"],"protocol":"groth16","curve":"bn128"},"pub_signals":["0","21575127216236248869702276246037557119007466180301957762196593786733007617","4487386332479489158003597844990487984925471813907462483907054425759564175341","1","25198543381200665770805816046271594885604002445105767653616878167826895617","1","4487386332479489158003597844990487984925471813907462483907054425759564175341","1712602611","198285726510688200335207273836123338699","1","0","3","1","99","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"]}`
+        );
       },
       verifyZKPResponse: () => Promise.resolve({})
     } as unknown as ProofService;
@@ -262,7 +180,7 @@ describe('MessageHandler', () => {
     );
 
     const authResp = await messageHandler.handleMessage(msgBytes, {
-      did: issuerDID
+      senderDid: issuerDID
     });
 
     expect(authResp).not.to.be.null;
@@ -286,5 +204,72 @@ describe('MessageHandler', () => {
 
     expect(dummyHandlerResponseMsg).not.to.be.null;
     expect(dummyHandlerResponseMsg!.type).to.be.eq('msg-type-resp');
+  });
+
+  it('dynamic register message handler with own context', async () => {
+    const packageManager = new PackageManager();
+    packageManager.registerPackers([new PlainPacker()]);
+    const messageHandler = new MessageHandler({
+      messageHandlers: [new DummyHandler('dummy-handler-1'), new DummyHandler('dummy-handler-2')],
+      packageManager
+    });
+
+    // call handleMessage with a message with a custom type
+    const resp = await messageHandler.handleMessage(
+      byteEncoder.encode('{"type":"dummy-handler-2", "typ": "application/iden3comm-plain-json"}'),
+      {
+        myKey: 'did:example:123'
+      }
+    );
+
+    expect(byteDecoder.decode(resp!)).to.be.eq(
+      JSON.stringify({
+        type: 'dummy-handler-2',
+        typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+        body: {
+          myKey: 'did:example:123'
+        }
+      })
+    );
+
+    // register a new handler
+    messageHandler.registerHandlers([new DummyHandler('dummy-handler-3')]);
+
+    // call handleMessage with a message with a custom type
+    const resp2 = await messageHandler.handleMessage(
+      byteEncoder.encode('{"type":"dummy-handler-3", "typ": "application/iden3comm-plain-json"}'),
+      {
+        myKey2: 'did:example:321'
+      }
+    );
+    // verify that handle newly registered msg pass successfully
+    expect(byteDecoder.decode(resp2!)).to.be.eq(
+      JSON.stringify({
+        type: 'dummy-handler-3',
+        typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+        body: {
+          myKey2: 'did:example:321'
+        }
+      })
+    );
+
+    // call handleMessage with a message with a custom type
+    const resp3 = await messageHandler.handleMessage(
+      byteEncoder.encode('{"type":"dummy-handler-1", "typ": "application/iden3comm-plain-json"}'),
+      {
+        myKey3: 'did:example:321'
+      }
+    );
+
+    // verify that registration didn't broke previous handlers
+    expect(byteDecoder.decode(resp3!)).to.be.eq(
+      JSON.stringify({
+        type: 'dummy-handler-1',
+        typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+        body: {
+          myKey3: 'did:example:321'
+        }
+      })
+    );
   });
 });

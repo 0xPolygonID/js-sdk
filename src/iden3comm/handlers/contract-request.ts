@@ -46,7 +46,7 @@ export type ContractInvokeHandlerOptions = {
 };
 
 export type ContractMessageHandlerOptions = {
-  did: DID;
+  senderDid: DID;
   ethSigner: Signer;
   challenge?: bigint;
 };
@@ -107,7 +107,7 @@ export class ContractRequestHandler
       throw new Error('Invalid message type for contract invoke request');
     }
 
-    const { did, ethSigner, challenge } = ctx;
+    const { senderDid: did, ethSigner, challenge } = ctx;
     if (!ctx.ethSigner) {
       throw new Error("Can't sign transaction. Provide Signer in options.");
     }
@@ -166,7 +166,7 @@ export class ContractRequestHandler
     const ciRequest = await this.parseContractInvokeRequest(request);
 
     return this.handleContractInvoke(ciRequest, {
-      did,
+      senderDid: did,
       ethSigner: opts.ethSigner,
       challenge: opts.challenge
     });

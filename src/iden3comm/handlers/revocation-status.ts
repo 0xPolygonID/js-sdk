@@ -17,6 +17,13 @@ import { proving } from '@iden3/js-jwz';
 import { IIdentityWallet } from '../../identity';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 
+/**
+ * Defines the options for a RevocationStatusMessageHandler.
+ * @property did - The DID (Decentralized Identifier) to be used.
+ * @property mediaType - The media type to be used.
+ * @property packerOptions - Optional parameters for the JWS packer.
+ * @property treeState - Optional tree state to be used.
+ */
 export type RevocationStatusMessageHandlerOptions = {
   did: DID;
   mediaType: MediaType;
