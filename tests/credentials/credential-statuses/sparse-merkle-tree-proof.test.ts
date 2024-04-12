@@ -8,7 +8,7 @@ import {
   SEED_USER,
   createIdentity,
   getInMemoryDataStorage,
-  registerBJJIntoInMemoryKMS
+  registerKeyProvidersInMemoryKMS
 } from '../../helpers';
 import { DID } from '@iden3/js-iden3-core';
 import fetchMock from '@gr2m/fetch-mock';
@@ -26,7 +26,7 @@ describe('SparseMerkleTreeProof', () => {
   const issuerWalletUrl = 'https://issuer.com';
 
   beforeEach(async () => {
-    const kms = registerBJJIntoInMemoryKMS();
+    const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
 
     credWallet = new CredentialWallet(dataStorage);

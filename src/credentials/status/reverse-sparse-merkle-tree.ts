@@ -5,7 +5,7 @@ import { IStateStorage } from '../../storage';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { CredentialStatus, RevocationStatus, State } from '../../verifiable';
 import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
-import { isGenesisState } from '../../utils';
+import { isEthereumIdentity, isGenesisState } from '../../utils';
 import { IssuerResolver } from './sparse-merkle-tree';
 
 /**
@@ -173,11 +173,19 @@ export class RHSResolver implements CredentialStatusResolver {
         return this.getRevocationStatusFromIssuerData(issuerDID, issuerData, genesisState);
       }
       const currentStateBigInt = Hash.fromHex(stateHex).bigInt();
-      if (!isGenesisState(issuerDID, currentStateBigInt)) {
+
+      const isEthIdentity = isEthereumIdentity(issuerDID);
+
+      if (!isEthIdentity && !isGenesisState(issuerDID, currentStateBigInt)) {
         throw new Error(
           `latest state not found and state parameter ${stateHex} is not genesis state`
         );
       }
+
+      if (isEthIdentity) {
+        throw new Error(`State must be published for Ethereum based identity`);
+      }
+
       latestState = currentStateBigInt;
     }
 

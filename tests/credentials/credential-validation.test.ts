@@ -50,6 +50,9 @@ const mockStateStorage: IStateStorage = {
   publishState: async () => {
     return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
   },
+  publishStateGeneric: async () => {
+    return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+  },
   getGISTProof: (): Promise<StateProof> => {
     return Promise.resolve({
       root: 0n,

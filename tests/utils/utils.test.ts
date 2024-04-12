@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import { JSONObject, mergeObjects } from '../../src';
+import { buildDIDFromEthPubKey, JSONObject, mergeObjects } from '../../src';
+import { Blockchain, buildDIDType, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 
 describe('merge credential subjects to create query', () => {
   it('should merge two valid JSONObjects correctly', () => {
@@ -147,5 +148,18 @@ describe('merge credential subjects to create query', () => {
         mergeObjects(testCase.subj1 as JSONObject, testCase.subj2 as JSONObject)
       ).to.deep.equal(testCase.expectedResult);
     }
+  });
+});
+
+describe('build did from ethereum public key', () => {
+  it('should build did from ethereum public key correctly', async () => {
+    const pubKeyHexEth =
+      '8318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5';
+    const didType = buildDIDType(DidMethod.Iden3, Blockchain.Polygon, NetworkId.Amoy);
+    const did = buildDIDFromEthPubKey(didType, pubKeyHexEth);
+
+    expect(did.string()).to.equal(
+      'did:iden3:polygon:amoy:x6x5sor7zpycB7z7Q9348dXJxZ9s5b9AgmPeSccZz'
+    );
   });
 });
