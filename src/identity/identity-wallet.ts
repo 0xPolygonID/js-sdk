@@ -94,10 +94,8 @@ export type AuthBJJCredentialCreationOptions = {
  * Options for creating Ethereum based identity
  */
 export type EthereumBasedIdentityCreationOptions = IdentityCreationOptions & {
-  ethereumBasedIdentityOpts?: {
-    ethSigner?: Signer;
-    createBjjCredential?: boolean;
-  };
+  ethSigner?: Signer;
+  createBjjCredential?: boolean;
 };
 
 /**
@@ -679,13 +677,10 @@ export class IdentityWallet implements IIdentityWallet {
     opts: EthereumBasedIdentityCreationOptions
   ): Promise<{ did: DID; credential: W3CCredential | undefined }> {
     opts.seed = opts.seed ?? getRandomBytes(32);
-    if (opts.ethereumBasedIdentityOpts) {
-      opts.ethereumBasedIdentityOpts.createBjjCredential =
-        opts.ethereumBasedIdentityOpts?.createBjjCredential ?? true;
-    }
+    opts.createBjjCredential = opts.createBjjCredential ?? true;
 
     let credential;
-    const ethSigner = opts.ethereumBasedIdentityOpts?.ethSigner;
+    const ethSigner = opts.ethSigner;
 
     if (!ethSigner) {
       throw new Error(
@@ -714,7 +709,7 @@ export class IdentityWallet implements IIdentityWallet {
       isStateGenesis: true
     });
 
-    if (opts.ethereumBasedIdentityOpts?.createBjjCredential) {
+    if (opts.createBjjCredential) {
       // Old tree state genesis state
       const oldTreeState: TreeState = {
         revocationRoot: ZERO_HASH,

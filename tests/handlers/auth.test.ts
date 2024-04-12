@@ -424,9 +424,7 @@ describe('auth', () => {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
           id: RHS_URL
         },
-        ethereumBasedIdentityOpts: {
-          ethSigner
-        }
+        ethSigner
       });
     expect(issuerAuthCredential).not.to.be.undefined;
 
@@ -673,9 +671,7 @@ describe('auth', () => {
           type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
           id: RHS_URL
         },
-        ethereumBasedIdentityOpts: {
-          ethSigner
-        }
+        ethSigner
       });
     expect(issuerAuthCredential).not.to.be.undefined;
 
