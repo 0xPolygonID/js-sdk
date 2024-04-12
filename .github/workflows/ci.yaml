@@ -2,9 +2,6 @@ name: Build, Lint and Test
 on: push
 jobs:
   build:
-    strategy:
-      matrix:
-        version: ['lts/*']
     timeout-minutes: 12
     runs-on: ubuntu-latest
     steps:
