@@ -2,7 +2,7 @@ name: Build, Lint and Test
 on: push
 jobs:
   build:
-    timeout-minutes: 7
+    timeout-minutes: 12
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
