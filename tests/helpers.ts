@@ -6,6 +6,7 @@ import {
   CredentialStatusType,
   CredentialStorage,
   DataPrepareHandlerFunc,
+  EthereumBasedIdentityCreationOptions,
   IIdentityWallet,
   IPackageManager,
   IStateStorage,
@@ -22,6 +23,7 @@ import {
   Profile,
   ProvingParams,
   RootInfo,
+  Sec256k1Provider,
   StateProof,
   StateVerificationFunc,
   VerifiableConstants,
@@ -59,6 +61,23 @@ export const createIdentity = async (
   });
 };
 
+export const createEthereumBasedIdentity = async (
+  wallet: IIdentityWallet,
+  opts?: Partial<EthereumBasedIdentityCreationOptions>
+) => {
+  return await wallet.createEthereumBasedIdentity({
+    method: DidMethod.Iden3,
+    blockchain: Blockchain.Polygon,
+    networkId: NetworkId.Amoy,
+    seed: SEED_ISSUER,
+    revocationOpts: {
+      type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      id: RHS_URL
+    },
+    ...opts
+  });
+};
+
 export const MOCK_STATE_STORAGE: IStateStorage = {
   getLatestStateById: async () => {
     throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
@@ -78,6 +97,9 @@ export const MOCK_STATE_STORAGE: IStateStorage = {
     throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
   },
   publishState: async () => {
+    return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+  },
+  publishStateGeneric: async () => {
     return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
   },
   getGISTProof: (): Promise<StateProof> => {
@@ -169,11 +191,13 @@ export const MOCK_STATE_STORAGE: IStateStorage = {
   }
 };
 
-export const registerBJJIntoInMemoryKMS = (): KMS => {
+export const registerKeyProvidersInMemoryKMS = (): KMS => {
   const memoryKeyStore = new InMemoryPrivateKeyStore();
   const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
   const kms = new KMS();
   kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+  const sec256k1Provider = new Sec256k1Provider(KmsKeyType.Secp256k1, memoryKeyStore);
+  kms.registerKeyProvider(KmsKeyType.Secp256k1, sec256k1Provider);
   return kms;
 };
 

@@ -10,7 +10,7 @@ import {
 } from '../../src';
 import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
 import { InMemoryPrivateKeyStore } from '../../src/kms/store';
-import { IDataStorage, IStateStorage } from '../../src/storage/interfaces';
+import { ICircuitStorage, IDataStorage, IStateStorage } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
@@ -20,7 +20,7 @@ import { EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
-import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
+import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../../src/iden3comm';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
@@ -32,6 +32,7 @@ describe('mtp proofs', () => {
 
   let dataStorage: IDataStorage;
   let proofService: ProofService;
+  let circuitStorage: ICircuitStorage;
 
   const rhsUrl = process.env.RHS_URL as string;
   const walletKey = process.env.WALLET_KEY as string;
@@ -52,6 +53,9 @@ describe('mtp proofs', () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
     },
     publishState: async () => {
+      return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
+    },
+    publishStateGeneric: async () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
     },
     getGISTProof: (): Promise<StateProof> => {
@@ -93,7 +97,7 @@ describe('mtp proofs', () => {
       states: mockStateStorage
     };
 
-    const circuitStorage = new FSCircuitStorage({
+    circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, './testdata')
     });
 
@@ -113,6 +117,7 @@ describe('mtp proofs', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
+
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
@@ -309,5 +314,40 @@ describe('mtp proofs', () => {
 
   it('mtpv3-merklized', async () => {
     await merklizedTest(CircuitId.AtomicQueryV3);
+  });
+
+  it('should not throw when resolving not latest state', async () => {
+    const mockStateStorage = {
+      getStateInfoByIdAndState: async () => {
+        return {
+          id: 25198543381200665770805816046271594885604002445105767653616878167826895617n,
+          state: 5224437024673068498206105743424598123651101873588696368477339341771571761791n,
+          replacedByState: 0n,
+          createdAtTimestamp: 1672245326n,
+          replacedAtTimestamp: 1672246326n,
+          createdAtBlock: 30258020n,
+          replacedAtBlock: 0n
+        };
+      }
+    } as unknown as IStateStorage;
+    const proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
+    const response: ZeroKnowledgeProofResponse = JSON.parse(
+      `{"id":1,"circuitId":"credentialAtomicQuerySigV2","proof":{"pi_a":["1692621919535462098029340422338985117387349922432058572912503289494740072544","5849832527522776520992910317111843161659287939749030678875104723725167741629","1"],"pi_b":[["9073804311318969142382194823200861430394532493054777280144376515679156840294","320345546718280141355625312977249941988595053000873620335373153762333347618"],["21818506300133624706104504788964095807930130277005378306774974876198233822873","20508916211207310005669939018224159176090237395847319407804660514445244746059"],["1","0"]],"pi_c":["75773990211509807568779994083842535776985171363939633486110559284258142402","21708643189390101987073995679050930953292947427942962697950732212904750632605","1"],"protocol":"groth16","curve":"bn128"},"pub_signals":["0","21575127216236248869702276246037557119007466180301957762196593786733007617","4487386332479489158003597844990487984925471813907462483907054425759564175341","1","25198543381200665770805816046271594885604002445105767653616878167826895617","1","4487386332479489158003597844990487984925471813907462483907054425759564175341","1712671029","198285726510688200335207273836123338699","1","0","3","1","99","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"]}`
+    );
+    const query = {
+      allowedIssuers: ['*'],
+      type: 'KYCAgeCredential',
+      context:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+      credentialSubject: {
+        documentType: {
+          $eq: 99
+        }
+      }
+    };
+    const sender = 'did:iden3:polygon:amoy:x7Z95VkUuyo6mqraJw2VGwCfqTzdqhM1RVjRHzcpK';
+    await expect(proofService.verifyZKPResponse(response, { query, sender })).to.be.rejectedWith(
+      'issuer state is outdated'
+    );
   });
 });

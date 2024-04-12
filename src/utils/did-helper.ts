@@ -2,11 +2,13 @@ import { Hex } from '@iden3/js-crypto';
 import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import { DIDResolutionResult, VerificationMethod } from 'did-resolver';
+import { keccak256 } from 'js-sha3';
+import { hexToBytes } from './encoding';
 
 /**
  * Checks if state is genesis state
  *
- * @param {string} did - did
+ * @param {DID} did - did
  * @param {bigint|string} state  - hash on bigInt or hex string format
  * @returns boolean
  */
@@ -20,6 +22,24 @@ export function isGenesisState(did: DID, state: bigint | string): boolean {
   const idFromState = Id.idGenesisFromIdenState(type, state);
 
   return id.bigInt().toString() === idFromState.bigInt().toString();
+}
+
+/**
+ * Checks if DID is an ethereum identity
+ *
+ * @param {DID} did - did
+ * @returns boolean
+ */
+export function isEthereumIdentity(did: DID): boolean {
+  const issuerId = DID.idFromDID(did);
+  try {
+    Id.ethAddressFromId(issuerId);
+    // is an ethereum identity
+    return true;
+  } catch {
+    // not an ethereum identity (BabyJubJub or other)
+    return false;
+  }
 }
 
 export const buildVerifierId = (
@@ -64,4 +84,17 @@ export const resolveDIDDocumentAuth = async (
   return didResolutionRes.didDocument?.verificationMethod?.find(
     (i) => i.type === 'Iden3StateInfo2023'
   );
+};
+
+export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): DID => {
+  // Use Keccak-256 hash function to get public key hash
+  const hashOfPublicKey = keccak256(hexToBytes(pubKeyEth));
+  // Convert hash to buffer
+  const ethAddressBuffer = hexToBytes(hashOfPublicKey);
+  // Ethereum Address is '0x' concatenated with last 20 bytes
+  // of the public key hash
+  const ethAddr = ethAddressBuffer.slice(-20);
+  const genesis = genesisFromEthAddress(ethAddr);
+  const identifier = new Id(didType, genesis);
+  return DID.parseFromId(identifier);
 };

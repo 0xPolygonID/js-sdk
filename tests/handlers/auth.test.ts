@@ -24,23 +24,42 @@ import {
   createAuthorizationRequestWithMessage,
   AuthorizationResponseMessage,
   ZeroKnowledgeProofResponse,
-  ProofType
+  ProofType,
+  KmsKeyType,
+  defaultEthConnectionConfig,
+  InMemoryPrivateKeyStore,
+  BjjProvider,
+  KMS,
+  CredentialStorage,
+  InMemoryDataSource,
+  IdentityStorage,
+  Identity,
+  Profile,
+  InMemoryMerkleTreeStorage,
+  W3CCredential,
+  Sec256k1Provider,
+  StateInfo,
+  hexToBytes,
+  NativeProver
 } from '../../src';
 import { Token } from '@iden3/js-jwz';
-import { DID } from '@iden3/js-iden3-core';
+import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { ethers } from 'ethers';
 import * as uuid from 'uuid';
 import {
   MOCK_STATE_STORAGE,
   getInMemoryDataStorage,
-  registerBJJIntoInMemoryKMS,
+  registerKeyProvidersInMemoryKMS,
   IPFS_URL,
   getPackageMgr,
   createIdentity,
   SEED_USER,
   RHS_URL,
-  WALLET_KEY
+  WALLET_KEY,
+  STATE_CONTRACT,
+  RPC_URL,
+  SEED_ISSUER
 } from '../helpers';
 import { testOpts } from './mock';
 
@@ -57,7 +76,7 @@ describe('auth', () => {
   let issuerDID: DID;
 
   beforeEach(async () => {
-    const kms = registerBJJIntoInMemoryKMS();
+    const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
     const circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, '../proofs/testdata')
@@ -385,6 +404,422 @@ describe('auth', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
     // console.log(JSON.stringify(authRes.authResponse));
+    const tokenStr = authRes.token;
+    // console.log(tokenStr);
+    expect(tokenStr).to.be.a('string');
+    const token = await Token.parse(tokenStr);
+    expect(token).to.be.a('object');
+  });
+
+  it('auth flow identity (profile) with ethereum identity issuer with circuits V3', async () => {
+    const ethSigner = new ethers.Wallet(
+      WALLET_KEY,
+      (dataStorage.states as EthStateStorage).provider
+    );
+
+    const { did: didIssuer, credential: issuerAuthCredential } =
+      await idWallet.createEthereumBasedIdentity({
+        method: DidMethod.PolygonId,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Mumbai,
+        seed: SEED_ISSUER,
+        revocationOpts: {
+          type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+          id: RHS_URL
+        },
+        ethSigner
+      });
+    expect(issuerAuthCredential).not.to.be.undefined;
+
+    const profileDID = await idWallet.createProfile(userDID, 777, didIssuer.string());
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(didIssuer, claimReq);
+    const employeeCredRequest: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCEmployee-v101.json',
+      type: 'KYCEmployee',
+      credentialSubject: {
+        id: profileDID.string(),
+        ZKPexperiance: true,
+        hireDate: '2023-12-11',
+        position: 'boss',
+        salary: 200,
+        documentType: 1
+      },
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(didIssuer, employeeCredRequest);
+
+    await credWallet.saveAll([employeeCred, issuerCred]);
+
+    const res = await idWallet.addCredentialsToMerkleTree([employeeCred], didIssuer);
+    await idWallet.publishStateToRHS(didIssuer, RHS_URL);
+
+    const txId = await proofService.transitState(
+      didIssuer,
+      res.oldTreeState,
+      true,
+      dataStorage.states,
+      ethSigner
+    );
+
+    const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
+      didIssuer,
+      res.credentials,
+      txId
+    );
+
+    await credWallet.saveAll(credsWithIden3MTPProof);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+          credentialSubject: {
+            documentType: {
+              $eq: 99
+            }
+          }
+        }
+      },
+      {
+        id: 2,
+        circuitId: CircuitId.LinkedMultiQuery10,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.Iden3SparseMerkleTreeProof,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            documentType: {
+              $eq: 1
+            },
+            position: {
+              $eq: 'boss',
+              $ne: 'employee'
+            }
+          }
+        }
+      },
+      {
+        id: 3,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            hireDate: {
+              $eq: '2023-12-11'
+            }
+          }
+        },
+        params: {
+          nullifierSessionId: '12345'
+        }
+      }
+    ];
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'mesage',
+      did_doc: {},
+      scope: proofReqs
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: didIssuer.string()
+    };
+
+    // Ethereum identities should have a previous state in state storage. We mock it here.
+    const previousGetLatestStateById = MOCK_STATE_STORAGE.getLatestStateById;
+    MOCK_STATE_STORAGE.getLatestStateById = async (id: bigint): Promise<StateInfo> => {
+      return {
+        id,
+        state: res.oldTreeState.state.bigInt(),
+        replacedByState: 0n,
+        createdAtTimestamp: 1712062738n,
+        replacedAtTimestamp: 0n,
+        createdAtBlock: 5384981n,
+        replacedAtBlock: 0n
+      };
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+
+    // Restore the mock state storage
+    MOCK_STATE_STORAGE.getLatestStateById = previousGetLatestStateById;
+
+    // console.log(JSON.stringify(authRes.authResponse));
+    const tokenStr = authRes.token;
+    // console.log(tokenStr);
+    expect(tokenStr).to.be.a('string');
+    const token = await Token.parse(tokenStr);
+    expect(token).to.be.a('object');
+  });
+
+  // SKIPPED : ethereum identity integration test
+  it.skip('auth flow identity (profile) with ethereum identity issuer with circuits V3 (integration)', async () => {
+    const stateEthConfig = defaultEthConnectionConfig;
+    stateEthConfig.url = RPC_URL;
+    stateEthConfig.contractAddress = STATE_CONTRACT;
+    stateEthConfig.chainId = 80002; // Amoy
+
+    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
+    const sec256k1Provider = new Sec256k1Provider(KmsKeyType.Secp256k1, memoryKeyStore);
+    const kms = new KMS();
+    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+    kms.registerKeyProvider(KmsKeyType.Secp256k1, sec256k1Provider);
+
+    dataStorage = {
+      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
+      identity: new IdentityStorage(
+        new InMemoryDataSource<Identity>(),
+        new InMemoryDataSource<Profile>()
+      ),
+      mt: new InMemoryMerkleTreeStorage(40),
+      states: new EthStateStorage(stateEthConfig)
+    };
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
+
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, dataStorage.states, {
+      ipfsNodeURL: IPFS_URL
+    });
+
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.verifyState.bind(proofService)
+    );
+
+    authHandler = new AuthHandler(packageMgr, proofService);
+
+    const { did: didUser, credential: userAuthCredential } = await idWallet.createIdentity({
+      method: DidMethod.PolygonId,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Amoy,
+      seed: SEED_USER,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    });
+
+    expect(userAuthCredential).not.to.be.undefined;
+
+    const ethSigner = new ethers.Wallet(
+      WALLET_KEY,
+      (dataStorage.states as EthStateStorage).provider
+    );
+
+    const { did: didIssuer, credential: issuerAuthCredential } =
+      await idWallet.createEthereumBasedIdentity({
+        method: DidMethod.PolygonId,
+        blockchain: Blockchain.Polygon,
+        networkId: NetworkId.Amoy,
+        seed: hexToBytes(WALLET_KEY),
+        revocationOpts: {
+          type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+          id: RHS_URL
+        },
+        ethSigner
+      });
+    expect(issuerAuthCredential).not.to.be.undefined;
+
+    const profileDID = await idWallet.createProfile(didUser, 777, didIssuer.string());
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: didUser.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(didIssuer, claimReq);
+    const employeeCredRequest: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCEmployee-v101.json',
+      type: 'KYCEmployee',
+      credentialSubject: {
+        id: profileDID.string(),
+        ZKPexperiance: true,
+        hireDate: '2023-12-11',
+        position: 'boss',
+        salary: 200,
+        documentType: 1
+      },
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(didIssuer, employeeCredRequest);
+
+    await credWallet.saveAll([employeeCred, issuerCred]);
+
+    const res = await idWallet.addCredentialsToMerkleTree([employeeCred], didIssuer);
+    await idWallet.publishStateToRHS(didIssuer, RHS_URL);
+
+    const txId = await proofService.transitState(
+      didIssuer,
+      res.oldTreeState,
+      false,
+      dataStorage.states,
+      ethSigner
+    );
+
+    const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
+      didIssuer,
+      res.credentials,
+      txId
+    );
+
+    await credWallet.saveAll(credsWithIden3MTPProof);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+          credentialSubject: {
+            documentType: {
+              $eq: 99
+            }
+          }
+        }
+      },
+      {
+        id: 2,
+        circuitId: CircuitId.LinkedMultiQuery10,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.Iden3SparseMerkleTreeProof,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            documentType: {
+              $eq: 1
+            },
+            position: {
+              $eq: 'boss',
+              $ne: 'employee'
+            }
+          }
+        }
+      },
+      {
+        id: 3,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            hireDate: {
+              $eq: '2023-12-11'
+            }
+          }
+        },
+        params: {
+          nullifierSessionId: '12345'
+        }
+      }
+    ];
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'mesage',
+      did_doc: {},
+      scope: proofReqs
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: didIssuer.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    const authRes = await authHandler.handleAuthorizationRequest(didUser, msgBytes);
+    // console.log('authRes', JSON.stringify(authRes.authResponse));
     const tokenStr = authRes.token;
     // console.log(tokenStr);
     expect(tokenStr).to.be.a('string');
@@ -1475,5 +1910,362 @@ describe('auth', () => {
   }`) as AuthorizationResponseMessage;
 
     await authHandler.handleAuthorizationResponse(response, request, testOpts);
+  });
+
+  it('auth flow identity (profile) with circuits V3', async () => {
+    const profileDID = await idWallet.createProfile(userDID, 777, issuerDID.string());
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const employeeCredRequest: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCEmployee-v101.json',
+      type: 'KYCEmployee',
+      credentialSubject: {
+        id: profileDID.string(),
+        ZKPexperiance: true,
+        hireDate: '2023-12-11',
+        position: 'boss',
+        salary: 200,
+        documentType: 1
+      },
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(issuerDID, employeeCredRequest);
+
+    await credWallet.saveAll([employeeCred, issuerCred]);
+
+    const res = await idWallet.addCredentialsToMerkleTree([employeeCred], issuerDID);
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL);
+
+    const ethSigner = new ethers.Wallet(
+      WALLET_KEY,
+      (dataStorage.states as EthStateStorage).provider
+    );
+
+    const txId = await proofService.transitState(
+      issuerDID,
+      res.oldTreeState,
+      true,
+      dataStorage.states,
+      ethSigner
+    );
+
+    const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
+      issuerDID,
+      res.credentials,
+      txId
+    );
+
+    await credWallet.saveAll(credsWithIden3MTPProof);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+          credentialSubject: {
+            documentType: {
+              $eq: 99
+            }
+          }
+        }
+      },
+      {
+        id: 2,
+        circuitId: CircuitId.LinkedMultiQuery10,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.Iden3SparseMerkleTreeProof,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            documentType: {
+              $eq: 1
+            },
+            position: {
+              $eq: 'boss',
+              $ne: 'employee'
+            }
+          }
+        }
+      },
+      {
+        id: 3,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            hireDate: {
+              $eq: '2023-12-11'
+            }
+          }
+        },
+        params: {
+          nullifierSessionId: '12345'
+        }
+      }
+    ];
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'mesage',
+      did_doc: {},
+      scope: proofReqs
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    // console.log(JSON.stringify(authRes.authResponse));
+    const tokenStr = authRes.token;
+    // console.log(tokenStr);
+    expect(tokenStr).to.be.a('string');
+    const token = await Token.parse(tokenStr);
+    expect(token).to.be.a('object');
+  });
+
+  it('key rotation use case', async () => {
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v4.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    await credWallet.save(issuerCred);
+    const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQueryV3,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
+        credentialSubject: {
+          documentType: {
+            $eq: 99
+          }
+        },
+        proofType: ProofType.BJJSignature
+      }
+    };
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'mesage',
+      did_doc: {},
+      scope: [proofReq as ZeroKnowledgeProofRequest]
+    };
+
+    const handleAuthorizationRequest = async (
+      userDID: DID,
+      authReqBody: AuthorizationRequestMessageBody
+    ) => {
+      const id = uuid.v4();
+      const authReq: AuthorizationRequestMessage = {
+        id,
+        typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+        type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+        thid: id,
+        body: authReqBody,
+        from: issuerDID.string()
+      };
+
+      const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+      const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+      expect(authRes.token).to.be.a('string');
+      const token = await Token.parse(authRes.token);
+      expect(token).to.be.a('object');
+    };
+
+    await handleAuthorizationRequest(userDID, authReqBody);
+
+    // add second Bjj auth credential
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+    const prover = new NativeProver(circuitStorage);
+
+    const ethSigner = new ethers.Wallet(
+      WALLET_KEY,
+      (dataStorage.states as EthStateStorage).provider
+    );
+    const opts = {
+      seed: SEED_USER,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+
+    const treesModel = await idWallet.getDIDTreeModel(issuerDID);
+    const [ctrHex, rtrHex, rorTrHex] = await Promise.all([
+      treesModel.claimsTree.root(),
+      treesModel.revocationTree.root(),
+      treesModel.rootsTree.root()
+    ]);
+
+    const oldTreeState = {
+      state: treesModel.state,
+      claimsRoot: ctrHex,
+      revocationRoot: rtrHex,
+      rootOfRoots: rorTrHex
+    };
+
+    // add k2 auth credential (we have k1 already)
+    const credential2 = await idWallet.addBJJAuthCredential(
+      issuerDID,
+      oldTreeState,
+      false,
+      ethSigner,
+      opts,
+      prover
+    );
+
+    expect(credential2?.proof).not.to.be.undefined;
+
+    // get actual auth credential (k1)
+    const { authCredential: issuerAuthCredential } = await idWallet.getActualAuthCredential(
+      issuerDID
+    );
+
+    // revoke k1 auth credential
+    const nonce = await idWallet.revokeCredential(issuerDID, issuerAuthCredential);
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL, [nonce]);
+    await proofService.transitState(
+      issuerDID,
+      res.oldTreeState,
+      false,
+      dataStorage.states,
+      ethSigner
+    );
+
+    await handleAuthorizationRequest(userDID, authReqBody);
+
+    // get actual auth credential (k2)
+    const { authCredential: issuerAuthCredential2 } = await idWallet.getActualAuthCredential(
+      issuerDID
+    );
+    expect(issuerAuthCredential2).to.be.deep.equal(credential2);
+
+    // check we can issue new credential with k2
+    const issuerCred2 = await idWallet.issueCredential(issuerDID, claimReq);
+    expect(issuerCred2).to.be.not.undefined;
+
+    const treesModel2 = await idWallet.getDIDTreeModel(issuerDID);
+    const [ctrHex2, rtrHex2, rorTrHex2] = await Promise.all([
+      treesModel2.claimsTree.root(),
+      treesModel2.revocationTree.root(),
+      treesModel2.rootsTree.root()
+    ]);
+
+    const oldTreeState2 = {
+      state: treesModel2.state,
+      claimsRoot: ctrHex2,
+      revocationRoot: rtrHex2,
+      rootOfRoots: rorTrHex2
+    };
+
+    // revoke k2 auth credential
+    const nonce2 = await idWallet.revokeCredential(issuerDID, issuerAuthCredential2);
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL, [nonce2]);
+    await proofService.transitState(issuerDID, oldTreeState2, false, dataStorage.states, ethSigner);
+
+    // check that we don't have auth credentials now
+    await expect(idWallet.getActualAuthCredential(issuerDID)).to.rejectedWith(
+      'no auth credentials found'
+    );
+
+    // check that we can't issue new credential
+    await expect(idWallet.issueCredential(issuerDID, claimReq)).to.rejectedWith(
+      'no auth credentials found'
+    );
+
+    // this should this work because we haven't revoked user keys
+    await handleAuthorizationRequest(userDID, authReqBody);
+
+    // get actual auth credential for user
+    const { authCredential: userAuthCredential } = await idWallet.getActualAuthCredential(userDID);
+
+    const treesModel3 = await idWallet.getDIDTreeModel(userDID);
+    const [ctrHex3, rtrHex3, rorTrHex3] = await Promise.all([
+      treesModel3.claimsTree.root(),
+      treesModel3.revocationTree.root(),
+      treesModel3.rootsTree.root()
+    ]);
+
+    const oldTreeState3 = {
+      state: treesModel3.state,
+      claimsRoot: ctrHex3,
+      revocationRoot: rtrHex3,
+      rootOfRoots: rorTrHex3
+    };
+
+    // revoke user keys
+    const nonce3 = await idWallet.revokeCredential(userDID, userAuthCredential);
+    await idWallet.publishStateToRHS(userDID, RHS_URL, [nonce3]);
+    await proofService.transitState(userDID, oldTreeState3, true, dataStorage.states, ethSigner);
+
+    // this should not work because we revoked user keys
+    await expect(handleAuthorizationRequest(userDID, authReqBody)).to.rejectedWith(
+      'no auth credentials found'
+    );
   });
 });
