@@ -1,17 +1,12 @@
 import { ZKProof } from '@iden3/js-jwz';
-import { MediaType } from '../../constants';
-import { JSONObject, ProtocolMessage } from '../packer';
+import { BasicMessage, JSONObject } from '../packer';
 import { DID } from '@iden3/js-iden3-core';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
-export type AuthorizationResponseMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type AuthorizationResponseMessage = BasicMessage & {
   body: AuthorizationMessageResponseBody;
-  from?: string;
-  to?: string;
+  from: string;
+  to: string;
 };
 
 /** AuthorizationMessageResponseBody is struct the represents authorization response data */
@@ -22,14 +17,9 @@ export type AuthorizationMessageResponseBody = {
 };
 
 /** AuthorizationRequestMessage is struct the represents iden3message authorization request */
-export type AuthorizationRequestMessage = {
-  id: string;
-  typ: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type AuthorizationRequestMessage = BasicMessage & {
   body: AuthorizationRequestMessageBody;
   from: string;
-  to?: string;
 };
 
 /** AuthorizationRequestMessageBody is body for authorization request */

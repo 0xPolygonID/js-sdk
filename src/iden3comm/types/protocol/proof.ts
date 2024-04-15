@@ -1,16 +1,9 @@
-import { ProtocolMessage } from '../';
-import { MediaType } from '../../constants';
+import { BasicMessage } from '../';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from './auth';
 
 /** ProofGenerationRequestMessage is struct the represents body for proof generation request */
-export type ProofGenerationRequestMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type ProofGenerationRequestMessage = Required<BasicMessage> & {
   body?: ProofGenerationRequestMessageBody;
-  from?: string;
-  to?: string;
 };
 
 /** ProofGenerationRequestMessageBody is struct the represents body for proof generation request */
@@ -19,14 +12,8 @@ export type ProofGenerationRequestMessageBody = {
 };
 
 /** ProofGenerationResponseMessage is struct the represents body for proof generation request */
-export type ProofGenerationResponseMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type ProofGenerationResponseMessage = Required<BasicMessage> & {
   body?: ResponseMessageBody;
-  from?: string;
-  to?: string;
 };
 
 /** ResponseMessageBody is struct the represents request for revocation status */

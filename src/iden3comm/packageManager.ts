@@ -37,6 +37,29 @@ export class PackageManager implements IPackageManager {
 
     return await p.pack(payload, params);
   }
+
+  /**
+   * Packs a protocol message using the specified media type and packer parameters.
+   *
+   * @param mediaType - The media type to use for packing the message.
+   * @param protocolMessage - The protocol message to pack.
+   * @param params - The packer parameters.
+   * @returns A promise that resolves to the packed message as a Uint8Array.
+   * @throws An error if the packer for the specified media type is not found.
+   */
+  packMessage(
+    mediaType: MediaType,
+    protocolMessage: BasicMessage,
+    params: PackerParams
+  ): Promise<Uint8Array> {
+    const p = this.packers.get(mediaType);
+    if (!p) {
+      throw new Error(`packer for media type ${mediaType} not found`);
+    }
+
+    return p.packMessage(protocolMessage, params);
+  }
+
   /** {@inheritDoc IPackageManager.unpack} */
   async unpack(
     envelope: Uint8Array

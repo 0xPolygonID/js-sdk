@@ -1,16 +1,9 @@
-import { ProtocolMessage } from '../';
+import { BasicMessage } from '../';
 import { RevocationStatus } from '../../../verifiable';
-import { MediaType } from '../../constants';
 
 /** RevocationStatusRequestMessage is struct the represents body for proof generation request */
-export type RevocationStatusRequestMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type RevocationStatusRequestMessage = BasicMessage & {
   body?: RevocationStatusRequestMessageBody;
-  from?: string;
-  to?: string;
 };
 
 /** RevocationStatusRequestMessageBody is struct the represents request for revocation status */
@@ -19,14 +12,8 @@ export type RevocationStatusRequestMessageBody = {
 };
 
 /** RevocationStatusResponseMessage is struct the represents body for proof generation request */
-export type RevocationStatusResponseMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type RevocationStatusResponseMessage = Required<BasicMessage> & {
   body?: RevocationStatusResponseMessageBody;
-  from?: string;
-  to?: string;
 };
 
 /** RevocationStatusResponseMessageBody is struct the represents request for revocation status */

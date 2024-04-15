@@ -1,15 +1,8 @@
-import { ProtocolMessage } from '../';
-import { MediaType } from '../../constants';
+import { BasicMessage } from '../';
 
 /**  MessageFetchRequestMessage represent Iden3message for message fetch request. */
-export type MessageFetchRequestMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type MessageFetchRequestMessage = Required<BasicMessage> & {
   body?: MessageFetchRequestMessageBody;
-  from?: string;
-  to?: string;
 };
 
 /** MessageFetchRequestMessageBody is struct the represents body for message fetch request. */

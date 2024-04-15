@@ -94,6 +94,16 @@ export class ZKPPacker implements IPacker {
   ) {}
 
   /**
+   * Packs a basic message using the specified parameters.
+   * @param msg - The basic message to pack.
+   * @param param - The parameters for the ZKPPacker.
+   * @returns A promise that resolves to a Uint8Array representing the packed message.
+   */
+  packMessage(msg: BasicMessage, param: ZKPPackerParams): Promise<Uint8Array> {
+    return this.pack(byteEncoder.encode(JSON.stringify(msg)), param as ZKPPackerParams);
+  }
+
+  /**
    * creates JSON Web Zeroknowledge token
    *
    * @param {Uint8Array} payload - serialized message
