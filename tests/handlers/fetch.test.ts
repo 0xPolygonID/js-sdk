@@ -17,7 +17,8 @@ import {
   CredentialIssuanceMessage,
   FSCircuitStorage,
   ProofService,
-  CircuitId
+  CircuitId,
+  defaultEthConnectionConfig
 } from '../../src';
 
 import {
@@ -123,7 +124,7 @@ describe('fetch', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
     packageMgr = await getPackageMgr(

@@ -3,6 +3,7 @@ import { Contract, JsonRpcProvider, Signer, TransactionReceipt, TransactionReque
 import { Proof, NodeAuxJSON, Hash } from '@iden3/js-merkletree';
 import { EthConnectionConfig } from './state';
 import abi from '../blockchain/abi/CredentialStatusResolver.json';
+import { ITransactionService, TransactionService } from '../../blockchain';
 
 /**
  * OnChainRevocationStore is a class that allows to interact with the onchain contract
@@ -14,6 +15,7 @@ import abi from '../blockchain/abi/CredentialStatusResolver.json';
 export class OnChainRevocationStorage {
   private readonly _contract: Contract;
   private readonly _provider: JsonRpcProvider;
+  private readonly _transactionService: ITransactionService;
 
   /**
    *
@@ -35,6 +37,7 @@ export class OnChainRevocationStorage {
       contract = contract.connect(this._signer) as Contract;
     }
     this._contract = contract;
+    this._transactionService = new TransactionService(_config);
   }
 
   /**
@@ -99,20 +102,11 @@ export class OnChainRevocationStorage {
       maxPriorityFeePerGas
     };
 
-    const tx = await this._signer.sendTransaction(request);
-    return tx.wait().then((txReceipt) => {
-      if (!txReceipt) {
-        throw new Error(`transaction: ${tx.hash} failed to mine`);
-      }
-      const status: number | null = txReceipt.status;
-      const txnHash: string = txReceipt.hash;
-
-      if (!status) {
-        throw new Error(`transaction: ${txnHash} failed to mine`);
-      }
-
-      return txReceipt;
-    });
+    const { txnReceipt } = await this._transactionService.sendTransactionRequest(
+      this._signer,
+      request
+    );
+    return txnReceipt;
   }
 
   private static convertIssuerInfo(issuer: bigint[]): Issuer {

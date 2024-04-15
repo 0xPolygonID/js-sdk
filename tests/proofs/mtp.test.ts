@@ -16,7 +16,7 @@ import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { ethers } from 'ethers';
-import { EthStateStorage } from '../../src/storage/blockchain/state';
+import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
@@ -118,7 +118,7 @@ describe('mtp proofs', () => {
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
 
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });

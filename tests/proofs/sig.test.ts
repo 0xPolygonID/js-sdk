@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import {
   CredentialStorage,
+  defaultEthConnectionConfig,
   FSCircuitStorage,
   Identity,
   IdentityStorage,
@@ -98,7 +99,7 @@ describe('sig proofs', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
       ipfsNodeURL

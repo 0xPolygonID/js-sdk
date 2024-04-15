@@ -3,6 +3,7 @@ import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
 import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
 import abi from './abi/ZkpVerifier.json';
+import { ITransactionService, TransactionService } from '../../blockchain';
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
@@ -18,6 +19,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
    * uint256[2] calldata a, uint256[2][2] calldata b, uint256[2] calldata c) public
    */
   private readonly _supportedMethodId = 'b68967e2';
+  private readonly _transactionService: ITransactionService;
   /**
    *
    * Creates an instance of OnChainZKPVerifier.
@@ -25,7 +27,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
    * @param {EthConnectionConfig[]} - array of ETH configs
    */
 
-  constructor(private readonly _configs: EthConnectionConfig[]) {}
+  constructor(private readonly _configs: EthConnectionConfig[]) {
+    this._transactionService = new TransactionService(_configs);
+  }
 
   /**
    * Submit ZKP Responses to OnChainZKPVerifier contract.
@@ -88,17 +92,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         maxFeePerGas,
         maxPriorityFeePerGas
       };
-      const tx = await ethSigner.sendTransaction(request);
-      const txnReceipt = await tx.wait();
-      if (!txnReceipt) {
-        throw new Error(`transaction: ${tx.hash} failed to mined`);
-      }
-      const status: number | null = txnReceipt.status;
-      const txnHash: string = txnReceipt.hash;
 
-      if (!status) {
-        throw new Error(`transaction: ${txnHash} failed to mined`);
-      }
+      const { txnHash } = await this._transactionService.sendTransactionRequest(ethSigner, request);
       response.set(txnHash, zkProof);
     }
 

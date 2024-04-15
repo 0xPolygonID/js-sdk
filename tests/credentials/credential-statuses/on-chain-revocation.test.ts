@@ -238,9 +238,15 @@ describe('onchain revocation checks', () => {
       new Iden3OnchainSmtCredentialStatusPublisher(storage)
     );
 
-    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet, {
-      credentialStatusPublisherRegistry
-    });
+    idWallet = new IdentityWallet(
+      registerKeyProvidersInMemoryKMS(),
+      dataStorage,
+      credWallet,
+      defaultEthConnectionConfig,
+      {
+        credentialStatusPublisherRegistry
+      }
+    );
     proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
   });
 

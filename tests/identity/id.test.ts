@@ -15,7 +15,8 @@ import {
   FSCircuitStorage,
   NativeProver,
   Iden3SparseMerkleTreeProof,
-  BJJSignatureProof2021
+  BJJSignatureProof2021,
+  defaultEthConnectionConfig
 } from '../../src';
 import {
   MOCK_STATE_STORAGE,
@@ -67,7 +68,12 @@ describe('identity', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet);
+    idWallet = new IdentityWallet(
+      registerKeyProvidersInMemoryKMS(),
+      dataStorage,
+      credWallet,
+      defaultEthConnectionConfig
+    );
   });
 
   it('createIdentity', async () => {

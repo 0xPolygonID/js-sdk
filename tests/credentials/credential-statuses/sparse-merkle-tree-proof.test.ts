@@ -1,4 +1,4 @@
-import { IdentityWallet } from '../../../src';
+import { defaultEthConnectionConfig, IdentityWallet } from '../../../src';
 import { IDataStorage } from '../../../src/storage/interfaces';
 import { CredentialRequest, CredentialWallet } from '../../../src/credentials';
 import { CredentialStatusType } from '../../../src/verifiable';
@@ -30,7 +30,7 @@ describe('SparseMerkleTreeProof', () => {
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
 
     credWallet = new CredentialWallet(dataStorage);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
 
     const { did: didUser, credential: userAuthCredential } = await createIdentity(idWallet, {
       seed: SEED_USER,

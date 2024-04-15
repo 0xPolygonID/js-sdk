@@ -7,6 +7,7 @@ import { StateTransitionPubSignals } from '../../circuits';
 import { byteEncoder } from '../../utils';
 import abi from './abi/State.json';
 import { DID, getChainId, Id } from '@iden3/js-iden3-core';
+import { ITransactionService, TransactionService } from '../../blockchain';
 
 /**
  * Configuration of ethereum based blockchain connection
@@ -56,6 +57,7 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
 export class EthStateStorage implements IStateStorage {
   public readonly stateContract: Contract;
   public readonly provider: JsonRpcProvider;
+  private readonly _transactionService: ITransactionService;
 
   /**
    * Creates an instance of EthStateStorage.
@@ -65,6 +67,7 @@ export class EthStateStorage implements IStateStorage {
     const config = Array.isArray(ethConfig) ? ethConfig[0] : ethConfig;
     this.provider = new JsonRpcProvider(config.url);
     this.stateContract = new Contract(config.contractAddress, abi, this.provider);
+    this._transactionService = new TransactionService(ethConfig);
   }
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
@@ -145,7 +148,7 @@ export class EthStateStorage implements IStateStorage {
       maxPriorityFeePerGas
     };
 
-    const txnHash: string = await this.sendTransactionRequest(signer, request);
+    const { txnHash } = await this._transactionService.sendTransactionRequest(signer, request);
 
     return txnHash;
   }
@@ -187,7 +190,7 @@ export class EthStateStorage implements IStateStorage {
       maxPriorityFeePerGas
     };
 
-    const txnHash: string = await this.sendTransactionRequest(signer, request);
+    const { txnHash } = await this._transactionService.sendTransactionRequest(signer, request);
 
     return txnHash;
   }
@@ -258,24 +261,5 @@ export class EthStateStorage implements IStateStorage {
     }
 
     return this.ethConfig as EthConnectionConfig;
-  }
-
-  private async sendTransactionRequest(
-    signer: Signer,
-    request: TransactionRequest
-  ): Promise<string> {
-    const tx = await signer.sendTransaction(request);
-    const txnReceipt = await tx.wait();
-    if (!txnReceipt) {
-      throw new Error(`transaction: ${tx.hash} failed to mined`);
-    }
-    const status: number | null = txnReceipt.status;
-    const txnHash: string = txnReceipt.hash;
-
-    if (!status) {
-      throw new Error(`transaction: ${txnHash} failed to mined`);
-    }
-
-    return txnHash;
   }
 }

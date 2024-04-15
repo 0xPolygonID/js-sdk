@@ -12,7 +12,8 @@ import {
   RevocationStatusHandler,
   RevocationStatusRequestMessage,
   PROTOCOL_CONSTANTS,
-  byteEncoder
+  byteEncoder,
+  defaultEthConnectionConfig
 } from '../../src';
 
 import {
@@ -46,7 +47,7 @@ describe('revocation status', () => {
       new RHSResolver(dataStorage.states)
     );
     const credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
     packageMgr = await getPackageMgr(

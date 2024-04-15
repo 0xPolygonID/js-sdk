@@ -188,7 +188,7 @@ describe('rhs', () => {
       };
       return r;
     };
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
   });
 
   it('genesis reject : backup is called', async () => {

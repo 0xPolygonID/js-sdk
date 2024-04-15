@@ -25,7 +25,13 @@ import { Hash, hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
 import { JSONSchema, JsonSchemaValidator, cacheLoader } from '../schema-processor';
-import { IDataStorage, MerkleTreeType, Profile, UserStateTransitionInfo } from '../storage';
+import {
+  EthConnectionConfig,
+  IDataStorage,
+  MerkleTreeType,
+  Profile,
+  UserStateTransitionInfo
+} from '../storage';
 import {
   VerifiableConstants,
   BJJSignatureProof2021,
@@ -58,6 +64,7 @@ import {
   Iden3SmtRhsCredentialStatusPublisher
 } from '../credentials/status/credential-status-publisher';
 import { InputGenerator, IZKProver } from '../proof';
+import { ITransactionService, TransactionService } from '../blockchain';
 
 /**
  * DID creation options
@@ -472,6 +479,7 @@ export interface IIdentityWallet {
 export class IdentityWallet implements IIdentityWallet {
   private readonly _credentialStatusPublisherRegistry: CredentialStatusPublisherRegistry;
   private readonly _inputsGenerator: InputGenerator;
+  private readonly _transactionService: ITransactionService;
 
   /**
    * Constructs a new instance of the `IdentityWallet` class
@@ -485,12 +493,14 @@ export class IdentityWallet implements IIdentityWallet {
     private readonly _kms: KMS,
     private readonly _storage: IDataStorage,
     private readonly _credentialWallet: ICredentialWallet,
+    _ethConfig: EthConnectionConfig,
     private readonly _opts?: {
       credentialStatusPublisherRegistry?: CredentialStatusPublisherRegistry;
     }
   ) {
     this._credentialStatusPublisherRegistry = this.getCredentialStatusPublisherRegistry(_opts);
     this._inputsGenerator = new InputGenerator(this, _credentialWallet, _storage.states);
+    this._transactionService = new TransactionService(_ethConfig);
   }
 
   private getCredentialStatusPublisherRegistry(
@@ -1432,13 +1442,13 @@ export class IdentityWallet implements IIdentityWallet {
     );
 
     const txId = await this.transitState(did, oldTreeState, isOldStateGenesis, ethSigner, prover);
-    // TODO: update to get blockNumber and blockTimestamp from function instead of passing 0s
+    const { receipt, block } = await this._transactionService.getTransactionReceiptAndBlock(txId);
     const credsWithIden3MTPProof = await this.generateIden3SparseMerkleTreeProof(
       did,
       [credential],
       txId,
-      0,
-      0,
+      receipt?.blockNumber,
+      block?.timestamp,
       undefined,
       {
         revNonce: Number(authClaim.getRevocationNonce()),

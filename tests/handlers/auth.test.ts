@@ -88,7 +88,7 @@ describe('auth', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE, {
       ipfsNodeURL: IPFS_URL
@@ -632,7 +632,7 @@ describe('auth', () => {
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
 
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, dataStorage.states, {
       ipfsNodeURL: IPFS_URL
