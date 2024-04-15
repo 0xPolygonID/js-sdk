@@ -24,7 +24,7 @@ import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../../src
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { SEED_USER, createIdentity } from '../helpers';
+import { SEED_USER, createIdentity, TEST_VERIFICATION_OPTS } from '../helpers';
 
 describe('mtp proofs', () => {
   let idWallet: IdentityWallet;
@@ -346,8 +346,8 @@ describe('mtp proofs', () => {
       }
     };
     const sender = 'did:iden3:polygon:amoy:x7Z95VkUuyo6mqraJw2VGwCfqTzdqhM1RVjRHzcpK';
-    await expect(proofService.verifyZKPResponse(response, { query, sender })).to.be.rejectedWith(
-      'issuer state is outdated'
-    );
+    await expect(
+      proofService.verifyZKPResponse(response, { query, sender, opts: TEST_VERIFICATION_OPTS })
+    ).to.be.rejectedWith('issuer state is outdated');
   });
 });

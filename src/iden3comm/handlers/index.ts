@@ -5,3 +5,4 @@ export * from './refresh';
 export * from './revocation-status';
 export * from './common';
 export * from './credential-proposal';
+export * from './message-handler';

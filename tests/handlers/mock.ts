@@ -1,11 +1,6 @@
 import { DocumentLoader } from '@iden3/js-jsonld-merklization';
 import { DIDResolutionResult } from 'did-resolver';
-import { cacheLoader, VerifyOpts } from '../../src';
-
-export const testOpts: VerifyOpts = {
-  acceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minutes
-  acceptedProofGenerationDelay: 10 * 365 * 24 * 60 * 60 * 1000 // 10 years
-};
+import { cacheLoader } from '../../src';
 
 export const exampleDidDoc = {
   '@context': [

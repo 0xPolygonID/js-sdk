@@ -2,6 +2,7 @@ import { MediaType } from '../constants';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
 import {
+  BasicMessage,
   CredentialFetchRequestMessage,
   CredentialIssuanceMessage,
   CredentialsOfferMessage,
@@ -17,6 +18,7 @@ import { byteDecoder, byteEncoder } from '../../utils';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
+import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 
 /**
  *
@@ -25,13 +27,15 @@ import * as uuid from 'uuid';
  * @public
  * @interface FetchHandlerOptions
  */
-export interface FetchHandlerOptions {
+export type FetchHandlerOptions = {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
   headers?: {
     [key: string]: string;
   };
-}
+};
+
+export type FetchMessageHandlerOptions = FetchHandlerOptions;
 
 /**
  * Interface that allows the processing of the credential offer in the raw format for given identifier
@@ -80,46 +84,54 @@ export interface IFetchHandler {
  * @class FetchHandler
  * @implements implements IFetchHandler interface
  */
-export class FetchHandler implements IFetchHandler {
+export class FetchHandler
+  extends AbstractMessageHandler
+  implements IFetchHandler, IProtocolMessageHandler
+{
   /**
-   * Creates an instance of FetchHandler.
-   * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
+   * Constructs a new instance of the FetchHandler class.
+   *
+   * @param _packerMgr The package manager used for packing and unpacking data.
+   * @param opts Optional configuration options for the FetchHandler.
+   * @param opts.credentialWallet The credential wallet used for managing credentials.
    */
   constructor(
     private readonly _packerMgr: IPackageManager,
     private readonly opts?: {
       credentialWallet: ICredentialWallet;
     }
-  ) {}
+  ) {
+    super();
+  }
 
-  /**
-   * Handles only messages with credentials/1.0/offer type
-   *
-   * @param {
-   *     offer: Uint8Array; offer - raw offer message
-   *     opts
-   *   }) options how to fetch credential
-   * @returns `Promise<W3CCredential[]>`
-   */
-  async handleCredentialOffer(
-    offer: Uint8Array,
-    opts?: FetchHandlerOptions
+  async handle(
+    message: BasicMessage,
+    ctx: FetchMessageHandlerOptions
+  ): Promise<BasicMessage | null> {
+    switch (message.type) {
+      case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE:
+        await this.handleOfferMessage(message as CredentialsOfferMessage, ctx);
+        return null;
+      case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE:
+        return this.handleFetchRequest(message as CredentialFetchRequestMessage);
+      case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE:
+        return this.handleIssuanceResponseMsg(message as CredentialIssuanceMessage);
+      default:
+        return super.handle(message, ctx);
+    }
+  }
+
+  private async handleOfferMessage(
+    offerMessage: CredentialsOfferMessage,
+    ctx: {
+      mediaType?: MediaType;
+      headers?: HeadersInit;
+      packerOptions?: JWSPackerParams;
+    }
   ): Promise<W3CCredential[]> {
-    if (!opts) {
-      opts = {
-        mediaType: MediaType.ZKPMessage
-      };
+    if (!ctx.mediaType) {
+      ctx.mediaType = MediaType.ZKPMessage;
     }
-
-    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
-    const offerMessage = await FetchHandler.unpackMessage<CredentialsOfferMessage>(
-      this._packerMgr,
-      offer,
-      PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE
-    );
 
     const credentials: W3CCredential[] = [];
 
@@ -129,7 +141,7 @@ export class FetchHandler implements IFetchHandler {
       const guid = uuid.v4();
       const fetchRequest: MessageFetchRequestMessage = {
         id: guid,
-        typ: opts.mediaType,
+        typ: ctx.mediaType,
         type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE,
         thid: offerMessage.thid ?? guid,
         body: {
@@ -142,15 +154,15 @@ export class FetchHandler implements IFetchHandler {
       const msgBytes = byteEncoder.encode(JSON.stringify(fetchRequest));
 
       const packerOpts =
-        opts.mediaType === MediaType.SignedMessage
-          ? opts.packerOptions
+        ctx.mediaType === MediaType.SignedMessage
+          ? ctx.packerOptions
           : {
               provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
             };
 
       const senderDID = DID.parse(offerMessage.to);
       const token = byteDecoder.decode(
-        await this._packerMgr.pack(opts.mediaType, msgBytes, {
+        await this._packerMgr.pack(ctx.mediaType, msgBytes, {
           senderDID,
           ...packerOpts
         })
@@ -164,7 +176,7 @@ export class FetchHandler implements IFetchHandler {
           method: 'post',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            ...(opts.headers ?? {})
+            ...ctx.headers
           },
           body: token
         });
@@ -185,15 +197,38 @@ export class FetchHandler implements IFetchHandler {
   }
 
   /**
-   * @inheritdoc IFetchHandler#handleCredentialFetchRequest
+   * Handles only messages with credentials/1.0/offer type
+   *
+   * @param {
+   *     offer: Uint8Array; offer - raw offer message
+   *     opts
+   *   }) options how to fetch credential
+   * @returns `Promise<W3CCredential[]>`
    */
-  async handleCredentialFetchRequest(envelope: Uint8Array): Promise<Uint8Array> {
-    const msgRequest = await FetchHandler.unpackMessage<CredentialFetchRequestMessage>(
+  async handleCredentialOffer(
+    offer: Uint8Array,
+    opts?: FetchHandlerOptions
+  ): Promise<W3CCredential[]> {
+    if (opts?.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
+      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
+    }
+
+    const offerMessage = await FetchHandler.unpackMessage<CredentialsOfferMessage>(
       this._packerMgr,
-      envelope,
-      PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE
+      offer,
+      PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE
     );
 
+    return this.handleOfferMessage(offerMessage, {
+      mediaType: opts?.mediaType,
+      headers: opts?.headers,
+      packerOptions: opts?.packerOptions
+    });
+  }
+
+  private async handleFetchRequest(
+    msgRequest: CredentialFetchRequestMessage
+  ): Promise<CredentialIssuanceMessage> {
     if (!msgRequest.to) {
       throw new Error("failed request. empty 'to' field");
     }
@@ -226,21 +261,47 @@ export class FetchHandler implements IFetchHandler {
       throw new Error('credential subject is not a sender DID');
     }
 
+    return {
+      id: uuid.v4(),
+      type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE,
+      typ: msgRequest.typ ?? MediaType.PlainMessage,
+      thid: msgRequest.thid ?? uuid.v4(),
+      body: { credential: cred },
+      from: msgRequest.to,
+      to: msgRequest.from
+    };
+  }
+  /**
+   * @inheritdoc IFetchHandler#handleCredentialFetchRequest
+   */
+  async handleCredentialFetchRequest(envelope: Uint8Array): Promise<Uint8Array> {
+    const msgRequest = await FetchHandler.unpackMessage<CredentialFetchRequestMessage>(
+      this._packerMgr,
+      envelope,
+      PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE
+    );
+
+    const request = await this.handleFetchRequest(msgRequest);
+
     return this._packerMgr.pack(
       MediaType.PlainMessage,
-      byteEncoder.encode(
-        JSON.stringify({
-          id: uuid.v4(),
-          type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE,
-          typ: msgRequest.typ ?? MediaType.PlainMessage,
-          thid: msgRequest.thid ?? uuid.v4(),
-          body: { credential: cred },
-          from: msgRequest.to,
-          to: msgRequest.from
-        })
-      ),
+      byteEncoder.encode(JSON.stringify(request)),
       {}
     );
+  }
+
+  private async handleIssuanceResponseMsg(issuanceMsg: CredentialIssuanceMessage): Promise<null> {
+    if (!this.opts?.credentialWallet) {
+      throw new Error('please provide credential wallet in options');
+    }
+
+    if (!issuanceMsg.body?.credential) {
+      throw new Error('credential is missing in issuance response message');
+    }
+
+    await this.opts.credentialWallet.save(W3CCredential.fromJSON(issuanceMsg.body.credential));
+
+    return null;
   }
 
   /**
@@ -253,17 +314,9 @@ export class FetchHandler implements IFetchHandler {
       PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE
     );
 
-    if (!this.opts?.credentialWallet) {
-      throw new Error('please provide credential wallet in options');
-    }
+    await this.handleIssuanceResponseMsg(issuanceMsg);
 
-    if (!issuanceMsg.body?.credential) {
-      throw new Error('credential is missing in issuance response message');
-    }
-
-    await this.opts.credentialWallet.save(W3CCredential.fromJSON(issuanceMsg.body.credential));
-
-    return Promise.resolve(Uint8Array.from([]));
+    return Uint8Array.from([]);
   }
 
   /**

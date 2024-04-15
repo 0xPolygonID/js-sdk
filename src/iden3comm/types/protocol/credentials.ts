@@ -1,6 +1,5 @@
 import { W3CCredential } from '../../../verifiable';
-import { MediaType } from '../../constants';
-import { JSONObject, ProtocolMessage } from '../packer';
+import { BasicMessage, JSONObject } from '../packer';
 import { ContractInvokeTransactionData } from './contract-request';
 
 /** CredentialIssuanceRequestMessageBody represents data for credential issuance request */
@@ -11,25 +10,13 @@ export type CredentialIssuanceRequestMessageBody = {
 };
 
 /** CredentialIssuanceRequestMessage represent Iden3message for credential request */
-export type CredentialIssuanceRequestMessage = {
-  id: string;
-  typ: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type CredentialIssuanceRequestMessage = Required<BasicMessage> & {
   body: CredentialIssuanceRequestMessageBody;
-  from: string;
-  to: string;
 };
 
 /** CredentialsOfferMessage represent Iden3message for credential offer */
-export type CredentialsOfferMessage = {
-  id: string;
-  typ: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type CredentialsOfferMessage = Required<BasicMessage> & {
   body: CredentialsOfferMessageBody;
-  from: string;
-  to: string;
 };
 
 /** CredentialsOfferMessageBody is struct the represents offer message */
@@ -39,14 +26,8 @@ export type CredentialsOfferMessageBody = {
 };
 
 /** CredentialsOnchainOfferMessage represent Iden3message for credential onhcain offer message */
-export type CredentialsOnchainOfferMessage = {
-  id: string;
-  typ: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type CredentialsOnchainOfferMessage = Required<BasicMessage> & {
   body: CredentialsOnchainOfferMessageBody;
-  from: string;
-  to: string;
 };
 
 /** CredentialsOnchainOfferMessageBody is struct the represents onchain offer message body */
@@ -62,14 +43,8 @@ export type CredentialOffer = {
 };
 
 /** CredentialIssuanceMessage represent Iden3message for credential issuance */
-export type CredentialIssuanceMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  threadID?: string;
+export type CredentialIssuanceMessage = Required<BasicMessage> & {
   body?: IssuanceMessageBody;
-  from?: string;
-  to?: string;
 };
 
 /** IssuanceMessageBody is struct the represents message when credential is issued */
@@ -78,14 +53,8 @@ export type IssuanceMessageBody = {
 };
 
 /** CredentialFetchRequestMessage represent Iden3message for credential fetch request */
-export type CredentialFetchRequestMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type CredentialFetchRequestMessage = BasicMessage & {
   body?: CredentialFetchRequestMessageBody;
-  from?: string;
-  to?: string;
 };
 
 /** CredentialFetchRequestMessageBody is msg body for fetch request */
@@ -101,14 +70,8 @@ export type Schema = {
 };
 
 /** CredentialRefreshMessage represent Iden3message for credential refresh request */
-export type CredentialRefreshMessage = {
-  id: string;
-  typ?: MediaType;
-  type: ProtocolMessage;
-  thid?: string;
+export type CredentialRefreshMessage = Required<BasicMessage> & {
   body?: CredentialRefreshMessageBody;
-  from?: string;
-  to?: string;
 };
 
 /** CredentialRefreshMessageBody is msg body for refresh request */

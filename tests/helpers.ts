@@ -31,7 +31,8 @@ import {
   VerificationParams,
   W3CCredential,
   ZKPPacker,
-  byteEncoder
+  byteEncoder,
+  VerifyOpts
 } from '../src';
 import { proving } from '@iden3/js-jwz';
 
@@ -255,4 +256,9 @@ export const getPackageMgr = async (
   mgr.registerPackers([packer, plainPacker]);
 
   return mgr;
+};
+
+export const TEST_VERIFICATION_OPTS: VerifyOpts = {
+  acceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minutes
+  acceptedProofGenerationDelay: 10 * 365 * 24 * 60 * 60 * 1000 // 10 years
 };

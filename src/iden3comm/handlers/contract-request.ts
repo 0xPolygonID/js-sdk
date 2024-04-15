@@ -1,12 +1,13 @@
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
-import { IPackageManager, ZeroKnowledgeProofResponse } from '../types';
+import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
 import { DID, ChainIds } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { processZeroKnowledgeProofRequests } from './common';
+import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 
 /**
  * Interface that allows the processing of the contract request
@@ -44,6 +45,12 @@ export type ContractInvokeHandlerOptions = {
   challenge?: bigint;
 };
 
+export type ContractMessageHandlerOptions = {
+  senderDid: DID;
+  ethSigner: Signer;
+  challenge?: bigint;
+};
+
 /**
  *
  * Allows to process ContractInvokeRequest protocol message
@@ -53,7 +60,10 @@ export type ContractInvokeHandlerOptions = {
  * @class ContractRequestHandler
  * @implements implements IContractRequestHandler interface
  */
-export class ContractRequestHandler implements IContractRequestHandler {
+export class ContractRequestHandler
+  extends AbstractMessageHandler
+  implements IContractRequestHandler, IProtocolMessageHandler
+{
   private readonly _supportedCircuits = [
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
@@ -72,7 +82,57 @@ export class ContractRequestHandler implements IContractRequestHandler {
     private readonly _packerMgr: IPackageManager,
     private readonly _proofService: IProofService,
     private readonly _zkpVerifier: IOnChainZKPVerifier
-  ) {}
+  ) {
+    super();
+  }
+
+  async handle(
+    message: BasicMessage,
+    ctx: ContractMessageHandlerOptions
+  ): Promise<BasicMessage | null> {
+    switch (message.type) {
+      case PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE:
+        await this.handleContractInvoke(message as ContractInvokeRequest, ctx);
+        return null;
+      default:
+        return super.handle(message, ctx);
+    }
+  }
+
+  private async handleContractInvoke(
+    message: ContractInvokeRequest,
+    ctx: ContractMessageHandlerOptions
+  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
+    if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
+      throw new Error('Invalid message type for contract invoke request');
+    }
+
+    const { senderDid: did, ethSigner, challenge } = ctx;
+    if (!ctx.ethSigner) {
+      throw new Error("Can't sign transaction. Provide Signer in options.");
+    }
+
+    const { chain_id } = message.body.transaction_data;
+    const networkFlag = Object.keys(ChainIds).find((key) => ChainIds[key] === chain_id);
+
+    if (!networkFlag) {
+      throw new Error(`Invalid chain id ${chain_id}`);
+    }
+    const verifierDid = message.from ? DID.parse(message.from) : undefined;
+    const zkpResponses = await processZeroKnowledgeProofRequests(
+      did,
+      message?.body?.scope,
+      verifierDid,
+      this._proofService,
+      { ethSigner, challenge, supportedCircuits: this._supportedCircuits }
+    );
+
+    return this._zkpVerifier.submitZKPResponse(
+      ethSigner,
+      message.body.transaction_data,
+      zkpResponses
+    );
+  }
 
   /**
    * unpacks contract-invoke request
@@ -105,33 +165,10 @@ export class ContractRequestHandler implements IContractRequestHandler {
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
     const ciRequest = await this.parseContractInvokeRequest(request);
 
-    if (ciRequest.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
-      throw new Error('Invalid message type for contract invoke request');
-    }
-
-    if (!opts.ethSigner) {
-      throw new Error("Can't sign transaction. Provide Signer in options.");
-    }
-
-    const { chain_id } = ciRequest.body.transaction_data;
-    const networkFlag = Object.keys(ChainIds).find((key) => ChainIds[key] === chain_id);
-
-    if (!networkFlag) {
-      throw new Error(`Invalid chain id ${chain_id}`);
-    }
-    const verifierDid = ciRequest.from ? DID.parse(ciRequest.from) : undefined;
-    const zkpResponses = await processZeroKnowledgeProofRequests(
-      did,
-      ciRequest?.body?.scope,
-      verifierDid,
-      this._proofService,
-      { ...opts, supportedCircuits: this._supportedCircuits }
-    );
-
-    return this._zkpVerifier.submitZKPResponse(
-      opts.ethSigner,
-      ciRequest.body.transaction_data,
-      zkpResponses
-    );
+    return this.handleContractInvoke(ciRequest, {
+      senderDid: did,
+      ethSigner: opts.ethSigner,
+      challenge: opts.challenge
+    });
   }
 }

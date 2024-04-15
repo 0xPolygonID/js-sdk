@@ -88,10 +88,33 @@ export type StateVerificationFunc = (id: string, pubSignals: Array<string>) => P
  * @interface   IPacker
  */
 export interface IPacker {
+  /**
+   * Packs the given payload and returns a promise that resolves to the packed data.
+   * @param payload - The payload to be packed.
+   * @param param - The packing parameters.
+   * @returns A promise that resolves to the packed data as a Uint8Array.
+   */
   pack(payload: Uint8Array, param: PackerParams): Promise<Uint8Array>;
 
+  /**
+   * Packs the given message and returns a promise that resolves to the packed data.
+   * @param msg - The message to be packed.
+   * @param param - The packing parameters.
+   * @returns A promise that resolves to the packed data as a Uint8Array.
+   */
+  packMessage(msg: BasicMessage, param: PackerParams): Promise<Uint8Array>;
+
+  /**
+   * Unpacks the given envelope and returns a promise that resolves to the unpacked message.
+   * @param envelope - The envelope to be unpacked.
+   * @returns A promise that resolves to the unpacked message as a BasicMessage.
+   */
   unpack(envelope: Uint8Array): Promise<BasicMessage>;
 
+  /**
+   * Returns the media type associated with the packer.
+   * @returns The media type as a MediaType.
+   */
   mediaType(): MediaType;
 }
 /**
