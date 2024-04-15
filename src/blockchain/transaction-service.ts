@@ -18,7 +18,7 @@ export interface ITransactionService {
    * Returns transaction receipt and block by transaction hash
    *
    * @param {string} transactionHash - transaction hash.
-   * @returns `Promise<{receipt?: TransactionReceipt , block?: Block}>` - returns transaction receipt or null
+   * @returns `Promise<{receipt?: TransactionReceipt , block?: Block}>` - returns transaction receipt and block
    * @public
    */
   getTransactionReceiptAndBlock(
@@ -73,7 +73,7 @@ export class TransactionService implements ITransactionService {
     this._provider = new JsonRpcProvider(config.url);
   }
 
-  /** {@inheritDoc ITransactionService.getTransactionReceipt} */
+  /** {@inheritDoc ITransactionService.getTransactionReceiptAndBlock} */
   async getTransactionReceiptAndBlock(
     txnHash: string
   ): Promise<{ receipt?: TransactionReceipt; block?: Block }> {
