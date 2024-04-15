@@ -230,7 +230,7 @@ export class AuthHandler
     }
 
     // override sender did if it's explicitly specified in the auth request
-    const did = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
+    const to = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
     const mediaType = ctx.mediaType || MediaType.ZKPMessage;
     const guid = uuid.v4();
 
@@ -241,7 +241,7 @@ export class AuthHandler
     const from = DID.parse(authRequest.from);
 
     const responseScope = await processZeroKnowledgeProofRequests(
-      did,
+      to,
       authRequest?.body.scope,
       from,
       this._proofService,
@@ -257,7 +257,7 @@ export class AuthHandler
         message: authRequest?.body?.message,
         scope: responseScope
       },
-      from: did.string(),
+      from: to.string(),
       to: authRequest.from
     };
   }

@@ -59,7 +59,7 @@ const getGroupedQueries = (
 /**
  * Processes zero knowledge proof requests.
  *
- * @param senderIdentifier - The identifier of the sender.
+ * @param to - The identifier of the recipient.
  * @param requests - An array of zero knowledge proof requests.
  * @param from - The identifier of the sender.
  * @param proofService - The proof service.
@@ -67,7 +67,7 @@ const getGroupedQueries = (
  * @returns A promise that resolves to an array of zero knowledge proof responses.
  */
 export const processZeroKnowledgeProofRequests = async (
-  senderIdentifier: DID,
+  to: DID,
   requests: ZeroKnowledgeProofRequest[] | undefined,
   from: DID | undefined,
   proofService: IProofService,
@@ -106,7 +106,7 @@ export const processZeroKnowledgeProofRequests = async (
 
       if (!groupedCredentialsCache.has(groupId)) {
         const credWithRevStatus = await proofService.findCredentialByProofQuery(
-          senderIdentifier,
+          to,
           combinedQueryData.query
         );
         if (!credWithRevStatus.cred) {
@@ -119,18 +119,14 @@ export const processZeroKnowledgeProofRequests = async (
 
     const credWithRevStatus = groupedCredentialsCache.get(groupId as number);
 
-    const zkpRes: ZeroKnowledgeProofResponse = await proofService.generateProof(
-      proofReq,
-      senderIdentifier,
-      {
-        verifierDid: from,
-        challenge: opts.challenge,
-        skipRevocation: Boolean(query.skipClaimRevocationCheck),
-        credential: credWithRevStatus?.cred,
-        credentialRevocationStatus: credWithRevStatus?.revStatus,
-        linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
-      }
-    );
+    const zkpRes: ZeroKnowledgeProofResponse = await proofService.generateProof(proofReq, to, {
+      verifierDid: from,
+      challenge: opts.challenge,
+      skipRevocation: Boolean(query.skipClaimRevocationCheck),
+      credential: credWithRevStatus?.cred,
+      credentialRevocationStatus: credWithRevStatus?.revStatus,
+      linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
+    });
 
     zkpResponses.push(zkpRes);
   }
