@@ -6,7 +6,7 @@ import { EthConnectionConfig } from '../storage';
  * @type RecendTxnOptions
  */
 export type RecendTxnOptions = {
-  increaseFeesPercentage?: number;
+  increasedFeesPercentage?: number;
 };
 
 /**
@@ -26,11 +26,11 @@ export interface ITransactionService {
   ): Promise<{ receipt?: TransactionReceipt; block?: Block }>;
 
   /**
-   * Returns transaction receipt by transaction hash
+   * Send transaction.
    *
    * @param {Signer} signer - transaction signer.
    * @param {TransactionRequest} request - transaction request.
-   * @returns `Promise<txnHash: string, txnReceipt: TransactionReceipt` - returns txn hash and txn receipt
+   * @returns `Promise<txnHash: string, txnReceipt: TransactionReceipt` - returns txn hash and txn receipt.
    * @public
    */
   sendTransactionRequest(
@@ -44,7 +44,7 @@ export interface ITransactionService {
    * @param {Signer} signer - transaction signer.
    * @param {TransactionRequest} request - transaction request.
    * @param {RecendTxnOptions} opts - resend transaction options.
-   * @returns `Promise<{ txnHash: string; txnReceipt: TransactionReceipt }>` - returns transaction receipt or null
+   * @returns `Promise<{ txnHash: string; txnReceipt: TransactionReceipt }>` -returns txn hash and txn receipt.
    * @public
    */
   resendTransaction(
@@ -56,10 +56,10 @@ export interface ITransactionService {
 
 /**
  * Transaction service to provide interaction with blockchain transactions.
- * allows to: get tx receipt by tx id, resend transaction with new fees.
+ * allows to: get tx receipt by tx id, send and resend transaction with new fees.
  * @class TransactionService
  * @public
- * @implements implements ITransactionService interface
+ * @implements ITransactionService interface
  */
 export class TransactionService implements ITransactionService {
   private readonly _provider: JsonRpcProvider;
@@ -111,8 +111,8 @@ export class TransactionService implements ITransactionService {
     const feeData = await this._provider.getFeeData();
     let { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = feeData;
 
-    if (opts?.increaseFeesPercentage) {
-      const multiplyVal = BigInt((opts.increaseFeesPercentage + 100) / 100);
+    if (opts?.increasedFeesPercentage) {
+      const multiplyVal = BigInt((opts.increasedFeesPercentage + 100) / 100);
       maxFeePerGas = maxFeePerGas ? maxFeePerGas * multiplyVal : null;
       maxPriorityFeePerGas = maxPriorityFeePerGas ? maxPriorityFeePerGas * multiplyVal : null;
       gasPrice = gasPrice ? gasPrice * multiplyVal : null;
