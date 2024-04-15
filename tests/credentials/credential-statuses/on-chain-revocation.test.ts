@@ -242,7 +242,7 @@ describe('onchain revocation checks', () => {
       registerKeyProvidersInMemoryKMS(),
       dataStorage,
       credWallet,
-      defaultEthConnectionConfig,
+      { ...defaultEthConnectionConfig, url: RPC_URL },
       {
         credentialStatusPublisherRegistry
       }

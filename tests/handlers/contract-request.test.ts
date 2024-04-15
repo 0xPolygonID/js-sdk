@@ -55,6 +55,7 @@ import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, Signer } from 'ethers';
+import { RPC_URL } from '../helpers';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -189,7 +190,10 @@ describe('contract-request', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
+      ...defaultEthConnectionConfig,
+      url: RPC_URL
+    });
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
       ipfsNodeURL
@@ -331,7 +335,10 @@ describe('contract-request', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
+      ...defaultEthConnectionConfig,
+      url: RPC_URL
+    });
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, dataStorage.states, {
       ipfsNodeURL
@@ -482,7 +489,10 @@ describe('contract-request', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
+      ...defaultEthConnectionConfig,
+      url: RPC_URL
+    });
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, dataStorage.states, {
       ipfsNodeURL

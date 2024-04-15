@@ -26,7 +26,8 @@ import {
   getInMemoryDataStorage,
   registerKeyProvidersInMemoryKMS,
   WALLET_KEY,
-  createEthereumBasedIdentity
+  createEthereumBasedIdentity,
+  RPC_URL
 } from '../helpers';
 import { expect } from 'chai';
 import { Wallet } from 'ethers';
@@ -68,12 +69,10 @@ describe('identity', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(
-      registerKeyProvidersInMemoryKMS(),
-      dataStorage,
-      credWallet,
-      defaultEthConnectionConfig
-    );
+    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet, {
+      ...defaultEthConnectionConfig,
+      url: RPC_URL
+    });
   });
 
   it('createIdentity', async () => {

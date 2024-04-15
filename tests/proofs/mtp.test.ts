@@ -24,7 +24,7 @@ import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../../src
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { SEED_USER, createIdentity } from '../helpers';
+import { SEED_USER, createIdentity, RPC_URL } from '../helpers';
 
 describe('mtp proofs', () => {
   let idWallet: IdentityWallet;
@@ -118,7 +118,10 @@ describe('mtp proofs', () => {
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
 
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
+      ...defaultEthConnectionConfig,
+      url: RPC_URL
+    });
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });

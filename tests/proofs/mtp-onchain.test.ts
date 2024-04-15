@@ -28,6 +28,7 @@ import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
+import { RPC_URL } from '../helpers';
 
 describe('mtp onchain proofs', () => {
   let idWallet: IdentityWallet;
@@ -116,7 +117,10 @@ describe('mtp onchain proofs', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
+      ...defaultEthConnectionConfig,
+      url: RPC_URL
+    });
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });

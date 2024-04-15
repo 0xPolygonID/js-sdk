@@ -20,7 +20,7 @@ import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { RHSResolver } from '../../../src/credentials';
 import { CredentialStatusResolverRegistry } from '../../../src/credentials';
-import { RHS_URL, SEED_USER, createIdentity } from '../../helpers';
+import { RHS_URL, SEED_USER, createIdentity, RPC_URL } from '../../helpers';
 
 describe('rhs', () => {
   let idWallet: IdentityWallet;
@@ -188,7 +188,10 @@ describe('rhs', () => {
       };
       return r;
     };
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
+      ...defaultEthConnectionConfig,
+      url: RPC_URL
+    });
   });
 
   it('genesis reject : backup is called', async () => {

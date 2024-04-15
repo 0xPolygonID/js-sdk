@@ -8,7 +8,8 @@ import {
   SEED_USER,
   createIdentity,
   getInMemoryDataStorage,
-  registerKeyProvidersInMemoryKMS
+  registerKeyProvidersInMemoryKMS,
+  RPC_URL
 } from '../../helpers';
 import { DID } from '@iden3/js-iden3-core';
 import fetchMock from '@gr2m/fetch-mock';
@@ -30,7 +31,10 @@ describe('SparseMerkleTreeProof', () => {
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
 
     credWallet = new CredentialWallet(dataStorage);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, defaultEthConnectionConfig);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
+      ...defaultEthConnectionConfig,
+      url: RPC_URL
+    });
 
     const { did: didUser, credential: userAuthCredential } = await createIdentity(idWallet, {
       seed: SEED_USER,
