@@ -59,9 +59,9 @@ import {
   WALLET_KEY,
   STATE_CONTRACT,
   RPC_URL,
-  SEED_ISSUER
+  SEED_ISSUER,
+  testOpts
 } from '../helpers';
-import { testOpts } from './mock';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
