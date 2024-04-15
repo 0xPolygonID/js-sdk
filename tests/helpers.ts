@@ -258,7 +258,7 @@ export const getPackageMgr = async (
   return mgr;
 };
 
-export const testOpts: VerifyOpts = {
+export const TEST_VERIFICATION_OPTS: VerifyOpts = {
   acceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minutes
   acceptedProofGenerationDelay: 10 * 365 * 24 * 60 * 60 * 1000 // 10 years
 };
