@@ -35,6 +35,7 @@ import {
   VerifyOpts
 } from '../src';
 import { proving } from '@iden3/js-jwz';
+import { JsonRpcProvider } from 'ethers';
 
 export const SEED_ISSUER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 export const SEED_USER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -189,6 +190,9 @@ export const MOCK_STATE_STORAGE: IStateStorage = {
       createdAtBlock: 5499734n,
       replacedAtBlock: 0n
     });
+  },
+  getRpcProvider: (): JsonRpcProvider => {
+    return new JsonRpcProvider();
   }
 };
 

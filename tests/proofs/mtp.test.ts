@@ -15,7 +15,7 @@ import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { ethers } from 'ethers';
+import { ethers, JsonRpcProvider } from 'ethers';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
@@ -78,6 +78,9 @@ describe('mtp proofs', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
+    },
+    getRpcProvider: (): JsonRpcProvider => {
+      return new JsonRpcProvider();
     }
   };
   beforeEach(async () => {
