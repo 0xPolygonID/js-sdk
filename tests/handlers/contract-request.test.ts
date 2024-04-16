@@ -55,6 +55,7 @@ import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, JsonRpcProvider, Signer } from 'ethers';
+import { RPC_URL } from '../helpers';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -108,7 +109,7 @@ describe('contract-request', () => {
       });
     },
     getRpcProvider() {
-      return new JsonRpcProvider();
+      return new JsonRpcProvider(RPC_URL);
     }
   };
 

@@ -20,7 +20,7 @@ import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { RHSResolver } from '../../../src/credentials';
 import { CredentialStatusResolverRegistry } from '../../../src/credentials';
-import { RHS_URL, SEED_USER, createIdentity } from '../../helpers';
+import { RHS_URL, SEED_USER, createIdentity, RPC_URL } from '../../helpers';
 import { JsonRpcProvider } from 'ethers';
 
 describe('rhs', () => {
@@ -64,7 +64,7 @@ describe('rhs', () => {
       });
     },
     getRpcProvider() {
-      return new JsonRpcProvider();
+      return new JsonRpcProvider(RPC_URL);
     }
   };
 
@@ -112,7 +112,7 @@ describe('rhs', () => {
       });
     },
     getRpcProvider() {
-      return new JsonRpcProvider();
+      return new JsonRpcProvider(RPC_URL);
     }
   };
   const mockStateStorageForSecondState: IStateStorage = {
@@ -159,7 +159,7 @@ describe('rhs', () => {
       });
     },
     getRpcProvider() {
-      return new JsonRpcProvider();
+      return new JsonRpcProvider(RPC_URL);
     }
   };
 

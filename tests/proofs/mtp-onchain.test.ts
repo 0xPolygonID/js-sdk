@@ -27,6 +27,7 @@ import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
+import { RPC_URL } from '../helpers';
 
 describe('mtp onchain proofs', () => {
   let idWallet: IdentityWallet;
@@ -83,7 +84,7 @@ describe('mtp onchain proofs', () => {
       });
     },
     getRpcProvider() {
-      return new JsonRpcProvider();
+      return new JsonRpcProvider(RPC_URL);
     }
   };
   beforeEach(async () => {

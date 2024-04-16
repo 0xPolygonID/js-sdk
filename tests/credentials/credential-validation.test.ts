@@ -26,6 +26,7 @@ chai.use(chaiAsPromised);
 const { expect } = chai;
 import fetchMock from '@gr2m/fetch-mock';
 import { JsonRpcProvider } from 'ethers';
+import { RPC_URL } from '../helpers';
 
 const mockStateStorage: IStateStorage = {
   getLatestStateById: async (id: bigint) => {
@@ -77,7 +78,7 @@ const mockStateStorage: IStateStorage = {
     });
   },
   getRpcProvider: (): JsonRpcProvider => {
-    return new JsonRpcProvider();
+    return new JsonRpcProvider(RPC_URL);
   }
 };
 

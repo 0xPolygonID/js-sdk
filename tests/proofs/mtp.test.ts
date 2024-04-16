@@ -23,7 +23,7 @@ import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../../src
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { SEED_USER, createIdentity, TEST_VERIFICATION_OPTS } from '../helpers';
+import { SEED_USER, createIdentity, TEST_VERIFICATION_OPTS, RPC_URL } from '../helpers';
 
 describe('mtp proofs', () => {
   let idWallet: IdentityWallet;
@@ -80,7 +80,7 @@ describe('mtp proofs', () => {
       });
     },
     getRpcProvider: (): JsonRpcProvider => {
-      return new JsonRpcProvider();
+      return new JsonRpcProvider(RPC_URL);
     }
   };
   beforeEach(async () => {

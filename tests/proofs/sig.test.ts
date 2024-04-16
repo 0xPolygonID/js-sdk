@@ -24,6 +24,7 @@ import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { JsonRpcProvider } from 'ethers';
+import { RPC_URL } from '../helpers';
 
 describe('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -74,7 +75,7 @@ describe('sig proofs', () => {
       });
     },
     getRpcProvider() {
-      return new JsonRpcProvider();
+      return new JsonRpcProvider(RPC_URL);
     }
   };
 

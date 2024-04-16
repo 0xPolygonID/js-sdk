@@ -2,9 +2,9 @@ import { Block, JsonRpcProvider, Signer, TransactionReceipt, TransactionRequest 
 
 /**
  * Resend transaction options
- * @type RecendTxnOptions
+ * @type ResendTxnOptions
  */
-export type RecendTxnOptions = {
+export type ResendTxnOptions = {
   increasedFeesPercentage?: number;
 };
 
@@ -42,14 +42,14 @@ export interface ITransactionService {
    *
    * @param {Signer} signer - transaction signer.
    * @param {TransactionRequest} request - transaction request.
-   * @param {RecendTxnOptions} opts - resend transaction options.
+   * @param {ResendTxnOptions} opts - resend transaction options.
    * @returns `Promise<{ txnHash: string; txnReceipt: TransactionReceipt }>` -returns txn hash and txn receipt.
    * @public
    */
   resendTransaction(
     signer: Signer,
     request: TransactionRequest,
-    opts?: RecendTxnOptions
+    opts?: ResendTxnOptions
   ): Promise<{ txnHash: string; txnReceipt: TransactionReceipt }>;
 }
 
@@ -100,7 +100,7 @@ export class TransactionService implements ITransactionService {
   async resendTransaction(
     signer: Signer,
     request: TransactionRequest,
-    opts?: RecendTxnOptions
+    opts?: ResendTxnOptions
   ): Promise<{ txnHash: string; txnReceipt: TransactionReceipt }> {
     const feeData = await this._provider.getFeeData();
     let { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = feeData;
