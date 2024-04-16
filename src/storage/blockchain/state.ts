@@ -56,7 +56,7 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
  */
 export class EthStateStorage implements IStateStorage {
   public readonly stateContract: Contract;
-  public readonly provider: JsonRpcProvider;
+  private readonly provider: JsonRpcProvider;
   private readonly _transactionService: ITransactionService;
 
   /**
@@ -67,7 +67,7 @@ export class EthStateStorage implements IStateStorage {
     const config = Array.isArray(ethConfig) ? ethConfig[0] : ethConfig;
     this.provider = new JsonRpcProvider(config.url);
     this.stateContract = new Contract(config.contractAddress, abi, this.provider);
-    this._transactionService = new TransactionService(ethConfig);
+    this._transactionService = new TransactionService(this.getRpcProvider());
   }
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
@@ -228,6 +228,11 @@ export class EthStateStorage implements IStateStorage {
       createdAtBlock: BigInt(data.createdAtBlock.toString()),
       replacedAtBlock: BigInt(data.replacedAtBlock.toString())
     };
+  }
+
+  /** {@inheritdoc IStateStorage.getRpcProvider} */
+  getRpcProvider(): JsonRpcProvider {
+    return this.provider;
   }
 
   private getStateContractAndProviderForId(id: bigint): {

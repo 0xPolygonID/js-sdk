@@ -11,12 +11,10 @@ import {
   CredentialStatusResolverRegistry,
   RHSResolver,
   CredentialStatusType,
-  EthStateStorage,
   FSCircuitStorage,
   NativeProver,
   Iden3SparseMerkleTreeProof,
-  BJJSignatureProof2021,
-  defaultEthConnectionConfig
+  BJJSignatureProof2021
 } from '../../src';
 import {
   MOCK_STATE_STORAGE,
@@ -26,8 +24,7 @@ import {
   getInMemoryDataStorage,
   registerKeyProvidersInMemoryKMS,
   WALLET_KEY,
-  createEthereumBasedIdentity,
-  RPC_URL
+  createEthereumBasedIdentity
 } from '../helpers';
 import { expect } from 'chai';
 import { Wallet } from 'ethers';
@@ -69,10 +66,7 @@ describe('identity', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet);
   });
 
   it('createIdentity', async () => {
@@ -175,7 +169,7 @@ describe('identity', () => {
   });
 
   it('createIdentity Secp256k1', async () => {
-    const ethSigner = new Wallet(WALLET_KEY, (dataStorage.states as EthStateStorage).provider);
+    const ethSigner = new Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
 
     const { did, credential } = await createEthereumBasedIdentity(idWallet, {
       ethSigner
@@ -209,7 +203,7 @@ describe('identity', () => {
     });
     const prover = new NativeProver(circuitStorage);
 
-    const ethSigner = new Wallet(WALLET_KEY, (dataStorage.states as EthStateStorage).provider);
+    const ethSigner = new Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
     const opts = {
       seed: SEED_USER,
       revocationOpts: {
@@ -265,7 +259,7 @@ describe('identity', () => {
     });
     const prover = new NativeProver(circuitStorage);
 
-    const ethSigner = new Wallet(WALLET_KEY, (dataStorage.states as EthStateStorage).provider);
+    const ethSigner = new Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
     const opts = {
       seed: SEED_USER,
       revocationOpts: {

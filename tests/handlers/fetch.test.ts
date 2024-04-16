@@ -17,8 +17,7 @@ import {
   CredentialIssuanceMessage,
   FSCircuitStorage,
   ProofService,
-  CircuitId,
-  defaultEthConnectionConfig
+  CircuitId
 } from '../../src';
 
 import {
@@ -29,8 +28,7 @@ import {
   createIdentity,
   getInMemoryDataStorage,
   getPackageMgr,
-  registerKeyProvidersInMemoryKMS,
-  RPC_URL
+  registerKeyProvidersInMemoryKMS
 } from '../helpers';
 
 import * as uuid from 'uuid';
@@ -125,10 +123,7 @@ describe('fetch', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
     packageMgr = await getPackageMgr(

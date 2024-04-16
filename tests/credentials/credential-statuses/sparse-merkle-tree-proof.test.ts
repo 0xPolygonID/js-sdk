@@ -1,4 +1,4 @@
-import { defaultEthConnectionConfig, IdentityWallet } from '../../../src';
+import { IdentityWallet } from '../../../src';
 import { IDataStorage } from '../../../src/storage/interfaces';
 import { CredentialRequest, CredentialWallet } from '../../../src/credentials';
 import { CredentialStatusType } from '../../../src/verifiable';
@@ -8,8 +8,7 @@ import {
   SEED_USER,
   createIdentity,
   getInMemoryDataStorage,
-  registerKeyProvidersInMemoryKMS,
-  RPC_URL
+  registerKeyProvidersInMemoryKMS
 } from '../../helpers';
 import { DID } from '@iden3/js-iden3-core';
 import fetchMock from '@gr2m/fetch-mock';
@@ -31,10 +30,7 @@ describe('SparseMerkleTreeProof', () => {
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
 
     credWallet = new CredentialWallet(dataStorage);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const { did: didUser, credential: userAuthCredential } = await createIdentity(idWallet, {
       seed: SEED_USER,

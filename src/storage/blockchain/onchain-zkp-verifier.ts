@@ -3,7 +3,7 @@ import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
 import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
 import abi from './abi/ZkpVerifier.json';
-import { ITransactionService, TransactionService } from '../../blockchain';
+import { TransactionService } from '../../blockchain';
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
@@ -19,7 +19,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
    * uint256[2] calldata a, uint256[2][2] calldata b, uint256[2] calldata c) public
    */
   private readonly _supportedMethodId = 'b68967e2';
-  private readonly _transactionService: ITransactionService;
   /**
    *
    * Creates an instance of OnChainZKPVerifier.
@@ -27,9 +26,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
    * @param {EthConnectionConfig[]} - array of ETH configs
    */
 
-  constructor(private readonly _configs: EthConnectionConfig[]) {
-    this._transactionService = new TransactionService(_configs);
-  }
+  constructor(private readonly _configs: EthConnectionConfig[]) {}
 
   /**
    * Submit ZKP Responses to OnChainZKPVerifier contract.
@@ -93,7 +90,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         maxPriorityFeePerGas
       };
 
-      const { txnHash } = await this._transactionService.sendTransactionRequest(ethSigner, request);
+      const transactionService = new TransactionService(provider);
+      const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
       response.set(txnHash, zkProof);
     }
 

@@ -16,7 +16,6 @@ import { CredentialRequest, CredentialWallet } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
 import { ethers } from 'ethers';
-import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
@@ -24,7 +23,7 @@ import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../../src
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { SEED_USER, createIdentity, TEST_VERIFICATION_OPTS, RPC_URL } from '../helpers';
+import { SEED_USER, createIdentity, TEST_VERIFICATION_OPTS } from '../helpers';
 
 describe('mtp proofs', () => {
   let idWallet: IdentityWallet;
@@ -118,10 +117,7 @@ describe('mtp proofs', () => {
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
 
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });
@@ -167,10 +163,7 @@ describe('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet(
-      walletKey,
-      (dataStorage.states as EthStateStorage).provider
-    );
+    const ethSigner = new ethers.Wallet(walletKey, dataStorage.states.getRpcProvider());
     const txId = await proofService.transitState(
       issuerDID,
       res.oldTreeState,
@@ -257,10 +250,7 @@ describe('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet(
-      walletKey,
-      (dataStorage.states as EthStateStorage).provider
-    );
+    const ethSigner = new ethers.Wallet(walletKey, dataStorage.states.getRpcProvider());
 
     const txId = await proofService.transitState(
       issuerDID,

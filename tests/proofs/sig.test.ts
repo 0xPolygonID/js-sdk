@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import {
   CredentialStorage,
-  defaultEthConnectionConfig,
   FSCircuitStorage,
   Identity,
   IdentityStorage,
@@ -24,7 +23,7 @@ import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { RPC_URL } from '../helpers';
+import { JsonRpcProvider } from 'ethers';
 
 describe('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -73,6 +72,9 @@ describe('sig proofs', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
+    },
+    getRpcProvider() {
+      return new JsonRpcProvider();
     }
   };
 
@@ -100,10 +102,7 @@ describe('sig proofs', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
       ipfsNodeURL

@@ -54,8 +54,7 @@ import { Blockchain, BytesHelper, DidMethod, NetworkId } from '@iden3/js-iden3-c
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { ethers, Signer } from 'ethers';
-import { RPC_URL } from '../helpers';
+import { ethers, JsonRpcProvider, Signer } from 'ethers';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -107,6 +106,9 @@ describe('contract-request', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
+    },
+    getRpcProvider() {
+      return new JsonRpcProvider();
     }
   };
 
@@ -190,10 +192,7 @@ describe('contract-request', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
       ipfsNodeURL
@@ -335,10 +334,7 @@ describe('contract-request', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, dataStorage.states, {
       ipfsNodeURL
@@ -489,10 +485,7 @@ describe('contract-request', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, dataStorage.states, {
       ipfsNodeURL

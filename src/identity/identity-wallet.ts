@@ -25,13 +25,7 @@ import { Hash, hashElems, ZERO_HASH } from '@iden3/js-merkletree';
 import { generateProfileDID, subjectPositionIndex } from './common';
 import * as uuid from 'uuid';
 import { JSONSchema, JsonSchemaValidator, cacheLoader } from '../schema-processor';
-import {
-  EthConnectionConfig,
-  IDataStorage,
-  MerkleTreeType,
-  Profile,
-  UserStateTransitionInfo
-} from '../storage';
+import { IDataStorage, MerkleTreeType, Profile, UserStateTransitionInfo } from '../storage';
 import {
   VerifiableConstants,
   BJJSignatureProof2021,
@@ -493,14 +487,13 @@ export class IdentityWallet implements IIdentityWallet {
     private readonly _kms: KMS,
     private readonly _storage: IDataStorage,
     private readonly _credentialWallet: ICredentialWallet,
-    _ethConfig: EthConnectionConfig,
     private readonly _opts?: {
       credentialStatusPublisherRegistry?: CredentialStatusPublisherRegistry;
     }
   ) {
     this._credentialStatusPublisherRegistry = this.getCredentialStatusPublisherRegistry(_opts);
     this._inputsGenerator = new InputGenerator(this, _credentialWallet, _storage.states);
-    this._transactionService = new TransactionService(_ethConfig);
+    this._transactionService = new TransactionService(_storage.states.getRpcProvider());
   }
 
   private getCredentialStatusPublisherRegistry(

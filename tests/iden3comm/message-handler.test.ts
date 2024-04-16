@@ -18,8 +18,7 @@ import {
   RHSResolver,
   byteEncoder,
   IProtocolMessageHandler,
-  byteDecoder,
-  defaultEthConnectionConfig
+  byteDecoder
 } from '../../src';
 import {
   AbstractMessageHandler,
@@ -32,8 +31,7 @@ import {
   SEED_USER,
   createIdentity,
   getInMemoryDataStorage,
-  registerKeyProvidersInMemoryKMS,
-  RPC_URL
+  registerKeyProvidersInMemoryKMS
 } from '../helpers';
 import { randomUUID } from 'crypto';
 
@@ -93,10 +91,7 @@ describe('MessageHandler', () => {
       new RHSResolver(dataStorage.states)
     );
     const credWallet = new CredentialWallet(dataStorage, resolvers);
-    const idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    const idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = {
       generateProof: async () => {

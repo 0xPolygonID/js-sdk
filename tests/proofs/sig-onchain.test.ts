@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import {
   CredentialStorage,
-  defaultEthConnectionConfig,
   FSCircuitStorage,
   Identity,
   IdentityStorage,
@@ -27,7 +26,7 @@ import { byteEncoder } from '../../src';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import { RPC_URL } from '../helpers';
+import { JsonRpcProvider } from 'ethers';
 
 describe('sig onchain proofs', () => {
   let idWallet: IdentityWallet;
@@ -71,6 +70,9 @@ describe('sig onchain proofs', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
+    },
+    getRpcProvider() {
+      return new JsonRpcProvider();
     }
   };
 
@@ -100,10 +102,7 @@ describe('sig onchain proofs', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
     const prover = new NativeProver(circuitStorage);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {

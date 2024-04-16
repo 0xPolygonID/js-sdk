@@ -20,15 +20,13 @@ import {
 } from '../../src/credentials';
 import { ProofService } from '../../src/proof';
 import { CircuitId } from '../../src/circuits';
-import { ethers } from 'ethers';
-import { defaultEthConnectionConfig, EthStateStorage } from '../../src/storage/blockchain/state';
+import { ethers, JsonRpcProvider } from 'ethers';
 import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
-import { RPC_URL } from '../helpers';
 
 describe('mtp onchain proofs', () => {
   let idWallet: IdentityWallet;
@@ -83,6 +81,9 @@ describe('mtp onchain proofs', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
+    },
+    getRpcProvider() {
+      return new JsonRpcProvider();
     }
   };
   beforeEach(async () => {
@@ -117,10 +118,7 @@ describe('mtp onchain proofs', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
   });
@@ -189,10 +187,7 @@ describe('mtp onchain proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet(
-      walletKey,
-      (dataStorage.states as EthStateStorage).provider
-    );
+    const ethSigner = new ethers.Wallet(walletKey, dataStorage.states.getRpcProvider());
 
     const txId = await proofService.transitState(
       issuerDID,

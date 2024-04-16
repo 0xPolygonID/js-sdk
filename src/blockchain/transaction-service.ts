@@ -1,5 +1,4 @@
 import { Block, JsonRpcProvider, Signer, TransactionReceipt, TransactionRequest } from 'ethers';
-import { EthConnectionConfig } from '../storage';
 
 /**
  * Resend transaction options
@@ -62,16 +61,11 @@ export interface ITransactionService {
  * @implements ITransactionService interface
  */
 export class TransactionService implements ITransactionService {
-  private readonly _provider: JsonRpcProvider;
-
   /**
    * Creates an instance of TransactionService.
-   * @param {EthConnectionConfig | EthConnectionConfig[]} [ethConfig=defaultEthConnectionConfig]
+   * @param {JsonRpcProvider} - RPC provider
    */
-  constructor(ethConfig: EthConnectionConfig | EthConnectionConfig[]) {
-    const config = Array.isArray(ethConfig) ? ethConfig[0] : ethConfig;
-    this._provider = new JsonRpcProvider(config.url);
-  }
+  constructor(private readonly _provider: JsonRpcProvider) {}
 
   /** {@inheritDoc ITransactionService.getTransactionReceiptAndBlock} */
   async getTransactionReceiptAndBlock(

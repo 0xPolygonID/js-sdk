@@ -37,7 +37,7 @@ export class OnChainRevocationStorage {
       contract = contract.connect(this._signer) as Contract;
     }
     this._contract = contract;
-    this._transactionService = new TransactionService(_config);
+    this._transactionService = new TransactionService(this._provider);
   }
 
   /**

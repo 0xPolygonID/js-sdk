@@ -20,8 +20,7 @@ import {
   ProposalMessage,
   Proposal,
   PlainPacker,
-  PackageManager,
-  defaultEthConnectionConfig
+  PackageManager
 } from '../../src';
 
 import {
@@ -32,8 +31,7 @@ import {
   createIdentity,
   SEED_USER,
   SEED_ISSUER,
-  RHS_URL,
-  RPC_URL
+  RHS_URL
 } from '../helpers';
 
 import { expect } from 'chai';
@@ -85,10 +83,7 @@ describe('proposal-request handler', () => {
       new RHSResolver(dataStorage.states)
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
     packageMgr = await getPackageMgr(

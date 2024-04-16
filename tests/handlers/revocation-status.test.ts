@@ -12,8 +12,7 @@ import {
   RevocationStatusHandler,
   RevocationStatusRequestMessage,
   PROTOCOL_CONSTANTS,
-  byteEncoder,
-  defaultEthConnectionConfig
+  byteEncoder
 } from '../../src';
 
 import {
@@ -23,8 +22,7 @@ import {
   registerKeyProvidersInMemoryKMS,
   createIdentity,
   SEED_USER,
-  SEED_ISSUER,
-  RPC_URL
+  SEED_ISSUER
 } from '../helpers';
 
 import * as uuid from 'uuid';
@@ -48,10 +46,7 @@ describe('revocation status', () => {
       new RHSResolver(dataStorage.states)
     );
     const credWallet = new CredentialWallet(dataStorage, resolvers);
-    idWallet = new IdentityWallet(kms, dataStorage, credWallet, {
-      ...defaultEthConnectionConfig,
-      url: RPC_URL
-    });
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
     packageMgr = await getPackageMgr(
