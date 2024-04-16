@@ -192,7 +192,7 @@ export const MOCK_STATE_STORAGE: IStateStorage = {
     });
   },
   getRpcProvider: (): JsonRpcProvider => {
-    return new JsonRpcProvider();
+    return new JsonRpcProvider(RPC_URL);
   }
 };
 
