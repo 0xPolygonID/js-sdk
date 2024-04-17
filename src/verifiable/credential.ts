@@ -92,9 +92,6 @@ export class W3CCredential {
   };
 
   static fromJSON(obj: any): W3CCredential {
-    if (obj instanceof W3CCredential) {
-      return obj;
-    }
     const w = new W3CCredential();
     Object.assign(w, obj);
     w.proof = Array.isArray(w.proof)
