@@ -79,7 +79,10 @@ export class Iden3SparseMerkleTreeProof {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static fromJSON(obj: any) {
+  static fromJSON(obj: any): Iden3SparseMerkleTreeProof {
+    if (obj instanceof Iden3SparseMerkleTreeProof) {
+      return obj;
+    }
     let mtp: Proof;
     if (obj?.mtp?.notEmpties && obj?.mtp?.depth && obj?.mtp?.siblings) {
       // legacy
@@ -185,7 +188,10 @@ export class BJJSignatureProof2021 {
    * @param obj
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static fromJSON(obj: any) {
+  static fromJSON(obj: any): BJJSignatureProof2021 {
+    if (obj instanceof BJJSignatureProof2021) {
+      return obj;
+    }
     return new BJJSignatureProof2021({
       issuerData: {
         id: DID.parse(obj.issuerData.id),
