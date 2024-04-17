@@ -26,6 +26,8 @@ import { byteEncoder } from '../../src';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
+import { JsonRpcProvider } from 'ethers';
+import { RPC_URL } from '../helpers';
 
 describe('sig onchain proofs', () => {
   let idWallet: IdentityWallet;
@@ -69,6 +71,9 @@ describe('sig onchain proofs', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
+    },
+    getRpcProvider() {
+      return new JsonRpcProvider(RPC_URL);
     }
   };
 

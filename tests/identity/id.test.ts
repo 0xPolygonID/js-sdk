@@ -11,7 +11,6 @@ import {
   CredentialStatusResolverRegistry,
   RHSResolver,
   CredentialStatusType,
-  EthStateStorage,
   FSCircuitStorage,
   NativeProver,
   Iden3SparseMerkleTreeProof,
@@ -170,7 +169,7 @@ describe('identity', () => {
   });
 
   it('createIdentity Secp256k1', async () => {
-    const ethSigner = new Wallet(WALLET_KEY, (dataStorage.states as EthStateStorage).provider);
+    const ethSigner = new Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
 
     const { did, credential } = await createEthereumBasedIdentity(idWallet, {
       ethSigner
@@ -204,7 +203,7 @@ describe('identity', () => {
     });
     const prover = new NativeProver(circuitStorage);
 
-    const ethSigner = new Wallet(WALLET_KEY, (dataStorage.states as EthStateStorage).provider);
+    const ethSigner = new Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
     const opts = {
       seed: SEED_USER,
       revocationOpts: {
@@ -260,7 +259,7 @@ describe('identity', () => {
     });
     const prover = new NativeProver(circuitStorage);
 
-    const ethSigner = new Wallet(WALLET_KEY, (dataStorage.states as EthStateStorage).provider);
+    const ethSigner = new Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
     const opts = {
       seed: SEED_USER,
       revocationOpts: {

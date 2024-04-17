@@ -1,5 +1,5 @@
 import { ZKProof } from '@iden3/js-jwz';
-import { Signer } from 'ethers';
+import { JsonRpcProvider, Signer } from 'ethers';
 import { RootInfo, StateInfo, StateProof } from '../entities/state';
 import { Id } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
@@ -71,4 +71,11 @@ export interface IStateStorage {
    * @returns `Promise<RootInfo>`
    */
   getGISTRootInfo(root: bigint, userId: bigint): Promise<RootInfo>;
+
+  /**
+   * gets RPC provider
+   *
+   * @returns `Promise<JsonRpcProvider>`
+   */
+  getRpcProvider(): JsonRpcProvider;
 }

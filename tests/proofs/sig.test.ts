@@ -23,6 +23,8 @@ import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
+import { JsonRpcProvider } from 'ethers';
+import { RPC_URL } from '../helpers';
 
 describe('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -71,6 +73,9 @@ describe('sig proofs', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
+    },
+    getRpcProvider() {
+      return new JsonRpcProvider(RPC_URL);
     }
   };
 

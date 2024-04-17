@@ -54,7 +54,8 @@ import { Blockchain, BytesHelper, DidMethod, NetworkId } from '@iden3/js-iden3-c
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
-import { ethers, Signer } from 'ethers';
+import { ethers, JsonRpcProvider, Signer } from 'ethers';
+import { RPC_URL } from '../helpers';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -106,6 +107,9 @@ describe('contract-request', () => {
         createdAtBlock: 0n,
         replacedAtBlock: 0n
       });
+    },
+    getRpcProvider() {
+      return new JsonRpcProvider(RPC_URL);
     }
   };
 

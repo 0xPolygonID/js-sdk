@@ -299,10 +299,7 @@ describe('auth', () => {
     const res = await idWallet.addCredentialsToMerkleTree([employeeCred], issuerDID);
     await idWallet.publishStateToRHS(issuerDID, RHS_URL);
 
-    const ethSigner = new ethers.Wallet(
-      WALLET_KEY,
-      (dataStorage.states as EthStateStorage).provider
-    );
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
 
     const txId = await proofService.transitState(
       issuerDID,
@@ -412,10 +409,7 @@ describe('auth', () => {
   });
 
   it('auth flow identity (profile) with ethereum identity issuer with circuits V3', async () => {
-    const ethSigner = new ethers.Wallet(
-      WALLET_KEY,
-      (dataStorage.states as EthStateStorage).provider
-    );
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
 
     const { did: didIssuer, credential: issuerAuthCredential } =
       await idWallet.createEthereumBasedIdentity({
@@ -659,10 +653,7 @@ describe('auth', () => {
 
     expect(userAuthCredential).not.to.be.undefined;
 
-    const ethSigner = new ethers.Wallet(
-      WALLET_KEY,
-      (dataStorage.states as EthStateStorage).provider
-    );
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
 
     const { did: didIssuer, credential: issuerAuthCredential } =
       await idWallet.createEthereumBasedIdentity({
@@ -1963,10 +1954,7 @@ describe('auth', () => {
     const res = await idWallet.addCredentialsToMerkleTree([employeeCred], issuerDID);
     await idWallet.publishStateToRHS(issuerDID, RHS_URL);
 
-    const ethSigner = new ethers.Wallet(
-      WALLET_KEY,
-      (dataStorage.states as EthStateStorage).provider
-    );
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
 
     const txId = await proofService.transitState(
       issuerDID,
@@ -2151,10 +2139,7 @@ describe('auth', () => {
     });
     const prover = new NativeProver(circuitStorage);
 
-    const ethSigner = new ethers.Wallet(
-      WALLET_KEY,
-      (dataStorage.states as EthStateStorage).provider
-    );
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
     const opts = {
       seed: SEED_USER,
       revocationOpts: {
