@@ -52,7 +52,7 @@ const didExample = {
   authentication: ['did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw']
 };
 
-describe.only('jws packer tests', () => {
+describe('jws packer tests', () => {
   const did = 'did:example:123';
   let kms: KMS;
   let resolveDIDDocument: { resolve: (did: string) => Promise<DIDResolutionResult> };

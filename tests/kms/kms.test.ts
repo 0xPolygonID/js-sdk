@@ -45,7 +45,7 @@ const testFlow = async (provider: IKeyProvider) => {
   expect(isPublicKey3Valid).to.be.true;
 };
 
-describe.only('Key store providers', () => {
+describe('Key store providers', () => {
   it('should signatures be valid and equal for the same data and private key', async () => {
     const keyStore: AbstractPrivateKeyStore = new InMemoryPrivateKeyStore();
     const ed25519Provider = new Ed25519Provider(KmsKeyType.Ed25519, keyStore);
