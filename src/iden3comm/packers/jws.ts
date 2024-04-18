@@ -1,10 +1,6 @@
 import { BasicMessage, IPacker, JWSPackerParams } from '../types';
 import { MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
-import {
-  extractPublicKeyBytes,
-  extractPublicKeyBytes2,
-  resolveVerificationMethods
-} from '../utils/did';
+import { extractPublicKeyBytes, resolveVerificationMethods } from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
 
 import { verifyJWS } from 'did-jwt';
@@ -152,8 +148,6 @@ export class JWSPacker implements IPacker {
     }
 
     const { publicKeyBytes, kmsKeyType } = extractPublicKeyBytes(vm);
-    const { publicKeyBytes: publicKeyBytes2 } = extractPublicKeyBytes2(vm);
-    console.assert(JSON.stringify(publicKeyBytes) === JSON.stringify(publicKeyBytes2));
 
     if (!publicKeyBytes && !kmsKeyType) {
       if ((vm.blockchainAccountId || vm.ethereumAddress) && !params.signer) {
