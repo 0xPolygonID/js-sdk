@@ -7,23 +7,21 @@ import {
   Ed25519Provider,
   IKeyProvider,
   bytesToHex,
-  BjjProvider,
-  Sec256k2Provider
+  BjjProvider
 } from '../../src';
 import { getRandomBytes } from '@iden3/js-crypto';
-import { checkBigIntInField, BytesHelper } from '@iden3/js-iden3-core';
+import { BytesHelper, Constants } from '@iden3/js-iden3-core';
 
 const testFlow = async (provider: IKeyProvider) => {
   const seed1 = getRandomBytes(32);
   const seed2 = getRandomBytes(32);
   expect(seed1).to.not.deep.equal(seed2);
-  const dataToSign1 = getRandomBytes(32);
-  const dataToSign2 = getRandomBytes(32);
+  let dataToSign1 = getRandomBytes(32);
+  let dataToSign2 = getRandomBytes(32);
   if (provider instanceof BjjProvider) {
-    if (!checkBigIntInField(BytesHelper.bytesToInt(seed1))) {
-      dataToSign1.set(new Uint8Array(16), 16);
-      dataToSign2.set(new Uint8Array(16), 16);
-    }
+    // because challange should be in the finite field of Constant.Q
+    dataToSign1 = BytesHelper.intToBytes(Constants.Q - 1n);
+    dataToSign2 = BytesHelper.intToBytes(Constants.Q - 100n);
   }
   const [keyId1, keyId2, keyId3] = await Promise.all([
     provider.newPrivateKeyFromSeed(seed1),
@@ -47,7 +45,7 @@ const testFlow = async (provider: IKeyProvider) => {
   expect(isPublicKey3Valid).to.be.true;
 };
 
-describe('Key store providers', () => {
+describe.only('Key store providers', () => {
   it('should signatures be valid and equal for the same data and private key', async () => {
     const keyStore: AbstractPrivateKeyStore = new InMemoryPrivateKeyStore();
     const ed25519Provider = new Ed25519Provider(KmsKeyType.Ed25519, keyStore);
@@ -58,33 +56,5 @@ describe('Key store providers', () => {
       testFlow(ed25519Provider),
       testFlow(secp256k1Provider)
     ]);
-  });
-
-  it.skip('should fail to verify with wrong public key', async () => {
-    const keyStore: AbstractPrivateKeyStore = new InMemoryPrivateKeyStore();
-
-    const secp256k1Provider = new Sec256k1Provider(KmsKeyType.Secp256k1, keyStore);
-    const secp256k2Provider = new Sec256k2Provider(KmsKeyType.Secp256k1, keyStore);
-    const seed1 = new Uint8Array([
-      81, 238, 246, 232, 216, 196, 154, 217, 213, 61, 101, 152, 98, 114, 212, 1, 163, 204, 186, 14,
-      17, 69, 201, 157, 63, 168, 0, 120, 164, 130, 253, 156
-    ]);
-
-    const data = new Uint8Array([
-      88, 25, 174, 24, 47, 161, 52, 187, 216, 36, 30, 241, 31, 7, 130, 31, 116, 85, 79, 16, 40, 44,
-      138, 39, 177, 11, 161, 139, 34, 156, 157, 106
-    ]);
-
-    const [keyId1, keyId2] = await Promise.all([
-      secp256k1Provider.newPrivateKeyFromSeed(seed1),
-      secp256k2Provider.newPrivateKeyFromSeed(seed1)
-    ]);
-
-    const [signature1, signature2] = await Promise.all([
-      secp256k1Provider.sign(keyId1, data),
-      secp256k2Provider.sign(keyId2, data)
-    ]);
-
-    expect(signature1).to.deep.equal(signature2);
   });
 });

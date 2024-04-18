@@ -6,9 +6,9 @@ import { secp256k1 } from '@noble/curves/secp256k1';
 import { sha256 } from '@iden3/js-crypto';
 
 /**
- * Provider for Sec256p1 keys256p1
+ * Provider for Secp256k1
  * @public
- * @class Sec256p1Provider
+ * @class Secp256k1Provider
  * @implements implements IKeyProvider interface
  */
 export class Sec256k1Provider implements IKeyProvider {

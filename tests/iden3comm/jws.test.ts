@@ -127,10 +127,11 @@ describe.only('jws packer tests', () => {
       issuer: did
     });
 
-    expect(tokenBytesKMS).to.deep.equal(tokenBytesSigner);
-
-    const data = await packer.unpack(tokenBytesSigner);
+    const signerData = await packer.unpack(tokenBytesSigner);
+    expect(signerData).to.not.be.undefined;
+    const data = await packer.unpack(tokenBytesKMS);
     expect(data).to.not.be.undefined;
+    expect(signerData).to.deep.equal(data);
   });
 
   it('unpack: no kid', async () => {

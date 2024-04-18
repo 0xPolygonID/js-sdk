@@ -1,4 +1,4 @@
 export * from './bjj-provider';
 export * from './ed25519-provider';
-export * from './sec256k1-provider';
-export * from './sec256k2-provider';
+export * from './secp256k1-provider';
+export * from './secp256k1-provider';

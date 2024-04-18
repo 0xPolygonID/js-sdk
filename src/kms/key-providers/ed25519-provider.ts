@@ -3,6 +3,7 @@ import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 import * as providerHelpers from '../provider-helpers';
 import { ed25519 } from '@noble/curves/ed25519';
 import { bytesToHex } from '../../utils';
+import { sha256 } from '@iden3/js-crypto';
 
 /**
  * Provider for Ed25519 keys
@@ -20,10 +21,6 @@ export class Ed25519Provider implements IKeyProvider {
     public readonly keyType: KmsKeyType,
     private readonly _keyStore: AbstractPrivateKeyStore
   ) {}
-
-  verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
-    return Promise.resolve(true);
-  }
 
   /**
    * generates a ed25519 key from a seed phrase
@@ -69,7 +66,19 @@ export class Ed25519Provider implements IKeyProvider {
    */
   async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {
     const privateKeyHex = await this.privateKey(keyId);
-    return ed25519.sign(data, privateKeyHex);
+    return ed25519.sign(sha256(data), privateKeyHex);
+  }
+
+  /**
+   * Verifies a signature for the given message and key identifier.
+   * @param message - The message to verify the signature against.
+   * @param signatureHex - The signature to verify, as a hexadecimal string.
+   * @param keyId - The key identifier to use for verification.
+   * @returns A Promise that resolves to a boolean indicating whether the signature is valid.
+   */
+  async verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
+    const publicKeyHex = await this.publicKey(keyId);
+    return ed25519.verify(signatureHex, sha256(message), publicKeyHex);
   }
 
   /**
