@@ -21,6 +21,10 @@ export class Ed25519Provider implements IKeyProvider {
     private readonly _keyStore: AbstractPrivateKeyStore
   ) {}
 
+  verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
+    return Promise.resolve(true);
+  }
+
   /**
    * generates a ed25519 key from a seed phrase
    * @param {Uint8Array} seed - byte array seed

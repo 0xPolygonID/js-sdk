@@ -1,6 +1,7 @@
 import { SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
 import elliptic from 'elliptic';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
+import { secp256k1 as sec } from '@noble/curves/secp256k1';
 
 import { KmsKeyType } from '../../kms';
 import { base58ToBytes, base64UrlToBytes, bytesToHex, hexToBytes } from '../../utils';
@@ -64,6 +65,47 @@ export const extractPublicKeyBytes = (
           })
           .getPublic('hex')
       ),
+      kmsKeyType: KmsKeyType.Secp256k1
+    };
+  }
+  return { publicKeyBytes: null };
+};
+
+export const extractPublicKeyBytes2 = (
+  vm: VerificationMethod
+): { publicKeyBytes: Uint8Array | null; kmsKeyType?: KmsKeyType } => {
+  const isSupportedVmType = Object.keys(SUPPORTED_PUBLIC_KEY_TYPES).some((key) =>
+    SUPPORTED_PUBLIC_KEY_TYPES[key as keyof typeof SUPPORTED_PUBLIC_KEY_TYPES].includes(vm.type)
+  );
+  if (vm.publicKeyBase58 && isSupportedVmType) {
+    return { publicKeyBytes: base58ToBytes(vm.publicKeyBase58), kmsKeyType: KmsKeyType.Secp256k1 };
+  }
+  if (vm.publicKeyBase64 && isSupportedVmType) {
+    return {
+      publicKeyBytes: base64UrlToBytes(vm.publicKeyBase64),
+      kmsKeyType: KmsKeyType.Secp256k1
+    };
+  }
+  if (vm.publicKeyHex && isSupportedVmType) {
+    return { publicKeyBytes: hexToBytes(vm.publicKeyHex), kmsKeyType: KmsKeyType.Secp256k1 };
+  }
+  if (
+    vm.publicKeyJwk &&
+    vm.publicKeyJwk.crv === 'secp256k1' &&
+    vm.publicKeyJwk.x &&
+    vm.publicKeyJwk.y
+  ) {
+    const [xHex, yHex] = [
+      base64UrlToBytes(vm.publicKeyJwk.x),
+      base64UrlToBytes(vm.publicKeyJwk.y)
+    ].map(bytesToHex);
+    const x = xHex.includes('0x') ? BigInt(xHex) : BigInt(`0x${xHex}`);
+    const y = yHex.includes('0x') ? BigInt(yHex) : BigInt(`0x${yHex}`);
+    return {
+      publicKeyBytes: sec.ProjectivePoint.fromAffine({
+        x,
+        y
+      }).toRawBytes(false),
       kmsKeyType: KmsKeyType.Secp256k1
     };
   }

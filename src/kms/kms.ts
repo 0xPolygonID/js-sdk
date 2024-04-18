@@ -37,6 +37,16 @@ export interface IKeyProvider {
    * @returns `Promise<KmsKeyId>`
    */
   newPrivateKeyFromSeed(seed: Uint8Array): Promise<KmsKeyId>;
+
+  /**
+   * Verifies a message signature using the provided key ID.
+   *
+   * @param message - The message bytes to verify.
+   * @param signatureHex - The signature in hexadecimal format.
+   * @param keyId - The KMS key ID used to verify the signature.
+   * @returns A promise that resolves to a boolean indicating whether the signature is valid.
+   */
+  verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean>;
 }
 /**
  * Key management system class contains different key providers.
@@ -111,5 +121,21 @@ export class KMS {
     }
 
     return keyProvider.sign(keyId, data, opts);
+  }
+
+  /**
+   * Verifies a signature against the provided data and key ID.
+   *
+   * @param data - The data to verify the signature against.
+   * @param signatureHex - The signature to verify, in hexadecimal format.
+   * @param keyId - The key ID to use for verification.
+   * @returns A promise that resolves to a boolean indicating whether the signature is valid.
+   */
+  verify(data: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
+    const keyProvider = this._registry.get(keyId.type);
+    if (!keyProvider) {
+      throw new Error(`keyProvider not found for: ${keyId.type}`);
+    }
+    return keyProvider.verify(data, signatureHex, keyId);
   }
 }
