@@ -61,7 +61,7 @@ export class Sec256k1Provider implements IKeyProvider {
    */
   async publicKey(keyId: KmsKeyId): Promise<string> {
     const privateKeyHex = await this.privateKey(keyId);
-    const publicKey = secp256k1.getPublicKey(privateKeyHex);
+    const publicKey = secp256k1.getPublicKey(privateKeyHex, false); // 04 + x + y (uncompressed key)
     return bytesToHex(publicKey);
   }
 
