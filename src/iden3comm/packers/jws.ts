@@ -177,7 +177,8 @@ export class JWSPacker implements IPacker {
 
       const signatureBytes = await this._kms.sign(
         { type: kmsKeyType, id: keyPath(kmsKeyType, bytesToHex(publicKeyBytes)) },
-        signingInputBytes
+        signingInputBytes,
+        { alg: params.alg }
       );
 
       signatureBase64 = bytesToBase64url(signatureBytes);

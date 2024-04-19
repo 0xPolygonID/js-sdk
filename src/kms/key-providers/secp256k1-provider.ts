@@ -1,9 +1,10 @@
 import { IKeyProvider } from '../kms';
 import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 import * as providerHelpers from '../provider-helpers';
-import { bytesToHex } from '../../utils';
+import { base64UrlToBytes, bytesToHex } from '../../utils';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { sha256 } from '@iden3/js-crypto';
+import { ES256KSigner, hexToBytes } from 'did-jwt';
 
 /**
  * Provider for Secp256k1
@@ -66,24 +67,29 @@ export class Sec256k1Provider implements IKeyProvider {
   }
 
   /**
-   * signs prepared payload of size,
-   * with a key id
-   *
-   * @param {KmsKeyId} keyId  - key identifier
-   * @param {Uint8Array} data - data to sign (32 bytes)
-   * @returns Uint8Array signature
+   * Signs the given data using the private key associated with the specified key identifier.
+   * @param keyId - The key identifier to use for signing.
+   * @param data - The data to sign.
+   * @param opts - Signing options, such as the algorithm to use.
+   * @returns A Promise that resolves to the signature as a Uint8Array.
    */
-  /**
-   * signs prepared payload of size,
-   * with a key id
-   * @param {KmsKeyId} keyId  - key identifier
-   * @param {Uint8Array} data - data to sign (32 bytes)
-   * @returns {Promise<Uint8Array>} signature
-   */
-  async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {
+  async sign(
+    keyId: KmsKeyId,
+    data: Uint8Array,
+    opts: { [key: string]: unknown } = { alg: 'ES256K' }
+  ): Promise<Uint8Array> {
     const privateKeyHex = await this.privateKey(keyId);
-    const signature = secp256k1.sign(sha256(data), privateKeyHex);
-    return signature.toCompactRawBytes();
+
+    const signatureBase64 = await ES256KSigner(
+      hexToBytes(privateKeyHex),
+      opts.alg === 'ES256K-R'
+    )(data);
+
+    if (typeof signatureBase64 !== 'string') {
+      throw new Error('signatureBase64 must be a string');
+    }
+
+    return base64UrlToBytes(signatureBase64);
   }
 
   /**
