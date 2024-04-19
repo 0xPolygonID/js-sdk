@@ -43,7 +43,7 @@
     "url": "https://github.com/0xPolygonID/js-sdk.git"
   },
   "author": "",
-  "license": "AGPL-3.0",
+  "license": "MIT or Apache-2.0",
   "bugs": {
     "url": "https://github.com/0xPolygonID/js-sdk/issues"
   },
