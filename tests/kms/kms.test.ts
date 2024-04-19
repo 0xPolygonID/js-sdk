@@ -19,7 +19,7 @@ const testFlow = async (provider: IKeyProvider) => {
   let dataToSign1 = getRandomBytes(32);
   let dataToSign2 = getRandomBytes(32);
   if (provider instanceof BjjProvider) {
-    // because challange should be in the finite field of Constant.Q
+    // because challenge should be in the finite field of Constant.Q
     dataToSign1 = BytesHelper.intToBytes(Constants.Q - 1n);
     dataToSign2 = BytesHelper.intToBytes(Constants.Q - 100n);
   }
