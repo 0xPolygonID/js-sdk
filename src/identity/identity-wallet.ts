@@ -683,12 +683,12 @@ export class IdentityWallet implements IIdentityWallet {
 
     credential.proof = [mtpProof];
 
-    await this._credentialWallet.save(credential);
-
     await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
       rhsUrl: opts.revocationOpts.id,
       onChain: opts.revocationOpts.onChain
     });
+
+    await this._credentialWallet.save(credential);
 
     return {
       did,
