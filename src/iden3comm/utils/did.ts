@@ -1,6 +1,6 @@
 import { SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
-import elliptic from 'elliptic';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
+import { secp256k1 as sec } from '@noble/curves/secp256k1';
 
 import { KmsKeyType } from '../../kms';
 import { base58ToBytes, base64UrlToBytes, bytesToHex, hexToBytes } from '../../utils';
@@ -29,8 +29,6 @@ export const resolveVerificationMethods = (didDocument: DIDDocument): Verificati
   return sortedVerificationMethods;
 };
 
-const secp256k1 = new elliptic.ec('secp256k1');
-
 export const extractPublicKeyBytes = (
   vm: VerificationMethod
 ): { publicKeyBytes: Uint8Array | null; kmsKeyType?: KmsKeyType } => {
@@ -55,15 +53,17 @@ export const extractPublicKeyBytes = (
     vm.publicKeyJwk.x &&
     vm.publicKeyJwk.y
   ) {
+    const [xHex, yHex] = [
+      base64UrlToBytes(vm.publicKeyJwk.x),
+      base64UrlToBytes(vm.publicKeyJwk.y)
+    ].map(bytesToHex);
+    const x = xHex.includes('0x') ? BigInt(xHex) : BigInt(`0x${xHex}`);
+    const y = yHex.includes('0x') ? BigInt(yHex) : BigInt(`0x${yHex}`);
     return {
-      publicKeyBytes: hexToBytes(
-        secp256k1
-          .keyFromPublic({
-            x: bytesToHex(base64UrlToBytes(vm.publicKeyJwk.x)),
-            y: bytesToHex(base64UrlToBytes(vm.publicKeyJwk.y))
-          })
-          .getPublic('hex')
-      ),
+      publicKeyBytes: sec.ProjectivePoint.fromAffine({
+        x,
+        y
+      }).toRawBytes(false),
       kmsKeyType: KmsKeyType.Secp256k1
     };
   }

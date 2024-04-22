@@ -401,9 +401,7 @@ describe('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
-    // console.log(JSON.stringify(authRes.authResponse));
     const tokenStr = authRes.token;
-    // console.log(tokenStr);
     expect(tokenStr).to.be.a('string');
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');
@@ -585,9 +583,7 @@ describe('auth', () => {
     // Restore the mock state storage
     MOCK_STATE_STORAGE.getLatestStateById = previousGetLatestStateById;
 
-    // console.log(JSON.stringify(authRes.authResponse));
     const tokenStr = authRes.token;
-    // console.log(tokenStr);
     expect(tokenStr).to.be.a('string');
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');
@@ -811,9 +807,7 @@ describe('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(didUser, msgBytes);
-    // console.log('authRes', JSON.stringify(authRes.authResponse));
     const tokenStr = authRes.token;
-    // console.log(tokenStr);
     expect(tokenStr).to.be.a('string');
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');
@@ -2056,9 +2050,7 @@ describe('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
-    // console.log(JSON.stringify(authRes.authResponse));
     const tokenStr = authRes.token;
-    // console.log(tokenStr);
     expect(tokenStr).to.be.a('string');
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');

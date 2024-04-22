@@ -4,7 +4,6 @@ import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
 import { MediaType } from '../constants';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
-import { Signer } from 'did-jwt';
 /**
  *  Protocol message type
  */
@@ -50,8 +49,9 @@ export type ZKPPackerParams = PackerParams & {
 
 /**
  *  SignerFn Is function to sign data with a verification method
+ *  @returns Promise of signature bytes;
  */
-export type SignerFn = (vm: VerificationMethod, data: Uint8Array) => Signer;
+export type SignerFn = (vm: VerificationMethod, dataToSign: Uint8Array) => Promise<Uint8Array>;
 
 /**
  *  JWSPackerParams are parameters for JWS packer

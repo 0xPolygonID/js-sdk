@@ -4,46 +4,57 @@ import {
   InMemoryPrivateKeyStore,
   KmsKeyType,
   Sec256k1Provider,
-  Ed25519Provider
+  Ed25519Provider,
+  IKeyProvider,
+  bytesToHex,
+  BjjProvider
 } from '../../src';
 import { getRandomBytes } from '@iden3/js-crypto';
-import { ed25519 } from '@noble/curves/ed25519';
+import { BytesHelper, Constants } from '@iden3/js-iden3-core';
 
-describe('secp256k1 KMS', () => {
-  it('should sec256k1 signatures be equal for the same data and private key', async () => {
-    const keyStore: AbstractPrivateKeyStore = new InMemoryPrivateKeyStore();
-    const secp256k1 = new Sec256k1Provider(KmsKeyType.Secp256k1, keyStore);
-    const seed = getRandomBytes(32);
-    const dataToSign = getRandomBytes(32);
-    const [keyId1, keyId2] = await Promise.all([
-      secp256k1.newPrivateKeyFromSeed(seed),
-      secp256k1.newPrivateKeyFromSeed(seed)
-    ]);
-    const [signature1, signature2] = await Promise.all([
-      secp256k1.sign(keyId1, dataToSign),
-      secp256k1.sign(keyId2, dataToSign)
-    ]);
-    expect(signature1).to.deep.equal(signature2);
-  });
-});
+const testFlow = async (provider: IKeyProvider) => {
+  const seed1 = getRandomBytes(32);
+  const seed2 = getRandomBytes(32);
+  expect(seed1).to.not.deep.equal(seed2);
+  let dataToSign1 = getRandomBytes(32);
+  let dataToSign2 = getRandomBytes(32);
+  if (provider instanceof BjjProvider) {
+    // because challenge should be in the finite field of Constant.Q
+    dataToSign1 = BytesHelper.intToBytes(Constants.Q - 1n);
+    dataToSign2 = BytesHelper.intToBytes(Constants.Q - 100n);
+  }
+  const [keyId1, keyId2, keyId3] = await Promise.all([
+    provider.newPrivateKeyFromSeed(seed1),
+    provider.newPrivateKeyFromSeed(seed2),
+    provider.newPrivateKeyFromSeed(seed1)
+  ]);
+  const [signature1, signature2, signature3] = await Promise.all([
+    provider.sign(keyId1, dataToSign1),
+    provider.sign(keyId2, dataToSign2),
+    provider.sign(keyId3, dataToSign1)
+  ]);
+  const [isPublicKey1Valid, isPublicKey2Valid, isPublicKey3Valid] = await Promise.all([
+    provider.verify(dataToSign1, bytesToHex(signature1), keyId1),
+    provider.verify(dataToSign2, bytesToHex(signature2), keyId2),
+    provider.verify(dataToSign1, bytesToHex(signature3), keyId3)
+  ]);
+  expect(signature1).to.not.deep.equal(signature2);
+  expect(signature1).to.deep.equal(signature3);
+  expect(isPublicKey1Valid).to.be.true;
+  expect(isPublicKey2Valid).to.be.true;
+  expect(isPublicKey3Valid).to.be.true;
+};
 
-describe('ed25519 KMS', () => {
-  it('should ed25519 signatures be valid and equal for the same data and private key', async () => {
+describe('Key store providers', () => {
+  it('should signatures be valid and equal for the same data and private key', async () => {
     const keyStore: AbstractPrivateKeyStore = new InMemoryPrivateKeyStore();
     const ed25519Provider = new Ed25519Provider(KmsKeyType.Ed25519, keyStore);
-    const seed = getRandomBytes(32);
-    const dataToSign = getRandomBytes(32);
-    const [keyId1, keyId2] = await Promise.all([
-      ed25519Provider.newPrivateKeyFromSeed(seed),
-      ed25519Provider.newPrivateKeyFromSeed(seed)
+    const secp256k1Provider = new Sec256k1Provider(KmsKeyType.Secp256k1, keyStore);
+    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, keyStore);
+    await Promise.all([
+      testFlow(bjjProvider),
+      testFlow(ed25519Provider),
+      testFlow(secp256k1Provider)
     ]);
-    const [signature1, signature2] = await Promise.all([
-      ed25519Provider.sign(keyId1, dataToSign),
-      ed25519Provider.sign(keyId2, dataToSign)
-    ]);
-    const publicKey1 = await ed25519Provider.publicKey(keyId1);
-    const isPublicKey1Valid = await ed25519.verify(signature1, dataToSign, publicKey1);
-    expect(signature1).to.deep.equal(signature2);
-    expect(isPublicKey1Valid).to.be.true;
   });
 });

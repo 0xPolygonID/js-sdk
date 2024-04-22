@@ -1,9 +1,10 @@
-import { Hex, PrivateKey } from '@iden3/js-crypto';
+import { Hex, PrivateKey, PublicKey, Signature } from '@iden3/js-crypto';
 import { BytesHelper, checkBigIntInField } from '@iden3/js-iden3-core';
 import { IKeyProvider } from '../kms';
 import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 
 import * as providerHelpers from '../provider-helpers';
+import { hexToBytes } from '../../utils';
 
 /**
  * Provider for Baby Jub Jub keys
@@ -24,6 +25,9 @@ export class BjjProvider implements IKeyProvider {
    * @param {AbstractPrivateKeyStore} keyStore - key store for kms
    */
   constructor(keyType: KmsKeyType, keyStore: AbstractPrivateKeyStore) {
+    if (keyType !== KmsKeyType.BabyJubJub) {
+      throw new Error('Key type must be BabyJubJub');
+    }
     this.keyType = keyType;
     this.keyStore = keyStore;
   }
@@ -87,5 +91,14 @@ export class BjjProvider implements IKeyProvider {
     const privateKeyHex = await this.keyStore.get({ alias: keyId.id });
 
     return new PrivateKey(Hex.decodeString(privateKeyHex));
+  }
+
+  async verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
+    const publicKey = await this.publicKey(keyId);
+
+    return PublicKey.newFromCompressed(hexToBytes(publicKey)).verifyPoseidon(
+      BytesHelper.bytesToInt(message),
+      Signature.newFromCompressed(hexToBytes(signatureHex))
+    );
   }
 }

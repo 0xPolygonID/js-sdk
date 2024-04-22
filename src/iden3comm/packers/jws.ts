@@ -5,6 +5,7 @@ import { keyPath, KMS } from '../../kms/';
 
 import { verifyJWS } from 'did-jwt';
 import { DIDDocument, Resolvable, parse } from 'did-resolver';
+import { bytesToBase64url } from '../../utils/encoding';
 import {
   byteDecoder,
   byteEncoder,
@@ -163,8 +164,8 @@ export class JWSPacker implements IPacker {
     const signingInputBytes = byteEncoder.encode(signingInput);
     let signatureBase64: string;
     if (params.signer) {
-      const signerFn = params.signer(vm, signingInputBytes);
-      signatureBase64 = (await signerFn(signingInput)).toString();
+      const signature = await params.signer(vm, signingInputBytes);
+      signatureBase64 = bytesToBase64url(signature);
     } else {
       if (!publicKeyBytes) {
         throw new Error('No public key found');
@@ -176,10 +177,11 @@ export class JWSPacker implements IPacker {
 
       const signatureBytes = await this._kms.sign(
         { type: kmsKeyType, id: keyPath(kmsKeyType, bytesToHex(publicKeyBytes)) },
-        signingInputBytes
+        signingInputBytes,
+        { alg: params.alg }
       );
 
-      signatureBase64 = byteDecoder.decode(signatureBytes);
+      signatureBase64 = bytesToBase64url(signatureBytes);
     }
 
     return byteEncoder.encode(`${signingInput}.${signatureBase64}`);
