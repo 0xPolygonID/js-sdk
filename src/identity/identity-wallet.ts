@@ -628,11 +628,6 @@ export class IdentityWallet implements IIdentityWallet {
 
     const identity = await this._storage.identity.getIdentity(did.string());
     if (!identity) {
-      await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
-        rhsUrl: opts.revocationOpts.id,
-        onChain: opts.revocationOpts.onChain
-      });
-
       await this._storage.identity.saveIdentity({
         did: did.string(),
         state: currentState,
@@ -689,6 +684,11 @@ export class IdentityWallet implements IIdentityWallet {
     credential.proof = [mtpProof];
 
     await this._credentialWallet.save(credential);
+
+    await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
+      rhsUrl: opts.revocationOpts.id,
+      onChain: opts.revocationOpts.onChain
+    });
 
     return {
       did,
