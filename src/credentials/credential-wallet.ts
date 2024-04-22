@@ -192,7 +192,7 @@ export class CredentialWallet implements ICredentialWallet {
     });
 
     if (!authBJJCredsOfIssuer.length) {
-      throw new Error('no auth credentials found');
+      throw new Error(VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND);
     }
 
     for (let index = 0; index < authBJJCredsOfIssuer.length; index++) {

@@ -626,6 +626,36 @@ export class IdentityWallet implements IIdentityWallet {
       rootOfRoots: ZERO_HASH
     };
 
+    const identity = await this._storage.identity.getIdentity(did.string());
+    if (!identity) {
+      await this._storage.identity.saveIdentity({
+        did: did.string(),
+        state: currentState,
+        isStatePublished: false,
+        isStateGenesis: true
+      });
+    }
+
+    // check whether we have auth credential, if not - create a new one
+    const credentials = await this._credentialWallet.findByQuery({
+      credentialSubject: {
+        x: {
+          $eq: pubKey.p[0].toString()
+        },
+        y: {
+          $eq: pubKey.p[1].toString()
+        }
+      },
+      allowedIssuers: [did.string()]
+    });
+
+    if (credentials.length) {
+      return {
+        did,
+        credential: credentials[0]
+      };
+    }
+
     const credential = await this.createAuthBJJCredential(
       did,
       pubKey,
@@ -656,13 +686,6 @@ export class IdentityWallet implements IIdentityWallet {
     await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
       rhsUrl: opts.revocationOpts.id,
       onChain: opts.revocationOpts.onChain
-    });
-
-    await this._storage.identity.saveIdentity({
-      did: did.string(),
-      state: currentState,
-      isStatePublished: false,
-      isStateGenesis: true
     });
 
     await this._credentialWallet.save(credential);
@@ -1042,7 +1065,7 @@ export class IdentityWallet implements IIdentityWallet {
       }
     }
 
-    throw new Error('no auth credentials found');
+    throw new Error(VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND);
   }
 
   /** {@inheritDoc IIdentityWallet.revokeCredential} */

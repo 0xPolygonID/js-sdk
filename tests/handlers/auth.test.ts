@@ -40,7 +40,8 @@ import {
   Sec256k1Provider,
   StateInfo,
   hexToBytes,
-  NativeProver
+  NativeProver,
+  VerifiableConstants
 } from '../../src';
 import { Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -2223,12 +2224,12 @@ describe('auth', () => {
 
     // check that we don't have auth credentials now
     await expect(idWallet.getActualAuthCredential(issuerDID)).to.rejectedWith(
-      'no auth credentials found'
+      VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND
     );
 
     // check that we can't issue new credential
     await expect(idWallet.issueCredential(issuerDID, claimReq)).to.rejectedWith(
-      'no auth credentials found'
+      VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND
     );
 
     // this should this work because we haven't revoked user keys
@@ -2258,7 +2259,7 @@ describe('auth', () => {
 
     // this should not work because we revoked user keys
     await expect(handleAuthorizationRequest(userDID, authReqBody)).to.rejectedWith(
-      'no auth credentials found'
+      VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND
     );
   });
 });
