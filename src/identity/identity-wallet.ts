@@ -626,6 +626,21 @@ export class IdentityWallet implements IIdentityWallet {
       rootOfRoots: ZERO_HASH
     };
 
+    const identity = await this._storage.identity.getIdentity(did.string());
+    if (!identity) {
+      await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
+        rhsUrl: opts.revocationOpts.id,
+        onChain: opts.revocationOpts.onChain
+      });
+
+      await this._storage.identity.saveIdentity({
+        did: did.string(),
+        state: currentState,
+        isStatePublished: false,
+        isStateGenesis: true
+      });
+    }
+
     // check whether we have auth credential, if not - create a new one
     const credentials = await this._credentialWallet.findByQuery({
       credentialSubject: {
@@ -671,18 +686,6 @@ export class IdentityWallet implements IIdentityWallet {
     });
 
     credential.proof = [mtpProof];
-
-    await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
-      rhsUrl: opts.revocationOpts.id,
-      onChain: opts.revocationOpts.onChain
-    });
-
-    await this._storage.identity.saveIdentity({
-      did: did.string(),
-      state: currentState,
-      isStatePublished: false,
-      isStateGenesis: true
-    });
 
     await this._credentialWallet.save(credential);
 
