@@ -626,32 +626,47 @@ export class IdentityWallet implements IIdentityWallet {
       rootOfRoots: ZERO_HASH
     };
 
-    const credential = await this.createAuthBJJCredential(
-      did,
-      pubKey,
-      authClaim,
-      currentState,
-      opts.revocationOpts
-    );
+    let credential: W3CCredential | undefined;
 
-    const index = authClaim.hIndex();
-    const { proof } = await claimsTree.generateProof(index, ctr);
+    // check whether we have auth credential, if not - create a new one
+    try {
+      credential = (await this.getActualAuthCredential(did)).authCredential;
+    } catch (err) {
+      if ((err as unknown as Error).message !== VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND) {
+        throw err;
+      }
+    }
 
-    const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
-      mtp: proof,
-      issuerData: {
-        id: did,
-        state: {
-          rootOfRoots: oldTreeState.rootOfRoots,
-          revocationTreeRoot: oldTreeState.revocationRoot,
-          claimsTreeRoot: ctr,
-          value: currentState
-        }
-      },
-      coreClaim: authClaim
-    });
+    if (!credential) {
+      credential = await this.createAuthBJJCredential(
+        did,
+        pubKey,
+        authClaim,
+        currentState,
+        opts.revocationOpts
+      );
 
-    credential.proof = [mtpProof];
+      const index = authClaim.hIndex();
+      const { proof } = await claimsTree.generateProof(index, ctr);
+
+      const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
+        mtp: proof,
+        issuerData: {
+          id: did,
+          state: {
+            rootOfRoots: oldTreeState.rootOfRoots,
+            revocationTreeRoot: oldTreeState.revocationRoot,
+            claimsTreeRoot: ctr,
+            value: currentState
+          }
+        },
+        coreClaim: authClaim
+      });
+
+      credential.proof = [mtpProof];
+
+      await this._credentialWallet.save(credential);
+    }
 
     await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
       rhsUrl: opts.revocationOpts.id,
@@ -664,8 +679,6 @@ export class IdentityWallet implements IIdentityWallet {
       isStatePublished: false,
       isStateGenesis: true
     });
-
-    await this._credentialWallet.save(credential);
 
     return {
       did,
@@ -1042,7 +1055,7 @@ export class IdentityWallet implements IIdentityWallet {
       }
     }
 
-    throw new Error('no auth credentials found');
+    throw new Error(VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND);
   }
 
   /** {@inheritDoc IIdentityWallet.revokeCredential} */

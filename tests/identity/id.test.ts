@@ -28,6 +28,7 @@ import {
 } from '../helpers';
 import { expect } from 'chai';
 import { Wallet } from 'ethers';
+import { getRandomBytes } from '@iden3/js-crypto';
 
 describe('identity', () => {
   let credWallet: ICredentialWallet;
@@ -317,5 +318,17 @@ describe('identity', () => {
 
     const afterRevokeProofNRcredential2 = await idWallet.generateNonRevocationMtp(did, credential2);
     expect(afterRevokeProofNRcredential2.proof.existence).to.equal(false);
+  });
+
+  it("restore identity (doesn't create a new auth BJJ credential)", async () => {
+    const seed = getRandomBytes(32);
+    const { did, credential } = await createIdentity(idWallet, { seed });
+
+    // "restore" identity from the same seed
+    const { did: restoredDid, credential: restoredCredential } = await createIdentity(idWallet, {
+      seed
+    });
+    expect(credential).to.be.deep.eq(restoredCredential);
+    expect(did.string()).to.be.eq(restoredDid.string());
   });
 });
