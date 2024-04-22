@@ -626,47 +626,51 @@ export class IdentityWallet implements IIdentityWallet {
       rootOfRoots: ZERO_HASH
     };
 
-    let credential: W3CCredential | undefined;
-
     // check whether we have auth credential, if not - create a new one
-    try {
-      credential = (await this.getActualAuthCredential(did)).authCredential;
-    } catch (err) {
-      if ((err as unknown as Error).message !== VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND) {
-        throw err;
-      }
-    }
-
-    if (!credential) {
-      credential = await this.createAuthBJJCredential(
-        did,
-        pubKey,
-        authClaim,
-        currentState,
-        opts.revocationOpts
-      );
-
-      const index = authClaim.hIndex();
-      const { proof } = await claimsTree.generateProof(index, ctr);
-
-      const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
-        mtp: proof,
-        issuerData: {
-          id: did,
-          state: {
-            rootOfRoots: oldTreeState.rootOfRoots,
-            revocationTreeRoot: oldTreeState.revocationRoot,
-            claimsTreeRoot: ctr,
-            value: currentState
-          }
+    const credentials = await this._credentialWallet.findByQuery({
+      credentialSubject: {
+        x: {
+          $eq: pubKey.p[0].toString()
         },
-        coreClaim: authClaim
-      });
+        y: {
+          $eq: pubKey.p[1].toString()
+        }
+      }
+    });
 
-      credential.proof = [mtpProof];
-
-      await this._credentialWallet.save(credential);
+    if (credentials.length) {
+      return {
+        did,
+        credential: credentials[0]
+      };
     }
+
+    const credential = await this.createAuthBJJCredential(
+      did,
+      pubKey,
+      authClaim,
+      currentState,
+      opts.revocationOpts
+    );
+
+    const index = authClaim.hIndex();
+    const { proof } = await claimsTree.generateProof(index, ctr);
+
+    const mtpProof: Iden3SparseMerkleTreeProof = new Iden3SparseMerkleTreeProof({
+      mtp: proof,
+      issuerData: {
+        id: did,
+        state: {
+          rootOfRoots: oldTreeState.rootOfRoots,
+          revocationTreeRoot: oldTreeState.revocationRoot,
+          claimsTreeRoot: ctr,
+          value: currentState
+        }
+      },
+      coreClaim: authClaim
+    });
+
+    credential.proof = [mtpProof];
 
     await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
       rhsUrl: opts.revocationOpts.id,
@@ -679,6 +683,8 @@ export class IdentityWallet implements IIdentityWallet {
       isStatePublished: false,
       isStateGenesis: true
     });
+
+    await this._credentialWallet.save(credential);
 
     return {
       did,
