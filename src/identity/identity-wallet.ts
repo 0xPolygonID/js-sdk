@@ -650,7 +650,8 @@ export class IdentityWallet implements IIdentityWallet {
         y: {
           $eq: pubKey.p[1].toString()
         }
-      }
+      },
+      allowedIssuers: [did.string()]
     });
 
     if (credentials.length) {
