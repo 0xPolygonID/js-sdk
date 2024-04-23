@@ -213,8 +213,17 @@ export const parseQueryMetadata = async (
       );
     }
 
+    if (
+      (propertyQuery.operator === Operators.NOOP || propertyQuery.operator === Operators.SD) &&
+      propertyQuery.operatorValue
+    ) {
+      throw new Error(`operator value should be undefined for ${propertyQuery.operator} operator`);
+    }
+
     query.values =
-      propertyQuery.operator === Operators.EXISTS
+      propertyQuery.operator === Operators.NOOP || propertyQuery.operator === Operators.SD
+        ? []
+        : propertyQuery.operator === Operators.EXISTS
         ? transformExistsValue(propertyQuery.operatorValue)
         : await transformQueryValueToBigInts(propertyQuery.operatorValue, query.datatype);
   }
