@@ -51,7 +51,7 @@ describe('parseQueryMetadata', () => {
           ipfsNodeURL
         }
       )
-    ).to.be.rejectedWith('operatorValue should be undefined for 0 operator');
+    ).to.be.rejectedWith('operator value should be undefined for 0 operator');
 
     await expect(
       parseQueryMetadata(
@@ -66,6 +66,6 @@ describe('parseQueryMetadata', () => {
           ipfsNodeURL
         }
       )
-    ).to.be.rejectedWith('operatorValue should be undefined for 16 operator');
+    ).to.be.rejectedWith('operator value should be undefined for 16 operator');
   });
 });
