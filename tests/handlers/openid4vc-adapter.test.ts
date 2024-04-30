@@ -277,6 +277,8 @@ describe('openid4vc', () => {
     vp['verifiableCredential']['zkProof'] = zkpCredProof;
     vp['@context'] = [...vp['@context'], zkProofContext];
     vp['verifiableCredential']['@context'] = [...vp['@context'], zkProofContext];
+    vp['@type'] = [vp['@type'], 'Iden3ZeroKnowledgeProof'];
+    vp['verifiableCredential']['@type'] = [...vp['verifiableCredential']['@type'], 'Iden3ZeroKnowledgeProof'];
 
     const presentationSubmission: PresentationSubmission = {
       id: 'Presentation submission example',
