@@ -262,7 +262,8 @@ describe('openid4vc', () => {
 
     const tokenDecoded = decodeBase64url(authRes.token.split('.')[2]);
     const { proof: authProof, pub_signals: authPubSginals } = JSON.parse(tokenDecoded);
-
+    const zkProofContext =
+      'https://raw.githubusercontent.com/iden3/claim-schema-vocab/cbf810ea5620054be44efeb29e5bd41e030f7815/core/jsonld/Iden3ZeroKnowledgeProof.jsonld';
     const authZkpProof = {
       circuit_id: CircuitId.AuthV2,
       pi_a: authProof.pi_a,
@@ -274,8 +275,8 @@ describe('openid4vc', () => {
     };
     vp['zkProof'] = authZkpProof;
     vp['verifiableCredential']['zkProof'] = zkpCredProof;
-    vp['@context'] = [...vp['@context'], '<zkProofContext>'];
-    vp['verifiableCredential']['@context'] = [...vp['@context'], '<zkProofContext>'];
+    vp['@context'] = [...vp['@context'], zkProofContext];
+    vp['verifiableCredential']['@context'] = [...vp['@context'], zkProofContext];
 
     const presentationSubmission: PresentationSubmission = {
       id: 'Presentation submission example',
