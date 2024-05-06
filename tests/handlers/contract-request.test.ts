@@ -55,7 +55,7 @@ import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, JsonRpcProvider, Signer } from 'ethers';
-import { RPC_URL } from '../helpers';
+import { RHS_URL, RPC_URL } from '../helpers';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -306,7 +306,7 @@ describe('contract-request', () => {
   });
 
   // SKIPPED : integration test
-  it.skip('contract request flow - integration test', async () => {
+  it.only('contract request flow - integration test', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = rpcUrl;
     stateEthConfig.contractAddress = '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124';
@@ -373,12 +373,12 @@ describe('contract-request', () => {
 
     const claimReq: CredentialRequest = {
       credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
-      type: 'KYCAgeCredential',
+        'https://gist.githubusercontent.com/ilya-korotya/e10cd79a8cc26ab6e40400a11838617e/raw/575edc33d485e2a4c806baad97e21117f3c90a9f/non-merklized-non-zero-balance.json',
+      type: 'Balance',
       credentialSubject: {
         id: userDID.string(),
-        birthday: 19960424,
-        documentType: 99
+        address: '0x12323',
+        balance: '3'
       },
       expiration: 2793526400,
       revocationOpts: {
@@ -388,26 +388,48 @@ describe('contract-request', () => {
     };
     const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
 
+
     await credWallet.save(issuerCred);
 
+    const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL);
+
+    const ethSigner = new ethers.Wallet(walletKey, dataStorage.states.getRpcProvider());
+
+    const txId = await proofService.transitState(
+      issuerDID,
+      res.oldTreeState,
+      true,
+      dataStorage.states,
+      ethSigner
+    );
+
+    const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
+      issuerDID,
+      res.credentials,
+      txId
+    );
+
+    await credWallet.saveAll(credsWithIden3MTPProof);
+
     const proofReq: ZeroKnowledgeProofRequest = {
-      id: 200,
-      circuitId: CircuitId.AtomicQuerySigV2OnChain,
+      id: 2,
+      circuitId: CircuitId.AtomicQueryMTPV2OnChain,
       optional: false,
       query: {
         allowedIssuers: ['*'],
         type: claimReq.type,
         context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          'https://gist.githubusercontent.com/ilya-korotya/660496c859f8d31a7d2a92ca5e970967/raw/6b5fc14fe630c17bfa52e05e08fdc8394c5ea0ce/non-merklized-non-zero-balance.jsonld',
         credentialSubject: {
-          birthday: {
-            $lt: 20020101
+          balance: {
+            $gt: 1
           }
         }
       }
     };
 
-    const contractAddress = '0x2b23e5cF70D133fFaA7D8ba61E1bAC4637253880';
+    const contractAddress = '0xf702DB17F987ed751f360b3A54F5d9dEFE2B06F9';
     const conf = defaultEthConnectionConfig;
     conf.contractAddress = contractAddress;
     conf.url = rpcUrl;
@@ -437,7 +459,6 @@ describe('contract-request', () => {
       body: ciRequestBody
     };
 
-    const ethSigner = new ethers.Wallet(walletKey);
 
     const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
 
