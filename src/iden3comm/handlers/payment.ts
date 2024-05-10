@@ -109,12 +109,7 @@ export interface IPaymentHandler {
       payment: PaymentMessage;
     }>`
      */
-  handlePayment(
-    payment: PaymentMessage,
-    opts?: PaymentHandlerOptions
-  ): Promise<{
-    payment: PaymentMessage;
-  }>;
+  handlePayment(payment: PaymentMessage, opts: PaymentHandlerOptions): Promise<void>;
 }
 
 /** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
@@ -124,12 +119,14 @@ export type PaymentTxData = ContractInvokeTransactionData & {
 
 /** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
 export type PaymentRequestMessageHandlerOptions = {
-  paymentHandler: (data: PaymentRequestDataInfo) => Promise<string>;
+  txParams: unknown[];
+  paymentHandler: (data: PaymentRequestDataInfo, txParams: unknown[]) => Promise<string>;
 };
 
 /** @beta PaymentHandlerOptions represents payment handler options */
 export type PaymentHandlerOptions = {
-  paymentRequest?: PaymentRequestMessage;
+  paymentRequest: PaymentRequestMessage;
+  checkPaymentHandler: (txId: string, data: PaymentRequestDataInfo) => Promise<void>;
 };
 
 /** @beta PaymentHandlerParams represents payment handler params */
@@ -218,7 +215,7 @@ export class PaymentHandler
         throw new Error(`failed request. not supported '${paymentReq.data.type}' payment type `);
       }
 
-      const txID = await ctx.paymentHandler(paymentReq.data);
+      const txID = await ctx.paymentHandler(paymentReq.data, ctx.txParams);
       payments.push({
         id: paymentReq.data.id,
         type: PaymentType.Iden3PaymentCryptoV1,
@@ -261,6 +258,8 @@ export class PaymentHandler
             provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
           };
 
+    // send to agent, return void
+
     return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
       senderDID,
       ...packerOpts
@@ -270,12 +269,24 @@ export class PaymentHandler
   /**
    * @inheritdoc IPaymentHandler#handlePayment
    */
-  async handlePayment(payment: PaymentMessage, opts?: PaymentHandlerOptions) {
-    if (opts?.paymentRequest && opts.paymentRequest.from !== payment.to) {
+  async handlePayment(payment: PaymentMessage, opts: PaymentHandlerOptions) {
+    if (opts.paymentRequest && opts.paymentRequest.from !== payment.to) {
       throw new Error(
         `sender of the request is not a target of response - expected ${opts.paymentRequest.from}, given ${payment.to}`
       );
     }
-    return { payment };
+
+    if (!payment.body?.payments.length) {
+      throw new Error(`failed request. empty 'payments' field in body`);
+    }
+
+    for (let i = 0; i < payment.body.payments.length; i++) {
+      const p = payment.body?.payments[i];
+      const paymentRequestData = opts.paymentRequest.body?.payments.find((r) => r.data.id === p.id);
+      if (!paymentRequestData) {
+        throw new Error(`can't find payment request for payment id ${p.id}`);
+      }
+      await opts.checkPaymentHandler(p.paymentData.txID, paymentRequestData.data);
+    }
   }
 }

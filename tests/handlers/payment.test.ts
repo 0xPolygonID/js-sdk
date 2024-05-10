@@ -50,56 +50,69 @@ describe('payment-request handler', () => {
   const packageManager: IPackageManager = new PackageManager();
   packageManager.registerPackers([new PlainPacker()]);
 
-  const paymentIntegrationHandlerFunc = async (data: PaymentRequestDataInfo): Promise<string> => {
-    const counterContractAbi = [
-      {
-        inputs: [
-          {
-            internalType: 'string',
-            name: '',
-            type: 'string'
-          }
-        ],
-        name: 'Payments',
-        outputs: [
-          {
-            internalType: 'string',
-            name: 'issuerIdHash',
-            type: 'string'
-          }
-        ],
-        stateMutability: 'view',
-        type: 'function'
-      },
-      {
-        inputs: [
-          {
-            internalType: 'string',
-            name: 'sessionIdHash',
-            type: 'string'
-          },
-          {
-            internalType: 'string',
-            name: 'issuerIdHash',
-            type: 'string'
-          }
-        ],
-        name: 'pay',
-        outputs: [],
-        stateMutability: 'payable',
-        type: 'function'
-      }
-    ];
+  const payContractAbi = [
+    {
+      inputs: [
+        {
+          internalType: 'string',
+          name: '',
+          type: 'string'
+        }
+      ],
+      name: 'Payments',
+      outputs: [
+        {
+          internalType: 'string',
+          name: 'issuerIdHash',
+          type: 'string'
+        }
+      ],
+      stateMutability: 'view',
+      type: 'function'
+    },
+    {
+      inputs: [
+        {
+          internalType: 'string',
+          name: 'sessionIdHash',
+          type: 'string'
+        },
+        {
+          internalType: 'string',
+          name: 'issuerIdHash',
+          type: 'string'
+        }
+      ],
+      name: 'pay',
+      outputs: [],
+      stateMutability: 'payable',
+      type: 'function'
+    }
+  ];
+
+  const paymentIntegrationHandlerFunc = async (
+    data: PaymentRequestDataInfo,
+    txParams: unknown[]
+  ): Promise<string> => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const payContract = new Contract(data.address, counterContractAbi, ethSigner);
+    const payContract = new Contract(data.address, payContractAbi, ethSigner);
     const options = { value: data.amount };
-    const txData = await payContract.pay(
-      ethers.hashMessage('<sessionidhere>'),
-      ethers.hashMessage('<issuer_did_here>'),
-      options
-    );
+    const txData = await payContract.pay(...txParams, options);
     return txData.hash;
+  };
+
+  const paymentCheckIntegrationHandlerFunc = async (
+    txId: string,
+    data: PaymentRequestDataInfo
+  ): Promise<void> => {
+    const rpcProvider = new JsonRpcProvider(RPC_URL);
+
+    const tx = await rpcProvider.getTransaction(txId);
+
+    if (tx?.value !== BigInt(data.amount)) {
+      throw new Error('invalid value');
+    }
   };
 
   const paymentReqInfo: PaymentRequestInfo = {
@@ -173,7 +186,8 @@ describe('payment-request handler', () => {
       {}
     );
     const paymentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentUnitHandlerFunc
+      paymentHandler: paymentUnitHandlerFunc,
+      txParams: ['<session-id-hash>', '<issuer-did-hash>']
     });
     const { unpackedMessage: paymentMessage } = await packageManager.unpack(paymentMessageBytes);
 
@@ -184,6 +198,27 @@ describe('payment-request handler', () => {
     expect((paymentMessage as PaymentMessage).body?.payments[0].paymentData.txID).to.be.not.empty;
   });
 
+  it('payment handler', async () => {
+    const paymentRequest = createPaymentRequest(userDID, issuerDID, [paymentReqInfo]);
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(paymentRequest)),
+      {}
+    );
+    const paymentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
+      paymentHandler: paymentUnitHandlerFunc,
+      txParams: ['<session-id-hash>', '<issuer-did-hash>']
+    });
+    const { unpackedMessage: paymentMessage } = await packageManager.unpack(paymentMessageBytes);
+
+    paymentHandler.handlePayment(paymentMessage as PaymentMessage, {
+      paymentRequest,
+      checkPaymentHandler: async () => {
+        Promise.resolve();
+      }
+    });
+  });
+
   it.skip('payment-request handler (integration test)', async () => {
     const paymentRequest = createPaymentRequest(userDID, issuerDID, [paymentReqInfo]);
     const msgBytesRequest = await packageManager.pack(
@@ -192,7 +227,8 @@ describe('payment-request handler', () => {
       {}
     );
     const paymentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentIntegrationHandlerFunc
+      paymentHandler: paymentIntegrationHandlerFunc,
+      txParams: ['<session-id-hash>', '<issuer-did-hash>']
     });
     const { unpackedMessage: paymentMessage } = await packageManager.unpack(paymentMessageBytes);
 
@@ -201,5 +237,24 @@ describe('payment-request handler', () => {
     );
 
     expect((paymentMessage as PaymentMessage).body?.payments[0].paymentData.txID).to.be.not.empty;
+  });
+
+  it.skip('payment handler (integration test)', async () => {
+    const paymentRequest = createPaymentRequest(userDID, issuerDID, [paymentReqInfo]);
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(paymentRequest)),
+      {}
+    );
+    const paymentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
+      paymentHandler: paymentIntegrationHandlerFunc,
+      txParams: ['<session-id-hash>', '<issuer-did-hash>']
+    });
+    const { unpackedMessage: paymentMessage } = await packageManager.unpack(paymentMessageBytes);
+
+    paymentHandler.handlePayment(paymentMessage as PaymentMessage, {
+      paymentRequest,
+      checkPaymentHandler: paymentCheckIntegrationHandlerFunc
+    });
   });
 });
