@@ -107,9 +107,7 @@ describe('payment-request handler', () => {
     data: PaymentRequestDataInfo
   ): Promise<void> => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
-
     const tx = await rpcProvider.getTransaction(txId);
-
     if (tx?.value !== BigInt(data.amount)) {
       throw new Error('invalid value');
     }
@@ -135,7 +133,7 @@ describe('payment-request handler', () => {
     description: 'payment-request integration test'
   };
 
-  const paymentUnitHandlerFunc = async (): Promise<string> => {
+  const paymentHandlerFuncMock = async (): Promise<string> => {
     return Promise.resolve('0x312312334');
   };
 
@@ -186,7 +184,7 @@ describe('payment-request handler', () => {
       {}
     );
     const paymentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentUnitHandlerFunc,
+      paymentHandler: paymentHandlerFuncMock,
       txParams: ['<session-id-hash>', '<issuer-did-hash>']
     });
     const { unpackedMessage: paymentMessage } = await packageManager.unpack(paymentMessageBytes);
@@ -206,7 +204,7 @@ describe('payment-request handler', () => {
       {}
     );
     const paymentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentUnitHandlerFunc,
+      paymentHandler: paymentHandlerFuncMock,
       txParams: ['<session-id-hash>', '<issuer-did-hash>']
     });
     const { unpackedMessage: paymentMessage } = await packageManager.unpack(paymentMessageBytes);
