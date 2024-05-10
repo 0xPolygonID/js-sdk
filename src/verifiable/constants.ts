@@ -110,3 +110,30 @@ export enum SubjectPosition {
 export enum RefreshServiceType {
   Iden3RefreshService2023 = 'Iden3RefreshService2023'
 }
+
+/**
+ * PaymentRequestType type for payment requests
+ *
+ * @enum {string}
+ */
+export enum PaymentRequestType {
+  PaymentRequest = 'PaymentRequest'
+}
+
+/**
+ * PaymentRequestDataType type for payment requests
+ *
+ * @enum {string}
+ */
+export enum PaymentRequestDataType {
+  Iden3PaymentRequestCryptoV1 = 'Iden3PaymentRequestCryptoV1'
+}
+
+/**
+ * PaymentType type for payment responses
+ *
+ * @enum {string}
+ */
+export enum PaymentType {
+  Iden3PaymentCryptoV1 = 'Iden3PaymentCryptoV1'
+}
