@@ -21,12 +21,14 @@ import { PaymentRequestDataType, PaymentRequestType, PaymentType } from '../../v
  * createPaymentRequest is a function to create protocol payment-request message
  * @param {DID} sender - sender did
  * @param {DID} receiver - receiver did
+ * @param {string} agent - agent URL
  * @param {PaymentRequestInfo[]} payments - payments
  * @returns `PaymentRequestMessage`
  */
 export function createPaymentRequest(
   sender: DID,
   receiver: DID,
+  agent: string,
   payments: PaymentRequestInfo[]
 ): PaymentRequestMessage {
   const uuidv4 = uuid.v4();
@@ -38,6 +40,7 @@ export function createPaymentRequest(
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE,
     body: {
+      agent,
       payments
     }
   };
@@ -196,7 +199,7 @@ export class PaymentHandler
     const senderDID = DID.parse(paymentRequest.from);
     const receiverDID = DID.parse(paymentRequest.to);
 
-    const agentGroups: { agentURL: string; payments: PaymentInfo[] }[] = [];
+    const payments: PaymentInfo[] = [];
     for (let i = 0; i < paymentRequest.body.payments.length; i++) {
       const paymentReq = paymentRequest.body.payments[i];
       if (paymentReq.type !== PaymentRequestType.PaymentRequest) {
@@ -208,26 +211,17 @@ export class PaymentHandler
       }
 
       const txID = await ctx.paymentHandler(paymentReq.data, ctx.txParams);
-      const paymentInfo = {
+
+      payments.push({
         id: paymentReq.data.id,
         type: PaymentType.Iden3PaymentCryptoV1,
         paymentData: {
           txID
         }
-      };
-      const paymentGroup = agentGroups.find((a) => a.agentURL === paymentReq.agent);
-      if (paymentGroup) {
-        paymentGroup.payments.push(paymentInfo);
-      } else {
-        agentGroups.push({ agentURL: paymentReq.agent, payments: [paymentInfo] });
-      }
+      });
     }
 
-    if (agentGroups.length > 1) {
-      throw new Error(`all agent urls in payment objects should match`);
-    }
-
-    const paymentMessage = createPayment(receiverDID, senderDID, agentGroups[0].payments);
+    const paymentMessage = createPayment(receiverDID, senderDID, payments);
     const responseEncoded = byteEncoder.encode(JSON.stringify(paymentMessage));
     const packerOpts =
       this._params.packerParams.mediaType === MediaType.SignedMessage
@@ -244,7 +238,7 @@ export class PaymentHandler
       }
     );
 
-    const agentResult = await fetch(agentGroups[0].agentURL, {
+    const agentResult = await fetch(paymentRequest.body.agent, {
       method: 'POST',
       body: response,
       headers: {

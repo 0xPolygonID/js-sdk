@@ -8,6 +8,7 @@ export type PaymentRequestMessage = BasicMessage & {
 
 /** @beta PaymentRequestMessageBody is struct the represents body for payment-request */
 export type PaymentRequestMessageBody = {
+  agent: string;
   payments: PaymentRequestInfo[];
 };
 
@@ -19,7 +20,6 @@ export type PaymentRequestInfo = {
   }[];
   type: PaymentRequestType;
   data: PaymentRequestDataInfo;
-  agent: string;
   expiration: number;
   description: string;
 };

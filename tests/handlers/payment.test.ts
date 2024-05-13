@@ -117,7 +117,7 @@ describe('payment-request handler', () => {
       throw new Error('invalid value');
     }
   };
-
+  const agent = 'https://agent-url.com';
   const paymentReqInfo: PaymentRequestInfo = {
     credentials: [
       {
@@ -133,7 +133,6 @@ describe('payment-request handler', () => {
       chainID: 80002,
       address: '0x2C2007d72f533FfD409F0D9f515983e95bF14992'
     },
-    agent: 'https://agent-url.com',
     expiration: 2125558127,
     description: 'payment-request integration test'
   };
@@ -190,7 +189,7 @@ describe('payment-request handler', () => {
   });
 
   it('payment-request handler test', async () => {
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, [paymentReqInfo]);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
@@ -208,7 +207,7 @@ describe('payment-request handler', () => {
   });
 
   it('payment handler', async () => {
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, [paymentReqInfo]);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
     const payment = createPayment(userDID, issuerDID, [
       {
         id: paymentRequest.body?.payments[0].data.id || 0,
@@ -228,7 +227,7 @@ describe('payment-request handler', () => {
   });
 
   it.skip('payment-request handler (integration test)', async () => {
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, [paymentReqInfo]);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
@@ -246,7 +245,7 @@ describe('payment-request handler', () => {
   });
 
   it.skip('payment handler (integration test)', async () => {
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, [paymentReqInfo]);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
     const payment = createPayment(userDID, issuerDID, [
       {
         id: paymentRequest.body?.payments[0].data.id || 0,
