@@ -116,7 +116,7 @@ export type PaymentRequestMessageHandlerOptions = {
 /** @beta PaymentHandlerOptions represents payment handler options */
 export type PaymentHandlerOptions = {
   paymentRequest: PaymentRequestMessage;
-  checkPaymentHandler: (txId: string, data: PaymentRequestDataInfo) => Promise<void>;
+  paymentValidationHandler: (txId: string, data: PaymentRequestDataInfo) => Promise<void>;
 };
 
 /** @beta PaymentHandlerParams represents payment handler params */
@@ -295,10 +295,10 @@ export class PaymentHandler
       if (!paymentRequestData) {
         throw new Error(`can't find payment request for payment id ${p.id}`);
       }
-      if (!opts.checkPaymentHandler) {
-        throw new Error(`please provide check payment handler in options`);
+      if (!opts.paymentValidationHandler) {
+        throw new Error(`please provide payment validation handler in options`);
       }
-      await opts.checkPaymentHandler(p.paymentData.txId, paymentRequestData.data);
+      await opts.paymentValidationHandler(p.paymentData.txId, paymentRequestData.data);
     }
   }
 

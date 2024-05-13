@@ -107,7 +107,7 @@ describe('payment-request handler', () => {
       return txData.hash;
     };
 
-  const paymentCheckIntegrationHandlerFunc = async (
+  const paymentValidationIntegrationHandlerFunc = async (
     txId: string,
     data: PaymentRequestDataInfo
   ): Promise<void> => {
@@ -237,7 +237,7 @@ describe('payment-request handler', () => {
 
     await paymentHandler.handlePayment(payment, {
       paymentRequest,
-      checkPaymentHandler: async () => {
+      paymentValidationHandler: async () => {
         Promise.resolve();
       }
     });
@@ -277,7 +277,7 @@ describe('payment-request handler', () => {
 
     await paymentHandler.handlePayment(payment, {
       paymentRequest,
-      checkPaymentHandler: paymentCheckIntegrationHandlerFunc
+      paymentValidationHandler: paymentValidationIntegrationHandlerFunc
     });
   });
 });
