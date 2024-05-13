@@ -12,7 +12,10 @@ import {
   PackageManager,
   PaymentRequestType,
   PaymentRequestDataType,
-  byteEncoder
+  byteEncoder,
+  PaymentType,
+  BasicMessage,
+  createProposal
 } from '../../src';
 
 import {
@@ -29,24 +32,26 @@ import {
 
 import { expect } from 'chai';
 import path from 'path';
-import { MediaType } from '../../src/iden3comm/constants';
+import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { DID } from '@iden3/js-iden3-core';
 import {
+  createPayment,
   createPaymentRequest,
   IPaymentHandler,
   PaymentHandler
 } from '../../src/iden3comm/handlers/payment';
 import {
-  PaymentMessage,
   PaymentRequestDataInfo,
   PaymentRequestInfo
 } from '../../src/iden3comm/types/protocol/payment';
 import { Contract, ethers, JsonRpcProvider } from 'ethers';
+import fetchMock from '@gr2m/fetch-mock';
 
 describe('payment-request handler', () => {
   let packageMgr: IPackageManager;
   let paymentHandler: IPaymentHandler;
   let userDID, issuerDID: DID;
+  let agentMessageResponse: BasicMessage;
   const packageManager: IPackageManager = new PackageManager();
   packageManager.registerPackers([new PlainPacker()]);
 
@@ -128,7 +133,7 @@ describe('payment-request handler', () => {
       chainID: 80002,
       address: '0x2C2007d72f533FfD409F0D9f515983e95bF14992'
     },
-    agent: 'https://issuer.com',
+    agent: 'https://agent-url.com',
     expiration: 2125558127,
     description: 'payment-request integration test'
   };
@@ -136,6 +141,10 @@ describe('payment-request handler', () => {
   const paymentHandlerFuncMock = async (): Promise<string> => {
     return Promise.resolve('0x312312334');
   };
+
+  afterEach(() => {
+    fetchMock.restore();
+  });
 
   beforeEach(async () => {
     const kms = registerKeyProvidersInMemoryKMS();
@@ -174,42 +183,43 @@ describe('payment-request handler', () => {
     });
 
     issuerDID = issuerIdentity.did;
+
+    agentMessageResponse = createProposal(issuerDID, userDID, []);
+    fetchMock.spy();
+    fetchMock.post('https://agent-url.com', agentMessageResponse);
   });
 
   it('payment-request handler test', async () => {
-    const paymentRequest = createPaymentRequest(userDID, issuerDID, [paymentReqInfo]);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, [paymentReqInfo]);
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
     );
-    const paymentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
+    const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentHandlerFuncMock,
       txParams: ['<session-id-hash>', '<issuer-did-hash>']
     });
-    const { unpackedMessage: paymentMessage } = await packageManager.unpack(paymentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
 
-    expect((paymentMessage as PaymentMessage).body?.payments[0].id).to.be.eq(
-      paymentReqInfo.data.id
+    expect((agentMessage as BasicMessage).type).to.be.eq(
+      PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
     );
-
-    expect((paymentMessage as PaymentMessage).body?.payments[0].paymentData.txID).to.be.not.empty;
   });
 
   it('payment handler', async () => {
-    const paymentRequest = createPaymentRequest(userDID, issuerDID, [paymentReqInfo]);
-    const msgBytesRequest = await packageManager.pack(
-      MediaType.PlainMessage,
-      byteEncoder.encode(JSON.stringify(paymentRequest)),
-      {}
-    );
-    const paymentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentHandlerFuncMock,
-      txParams: ['<session-id-hash>', '<issuer-did-hash>']
-    });
-    const { unpackedMessage: paymentMessage } = await packageManager.unpack(paymentMessageBytes);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, [paymentReqInfo]);
+    const payment = createPayment(userDID, issuerDID, [
+      {
+        id: paymentRequest.body?.payments[0].data.id || 0,
+        type: PaymentType.Iden3PaymentCryptoV1,
+        paymentData: {
+          txID: '0x312312334'
+        }
+      }
+    ]);
 
-    paymentHandler.handlePayment(paymentMessage as PaymentMessage, {
+    await paymentHandler.handlePayment(payment, {
       paymentRequest,
       checkPaymentHandler: async () => {
         Promise.resolve();
@@ -218,39 +228,36 @@ describe('payment-request handler', () => {
   });
 
   it.skip('payment-request handler (integration test)', async () => {
-    const paymentRequest = createPaymentRequest(userDID, issuerDID, [paymentReqInfo]);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, [paymentReqInfo]);
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
     );
-    const paymentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
+    const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc,
       txParams: ['<session-id-hash>', '<issuer-did-hash>']
     });
-    const { unpackedMessage: paymentMessage } = await packageManager.unpack(paymentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
 
-    expect((paymentMessage as PaymentMessage).body?.payments[0].id).to.be.eq(
-      paymentReqInfo.data.id
+    expect((agentMessage as BasicMessage).type).to.be.eq(
+      PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
     );
-
-    expect((paymentMessage as PaymentMessage).body?.payments[0].paymentData.txID).to.be.not.empty;
   });
 
   it.skip('payment handler (integration test)', async () => {
-    const paymentRequest = createPaymentRequest(userDID, issuerDID, [paymentReqInfo]);
-    const msgBytesRequest = await packageManager.pack(
-      MediaType.PlainMessage,
-      byteEncoder.encode(JSON.stringify(paymentRequest)),
-      {}
-    );
-    const paymentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentIntegrationHandlerFunc,
-      txParams: ['<session-id-hash>', '<issuer-did-hash>']
-    });
-    const { unpackedMessage: paymentMessage } = await packageManager.unpack(paymentMessageBytes);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, [paymentReqInfo]);
+    const payment = createPayment(userDID, issuerDID, [
+      {
+        id: paymentRequest.body?.payments[0].data.id || 0,
+        type: PaymentType.Iden3PaymentCryptoV1,
+        paymentData: {
+          txID: '0xe9bea8e7adfe1092a8a4ca2cd75f4d21cc54b9b7a31bd8374b558d11b58a6a1a'
+        }
+      }
+    ]);
 
-    paymentHandler.handlePayment(paymentMessage as PaymentMessage, {
+    await paymentHandler.handlePayment(payment, {
       paymentRequest,
       checkPaymentHandler: paymentCheckIntegrationHandlerFunc
     });

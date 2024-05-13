@@ -1,11 +1,6 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
-import {
-  BasicMessage,
-  ContractInvokeTransactionData,
-  IPackageManager,
-  PackerParams
-} from '../types';
+import { BasicMessage, IPackageManager, PackerParams } from '../types';
 
 import { DID } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
@@ -26,7 +21,7 @@ import { PaymentRequestDataType, PaymentRequestType, PaymentType } from '../../v
  * createPaymentRequest is a function to create protocol payment-request message
  * @param {DID} sender - sender did
  * @param {DID} receiver - receiver did
- * @param {PaymentRequestCreationOptions} opts - creation options
+ * @param {PaymentRequestInfo[]} payments - payments
  * @returns `PaymentRequestMessage`
  */
 export function createPaymentRequest(
@@ -93,7 +88,7 @@ export interface IPaymentHandler {
    * handle payment-request
    * @param {Uint8Array} request - raw byte message
    * @param {PaymentRequestMessageHandlerOptions} opts - handler options
-   * @returns {Promise<Uint8Array>}` - payment message
+   * @returns {Promise<Uint8Array>} - payment message
    */
   handlePaymentRequest(
     request: Uint8Array,
@@ -101,21 +96,14 @@ export interface IPaymentHandler {
   ): Promise<Uint8Array>;
 
   /**
-     * @beta
-     * handle payment protocol message
-     * @param {PaymentMessage} payment  - payment message
-     * @param {PaymentHandlerOptions} opts - options
-     * @returns `Promise<{
-      payment: PaymentMessage;
-    }>`
-     */
+   * @beta
+   * handle payment protocol message
+   * @param {PaymentMessage} payment  - payment message
+   * @param {PaymentHandlerOptions} opts - options
+   * @returns `Promise<void>`
+   */
   handlePayment(payment: PaymentMessage, opts: PaymentHandlerOptions): Promise<void>;
 }
-
-/** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
-export type PaymentTxData = ContractInvokeTransactionData & {
-  amount: bigint;
-};
 
 /** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
 export type PaymentRequestMessageHandlerOptions = {
@@ -161,14 +149,17 @@ export class PaymentHandler
 
   public async handle(
     message: BasicMessage,
-    context: PaymentRequestMessageHandlerOptions
+    context: PaymentRequestMessageHandlerOptions | PaymentHandlerOptions
   ): Promise<BasicMessage | null> {
     switch (message.type) {
       case PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE:
         return (await this.handlePaymentRequestMessage(
-          message as unknown as PaymentRequestMessage,
-          context
+          message as PaymentRequestMessage,
+          context as PaymentRequestMessageHandlerOptions
         )) as BasicMessage;
+      case PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE:
+        await this.handlePayment(message as PaymentMessage, context as PaymentHandlerOptions);
+        return null;
       default:
         return super.handle(message, context as { [key: string]: unknown });
     }
@@ -189,7 +180,7 @@ export class PaymentHandler
   private async handlePaymentRequestMessage(
     paymentRequest: PaymentRequestMessage,
     ctx: PaymentRequestMessageHandlerOptions
-  ): Promise<PaymentMessage> {
+  ): Promise<BasicMessage> {
     if (!paymentRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
@@ -203,8 +194,9 @@ export class PaymentHandler
     }
 
     const senderDID = DID.parse(paymentRequest.from);
+    const receiverDID = DID.parse(paymentRequest.to);
 
-    const payments: PaymentInfo[] = [];
+    const agentGroups: { agentURL: string; payments: PaymentInfo[] }[] = [];
     for (let i = 0; i < paymentRequest.body.payments.length; i++) {
       const paymentReq = paymentRequest.body.payments[i];
       if (paymentReq.type !== PaymentRequestType.PaymentRequest) {
@@ -216,16 +208,56 @@ export class PaymentHandler
       }
 
       const txID = await ctx.paymentHandler(paymentReq.data, ctx.txParams);
-      payments.push({
+      const paymentInfo = {
         id: paymentReq.data.id,
         type: PaymentType.Iden3PaymentCryptoV1,
         paymentData: {
           txID
         }
-      });
+      };
+      const paymentGroup = agentGroups.find((a) => a.agentURL === paymentReq.agent);
+      if (paymentGroup) {
+        paymentGroup.payments.push(paymentInfo);
+      } else {
+        agentGroups.push({ agentURL: paymentReq.agent, payments: [paymentInfo] });
+      }
     }
 
-    return createPayment(senderDID, DID.parse(paymentRequest.from), payments);
+    if (agentGroups.length > 1) {
+      throw new Error(`all agent urls in payment objects should match`);
+    }
+
+    const paymentMessage = createPayment(receiverDID, senderDID, agentGroups[0].payments);
+    const responseEncoded = byteEncoder.encode(JSON.stringify(paymentMessage));
+    const packerOpts =
+      this._params.packerParams.mediaType === MediaType.SignedMessage
+        ? this._params.packerParams.packerOptions
+        : {
+            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+          };
+    const response = await this._packerMgr.pack(
+      this._params.packerParams.mediaType,
+      responseEncoded,
+      {
+        senderDID,
+        ...packerOpts
+      }
+    );
+
+    const agentResult = await fetch(agentGroups[0].agentURL, {
+      method: 'POST',
+      body: response,
+      headers: {
+        'Content-Type': 'application/octet-stream'
+      }
+    });
+
+    const agentMessage = await agentResult.json();
+
+    if (!agentMessage) {
+      throw new Error('empty response from agent');
+    }
+    return agentMessage as BasicMessage;
   }
 
   /**
@@ -247,10 +279,9 @@ export class PaymentHandler
       throw new Error(`failed request. empty 'from' field`);
     }
 
-    const senderDID = DID.parse(paymentRequest.from);
-    const message = await this.handlePaymentRequestMessage(paymentRequest, opts);
-    const response = byteEncoder.encode(JSON.stringify(message));
+    const agentMessage = await this.handlePaymentRequestMessage(paymentRequest, opts);
 
+    const response = byteEncoder.encode(JSON.stringify(agentMessage));
     const packerOpts =
       this._params.packerParams.mediaType === MediaType.SignedMessage
         ? this._params.packerParams.packerOptions
@@ -258,8 +289,7 @@ export class PaymentHandler
             provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
           };
 
-    // send to agent, return void
-
+    const senderDID = DID.parse(paymentRequest.from);
     return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
       senderDID,
       ...packerOpts
