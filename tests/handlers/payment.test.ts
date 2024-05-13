@@ -186,7 +186,6 @@ describe('payment-request handler', () => {
     agentMessageResponse = createProposal(issuerDID, userDID, []);
     fetchMock.spy();
     fetchMock.post('https://agent-url.com', JSON.stringify(agentMessageResponse));
-
   });
 
   it('payment-request handler test', async () => {
@@ -205,6 +204,22 @@ describe('payment-request handler', () => {
     expect((agentMessage as BasicMessage).type).to.be.eq(
       PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
     );
+  });
+
+  it('payment-request handler test with empty agent response', async () => {
+    fetchMock.post('https://agent-url.com', '', { overwriteRoutes: true });
+
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(paymentRequest)),
+      {}
+    );
+    const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
+      paymentHandler: paymentHandlerFuncMock,
+      txParams: ['<session-id-hash>', '<issuer-did-hash>']
+    });
+    expect(agentMessageBytes).to.be.null;
   });
 
   it('payment handler', async () => {

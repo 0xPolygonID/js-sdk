@@ -91,12 +91,12 @@ export interface IPaymentHandler {
    * handle payment-request
    * @param {Uint8Array} request - raw byte message
    * @param {PaymentRequestMessageHandlerOptions} opts - handler options
-   * @returns {Promise<Uint8Array>} - payment message
+   * @returns {Promise<Uint8Array>} - agent message or null
    */
   handlePaymentRequest(
     request: Uint8Array,
     opts: PaymentRequestMessageHandlerOptions
-  ): Promise<Uint8Array>;
+  ): Promise<Uint8Array | null>;
 
   /**
    * @beta
@@ -183,7 +183,7 @@ export class PaymentHandler
   private async handlePaymentRequestMessage(
     paymentRequest: PaymentRequestMessage,
     ctx: PaymentRequestMessageHandlerOptions
-  ): Promise<BasicMessage> {
+  ): Promise<BasicMessage | null> {
     if (!paymentRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
@@ -246,8 +246,11 @@ export class PaymentHandler
       }
     });
 
-    const agentMessageBytes = new Uint8Array(await agentResult.arrayBuffer());
-    const { unpackedMessage } = await this._packerMgr.unpack(agentMessageBytes);
+    const arrayBuffer = await agentResult.arrayBuffer();
+    if (!arrayBuffer.byteLength) {
+      return null;
+    }
+    const { unpackedMessage } = await this._packerMgr.unpack(new Uint8Array(arrayBuffer));
     return unpackedMessage;
   }
 
@@ -257,7 +260,7 @@ export class PaymentHandler
   async handlePaymentRequest(
     request: Uint8Array,
     opts: PaymentRequestMessageHandlerOptions
-  ): Promise<Uint8Array> {
+  ): Promise<Uint8Array | null> {
     if (
       this._params.packerParams.mediaType === MediaType.SignedMessage &&
       !this._params.packerParams.packerOptions
@@ -275,6 +278,9 @@ export class PaymentHandler
     }
 
     const agentMessage = await this.handlePaymentRequestMessage(paymentRequest, opts);
+    if (!agentMessage) {
+      return null;
+    }
 
     const response = byteEncoder.encode(JSON.stringify(agentMessage));
     const packerOpts =
