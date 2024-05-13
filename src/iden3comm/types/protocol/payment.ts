@@ -29,7 +29,7 @@ export type PaymentRequestDataInfo = {
   type: PaymentRequestDataType;
   amount: string;
   id: number;
-  chainID: number;
+  chainId: number;
   address: string;
   signature?: string;
 };

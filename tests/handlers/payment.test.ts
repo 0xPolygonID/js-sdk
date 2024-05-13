@@ -46,6 +46,7 @@ import {
 } from '../../src/iden3comm/types/protocol/payment';
 import { Contract, ethers, JsonRpcProvider } from 'ethers';
 import fetchMock from '@gr2m/fetch-mock';
+import { fail } from 'assert';
 
 describe('payment-request handler', () => {
   let packageMgr: IPackageManager;
@@ -95,17 +96,16 @@ describe('payment-request handler', () => {
     }
   ];
 
-  const paymentIntegrationHandlerFunc = async (
-    data: PaymentRequestDataInfo,
-    txParams: unknown[]
-  ): Promise<string> => {
-    const rpcProvider = new JsonRpcProvider(RPC_URL);
-    const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const payContract = new Contract(data.address, payContractAbi, ethSigner);
-    const options = { value: data.amount };
-    const txData = await payContract.pay(...txParams, options);
-    return txData.hash;
-  };
+  const paymentIntegrationHandlerFunc =
+    (sessionId: string, did: string) =>
+    async (data: PaymentRequestDataInfo): Promise<string> => {
+      const rpcProvider = new JsonRpcProvider(RPC_URL);
+      const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
+      const payContract = new Contract(data.address, payContractAbi, ethSigner);
+      const options = { value: data.amount };
+      const txData = await payContract.pay(sessionId, did, options);
+      return txData.hash;
+    };
 
   const paymentCheckIntegrationHandlerFunc = async (
     txId: string,
@@ -130,7 +130,7 @@ describe('payment-request handler', () => {
       type: PaymentRequestDataType.Iden3PaymentRequestCryptoV1,
       amount: '1000000000000000',
       id: 12432,
-      chainID: 80002,
+      chainId: 80002,
       address: '0x2C2007d72f533FfD409F0D9f515983e95bF14992'
     },
     expiration: 2125558127,
@@ -196,9 +196,11 @@ describe('payment-request handler', () => {
       {}
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentHandlerFuncMock,
-      txParams: ['<session-id-hash>', '<issuer-did-hash>']
+      paymentHandler: paymentHandlerFuncMock
     });
+    if (!agentMessageBytes) {
+      fail('handlePaymentRequest is not expected null response');
+    }
     const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(
@@ -216,8 +218,7 @@ describe('payment-request handler', () => {
       {}
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentHandlerFuncMock,
-      txParams: ['<session-id-hash>', '<issuer-did-hash>']
+      paymentHandler: paymentHandlerFuncMock
     });
     expect(agentMessageBytes).to.be.null;
   });
@@ -250,9 +251,11 @@ describe('payment-request handler', () => {
       {}
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentIntegrationHandlerFunc,
-      txParams: ['<session-id-hash>', '<issuer-did-hash>']
+      paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>')
     });
+    if (!agentMessageBytes) {
+      fail('handlePaymentRequest is not expected null response');
+    }
     const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(

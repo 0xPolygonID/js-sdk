@@ -110,8 +110,7 @@ export interface IPaymentHandler {
 
 /** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
 export type PaymentRequestMessageHandlerOptions = {
-  txParams: unknown[];
-  paymentHandler: (data: PaymentRequestDataInfo, txParams: unknown[]) => Promise<string>;
+  paymentHandler: (data: PaymentRequestDataInfo) => Promise<string>;
 };
 
 /** @beta PaymentHandlerOptions represents payment handler options */
@@ -210,7 +209,7 @@ export class PaymentHandler
         throw new Error(`failed request. not supported '${paymentReq.data.type}' payment type `);
       }
 
-      const txID = await ctx.paymentHandler(paymentReq.data, ctx.txParams);
+      const txID = await ctx.paymentHandler(paymentReq.data);
 
       payments.push({
         id: paymentReq.data.id,
