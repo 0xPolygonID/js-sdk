@@ -246,12 +246,9 @@ export class PaymentHandler
       }
     });
 
-    const agentMessage = await agentResult.json();
-
-    if (!agentMessage) {
-      throw new Error('empty response from agent');
-    }
-    return agentMessage as BasicMessage;
+    const agentMessageBytes = new Uint8Array(await agentResult.arrayBuffer());
+    const { unpackedMessage } = await this._packerMgr.unpack(agentMessageBytes);
+    return unpackedMessage;
   }
 
   /**

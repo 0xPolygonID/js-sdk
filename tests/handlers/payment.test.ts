@@ -185,7 +185,8 @@ describe('payment-request handler', () => {
 
     agentMessageResponse = createProposal(issuerDID, userDID, []);
     fetchMock.spy();
-    fetchMock.post('https://agent-url.com', agentMessageResponse);
+    fetchMock.post('https://agent-url.com', JSON.stringify(agentMessageResponse));
+
   });
 
   it('payment-request handler test', async () => {
