@@ -230,7 +230,7 @@ describe('payment-request handler', () => {
         id: paymentRequest.body?.payments[0].data.id || 0,
         type: PaymentType.Iden3PaymentCryptoV1,
         paymentData: {
-          txID: '0x312312334'
+          txId: '0x312312334'
         }
       }
     ]);
@@ -270,7 +270,7 @@ describe('payment-request handler', () => {
         id: paymentRequest.body?.payments[0].data.id || 0,
         type: PaymentType.Iden3PaymentCryptoV1,
         paymentData: {
-          txID: '0xe9bea8e7adfe1092a8a4ca2cd75f4d21cc54b9b7a31bd8374b558d11b58a6a1a'
+          txId: '0xe9bea8e7adfe1092a8a4ca2cd75f4d21cc54b9b7a31bd8374b558d11b58a6a1a'
         }
       }
     ]);

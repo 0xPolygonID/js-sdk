@@ -49,6 +49,6 @@ export type PaymentInfo = {
   id: number;
   type: PaymentType;
   paymentData: {
-    txID: string;
+    txId: string;
   };
 };

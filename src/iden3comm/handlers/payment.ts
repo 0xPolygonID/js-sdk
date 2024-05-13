@@ -155,10 +155,10 @@ export class PaymentHandler
   ): Promise<BasicMessage | null> {
     switch (message.type) {
       case PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE:
-        return (await this.handlePaymentRequestMessage(
+        return await this.handlePaymentRequestMessage(
           message as PaymentRequestMessage,
           context as PaymentRequestMessageHandlerOptions
-        )) as BasicMessage;
+        );
       case PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE:
         await this.handlePayment(message as PaymentMessage, context as PaymentHandlerOptions);
         return null;
@@ -172,7 +172,7 @@ export class PaymentHandler
    */
   async parsePaymentRequest(request: Uint8Array): Promise<PaymentRequestMessage> {
     const { unpackedMessage: message } = await this._packerMgr.unpack(request);
-    const paymentRequest = message as unknown as PaymentRequestMessage;
+    const paymentRequest = message as PaymentRequestMessage;
     if (message.type !== PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid media type');
     }
@@ -195,6 +195,10 @@ export class PaymentHandler
       throw new Error(`failed request. no 'payments' in body`);
     }
 
+    if (!ctx.paymentHandler) {
+      throw new Error(`please provide payment handler in context`);
+    }
+
     const senderDID = DID.parse(paymentRequest.to);
     const receiverDID = DID.parse(paymentRequest.from);
 
@@ -209,33 +213,19 @@ export class PaymentHandler
         throw new Error(`failed request. not supported '${paymentReq.data.type}' payment type `);
       }
 
-      const txID = await ctx.paymentHandler(paymentReq.data);
+      const txId = await ctx.paymentHandler(paymentReq.data);
 
       payments.push({
         id: paymentReq.data.id,
         type: PaymentType.Iden3PaymentCryptoV1,
         paymentData: {
-          txID
+          txId
         }
       });
     }
 
     const paymentMessage = createPayment(senderDID, receiverDID, payments);
-    const responseEncoded = byteEncoder.encode(JSON.stringify(paymentMessage));
-    const packerOpts =
-      this._params.packerParams.mediaType === MediaType.SignedMessage
-        ? this._params.packerParams.packerOptions
-        : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-          };
-    const response = await this._packerMgr.pack(
-      this._params.packerParams.mediaType,
-      responseEncoded,
-      {
-        senderDID,
-        ...packerOpts
-      }
-    );
+    const response = await this.packMessage(paymentMessage, senderDID);
 
     const agentResult = await fetch(paymentRequest.body.agent, {
       method: 'POST',
@@ -281,19 +271,8 @@ export class PaymentHandler
       return null;
     }
 
-    const response = byteEncoder.encode(JSON.stringify(agentMessage));
-    const packerOpts =
-      this._params.packerParams.mediaType === MediaType.SignedMessage
-        ? this._params.packerParams.packerOptions
-        : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-          };
-
     const senderDID = DID.parse(paymentRequest.to);
-    return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
-      senderDID,
-      ...packerOpts
-    });
+    return this.packMessage(agentMessage, senderDID);
   }
 
   /**
@@ -316,7 +295,24 @@ export class PaymentHandler
       if (!paymentRequestData) {
         throw new Error(`can't find payment request for payment id ${p.id}`);
       }
-      await opts.checkPaymentHandler(p.paymentData.txID, paymentRequestData.data);
+      if (!opts.checkPaymentHandler) {
+        throw new Error(`please provide check payment handler in options`);
+      }
+      await opts.checkPaymentHandler(p.paymentData.txId, paymentRequestData.data);
     }
+  }
+
+  private async packMessage(message: BasicMessage, senderDID: DID): Promise<Uint8Array> {
+    const responseEncoded = byteEncoder.encode(JSON.stringify(message));
+    const packerOpts =
+      this._params.packerParams.mediaType === MediaType.SignedMessage
+        ? this._params.packerParams.packerOptions
+        : {
+            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+          };
+    return await this._packerMgr.pack(this._params.packerParams.mediaType, responseEncoded, {
+      senderDID,
+      ...packerOpts
+    });
   }
 }
