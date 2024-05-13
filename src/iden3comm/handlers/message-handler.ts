@@ -2,7 +2,7 @@ import { BasicMessage, IPackageManager } from '../types';
 import { AuthMessageHandlerOptions } from './auth';
 import { RevocationStatusMessageHandlerOptions } from './revocation-status';
 import { ContractMessageHandlerOptions } from './contract-request';
-import { PaymentRequestMessageHandlerOptions } from './payment';
+import { PaymentHandlerOptions, PaymentRequestMessageHandlerOptions } from './payment';
 /**
  * iden3  Protocol message handler interface
  */
@@ -119,6 +119,7 @@ export class MessageHandler {
       | ContractMessageHandlerOptions
       | RevocationStatusMessageHandlerOptions
       | PaymentRequestMessageHandlerOptions
+      | PaymentHandlerOptions
       | { [key: string]: unknown }
   ): Promise<Uint8Array | null> {
     const { unpackedMediaType, unpackedMessage: message } =

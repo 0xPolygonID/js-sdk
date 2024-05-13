@@ -196,8 +196,8 @@ export class PaymentHandler
       throw new Error(`failed request. no 'payments' in body`);
     }
 
-    const senderDID = DID.parse(paymentRequest.from);
-    const receiverDID = DID.parse(paymentRequest.to);
+    const senderDID = DID.parse(paymentRequest.to);
+    const receiverDID = DID.parse(paymentRequest.from);
 
     const payments: PaymentInfo[] = [];
     for (let i = 0; i < paymentRequest.body.payments.length; i++) {
@@ -221,7 +221,7 @@ export class PaymentHandler
       });
     }
 
-    const paymentMessage = createPayment(receiverDID, senderDID, payments);
+    const paymentMessage = createPayment(senderDID, receiverDID, payments);
     const responseEncoded = byteEncoder.encode(JSON.stringify(paymentMessage));
     const packerOpts =
       this._params.packerParams.mediaType === MediaType.SignedMessage
@@ -273,6 +273,10 @@ export class PaymentHandler
       throw new Error(`failed request. empty 'from' field`);
     }
 
+    if (!paymentRequest.to) {
+      throw new Error(`failed request. empty 'to' field`);
+    }
+
     const agentMessage = await this.handlePaymentRequestMessage(paymentRequest, opts);
 
     const response = byteEncoder.encode(JSON.stringify(agentMessage));
@@ -283,7 +287,7 @@ export class PaymentHandler
             provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
           };
 
-    const senderDID = DID.parse(paymentRequest.from);
+    const senderDID = DID.parse(paymentRequest.to);
     return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
       senderDID,
       ...packerOpts
@@ -294,7 +298,7 @@ export class PaymentHandler
    * @inheritdoc IPaymentHandler#handlePayment
    */
   async handlePayment(payment: PaymentMessage, opts: PaymentHandlerOptions) {
-    if (opts.paymentRequest && opts.paymentRequest.from !== payment.to) {
+    if (opts.paymentRequest.from !== payment.to) {
       throw new Error(
         `sender of the request is not a target of response - expected ${opts.paymentRequest.from}, given ${payment.to}`
       );
