@@ -51,7 +51,7 @@ export interface IRefreshHandler {
    * @param {RefreshOptions} opts - options
    * @returns {Promise<W3CCredential>}
    */
-  refreshCredential(credential: W3CCredential, opts?: RefreshOptions): Promise<W3CCredential>;
+  refreshCredential(credential: W3CCredential, opts?: RefreshOptions): Promise<W3CCredential[]>;
 }
 /**
  *
@@ -72,7 +72,7 @@ export class RefreshHandler implements IRefreshHandler {
   async refreshCredential(
     credential: W3CCredential,
     opts?: RefreshOptions
-  ): Promise<W3CCredential> {
+  ): Promise<W3CCredential[]> {
     if (!credential.refreshService) {
       throw new Error('refreshService not specified for W3CCredential');
     }
@@ -129,10 +129,13 @@ export class RefreshHandler implements IRefreshHandler {
 
     const respBody: CredentialIssuanceMessage = await resp.json();
 
-    if (!respBody.body?.credential) {
+    const credBody = respBody.body?.credential;
+    if (!credBody) {
       throw new Error('no credential in CredentialIssuanceMessage response');
     }
 
-    return W3CCredential.fromJSON(respBody.body.credential);
+    const creds = Array.isArray(credBody) ? credBody : [credBody];
+
+    return creds.map((c) => W3CCredential.fromJSON(c));
   }
 }

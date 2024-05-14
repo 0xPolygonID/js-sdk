@@ -110,8 +110,7 @@ export class FetchHandler
   ): Promise<BasicMessage | null> {
     switch (message.type) {
       case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE:
-        await this.handleOfferMessage(message as CredentialsOfferMessage, ctx);
-        return null;
+        return this.handleOfferMessage(message as CredentialsOfferMessage, ctx);
       case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE:
         return this.handleFetchRequest(message as CredentialFetchRequestMessage);
       case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE:
@@ -128,7 +127,7 @@ export class FetchHandler
       headers?: HeadersInit;
       packerOptions?: JWSPackerParams;
     }
-  ): Promise<W3CCredential[]> {
+  ): Promise<CredentialIssuanceMessage> {
     if (!ctx.mediaType) {
       ctx.mediaType = MediaType.ZKPMessage;
     }
@@ -167,7 +166,6 @@ export class FetchHandler
           ...packerOpts
         })
       );
-      let message: { body: { credential: W3CCredential } };
       try {
         if (!offerMessage?.body?.url) {
           throw new Error(`could not fetch W3C credential, body url is missing`);
@@ -180,11 +178,14 @@ export class FetchHandler
           },
           body: token
         });
-        if (resp.status !== 200) {
-          throw new Error(`could not fetch W3C credential, ${credentialInfo?.id}`);
+
+        const message: CredentialIssuanceMessage = await resp.json();
+        const credentialBody = message.body?.credential;
+        if (!credentialBody) {
+          throw new Error(`could not fetch W3C credential, no credential in response`);
         }
-        message = await resp.json();
-        credentials.push(W3CCredential.fromJSON(message.body.credential));
+        const w3cCreds = Array.isArray(credentialBody) ? credentialBody : [credentialBody];
+        credentials.push(...w3cCreds.map((c) => W3CCredential.fromJSON(c)));
       } catch (e: unknown) {
         throw new Error(
           `could not fetch W3C credential, ${credentialInfo?.id}, error: ${
@@ -193,7 +194,18 @@ export class FetchHandler
         );
       }
     }
-    return credentials;
+
+    return {
+      id: uuid.v4(),
+      type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE,
+      typ: MediaType.PlainMessage,
+      thid: offerMessage.thid,
+      from: offerMessage.to,
+      to: offerMessage.from,
+      body: {
+        credential: credentials
+      }
+    };
   }
 
   /**
@@ -219,11 +231,19 @@ export class FetchHandler
       PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE
     );
 
-    return this.handleOfferMessage(offerMessage, {
+    const message = await this.handleOfferMessage(offerMessage, {
       mediaType: opts?.mediaType,
       headers: opts?.headers,
       packerOptions: opts?.packerOptions
     });
+
+    const body = message?.body;
+
+    if (!body) {
+      return [];
+    }
+
+    return Array.isArray(body.credential) ? body.credential : [body.credential];
   }
 
   private async handleFetchRequest(
@@ -245,30 +265,43 @@ export class FetchHandler
       throw new Error('nvalid credential id in fetch request body');
     }
 
-    if (!this.opts?.credentialWallet) {
+    const credWallet = this.opts?.credentialWallet;
+
+    if (!credWallet) {
       throw new Error('please, provide credential wallet in options');
     }
 
-    const cred = await this.opts.credentialWallet.findById(credId);
-
-    if (!cred) {
-      throw new Error('credential not found');
-    }
-
-    const userToVerifyDID = getUserDIDFromCredential(issuerDID, cred);
-
-    if (userToVerifyDID.string() !== userDID.string()) {
-      throw new Error('credential subject is not a sender DID');
-    }
-
-    return {
+    const msg = {
       id: uuid.v4(),
       type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE,
       typ: msgRequest.typ ?? MediaType.PlainMessage,
       thid: msgRequest.thid ?? uuid.v4(),
-      body: { credential: cred },
       from: msgRequest.to,
       to: msgRequest.from
+    };
+
+    const credIds = Array.isArray(credId) ? credId : [credId];
+    const creds = (await Promise.all(credIds.map((id) => credWallet.findById(id)))).filter(
+      Boolean
+    ) as W3CCredential[];
+
+    if (!creds.length) {
+      throw new Error('credentials not found');
+    }
+
+    const userVerified = creds
+      .map((cred) => getUserDIDFromCredential(issuerDID, cred))
+      .some((did) => did.string() !== userDID.string());
+
+    if (!userVerified) {
+      throw new Error('credential subject is not a sender DID');
+    }
+
+    return {
+      ...msg,
+      body: {
+        credential: creds.length === 1 ? creds[0] : creds
+      }
     };
   }
   /**
@@ -291,15 +324,23 @@ export class FetchHandler
   }
 
   private async handleIssuanceResponseMsg(issuanceMsg: CredentialIssuanceMessage): Promise<null> {
-    if (!this.opts?.credentialWallet) {
+    const credWallet = this.opts?.credentialWallet;
+    if (!credWallet) {
       throw new Error('please provide credential wallet in options');
     }
+    const cred = issuanceMsg.body?.credential;
 
-    if (!issuanceMsg.body?.credential) {
+    if (!cred) {
       throw new Error('credential is missing in issuance response message');
     }
 
-    await this.opts.credentialWallet.save(W3CCredential.fromJSON(issuanceMsg.body.credential));
+    const creds = Array.isArray(cred) ? cred : [cred];
+
+    await Promise.all(
+      creds.map(async (cred) => {
+        await credWallet.save(W3CCredential.fromJSON(cred));
+      })
+    );
 
     return null;
   }

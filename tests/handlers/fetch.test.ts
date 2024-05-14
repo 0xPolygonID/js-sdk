@@ -238,7 +238,7 @@ describe('fetch', () => {
     expect(issueanceMsg).not.to.be.undefined;
     expect(issueanceMsg.body).not.to.be.undefined;
     expect(issueanceMsg.body?.credential).not.to.be.undefined;
-    expect(issueanceMsg.body?.credential.id).to.equal(issuedCred.id);
+    expect((issueanceMsg.body?.credential as W3CCredential).id).to.equal(issuedCred.id);
 
     const newId = uuid.v4();
 
