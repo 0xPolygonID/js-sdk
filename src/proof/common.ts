@@ -213,10 +213,26 @@ export const parseQueryMetadata = async (
       );
     }
 
-    query.values =
-      propertyQuery.operator === Operators.EXISTS
-        ? transformExistsValue(propertyQuery.operatorValue)
-        : await transformQueryValueToBigInts(propertyQuery.operatorValue, query.datatype);
+    if (
+      (propertyQuery.operator === Operators.NOOP || propertyQuery.operator === Operators.SD) &&
+      propertyQuery.operatorValue
+    ) {
+      throw new Error(`operator value should be undefined for ${propertyQuery.operator} operator`);
+    }
+
+    let values: bigint[];
+    switch (propertyQuery.operator) {
+      case Operators.NOOP:
+      case Operators.SD:
+        values = [];
+        break;
+      case Operators.EXISTS:
+        values = transformExistsValue(propertyQuery.operatorValue);
+        break;
+      default:
+        values = await transformQueryValueToBigInts(propertyQuery.operatorValue, query.datatype);
+    }
+    query.values = values;
   }
   return query;
 };
