@@ -1,7 +1,6 @@
 import {
   CredentialsOfferMessage,
   FetchHandler,
-  IFetchHandler,
   IPackageManager,
   IDataStorage,
   IdentityWallet,
@@ -17,7 +16,8 @@ import {
   CredentialIssuanceMessage,
   FSCircuitStorage,
   ProofService,
-  CircuitId
+  CircuitId,
+  MessageHandler
 } from '../../src';
 
 import {
@@ -41,8 +41,9 @@ describe('fetch', () => {
   let credWallet: CredentialWallet;
 
   let dataStorage: IDataStorage;
-  let fetchHandler: IFetchHandler;
+  let fetchHandler: FetchHandler;
   let packageMgr: IPackageManager;
+  let msgHandler: MessageHandler;
   const agentUrl = 'https://testagent.com/';
 
   const issuanceResponseMock = `{
@@ -133,6 +134,11 @@ describe('fetch', () => {
     );
     fetchHandler = new FetchHandler(packageMgr, {
       credentialWallet: credWallet
+    });
+
+    msgHandler = new MessageHandler({
+      messageHandlers: [fetchHandler],
+      packageManager: packageMgr
     });
   });
 
@@ -252,5 +258,34 @@ describe('fetch', () => {
 
     const cred2 = await credWallet.findById(newId);
     expect(cred2).not.to.be.undefined;
+    // expect(await credWallet.list()).to.have.length(3);
+
+    const offer: CredentialsOfferMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE,
+      thid: id,
+      body: {
+        url: agentUrl,
+        credentials: [{ id: cred2?.id as string, description: 'kyc age credentials' }]
+      },
+      from: issuerDID.string(),
+      to: userDID.string()
+    };
+
+    const bytes = await packageMgr.packMessage(
+      PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      offer,
+      {}
+    );
+    fetchMock.restore();
+    fetchMock.spy();
+    fetchMock.post(agentUrl, issuanceResponseMock);
+    expect(await credWallet.list()).to.have.length(4);
+
+    const response = await msgHandler.handleMessage(bytes, {});
+    // credential saved after handleing message via msgHandler
+    expect(response).to.be.null;
+    expect(await credWallet.list()).to.have.length(5);
   });
 });

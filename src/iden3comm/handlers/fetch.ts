@@ -109,9 +109,16 @@ export class FetchHandler
     ctx: FetchMessageHandlerOptions
   ): Promise<BasicMessage | null> {
     switch (message.type) {
-      case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE:
-        await this.handleOfferMessage(message as CredentialsOfferMessage, ctx);
-        return null;
+      case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE: {
+        const result = await this.handleOfferMessage(message as CredentialsOfferMessage, ctx);
+        if (Array.isArray(result)) {
+          const credWallet = this.opts?.credentialWallet;
+          if (!credWallet) throw new Error('Credential wallet is not provided');
+          await credWallet.saveAll(result);
+          return null;
+        }
+        return result as BasicMessage;
+      }
       case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE:
         return this.handleFetchRequest(message as CredentialFetchRequestMessage);
       case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE:
@@ -128,16 +135,14 @@ export class FetchHandler
       headers?: HeadersInit;
       packerOptions?: JWSPackerParams;
     }
-  ): Promise<W3CCredential[]> {
+  ): Promise<W3CCredential[] | BasicMessage> {
     if (!ctx.mediaType) {
       ctx.mediaType = MediaType.ZKPMessage;
     }
 
     const credentials: W3CCredential[] = [];
 
-    for (let index = 0; index < offerMessage.body.credentials.length; index++) {
-      const credentialInfo = offerMessage.body.credentials[index];
-
+    for (const credentialInfo of offerMessage.body.credentials) {
       const guid = uuid.v4();
       const fetchRequest: MessageFetchRequestMessage = {
         id: guid,
@@ -167,7 +172,6 @@ export class FetchHandler
           ...packerOpts
         })
       );
-      let message: { body: { credential: W3CCredential } };
       try {
         if (!offerMessage?.body?.url) {
           throw new Error(`could not fetch W3C credential, body url is missing`);
@@ -180,16 +184,24 @@ export class FetchHandler
           },
           body: token
         });
-        if (resp.status !== 200) {
-          throw new Error(`could not fetch W3C credential, ${credentialInfo?.id}`);
+        const arrayBuffer = await resp.arrayBuffer();
+        if (!arrayBuffer.byteLength) {
+          throw new Error(`could not fetch , ${credentialInfo?.id}, response is empty`);
         }
-        message = await resp.json();
-        credentials.push(W3CCredential.fromJSON(message.body.credential));
+        const { unpackedMessage: message } = await this._packerMgr.unpack(
+          new Uint8Array(arrayBuffer)
+        );
+        if (message.type !== PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE) {
+          return message;
+        }
+        credentials.push(
+          W3CCredential.fromJSON((message as CredentialIssuanceMessage).body.credential)
+        );
       } catch (e: unknown) {
         throw new Error(
-          `could not fetch W3C credential, ${credentialInfo?.id}, error: ${
-            (e as Error).message ?? e
-          }`
+          `could not fetch protocol message for credential offer id: , ${
+            credentialInfo?.id
+          }, error: ${(e as Error).message ?? e}`
         );
       }
     }
@@ -219,11 +231,17 @@ export class FetchHandler
       PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE
     );
 
-    return this.handleOfferMessage(offerMessage, {
+    const result = await this.handleOfferMessage(offerMessage, {
       mediaType: opts?.mediaType,
       headers: opts?.headers,
       packerOptions: opts?.packerOptions
     });
+
+    if (Array.isArray(result)) {
+      return result;
+    }
+
+    throw new Error('invalid protocol message response');
   }
 
   private async handleFetchRequest(
@@ -242,7 +260,7 @@ export class FetchHandler
 
     const credId = msgRequest.body?.id;
     if (!credId) {
-      throw new Error('nvalid credential id in fetch request body');
+      throw new Error('invalid credential id in fetch request body');
     }
 
     if (!this.opts?.credentialWallet) {
