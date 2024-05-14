@@ -258,7 +258,6 @@ describe('fetch', () => {
 
     const cred2 = await credWallet.findById(newId);
     expect(cred2).not.to.be.undefined;
-    // expect(await credWallet.list()).to.have.length(3);
 
     const offer: CredentialsOfferMessage = {
       id,
