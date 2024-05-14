@@ -22,7 +22,7 @@ export type CredentialsOfferMessage = Required<BasicMessage> & {
 /** CredentialsOfferMessageBody is struct the represents offer message */
 export type CredentialsOfferMessageBody = {
   url: string;
-  credentials: Array<CredentialOffer>;
+  credentials: CredentialOffer[];
 };
 
 /** CredentialsOnchainOfferMessage represent Iden3message for credential onhcain offer message */
@@ -32,7 +32,7 @@ export type CredentialsOnchainOfferMessage = Required<BasicMessage> & {
 
 /** CredentialsOnchainOfferMessageBody is struct the represents onchain offer message body */
 export type CredentialsOnchainOfferMessageBody = {
-  credentials: Array<CredentialOffer>;
+  credentials: CredentialOffer[];
   transaction_data: ContractInvokeTransactionData;
 };
 
@@ -44,7 +44,7 @@ export type CredentialOffer = {
 
 /** CredentialIssuanceMessage represent Iden3message for credential issuance */
 export type CredentialIssuanceMessage = Required<BasicMessage> & {
-  body?: IssuanceMessageBody;
+  body: IssuanceMessageBody;
 };
 
 /** IssuanceMessageBody is struct the represents message when credential is issued */
