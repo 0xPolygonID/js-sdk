@@ -15,7 +15,8 @@ import {
   byteEncoder,
   PaymentType,
   BasicMessage,
-  createProposal
+  createProposal,
+  SupportedCurrencies
 } from '../../src';
 
 import {
@@ -102,7 +103,10 @@ describe('payment-request handler', () => {
       const rpcProvider = new JsonRpcProvider(RPC_URL);
       const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
       const payContract = new Contract(data.address, payContractAbi, ethSigner);
-      const options = { value: data.amount };
+      if (data.currency !== SupportedCurrencies.ETH) {
+        throw new Error('integration can only pay in eth currency');
+      }
+      const options = { value: ethers.formatUnits(data.amount, 'ether') };
       const txData = await payContract.pay(sessionId, did, options);
       return txData.hash;
     };
@@ -128,12 +132,13 @@ describe('payment-request handler', () => {
     type: PaymentRequestType.PaymentRequest,
     data: {
       type: PaymentRequestDataType.Iden3PaymentRequestCryptoV1,
-      amount: '1000000000000000',
+      amount: '0.1',
       id: 12432,
       chainId: 80002,
-      address: '0x2C2007d72f533FfD409F0D9f515983e95bF14992'
+      address: '0x2C2007d72f533FfD409F0D9f515983e95bF14992',
+      currency: 'eth'
     },
-    expiration: 2125558127,
+    expiration: '2125558127',
     description: 'payment-request integration test'
   };
 

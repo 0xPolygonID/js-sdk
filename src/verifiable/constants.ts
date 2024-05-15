@@ -113,7 +113,7 @@ export enum RefreshServiceType {
 
 /**
  * PaymentRequestType type for payment requests
- *
+ * @beta
  * @enum {string}
  */
 export enum PaymentRequestType {
@@ -122,7 +122,7 @@ export enum PaymentRequestType {
 
 /**
  * PaymentRequestDataType type for payment requests
- *
+ * @beta
  * @enum {string}
  */
 export enum PaymentRequestDataType {
@@ -131,9 +131,18 @@ export enum PaymentRequestDataType {
 
 /**
  * PaymentType type for payment responses
- *
+ * @beta
  * @enum {string}
  */
 export enum PaymentType {
   Iden3PaymentCryptoV1 = 'Iden3PaymentCryptoV1'
+}
+
+/**
+ * Media types for Payment supported currencies
+ * @beta
+ * @enum {number}
+ */
+export enum SupportedCurrencies {
+  ETH = 'ETH'
 }
