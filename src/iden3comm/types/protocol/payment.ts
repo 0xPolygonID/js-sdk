@@ -20,8 +20,8 @@ export type PaymentRequestInfo = {
   }[];
   type: PaymentRequestType;
   data: PaymentRequestDataInfo;
-  expiration: number;
-  description: string;
+  expiration?: string;
+  description?: string;
 };
 
 /** @beta PaymentRequestDataInfo is struct the represents payment data info for payment-request */
@@ -31,6 +31,7 @@ export type PaymentRequestDataInfo = {
   id: number;
   chainId: number;
   address: string;
+  currency: string;
   signature?: string;
 };
 
