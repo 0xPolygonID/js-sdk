@@ -106,7 +106,7 @@ describe('payment-request handler', () => {
       if (data.currency !== SupportedCurrencies.ETH) {
         throw new Error('integration can only pay in eth currency');
       }
-      const options = { value: ethers.formatUnits(data.amount, 'ether') };
+      const options = { value: ethers.parseUnits(data.amount, 'ether') };
       const txData = await payContract.pay(sessionId, did, options);
       return txData.hash;
     };
@@ -117,7 +117,7 @@ describe('payment-request handler', () => {
   ): Promise<void> => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const tx = await rpcProvider.getTransaction(txId);
-    if (tx?.value !== BigInt(data.amount)) {
+    if (tx?.value !== ethers.parseUnits(data.amount, 'ether')) {
       throw new Error('invalid value');
     }
   };
@@ -132,11 +132,11 @@ describe('payment-request handler', () => {
     type: PaymentRequestType.PaymentRequest,
     data: {
       type: PaymentRequestDataType.Iden3PaymentRequestCryptoV1,
-      amount: '0.1',
+      amount: '0.001',
       id: 12432,
       chainId: 80002,
       address: '0x2C2007d72f533FfD409F0D9f515983e95bF14992',
-      currency: 'eth'
+      currency: 'ETH'
     },
     expiration: '2125558127',
     description: 'payment-request integration test'
