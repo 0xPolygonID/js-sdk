@@ -232,7 +232,7 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
     const payment = createPayment(userDID, issuerDID, [
       {
-        id: paymentRequest.body?.payments[0].data.id || '0',
+        id: paymentRequest.body.payments[0].data.id,
         type: PaymentType.Iden3PaymentCryptoV1,
         paymentData: {
           txId: '0x312312334'
@@ -272,7 +272,7 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
     const payment = createPayment(userDID, issuerDID, [
       {
-        id: paymentRequest.body?.payments[0].data.id || '0',
+        id: paymentRequest.body.payments[0].data.id,
         type: PaymentType.Iden3PaymentCryptoV1,
         paymentData: {
           txId: '0xe9bea8e7adfe1092a8a4ca2cd75f4d21cc54b9b7a31bd8374b558d11b58a6a1a'
