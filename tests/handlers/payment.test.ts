@@ -133,8 +133,8 @@ describe('payment-request handler', () => {
     data: {
       type: PaymentRequestDataType.Iden3PaymentRequestCryptoV1,
       amount: '0.001',
-      id: 12432,
-      chainId: 80002,
+      id: '12432',
+      chainId: '80002',
       address: '0x2C2007d72f533FfD409F0D9f515983e95bF14992',
       currency: 'ETH'
     },
@@ -232,7 +232,7 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
     const payment = createPayment(userDID, issuerDID, [
       {
-        id: paymentRequest.body?.payments[0].data.id || 0,
+        id: paymentRequest.body.payments[0].data.id,
         type: PaymentType.Iden3PaymentCryptoV1,
         paymentData: {
           txId: '0x312312334'
@@ -272,7 +272,7 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
     const payment = createPayment(userDID, issuerDID, [
       {
-        id: paymentRequest.body?.payments[0].data.id || 0,
+        id: paymentRequest.body.payments[0].data.id,
         type: PaymentType.Iden3PaymentCryptoV1,
         paymentData: {
           txId: '0xe9bea8e7adfe1092a8a4ca2cd75f4d21cc54b9b7a31bd8374b558d11b58a6a1a'

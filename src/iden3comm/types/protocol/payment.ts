@@ -3,7 +3,7 @@ import { PaymentRequestDataType, PaymentRequestType, PaymentType } from '../../.
 
 /** @beta PaymentRequestMessage is struct the represents payment-request message */
 export type PaymentRequestMessage = BasicMessage & {
-  body?: PaymentRequestMessageBody;
+  body: PaymentRequestMessageBody;
 };
 
 /** @beta PaymentRequestMessageBody is struct the represents body for payment-request */
@@ -28,8 +28,8 @@ export type PaymentRequestInfo = {
 export type PaymentRequestDataInfo = {
   type: PaymentRequestDataType;
   amount: string;
-  id: number;
-  chainId: number;
+  id: string;
+  chainId: string;
   address: string;
   currency: string;
   signature?: string;
@@ -37,7 +37,7 @@ export type PaymentRequestDataInfo = {
 
 /** @beta  PaymentMessage is struct the represents payment message */
 export type PaymentMessage = BasicMessage & {
-  body?: PaymentMessageBody;
+  body: PaymentMessageBody;
 };
 
 /** @beta  PaymentMessageBody is struct the represents body for payment message */
@@ -47,7 +47,7 @@ export type PaymentMessageBody = {
 
 /** @beta PaymentInfo is struct the represents payment info for payment */
 export type PaymentInfo = {
-  id: number;
+  id: string;
   type: PaymentType;
   paymentData: {
     txId: string;

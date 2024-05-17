@@ -191,7 +191,7 @@ export class PaymentHandler
       throw new Error(`failed request. empty 'from' field`);
     }
 
-    if (!paymentRequest.body?.payments?.length) {
+    if (!paymentRequest.body.payments?.length) {
       throw new Error(`failed request. no 'payments' in body`);
     }
 
@@ -285,13 +285,13 @@ export class PaymentHandler
       );
     }
 
-    if (!payment.body?.payments.length) {
+    if (!payment.body.payments.length) {
       throw new Error(`failed request. empty 'payments' field in body`);
     }
 
     for (let i = 0; i < payment.body.payments.length; i++) {
-      const p = payment.body?.payments[i];
-      const paymentRequestData = opts.paymentRequest.body?.payments.find((r) => r.data.id === p.id);
+      const p = payment.body.payments[i];
+      const paymentRequestData = opts.paymentRequest.body.payments.find((r) => r.data.id === p.id);
       if (!paymentRequestData) {
         throw new Error(`can't find payment request for payment id ${p.id}`);
       }
