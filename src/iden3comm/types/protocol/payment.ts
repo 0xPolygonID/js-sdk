@@ -28,8 +28,8 @@ export type PaymentRequestInfo = {
 export type PaymentRequestDataInfo = {
   type: PaymentRequestDataType;
   amount: string;
-  id: number;
-  chainId: number;
+  id: string;
+  chainId: string;
   address: string;
   currency: string;
   signature?: string;
@@ -47,7 +47,7 @@ export type PaymentMessageBody = {
 
 /** @beta PaymentInfo is struct the represents payment info for payment */
 export type PaymentInfo = {
-  id: number;
+  id: string;
   type: PaymentType;
   paymentData: {
     txId: string;
