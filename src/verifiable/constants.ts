@@ -144,5 +144,6 @@ export enum PaymentType {
  * @enum {number}
  */
 export enum SupportedCurrencies {
-  ETH = 'ETH'
+  ETH = 'ETH',
+  MATIC = 'MATIC'
 }
