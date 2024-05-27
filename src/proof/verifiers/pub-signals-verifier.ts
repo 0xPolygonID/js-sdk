@@ -604,7 +604,7 @@ export class PubSignalsVerifier {
     } catch (e) {
       const stateNotExistErr = ((e as unknown as { errorArgs: string[] })?.errorArgs ?? [])[0];
       const errMsg = stateNotExistErr || (e as unknown as Error).message;
-      if (errMsg === 'State does not exist') {
+      if (errMsg.includes('State does not exist')) {
         if (isGenesis) {
           return {
             latest: true,

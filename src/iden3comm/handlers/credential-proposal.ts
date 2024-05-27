@@ -1,5 +1,4 @@
-import { PROTOCOL_MESSAGE_TYPE } from '../constants';
-import { MediaType } from '../constants';
+import { PROTOCOL_MESSAGE_TYPE, MediaType } from '../constants';
 import {
   BasicMessage,
   CredentialOffer,
@@ -22,6 +21,7 @@ import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { ICredentialWallet } from '../../credentials';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
@@ -165,6 +165,7 @@ export class CredentialProposalHandler
   constructor(
     private readonly _packerMgr: IPackageManager,
     private readonly _identityWallet: IIdentityWallet,
+    private readonly _credWallet: ICredentialWallet,
     private readonly _params: CredentialProposalHandlerParams
   ) {
     super();
@@ -218,16 +219,37 @@ export class CredentialProposalHandler
 
     let credOfferMessage: CredentialsOfferMessage | undefined = undefined;
     let proposalMessage: ProposalMessage | undefined = undefined;
+
+    let isExternalSender = false;
+
+    try {
+      await this._identityWallet.getGenesisDIDMetadata(senderDID);
+    } catch {
+      isExternalSender = true;
+    }
     for (let i = 0; i < proposalRequest.body.credentials.length; i++) {
       const cred = proposalRequest.body.credentials[i];
 
       // check if there is credentials in the wallet
       let credsFromWallet: W3CCredential[] = [];
+
       try {
-        credsFromWallet = await this._identityWallet.findOwnedCredentialsByDID(senderDID, {
-          type: cred.type,
-          context: cred.context
-        });
+        if (isExternalSender) {
+          credsFromWallet = await this._credWallet.findByQuery({
+            credentialSubject: {
+              id: {
+                $eq: proposalRequest.from
+              }
+            },
+            type: cred.type,
+            context: cred.context
+          });
+        } else {
+          credsFromWallet = await this._identityWallet.findOwnedCredentialsByDID(senderDID, {
+            type: cred.type,
+            context: cred.context
+          });
+        }
       } catch (e) {
         if ((e as Error).message !== 'no credential satisfied query') {
           throw e;

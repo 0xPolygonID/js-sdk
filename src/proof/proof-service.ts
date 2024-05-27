@@ -449,11 +449,6 @@ export class ProofService implements IProofService {
 
     const authPrepared = await this._inputsGenerator.prepareAuthBJJCredential(genesisDID);
 
-    const authClaimData = await this._inputsGenerator.newCircuitClaimData({
-      credential: authPrepared.credential,
-      credentialCoreClaim: authPrepared.coreClaim
-    });
-
     const signature = await this._identityWallet.signChallenge(challenge, authPrepared.credential);
     const id = DID.idFromDID(genesisDID);
     const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
@@ -464,10 +459,10 @@ export class ProofService implements IProofService {
 
     authInputs.genesisID = id;
     authInputs.profileNonce = BigInt(authProfileNonce);
-    authInputs.authClaim = authClaimData.claim;
-    authInputs.authClaimIncMtp = authClaimData.proof;
+    authInputs.authClaim = authPrepared.coreClaim;
+    authInputs.authClaimIncMtp = authPrepared.incProof.proof;
     authInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
-    authInputs.treeState = authClaimData.treeState;
+    authInputs.treeState = authPrepared.incProof.treeState;
     authInputs.signature = signature;
     authInputs.challenge = challenge;
     authInputs.gistProof = gistProof;
