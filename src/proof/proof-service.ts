@@ -523,7 +523,10 @@ export class ProofService implements IProofService {
         Date.now() -
         getDateFromUnixTimestamp(Number(globalStateInfo.replacedAtTimestamp)).getTime();
 
-      if (timeDiff > (opts?.acceptedStateTransitionDelay ?? 300_000)) {
+      if (
+        timeDiff >
+        (opts?.acceptedStateTransitionDelay ?? PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_OPTS)
+      ) {
         throw new Error('global state is outdated');
       }
 

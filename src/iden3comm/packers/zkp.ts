@@ -10,7 +10,7 @@ import {
 } from '../types';
 import { Token, Header, ProvingMethodAlg, proving } from '@iden3/js-jwz';
 import { AuthV2PubSignals, CircuitId } from '../../circuits/index';
-import { DID, Id } from '@iden3/js-iden3-core';
+import { BytesHelper, DID } from '@iden3/js-iden3-core';
 import { bytesToProtocolMessage } from '../utils/envelope';
 import {
   ErrNoProvingMethodAlg,
@@ -176,26 +176,31 @@ export class ZKPPacker implements IPacker {
   }
 }
 
-const verifySender = (token: Token, msg: BasicMessage): void => {
+const verifySender = async (token: Token, msg: BasicMessage): Promise<void> => {
   switch (token.circuitId) {
     case CircuitId.AuthV2:
-      if (!msg.from || !verifyAuthV2Sender(msg.from, token.zkProof.pub_signals)) {
-        throw new Error(ErrSenderNotUsedTokenCreation);
+      {
+        if (!msg.from) {
+          throw new Error(ErrSenderNotUsedTokenCreation);
+        }
+        const authSignals = new AuthV2PubSignals().pubSignalsUnmarshal(
+          byteEncoder.encode(JSON.stringify(token.zkProof.pub_signals))
+        );
+        const did = DID.parseFromId(authSignals.userID);
+
+        const msgHash = await token.getMessageHash();
+        const challenge = BytesHelper.bytesToInt(msgHash.reverse());
+
+        if (challenge !== authSignals.challenge) {
+          throw new Error(ErrSenderNotUsedTokenCreation);
+        }
+
+        if (msg.from !== did.string()) {
+          throw new Error(ErrSenderNotUsedTokenCreation);
+        }
       }
       break;
     default:
       throw new Error(ErrUnknownCircuitID);
   }
-};
-
-const verifyAuthV2Sender = (from: string, pubSignals: Array<string>): boolean => {
-  const authSignals = new AuthV2PubSignals();
-
-  const pubSig = authSignals.pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(pubSignals)));
-  return pubSig.userID ? checkSender(from, pubSig.userID) : false;
-};
-
-const checkSender = (from: string, id: Id): boolean => {
-  const did = DID.parseFromId(id);
-  return from === did.string();
 };
