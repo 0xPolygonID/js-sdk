@@ -1,7 +1,6 @@
 import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { DocumentLoader, getDocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
-import { JSONObject } from '../../iden3comm';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
 import { byteEncoder, isGenesisState } from '../../utils';
 import { calculateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
@@ -33,6 +32,7 @@ import { parseQueriesMetadata, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
 import { calculateQueryHashV3 } from './query-hash';
 import { JsonLd } from 'jsonld/jsonld-spec';
+import { PROTOCOL_CONSTANTS, JSONObject } from '../../iden3comm';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -50,8 +50,6 @@ export type VerifyContext = {
 
 export const userStateError = new Error(`user state is not valid`);
 const zeroInt = 0n;
-const defaultProofVerifyOpts = 1 * 60 * 60 * 1000; // 1 hour
-const defaultAuthVerifyOpts = 5 * 60 * 1000; // 5 minutes
 
 /**
  * PubSignalsVerifier provides verify method
@@ -395,7 +393,7 @@ export class PubSignalsVerifier {
     // verify state
     const gist = await this.checkGlobalState(authV2PubSignals.GISTRoot, this.userId);
 
-    let acceptedStateTransitionDelay = defaultAuthVerifyOpts;
+    let acceptedStateTransitionDelay = PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_OPTS;
     if (opts?.acceptedStateTransitionDelay) {
       acceptedStateTransitionDelay = opts.acceptedStateTransitionDelay;
     }
@@ -714,7 +712,7 @@ export class PubSignalsVerifier {
     );
 
     const acceptedStateTransitionDelay =
-      opts?.acceptedStateTransitionDelay ?? defaultProofVerifyOpts;
+      opts?.acceptedStateTransitionDelay ?? PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_OPT;
 
     if (!issuerNonRevStateResolved.latest) {
       const timeDiff =

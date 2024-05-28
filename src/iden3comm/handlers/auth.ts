@@ -3,6 +3,7 @@ import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
 import {
+  StateVerificationOpts,
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
   BasicMessage,
@@ -64,19 +65,17 @@ export function createAuthorizationRequestWithMessage(
   };
   return request;
 }
+
 /**
  *
  * Options to pass to auth response handler
  *
  * @public
- * @interface AuthResponseHandlerOptions
  */
-export interface AuthResponseHandlerOptions {
-  // acceptedStateTransitionDelay is the period of time in milliseconds that a revoked state remains valid.
-  acceptedStateTransitionDelay?: number;
+export type AuthResponseHandlerOptions = StateVerificationOpts & {
   // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
   acceptedProofGenerationDelay?: number;
-}
+};
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier

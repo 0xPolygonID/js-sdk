@@ -1,4 +1,5 @@
 import {
+  StateVerificationOpts,
   AuthDataPrepareFunc,
   BasicMessage,
   IPacker,
@@ -21,6 +22,7 @@ import {
 } from '../errors';
 import { MediaType } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
+import { DEFAULT_AUTH_VERIFY_OPTS } from '../constants';
 
 const { getProvingMethod } = proving;
 
@@ -70,8 +72,8 @@ export class VerificationHandlerFunc {
    * @param {Array<string>} pubSignals - signals that must contain user id and state
    * @returns `Promise<boolean>`
    */
-  verify(id: string, pubSignals: Array<string>): Promise<boolean> {
-    return this.stateVerificationFunc(id, pubSignals);
+  verify(id: string, pubSignals: Array<string>, opts?: StateVerificationOpts): Promise<boolean> {
+    return this.stateVerificationFunc(id, pubSignals, opts);
   }
 }
 
@@ -89,8 +91,11 @@ export class ZKPPacker implements IPacker {
    * @param {Map<string, VerificationParams>} verificationParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
    */
   constructor(
-    public provingParamsMap: Map<string, ProvingParams>,
-    public verificationParamsMap: Map<string, VerificationParams>
+    public readonly provingParamsMap: Map<string, ProvingParams>,
+    public readonly verificationParamsMap: Map<string, VerificationParams>,
+    private readonly _opts: StateVerificationOpts = {
+      acceptedStateTransitionDelay: DEFAULT_AUTH_VERIFY_OPTS
+    }
   ) {}
 
   /**
@@ -150,8 +155,10 @@ export class ZKPPacker implements IPacker {
 
     const verificationResult = await verificationParams?.verificationFn?.verify(
       token.circuitId,
-      token.zkProof.pub_signals
+      token.zkProof.pub_signals,
+      this._opts
     );
+
     if (!verificationResult) {
       throw new Error(ErrStateVerificationFailed);
     }
