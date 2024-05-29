@@ -91,7 +91,7 @@ describe('proposal-request handler', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    proposalRequestHandler = new CredentialProposalHandler(packageMgr, idWallet, credWallet, {
+    proposalRequestHandler = new CredentialProposalHandler(packageMgr, idWallet, {
       agentUrl,
       proposalResolverFn,
       packerParams: {

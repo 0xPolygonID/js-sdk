@@ -4,7 +4,6 @@ import {
   MerklizedRootPosition,
   getDateFromUnixTimestamp
 } from '@iden3/js-iden3-core';
-import { Hash } from '@iden3/js-merkletree';
 import {
   AuthV2Inputs,
   AuthV2PubSignals,

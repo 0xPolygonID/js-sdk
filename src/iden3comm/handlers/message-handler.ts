@@ -6,7 +6,6 @@ import { PaymentHandlerOptions, PaymentRequestMessageHandlerOptions } from './pa
 import { MediaType } from '../constants';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
-import { PROTOCOL_CONSTANTS } from '..';
 /**
  * iden3  Protocol message handler interface
  */
@@ -149,10 +148,6 @@ export class MessageHandler {
       return this._params.packageManager.packMessage(unpackedMediaType, response, packerParams);
     }
 
-    return this._params.packageManager.packMessage(
-      PROTOCOL_CONSTANTS.MediaType.PlainMessage,
-      response,
-      packerParams
-    );
+    return this._params.packageManager.packMessage(MediaType.PlainMessage, response, packerParams);
   }
 }
