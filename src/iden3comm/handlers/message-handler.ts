@@ -3,6 +3,9 @@ import { AuthMessageHandlerOptions } from './auth';
 import { RevocationStatusMessageHandlerOptions } from './revocation-status';
 import { ContractMessageHandlerOptions } from './contract-request';
 import { PaymentHandlerOptions, PaymentRequestMessageHandlerOptions } from './payment';
+import { MediaType } from '../constants';
+import { proving } from '@iden3/js-jwz';
+import { DID } from '@iden3/js-iden3-core';
 /**
  * iden3  Protocol message handler interface
  */
@@ -120,7 +123,7 @@ export class MessageHandler {
       | RevocationStatusMessageHandlerOptions
       | PaymentRequestMessageHandlerOptions
       | PaymentHandlerOptions
-      | { [key: string]: unknown }
+      | { senderDID?: DID; [key: string]: unknown }
   ): Promise<Uint8Array | null> {
     const { unpackedMediaType, unpackedMessage: message } =
       await this._params.packageManager.unpack(bytes);
@@ -131,10 +134,20 @@ export class MessageHandler {
 
     const response = await this.messageHandler.handle(message, context);
 
-    if (response) {
-      return this._params.packageManager.packMessage(unpackedMediaType, response, {});
+    if (!response) {
+      return null;
     }
 
-    return null;
+    let packerParams = {};
+    const senderDID = (context as { senderDID?: DID })?.senderDID;
+    if (unpackedMediaType === MediaType.ZKPMessage && senderDID) {
+      packerParams = {
+        senderDID,
+        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+      };
+      return this._params.packageManager.packMessage(unpackedMediaType, response, packerParams);
+    }
+
+    return this._params.packageManager.packMessage(MediaType.PlainMessage, response, packerParams);
   }
 }

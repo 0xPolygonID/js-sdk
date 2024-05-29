@@ -43,13 +43,12 @@ import {
   NativeProver,
   VerifiableConstants
 } from '../../src';
-import { Token } from '@iden3/js-jwz';
+import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { ethers } from 'ethers';
 import * as uuid from 'uuid';
 import {
-  MOCK_STATE_STORAGE,
   getInMemoryDataStorage,
   registerKeyProvidersInMemoryKMS,
   IPFS_URL,
@@ -61,8 +60,10 @@ import {
   STATE_CONTRACT,
   RPC_URL,
   SEED_ISSUER,
-  TEST_VERIFICATION_OPTS
+  TEST_VERIFICATION_OPTS,
+  MOCK_STATE_STORAGE
 } from '../helpers';
+import { getRandomBytes } from '@iden3/js-crypto';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -813,34 +814,6 @@ describe('auth', () => {
     expect(token).to.be.a('object');
   });
 
-  it('auth response: TestVerifyMessageWithoutProof', async () => {
-    const sender = '1125GJqgw6YEsKFwj63GY87MMxPL9kwDKxPUiwMLNZ';
-    const userId = '119tqceWdRd2F6WnAyVuFQRFjK3WUXq2LorSPyG9LJ';
-    const callback = 'https://test.com/callback';
-    const msg = 'message to sign';
-    const request: AuthorizationRequestMessage = createAuthorizationRequestWithMessage(
-      'kyc verification',
-      msg,
-      sender,
-      callback
-    );
-
-    const response: AuthorizationResponseMessage = {
-      id: uuid.v4(),
-      thid: request.thid,
-      typ: request.typ,
-      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
-      from: userId,
-      to: sender,
-      body: {
-        message: request.body.message,
-        scope: []
-      }
-    };
-
-    await authHandler.handleAuthorizationResponse(response, request);
-  });
-
   it('auth response: TestVerifyWithAtomicMTPProof', async () => {
     const sender = 'did:polygonid:polygon:mumbai:1125GJqgw6YEsKFwj63GY87MMxPL9kwDKxPUiwMLNZ';
     const callback = 'https://test.com/callback';
@@ -1580,6 +1553,43 @@ describe('auth', () => {
   });
 
   it('auth response: TestVerifyV3MessageWithMtpProof_Merklized_exists', async () => {
+    const stateEthConfig = defaultEthConnectionConfig;
+    stateEthConfig.url = RPC_URL;
+    stateEthConfig.contractAddress = STATE_CONTRACT;
+    const eth = new EthStateStorage(stateEthConfig);
+
+    const kms = registerKeyProvidersInMemoryKMS();
+    dataStorage = getInMemoryDataStorage(eth);
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, eth, {
+      ipfsNodeURL: IPFS_URL
+    });
+    const { did: issuerDID } = await createIdentity(idWallet, {
+      seed: getRandomBytes(32)
+    });
+    const { did: userDID } = await createIdentity(idWallet, {
+      seed: getRandomBytes(32)
+    });
+
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.verifyState.bind(proofService)
+    );
+
+    authHandler = new AuthHandler(packageMgr, proofService);
+
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v4.json',
@@ -1639,11 +1649,64 @@ describe('auth', () => {
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
 
-    await authHandler.handleAuthorizationResponse(
+    const { response } = await authHandler.handleAuthorizationResponse(
       authRes.authResponse,
       authReq,
       TEST_VERIFICATION_OPTS
     );
+
+    const token = await packageMgr.pack(
+      PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
+      byteEncoder.encode(JSON.stringify(response)),
+      {
+        senderDID: issuerDID,
+        provingMethodAlg: new ProvingMethodAlg('groth16', 'authV2')
+      }
+    );
+
+    expect(token).to.be.a.string;
+
+    const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
+
+    // publish to rhs
+
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL);
+
+    // you must store stat info (e.g. state and it's roots)
+
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
+    const txId = await proofService.transitState(
+      issuerDID,
+      res.oldTreeState,
+      true,
+      dataStorage.states,
+      ethSigner
+    );
+
+    const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
+      issuerDID,
+      res.credentials,
+      txId
+    );
+
+    await credWallet.saveAll(credsWithIden3MTPProof);
+
+    const { response: resp2 } = await authHandler.handleAuthorizationResponse(
+      authRes.authResponse,
+      authReq,
+      TEST_VERIFICATION_OPTS
+    );
+
+    const token2 = await packageMgr.pack(
+      PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
+      byteEncoder.encode(JSON.stringify(resp2)),
+      {
+        senderDID: issuerDID,
+        provingMethodAlg: new ProvingMethodAlg('groth16', 'authV2')
+      }
+    );
+
+    expect(token2).to.be.a.string;
   });
 
   it('auth response: TestVerifyV3MessageWithMtpProof_Merklized_noop', async () => {
@@ -1700,12 +1763,6 @@ describe('auth', () => {
 
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
-
-    await authHandler.handleAuthorizationResponse(
-      authRes.authResponse,
-      authReq,
-      TEST_VERIFICATION_OPTS
-    );
   });
 
   it('auth response: TestVerify v2 sig sd', async () => {

@@ -8,4 +8,5 @@ export * from './protocol/proposal-request';
 export * from './protocol/payment';
 
 export * from './packer';
+export * from './models';
 export * from './packageManager';
