@@ -491,7 +491,7 @@ export class ProofService implements IProofService {
     circuitId: string,
     pubSignals: string[],
     opts: StateVerificationOpts = {
-      acceptedStateTransitionDelay: PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_OPTS
+      acceptedStateTransitionDelay: PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY
     }
   ): Promise<boolean> {
     if (circuitId !== CircuitId.AuthV2) {
@@ -524,12 +524,10 @@ export class ProofService implements IProofService {
 
       if (
         timeDiff >
-        (opts?.acceptedStateTransitionDelay ?? PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_OPTS)
+        (opts?.acceptedStateTransitionDelay ?? PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY)
       ) {
         throw new Error('global state is outdated');
       }
-
-      return true;
     }
 
     return true;

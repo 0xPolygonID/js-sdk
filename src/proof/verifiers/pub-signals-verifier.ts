@@ -393,7 +393,7 @@ export class PubSignalsVerifier {
     // verify state
     const gist = await this.checkGlobalState(authV2PubSignals.GISTRoot, this.userId);
 
-    let acceptedStateTransitionDelay = PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_OPTS;
+    let acceptedStateTransitionDelay = PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY;
     if (opts?.acceptedStateTransitionDelay) {
       acceptedStateTransitionDelay = opts.acceptedStateTransitionDelay;
     }
@@ -712,7 +712,7 @@ export class PubSignalsVerifier {
     );
 
     const acceptedStateTransitionDelay =
-      opts?.acceptedStateTransitionDelay ?? PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_OPT;
+      opts?.acceptedStateTransitionDelay ?? PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_DELAY;
 
     if (!issuerNonRevStateResolved.latest) {
       const timeDiff =

@@ -22,7 +22,7 @@ import {
 } from '../errors';
 import { MediaType } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { DEFAULT_AUTH_VERIFY_OPTS } from '../constants';
+import { DEFAULT_AUTH_VERIFY_DELAY } from '../constants';
 
 const { getProvingMethod } = proving;
 
@@ -94,7 +94,7 @@ export class ZKPPacker implements IPacker {
     public readonly provingParamsMap: Map<string, ProvingParams>,
     public readonly verificationParamsMap: Map<string, VerificationParams>,
     private readonly _opts: StateVerificationOpts = {
-      acceptedStateTransitionDelay: DEFAULT_AUTH_VERIFY_OPTS
+      acceptedStateTransitionDelay: DEFAULT_AUTH_VERIFY_DELAY
     }
   ) {}
 

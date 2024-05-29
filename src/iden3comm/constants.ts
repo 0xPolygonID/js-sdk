@@ -73,5 +73,5 @@ export const SUPPORTED_PUBLIC_KEY_TYPES = {
   ]
 };
 
-export const DEFAULT_PROOF_VERIFY_OPT = 1 * 60 * 60 * 1000; // 1 hour
-export const DEFAULT_AUTH_VERIFY_OPTS = 5 * 60 * 1000; // 5 minutes
+export const DEFAULT_PROOF_VERIFY_DELAY = 1 * 60 * 60 * 1000; // 1 hour
+export const DEFAULT_AUTH_VERIFY_DELAY = 5 * 60 * 1000; // 5 minutes
