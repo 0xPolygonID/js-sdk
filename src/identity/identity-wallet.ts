@@ -141,6 +141,14 @@ export interface IIdentityWallet {
   createIdentity(opts: IdentityCreationOptions): Promise<{ did: DID; credential: W3CCredential }>;
 
   /**
+   *  Credential wallet getter
+   *
+   * @returns  {ICredentialWallet}
+   * @memberof IIdentityWallet
+   */
+  get credentialWallet(): ICredentialWallet;
+
+  /**
    * Create Identity based in Ethereum address and it provides an identifier in DID form.
    *
    * @param {IdentityCreationOptions} opts - default is did:iden3:polygon:amoy** with generated key.
@@ -494,6 +502,10 @@ export class IdentityWallet implements IIdentityWallet {
     this._credentialStatusPublisherRegistry = this.getCredentialStatusPublisherRegistry(_opts);
     this._inputsGenerator = new InputGenerator(this, _credentialWallet, _storage.states);
     this._transactionService = new TransactionService(_storage.states.getRpcProvider());
+  }
+
+  get credentialWallet(): ICredentialWallet {
+    return this._credentialWallet;
   }
 
   private getCredentialStatusPublisherRegistry(

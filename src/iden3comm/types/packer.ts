@@ -4,6 +4,7 @@ import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
 import { MediaType } from '../constants';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
+import { StateVerificationOpts } from './models';
 /**
  *  Protocol message type
  */
@@ -79,7 +80,11 @@ export type AuthDataPrepareFunc = (
 /**
  *  signature of state function verifier
  */
-export type StateVerificationFunc = (id: string, pubSignals: Array<string>) => Promise<boolean>;
+export type StateVerificationFunc = (
+  id: string,
+  pubSignals: Array<string>,
+  opts?: StateVerificationOpts
+) => Promise<boolean>;
 
 /**
  * Defines method that must be implemented by any packer

@@ -1,4 +1,5 @@
 import {
+  StateVerificationOpts,
   AuthDataPrepareFunc,
   BasicMessage,
   IPacker,
@@ -9,7 +10,7 @@ import {
 } from '../types';
 import { Token, Header, ProvingMethodAlg, proving } from '@iden3/js-jwz';
 import { AuthV2PubSignals, CircuitId } from '../../circuits/index';
-import { DID, Id } from '@iden3/js-iden3-core';
+import { BytesHelper, DID } from '@iden3/js-iden3-core';
 import { bytesToProtocolMessage } from '../utils/envelope';
 import {
   ErrNoProvingMethodAlg,
@@ -21,6 +22,7 @@ import {
 } from '../errors';
 import { MediaType } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
+import { DEFAULT_AUTH_VERIFY_DELAY } from '../constants';
 
 const { getProvingMethod } = proving;
 
@@ -70,8 +72,8 @@ export class VerificationHandlerFunc {
    * @param {Array<string>} pubSignals - signals that must contain user id and state
    * @returns `Promise<boolean>`
    */
-  verify(id: string, pubSignals: Array<string>): Promise<boolean> {
-    return this.stateVerificationFunc(id, pubSignals);
+  verify(id: string, pubSignals: Array<string>, opts?: StateVerificationOpts): Promise<boolean> {
+    return this.stateVerificationFunc(id, pubSignals, opts);
   }
 }
 
@@ -89,8 +91,11 @@ export class ZKPPacker implements IPacker {
    * @param {Map<string, VerificationParams>} verificationParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
    */
   constructor(
-    public provingParamsMap: Map<string, ProvingParams>,
-    public verificationParamsMap: Map<string, VerificationParams>
+    public readonly provingParamsMap: Map<string, ProvingParams>,
+    public readonly verificationParamsMap: Map<string, VerificationParams>,
+    private readonly _opts: StateVerificationOpts = {
+      acceptedStateTransitionDelay: DEFAULT_AUTH_VERIFY_DELAY
+    }
   ) {}
 
   /**
@@ -150,8 +155,10 @@ export class ZKPPacker implements IPacker {
 
     const verificationResult = await verificationParams?.verificationFn?.verify(
       token.circuitId,
-      token.zkProof.pub_signals
+      token.zkProof.pub_signals,
+      this._opts
     );
+
     if (!verificationResult) {
       throw new Error(ErrStateVerificationFailed);
     }
@@ -169,26 +176,31 @@ export class ZKPPacker implements IPacker {
   }
 }
 
-const verifySender = (token: Token, msg: BasicMessage): void => {
+const verifySender = async (token: Token, msg: BasicMessage): Promise<void> => {
   switch (token.circuitId) {
     case CircuitId.AuthV2:
-      if (!msg.from || !verifyAuthV2Sender(msg.from, token.zkProof.pub_signals)) {
-        throw new Error(ErrSenderNotUsedTokenCreation);
+      {
+        if (!msg.from) {
+          throw new Error(ErrSenderNotUsedTokenCreation);
+        }
+        const authSignals = new AuthV2PubSignals().pubSignalsUnmarshal(
+          byteEncoder.encode(JSON.stringify(token.zkProof.pub_signals))
+        );
+        const did = DID.parseFromId(authSignals.userID);
+
+        const msgHash = await token.getMessageHash();
+        const challenge = BytesHelper.bytesToInt(msgHash.reverse());
+
+        if (challenge !== authSignals.challenge) {
+          throw new Error(ErrSenderNotUsedTokenCreation);
+        }
+
+        if (msg.from !== did.string()) {
+          throw new Error(ErrSenderNotUsedTokenCreation);
+        }
       }
       break;
     default:
       throw new Error(ErrUnknownCircuitID);
   }
-};
-
-const verifyAuthV2Sender = (from: string, pubSignals: Array<string>): boolean => {
-  const authSignals = new AuthV2PubSignals();
-
-  const pubSig = authSignals.pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(pubSignals)));
-  return pubSig.userID ? checkSender(from, pubSig.userID) : false;
-};
-
-const checkSender = (from: string, id: Id): boolean => {
-  const did = DID.parseFromId(id);
-  return from === did.string();
 };

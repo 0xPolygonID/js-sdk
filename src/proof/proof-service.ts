@@ -1,6 +1,18 @@
-import { BytesHelper, DID, MerklizedRootPosition } from '@iden3/js-iden3-core';
-import { Hash } from '@iden3/js-merkletree';
-import { AuthV2Inputs, CircuitId, Operators, Query, TreeState, ValueProof } from '../circuits';
+import {
+  BytesHelper,
+  DID,
+  MerklizedRootPosition,
+  getDateFromUnixTimestamp
+} from '@iden3/js-iden3-core';
+import {
+  AuthV2Inputs,
+  AuthV2PubSignals,
+  CircuitId,
+  Operators,
+  Query,
+  TreeState,
+  ValueProof
+} from '../circuits';
 import { ICredentialWallet } from '../credentials';
 import { IIdentityWallet } from '../identity';
 import {
@@ -22,7 +34,13 @@ import { IZKProver, NativeProver } from './provers/prover';
 import { Merklizer, Options, getDocumentLoader } from '@iden3/js-jsonld-merklization';
 import { ZKProof } from '@iden3/js-jwz';
 import { Signer } from 'ethers';
-import { JSONObject, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../iden3comm';
+import {
+  StateVerificationOpts,
+  JSONObject,
+  ZeroKnowledgeProofRequest,
+  ZeroKnowledgeProofResponse,
+  PROTOCOL_CONSTANTS
+} from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
@@ -449,11 +467,6 @@ export class ProofService implements IProofService {
 
     const authPrepared = await this._inputsGenerator.prepareAuthBJJCredential(genesisDID);
 
-    const authClaimData = await this._inputsGenerator.newCircuitClaimData({
-      credential: authPrepared.credential,
-      credentialCoreClaim: authPrepared.coreClaim
-    });
-
     const signature = await this._identityWallet.signChallenge(challenge, authPrepared.credential);
     const id = DID.idFromDID(genesisDID);
     const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
@@ -464,22 +477,32 @@ export class ProofService implements IProofService {
 
     authInputs.genesisID = id;
     authInputs.profileNonce = BigInt(authProfileNonce);
-    authInputs.authClaim = authClaimData.claim;
-    authInputs.authClaimIncMtp = authClaimData.proof;
+    authInputs.authClaim = authPrepared.coreClaim;
+    authInputs.authClaimIncMtp = authPrepared.incProof.proof;
     authInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
-    authInputs.treeState = authClaimData.treeState;
+    authInputs.treeState = authPrepared.incProof.treeState;
     authInputs.signature = signature;
     authInputs.challenge = challenge;
     authInputs.gistProof = gistProof;
     return authInputs.inputsMarshal();
   }
 
-  async verifyState(circuitId: string, pubSignals: string[]): Promise<boolean> {
+  async verifyState(
+    circuitId: string,
+    pubSignals: string[],
+    opts: StateVerificationOpts = {
+      acceptedStateTransitionDelay: PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY
+    }
+  ): Promise<boolean> {
     if (circuitId !== CircuitId.AuthV2) {
       throw new Error(`CircuitId is not supported ${circuitId}`);
     }
-    const gistRoot = Hash.fromString(pubSignals[2]).bigInt();
-    const userId = BigInt(pubSignals[0]);
+
+    const authV2PubSignals = new AuthV2PubSignals().pubSignalsUnmarshal(
+      byteEncoder.encode(JSON.stringify(pubSignals))
+    );
+    const gistRoot = authV2PubSignals.GISTRoot.bigInt();
+    const userId = authV2PubSignals.userID.bigInt();
     const globalStateInfo = await this._stateStorage.getGISTRootInfo(gistRoot, userId);
 
     if (globalStateInfo.createdAtTimestamp === 0n) {
@@ -494,7 +517,17 @@ export class ProofService implements IProofService {
       if (globalStateInfo.replacedAtTimestamp === 0n) {
         throw new Error(`state was replaced, but replaced time unknown`);
       }
-      return false;
+
+      const timeDiff =
+        Date.now() -
+        getDateFromUnixTimestamp(Number(globalStateInfo.replacedAtTimestamp)).getTime();
+
+      if (
+        timeDiff >
+        (opts?.acceptedStateTransitionDelay ?? PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY)
+      ) {
+        throw new Error('global state is outdated');
+      }
     }
 
     return true;

@@ -1,5 +1,4 @@
-import { PROTOCOL_MESSAGE_TYPE } from '../constants';
-import { MediaType } from '../constants';
+import { PROTOCOL_MESSAGE_TYPE, MediaType } from '../constants';
 import {
   BasicMessage,
   CredentialOffer,
@@ -214,17 +213,22 @@ export class CredentialProposalHandler
       throw new Error(`failed request. no 'credentials' in body`);
     }
 
-    const senderDID = DID.parse(proposalRequest.from);
-
     let credOfferMessage: CredentialsOfferMessage | undefined = undefined;
     let proposalMessage: ProposalMessage | undefined = undefined;
+
     for (let i = 0; i < proposalRequest.body.credentials.length; i++) {
       const cred = proposalRequest.body.credentials[i];
 
       // check if there is credentials in the wallet
       let credsFromWallet: W3CCredential[] = [];
+
       try {
-        credsFromWallet = await this._identityWallet.findOwnedCredentialsByDID(senderDID, {
+        credsFromWallet = await this._identityWallet.credentialWallet.findByQuery({
+          credentialSubject: {
+            id: {
+              $eq: proposalRequest.from
+            }
+          },
           type: cred.type,
           context: cred.context
         });
