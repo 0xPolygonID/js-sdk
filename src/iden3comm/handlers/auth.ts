@@ -9,7 +9,8 @@ import {
   BasicMessage,
   IPackageManager,
   JWSPackerParams,
-  ZeroKnowledgeProofRequest
+  ZeroKnowledgeProofRequest,
+  JSONObject
 } from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
@@ -352,7 +353,7 @@ export class AuthHandler
         );
       }
 
-      const params = proofRequest.params ?? {};
+      const params: JSONObject = proofRequest.params ?? {};
       params.verifierDid = DID.parse(request.from);
 
       const opts = [ctx.acceptedProofGenerationDelay, ctx.acceptedStateTransitionDelay].some(
