@@ -39,7 +39,6 @@ export type ZeroKnowledgeProofRequest = {
   query: JSONObject;
   params?: {
     nullifierSessionId?: string | number;
-    verifierDid?: DID;
   };
 };
 
