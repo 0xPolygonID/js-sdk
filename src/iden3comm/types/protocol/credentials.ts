@@ -42,6 +42,7 @@ export declare enum CredentialOfferStatus {
   Completed = 'completed',
   Rejected = 'rejected'
 }
+
 /** CredentialOffer is structure to fetch credential */
 export type CredentialOffer = {
   id: string;
