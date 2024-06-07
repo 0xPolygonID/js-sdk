@@ -505,10 +505,6 @@ export class ProofService implements IProofService {
     const userId = authV2PubSignals.userID.bigInt();
     const globalStateInfo = await this._stateStorage.getGISTRootInfo(gistRoot, userId);
 
-    if (globalStateInfo.createdAtTimestamp === 0n) {
-      throw new Error(`gist state doesn't exists in contract`);
-    }
-
     if (globalStateInfo.root !== gistRoot) {
       throw new Error(`gist info contains invalid state`);
     }
