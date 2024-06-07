@@ -37,7 +37,7 @@ export type CredentialsOnchainOfferMessageBody = {
 };
 
 /** CredentialOfferStatus is list of possible statuses for credential offer message */
-export declare enum CredentialOfferStatus {
+export enum CredentialOfferStatus {
   Pending = 'pending',
   Completed = 'completed',
   Rejected = 'rejected'
