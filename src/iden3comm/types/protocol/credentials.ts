@@ -36,10 +36,18 @@ export type CredentialsOnchainOfferMessageBody = {
   transaction_data: ContractInvokeTransactionData;
 };
 
+/** CredentialOfferStatus is list of possible statuses for credential offer message */
+export enum CredentialOfferStatus {
+  Pending = 'pending',
+  Completed = 'completed',
+  Rejected = 'rejected'
+}
+
 /** CredentialOffer is structure to fetch credential */
 export type CredentialOffer = {
   id: string;
   description: string;
+  status?: CredentialOfferStatus;
 };
 
 /** CredentialIssuanceMessage represent Iden3message for credential issuance */
