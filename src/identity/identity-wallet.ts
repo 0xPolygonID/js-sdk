@@ -984,7 +984,7 @@ export class IdentityWallet implements IIdentityWallet {
     req.revocationOpts.nonce =
       typeof req.revocationOpts.nonce === 'number'
         ? req.revocationOpts.nonce
-        : Math.round(Math.random() * 10000);
+        : new DataView(getRandomBytes(16).buffer).getUint32(0, false);
 
     req.subjectPosition = req.subjectPosition ?? SubjectPosition.Index;
 
