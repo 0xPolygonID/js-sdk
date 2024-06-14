@@ -146,3 +146,12 @@ export enum PaymentType {
 export enum SupportedCurrencies {
   ETH = 'ETH'
 }
+
+/**
+ * DisplayMethodType type for display method
+ *
+ * @enum {string}
+ */
+export enum DisplayMethodType {
+  Iden3BasicDisplayMethodV1 = 'Iden3BasicDisplayMethodV1'
+}
