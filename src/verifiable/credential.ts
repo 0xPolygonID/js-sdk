@@ -3,7 +3,8 @@ import {
   BJJSignatureProof2021,
   Iden3SparseMerkleTreeProof,
   CredentialStatus,
-  RefreshService
+  RefreshService,
+  DisplayMethod
 } from './proof';
 import {
   Claim,
@@ -42,6 +43,7 @@ export class W3CCredential {
   type: string[] = [];
   expirationDate?: string;
   refreshService?: RefreshService;
+  displayMethod?: DisplayMethod;
   issuanceDate?: string;
   credentialSubject: { [key: string]: object | string | number | boolean } = {};
   credentialStatus!: CredentialStatus;
