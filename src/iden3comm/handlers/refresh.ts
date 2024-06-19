@@ -102,7 +102,7 @@ export class RefreshHandler implements IRefreshHandler {
       type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_REFRESH_MESSAGE_TYPE,
       thid: uuid.v4(),
       body: {
-        id: otherIdentifier,
+        id: credential.id,
         reason: opts?.reason ?? 'credential is expired'
       },
       from: otherIdentifier,
