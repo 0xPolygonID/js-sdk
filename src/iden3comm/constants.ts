@@ -40,7 +40,9 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   // PaymentRequestMessageType is type for payment-request message
   PAYMENT_REQUEST_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/0.1/payment-request',
   // PaymentMessageType is type for payment message
-  PAYMENT_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/0.1/payment'
+  PAYMENT_MESSAGE_TYPE: IDEN3_PROTOCOL + 'credentials/0.1/payment',
+  // InvitationMessageType is type for didcomm invitation message
+  INVITATION_MESSAGE_TYPE: 'https://didcomm.org/out-of-band/2.0/invitation'
 });
 
 /**

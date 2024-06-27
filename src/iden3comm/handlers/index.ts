@@ -7,3 +7,4 @@ export * from './common';
 export * from './credential-proposal';
 export * from './message-handler';
 export * from './payment';
+export * from './invintation';

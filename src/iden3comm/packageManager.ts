@@ -103,7 +103,7 @@ export class PackageManager implements IPackageManager {
     // full serialized
     if (envelope[0] === '{') {
       const envelopeStub = JSON.parse(envelope);
-      return envelopeStub.typ as MediaType;
+      return envelopeStub.typ ? (envelopeStub.typ as MediaType) : MediaType.PlainMessage;
     } else {
       const header = envelope.split('.')[0];
       base64HeaderBytes = base64.parse(header, { loose: true });
