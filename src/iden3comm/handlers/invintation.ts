@@ -9,6 +9,8 @@ import {
   parseAcceptProfile
 } from '../accept-profiles';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
+import { IIdentityWallet } from '../../identity';
+import { DID } from '@iden3/js-iden3-core';
 
 /**
  *  @beta
@@ -57,7 +59,8 @@ export type InvitationHandlerParams = {
 
 /** @beta InvitationHandlerOptions represents invitation handler options */
 export type InvitationHandlerOptions = {
-  useProfile?: boolean;
+  profileNonce?: number;
+  senderDid: DID;
 };
 
 /** @beta AcceptOptions represents invitation handler accept options */
@@ -101,6 +104,7 @@ export class InvitationHandler
    *
    */
   constructor(
+    private readonly _identityWallet: IIdentityWallet,
     private readonly _packerMgr: IPackageManager,
     private readonly _params: InvitationHandlerParams
   ) {
@@ -129,7 +133,18 @@ export class InvitationHandler
         if (!this.isSupportAcceptProfile(invitationMessage.body.accept)) {
           throw new Error('accept profile not supported');
         }
-        // TODO: support profile
+        if (context.profileNonce) {
+          const authProfile = (await this._identityWallet.getProfilesByDID(context.senderDid)).find(
+            (i) => i.verifier === invitationMessage.from
+          );
+          context.senderDid = authProfile
+            ? DID.parse(authProfile.id)
+            : await this._identityWallet.createProfile(
+                context.senderDid,
+                context.profileNonce,
+                invitationMessage.from
+              );
+        }
         const iden3message = invitationMessage.attachments[0].data.json;
         return super.handle(iden3message, context as { [key: string]: unknown });
       }

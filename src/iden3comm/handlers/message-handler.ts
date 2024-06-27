@@ -6,6 +6,7 @@ import { PaymentHandlerOptions, PaymentRequestMessageHandlerOptions } from './pa
 import { MediaType } from '../constants';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
+import { InvitationHandlerOptions } from './invintation';
 /**
  * iden3  Protocol message handler interface
  */
@@ -123,6 +124,7 @@ export class MessageHandler {
       | RevocationStatusMessageHandlerOptions
       | PaymentRequestMessageHandlerOptions
       | PaymentHandlerOptions
+      | InvitationHandlerOptions
       | { senderDid?: DID; [key: string]: unknown }
   ): Promise<Uint8Array | null> {
     const { unpackedMediaType, unpackedMessage: message } =
