@@ -19,13 +19,13 @@ import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handl
 
 /**
  * Defines the options for a RevocationStatusMessageHandler.
- * @property did - The DID (Decentralized Identifier) to be used.
+ * @property senderDid - The DID (Decentralized Identifier) to be used.
  * @property mediaType - The media type to be used.
  * @property packerOptions - Optional parameters for the JWS packer.
  * @property treeState - Optional tree state to be used.
  */
 export type RevocationStatusMessageHandlerOptions = {
-  did: DID;
+  senderDid: DID;
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
   treeState?: TreeState;
@@ -94,7 +94,7 @@ export class RevocationStatusHandler
     message: BasicMessage,
     context: RevocationStatusMessageHandlerOptions
   ): Promise<BasicMessage | null> {
-    if (!context.did) {
+    if (!context.senderDid) {
       throw new Error('DID is required');
     }
 
@@ -155,7 +155,7 @@ export class RevocationStatusHandler
       type: PROTOCOL_MESSAGE_TYPE.REVOCATION_STATUS_RESPONSE_MESSAGE_TYPE,
       thid: rsRequest.thid ?? guid,
       body: revStatus,
-      from: context.did.string(),
+      from: context.senderDid.string(),
       to: rsRequest.from
     };
 
@@ -195,7 +195,7 @@ export class RevocationStatusHandler
     const rsRequest = await this.parseRevocationStatusRequest(request);
 
     const response = await this.handleRevocationStatusRequestMessage(rsRequest, {
-      did,
+      senderDid: did,
       mediaType: opts.mediaType,
       packerOptions: opts.packerOptions,
       treeState: opts.treeState

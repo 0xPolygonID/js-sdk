@@ -123,7 +123,7 @@ export class MessageHandler {
       | RevocationStatusMessageHandlerOptions
       | PaymentRequestMessageHandlerOptions
       | PaymentHandlerOptions
-      | { senderDID?: DID; [key: string]: unknown }
+      | { senderDid?: DID; [key: string]: unknown }
   ): Promise<Uint8Array | null> {
     const { unpackedMediaType, unpackedMessage: message } =
       await this._params.packageManager.unpack(bytes);
@@ -139,10 +139,10 @@ export class MessageHandler {
     }
 
     let packerParams = {};
-    const senderDID = (context as { senderDID?: DID })?.senderDID;
-    if (unpackedMediaType === MediaType.ZKPMessage && senderDID) {
+    const senderDid = (context as { senderDid?: DID })?.senderDid;
+    if (unpackedMediaType === MediaType.ZKPMessage && senderDid) {
       packerParams = {
-        senderDID,
+        senderDID: senderDid,
         provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
       };
       return this._params.packageManager.packMessage(unpackedMediaType, response, packerParams);
