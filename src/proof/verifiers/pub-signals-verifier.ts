@@ -168,6 +168,14 @@ export class PubSignalsVerifier {
       byteEncoder.encode(JSON.stringify(pubSignals))
     );
 
+    if (!sigV2PubSignals.userID) {
+      throw new Error('user id is not presented in proof public signals');
+    }
+
+    if (!sigV2PubSignals.requestID) {
+      throw new Error('requestId is not presented in proof public signals');
+    }
+
     this.userId = sigV2PubSignals.userID;
     this.challenge = sigV2PubSignals.requestID;
 
@@ -222,6 +230,14 @@ export class PubSignalsVerifier {
     let v3PubSignals = new AtomicQueryV3PubSignals();
     v3PubSignals = v3PubSignals.pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(pubSignals)));
 
+    if (!v3PubSignals.userID) {
+      throw new Error('user id is not presented in proof public signals');
+    }
+
+    if (!v3PubSignals.requestID) {
+      throw new Error('requestId is not presented in proof public signals');
+    }
+    
     this.userId = v3PubSignals.userID;
     this.challenge = v3PubSignals.requestID;
 
@@ -385,6 +401,14 @@ export class PubSignalsVerifier {
     authV2PubSignals = authV2PubSignals.pubSignalsUnmarshal(
       byteEncoder.encode(JSON.stringify(pubSignals))
     );
+
+    if (!authV2PubSignals.userID) {
+      throw new Error('user id is not presented in proof public signals');
+    }
+
+    if (!authV2PubSignals.challenge) {
+      throw new Error('challenge is not presented in proof public signals');
+    }
 
     this.userId = authV2PubSignals.userID;
     this.challenge = authV2PubSignals.challenge;
