@@ -230,7 +230,8 @@ export class CredentialProposalHandler
             }
           },
           type: cred.type,
-          context: cred.context
+          context: cred.context,
+          allowedIssuers: [proposalRequest.to]
         });
       } catch (e) {
         if ((e as Error).message !== 'no credential satisfied query') {
