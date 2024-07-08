@@ -9,11 +9,14 @@ import {
   byteEncoder,
   bytesToBase64url,
   hexToBytes,
+  isEthereumIdentity,
   keyPath
 } from '../../src';
 import { expect } from 'chai';
 import { DIDResolutionResult } from 'did-resolver';
 import { ES256KSigner } from 'did-jwt';
+import { DID, Id } from '@iden3/js-iden3-core';
+import { Hex } from '@iden3/js-crypto';
 
 const didExample = {
   '@context': [
@@ -50,6 +53,33 @@ const didExample = {
     }
   ],
   authentication: ['did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw']
+};
+
+const didExampleRecovery = {
+  '@context': [
+    'https://www.w3.org/ns/did/v1',
+    'https://w3id.org/security/suites/secp256k1recovery-2020/v2',
+    {
+      esrs2020: 'https://identity.foundation/EcdsaSecp256k1RecoverySignature2020#',
+      privateKeyJwk: {
+        '@id': 'esrs2020:privateKeyJwk',
+        '@type': '@json'
+      },
+      publicKeyHex: 'esrs2020:publicKeyHex',
+      privateKeyHex: 'esrs2020:privateKeyHex',
+      ethereumAddress: 'esrs2020:ethereumAddress'
+    }
+  ],
+  id: 'did:iden3:privado:main:2SZDsdYordSH49VhS6hGo164RLwfcQe9FGow5ftSUG',
+  verificationMethod: [
+    {
+      id: 'did:iden3:privado:main:2SZDsdYordSH49VhS6hGo164RLwfcQe9FGow5ftSUG#vm-1',
+      controller: 'did:iden3:privado:main:2SZDsdYordSH49VhS6hGo164RLwfcQe9FGow5ftSUG',
+      type: 'EcdsaSecp256k1RecoveryMethod2020',
+      blockchainAccountId: 'eip155:1:0x964e496a1b2541ed029abd5e49fd01e41cd02995'
+    }
+  ],
+  authentication: ['did:iden3:privado:main:2SZDsdYordSH49VhS6hGo164RLwfcQe9FGow5ftSUG#vm-1']
 };
 
 describe('jws packer tests', () => {
@@ -91,6 +121,60 @@ describe('jws packer tests', () => {
 
     const data = await packer.unpack(tokenBytes);
     expect(data).to.not.be.undefined;
+  });
+
+  it('pack / unpack: EcdsaSecp256k1RecoveryMethod2020 verification method', async () => {
+    const recoveryDIDDocument = {
+      resolve: () => Promise.resolve({ didDocument: didExampleRecovery } as DIDResolutionResult)
+    };
+    const recoveryPacker = new JWSPacker(kms, recoveryDIDDocument);
+    const ethDidString = 'did:iden3:privado:main:2SZDsdYordSH49VhS6hGo164RLwfcQe9FGow5ftSUG';
+    const ethDidPk = '7365656473656564656565657365656473656564736565647365656475736572';
+    const ethDid = DID.parse(ethDidString);
+    if (isEthereumIdentity(ethDid)) {
+      const bodyMsgStrRecovery = JSON.parse(bodyMsgStr);
+      bodyMsgStrRecovery.from = ethDidString;
+      const msgBytes = byteEncoder.encode(JSON.stringify(bodyMsgStrRecovery));
+
+      const signer: SignerFn = async (_, data) => {
+        const signatureBase64 = await ES256KSigner(hexToBytes(ethDidPk), false)(data);
+        return base64UrlToBytes(signatureBase64.toString());
+      };
+
+      const tokenBytes = await recoveryPacker.pack(msgBytes, {
+        alg: 'ES256K',
+        did: ethDidString,
+        issuer: did,
+        signer
+      });
+
+      const data = await recoveryPacker.unpack(tokenBytes);
+      expect(data).to.not.be.undefined;
+    } else {
+      throw new Error('Ethereum identity expected');
+    }
+  });
+
+  it('returns EcdsaSecp256k1RecoveryMethod2020 VM from eth identity', async () => {
+    const ethDidString = 'did:iden3:privado:main:2SZDsdYordSH49VhS6hGo164RLwfcQe9FGow5ftSUG';
+    const ethDid = DID.parse(ethDidString);
+    if (isEthereumIdentity(ethDid)) {
+      const id = DID.idFromDID(ethDid);
+      const address = Hex.encodeString(Id.ethAddressFromId(id));
+      const vms = [
+        {
+          id: `${ethDidString}#vm-1`,
+          controller: ethDidString,
+          type: 'EcdsaSecp256k1RecoveryMethod2020',
+          blockchainAccountId: `eip155:1:0x${address}`
+        }
+      ];
+      expect(vms[0].blockchainAccountId).to.be.eq(
+        didExampleRecovery.verificationMethod[0].blockchainAccountId
+      );
+    } else {
+      throw new Error('Ethereum identity expected');
+    }
   });
 
   it('pack / unpack: no kid', async () => {
