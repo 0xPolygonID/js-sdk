@@ -15,7 +15,7 @@ import {
 import { expect } from 'chai';
 import { DIDResolutionResult } from 'did-resolver';
 import { ES256KSigner } from 'did-jwt';
-import { DID, Id } from '@iden3/js-iden3-core';
+import { DID, getChainId, Id } from '@iden3/js-iden3-core';
 import { Hex } from '@iden3/js-crypto';
 
 const didExample = {
@@ -58,17 +58,7 @@ const didExample = {
 const didExampleRecovery = {
   '@context': [
     'https://www.w3.org/ns/did/v1',
-    'https://w3id.org/security/suites/secp256k1recovery-2020/v2',
-    {
-      esrs2020: 'https://identity.foundation/EcdsaSecp256k1RecoverySignature2020#',
-      privateKeyJwk: {
-        '@id': 'esrs2020:privateKeyJwk',
-        '@type': '@json'
-      },
-      publicKeyHex: 'esrs2020:publicKeyHex',
-      privateKeyHex: 'esrs2020:privateKeyHex',
-      ethereumAddress: 'esrs2020:ethereumAddress'
-    }
+    'https://w3id.org/security/suites/secp256k1recovery-2020/v2'
   ],
   id: 'did:iden3:privado:main:2SZDsdYordSH49VhS6hGo164RLwfcQe9FGow5ftSUG',
   verificationMethod: [
@@ -76,7 +66,7 @@ const didExampleRecovery = {
       id: 'did:iden3:privado:main:2SZDsdYordSH49VhS6hGo164RLwfcQe9FGow5ftSUG#vm-1',
       controller: 'did:iden3:privado:main:2SZDsdYordSH49VhS6hGo164RLwfcQe9FGow5ftSUG',
       type: 'EcdsaSecp256k1RecoveryMethod2020',
-      blockchainAccountId: 'eip155:1:0x964e496a1b2541ed029abd5e49fd01e41cd02995'
+      blockchainAccountId: 'eip155:21000:0x964e496a1b2541ed029abd5e49fd01e41cd02995'
     }
   ],
   authentication: ['did:iden3:privado:main:2SZDsdYordSH49VhS6hGo164RLwfcQe9FGow5ftSUG#vm-1']
@@ -160,13 +150,14 @@ describe('jws packer tests', () => {
     const ethDid = DID.parse(ethDidString);
     if (isEthereumIdentity(ethDid)) {
       const id = DID.idFromDID(ethDid);
+      const chainId = getChainId(DID.blockchainFromId(id), DID.networkIdFromId(id));
       const address = Hex.encodeString(Id.ethAddressFromId(id));
       const vms = [
         {
           id: `${ethDidString}#vm-1`,
           controller: ethDidString,
           type: 'EcdsaSecp256k1RecoveryMethod2020',
-          blockchainAccountId: `eip155:1:0x${address}`
+          blockchainAccountId: `eip155:${chainId}:0x${address}`
         }
       ];
       expect(vms[0].blockchainAccountId).to.be.eq(
