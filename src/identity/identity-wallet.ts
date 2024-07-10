@@ -720,7 +720,7 @@ export class IdentityWallet implements IIdentityWallet {
     let credential;
     const ethSigner = opts.ethSigner;
 
-    if (!ethSigner) {
+    if (opts.createBjjCredential && !ethSigner) {
       throw new Error(
         'Ethereum signer is required to create Ethereum identities in order to transit state'
       );
