@@ -747,7 +747,7 @@ export class IdentityWallet implements IIdentityWallet {
       isStateGenesis: true
     });
 
-    if (opts.createBjjCredential) {
+    if (opts.createBjjCredential && ethSigner) {
       // Old tree state genesis state
       const oldTreeState: TreeState = {
         revocationRoot: ZERO_HASH,
