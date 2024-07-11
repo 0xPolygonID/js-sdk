@@ -1489,6 +1489,13 @@ export class IdentityWallet implements IIdentityWallet {
     );
     await this._credentialWallet.saveAll(credsWithIden3MTPProof);
 
+    await this._storage.identity.saveIdentity({
+      did: did.string(),
+      state: currentState,
+      isStatePublished: true,
+      isStateGenesis: false
+    });
+
     const credRefreshed = await this._credentialWallet.findById(credential.id);
     if (!credRefreshed) {
       throw new Error('Credential not found in credential wallet');
