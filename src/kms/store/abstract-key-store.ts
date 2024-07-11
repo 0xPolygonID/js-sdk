@@ -23,4 +23,12 @@ export abstract class AbstractPrivateKeyStore {
    * @returns `Promise<string>`
    */
   abstract get(args: { alias: string }): Promise<string>;
+
+  /**
+   * get all keys
+   *
+   * @abstract
+   * @returns `Promise<{ alias: string; key: string }[]>`
+   */
+  abstract list(): Promise<{ alias: string; key: string }[]>;
 }

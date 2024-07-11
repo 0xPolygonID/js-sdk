@@ -13,6 +13,18 @@ export interface IKeyProvider {
    * @type {KmsKeyType}
    */
   keyType: KmsKeyType;
+
+  /**
+   * get all keys
+   *
+   * @returns list of keys
+   */
+  list(): Promise<
+    {
+      alias: string;
+      key: string;
+    }[]
+  >;
   /**
    * gets public key by key id
    *
@@ -137,5 +149,25 @@ export class KMS {
       throw new Error(`keyProvider not found for: ${keyId.type}`);
     }
     return keyProvider.verify(data, signatureHex, keyId);
+  }
+
+  /**
+   * get all keys by key type
+   *
+   * @param keyType - Key type
+   * @returns list of keys
+   */
+  list(keyType: KmsKeyType): Promise<
+    {
+      alias: string;
+      key: string;
+    }[]
+  > {
+    const keyProvider = this._registry.get(keyType);
+    if (!keyProvider) {
+      throw new Error(`keyProvider not found for: ${keyType}`);
+    }
+
+    return keyProvider.list();
   }
 }

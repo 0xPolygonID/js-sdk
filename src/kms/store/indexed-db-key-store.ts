@@ -1,4 +1,4 @@
-import { UseStore, createStore, get, set } from 'idb-keyval';
+import { UseStore, createStore, get, set, entries } from 'idb-keyval';
 import { AbstractPrivateKeyStore } from './abstract-key-store';
 
 /**
@@ -19,6 +19,21 @@ export class IndexedDBPrivateKeyStore implements AbstractPrivateKeyStore {
       IndexedDBPrivateKeyStore.storageKey
     );
   }
+
+  /**
+   * get all keys
+   *
+   * @abstract
+   * @returns `Promise<{ alias: string; key: string }[]>`
+   */
+  async list(): Promise<{ alias: string; key: string }[]> {
+    const allEntries = await entries(this._store);
+    return allEntries.map(([alias, key]) => ({ alias, key: key.value })) as unknown as {
+      alias: string;
+      key: string;
+    }[];
+  }
+
   /**
    * Gets key from the indexed db storage
    *

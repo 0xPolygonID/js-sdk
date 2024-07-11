@@ -56,5 +56,13 @@ describe('Key store providers', () => {
       testFlow(ed25519Provider),
       testFlow(secp256k1Provider)
     ]);
+    const allKeys = await keyStore.list();
+    expect(allKeys.length).to.equal(6);
+    const ed25519Keys = await ed25519Provider.list();
+    expect(ed25519Keys.length).to.equal(2);
+    const secp256k1Keys = await secp256k1Provider.list();
+    expect(secp256k1Keys.length).to.equal(2);
+    const bjjKeys = await bjjProvider.list();
+    expect(bjjKeys.length).to.equal(2);
   });
 });

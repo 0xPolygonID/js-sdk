@@ -32,6 +32,20 @@ export class BjjProvider implements IKeyProvider {
     this.keyStore = keyStore;
   }
   /**
+   * get all keys
+   * @returns list of keys
+   */
+  async list(): Promise<
+    {
+      alias: string;
+      key: string;
+    }[]
+  > {
+    const allKeysFromKeyStore = await this.keyStore.list();
+    return allKeysFromKeyStore.filter((key) => key.alias.startsWith(this.keyType));
+  }
+
+  /**
    * generates a baby jub jub key from a seed phrase
    * @param {Uint8Array} seed - byte array seed
    * @returns kms key identifier
