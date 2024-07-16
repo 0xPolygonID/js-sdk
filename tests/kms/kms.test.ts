@@ -28,6 +28,12 @@ const testFlow = async (provider: IKeyProvider) => {
     provider.newPrivateKeyFromSeed(seed2),
     provider.newPrivateKeyFromSeed(seed1)
   ]);
+
+  const providerKeys = await provider.list();
+  expect(providerKeys.length).to.equal(2);
+  expect(providerKeys[0].alias).to.include(provider.keyType);
+  expect(providerKeys[1].alias).to.include(provider.keyType);
+
   const [signature1, signature2, signature3] = await Promise.all([
     provider.sign(keyId1, dataToSign1),
     provider.sign(keyId2, dataToSign2),
@@ -58,17 +64,5 @@ describe('Key store providers', () => {
     ]);
     const allKeys = await keyStore.list();
     expect(allKeys.length).to.equal(6);
-    const ed25519Keys = await ed25519Provider.list();
-    expect(ed25519Keys.length).to.equal(2);
-    expect(ed25519Keys[0].alias).to.include(KmsKeyType.Ed25519);
-    expect(ed25519Keys[1].alias).to.include(KmsKeyType.Ed25519);
-    const secp256k1Keys = await secp256k1Provider.list();
-    expect(secp256k1Keys.length).to.equal(2);
-    expect(secp256k1Keys[0].alias).to.include(KmsKeyType.Secp256k1);
-    expect(secp256k1Keys[1].alias).to.include(KmsKeyType.Secp256k1);
-    const bjjKeys = await bjjProvider.list();
-    expect(bjjKeys.length).to.equal(2);
-    expect(bjjKeys[0].alias).to.include(KmsKeyType.BabyJubJub);
-    expect(bjjKeys[1].alias).to.include(KmsKeyType.BabyJubJub);
   });
 });
