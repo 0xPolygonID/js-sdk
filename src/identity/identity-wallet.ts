@@ -720,7 +720,7 @@ export class IdentityWallet implements IIdentityWallet {
     let credential;
     const ethSigner = opts.ethSigner;
 
-    if (!ethSigner) {
+    if (opts.createBjjCredential && !ethSigner) {
       throw new Error(
         'Ethereum signer is required to create Ethereum identities in order to transit state'
       );
@@ -747,7 +747,7 @@ export class IdentityWallet implements IIdentityWallet {
       isStateGenesis: true
     });
 
-    if (opts.createBjjCredential) {
+    if (opts.createBjjCredential && ethSigner) {
       // Old tree state genesis state
       const oldTreeState: TreeState = {
         revocationRoot: ZERO_HASH,
@@ -1488,6 +1488,13 @@ export class IdentityWallet implements IIdentityWallet {
       }
     );
     await this._credentialWallet.saveAll(credsWithIden3MTPProof);
+
+    await this._storage.identity.saveIdentity({
+      did: did.string(),
+      state: currentState,
+      isStatePublished: true,
+      isStateGenesis: false
+    });
 
     const credRefreshed = await this._credentialWallet.findById(credential.id);
     if (!credRefreshed) {

@@ -22,6 +22,20 @@ export class Ed25519Provider implements IKeyProvider {
   ) {}
 
   /**
+   * get all keys
+   * @returns list of keys
+   */
+  async list(): Promise<
+    {
+      alias: string;
+      key: string;
+    }[]
+  > {
+    const allKeysFromKeyStore = await this._keyStore.list();
+    return allKeysFromKeyStore.filter((key) => key.alias.startsWith(this.keyType));
+  }
+
+  /**
    * generates a ed25519 key from a seed phrase
    * @param {Uint8Array} seed - byte array seed
    * @returns {Promise<KmsKeyId>} kms key identifier
