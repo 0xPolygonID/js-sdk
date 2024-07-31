@@ -251,7 +251,7 @@ export class EthStateStorage implements IStateStorage {
     const config = this.networkByChainId(chainId);
 
     const provider = new JsonRpcProvider(config.url);
-    const stateContract = new Contract(config.contractAddress, abi, this.provider);
+    const stateContract = new Contract(config.contractAddress, abi, provider);
 
     return { stateContract, provider };
   }
