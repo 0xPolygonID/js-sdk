@@ -48,6 +48,7 @@ import {
 import { Contract, ethers, JsonRpcProvider } from 'ethers';
 import fetchMock from '@gr2m/fetch-mock';
 import { fail } from 'assert';
+import { decrypt, encrypt, getEncryptionPublicKey } from '@metamask/eth-sig-util';
 
 describe('payment-request handler', () => {
   let packageMgr: IPackageManager;
@@ -284,5 +285,74 @@ describe('payment-request handler', () => {
       paymentRequest,
       paymentValidationHandler: paymentValidationIntegrationHandlerFunc
     });
+  });
+
+  it.only('signed tx with encyption', async () => {
+    const rpcUrl = '';
+    const provider = new JsonRpcProvider(rpcUrl);
+
+    const walletVerifier = new ethers.Wallet(
+      ''
+    );
+    const signerVerifier = walletVerifier.connect(provider);
+    const nonce = await provider.getTransactionCount(signerVerifier.address);
+
+    const feeData = await provider.getFeeData();
+    const { maxFeePerGas, maxPriorityFeePerGas, gasPrice } = feeData;
+
+    const signedTx = await signerVerifier.signTransaction({
+      from: signerVerifier.address,
+      to: '0xCD6DF99ef9f0c52efe6De0C92DEf98B9Bf64fB21',
+      nonce,
+      gasPrice,
+      gasLimit: 800000,
+      maxFeePerGas,
+      maxPriorityFeePerGas,
+      chainId: 59141,
+      value: '100000000000000' // 0,0001 eth
+    });
+
+    console.log('signedTx', signedTx);
+    const issuerPK = '';
+
+    const walletIssuer = new ethers.Wallet(issuerPK);
+    const encryptionKey = getEncryptionPublicKey('');
+
+    // share with verifier encryptionKey != issuerPubKey
+    console.log('encryptionKey', encryptionKey);
+
+    const issuerPubKey = walletIssuer.signingKey.publicKey;
+    console.log('issuerPubKey', issuerPubKey);
+
+    // verifire encrypt signetTx with issuer encryptionKey
+    const encryptedTx = await encrypt({
+      data: signedTx,
+      publicKey: encryptionKey,
+      version: 'x25519-xsalsa20-poly1305'
+    });
+
+    // verifier send it to the issuer
+    console.log('encryptedTx', encryptedTx);
+
+    // issuer decrypt it
+    const decryptedTx = await decrypt({
+      encryptedData: encryptedTx,
+      privateKey: walletIssuer.privateKey.slice(2)
+    });
+    // execute the transaction (nonce problem stay)
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 0,
+        method: 'eth_sendRawTransaction',
+        params: [decryptedTx]
+      })
+    };
+
+    const receipt = await fetch(`${rpcUrl}`, requestOptions);
+    const body = await receipt.json();
+    console.log('body', JSON.stringify(body));
   });
 });
