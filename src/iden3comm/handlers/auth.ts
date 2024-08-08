@@ -10,7 +10,8 @@ import {
   IPackageManager,
   JWSPackerParams,
   ZeroKnowledgeProofRequest,
-  JSONObject
+  JSONObject,
+  AcceptProfile
 } from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
@@ -21,6 +22,7 @@ import { byteDecoder, byteEncoder } from '../../utils';
 import { processZeroKnowledgeProofRequests } from './common';
 import { CircuitId } from '../../circuits';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { defaultAcceptProfile, isAcceptProfileSupported } from '../utils';
 
 /**
  *  createAuthorizationRequest is a function to create protocol authorization request
@@ -138,6 +140,7 @@ export interface IAuthHandler {
 type AuthReqOptions = {
   senderDid: DID;
   mediaType?: MediaType;
+  acceptProfile?: AcceptProfile;
 };
 
 type AuthRespOptions = {
@@ -157,6 +160,7 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
 export interface AuthHandlerOptions {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
+  acceptProfile?: AcceptProfile;
 }
 
 /**
@@ -238,6 +242,13 @@ export class AuthHandler
       throw new Error('auth request should contain from field');
     }
 
+    if (
+      authRequest.body.accept?.length &&
+      !isAcceptProfileSupported(authRequest.body.accept, ctx.acceptProfile || defaultAcceptProfile)
+    ) {
+      throw new Error(`accept profile is not supported`);
+    }
+
     const from = DID.parse(authRequest.from);
 
     const responseScope = await processZeroKnowledgeProofRequests(
@@ -278,7 +289,8 @@ export class AuthHandler
 
     if (!opts) {
       opts = {
-        mediaType: MediaType.ZKPMessage
+        mediaType: MediaType.ZKPMessage,
+        acceptProfile: defaultAcceptProfile
       };
     }
 
@@ -288,7 +300,8 @@ export class AuthHandler
 
     const authResponse = await this.handleAuthRequest(authRequest, {
       senderDid: did,
-      mediaType: opts.mediaType
+      mediaType: opts.mediaType,
+      acceptProfile: opts.acceptProfile
     });
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
