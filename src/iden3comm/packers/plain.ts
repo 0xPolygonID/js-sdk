@@ -1,5 +1,5 @@
 import { BasicMessage, IPacker } from '../types';
-import { MediaType } from '../constants';
+import { AcceptJwsAlgorithms, AcceptJwzAlgorithms, MediaType } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
 
 /**
@@ -52,5 +52,10 @@ export class PlainPacker implements IPacker {
    */
   mediaType(): MediaType {
     return MediaType.PlainMessage;
+  }
+
+  /** {@inheritDoc IPacker.getSupportedAlgorithms} */
+  getSupportedAlgorithms(): AcceptJwzAlgorithms[] | AcceptJwsAlgorithms[] {
+    return [];
   }
 }

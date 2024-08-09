@@ -1,105 +1,75 @@
 import { expect } from 'chai';
+import { parseAcceptProfile, buildAccept } from '../../src/iden3comm/utils/accept-profile';
 import {
-  AcceptAuthMode,
-  AcceptJwzMode,
-  AcceptProfile,
-  AcceptProtocolVersion,
-  buildAcceptProfile,
-  isAcceptProfileSupported,
-  parseAcceptProfile
-} from '../../src';
-describe.only('accept profile utils test', () => {
-  it('test build/parse', async () => {
-    const acceptProfileParams = {
-      protocolVersion: AcceptProtocolVersion.iden3commV1,
-      authMode: [AcceptAuthMode.jsw],
-      jwzMode: [AcceptJwzMode.authV2, AcceptJwzMode.authV3]
-    };
+  ProtocolVersion,
+  MediaType,
+  AcceptAuthCircuits,
+  AcceptJwzAlgorithms,
+  AcceptJwsAlgorithms
+} from '../../src/iden3comm/constants';
 
-    const expectedAcceptProfile = 'iden3comm/v1;auth=jws;jwz=authV2,authV3';
+describe('accept profile utils test', () => {
+  it('parse accept profile', async () => {
+    const accept = [
+      'iden3comm/v1;env=application/iden3-zkp-json;circuits=authV2,authV3;alg=groth16',
+      'iden3comm/v1;env=application/iden3comm-signed-json;alg=ES256K-R'
+    ];
 
-    const acceptProfile = buildAcceptProfile(
-      acceptProfileParams.protocolVersion,
-      acceptProfileParams.authMode,
-      acceptProfileParams.jwzMode
-    );
+    const { protocolVersion, env, circuits, alg } = parseAcceptProfile(accept[0]);
+    expect(protocolVersion).to.be.eq('iden3comm/v1');
+    expect(env).to.be.eq('application/iden3-zkp-json');
+    expect(circuits).to.be.deep.eq(['authV2', 'authV3']);
+    expect(alg).to.be.deep.eq(['groth16']);
+  });
 
-    expect(acceptProfile).to.be.eq(expectedAcceptProfile);
-    const { protocolVersion, authMode, jwzMode } = parseAcceptProfile(acceptProfile);
-    expect(protocolVersion).to.be.deep.eq(acceptProfileParams.protocolVersion);
-    expect(authMode).to.be.deep.eq(acceptProfileParams.authMode);
-    expect(jwzMode).to.be.deep.eq(acceptProfileParams.jwzMode);
+  it('build accept profile', async () => {
+    const expectedAccept = [
+      'iden3comm/v1;env=application/iden3-zkp-json;circuits=authV2,authV3;alg=groth16',
+      'iden3comm/v1;env=application/iden3comm-signed-json;alg=ES256K-R'
+    ];
+
+    const accept = buildAccept([
+      {
+        protocolVersion: ProtocolVersion.v1,
+        env: MediaType.ZKPMessage,
+        circuits: [AcceptAuthCircuits.authV2, AcceptAuthCircuits.authV3],
+        alg: [AcceptJwzAlgorithms.groth16]
+      },
+      {
+        protocolVersion: ProtocolVersion.v1,
+        env: MediaType.SignedMessage,
+        alg: [AcceptJwsAlgorithms.ES256KR]
+      }
+    ]);
+    expect(expectedAccept).to.be.deep.eq(accept);
   });
 
   it('not supported protocol version', async () => {
-    const expectedAcceptProfile = 'iden3commm/v1;auth=jws;jwz=authV2,authV3';
+    const expectedAcceptProfile =
+      'iden3comm/v0.1;env=application/iden3-zkp-json;circuits=authV2,authV3;alg=groth16';
     expect(() => parseAcceptProfile(expectedAcceptProfile)).to.throw(
-      `Protocol version 'iden3commm/v1' not supported`
+      `Protocol version 'iden3comm/v0.1' not supported`
     );
   });
 
-  it('not supported auth mode', async () => {
-    const acceptProfile = 'iden3comm/v1;auth=jwt';
-    expect(() => parseAcceptProfile(acceptProfile)).to.throw(`Auth mode 'jwt' not supported`);
-  });
-
-  it('not supported jwz mode', async () => {
-    const acceptProfile = 'iden3comm/v1;jwz=authV2,authV3,authV3.5';
-    expect(() => parseAcceptProfile(acceptProfile)).to.throw(`Jwz mode 'authV3.5' not supported`);
-  });
-
-  it('build with empty auth mode', async () => {
-    const acceptProfile = buildAcceptProfile(
-      AcceptProtocolVersion.iden3commV1,
-      [],
-      [AcceptJwzMode.authV2]
+  it('not supported envelop', async () => {
+    const acceptProfile = 'iden3comm/v1;env=application/iden3-zkt-json';
+    expect(() => parseAcceptProfile(acceptProfile)).to.throw(
+      `Envelop 'application/iden3-zkt-json' not supported`
     );
-    expect(acceptProfile).to.be.eq('iden3comm/v1;jwz=authV2');
   });
 
-  it('build with empty jwz mode', async () => {
-    const acceptProfile = buildAcceptProfile(
-      AcceptProtocolVersion.iden3commV1,
-      [AcceptAuthMode.jsw],
-      []
+  it('invalid alg for jwz', async () => {
+    const acceptProfile = 'iden3comm/v1;env=application/iden3-zkp-json;alg=ES256K-R';
+    expect(() => parseAcceptProfile(acceptProfile)).to.throw(
+      `Algorithm 'ES256K-R' not supported for 'application/iden3-zkp-json`
     );
-    expect(acceptProfile).to.be.eq('iden3comm/v1;auth=jws');
   });
 
-  it('build with empty jwz mode and auth', async () => {
-    const acceptProfile = buildAcceptProfile(AcceptProtocolVersion.iden3commV1, [], []);
-    expect(acceptProfile).to.be.eq('iden3comm/v1');
-  });
-
-  it('parse with only protocol version', async () => {
-    const acceptProfile = 'iden3comm/v1';
-    const { protocolVersion, authMode, jwzMode } = parseAcceptProfile(acceptProfile);
-    expect(protocolVersion).to.be.eq(AcceptProtocolVersion.iden3commV1);
-    expect(authMode).to.be.deep.eq([]);
-    expect(jwzMode).to.be.deep.eq([]);
-  });
-
-  it('parse with auth mode', async () => {
-    const acceptProfile = 'iden3comm/v1;auth=jws';
-    const { protocolVersion, authMode, jwzMode } = parseAcceptProfile(acceptProfile);
-    expect(protocolVersion).to.be.eq(AcceptProtocolVersion.iden3commV1);
-    expect(authMode).to.be.deep.eq([AcceptAuthMode.jsw]);
-    expect(jwzMode).to.be.deep.eq([]);
-  });
-
-  it('parse with jwz mode', async () => {
-    const acceptProfile = 'iden3comm/v1;jwz=authV2, authV3';
-    const { protocolVersion, authMode, jwzMode } = parseAcceptProfile(acceptProfile);
-    expect(protocolVersion).to.be.eq(AcceptProtocolVersion.iden3commV1);
-    expect(authMode).to.be.deep.eq([]);
-    expect(jwzMode).to.be.deep.eq([AcceptJwzMode.authV2, AcceptJwzMode.authV3]);
-  });
-
-  it('supported profile', async () => {
-    const accept = ['iden3comm/v1;jwz=authV3'];
-    const acceptProfile: AcceptProfile = {
-      jwzMode: [AcceptJwzMode.authV3]
-    };
-    expect(isAcceptProfileSupported(accept, acceptProfile)).to.be.true;
+  it('circuits for jws', async () => {
+    const acceptProfile = 'iden3comm/v1;env=application/iden3comm-signed-json;circuits=authV2';
+    expect(() => parseAcceptProfile(acceptProfile)).to.throw(
+      `Circuits not supported for env 'application/iden3comm-signed-json'`
+    );
   });
 });

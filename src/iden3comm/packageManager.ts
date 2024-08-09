@@ -1,8 +1,14 @@
 import { BasicMessage, IPackageManager, IPacker, PackerParams } from './types';
 import { bytesToHeaderStub } from './utils/envelope';
 import { base64 } from 'rfc4648';
-import { MediaType } from './constants';
+import {
+  AcceptAuthCircuits,
+  AcceptJwsAlgorithms,
+  AcceptJwzAlgorithms,
+  MediaType
+} from './constants';
 import { byteDecoder, byteEncoder } from '../utils';
+import { ZKPPacker } from './packers';
 
 /**
  * Basic package manager for iden3 communication protocol
@@ -19,6 +25,39 @@ export class PackageManager implements IPackageManager {
    */
   constructor() {
     this.packers = new Map<MediaType, IPacker>();
+  }
+
+  /** {@inheritDoc IPackageManager.isSupported} */
+  isSupported(
+    mediaType: MediaType,
+    algs?: AcceptJwzAlgorithms[] | AcceptJwsAlgorithms[],
+    circuits?: AcceptAuthCircuits[]
+  ): boolean {
+    const p = this.packers.get(mediaType);
+    if (!p) {
+      return false;
+    }
+
+    let algFound = false || !algs?.length;
+    if (algs?.length) {
+      const packerSupportedAlgs = p.getSupportedAlgorithms().map((i) => i.toString());
+      algFound = algs?.some((alg) => packerSupportedAlgs.includes(alg));
+    }
+
+    let circuitFound = false || !circuits?.length;
+    if (circuits?.length) {
+      if (mediaType !== MediaType.ZKPMessage) {
+        throw new Error('circuits param not supported for ZKPMessage media type');
+      }
+      const packerCircuits = (p as ZKPPacker).getSupportedCircuits();
+      circuitFound = circuits.some((c) => packerCircuits.includes(c));
+    }
+    return algFound && circuitFound;
+  }
+
+  /** {@inheritDoc IPackageManager.getSupportedMediaTypes} */
+  getSupportedMediaTypes(): MediaType[] {
+    return [...this.packers.keys()];
   }
 
   /** {@inheritDoc IPackageManager.registerPackers} */

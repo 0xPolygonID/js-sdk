@@ -1,103 +1,121 @@
-import { AcceptAuthMode, AcceptJwzMode, AcceptProtocolVersion } from '../types';
-import { AcceptProfile } from '../types/protocol/accept-profile';
+import {
+  MediaType,
+  ProtocolVersion,
+  AcceptAuthCircuits,
+  AcceptJwzAlgorithms,
+  AcceptJwsAlgorithms
+} from '../constants';
+import { AcceptProfile } from '../types';
 
 function isProtocolVersion(value: string): boolean {
-  return Object.values(AcceptProtocolVersion).includes(value as AcceptProtocolVersion);
+  return Object.values(ProtocolVersion).includes(value as ProtocolVersion);
 }
 
-function isAcceptAuthMode(value: string): boolean {
-  return Object.values(AcceptAuthMode).includes(value as AcceptAuthMode);
+function isMediaType(value: string): boolean {
+  return Object.values(MediaType).includes(value as MediaType);
 }
 
-function isAcceptJwzMode(value: string): boolean {
-  return Object.values(AcceptJwzMode).includes(value as AcceptJwzMode);
+function isAcceptAuthCircuits(value: string): boolean {
+  return Object.values(AcceptAuthCircuits).includes(value as AcceptAuthCircuits);
 }
 
-export const defaultAcceptProfile: AcceptProfile = {
-  protocolVersion: [AcceptProtocolVersion.iden3commV1],
-  authMode: [AcceptAuthMode.jsw],
-  jwzMode: [AcceptJwzMode.authV2]
+function isAcceptJwsAlgorithms(value: string): boolean {
+  return Object.values(AcceptJwsAlgorithms).includes(value as AcceptJwsAlgorithms);
+}
+
+function isAcceptJwzAlgorithms(value: string): boolean {
+  return Object.values(AcceptJwzAlgorithms).includes(value as AcceptJwzAlgorithms);
+}
+
+export const buildAccept = (profiles: AcceptProfile[]): string[] => {
+  const result = [];
+  for (const profile of profiles) {
+    let accept = `${profile.protocolVersion};env=${profile.env}`;
+    if (profile.circuits?.length) {
+      accept += `;circuits=${profile.circuits.join(',')}`;
+    }
+    if (profile.alg?.length) {
+      accept += `;alg=${profile.alg.join(',')}`;
+    }
+    result.push(accept);
+  }
+
+  return result;
 };
 
-export const buildAcceptProfile = (
-  protocolVersion: AcceptProtocolVersion,
-  authMode: AcceptAuthMode[],
-  jwzMode: AcceptJwzMode[]
-): string => {
-  let acceptProfile = `${protocolVersion}`;
-  if (authMode.length > 0) {
-    acceptProfile += `;auth=${authMode.join(',')}`;
-  }
-  if (jwzMode.length > 0) {
-    acceptProfile += `;jwz=${jwzMode.join(',')}`;
-  }
-  return acceptProfile;
-};
+export const parseAcceptProfile = (profile: string): AcceptProfile => {
+  const params = profile.split(';');
 
-export const parseAcceptProfile = (
-  profileString: string
-): {
-  protocolVersion: AcceptProtocolVersion;
-  authMode: AcceptAuthMode[];
-  jwzMode: AcceptJwzMode[];
-} => {
-  const params = profileString.split(';');
-  const protocolVersion = params[0].trim() as AcceptProtocolVersion;
+  if (params.length < 2) {
+    throw new Error('Invalid accept profile');
+  }
+  const protocolVersion = params[0].trim() as ProtocolVersion;
   if (!isProtocolVersion(protocolVersion)) {
     throw new Error(`Protocol version '${protocolVersion}' not supported`);
   }
-  const authIndex = params.findIndex((i: string) => i.includes('auth='));
-  let authMode: AcceptAuthMode[] = [];
-  if (authIndex > 0) {
-    authMode = params[authIndex]
-      .split('=')[1]
-      .split(',')
-      .map((i) => i.trim())
-      .map((i) => {
-        if (!isAcceptAuthMode(i)) {
-          throw new Error(`Auth mode '${i}' not supported`);
-        }
-        return i as AcceptAuthMode;
-      });
-  }
-  const jwzIndex = params.findIndex((i: string) => i.includes('jwz='));
-  let jwzMode: AcceptJwzMode[] = [];
-  if (jwzIndex > 0) {
-    jwzMode = params[jwzIndex]
-      .split('=')[1]
-      .split(',')
-      .map((i) => i.trim())
-      .map((i) => {
-        if (!isAcceptJwzMode(i)) {
-          throw new Error(`Jwz mode '${i}' not supported`);
-        }
-        return i as AcceptJwzMode;
-      });
-  }
-  return {
-    protocolVersion,
-    authMode,
-    jwzMode
-  };
-};
 
-export const isAcceptProfileSupported = (
-  accept: string[],
-  acceptProfile: AcceptProfile
-): boolean => {
-  for (const acceptProfileString of accept) {
-    const supportedProtocols = acceptProfile.protocolVersion || [AcceptProtocolVersion.iden3commV1];
-    const supportedAuthModes = acceptProfile.authMode || [AcceptAuthMode.jsw];
-    const supportedJwzModes = acceptProfile.jwzMode || [AcceptJwzMode.authV2];
-    const { protocolVersion, authMode, jwzMode } = parseAcceptProfile(acceptProfileString);
-    if (
-      supportedProtocols.includes(protocolVersion) &&
-      supportedAuthModes.some((i) => !authMode?.length || authMode.includes(i)) &&
-      supportedJwzModes.some((i) => !jwzMode?.length || jwzMode.includes(i))
-    ) {
-      return true;
+  const envParam = params[1].split('=');
+  if (envParam.length !== 2) {
+    throw new Error(`Invalid accept profile 'env' parameter`);
+  }
+  const env = params[1].split('=')[1].trim() as MediaType;
+  if (!isMediaType(env)) {
+    throw new Error(`Envelop '${env}' not supported`);
+  }
+
+  const circuitsIndex = params.findIndex((i: string) => i.includes('circuits='));
+  if (env !== MediaType.ZKPMessage && circuitsIndex > 0) {
+    throw new Error(`Circuits not supported for env '${env}'`);
+  }
+
+  let circuits: AcceptAuthCircuits[] | undefined = undefined;
+  if (circuitsIndex > 0) {
+    circuits = params[circuitsIndex]
+      .split('=')[1]
+      .split(',')
+      .map((i) => i.trim())
+      .map((i) => {
+        if (!isAcceptAuthCircuits(i)) {
+          throw new Error(`Circuit '${i}' not supported`);
+        }
+        return i as AcceptAuthCircuits;
+      });
+  }
+
+  const algIndex = params.findIndex((i: string) => i.includes('alg='));
+  let alg: AcceptJwsAlgorithms[] | AcceptJwzAlgorithms[] | undefined = undefined;
+  if (algIndex > 0) {
+    if (env === MediaType.ZKPMessage) {
+      alg = params[algIndex]
+        .split('=')[1]
+        .split(',')
+        .map((i) => i.trim())
+        .map((i) => {
+          if (!isAcceptJwzAlgorithms(i)) {
+            throw new Error(`Algorithm '${i}' not supported for '${env}'`);
+          }
+          return i as AcceptJwzAlgorithms;
+        });
+    } else if (env === MediaType.SignedMessage) {
+      alg = params[algIndex]
+        .split('=')[1]
+        .split(',')
+        .map((i) => i.trim())
+        .map((i) => {
+          if (!isAcceptJwsAlgorithms(i)) {
+            throw new Error(`Algorithm '${i}' not supported for '${env}'`);
+          }
+          return i as AcceptJwsAlgorithms;
+        });
+    } else {
+      throw new Error(`Algorithm not supported for '${env}'`);
     }
   }
 
-  return false;
+  return {
+    protocolVersion,
+    env,
+    circuits,
+    alg
+  };
 };

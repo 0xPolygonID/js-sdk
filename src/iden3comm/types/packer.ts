@@ -2,7 +2,7 @@ import { DID } from '@iden3/js-iden3-core';
 import { DataPrepareHandlerFunc, VerificationHandlerFunc } from '../packers';
 import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
-import { MediaType } from '../constants';
+import { AcceptJwsAlgorithms, AcceptJwzAlgorithms, MediaType } from '../constants';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
 import { StateVerificationOpts } from './models';
 /**
@@ -121,6 +121,13 @@ export interface IPacker {
    * @returns The media type as a MediaType.
    */
   mediaType(): MediaType;
+
+  /**
+   * gets supported algorithms for mediaType
+   *
+   * @returns AcceptJwzAlgorithms[] | AcceptJwsAlgorithms[]
+   */
+  getSupportedAlgorithms(): AcceptJwzAlgorithms[] | AcceptJwsAlgorithms[];
 }
 /**
  * Params for verification of auth circuit public signals

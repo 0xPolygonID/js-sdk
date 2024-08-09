@@ -1,4 +1,4 @@
-import { MediaType } from '../constants';
+import { MediaType, ProtocolVersion } from '../constants';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
@@ -10,8 +10,7 @@ import {
   IPackageManager,
   JWSPackerParams,
   ZeroKnowledgeProofRequest,
-  JSONObject,
-  AcceptProfile
+  JSONObject
 } from '../types';
 import { DID } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
@@ -22,7 +21,7 @@ import { byteDecoder, byteEncoder } from '../../utils';
 import { processZeroKnowledgeProofRequests } from './common';
 import { CircuitId } from '../../circuits';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
-import { defaultAcceptProfile, isAcceptProfileSupported } from '../utils';
+import { parseAcceptProfile } from '../utils';
 
 /**
  *  createAuthorizationRequest is a function to create protocol authorization request
@@ -140,7 +139,6 @@ export interface IAuthHandler {
 type AuthReqOptions = {
   senderDid: DID;
   mediaType?: MediaType;
-  acceptProfile?: AcceptProfile;
 };
 
 type AuthRespOptions = {
@@ -160,7 +158,6 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
 export interface AuthHandlerOptions {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
-  acceptProfile?: AcceptProfile;
 }
 
 /**
@@ -235,18 +232,33 @@ export class AuthHandler
 
     // override sender did if it's explicitly specified in the auth request
     const to = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
-    const mediaType = ctx.mediaType || MediaType.ZKPMessage;
     const guid = uuid.v4();
 
     if (!authRequest.from) {
       throw new Error('auth request should contain from field');
     }
 
-    if (
-      authRequest.body.accept?.length &&
-      !isAcceptProfileSupported(authRequest.body.accept, ctx.acceptProfile || defaultAcceptProfile)
-    ) {
-      throw new Error(`accept profile is not supported`);
+    const responseType = PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
+    const supportedMediaTypes: MediaType[] = [];
+    for (const acceptProfile of authRequest.body.accept || []) {
+      // 1. check protocol version
+      const { protocolVersion, env, circuits, alg } = parseAcceptProfile(acceptProfile);
+      if (protocolVersion === ProtocolVersion.v1 && responseType.split('/')[-1] !== '1.0') {
+        continue;
+      }
+      // 2. check packer support
+      if (this._packerMgr.isSupported(env, alg, circuits)) {
+        supportedMediaTypes.push(env);
+      }
+    }
+
+    if (!supportedMediaTypes.length) {
+      throw new Error('no profile meets `access` header requirements');
+    }
+
+    let mediaType = supportedMediaTypes[0];
+    if (ctx.mediaType && supportedMediaTypes.includes(ctx.mediaType)) {
+      mediaType = ctx.mediaType;
     }
 
     const from = DID.parse(authRequest.from);
@@ -261,8 +273,8 @@ export class AuthHandler
 
     return {
       id: guid,
-      typ: ctx.mediaType,
-      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
+      typ: mediaType,
+      type: responseType,
       thid: authRequest.thid ?? guid,
       body: {
         message: authRequest?.body?.message,
@@ -289,8 +301,7 @@ export class AuthHandler
 
     if (!opts) {
       opts = {
-        mediaType: MediaType.ZKPMessage,
-        acceptProfile: defaultAcceptProfile
+        mediaType: MediaType.ZKPMessage
       };
     }
 
@@ -300,8 +311,7 @@ export class AuthHandler
 
     const authResponse = await this.handleAuthRequest(authRequest, {
       senderDid: did,
-      mediaType: opts.mediaType,
-      acceptProfile: opts.acceptProfile
+      mediaType: opts.mediaType
     });
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));

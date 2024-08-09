@@ -1,18 +1,14 @@
-export enum AcceptProtocolVersion {
-  iden3commV1 = 'iden3comm/v1'
-}
-
-export enum AcceptAuthMode {
-  jsw = 'jws'
-}
-
-export enum AcceptJwzMode {
-  authV2 = 'authV2',
-  authV3 = 'authV3'
-}
+import {
+  AcceptAuthCircuits,
+  AcceptJwsAlgorithms,
+  AcceptJwzAlgorithms,
+  MediaType,
+  ProtocolVersion
+} from '../../constants';
 
 export type AcceptProfile = {
-  protocolVersion?: AcceptProtocolVersion[];
-  authMode?: AcceptAuthMode[];
-  jwzMode?: AcceptJwzMode[];
+  protocolVersion: ProtocolVersion;
+  env: MediaType;
+  circuits?: AcceptAuthCircuits[];
+  alg?: AcceptJwsAlgorithms[] | AcceptJwzAlgorithms[];
 };
