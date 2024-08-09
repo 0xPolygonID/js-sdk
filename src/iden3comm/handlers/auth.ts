@@ -239,26 +239,31 @@ export class AuthHandler
     }
 
     const responseType = PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
-    const supportedMediaTypes: MediaType[] = [];
-    for (const acceptProfile of authRequest.body.accept || []) {
-      // 1. check protocol version
-      const { protocolVersion, env, circuits, alg } = parseAcceptProfile(acceptProfile);
-      if (protocolVersion === ProtocolVersion.v1 && responseType.split('/')[-1] !== '1.0') {
-        continue;
+    let mediaType: MediaType;
+    if (authRequest.body.accept?.length) {
+      const supportedMediaTypes: MediaType[] = [];
+      for (const acceptProfile of authRequest.body.accept || []) {
+        // 1. check protocol version
+        const { protocolVersion, env, circuits, alg } = parseAcceptProfile(acceptProfile);
+        if (protocolVersion === ProtocolVersion.v1 && responseType.split('/')[-1] !== '1.0') {
+          continue;
+        }
+        // 2. check packer support
+        if (this._packerMgr.isSupported(env, alg, circuits)) {
+          supportedMediaTypes.push(env);
+        }
       }
-      // 2. check packer support
-      if (this._packerMgr.isSupported(env, alg, circuits)) {
-        supportedMediaTypes.push(env);
+
+      if (!supportedMediaTypes.length) {
+        throw new Error('no profile meets `access` header requirements');
       }
-    }
 
-    if (!supportedMediaTypes.length) {
-      throw new Error('no profile meets `access` header requirements');
-    }
-
-    let mediaType = supportedMediaTypes[0];
-    if (ctx.mediaType && supportedMediaTypes.includes(ctx.mediaType)) {
-      mediaType = ctx.mediaType;
+      mediaType = supportedMediaTypes[0];
+      if (ctx.mediaType && supportedMediaTypes.includes(ctx.mediaType)) {
+        mediaType = ctx.mediaType;
+      }
+    } else {
+      mediaType = ctx.mediaType || MediaType.ZKPMessage;
     }
 
     const from = DID.parse(authRequest.from);
