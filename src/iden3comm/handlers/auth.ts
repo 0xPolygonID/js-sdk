@@ -1,4 +1,4 @@
-import { MediaType } from '../constants';
+import { MediaType, ProtocolVersion } from '../constants';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
@@ -21,6 +21,7 @@ import { byteDecoder, byteEncoder } from '../../utils';
 import { processZeroKnowledgeProofRequests } from './common';
 import { CircuitId } from '../../circuits';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { parseAcceptProfile } from '../utils';
 
 /**
  *  createAuthorizationRequest is a function to create protocol authorization request
@@ -231,11 +232,38 @@ export class AuthHandler
 
     // override sender did if it's explicitly specified in the auth request
     const to = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
-    const mediaType = ctx.mediaType || MediaType.ZKPMessage;
     const guid = uuid.v4();
 
     if (!authRequest.from) {
       throw new Error('auth request should contain from field');
+    }
+
+    const responseType = PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
+    let mediaType: MediaType;
+    if (authRequest.body.accept?.length) {
+      const supportedMediaTypes: MediaType[] = [];
+      for (const acceptProfile of authRequest.body.accept || []) {
+        // 1. check protocol version
+        const { protocolVersion, env, circuits, alg } = parseAcceptProfile(acceptProfile);
+        if (protocolVersion === ProtocolVersion.v1 && responseType.split('/')[-1] !== '1.0') {
+          continue;
+        }
+        // 2. check packer support
+        if (this._packerMgr.isSupported(env, alg, circuits)) {
+          supportedMediaTypes.push(env);
+        }
+      }
+
+      if (!supportedMediaTypes.length) {
+        throw new Error('no profile meets `access` header requirements');
+      }
+
+      mediaType = supportedMediaTypes[0];
+      if (ctx.mediaType && supportedMediaTypes.includes(ctx.mediaType)) {
+        mediaType = ctx.mediaType;
+      }
+    } else {
+      mediaType = ctx.mediaType || MediaType.ZKPMessage;
     }
 
     const from = DID.parse(authRequest.from);
@@ -250,8 +278,8 @@ export class AuthHandler
 
     return {
       id: guid,
-      typ: ctx.mediaType,
-      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
+      typ: mediaType,
+      type: responseType,
       thid: authRequest.thid ?? guid,
       body: {
         message: authRequest?.body?.message,

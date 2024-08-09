@@ -20,7 +20,7 @@ import {
   ErrStateVerificationFailed,
   ErrUnknownCircuitID
 } from '../errors';
-import { MediaType } from '../constants';
+import { AcceptAuthCircuits, AcceptJwzAlgorithms, MediaType } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { DEFAULT_AUTH_VERIFY_DELAY } from '../constants';
 
@@ -173,6 +173,15 @@ export class ZKPPacker implements IPacker {
 
   mediaType(): MediaType {
     return MediaType.ZKPMessage;
+  }
+
+  /** {@inheritDoc IPacker.getSupportedAlgorithms} */
+  getSupportedAlgorithms(): AcceptJwzAlgorithms[] {
+    return [AcceptJwzAlgorithms.groth16];
+  }
+
+  getSupportedCircuits(): AcceptAuthCircuits[] {
+    return [AcceptAuthCircuits.authV2];
   }
 }
 

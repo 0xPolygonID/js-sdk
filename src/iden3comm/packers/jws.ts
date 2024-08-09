@@ -1,5 +1,5 @@
 import { BasicMessage, IPacker, JWSPackerParams } from '../types';
-import { MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
+import { AcceptJwsAlgorithms, MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
 import { extractPublicKeyBytes, resolveVerificationMethods } from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
 
@@ -100,6 +100,11 @@ export class JWSPacker implements IPacker {
 
   mediaType(): MediaType {
     return MediaType.SignedMessage;
+  }
+
+  /** {@inheritDoc IPacker.getSupportedAlgorithms} */
+  getSupportedAlgorithms(): AcceptJwsAlgorithms[] {
+    return [AcceptJwsAlgorithms.ES256K, AcceptJwsAlgorithms.ES256KR];
   }
 
   private async resolveDidDoc(from: string) {
