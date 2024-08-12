@@ -245,7 +245,7 @@ export class AuthHandler
       for (const acceptProfile of authRequest.body.accept || []) {
         // 1. check protocol version
         const { protocolVersion, env, circuits, alg } = parseAcceptProfile(acceptProfile);
-        if (protocolVersion === ProtocolVersion.v1 && responseType.split('/')[-1] !== '1.0') {
+        if (protocolVersion === ProtocolVersion.v1 && responseType.split('/').at(-2) !== '1.0') {
           continue;
         }
         // 2. check packer support

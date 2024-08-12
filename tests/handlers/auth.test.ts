@@ -41,7 +41,9 @@ import {
   StateInfo,
   hexToBytes,
   NativeProver,
-  VerifiableConstants
+  VerifiableConstants,
+  buildAccept,
+  AcceptProfile
 } from '../../src';
 import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -64,6 +66,12 @@ import {
   MOCK_STATE_STORAGE
 } from '../helpers';
 import { getRandomBytes } from '@iden3/js-crypto';
+import {
+  AcceptAuthCircuits,
+  defaultAcceptProfile,
+  MediaType,
+  ProtocolVersion
+} from '../../src/iden3comm/constants';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -153,11 +161,18 @@ describe('auth', () => {
       }
     };
 
+    const profile: AcceptProfile = {
+      protocolVersion: ProtocolVersion.v1,
+      env: MediaType.ZKPMessage,
+      circuits: [AcceptAuthCircuits.authV2]
+    };
+
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'mesage',
       did_doc: {},
+      accept: buildAccept([profile]),
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
@@ -228,6 +243,7 @@ describe('auth', () => {
       reason: 'reason',
       message: 'mesage',
       did_doc: {},
+      accept: buildAccept([defaultAcceptProfile]),
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
@@ -2309,6 +2325,73 @@ describe('auth', () => {
     // this should not work because we revoked user keys
     await expect(handleAuthorizationRequest(userDID, authReqBody)).to.rejectedWith(
       VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND
+    );
+  });
+
+  it('request-response flow identity - accept header not supported', async () => {
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+        credentialSubject: {
+          documentType: {
+            $eq: 99
+          }
+        }
+      }
+    };
+
+    const authV3NotSupportedProfile: AcceptProfile = {
+      protocolVersion: ProtocolVersion.v1,
+      env: MediaType.ZKPMessage,
+      circuits: [AcceptAuthCircuits.authV3]
+    };
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'mesage',
+      did_doc: {},
+      accept: buildAccept([authV3NotSupportedProfile]),
+      scope: [proofReq as ZeroKnowledgeProofRequest]
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    await expect(authHandler.handleAuthorizationRequest(userDID, msgBytes)).to.be.rejectedWith(
+      'no profile meets `access` header requirements'
     );
   });
 });
