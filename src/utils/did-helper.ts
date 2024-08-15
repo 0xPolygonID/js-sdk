@@ -4,6 +4,7 @@ import { Hash } from '@iden3/js-merkletree';
 import { DIDResolutionResult, VerificationMethod } from 'did-resolver';
 import { keccak256 } from 'js-sha3';
 import { hexToBytes } from './encoding';
+import { GlobalStateUpdate, IdentityStateUpdate } from '../storage';
 
 /**
  * Checks if state is genesis state
@@ -84,6 +85,63 @@ export const resolveDIDDocumentAuth = async (
   return didResolutionRes.didDocument?.verificationMethod?.find(
     (i) => i.type === 'Iden3StateInfo2023'
   );
+};
+
+export const resolveDidDocumentEip712MessageAndSignature = async (
+  did: DID,
+  resolveURL: string,
+  opts?: {
+    state?: Hash;
+    gist?: Hash;
+  }
+): Promise<IdentityStateUpdate | GlobalStateUpdate> => {
+  let didString = did.string().replace(/:/g, '%3A');
+  // for gist resolve we have to `hide` user did (look into resolver implementation)
+  const isGistRequest = opts?.gist && !opts.state;
+  if (isGistRequest) {
+    didString = did
+      .string()
+      .replace(did.idStrings[2], '000000000000000000000000000000000000000000');
+  }
+  let url = `${resolveURL}/1.0/identifiers/${didString}?signature=EthereumEip712Signature2021`;
+  if (opts?.state) {
+    url += `&state=${opts.state.hex()}`;
+  }
+
+  if (opts?.gist) {
+    url += `&gist=${opts.gist.hex()}`;
+  }
+  const resp = await fetch(url);
+  const data = await resp.json();
+  const message = data.didResolutionMetadata.proof[0].eip712.message;
+  const signature = data.didResolutionMetadata.proof[0].proofValue;
+
+  if (isGistRequest) {
+    return {
+      globalStateMsg: {
+        from: message.from,
+        timestamp: message.timestamp,
+        root: message.root,
+        replacedByRoot: message.replacedByRoot,
+        createdAtTimestamp: message.createdAtTimestamp,
+        replacedAtTimestamp: message.replacedAtTimestamp
+      },
+      signature
+    };
+  }
+
+  return {
+    idStateMsg: {
+      from: message.from,
+      timestamp: message.timestamp,
+      identity: message.identity,
+      state: message.state,
+      replacedByState: message.replacedByState,
+      createdAtTimestamp: message.createdAtTimestamp,
+      replacedAtTimestamp: message.replacedAtTimestamp
+    },
+    signature
+  };
 };
 
 export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): DID => {

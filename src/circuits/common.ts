@@ -1,6 +1,7 @@
 import { Hex } from '@iden3/js-crypto';
 import { Hash, ZERO_HASH, Proof, swapEndianness } from '@iden3/js-merkletree';
 import { TreeState } from './models';
+import { Id } from '@iden3/js-iden3-core';
 
 export const defaultMTLevels = 40; // max MT levels, default value for identity circuits
 export const defaultValueArraySize = 64; // max value array size, default value for identity circuits
@@ -225,4 +226,34 @@ export function getProperties(obj: object): object {
     }
   }
   return result;
+}
+
+/**
+ * onchain state info from pub signals
+ *
+ * @public
+ * @type   OnChainStateInfo
+ */
+export type OnChainStateInfo = {
+  issuerId: Id;
+  userId: Id;
+  gist: Hash;
+  issuerState: Hash;
+  nonRevState: Hash;
+  operatorOutput?: bigint;
+};
+
+/**
+ * state pub signals
+ *
+ * @public
+ * @interface   IStatePubSignals
+ */
+export interface IGistRootStatePubSignals {
+  /**
+   * return object with state params
+   *
+   * @returns {OnChainStateInfo}
+   */
+  getGistRootStatePugSignals(): OnChainStateInfo;
 }

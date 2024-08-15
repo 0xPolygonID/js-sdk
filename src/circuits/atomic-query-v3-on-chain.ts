@@ -4,7 +4,9 @@ import {
   bigIntArrayToStringArray,
   prepareSiblingsStr,
   getNodeAuxValue,
-  prepareCircuitArrayValues
+  prepareCircuitArrayValues,
+  IGistRootStatePubSignals,
+  OnChainStateInfo
 } from './common';
 import { BJJSignatureProof, CircuitError, GISTProof, Query, TreeState, ValueProof } from './models';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
@@ -420,7 +422,7 @@ interface AtomicQueryV3OnChainCircuitInputs {
  * @beta
  * AtomicQueryV3OnChainPubSignals public inputs
  */
-export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
+export class AtomicQueryV3OnChainPubSignals extends BaseConfig implements IGistRootStatePubSignals {
   requestID!: bigint;
   userID!: Id;
   issuerID!: Id;
@@ -514,5 +516,17 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig {
     this.isBJJAuthEnabled = parseInt(sVals[fieldIdx]);
 
     return this;
+  }
+
+  /** {@inheritDoc IGistRootStatePubSignals.getGistRootStatePugSignals} */
+  getGistRootStatePugSignals(): OnChainStateInfo {
+    return {
+      issuerId: this.issuerID,
+      userId: this.userID,
+      gist: this.gistRoot,
+      issuerState: this.issuerState,
+      nonRevState: this.issuerClaimNonRevState,
+      operatorOutput: this.operatorOutput
+    };
   }
 }

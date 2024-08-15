@@ -122,6 +122,16 @@ describe('contract-request', () => {
       const response = new Map<string, ZeroKnowledgeProofResponse>();
       response.set('txhash1', zkProofResponses[0]);
       return response;
+    },
+
+    submitZKPResponseCrossChain: async (
+      signer: Signer,
+      txData: ContractInvokeTransactionData,
+      zkProofResponses: ZeroKnowledgeProofResponse[]
+    ) => {
+      const response = new Map<string, ZeroKnowledgeProofResponse>();
+      response.set('txhash1', zkProofResponses[0]);
+      return response;
     }
   };
 
@@ -608,6 +618,164 @@ describe('contract-request', () => {
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
       thid: id,
       from: verifierDid,
+      body: ciRequestBody
+    };
+
+    const ethSigner = new ethers.Wallet(walletKey);
+
+    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+
+    const options: ContractInvokeHandlerOptions = {
+      ethSigner,
+      challenge
+    };
+    const msgBytes = byteEncoder.encode(JSON.stringify(ciRequest));
+    const ciResponse = await contractRequestHandler.handleContractInvokeRequest(
+      userDID,
+      msgBytes,
+      options
+    );
+
+    expect(ciResponse).not.be.undefined;
+    expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(
+      proofReqs[0].id
+    );
+  });
+
+  // cross chain integration test
+  it.skip('cross chain contract request flow - integration test', async () => {
+    const privadoTestRpcUrl = '<>'; // issuer RPC URL - privato test
+    const privadoTestStateContract = '0x975556428F077dB5877Ea2474D783D6C69233742';
+    const amoyVerifierRpcUrl = '<> '; // verifier RPC URL - amoy
+    const erc20Verifier = '0xf8a8d8389938261a7827eac9b4b6b2b68189bef2';
+
+    const issuerStateEthConfig = defaultEthConnectionConfig;
+    issuerStateEthConfig.url = privadoTestRpcUrl;
+    issuerStateEthConfig.contractAddress = privadoTestStateContract; // privado test state contract
+
+    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
+    const kms = new KMS();
+    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+    dataStorage = {
+      credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
+      identity: new IdentityStorage(
+        new InMemoryDataSource<Identity>(),
+        new InMemoryDataSource<Profile>()
+      ),
+      mt: new InMemoryMerkleTreeStorage(40),
+      states: new EthStateStorage(issuerStateEthConfig)
+    };
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, dataStorage.states, {
+      ipfsNodeURL
+    });
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.verifyState.bind(proofService)
+    );
+
+    const { did: userDID, credential: cred } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Privado,
+      networkId: NetworkId.Main,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    expect(cred).not.to.be.undefined;
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Privado,
+      networkId: NetworkId.Test,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+    expect(issuerAuthCredential).not.to.be.undefined;
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 4, // 2 - mtp, 4 - sig
+        circuitId: CircuitId.AtomicQuerySigV2OnChain,
+        optional: false,
+        query: {
+          allowedIssuers: ['*'],
+          type: claimReq.type,
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          credentialSubject: {
+            birthday: {
+              $lt: 20020101
+            }
+          }
+        }
+      }
+    ];
+
+    const conf = defaultEthConnectionConfig;
+    conf.contractAddress = erc20Verifier;
+    conf.url = amoyVerifierRpcUrl;
+    conf.chainId = 80002; // amoy chain id
+
+    const zkpVerifier = new OnChainZKPVerifier([conf], 'https://resolver-dev.privado.id');
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
+
+    const transactionData: ContractInvokeTransactionData = {
+      contract_address: erc20Verifier,
+      method_id: '1c100d01',
+      chain_id: conf.chainId
+    };
+
+    const ciRequestBody: ContractInvokeRequestBody = {
+      reason: 'reason',
+      transaction_data: transactionData,
+      scope: [...proofReqs]
+    };
+
+    const id = uuid.v4();
+    const ciRequest: ContractInvokeRequest = {
+      id,
+      typ: MediaType.PlainMessage,
+      type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
+      thid: id,
       body: ciRequestBody
     };
 

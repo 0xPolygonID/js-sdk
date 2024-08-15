@@ -4,7 +4,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
 import { DID, ChainIds } from '@iden3/js-iden3-core';
-import { IOnChainZKPVerifier } from '../../storage';
+import { IOnChainZKPVerifier, OnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { processZeroKnowledgeProofRequests } from './common';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
@@ -127,11 +127,25 @@ export class ContractRequestHandler
       { ethSigner, challenge, supportedCircuits: this._supportedCircuits }
     );
 
-    return this._zkpVerifier.submitZKPResponse(
-      ethSigner,
-      message.body.transaction_data,
-      zkpResponses
-    );
+    const methodId = message.body.transaction_data.method_id.replace('0x', '');
+    switch (methodId) {
+      case OnChainZKPVerifier.SupportedCrossChainMethodId:
+        return this._zkpVerifier.submitZKPResponseCrossChain(
+          ethSigner,
+          message.body.transaction_data,
+          zkpResponses
+        );
+      case OnChainZKPVerifier.SupportedMethodId:
+        return this._zkpVerifier.submitZKPResponse(
+          ethSigner,
+          message.body.transaction_data,
+          zkpResponses
+        );
+      default:
+        throw new Error(
+          `Not supported method id. Only '${OnChainZKPVerifier.SupportedCrossChainMethodId} and ${OnChainZKPVerifier.SupportedMethodId} are supported.'`
+        );
+    }
   }
 
   /**

@@ -7,6 +7,8 @@ import {
   bigIntArrayToStringArray,
   existenceToInt,
   getNodeAuxValue,
+  IGistRootStatePubSignals,
+  OnChainStateInfo,
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
@@ -312,7 +314,10 @@ export class AtomicQuerySigV2OnChainCircuitInputs {
  * @class AtomicQuerySigV2OnChainPubSignals
  * @extends {BaseConfig}
  */
-export class AtomicQuerySigV2OnChainPubSignals extends BaseConfig {
+export class AtomicQuerySigV2OnChainPubSignals
+  extends BaseConfig
+  implements IGistRootStatePubSignals
+{
   requestID!: bigint;
   userID!: Id;
   issuerID!: Id;
@@ -396,5 +401,16 @@ export class AtomicQuerySigV2OnChainPubSignals extends BaseConfig {
     fieldIdx++;
 
     return this;
+  }
+
+  /** {@inheritDoc IGistRootStatePubSignals.getGistRootStatePugSignals} */
+  getGistRootStatePugSignals(): OnChainStateInfo {
+    return {
+      issuerId: this.issuerID,
+      userId: this.userID,
+      gist: this.gistRoot,
+      issuerState: this.issuerAuthState,
+      nonRevState: this.issuerClaimNonRevState
+    };
   }
 }

@@ -7,6 +7,8 @@ import {
   bigIntArrayToStringArray,
   existenceToInt,
   getNodeAuxValue,
+  IGistRootStatePubSignals,
+  OnChainStateInfo,
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
@@ -240,7 +242,10 @@ interface atomicQueryMTPV2OnChainCircuitInputs {
  * @class AtomicQueryMTPV2OnChainPubSignals
  * @extends {BaseConfig}
  */
-export class AtomicQueryMTPV2OnChainPubSignals extends BaseConfig {
+export class AtomicQueryMTPV2OnChainPubSignals
+  extends BaseConfig
+  implements IGistRootStatePubSignals
+{
   requestID!: bigint;
   userID!: Id;
   issuerID!: Id;
@@ -321,5 +326,16 @@ export class AtomicQueryMTPV2OnChainPubSignals extends BaseConfig {
     fieldIdx++;
 
     return this;
+  }
+
+  /** {@inheritDoc IGistRootStatePubSignals.getGistRootStatePugSignals} */
+  getGistRootStatePugSignals(): OnChainStateInfo {
+    return {
+      issuerId: this.issuerID,
+      userId: this.userID,
+      gist: this.gistRoot,
+      issuerState: this.issuerClaimIdenState,
+      nonRevState: this.issuerClaimNonRevState
+    };
   }
 }
