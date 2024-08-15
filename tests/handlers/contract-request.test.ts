@@ -280,7 +280,7 @@ describe('contract-request', () => {
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: '0x134b1be34911e39a8397ec6289782989729807a4',
-      method_id: '123',
+      method_id: 'b68967e2',
       chain_id: 80001
     };
 
@@ -646,7 +646,7 @@ describe('contract-request', () => {
   it.skip('cross chain contract request flow - integration test', async () => {
     const privadoTestRpcUrl = '<>'; // issuer RPC URL - privato test
     const privadoTestStateContract = '0x975556428F077dB5877Ea2474D783D6C69233742';
-    const amoyVerifierRpcUrl = '<> '; // verifier RPC URL - amoy
+    const amoyVerifierRpcUrl = '<>'; // verifier RPC URL - amoy
     const erc20Verifier = '0xf8a8d8389938261a7827eac9b4b6b2b68189bef2';
 
     const issuerStateEthConfig = defaultEthConnectionConfig;
