@@ -525,8 +525,7 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig implements IGistR
       userId: this.userID,
       gist: this.gistRoot,
       issuerState: this.issuerState,
-      nonRevState: this.issuerClaimNonRevState,
-      operatorOutput: this.operatorOutput
+      nonRevState: this.issuerClaimNonRevState
     };
   }
 }

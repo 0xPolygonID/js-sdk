@@ -33,14 +33,17 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
   /**
    * solidity identifier for function signature:
-   * function submitZKPResponseCrossChain(
-        uint64 requestId,
-        bytes calldata zkProof, 
-        bytes calldata crossChainProof,
-        bytes calldata data
+   * struct ZKPResponse {
+        uint64 requestId;
+        bytes zkProof;
+        bytes crossChainProof;
+        bytes data;
+    }
+   * function submitZKPResponseV2(
+        ZKPResponse[] memory responses
     ) public
    */
-  public static readonly SupportedCrossChainMethodId = '1c100d01';
+  public static readonly SupportedMethodIdV2 = 'fd41d8d4';
 
   /**
    * supported circuits
@@ -133,9 +136,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   }
 
   /**
-   * {@inheritDoc IOnChainZKPVerifier.submitZKPResponseCrossChain}
+   * {@inheritDoc IOnChainZKPVerifier.submitZKPResponseV2}
    */
-  public async submitZKPResponseCrossChain(
+  public async submitZKPResponseV2(
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
@@ -144,9 +147,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
     }
-    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedCrossChainMethodId) {
+    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV2) {
       throw new Error(
-        `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedCrossChainMethodId}' is supported.`
+        `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV2}' is supported.`
       );
     }
     if (!this._didResolverUrl) {
@@ -165,7 +168,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       if (!this._supportedCircuits.includes(zkProof.circuitId as CircuitId)) {
         throw new Error(`Circuit ${zkProof.circuitId} not supported by OnChainZKPVerifier`);
       }
-      const { gist, issuerState, nonRevState, issuerId, userId, operatorOutput } =
+      const { gist, issuerState, nonRevState, issuerId, userId } =
         this.getOnChainGistRootStatePubSignals(
           zkProof.circuitId as
             | CircuitId.AtomicQueryMTPV2OnChain
@@ -211,19 +214,34 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         issuerNonRevResolution
       );
 
-      let metadataArr: { key: string; value: string }[] = [];
-      if (operatorOutput && operatorOutput !== 0n) {
-        const metadataValue = poseidon.hash([operatorOutput]);
-        metadataArr = [
-          {
-            key: 'operator output',
-            value: `0x${metadataValue.toString(16)}` // TODO: fix
+      const metadataArr: { key: string; value: Uint8Array }[] = [];
+      if (zkProof.vp) {
+        for (const key in zkProof.vp.verifiableCredential.credentialSubject) {
+          if (key === '@type') {
+            continue;
           }
-        ];
+          const metadataValue = poseidon.hashBytes(
+            byteEncoder.encode(
+              JSON.stringify(zkProof.vp.verifiableCredential.credentialSubject[key])
+            )
+          );
+          const bytesValue = byteEncoder.encode(metadataValue.toString());
+          metadataArr.push({
+            key,
+            value: bytesValue
+          });
+        }
       }
 
       const metadata = this.packMetadatas(metadataArr);
-      const payload = [requestID, zkProofEncoded, crossChainProofs, metadata];
+      const payload = [
+        {
+          requestId: requestID,
+          zkProof: zkProofEncoded,
+          crossChainProof: crossChainProofs,
+          data: metadata
+        }
+      ];
 
       const feeData = await provider.getFeeData();
       const maxFeePerGas = chainConfig.maxFeePerGas
@@ -233,8 +251,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         ? BigInt(chainConfig.maxPriorityFeePerGas)
         : feeData.maxPriorityFeePerGas;
 
-      const gasLimit = await contract.submitZKPResponseCrossChain.estimateGas(...payload);
-      const txData = await contract.submitZKPResponseCrossChain.populateTransaction(...payload);
+      const gasLimit = await contract.submitZKPResponseV2.estimateGas(payload);
+      const txData = await contract.submitZKPResponseV2.populateTransaction(payload);
 
       const request: TransactionRequest = {
         to: txData.to,
@@ -326,7 +344,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   private packMetadatas(
     metas: {
       key: string;
-      value: string;
+      value: Uint8Array;
     }[]
   ): string {
     return this._abiCoder.encode(['tuple(' + 'string key,' + 'bytes value' + ')[]'], [metas]);

@@ -41,28 +41,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableInvalidOwner",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableUnauthorizedAccount",
-    "type": "error"
-  },
-  {
     "anonymous": false,
     "inputs": [
       {
@@ -76,44 +54,6 @@
     "type": "event"
   },
   {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferStarted",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
     "inputs": [],
     "name": "REQUESTS_RETURN_LIMIT",
     "outputs": [
@@ -124,26 +64,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "contract IStateCrossChain",
-        "name": "_stateCrossChain",
-        "type": "address"
-      }
-    ],
-    "name": "__ZKPVerifierBase_init",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "acceptOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -336,39 +256,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "pendingOwner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint64",
@@ -458,40 +345,34 @@
   {
     "inputs": [
       {
-        "internalType": "uint64",
-        "name": "requestId",
-        "type": "uint64"
-      },
-      {
-        "internalType": "bytes",
-        "name": "zkProof",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "crossChainProof",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
+        "components": [
+          {
+            "internalType": "uint64",
+            "name": "requestId",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bytes",
+            "name": "zkProof",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "crossChainProof",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct ZKPResponse[]",
+        "name": "responses",
+        "type": "tuple[]"
       }
     ],
-    "name": "submitZKPResponseCrossChain",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
+    "name": "submitZKPResponseV2",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -558,16 +439,16 @@
           },
           {
             "internalType": "uint256",
-            "name": "inputIndex",
+            "name": "inputValue",
             "type": "uint256"
           }
         ],
-        "internalType": "struct ICircuitValidator.KeyToInputIndex[]",
+        "internalType": "struct ICircuitValidator.KeyToInputValue[]",
         "name": "",
         "type": "tuple[]"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

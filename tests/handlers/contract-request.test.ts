@@ -124,7 +124,7 @@ describe('contract-request', () => {
       return response;
     },
 
-    submitZKPResponseCrossChain: async (
+    submitZKPResponseV2: async (
       signer: Signer,
       txData: ContractInvokeTransactionData,
       zkProofResponses: ZeroKnowledgeProofResponse[]
@@ -647,7 +647,7 @@ describe('contract-request', () => {
     const privadoTestRpcUrl = '<>'; // issuer RPC URL - privato test
     const privadoTestStateContract = '0x975556428F077dB5877Ea2474D783D6C69233742';
     const amoyVerifierRpcUrl = '<>'; // verifier RPC URL - amoy
-    const erc20Verifier = '0xf8a8d8389938261a7827eac9b4b6b2b68189bef2';
+    const erc20Verifier = '0x7F98857f2EF85407495cceD35Ff0aa0681128f03';
 
     const issuerStateEthConfig = defaultEthConnectionConfig;
     issuerStateEthConfig.url = privadoTestRpcUrl;
@@ -760,7 +760,7 @@ describe('contract-request', () => {
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: erc20Verifier,
-      method_id: '1c100d01',
+      method_id: 'fd41d8d4',
       chain_id: conf.chainId
     };
 

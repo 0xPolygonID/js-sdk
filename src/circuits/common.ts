@@ -240,7 +240,6 @@ export type OnChainStateInfo = {
   gist: Hash;
   issuerState: Hash;
   nonRevState: Hash;
-  operatorOutput?: bigint;
 };
 
 /**
