@@ -185,4 +185,59 @@ export class ContractRequestHandler
       challenge: opts.challenge
     });
   }
+
+  /**
+   * prepare contract invoker request transaction data
+   * @beta
+   * @param {did} did  - sender DID
+   * @param {ContractInvokeRequest} request  - contract invoke request
+   * @param {ContractInvokeHandlerOptions} opts - handler options
+   * @returns {Map<string, ZeroKnowledgeProofResponse>}` - map of transaction hash - ZeroKnowledgeProofResponse
+   */
+  async prepareContractInvokeRequestTxData(
+    did: DID,
+    request: Uint8Array,
+    opts?: {
+      challenge?: bigint;
+    }
+  ): Promise<Map<number, string>> {
+    const message = await this.parseContractInvokeRequest(request);
+
+    if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
+      throw new Error('Invalid message type for contract invoke request');
+    }
+
+    const { chain_id } = message.body.transaction_data;
+    const networkFlag = Object.keys(ChainIds).find((key) => ChainIds[key] === chain_id);
+
+    if (!networkFlag) {
+      throw new Error(`Invalid chain id ${chain_id}`);
+    }
+    const verifierDid = message.from ? DID.parse(message.from) : undefined;
+    const zkpResponses = await processZeroKnowledgeProofRequests(
+      did,
+      message?.body?.scope,
+      verifierDid,
+      this._proofService,
+      { challenge: opts?.challenge, supportedCircuits: this._supportedCircuits }
+    );
+
+    const methodId = message.body.transaction_data.method_id.replace('0x', '');
+    switch (methodId) {
+      case OnChainZKPVerifier.SupportedMethodIdV2:
+        return this._zkpVerifier.prepareZKPResponseV2TxData(
+          message.body.transaction_data,
+          zkpResponses
+        );
+      case OnChainZKPVerifier.SupportedMethodId:
+        return this._zkpVerifier.prepareZKPResponseTxData(
+          message.body.transaction_data,
+          zkpResponses
+        );
+      default:
+        throw new Error(
+          `Not supported method id. Only '${OnChainZKPVerifier.SupportedMethodIdV2} and ${OnChainZKPVerifier.SupportedMethodId} are supported.'`
+        );
+    }
+  }
 }

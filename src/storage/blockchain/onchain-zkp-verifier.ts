@@ -71,6 +71,46 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   ) {}
 
   /**
+   * {@inheritDoc IOnChainZKPVerifier.prepareZKPResponseTxData}
+   */
+  public async prepareZKPResponseTxData(
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ): Promise<Map<number, string>> {
+    const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
+    if (!chainConfig) {
+      throw new Error(`config for chain id ${txData.chain_id} was not found`);
+    }
+    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodId) {
+      throw new Error(
+        `submit doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodId}' is supported.`
+      );
+    }
+    const verifierContract = new Contract(txData.contract_address, abi);
+    const response = new Map<number, string>();
+    for (const zkProof of zkProofResponses) {
+      const requestID = zkProof.id;
+      const inputs = zkProof.pub_signals;
+
+      const payload = [
+        requestID,
+        inputs,
+        zkProof.proof.pi_a.slice(0, 2),
+        [
+          [zkProof.proof.pi_b[0][1], zkProof.proof.pi_b[0][0]],
+          [zkProof.proof.pi_b[1][1], zkProof.proof.pi_b[1][0]]
+        ],
+        zkProof.proof.pi_c.slice(0, 2)
+      ];
+
+      const txData = await verifierContract.submitZKPResponse.populateTransaction(...payload);
+      response.set(requestID, txData.data);
+    }
+
+    return response;
+  }
+
+  /**
    * {@inheritDoc IOnChainZKPVerifier.submitZKPResponse}
    */
   public async submitZKPResponse(
@@ -88,44 +128,31 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       );
     }
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
-    const verifierContract = new Contract(txData.contract_address, abi, provider);
     ethSigner = ethSigner.connect(provider);
-    const contract = verifierContract.connect(ethSigner) as Contract;
 
+    const txDataMap = await this.prepareZKPResponseTxData(txData, zkProofResponses);
     const response = new Map<string, ZeroKnowledgeProofResponse>();
+
+    const feeData = await provider.getFeeData();
+    const maxFeePerGas = chainConfig.maxFeePerGas
+      ? BigInt(chainConfig.maxFeePerGas)
+      : feeData.maxFeePerGas;
+    const maxPriorityFeePerGas = chainConfig.maxPriorityFeePerGas
+      ? BigInt(chainConfig.maxPriorityFeePerGas)
+      : feeData.maxPriorityFeePerGas;
+
     for (const zkProof of zkProofResponses) {
-      const requestID = zkProof.id;
-      const inputs = zkProof.pub_signals;
-
-      const payload = [
-        requestID,
-        inputs,
-        zkProof.proof.pi_a.slice(0, 2),
-        [
-          [zkProof.proof.pi_b[0][1], zkProof.proof.pi_b[0][0]],
-          [zkProof.proof.pi_b[1][1], zkProof.proof.pi_b[1][0]]
-        ],
-        zkProof.proof.pi_c.slice(0, 2)
-      ];
-
-      const feeData = await provider.getFeeData();
-      const maxFeePerGas = chainConfig.maxFeePerGas
-        ? BigInt(chainConfig.maxFeePerGas)
-        : feeData.maxFeePerGas;
-      const maxPriorityFeePerGas = chainConfig.maxPriorityFeePerGas
-        ? BigInt(chainConfig.maxPriorityFeePerGas)
-        : feeData.maxPriorityFeePerGas;
-
-      const gasLimit = await contract.submitZKPResponse.estimateGas(...payload);
-      const txData = await contract.submitZKPResponse.populateTransaction(...payload);
+      const payload = txDataMap.get(zkProof.id);
 
       const request: TransactionRequest = {
-        to: txData.to,
-        data: txData.data,
-        gasLimit,
+        to: txData.contract_address,
+        data: payload,
         maxFeePerGas,
         maxPriorityFeePerGas
       };
+
+      const gasLimit = await ethSigner.estimateGas(request);
+      request.gasLimit = gasLimit;
 
       const transactionService = new TransactionService(provider);
       const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
@@ -136,17 +163,12 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   }
 
   /**
-   * {@inheritDoc IOnChainZKPVerifier.submitZKPResponseV2}
+   * {@inheritDoc IOnChainZKPVerifier.prepareZKPResponseV2TxData}
    */
-  public async submitZKPResponseV2(
-    ethSigner: Signer,
+  public async prepareZKPResponseV2TxData(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
-    const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
-    if (!chainConfig) {
-      throw new Error(`config for chain id ${txData.chain_id} was not found`);
-    }
+  ): Promise<Map<number, string>> {
     if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV2) {
       throw new Error(
         `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV2}' is supported.`
@@ -155,12 +177,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     if (!this._didResolverUrl) {
       throw new Error(`did resolver url required for crosschain verification`);
     }
-    const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
-    const verifierContract = new Contract(txData.contract_address, abi, provider);
-    ethSigner = ethSigner.connect(provider);
-    const contract = verifierContract.connect(ethSigner) as Contract;
+    const verifierContract = new Contract(txData.contract_address, abi);
 
-    const response = new Map<string, ZeroKnowledgeProofResponse>();
+    const response = new Map<number, string>();
     for (const zkProof of zkProofResponses) {
       const requestID = zkProof.id;
       const inputs = zkProof.pub_signals;
@@ -243,24 +262,58 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         }
       ];
 
-      const feeData = await provider.getFeeData();
-      const maxFeePerGas = chainConfig.maxFeePerGas
-        ? BigInt(chainConfig.maxFeePerGas)
-        : feeData.maxFeePerGas;
-      const maxPriorityFeePerGas = chainConfig.maxPriorityFeePerGas
-        ? BigInt(chainConfig.maxPriorityFeePerGas)
-        : feeData.maxPriorityFeePerGas;
+      const txData = await verifierContract.submitZKPResponseV2.populateTransaction(payload);
 
-      const gasLimit = await contract.submitZKPResponseV2.estimateGas(payload);
-      const txData = await contract.submitZKPResponseV2.populateTransaction(payload);
+      response.set(requestID, txData.data);
+    }
 
+    return response;
+  }
+
+  /**
+   * {@inheritDoc IOnChainZKPVerifier.submitZKPResponseV2}
+   */
+  public async submitZKPResponseV2(
+    ethSigner: Signer,
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
+    const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
+    if (!chainConfig) {
+      throw new Error(`config for chain id ${txData.chain_id} was not found`);
+    }
+    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV2) {
+      throw new Error(
+        `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV2}' is supported.`
+      );
+    }
+    if (!this._didResolverUrl) {
+      throw new Error(`did resolver url required for crosschain verification`);
+    }
+    const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
+    ethSigner = ethSigner.connect(provider);
+
+    const txDataMap = await this.prepareZKPResponseV2TxData(txData, zkProofResponses);
+    const feeData = await provider.getFeeData();
+    const maxFeePerGas = chainConfig.maxFeePerGas
+      ? BigInt(chainConfig.maxFeePerGas)
+      : feeData.maxFeePerGas;
+    const maxPriorityFeePerGas = chainConfig.maxPriorityFeePerGas
+      ? BigInt(chainConfig.maxPriorityFeePerGas)
+      : feeData.maxPriorityFeePerGas;
+
+    const response = new Map<string, ZeroKnowledgeProofResponse>();
+    for (const zkProof of zkProofResponses) {
+      const payload = txDataMap.get(zkProof.id);
       const request: TransactionRequest = {
-        to: txData.to,
-        data: txData.data,
-        gasLimit,
+        to: txData.contract_address,
+        data: payload,
         maxFeePerGas,
         maxPriorityFeePerGas
       };
+
+      const gasLimit = await ethSigner.estimateGas(request);
+      request.gasLimit = gasLimit;
 
       const transactionService = new TransactionService(provider);
       const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);

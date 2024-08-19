@@ -132,6 +132,14 @@ describe('contract-request', () => {
       const response = new Map<string, ZeroKnowledgeProofResponse>();
       response.set('txhash1', zkProofResponses[0]);
       return response;
+    },
+
+    prepareZKPResponseTxData: async () => {
+      return new Map();
+    },
+
+    prepareZKPResponseV2TxData: async () => {
+      return new Map();
     }
   };
 

@@ -35,4 +35,24 @@ export interface IOnChainZKPVerifier {
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<string, ZeroKnowledgeProofResponse>>;
+
+  /**
+   * Returns the Map of request id to transaction data for the ZKP verifier contract submission.
+   * @param txData
+   * @param zkProofResponses
+   */
+  prepareZKPResponseTxData(
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ): Promise<Map<number, string>>;
+
+  /**
+   * Returns the Map of request id to transaction data for the ZKP verifier contract submission V2.
+   * @param txData
+   * @param zkProofResponses
+   */
+  prepareZKPResponseV2TxData(
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ): Promise<Map<number, string>>;
 }
