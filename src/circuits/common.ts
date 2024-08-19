@@ -254,5 +254,5 @@ export interface IGistRootStatePubSignals {
    *
    * @returns {OnChainStateInfo}
    */
-  getGistRootStatePugSignals(): OnChainStateInfo;
+  getGistRootStatePubSignals(): OnChainStateInfo;
 }

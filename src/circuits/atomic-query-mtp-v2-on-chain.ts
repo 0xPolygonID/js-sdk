@@ -328,8 +328,8 @@ export class AtomicQueryMTPV2OnChainPubSignals
     return this;
   }
 
-  /** {@inheritDoc IGistRootStatePubSignals.getGistRootStatePugSignals} */
-  getGistRootStatePugSignals(): OnChainStateInfo {
+  /** {@inheritDoc IGistRootStatePubSignals.getGistRootStatePubSignals} */
+  getGistRootStatePubSignals(): OnChainStateInfo {
     return {
       issuerId: this.issuerID,
       userId: this.userID,

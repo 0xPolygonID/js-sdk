@@ -424,6 +424,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     }
     const encodedInputs = byteEncoder.encode(JSON.stringify(inputs));
     atomicQueryPubSignals.pubSignalsUnmarshal(encodedInputs);
-    return atomicQueryPubSignals.getGistRootStatePugSignals();
+    return atomicQueryPubSignals.getGistRootStatePubSignals();
   }
 }
