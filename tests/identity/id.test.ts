@@ -14,7 +14,8 @@ import {
   FSCircuitStorage,
   NativeProver,
   Iden3SparseMerkleTreeProof,
-  BJJSignatureProof2021
+  BJJSignatureProof2021,
+  TreeState
 } from '../../src';
 import {
   MOCK_STATE_STORAGE,
@@ -24,11 +25,14 @@ import {
   getInMemoryDataStorage,
   registerKeyProvidersInMemoryKMS,
   WALLET_KEY,
-  createEthereumBasedIdentity
+  createEthereumBasedIdentity,
+  SEED_ISSUER
 } from '../helpers';
 import { expect } from 'chai';
 import { Wallet } from 'ethers';
 import { getRandomBytes } from '@iden3/js-crypto';
+import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { ZERO_HASH } from '@iden3/js-merkletree';
 
 describe('identity', () => {
   let credWallet: ICredentialWallet;
@@ -190,6 +194,68 @@ describe('identity', () => {
     );
 
     expect((await claimsTree.root()).bigInt()).not.to.equal(0);
+  });
+
+  it('createIdentity Secp256k1 w/o auth bjj cred and add after creation', async () => {
+    const authBJJCredentialCreationOptions = {
+      seed: SEED_ISSUER,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    // create identity without auth bjj credential
+    const { did, credential } = await idWallet.createEthereumBasedIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Amoy,
+      ...authBJJCredentialCreationOptions,
+      createBjjCredential: false
+    });
+
+    expect(did.string()).to.equal(
+      'did:iden3:polygon:amoy:x6x5sor7zpxsu478u36QvEgaRUfPjmzqFo5PHHzbM'
+    );
+    expect(credential).to.be.undefined;
+
+    // add bjj credential
+    const ethSigner = new Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
+
+    const oldTreeState: TreeState = {
+      revocationRoot: ZERO_HASH,
+      claimsRoot: ZERO_HASH,
+      state: ZERO_HASH,
+      rootOfRoots: ZERO_HASH
+    };
+
+    const credential2 = await idWallet.addBJJAuthCredential(
+      did,
+      oldTreeState,
+      true,
+      ethSigner,
+      authBJJCredentialCreationOptions
+    );
+
+    const dbCred = await dataStorage.credential.findCredentialById(credential2.id);
+    expect(credential2).to.deep.equal(dbCred);
+
+    const claimsTree = await dataStorage.mt.getMerkleTreeByIdentifierAndType(
+      did.string(),
+      MerkleTreeType.Claims
+    );
+
+    expect((await claimsTree.root()).bigInt()).not.to.equal(0);
+  });
+
+  it('createIdentity Secp256k1 with bjj cred and no signer', async () => {
+    try {
+      await createEthereumBasedIdentity(idWallet);
+      expect.fail();
+    } catch (err: unknown) {
+      expect((err as Error).message).to.be.eq(
+        `Ethereum signer is required to create Ethereum identities in order to transit state`
+      );
+    }
   });
 
   it('add auth bjj credential', async () => {

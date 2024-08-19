@@ -147,3 +147,12 @@ export enum SupportedCurrencies {
   ETH = 'ETH',
   MATIC = 'MATIC'
 }
+
+/**
+ * DisplayMethodType type for display method
+ *
+ * @enum {string}
+ */
+export enum DisplayMethodType {
+  Iden3BasicDisplayMethodV1 = 'Iden3BasicDisplayMethodV1'
+}

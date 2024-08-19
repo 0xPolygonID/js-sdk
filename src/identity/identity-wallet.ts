@@ -720,7 +720,7 @@ export class IdentityWallet implements IIdentityWallet {
     let credential;
     const ethSigner = opts.ethSigner;
 
-    if (!ethSigner) {
+    if (opts.createBjjCredential && !ethSigner) {
       throw new Error(
         'Ethereum signer is required to create Ethereum identities in order to transit state'
       );
@@ -747,7 +747,7 @@ export class IdentityWallet implements IIdentityWallet {
       isStateGenesis: true
     });
 
-    if (opts.createBjjCredential) {
+    if (opts.createBjjCredential && ethSigner) {
       // Old tree state genesis state
       const oldTreeState: TreeState = {
         revocationRoot: ZERO_HASH,
@@ -984,7 +984,7 @@ export class IdentityWallet implements IIdentityWallet {
     req.revocationOpts.nonce =
       typeof req.revocationOpts.nonce === 'number'
         ? req.revocationOpts.nonce
-        : Math.round(Math.random() * 10000);
+        : new DataView(getRandomBytes(16).buffer).getUint32(0, false);
 
     req.subjectPosition = req.subjectPosition ?? SubjectPosition.Index;
 
@@ -1426,6 +1426,38 @@ export class IdentityWallet implements IIdentityWallet {
     return txId;
   }
 
+  private async getAuthBJJCredential(
+    did: DID,
+    oldTreeState: TreeState,
+    {
+      nonce,
+      seed,
+      id,
+      type
+    }: { nonce: number; seed: Uint8Array; id: string; type: CredentialStatusType }
+  ): Promise<W3CCredential> {
+    const { authClaim, pubKey } = await this.createAuthCoreClaim(nonce, seed);
+
+    const { hi, hv } = authClaim.hiHv();
+    await this._storage.mt.addToMerkleTree(did.string(), MerkleTreeType.Claims, hi, hv);
+
+    // Calculate current state after adding credential to merkle tree
+    const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
+      did.string(),
+      MerkleTreeType.Claims
+    );
+    const currentState = hashElems([
+      (await claimsTree.root()).bigInt(),
+      oldTreeState.revocationRoot.bigInt(),
+      oldTreeState.rootOfRoots.bigInt()
+    ]);
+
+    return this.createAuthBJJCredential(did, pubKey, authClaim, currentState, {
+      id,
+      type
+    });
+  }
+
   /** {@inheritdoc IIdentityWallet.addBJJAuthCredential} */
   async addBJJAuthCredential(
     did: DID,
@@ -1442,64 +1474,76 @@ export class IdentityWallet implements IIdentityWallet {
         ? 0
         : opts.revocationOpts.nonce ?? new DataView(getRandomBytes(12).buffer).getUint32(0));
 
-    const { authClaim, pubKey } = await this.createAuthCoreClaim(
-      opts.revocationOpts.nonce ?? 0,
-      opts.seed
-    );
-
-    const { hi, hv } = authClaim.hiHv();
-    await this._storage.mt.addToMerkleTree(did.string(), MerkleTreeType.Claims, hi, hv);
-
-    // Calculate current state after adding credential to merkle tree
-    const claimsTree = await this._storage.mt.getMerkleTreeByIdentifierAndType(
-      did.string(),
-      MerkleTreeType.Claims
-    );
-    const currentState = hashElems([
-      (await claimsTree.root()).bigInt(),
-      oldTreeState.revocationRoot.bigInt(),
-      oldTreeState.rootOfRoots.bigInt()
-    ]);
-
-    let credential = await this.createAuthBJJCredential(
-      did,
-      pubKey,
-      authClaim,
-      currentState,
-      opts.revocationOpts
-    );
-
-    const txId = await this.transitState(did, oldTreeState, isOldStateGenesis, ethSigner, prover);
-    const { receipt, block } = await this._transactionService.getTransactionReceiptAndBlock(txId);
-    const credsWithIden3MTPProof = await this.generateIden3SparseMerkleTreeProof(
-      did,
-      [credential],
-      txId,
-      receipt?.blockNumber,
-      block?.timestamp,
-      undefined,
-      {
-        revNonce: Number(authClaim.getRevocationNonce()),
-        subjectPosition: SubjectPosition.None,
-        merklizedRootPosition: MerklizedRootPosition.None,
-        updatable: false,
-        version: 0,
-        merklizeOpts: { documentLoader: cacheLoader() }
-      }
-    );
-    await this._credentialWallet.saveAll(credsWithIden3MTPProof);
-
-    const credRefreshed = await this._credentialWallet.findById(credential.id);
-    if (!credRefreshed) {
-      throw new Error('Credential not found in credential wallet');
-    }
-    credential = credRefreshed;
-
-    await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
-      rhsUrl: opts.revocationOpts.id,
-      onChain: opts.revocationOpts.onChain
+    const credential = await this.getAuthBJJCredential(did, oldTreeState, {
+      nonce: opts.revocationOpts.nonce,
+      seed: opts.seed,
+      id: opts.revocationOpts.id,
+      type: opts.revocationOpts.type
     });
 
-    return credential;
+    const addMtpToCredAndPublishRevState = async () => {
+      const { receipt, block } = await this._transactionService.getTransactionReceiptAndBlock(txId);
+      const credsWithIden3MTPProof = await this.generateIden3SparseMerkleTreeProof(
+        did,
+        [credential],
+        txId,
+        receipt?.blockNumber,
+        block?.timestamp,
+        undefined,
+        {
+          revNonce: opts.revocationOpts.nonce ?? 0,
+          subjectPosition: SubjectPosition.None,
+          merklizedRootPosition: MerklizedRootPosition.None,
+          updatable: false,
+          version: 0,
+          merklizeOpts: { documentLoader: cacheLoader() }
+        }
+      );
+
+      await this._credentialWallet.saveAll(credsWithIden3MTPProof);
+
+      await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
+        rhsUrl: opts.revocationOpts.id,
+        onChain: opts.revocationOpts.onChain
+      });
+
+      return credsWithIden3MTPProof[0];
+    };
+
+    let txId = '';
+
+    let attempt = 2;
+    do {
+      try {
+        txId = await this.transitState(did, oldTreeState, isOldStateGenesis, ethSigner, prover);
+        break;
+      } catch (err) {
+        console.warn(
+          `Error while transiting state, retrying state transition, attempt: ${attempt}`,
+          err
+        );
+      }
+    } while (--attempt);
+
+    if (!txId) {
+      const oldTransitStateInfoJson = JSON.stringify(
+        {
+          claimsRoot: oldTreeState.claimsRoot.hex(),
+          revocationRoot: oldTreeState.revocationRoot.hex(),
+          rootOfRoots: oldTreeState.rootOfRoots.hex(),
+          state: oldTreeState.state.hex(),
+          isOldStateGenesis,
+          credentialId: credential.id,
+          did: did.string()
+        },
+        null,
+        2
+      );
+      await this._credentialWallet.save(credential);
+
+      throw new Error(`Error publishing state, info to publish: ${oldTransitStateInfoJson}`);
+    }
+
+    return addMtpToCredAndPublishRevState();
   }
 }

@@ -11,6 +11,21 @@ import { KmsKeyId } from './types';
  */
 export class LocalStoragePrivateKeyStore implements AbstractPrivateKeyStore {
   static readonly storageKey = 'keystore';
+
+  /**
+   * get all keys
+   *
+   * @abstract
+   * @returns `Promise<{ alias: string; key: string }[]>`
+   */
+  list(): Promise<{ alias: string; key: string }[]> {
+    const dataStr = localStorage.getItem(LocalStoragePrivateKeyStore.storageKey);
+    if (!dataStr) {
+      throw new Error('no key under given alias');
+    }
+    const data = JSON.parse(dataStr);
+    return data.map((i: { id: string; value: string }) => ({ alias: i.id, key: i.value }));
+  }
   /**
    * Gets key from the local storage
    *
