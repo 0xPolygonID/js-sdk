@@ -2,13 +2,9 @@ import { DID } from '@iden3/js-iden3-core';
 import { DataPrepareHandlerFunc, VerificationHandlerFunc } from '../packers';
 import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
-import { MediaType } from '../constants';
+import { MediaType, ProtocolMessage } from '../constants';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
 import { StateVerificationOpts } from './models';
-/**
- *  Protocol message type
- */
-export type ProtocolMessage = string;
 
 /**
  * JSONValue

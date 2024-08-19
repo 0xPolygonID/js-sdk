@@ -1,4 +1,4 @@
-import { MediaType } from '../constants';
+import { MediaType, ProtocolMessage } from '../constants';
 import { BasicMessage, EnvelopeStub, HeaderStub } from '../types';
 
 /**
@@ -11,7 +11,7 @@ export const basicMessageFactory = (): BasicMessage => {
     id: '',
     typ: '' as MediaType,
     thid: '',
-    type: '',
+    type: '' as ProtocolMessage,
     body: {},
     from: '',
     to: ''
