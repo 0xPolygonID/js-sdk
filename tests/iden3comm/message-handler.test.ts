@@ -77,12 +77,10 @@ describe('MessageHandler', () => {
     const dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
 
     const dummyHandler = {
-      handle: async (msg: BasicMessage) => {
-        if (msg.type === 'msg-type-req') {
-          return {
-            type: 'msg-type-resp'
-          };
-        }
+      handle: async () => {
+        return {
+          type: 'msg-type-resp'
+        };
       }
     } as unknown as AbstractMessageHandler;
     const resolvers = new CredentialStatusResolverRegistry();
@@ -198,7 +196,7 @@ describe('MessageHandler', () => {
     const dummyHandlerResponseMsg = await dummyHandler.handle(
       {
         type: 'msg-type-req'
-      } as BasicMessage,
+      } as unknown as BasicMessage,
       {}
     );
 
