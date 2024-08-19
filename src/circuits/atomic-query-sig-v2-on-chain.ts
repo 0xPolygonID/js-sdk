@@ -406,11 +406,11 @@ export class AtomicQuerySigV2OnChainPubSignals
   /** {@inheritDoc IGistRootStatePubSignals.getGistRootStatePubSignals} */
   getGistRootStatePubSignals(): OnChainStateInfo {
     return {
-      issuerId: this.issuerID,
-      userId: this.userID,
-      gist: this.gistRoot,
-      issuerState: this.issuerAuthState,
-      nonRevState: this.issuerClaimNonRevState
+      states: [
+        { id: this.issuerID, state: this.issuerAuthState },
+        { id: this.issuerID, state: this.issuerClaimNonRevState }
+      ],
+      gists: [{ id: this.userID, root: this.gistRoot }]
     };
   }
 }

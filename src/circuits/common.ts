@@ -235,11 +235,14 @@ export function getProperties(obj: object): object {
  * @type   OnChainStateInfo
  */
 export type OnChainStateInfo = {
-  issuerId: Id;
-  userId: Id;
-  gist: Hash;
-  issuerState: Hash;
-  nonRevState: Hash;
+  states: {
+    id: Id;
+    state: Hash;
+  }[];
+  gists: {
+    id: Id;
+    root: Hash;
+  }[];
 };
 
 /**

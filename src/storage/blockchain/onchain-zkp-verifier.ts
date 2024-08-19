@@ -187,17 +187,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       if (!this._supportedCircuits.includes(zkProof.circuitId as CircuitId)) {
         throw new Error(`Circuit ${zkProof.circuitId} not supported by OnChainZKPVerifier`);
       }
-      const { gist, issuerState, nonRevState, issuerId, userId } =
-        this.getOnChainGistRootStatePubSignals(
-          zkProof.circuitId as
-            | CircuitId.AtomicQueryMTPV2OnChain
-            | CircuitId.AtomicQuerySigV2OnChain
-            | CircuitId.AtomicQueryV3OnChain,
-          zkProof.pub_signals
-        );
-
-      const userDid = DID.parseFromId(userId);
-      const issuerDid = DID.parseFromId(issuerId);
 
       const zkProofEncoded = this.packZkpProof(
         inputs,
@@ -209,29 +198,40 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         zkProof.proof.pi_c.slice(0, 2)
       );
 
-      const globalStateUpdate = (await resolveDidDocumentEip712MessageAndSignature(
-        userDid,
-        this._didResolverUrl,
-        { gist }
-      )) as GlobalStateUpdate;
-
-      const issuerStateResolution = (await resolveDidDocumentEip712MessageAndSignature(
-        issuerDid,
-        this._didResolverUrl,
-        { state: issuerState }
-      )) as IdentityStateUpdate;
-
-      const issuerNonRevResolution = (await resolveDidDocumentEip712MessageAndSignature(
-        issuerDid,
-        this._didResolverUrl,
-        { state: nonRevState }
-      )) as IdentityStateUpdate;
-
-      const crossChainProofs = this.packCrossChainProofs(
-        globalStateUpdate,
-        issuerStateResolution,
-        issuerNonRevResolution
+      const stateInfo = this.getOnChainGistRootStatePubSignals(
+        zkProof.circuitId as
+          | CircuitId.AtomicQueryMTPV2OnChain
+          | CircuitId.AtomicQuerySigV2OnChain
+          | CircuitId.AtomicQueryV3OnChain,
+        zkProof.pub_signals
       );
+
+      const gistUpdateResolutions = [];
+      for (const gist of stateInfo.gists) {
+        gistUpdateResolutions.push(
+          resolveDidDocumentEip712MessageAndSignature(
+            DID.parseFromId(gist.id),
+            this._didResolverUrl,
+            { gist: gist.root }
+          )
+        );
+      }
+
+      const stateUpdateResolutions = [];
+      for (const state of stateInfo.states) {
+        stateUpdateResolutions.push(
+          resolveDidDocumentEip712MessageAndSignature(
+            DID.parseFromId(state.id),
+            this._didResolverUrl,
+            { state: state.state }
+          )
+        );
+      }
+
+      const gistUpdateArr = (await Promise.all(gistUpdateResolutions)) as GlobalStateUpdate[];
+      const stateUpdateArr = (await Promise.all(stateUpdateResolutions)) as IdentityStateUpdate[];
+
+      const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
 
       const metadataArr: { key: string; value: Uint8Array }[] = [];
       if (zkProof.vp) {
@@ -331,24 +331,23 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   }
 
   private packCrossChainProofs(
-    globalStateUpdate: GlobalStateUpdate,
-    issuerStateResolution: IdentityStateUpdate,
-    issuerNonRevResolution: IdentityStateUpdate
+    gistUpdateArr: GlobalStateUpdate[],
+    stateUpdateArr: IdentityStateUpdate[]
   ) {
-    const proofs = [
-      {
+    const proofs = [];
+
+    for (const globalStateUpdate of gistUpdateArr) {
+      proofs.push({
         proofType: 'globalStateProof',
         proof: this.packGlobalStateMsg(globalStateUpdate)
-      },
-      {
+      });
+    }
+    for (const stateUpdate of stateUpdateArr) {
+      proofs.push({
         proofType: 'stateProof',
-        proof: this.packIdentityStateMsg(issuerStateResolution)
-      },
-      {
-        proofType: 'stateProof',
-        proof: this.packIdentityStateMsg(issuerNonRevResolution)
-      }
-    ];
+        proof: this.packIdentityStateMsg(stateUpdate)
+      });
+    }
     return this._abiCoder.encode(
       ['tuple(' + 'string proofType,' + 'bytes proof' + ')[]'],
       [proofs]

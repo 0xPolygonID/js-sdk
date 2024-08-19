@@ -521,11 +521,11 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig implements IGistR
   /** {@inheritDoc IGistRootStatePubSignals.getGistRootStatePubSignals} */
   getGistRootStatePubSignals(): OnChainStateInfo {
     return {
-      issuerId: this.issuerID,
-      userId: this.userID,
-      gist: this.gistRoot,
-      issuerState: this.issuerState,
-      nonRevState: this.issuerClaimNonRevState
+      states: [
+        { id: this.issuerID, state: this.issuerState },
+        { id: this.issuerID, state: this.issuerClaimNonRevState }
+      ],
+      gists: [{ id: this.userID, root: this.gistRoot }]
     };
   }
 }
