@@ -1,5 +1,5 @@
-import { MediaType, ProtocolMessage } from '../constants';
-import { BasicMessage, EnvelopeStub, HeaderStub } from '../types';
+import { MediaType } from '../constants';
+import { BasicMessage, EnvelopeStub, HeaderStub, ProtocolMessage } from '../types';
 
 /**
  * creates empty basic message

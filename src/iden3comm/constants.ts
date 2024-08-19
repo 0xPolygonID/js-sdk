@@ -46,8 +46,6 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   PAYMENT_MESSAGE_TYPE: `${IDEN3_PROTOCOL}credentials/0.1/payment` as const
 });
 
-export type ProtocolMessage = (typeof PROTOCOL_MESSAGE_TYPE)[keyof typeof PROTOCOL_MESSAGE_TYPE];
-
 /**
  * Media types for iden3 comm communication protocol
  *
