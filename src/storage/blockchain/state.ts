@@ -240,13 +240,6 @@ export class EthStateStorage implements IStateStorage {
     provider: JsonRpcProvider;
   } {
     const idTyped = Id.fromBigInt(id as bigint);
-    if (!Array.isArray(this.ethConfig)) {
-      return {
-        stateContract: this.stateContract,
-        provider: this.provider
-      };
-    }
-
     const chainId = getChainId(DID.blockchainFromId(idTyped), DID.networkIdFromId(idTyped));
     const config = this.networkByChainId(chainId);
 
@@ -257,14 +250,11 @@ export class EthStateStorage implements IStateStorage {
   }
 
   private networkByChainId(chainId: number): EthConnectionConfig {
-    if (Array.isArray(this.ethConfig)) {
-      const network = this.ethConfig.find((c) => c.chainId === chainId);
-      if (!network) {
-        throw new Error(`chainId "${chainId}" not supported`);
-      }
-      return network;
+    const config = Array.isArray(this.ethConfig) ? this.ethConfig : [this.ethConfig];
+    const network = config.find((c) => c.chainId === chainId);
+    if (!network) {
+      throw new Error(`chainId "${chainId}" not supported`);
     }
-
-    return this.ethConfig as EthConnectionConfig;
+    return network;
   }
 }
