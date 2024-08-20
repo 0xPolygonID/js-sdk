@@ -1,6 +1,7 @@
 import { BasicMessage, IPacker } from '../types';
-import { AcceptJwsAlgorithms, AcceptJwzAlgorithms, MediaType } from '../constants';
+import { MediaType } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
+import { parseAcceptProfile } from '../utils';
 
 /**
  * Plain packer just serializes bytes to JSON and adds media type
@@ -54,8 +55,26 @@ export class PlainPacker implements IPacker {
     return MediaType.PlainMessage;
   }
 
-  /** {@inheritDoc IPacker.getSupportedAlgorithms} */
-  getSupportedAlgorithms(): AcceptJwzAlgorithms[] | AcceptJwsAlgorithms[] {
-    return [];
+  /** {@inheritDoc IPacker.getEnvelop} */
+  getEnvelop(): string {
+    return `env=${this.mediaType()}`;
+  }
+
+  /** {@inheritDoc IPacker.isSupported} */
+  isSupported(profile: string) {
+    const { env, circuits, alg } = parseAcceptProfile(profile);
+    if (env !== this.mediaType()) {
+      return false;
+    }
+
+    if (circuits) {
+      throw new Error(`Circuits are not supported for ${env} media type`);
+    }
+
+    if (alg) {
+      throw new Error(`Algorithms are not supported for ${env} media type`);
+    }
+
+    return true;
   }
 }

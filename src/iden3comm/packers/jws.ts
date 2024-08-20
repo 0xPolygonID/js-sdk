@@ -13,6 +13,7 @@ import {
   decodeBase64url,
   encodeBase64url
 } from '../../utils';
+import { parseAcceptProfile } from '../utils';
 
 /**
  * Packer that can pack message to JWZ token,
@@ -102,9 +103,35 @@ export class JWSPacker implements IPacker {
     return MediaType.SignedMessage;
   }
 
-  /** {@inheritDoc IPacker.getSupportedAlgorithms} */
-  getSupportedAlgorithms(): AcceptJwsAlgorithms[] {
-    return [AcceptJwsAlgorithms.ES256K, AcceptJwsAlgorithms.ES256KR];
+  /** {@inheritDoc IPacker.getEnvelop} */
+  getEnvelop(): string {
+    return `env=${this.mediaType()}&alg=${AcceptJwsAlgorithms.ES256K},${
+      AcceptJwsAlgorithms.ES256KR
+    }`;
+  }
+
+  /** {@inheritDoc IPacker.isSupported} */
+  isSupported(profile: string) {
+    const { env, circuits, alg } = parseAcceptProfile(profile);
+    if (env !== this.mediaType()) {
+      return false;
+    }
+
+    if (circuits) {
+      throw new Error(`Circuits are not supported for ${env} media type`);
+    }
+
+    if (!alg) {
+      throw new Error(`Algorithm is required for ${env} media type`);
+    }
+
+    for (const a of alg) {
+      if (!Object.values(AcceptJwsAlgorithms).includes(a as AcceptJwsAlgorithms)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private async resolveDidDoc(from: string) {

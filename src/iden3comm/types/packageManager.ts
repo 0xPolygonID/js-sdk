@@ -1,10 +1,5 @@
 import { BasicMessage, IPacker, PackerParams } from './packer';
-import {
-  AcceptAuthCircuits,
-  AcceptJwsAlgorithms,
-  AcceptJwzAlgorithms,
-  MediaType
-} from '../constants';
+import { MediaType } from '../constants';
 
 /**
  * Interface for defining the registry of packers
@@ -93,11 +88,7 @@ export interface IPackageManager {
    * @param {MediaType} mediaType
    * @returns AcceptJwzAlgorithms[] | AcceptJwsAlgorithms[]
    */
-  isSupported(
-    mediaType: MediaType,
-    alg?: AcceptJwzAlgorithms[] | AcceptJwsAlgorithms[],
-    circuits?: AcceptAuthCircuits[]
-  ): boolean;
+  isSupported(mediaType: MediaType, profile: string): boolean;
 }
 /**
  * EnvelopeStub is used to stub the jwt based envelops

@@ -32,7 +32,7 @@ export const buildAccept = (profiles: AcceptProfile[]): string[] => {
   for (const profile of profiles) {
     let accept = `${profile.protocolVersion};env=${profile.env}`;
     if (profile.circuits?.length) {
-      accept += `;circuits=${profile.circuits.join(',')}`;
+      accept += `;circuitId=${profile.circuits.join(',')}`;
     }
     if (profile.alg?.length) {
       accept += `;alg=${profile.alg.join(',')}`;
@@ -63,7 +63,7 @@ export const parseAcceptProfile = (profile: string): AcceptProfile => {
     throw new Error(`Envelop '${env}' not supported`);
   }
 
-  const circuitsIndex = params.findIndex((i: string) => i.includes('circuits='));
+  const circuitsIndex = params.findIndex((i: string) => i.includes('circuitId='));
   if (env !== MediaType.ZKPMessage && circuitsIndex > 0) {
     throw new Error(`Circuits not supported for env '${env}'`);
   }

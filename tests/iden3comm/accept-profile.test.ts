@@ -11,7 +11,7 @@ import {
 describe('accept profile utils test', () => {
   it('parse accept profile', async () => {
     const accept = [
-      'iden3comm/v1;env=application/iden3-zkp-json;circuits=authV2,authV3;alg=groth16',
+      'iden3comm/v1;env=application/iden3-zkp-json;circuitId=authV2,authV3;alg=groth16',
       'iden3comm/v1;env=application/iden3comm-signed-json;alg=ES256K-R'
     ];
 
@@ -24,7 +24,7 @@ describe('accept profile utils test', () => {
 
   it('build accept profile', async () => {
     const expectedAccept = [
-      'iden3comm/v1;env=application/iden3-zkp-json;circuits=authV2,authV3;alg=groth16',
+      'iden3comm/v1;env=application/iden3-zkp-json;circuitId=authV2,authV3;alg=groth16',
       'iden3comm/v1;env=application/iden3comm-signed-json;alg=ES256K-R'
     ];
 
@@ -46,7 +46,7 @@ describe('accept profile utils test', () => {
 
   it('not supported protocol version', async () => {
     const expectedAcceptProfile =
-      'iden3comm/v0.1;env=application/iden3-zkp-json;circuits=authV2,authV3;alg=groth16';
+      'iden3comm/v0.1;env=application/iden3-zkp-json;circuitId=authV2,authV3;alg=groth16';
     expect(() => parseAcceptProfile(expectedAcceptProfile)).to.throw(
       `Protocol version 'iden3comm/v0.1' not supported`
     );
@@ -67,7 +67,7 @@ describe('accept profile utils test', () => {
   });
 
   it('circuits for jws', async () => {
-    const acceptProfile = 'iden3comm/v1;env=application/iden3comm-signed-json;circuits=authV2';
+    const acceptProfile = 'iden3comm/v1;env=application/iden3comm-signed-json;circuitId=authV2';
     expect(() => parseAcceptProfile(acceptProfile)).to.throw(
       `Circuits not supported for env 'application/iden3comm-signed-json'`
     );
