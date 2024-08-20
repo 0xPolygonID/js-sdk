@@ -1556,6 +1556,7 @@ describe('auth', () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = RPC_URL;
     stateEthConfig.contractAddress = STATE_CONTRACT;
+    stateEthConfig.chainId = 80002;
     const eth = new EthStateStorage(stateEthConfig);
 
     const kms = registerKeyProvidersInMemoryKMS();
