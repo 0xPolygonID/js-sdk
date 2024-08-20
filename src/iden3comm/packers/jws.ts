@@ -121,11 +121,7 @@ export class JWSPacker implements IPacker {
       throw new Error(`Circuits are not supported for ${env} media type`);
     }
 
-    if (!alg) {
-      throw new Error(`Algorithm is required for ${env} media type`);
-    }
-
-    for (const a of alg) {
+    for (const a of alg || []) {
       if (!Object.values(AcceptJwsAlgorithms).includes(a as AcceptJwsAlgorithms)) {
         return false;
       }

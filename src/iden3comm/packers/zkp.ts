@@ -190,15 +190,13 @@ export class ZKPPacker implements IPacker {
       return false;
     }
 
-    if (circuits) {
-      throw new Error(`Circuits are not supported for ${env} media type`);
+    for (const c of circuits || []) {
+      if (![AcceptAuthCircuits.authV2].includes(c)) {
+        return false;
+      }
     }
 
-    if (!alg) {
-      throw new Error(`Algorithm is required for ${env} media type`);
-    }
-
-    for (const a of alg) {
+    for (const a of alg || []) {
       if (!Object.values(AcceptJwzAlgorithms).includes(a as AcceptJwzAlgorithms)) {
         return false;
       }
