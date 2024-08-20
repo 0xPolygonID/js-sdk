@@ -1,8 +1,10 @@
 import { BasicMessage, JSONObject } from '../';
+import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** @beta ProposalRequestMessage is struct the represents proposal-request message */
 export type ProposalRequestMessage = BasicMessage & {
   body?: ProposalRequestMessageBody;
+  type: typeof PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE;
 };
 
 /** @beta ProposalRequestMessageBody is struct the represents body for proposal-request */
@@ -15,6 +17,7 @@ export type ProposalRequestMessageBody = {
 /** @beta  ProposalMessage is struct the represents proposal message */
 export type ProposalMessage = BasicMessage & {
   body?: ProposalMessageBody;
+  type: typeof PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE;
 };
 
 /** @beta  ProposalMessageBody is struct the represents body for proposal message */
