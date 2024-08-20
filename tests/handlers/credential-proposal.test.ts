@@ -225,7 +225,8 @@ describe('proposal-request handler', () => {
       {
         type: 'WebVerificationForm',
         url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
-        description: 'you can pass the verification on our KYC provider by following the next link'
+        description: 'you can pass the verification on our KYC provider by following the next link',
+        credentials: []
       }
     ]);
 

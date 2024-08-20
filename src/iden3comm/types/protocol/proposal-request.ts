@@ -3,7 +3,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** @beta ProposalRequestMessage is struct the represents proposal-request message */
 export type ProposalRequestMessage = BasicMessage & {
-  body?: ProposalRequestMessageBody;
+  body: ProposalRequestMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE;
 };
 
@@ -16,7 +16,7 @@ export type ProposalRequestMessageBody = {
 
 /** @beta  ProposalMessage is struct the represents proposal message */
 export type ProposalMessage = BasicMessage & {
-  body?: ProposalMessageBody;
+  body: ProposalMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE;
 };
 
@@ -33,7 +33,7 @@ export type ProposalRequestCredential = {
 
 /** @beta Proposal is struct the represents proposal inside proposal protocol message */
 export type Proposal = {
-  credentials?: ProposalRequestCredential[];
+  credentials: ProposalRequestCredential[];
   type: string;
   url?: string;
   expiration?: string;
