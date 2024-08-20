@@ -105,9 +105,7 @@ export class JWSPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getEnvelop} */
   getEnvelop(): string {
-    return `env=${this.mediaType()}&alg=${AcceptJwsAlgorithms.ES256K},${
-      AcceptJwsAlgorithms.ES256KR
-    }`;
+    return `env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(',')}`;
   }
 
   /** {@inheritDoc IPacker.isSupported} */
@@ -121,13 +119,20 @@ export class JWSPacker implements IPacker {
       throw new Error(`Circuits are not supported for ${env} media type`);
     }
 
+    let algSupported = !alg?.length;
+    const supportedAlgs = this.getSupportedAlgorithms();
     for (const a of alg || []) {
-      if (!Object.values(AcceptJwsAlgorithms).includes(a as AcceptJwsAlgorithms)) {
-        return false;
+      if (supportedAlgs.includes(a as AcceptJwsAlgorithms)) {
+        algSupported = true;
+        break;
       }
     }
 
-    return true;
+    return algSupported;
+  }
+
+  private getSupportedAlgorithms(): AcceptJwsAlgorithms[] {
+    return [AcceptJwsAlgorithms.ES256K, AcceptJwsAlgorithms.ES256KR];
   }
 
   private async resolveDidDoc(from: string) {

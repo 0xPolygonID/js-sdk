@@ -178,9 +178,9 @@ export class ZKPPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getEnvelop} */
   getEnvelop(): string {
-    return `env=${this.mediaType()}&alg=${AcceptJwzAlgorithms.groth16}&circuitIds=${
-      AcceptAuthCircuits.authV2
-    }`;
+    return `env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(
+      ','
+    )}&circuitIds=${this.getSupportedCircuitIds().join(',')}`;
   }
 
   /** {@inheritDoc IPacker.isSupported} */
@@ -190,19 +190,33 @@ export class ZKPPacker implements IPacker {
       return false;
     }
 
+    let circuitIdSupported = !circuits?.length;
+    const supportedCircuitIds = this.getSupportedCircuitIds();
     for (const c of circuits || []) {
-      if (![AcceptAuthCircuits.authV2].includes(c)) {
-        return false;
+      if (supportedCircuitIds.includes(c)) {
+        circuitIdSupported = true;
+        break;
       }
     }
 
+    let algSupported = !alg?.length;
+    const supportedAlgs = this.getSupportedAlgorithms();
     for (const a of alg || []) {
-      if (!Object.values(AcceptJwzAlgorithms).includes(a as AcceptJwzAlgorithms)) {
-        return false;
+      if (supportedAlgs.includes(a as AcceptJwzAlgorithms)) {
+        algSupported = true;
+        break;
       }
     }
 
-    return true;
+    return algSupported && circuitIdSupported;
+  }
+
+  private getSupportedAlgorithms(): AcceptJwzAlgorithms[] {
+    return [AcceptJwzAlgorithms.groth16];
+  }
+
+  private getSupportedCircuitIds(): AcceptAuthCircuits[] {
+    return [AcceptAuthCircuits.authV2];
   }
 }
 
