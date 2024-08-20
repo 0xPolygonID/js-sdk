@@ -4,7 +4,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** RevocationStatusRequestMessage is struct the represents body for proof generation request */
 export type RevocationStatusRequestMessage = BasicMessage & {
-  body?: RevocationStatusRequestMessageBody;
+  body: RevocationStatusRequestMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.REVOCATION_STATUS_REQUEST_MESSAGE_TYPE;
 };
 
@@ -15,7 +15,7 @@ export type RevocationStatusRequestMessageBody = {
 
 /** RevocationStatusResponseMessage is struct the represents body for proof generation request */
 export type RevocationStatusResponseMessage = Required<BasicMessage> & {
-  body?: RevocationStatusResponseMessageBody;
+  body: RevocationStatusResponseMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.REVOCATION_STATUS_RESPONSE_MESSAGE_TYPE;
 };
 

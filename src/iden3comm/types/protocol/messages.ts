@@ -3,7 +3,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /**  MessageFetchRequestMessage represent Iden3message for message fetch request. */
 export type MessageFetchRequestMessage = Required<BasicMessage> & {
-  body?: MessageFetchRequestMessageBody;
+  body: MessageFetchRequestMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE;
 };
 

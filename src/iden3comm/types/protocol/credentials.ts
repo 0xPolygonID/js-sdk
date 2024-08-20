@@ -67,7 +67,7 @@ export type IssuanceMessageBody = {
 
 /** CredentialFetchRequestMessage represent Iden3message for credential fetch request */
 export type CredentialFetchRequestMessage = BasicMessage & {
-  body?: CredentialFetchRequestMessageBody;
+  body: CredentialFetchRequestMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE;
 };
 
@@ -85,7 +85,7 @@ export type Schema = {
 
 /** CredentialRefreshMessage represent Iden3message for credential refresh request */
 export type CredentialRefreshMessage = Required<BasicMessage> & {
-  body?: CredentialRefreshMessageBody;
+  body: CredentialRefreshMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_REFRESH_MESSAGE_TYPE;
 };
 
