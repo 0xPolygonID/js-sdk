@@ -248,8 +248,7 @@ export class AuthHandler
         const responseTypeVersion = Number(responseType.split('/').at(-2));
         if (
           protocolVersion === ProtocolVersion.v1 &&
-          responseTypeVersion >= 1 &&
-          responseTypeVersion < 2
+          (responseTypeVersion < 1 || responseTypeVersion >= 2)
         ) {
           continue;
         }
