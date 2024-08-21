@@ -87,6 +87,19 @@ export const resolveDIDDocumentAuth = async (
   );
 };
 
+function emptyStateDID(did: DID) {
+  const id = DID.idFromDID(did);
+  const didType = buildDIDType(
+    DID.methodFromId(id),
+    DID.blockchainFromId(id),
+    DID.networkIdFromId(id)
+  );
+  const identifier = Id.idGenesisFromIdenState(didType, 0n);
+  const emptyDID = DID.parseFromId(identifier);
+
+  return emptyDID;
+}
+
 export const resolveDidDocumentEip712MessageAndSignature = async (
   did: DID,
   resolveURL: string,
@@ -99,9 +112,7 @@ export const resolveDidDocumentEip712MessageAndSignature = async (
   // for gist resolve we have to `hide` user did (look into resolver implementation)
   const isGistRequest = opts?.gist && !opts.state;
   if (isGistRequest) {
-    didString = did
-      .string()
-      .replace(did.idStrings[2], '000000000000000000000000000000000000000000');
+    didString = emptyStateDID(did).string();
   }
   let url = `${resolveURL}/1.0/identifiers/${didString}?signature=EthereumEip712Signature2021`;
   if (opts?.state) {
@@ -119,11 +130,9 @@ export const resolveDidDocumentEip712MessageAndSignature = async (
   if (isGistRequest) {
     return {
       globalStateMsg: {
-        from: message.from,
         timestamp: message.timestamp,
+        userID: message.userID,
         root: message.root,
-        replacedByRoot: message.replacedByRoot,
-        createdAtTimestamp: message.createdAtTimestamp,
         replacedAtTimestamp: message.replacedAtTimestamp
       },
       signature
@@ -132,12 +141,9 @@ export const resolveDidDocumentEip712MessageAndSignature = async (
 
   return {
     idStateMsg: {
-      from: message.from,
       timestamp: message.timestamp,
-      identity: message.identity,
+      userID: message.userID,
       state: message.state,
-      replacedByState: message.replacedByState,
-      createdAtTimestamp: message.createdAtTimestamp,
       replacedAtTimestamp: message.replacedAtTimestamp
     },
     signature
