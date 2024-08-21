@@ -810,13 +810,32 @@ describe('contract-request', () => {
 
   it.skip('contract request flow V3 sig `email-verified` transak req - integration test', async () => {
     const privadoTestRpcUrl = '<>'; // issuer RPC URL - privato test
+    const privadoMainRpcUrl = '<>';
     const privadoTestStateContract = '0x975556428F077dB5877Ea2474D783D6C69233742';
     const amoyVerifierRpcUrl = '<>'; // verifier RPC URL - amoy
-    const verifierAddress = '0x74030e4c5d53ef381A889C01f0bBd3B8336F4a4a';
+    const verifierAddress = '0xE31725a735dd00eB0cc8aaf6b6eAB898f1BA9A69';
+    const amoyStateAddress = '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124';
 
-    const issuerStateEthConfig = defaultEthConnectionConfig;
-    issuerStateEthConfig.url = privadoTestRpcUrl;
-    issuerStateEthConfig.contractAddress = privadoTestStateContract; // privado test state contract
+    const issuerStateEthConfig = {
+      ...defaultEthConnectionConfig,
+      url: privadoTestRpcUrl,
+      contractAddress: privadoTestStateContract,
+      chainId: 21001
+    };
+
+    const userStateEthConfig = {
+      ...defaultEthConnectionConfig,
+      url: privadoMainRpcUrl,
+      contractAddress: privadoTestStateContract,
+      chainId: 21000
+    };
+
+    const amoyStateEthConfig = {
+      ...defaultEthConnectionConfig,
+      url: amoyVerifierRpcUrl,
+      contractAddress: amoyStateAddress,
+      chainId: 21001
+    };
 
     const memoryKeyStore = new InMemoryPrivateKeyStore();
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
@@ -829,7 +848,7 @@ describe('contract-request', () => {
         new InMemoryDataSource<Profile>()
       ),
       mt: new InMemoryMerkleTreeStorage(40),
-      states: new EthStateStorage(issuerStateEthConfig)
+      states: new EthStateStorage([issuerStateEthConfig, userStateEthConfig, amoyStateEthConfig])
     };
     const circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, '../proofs/testdata')
@@ -928,18 +947,16 @@ describe('contract-request', () => {
       }
     ];
 
-    const conf = defaultEthConnectionConfig;
-    conf.contractAddress = verifierAddress;
-    conf.url = amoyVerifierRpcUrl;
-    conf.chainId = 80002;
-
-    const zkpVerifier = new OnChainZKPVerifier([conf], 'https://resolver-dev.privado.id');
+    const zkpVerifier = new OnChainZKPVerifier(
+      [amoyStateEthConfig],
+      'https://resolver-dev.privado.id'
+    );
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: verifierAddress,
       method_id: 'fd41d8d4',
-      chain_id: conf.chainId
+      chain_id: amoyStateEthConfig.chainId
     };
 
     const verifierDid = 'did:iden3:polygon:amoy:x6x5sor7zpy1YGS4yjcmnzQSC7FZC7q7DPgNMT79q';
