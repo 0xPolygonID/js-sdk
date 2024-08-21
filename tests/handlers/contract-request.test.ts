@@ -834,7 +834,7 @@ describe('contract-request', () => {
       ...defaultEthConnectionConfig,
       url: amoyVerifierRpcUrl,
       contractAddress: amoyStateAddress,
-      chainId: 21001
+      chainId: 80002
     };
 
     const memoryKeyStore = new InMemoryPrivateKeyStore();
