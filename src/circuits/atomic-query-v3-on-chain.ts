@@ -6,7 +6,7 @@ import {
   getNodeAuxValue,
   prepareCircuitArrayValues,
   IGistRootStatePubSignals,
-  OnChainStateInfo
+  StatesInfo
 } from './common';
 import { BJJSignatureProof, CircuitError, GISTProof, Query, TreeState, ValueProof } from './models';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
@@ -518,8 +518,8 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig implements IGistR
     return this;
   }
 
-  /** {@inheritDoc IGistRootStatePubSignals.getGistRootStatePubSignals} */
-  getGistRootStatePubSignals(): OnChainStateInfo {
+  /** {@inheritDoc IGistRootStatePubSignals.getStatesInfo} */
+  getStatesInfo(): StatesInfo {
     return {
       states: [
         { id: this.issuerID, state: this.issuerState },

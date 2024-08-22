@@ -10,7 +10,7 @@ import {
   AtomicQuerySigV2OnChainPubSignals,
   AtomicQueryV3OnChainPubSignals,
   CircuitId,
-  OnChainStateInfo
+  StatesInfo
 } from '../../circuits';
 import { byteEncoder, resolveDidDocumentEip712MessageAndSignature } from '../../utils';
 import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
@@ -403,7 +403,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       | CircuitId.AtomicQuerySigV2OnChain
       | CircuitId.AtomicQueryV3OnChain,
     inputs: string[]
-  ): OnChainStateInfo {
+  ): StatesInfo {
     let atomicQueryPubSignals;
     switch (onChainCircuitId) {
       case CircuitId.AtomicQueryMTPV2OnChain:
@@ -418,6 +418,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     }
     const encodedInputs = byteEncoder.encode(JSON.stringify(inputs));
     atomicQueryPubSignals.pubSignalsUnmarshal(encodedInputs);
-    return atomicQueryPubSignals.getGistRootStatePubSignals();
+    return atomicQueryPubSignals.getStatesInfo();
   }
 }

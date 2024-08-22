@@ -229,12 +229,12 @@ export function getProperties(obj: object): object {
 }
 
 /**
- * onchain state info from pub signals
+ * states info from pub signals
  *
  * @public
- * @type   OnChainStateInfo
+ * @type   StatesInfo
  */
-export type OnChainStateInfo = {
+export type StatesInfo = {
   states: {
     id: Id;
     state: Hash;
@@ -257,5 +257,5 @@ export interface IGistRootStatePubSignals {
    *
    * @returns {OnChainStateInfo}
    */
-  getGistRootStatePubSignals(): OnChainStateInfo;
+  getStatesInfo(): StatesInfo;
 }

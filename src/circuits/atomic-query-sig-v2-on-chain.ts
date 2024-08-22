@@ -8,9 +8,9 @@ import {
   existenceToInt,
   getNodeAuxValue,
   IGistRootStatePubSignals,
-  OnChainStateInfo,
   prepareCircuitArrayValues,
-  prepareSiblingsStr
+  prepareSiblingsStr,
+  StatesInfo
 } from './common';
 import { byteDecoder, byteEncoder } from '../utils';
 
@@ -403,8 +403,8 @@ export class AtomicQuerySigV2OnChainPubSignals
     return this;
   }
 
-  /** {@inheritDoc IGistRootStatePubSignals.getGistRootStatePubSignals} */
-  getGistRootStatePubSignals(): OnChainStateInfo {
+  /** {@inheritDoc IGistRootStatePubSignals.getStatesInfo} */
+  getStatesInfo(): StatesInfo {
     return {
       states: [
         { id: this.issuerID, state: this.issuerAuthState },

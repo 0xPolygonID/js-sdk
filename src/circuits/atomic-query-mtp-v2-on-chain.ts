@@ -8,7 +8,7 @@ import {
   existenceToInt,
   getNodeAuxValue,
   IGistRootStatePubSignals,
-  OnChainStateInfo,
+  StatesInfo,
   prepareCircuitArrayValues,
   prepareSiblingsStr
 } from './common';
@@ -328,8 +328,8 @@ export class AtomicQueryMTPV2OnChainPubSignals
     return this;
   }
 
-  /** {@inheritDoc IGistRootStatePubSignals.getGistRootStatePubSignals} */
-  getGistRootStatePubSignals(): OnChainStateInfo {
+  /** {@inheritDoc IGistRootStatePubSignals.getStatesInfo} */
+  getStatesInfo(): StatesInfo {
     return {
       states: [
         { id: this.issuerID, state: this.issuerClaimIdenState },
