@@ -54,7 +54,7 @@ export interface RootInfo {
  */
 export interface IdentityStateMsg {
   timestamp: number;
-  userID: bigint;
+  id: bigint;
   state: bigint;
   replacedAtTimestamp: number;
 }
@@ -67,7 +67,7 @@ export interface IdentityStateMsg {
  */
 export interface GlobalStateMsg {
   timestamp: number;
-  userID: bigint;
+  idType: string;
   root: bigint;
   replacedAtTimestamp: number;
 }
