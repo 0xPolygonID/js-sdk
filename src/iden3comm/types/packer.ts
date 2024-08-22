@@ -23,6 +23,21 @@ export type JSONObject = {
   [x: string]: JSONValue;
 };
 
+/**
+ * JSON document object
+ */
+export type JsonDocumentObject = { [key: string]: JsonDocumentObjectValue };
+
+/**
+ * JSON document object allowed values
+ */
+export type JsonDocumentObjectValue =
+  | string
+  | number
+  | boolean
+  | JsonDocumentObject
+  | JsonDocumentObjectValue[];
+
 export type BasicMessage = {
   id: string;
   typ?: MediaType;

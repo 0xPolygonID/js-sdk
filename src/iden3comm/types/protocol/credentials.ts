@@ -1,12 +1,12 @@
 import { W3CCredential } from '../../../verifiable';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
-import { BasicMessage, JSONObject } from '../packer';
+import { BasicMessage, JsonDocumentObject } from '../packer';
 import { ContractInvokeTransactionData } from './contract-request';
 
 /** CredentialIssuanceRequestMessageBody represents data for credential issuance request */
 export type CredentialIssuanceRequestMessageBody = {
   schema: Schema;
-  data: JSONObject;
+  data: JsonDocumentObject;
   expiration: number;
 };
 

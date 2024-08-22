@@ -32,7 +32,7 @@ import { parseQueriesMetadata, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
 import { calculateQueryHashV3 } from './query-hash';
 import { JsonLd } from 'jsonld/jsonld-spec';
-import { PROTOCOL_CONSTANTS, JSONObject } from '../../iden3comm';
+import { PROTOCOL_CONSTANTS, JSONObject, JsonDocumentObject } from '../../iden3comm';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -257,7 +257,7 @@ export class PubSignalsVerifier {
     const queriesMetadata = await parseQueriesMetadata(
       query.type,
       JSON.stringify(context),
-      query.credentialSubject as JSONObject,
+      query.credentialSubject as JsonDocumentObject,
       {
         documentLoader: loader
       }
@@ -423,15 +423,15 @@ export class PubSignalsVerifier {
     );
 
     // verify query
-    let schema: JSONObject;
+    let schema: JsonDocumentObject;
     const ldOpts = { documentLoader: this._documentLoader };
     try {
-      schema = (await ldOpts.documentLoader(query.context || '')).document as JSONObject;
+      schema = (await ldOpts.documentLoader(query.context || '')).document as JsonDocumentObject;
     } catch (e) {
       throw new Error(`can't load schema for request query`);
     }
     const ldContextJSON = JSON.stringify(schema);
-    const credentialSubject = query.credentialSubject as JSONObject;
+    const credentialSubject = query.credentialSubject as JsonDocumentObject;
     const schemaId: string = await Path.getTypeIDFromContext(
       ldContextJSON,
       query.type || '',
@@ -540,7 +540,7 @@ export class PubSignalsVerifier {
     const queriesMetadata = await parseQueriesMetadata(
       query.type,
       JSON.stringify(context),
-      query.credentialSubject as JSONObject,
+      query.credentialSubject as JsonDocumentObject,
       {
         documentLoader: loader
       }

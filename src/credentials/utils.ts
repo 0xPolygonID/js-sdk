@@ -27,8 +27,8 @@ export const getKMSIdByAuthCredential = (credential: W3CCredential): KmsKeyId =>
   if (!credential.type.includes('AuthBJJCredential')) {
     throw new Error("can't sign with not AuthBJJCredential credential");
   }
-  const x = credential.credentialSubject['x'] as unknown as string;
-  const y = credential.credentialSubject['y'] as unknown as string;
+  const x = credential.credentialSubject['x'] as string;
+  const y = credential.credentialSubject['y'] as string;
 
   const pb: PublicKey = new PublicKey([BigInt(x), BigInt(y)]);
   const kp = keyPath(KmsKeyType.BabyJubJub, pb.hex());
