@@ -4,7 +4,7 @@ import {
   CredentialOffer,
   CredentialsOfferMessage,
   IPackageManager,
-  JSONObject,
+  JsonDocumentObject,
   PackerParams
 } from '../types';
 
@@ -25,8 +25,8 @@ import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handl
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; data?: JSONObject };
-  did_doc?: JSONObject;
+  metadata?: { type: string; data?: JsonDocumentObject };
+  did_doc?: JsonDocumentObject;
 };
 
 /**

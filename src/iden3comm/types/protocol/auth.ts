@@ -1,5 +1,5 @@
 import { ZKProof } from '@iden3/js-jwz';
-import { BasicMessage, JSONObject } from '../packer';
+import { BasicMessage, JsonDocumentObject } from '../packer';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
@@ -12,7 +12,7 @@ export type AuthorizationResponseMessage = BasicMessage & {
 
 /** AuthorizationMessageResponseBody is struct the represents authorization response data */
 export type AuthorizationMessageResponseBody = {
-  did_doc?: JSONObject;
+  did_doc?: JsonDocumentObject;
   message?: string;
   scope: Array<ZeroKnowledgeProofResponse>;
 };
@@ -29,7 +29,7 @@ export type AuthorizationRequestMessageBody = {
   callbackUrl: string;
   reason?: string;
   message?: string;
-  did_doc?: JSONObject;
+  did_doc?: JsonDocumentObject;
   scope: Array<ZeroKnowledgeProofRequest>;
 };
 
@@ -38,7 +38,7 @@ export type ZeroKnowledgeProofRequest = {
   id: number;
   circuitId: string;
   optional?: boolean;
-  query: JSONObject;
+  query: JsonDocumentObject;
   params?: {
     nullifierSessionId?: string | number;
   };

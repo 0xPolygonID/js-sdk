@@ -18,7 +18,7 @@ import {
 } from '../verifiable';
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { byteEncoder } from '../utils';
-import { JSONObject } from '../iden3comm';
+import { JsonDocumentObject } from '../iden3comm';
 import { Claim } from '@iden3/js-iden3-core';
 import { poseidon } from '@iden3/js-crypto';
 
@@ -112,7 +112,7 @@ export type QueryMetadata = PropertyQuery & {
   merklizedSchema: boolean;
 };
 
-export const parseCredentialSubject = (credentialSubject?: JSONObject): PropertyQuery[] => {
+export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): PropertyQuery[] => {
   // credentialSubject is empty
   if (!credentialSubject) {
     return [{ operator: QueryOperators.$noop, fieldName: '' }];
@@ -240,7 +240,7 @@ export const parseQueryMetadata = async (
 export const parseQueriesMetadata = async (
   credentialType: string,
   ldContextJSON: string,
-  credentialSubject: JSONObject,
+  credentialSubject: JsonDocumentObject,
   options: Options
 ): Promise<QueryMetadata[]> => {
   const queriesMetadata = parseCredentialSubject(credentialSubject);

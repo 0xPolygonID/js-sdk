@@ -1518,6 +1518,7 @@ export class IdentityWallet implements IIdentityWallet {
         txId = await this.transitState(did, oldTreeState, isOldStateGenesis, ethSigner, prover);
         break;
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.warn(
           `Error while transiting state, retrying state transition, attempt: ${attempt}`,
           err
