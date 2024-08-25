@@ -1315,7 +1315,7 @@ describe('auth', () => {
   });
 
   it('auth response: TestVerifyV3MessageWithMtpProof_Merklized', async () => {
-    const request = {
+    const request: AuthorizationRequestMessage = {
       id: '7e5b5847-b479-4499-90ee-5fe4826a5bdd',
       typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
       type: 'https://iden3-communication.io/authorization/1.0/request',
@@ -1572,6 +1572,7 @@ describe('auth', () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = RPC_URL;
     stateEthConfig.contractAddress = STATE_CONTRACT;
+    stateEthConfig.chainId = 80002;
     const eth = new EthStateStorage(stateEthConfig);
 
     const kms = registerKeyProvidersInMemoryKMS();

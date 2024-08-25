@@ -8,7 +8,7 @@ import {
 import { TreeState } from '../circuits';
 import { Hex, Signature } from '@iden3/js-crypto';
 import { Claim, DID } from '@iden3/js-iden3-core';
-import { JSONObject } from '../iden3comm';
+import { JsonDocumentObject, JSONObject } from '../iden3comm';
 
 /**
  * Represents the published state of the issuer
@@ -220,7 +220,7 @@ export class BJJSignatureProof2021 {
  */
 export interface ProofQuery {
   allowedIssuers?: string[];
-  credentialSubject?: { [key: string]: unknown };
+  credentialSubject?: JsonDocumentObject;
   schema?: string; // string url
   claimId?: string;
   credentialSubjectId?: string;

@@ -2,13 +2,14 @@ import { DID } from '@iden3/js-iden3-core';
 import { DataPrepareHandlerFunc, VerificationHandlerFunc } from '../packers';
 import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
-import { MediaType } from '../constants';
+import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
 import { StateVerificationOpts } from './models';
+
 /**
  *  Protocol message type
  */
-export type ProtocolMessage = string;
+export type ProtocolMessage = (typeof PROTOCOL_MESSAGE_TYPE)[keyof typeof PROTOCOL_MESSAGE_TYPE];
 
 /**
  * JSONValue
@@ -21,6 +22,21 @@ export type JSONValue = string | number | boolean | object | Array<object>;
 export type JSONObject = {
   [x: string]: JSONValue;
 };
+
+/**
+ * JSON document object
+ */
+export type JsonDocumentObject = { [key: string]: JsonDocumentObjectValue };
+
+/**
+ * JSON document object allowed values
+ */
+export type JsonDocumentObjectValue =
+  | string
+  | number
+  | boolean
+  | JsonDocumentObject
+  | JsonDocumentObjectValue[];
 
 export type BasicMessage = {
   id: string;

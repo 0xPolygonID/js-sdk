@@ -1,3 +1,4 @@
+import { JsonDocumentObject } from '../iden3comm';
 import {
   CredentialStatusType,
   MerklizedRootPosition,
@@ -32,7 +33,7 @@ export interface CredentialRequest {
   /**
    * Credential subject, usually contains claims and identifier
    */
-  credentialSubject: { [key: string]: string | object | number | boolean };
+  credentialSubject: JsonDocumentObject;
   /**
    * expiration time
    */

@@ -1,9 +1,11 @@
 import { BasicMessage } from '../';
 import { PaymentRequestDataType, PaymentRequestType, PaymentType } from '../../../verifiable';
+import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** @beta PaymentRequestMessage is struct the represents payment-request message */
 export type PaymentRequestMessage = BasicMessage & {
   body: PaymentRequestMessageBody;
+  type: typeof PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE;
 };
 
 /** @beta PaymentRequestMessageBody is struct the represents body for payment-request */
@@ -38,6 +40,7 @@ export type PaymentRequestDataInfo = {
 /** @beta  PaymentMessage is struct the represents payment message */
 export type PaymentMessage = BasicMessage & {
   body: PaymentMessageBody;
+  type: typeof PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE;
 };
 
 /** @beta  PaymentMessageBody is struct the represents body for payment message */

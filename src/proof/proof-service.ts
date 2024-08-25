@@ -39,7 +39,8 @@ import {
   JSONObject,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse,
-  PROTOCOL_CONSTANTS
+  PROTOCOL_CONSTANTS,
+  JsonDocumentObject
 } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
@@ -286,7 +287,7 @@ export class ProofService implements IProofService {
     }
 
     const propertiesMetadata = parseCredentialSubject(
-      proofReq.query.credentialSubject as JSONObject
+      proofReq.query.credentialSubject as JsonDocumentObject
     );
     if (!propertiesMetadata.length) {
       throw new Error('no queries in zkp request');
@@ -428,7 +429,7 @@ export class ProofService implements IProofService {
       const [first, ...rest] = queryMetadata.fieldName.split('.');
       let v = credential.credentialSubject[first];
       for (const part of rest) {
-        v = (v as JSONObject)[part];
+        v = (v as JsonDocumentObject)[part];
       }
       if (typeof v === 'undefined') {
         throw new Error(`credential doesn't contain value for field ${queryMetadata.fieldName}`);

@@ -5,10 +5,14 @@
  * @param otherCredSubject - The second object to merge.
  * @returns A new object with the merged properties.
  */
-type obj = { [k: string]: unknown };
 
-export function mergeObjects(credSubject: obj, otherCredSubject: obj) {
-  let result = {} as obj;
+import { JsonDocumentObject } from '../iden3comm';
+
+export function mergeObjects(
+  credSubject: JsonDocumentObject,
+  otherCredSubject: JsonDocumentObject
+) {
+  let result = {} as JsonDocumentObject;
   const credSubjectKeys = Object.keys(credSubject);
 
   for (const key of credSubjectKeys) {
@@ -16,17 +20,17 @@ export function mergeObjects(credSubject: obj, otherCredSubject: obj) {
       if (typeof credSubject[key] !== 'object' && typeof otherCredSubject[key] !== 'object') {
         throw new Error('Invalid query');
       }
-      const subjectProperty = credSubject[key] as obj;
-      const otherSubjectProperty = otherCredSubject[key] as obj;
+      const subjectProperty = credSubject[key] as JsonDocumentObject;
+      const otherSubjectProperty = otherCredSubject[key] as JsonDocumentObject;
       const propertyOperators = Object.keys(subjectProperty);
-      const subjectPropertyResult: obj = {};
+      const subjectPropertyResult: JsonDocumentObject = {};
       for (const operatorKey of propertyOperators) {
         if (typeof otherSubjectProperty[operatorKey] !== 'undefined') {
-          const operatorValue1 = subjectProperty[operatorKey] as obj;
+          const operatorValue1 = subjectProperty[operatorKey] as JsonDocumentObject;
           const operatorValue2 = otherSubjectProperty[operatorKey];
           subjectPropertyResult[operatorKey] = [
             ...new Set([
-              ...((subjectPropertyResult[operatorKey] as Array<obj>) ?? []),
+              ...((subjectPropertyResult[operatorKey] as Array<JsonDocumentObject>) ?? []),
               operatorValue1,
               ...(Array.isArray(operatorValue2) ? operatorValue2 : [operatorValue2])
             ])
@@ -36,7 +40,7 @@ export function mergeObjects(credSubject: obj, otherCredSubject: obj) {
         }
       }
       result[key] = {
-        ...(otherCredSubject[key] as obj),
+        ...(otherCredSubject[key] as JsonDocumentObject),
         ...subjectPropertyResult
       };
     }

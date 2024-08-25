@@ -2,7 +2,7 @@ import { VerifiableConstants } from './constants';
 import { Options, Path } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from './credential';
 import { QueryMetadata } from '../proof';
-import { JSONObject } from '../iden3comm';
+import { JsonDocumentObject } from '../iden3comm';
 
 export const stringByPath = (obj: { [key: string]: unknown }, path: string): string => {
   const parts = path.split('.');
@@ -36,13 +36,13 @@ export const buildFieldPath = async (
   return path;
 };
 
-export const findValue = (fieldName: string, credential: W3CCredential): JSONObject => {
+export const findValue = (fieldName: string, credential: W3CCredential): JsonDocumentObject => {
   const [first, ...rest] = fieldName.split('.');
   let v = credential.credentialSubject[first];
   for (const part of rest) {
-    v = (v as JSONObject)[part];
+    v = (v as JsonDocumentObject)[part];
   }
-  return v as JSONObject;
+  return v as JsonDocumentObject;
 };
 
 export const createVerifiablePresentation = (
@@ -72,15 +72,18 @@ export const createVerifiablePresentation = (
     }
   };
 
-  let result: JSONObject = {};
+  let result: JsonDocumentObject = {};
   for (const query of queries) {
     const parts = query.fieldName.split('.');
-    const current: JSONObject = parts.reduceRight((acc: JSONObject, part: string) => {
-      if (result[part]) {
-        return { [part]: { ...(result[part] as JSONObject), ...acc } };
-      }
-      return { [part]: acc };
-    }, findValue(query.fieldName, credential) as JSONObject);
+    const current: JsonDocumentObject = parts.reduceRight(
+      (acc: JsonDocumentObject, part: string) => {
+        if (result[part]) {
+          return { [part]: { ...(result[part] as JsonDocumentObject), ...acc } };
+        }
+        return { [part]: acc };
+      },
+      findValue(query.fieldName, credential) as JsonDocumentObject
+    );
 
     result = { ...result, ...current };
   }

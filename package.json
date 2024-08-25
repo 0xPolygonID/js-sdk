@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.17.2",
+  "version": "1.17.5",
   "description": "SDK to work with Polygon ID",
   "main": "dist/node/cjs/index.js",
   "module": "dist/node/esm/index.js",
@@ -36,7 +36,8 @@
     "lint": "eslint --fix --ext .ts src/** tests/**",
     "lint:check": "eslint --ext .ts src/** tests/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "format:check": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --check"
+    "format:check": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --check",
+    "watch": "tsc --watch"
   },
   "repository": {
     "type": "git",
