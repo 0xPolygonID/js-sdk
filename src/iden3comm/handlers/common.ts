@@ -1,6 +1,6 @@
 import { getRandomBytes } from '@iden3/js-crypto';
 import {
-  JSONObject,
+  JsonDocumentObject,
   JWSPackerParams,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
@@ -18,11 +18,11 @@ import { Signer } from 'ethers';
  * Returns a Map where the key is the groupId and the value is an object containing the query and linkNonce.
  *
  * @param requestScope - An array of ZeroKnowledgeProofRequest objects.
- * @returns A Map<number, { query: JSONObject; linkNonce: number }> representing the grouped queries.
+ * @returns A Map<number, { query: JsonDocumentObject; linkNonce: number }> representing the grouped queries.
  */
 const getGroupedQueries = (
   requestScope: ZeroKnowledgeProofRequest[]
-): Map<number, { query: JSONObject; linkNonce: number }> =>
+): Map<number, { query: JsonDocumentObject; linkNonce: number }> =>
   requestScope.reduce((acc, proofReq) => {
     const groupId = proofReq.query.groupId as number | undefined;
     if (!groupId) {
@@ -39,8 +39,8 @@ const getGroupedQueries = (
     }
 
     const credentialSubject = mergeObjects(
-      existedData.query.credentialSubject as JSONObject,
-      proofReq.query.credentialSubject as JSONObject
+      existedData.query.credentialSubject as JsonDocumentObject,
+      proofReq.query.credentialSubject as JsonDocumentObject
     );
 
     acc.set(groupId, {
@@ -48,13 +48,13 @@ const getGroupedQueries = (
       query: {
         skipClaimRevocationCheck:
           existedData.query.skipClaimRevocationCheck || proofReq.query.skipClaimRevocationCheck,
-        ...(existedData.query as JSONObject),
+        ...existedData.query,
         credentialSubject
       }
     });
 
     return acc;
-  }, new Map<number, { query: JSONObject; linkNonce: number }>());
+  }, new Map<number, { query: JsonDocumentObject; linkNonce: number }>());
 
 /**
  * Processes zero knowledge proof requests.

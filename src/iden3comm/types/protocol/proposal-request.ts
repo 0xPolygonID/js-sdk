@@ -1,22 +1,22 @@
-import { BasicMessage, JSONObject } from '../';
+import { BasicMessage, JsonDocumentObject } from '../';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** @beta ProposalRequestMessage is struct the represents proposal-request message */
 export type ProposalRequestMessage = BasicMessage & {
-  body?: ProposalRequestMessageBody;
+  body: ProposalRequestMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE;
 };
 
 /** @beta ProposalRequestMessageBody is struct the represents body for proposal-request */
 export type ProposalRequestMessageBody = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; data?: JSONObject };
-  did_doc?: JSONObject;
+  metadata?: { type: string; data?: JsonDocumentObject };
+  did_doc?: JsonDocumentObject;
 };
 
 /** @beta  ProposalMessage is struct the represents proposal message */
 export type ProposalMessage = BasicMessage & {
-  body?: ProposalMessageBody;
+  body: ProposalMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE;
 };
 
@@ -33,7 +33,7 @@ export type ProposalRequestCredential = {
 
 /** @beta Proposal is struct the represents proposal inside proposal protocol message */
 export type Proposal = {
-  credentials?: ProposalRequestCredential[];
+  credentials: ProposalRequestCredential[];
   type: string;
   url?: string;
   expiration?: string;

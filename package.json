@@ -36,7 +36,8 @@
     "lint": "eslint --fix --ext .ts src/** tests/**",
     "lint:check": "eslint --ext .ts src/** tests/**",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "format:check": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --check"
+    "format:check": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --check",
+    "watch": "tsc --watch"
   },
   "repository": {
     "type": "git",

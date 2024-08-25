@@ -29,6 +29,7 @@ import {
 
 import * as jsonld from 'jsonld/lib';
 import * as ldcontext from 'jsonld/lib/context';
+import { JsonDocumentObject } from '../iden3comm';
 
 /**
  * W3C Verifiable credential
@@ -45,7 +46,7 @@ export class W3CCredential {
   refreshService?: RefreshService;
   displayMethod?: DisplayMethod;
   issuanceDate?: string;
-  credentialSubject: { [key: string]: object | string | number | boolean } = {};
+  credentialSubject: JsonDocumentObject = {};
   credentialStatus!: CredentialStatus;
   issuer = '';
   credentialSchema!: CredentialSchema;

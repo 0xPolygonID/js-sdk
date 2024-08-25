@@ -4,7 +4,7 @@ import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from './auth';
 
 /** ProofGenerationRequestMessage is struct the represents body for proof generation request */
 export type ProofGenerationRequestMessage = Required<BasicMessage> & {
-  body?: ProofGenerationRequestMessageBody;
+  body: ProofGenerationRequestMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.PROOF_GENERATION_REQUEST_MESSAGE_TYPE;
 };
 
@@ -15,7 +15,7 @@ export type ProofGenerationRequestMessageBody = {
 
 /** ProofGenerationResponseMessage is struct the represents body for proof generation request */
 export type ProofGenerationResponseMessage = Required<BasicMessage> & {
-  body?: ResponseMessageBody;
+  body: ResponseMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.PROOF_GENERATION_RESPONSE_MESSAGE_TYPE;
 };
 

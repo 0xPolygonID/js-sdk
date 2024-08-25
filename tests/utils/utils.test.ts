@@ -1,10 +1,10 @@
 import { expect } from 'chai';
-import { buildDIDFromEthPubKey, JSONObject, mergeObjects } from '../../src';
+import { buildDIDFromEthPubKey, JsonDocumentObject, mergeObjects } from '../../src';
 import { Blockchain, buildDIDType, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 
 describe('merge credential subjects to create query', () => {
-  it('should merge two valid JSONObjects correctly', () => {
-    const testCases: JSONObject[] = [
+  it('should merge two valid JsonDocumentObjects correctly', () => {
+    const testCases: JsonDocumentObject[] = [
       {
         subj1: {
           documentType: {
@@ -145,7 +145,7 @@ describe('merge credential subjects to create query', () => {
 
     for (const testCase of testCases) {
       expect(
-        mergeObjects(testCase.subj1 as JSONObject, testCase.subj2 as JSONObject)
+        mergeObjects(testCase.subj1 as JsonDocumentObject, testCase.subj2 as JsonDocumentObject)
       ).to.deep.equal(testCase.expectedResult);
     }
   });
