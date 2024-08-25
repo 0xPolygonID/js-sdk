@@ -58,6 +58,6 @@ export type VerifiablePresentation = {
   verifiableCredential: {
     '@context': string[];
     '@type': string[];
-    credentialSubject: JSONObject;
+    credentialSubject: JsonDocumentObject;
   };
 };
