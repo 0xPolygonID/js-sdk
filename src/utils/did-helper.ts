@@ -131,7 +131,7 @@ export const resolveDidDocumentEip712MessageAndSignature = async (
     return {
       globalStateMsg: {
         timestamp: message.timestamp,
-        userID: message.userID,
+        idType: message.idType,
         root: message.root,
         replacedAtTimestamp: message.replacedAtTimestamp
       },
@@ -142,7 +142,7 @@ export const resolveDidDocumentEip712MessageAndSignature = async (
   return {
     idStateMsg: {
       timestamp: message.timestamp,
-      userID: message.userID,
+      id: message.id,
       state: message.state,
       replacedAtTimestamp: message.replacedAtTimestamp
     },
