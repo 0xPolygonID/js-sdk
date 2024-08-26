@@ -398,6 +398,41 @@
   {
     "inputs": [
       {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "requestId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "zkProof",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct ZKPResponseV3[]",
+        "name": "responses",
+        "type": "tuple[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "crossChainProof",
+        "type": "bytes"
+      }
+    ],
+    "name": "submitZKPResponseV3",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint64",
         "name": "requestId",
         "type": "uint64"

@@ -37,6 +37,20 @@ export interface IOnChainZKPVerifier {
   ): Promise<Map<string, ZeroKnowledgeProofResponse>>;
 
   /**
+   * Submit ZKP Response V3 to OnChainZKPVerifier contract.
+   * @beta
+   * @param {Signer} ethSigner - tx signer
+   * @param {txData} ContractInvokeTransactionData - transaction data
+   * @param {ZeroKnowledgeProofResponse[]} zkProofResponses - zkProofResponses
+   * @returns {Promise<Map<string, ZeroKnowledgeProofResponse>>} - map of transaction hash - ZeroKnowledgeProofResponse
+   */
+  submitZKPResponseV3(
+    ethSigner: Signer,
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ): Promise<Map<string, ZeroKnowledgeProofResponse>>;
+
+  /**
    * Returns the Map of request id to transaction data for the ZKP verifier contract submission.
    * @param txData
    * @param zkProofResponses
@@ -52,6 +66,16 @@ export interface IOnChainZKPVerifier {
    * @param zkProofResponses
    */
   prepareZKPResponseV2TxData(
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ): Promise<Map<number, string>>;
+
+  /**
+   * Returns the Map of request id to transaction data for the ZKP verifier contract submission V3.
+   * @param txData
+   * @param zkProofResponses
+   */
+  prepareZKPResponseV3TxData(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<number, string>>;
