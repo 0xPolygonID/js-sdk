@@ -1,5 +1,5 @@
 import { ZKProof } from '@iden3/js-jwz';
-import { BasicMessage, JsonDocumentObject, ContextObject } from '../packer';
+import { BasicMessage, JsonDocumentObject } from '../packer';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
