@@ -242,10 +242,7 @@ interface atomicQueryMTPV2OnChainCircuitInputs {
  * @class AtomicQueryMTPV2OnChainPubSignals
  * @extends {BaseConfig}
  */
-export class AtomicQueryMTPV2OnChainPubSignals
-  extends BaseConfig
-  implements IStateInfoPubSignals
-{
+export class AtomicQueryMTPV2OnChainPubSignals extends BaseConfig implements IStateInfoPubSignals {
   requestID!: bigint;
   userID!: Id;
   issuerID!: Id;

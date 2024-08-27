@@ -314,10 +314,7 @@ export class AtomicQuerySigV2OnChainCircuitInputs {
  * @class AtomicQuerySigV2OnChainPubSignals
  * @extends {BaseConfig}
  */
-export class AtomicQuerySigV2OnChainPubSignals
-  extends BaseConfig
-  implements IStateInfoPubSignals
-{
+export class AtomicQuerySigV2OnChainPubSignals extends BaseConfig implements IStateInfoPubSignals {
   requestID!: bigint;
   userID!: Id;
   issuerID!: Id;
