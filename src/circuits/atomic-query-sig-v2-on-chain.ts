@@ -7,7 +7,7 @@ import {
   bigIntArrayToStringArray,
   existenceToInt,
   getNodeAuxValue,
-  IGistRootStatePubSignals,
+  IStateInfoPubSignals,
   prepareCircuitArrayValues,
   prepareSiblingsStr,
   StatesInfo
@@ -316,7 +316,7 @@ export class AtomicQuerySigV2OnChainCircuitInputs {
  */
 export class AtomicQuerySigV2OnChainPubSignals
   extends BaseConfig
-  implements IGistRootStatePubSignals
+  implements IStateInfoPubSignals
 {
   requestID!: bigint;
   userID!: Id;
@@ -403,7 +403,7 @@ export class AtomicQuerySigV2OnChainPubSignals
     return this;
   }
 
-  /** {@inheritDoc IGistRootStatePubSignals.getStatesInfo} */
+  /** {@inheritDoc IStateInfoPubSignals.getStatesInfo} */
   getStatesInfo(): StatesInfo {
     return {
       states: [

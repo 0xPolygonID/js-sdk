@@ -1,5 +1,5 @@
 import { ZKProof } from '@iden3/js-jwz';
-import { BasicMessage, JsonDocumentObject } from '../packer';
+import { BasicMessage, JsonDocumentObject, ContextObject } from '../packer';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
@@ -53,11 +53,11 @@ export type ZeroKnowledgeProofResponse = {
 
 /** VerifiablePresentation represents structure of Verifiable Presentation */
 export type VerifiablePresentation = {
-  '@context': string[];
+  '@context': string | (string | object)[];
   '@type': string;
   verifiableCredential: {
-    '@context': string[];
-    '@type': string[];
+    '@context': string | string[];
+    '@type': string | string[];
     credentialSubject: JsonDocumentObject;
   };
 };

@@ -38,6 +38,16 @@ export type JsonDocumentObjectValue =
   | JsonDocumentObject
   | JsonDocumentObjectValue[];
 
+/**
+ * Context object type (for VP and VC)
+ */
+export type ContextObject = { [key: string]: ContextObjectValue };
+
+/**
+ * Context object allowed values
+ */
+export type ContextObjectValue = string | JsonDocumentObject | JsonDocumentObjectValue[];
+
 export type BasicMessage = {
   id: string;
   typ?: MediaType;

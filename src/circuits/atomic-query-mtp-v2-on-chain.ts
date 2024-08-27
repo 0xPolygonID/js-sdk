@@ -7,7 +7,7 @@ import {
   bigIntArrayToStringArray,
   existenceToInt,
   getNodeAuxValue,
-  IGistRootStatePubSignals,
+  IStateInfoPubSignals,
   StatesInfo,
   prepareCircuitArrayValues,
   prepareSiblingsStr
@@ -244,7 +244,7 @@ interface atomicQueryMTPV2OnChainCircuitInputs {
  */
 export class AtomicQueryMTPV2OnChainPubSignals
   extends BaseConfig
-  implements IGistRootStatePubSignals
+  implements IStateInfoPubSignals
 {
   requestID!: bigint;
   userID!: Id;
@@ -328,7 +328,7 @@ export class AtomicQueryMTPV2OnChainPubSignals
     return this;
   }
 
-  /** {@inheritDoc IGistRootStatePubSignals.getStatesInfo} */
+  /** {@inheritDoc IStateInfoPubSignals.getStatesInfo} */
   getStatesInfo(): StatesInfo {
     return {
       states: [

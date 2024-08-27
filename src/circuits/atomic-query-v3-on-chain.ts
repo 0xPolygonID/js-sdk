@@ -5,7 +5,7 @@ import {
   prepareSiblingsStr,
   getNodeAuxValue,
   prepareCircuitArrayValues,
-  IGistRootStatePubSignals,
+  IStateInfoPubSignals,
   StatesInfo
 } from './common';
 import { BJJSignatureProof, CircuitError, GISTProof, Query, TreeState, ValueProof } from './models';
@@ -422,7 +422,7 @@ interface AtomicQueryV3OnChainCircuitInputs {
  * @beta
  * AtomicQueryV3OnChainPubSignals public inputs
  */
-export class AtomicQueryV3OnChainPubSignals extends BaseConfig implements IGistRootStatePubSignals {
+export class AtomicQueryV3OnChainPubSignals extends BaseConfig implements IStateInfoPubSignals {
   requestID!: bigint;
   userID!: Id;
   issuerID!: Id;
@@ -518,7 +518,7 @@ export class AtomicQueryV3OnChainPubSignals extends BaseConfig implements IGistR
     return this;
   }
 
-  /** {@inheritDoc IGistRootStatePubSignals.getStatesInfo} */
+  /** {@inheritDoc IStateInfoPubSignals.getStatesInfo} */
   getStatesInfo(): StatesInfo {
     return {
       states: [

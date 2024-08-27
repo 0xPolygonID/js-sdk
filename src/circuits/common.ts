@@ -251,7 +251,7 @@ export type StatesInfo = {
  * @public
  * @interface   IStatePubSignals
  */
-export interface IGistRootStatePubSignals {
+export interface IStateInfoPubSignals {
   /**
    * return object with state params
    *
