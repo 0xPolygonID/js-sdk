@@ -129,12 +129,6 @@ export class ContractRequestHandler
 
     const methodId = message.body.transaction_data.method_id.replace('0x', '');
     switch (methodId) {
-      case OnChainZKPVerifier.SupportedMethodIdV3:
-        return this._zkpVerifier.submitZKPResponseV3(
-          ethSigner,
-          message.body.transaction_data,
-          zkpResponses
-        );
       case OnChainZKPVerifier.SupportedMethodIdV2:
         return this._zkpVerifier.submitZKPResponseV2(
           ethSigner,
@@ -149,7 +143,7 @@ export class ContractRequestHandler
         );
       default:
         throw new Error(
-          `Not supported method id. Only '${OnChainZKPVerifier.SupportedMethodIdV3}, ${OnChainZKPVerifier.SupportedMethodIdV2} and ${OnChainZKPVerifier.SupportedMethodId} are supported.'`
+          `Not supported method id. Only '${OnChainZKPVerifier.SupportedMethodIdV2} and ${OnChainZKPVerifier.SupportedMethodId} are supported.'`
         );
     }
   }
@@ -230,11 +224,6 @@ export class ContractRequestHandler
 
     const methodId = message.body.transaction_data.method_id.replace('0x', '');
     switch (methodId) {
-      case OnChainZKPVerifier.SupportedMethodIdV3:
-        return this._zkpVerifier.prepareZKPResponseV3TxData(
-          message.body.transaction_data,
-          zkpResponses
-        );
       case OnChainZKPVerifier.SupportedMethodIdV2:
         return this._zkpVerifier.prepareZKPResponseV2TxData(
           message.body.transaction_data,
@@ -247,7 +236,7 @@ export class ContractRequestHandler
         );
       default:
         throw new Error(
-          `Not supported method id. Only '${OnChainZKPVerifier.SupportedMethodIdV3}, ${OnChainZKPVerifier.SupportedMethodIdV2} and ${OnChainZKPVerifier.SupportedMethodId} are supported.'`
+          `Not supported method id. Only '${OnChainZKPVerifier.SupportedMethodIdV2} and ${OnChainZKPVerifier.SupportedMethodId} are supported.'`
         );
     }
   }

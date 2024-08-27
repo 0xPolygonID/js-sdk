@@ -12,9 +12,9 @@
         "type": "string"
       },
       {
-        "internalType": "uint64",
+        "internalType": "uint256",
         "name": "requestId",
-        "type": "uint64"
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -22,9 +22,9 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint64",
+        "internalType": "uint256",
         "name": "requestIdToCompare",
-        "type": "uint64"
+        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -41,6 +41,28 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -51,6 +73,100 @@
       }
     ],
     "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferStarted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "requestOwner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "metadata",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "validator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "ZKPRequestSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      }
+    ],
+    "name": "ZKPResponseSubmitted",
     "type": "event"
   },
   {
@@ -67,6 +183,65 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "VERSION",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "acceptOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract ICircuitValidator",
+        "name": "validator",
+        "type": "address"
+      }
+    ],
+    "name": "addValidatorToWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "disableZKPRequest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "enableZKPRequest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -74,9 +249,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint64",
+        "internalType": "uint256",
         "name": "requestId",
-        "type": "uint64"
+        "type": "uint256"
       }
     ],
     "name": "getProofStatus",
@@ -120,9 +295,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint64",
+        "internalType": "uint256",
         "name": "requestId",
-        "type": "uint64"
+        "type": "uint256"
       },
       {
         "internalType": "string",
@@ -144,9 +319,28 @@
   {
     "inputs": [
       {
-        "internalType": "uint64",
+        "internalType": "uint256",
         "name": "requestId",
-        "type": "uint64"
+        "type": "uint256"
+      }
+    ],
+    "name": "getRequestOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
       }
     ],
     "name": "getZKPRequest",
@@ -234,14 +428,27 @@
   {
     "inputs": [
       {
+        "internalType": "contract IStateCrossChain",
+        "name": "stateCrossChain",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "sender",
         "type": "address"
       },
       {
-        "internalType": "uint64",
+        "internalType": "uint256",
         "name": "requestId",
-        "type": "uint64"
+        "type": "uint256"
       }
     ],
     "name": "isProofVerified",
@@ -258,9 +465,93 @@
   {
     "inputs": [
       {
-        "internalType": "uint64",
+        "internalType": "contract ICircuitValidator",
+        "name": "validator",
+        "type": "address"
+      }
+    ],
+    "name": "isWhitelistedValidator",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "requestId",
-        "type": "uint64"
+        "type": "uint256"
+      }
+    ],
+    "name": "isZKPRequestEnabled",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pendingOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract ICircuitValidator",
+        "name": "validator",
+        "type": "address"
+      }
+    ],
+    "name": "removeValidatorFromWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
       }
     ],
     "name": "requestIdExists",
@@ -277,9 +568,27 @@
   {
     "inputs": [
       {
-        "internalType": "uint64",
+        "internalType": "uint256",
         "name": "requestId",
-        "type": "uint64"
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "requestOwner",
+        "type": "address"
+      }
+    ],
+    "name": "setRequestOwner",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
       },
       {
         "components": [
@@ -312,9 +621,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint64",
+        "internalType": "uint256",
         "name": "requestId",
-        "type": "uint64"
+        "type": "uint256"
       },
       {
         "internalType": "uint256[]",
@@ -347,59 +656,6 @@
       {
         "components": [
           {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          },
-          {
-            "internalType": "bytes",
-            "name": "zkProof",
-            "type": "bytes"
-          },
-          {
-            "internalType": "bytes",
-            "name": "crossChainProof",
-            "type": "bytes"
-          },
-          {
-            "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          }
-        ],
-        "internalType": "struct ZKPResponse[]",
-        "name": "responses",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "submitZKPResponseV2",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint64[]",
-        "name": "requestIds",
-        "type": "uint64[]"
-      }
-    ],
-    "name": "verifyLinkedProofs",
-    "outputs": [],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
             "internalType": "uint256",
             "name": "requestId",
             "type": "uint256"
@@ -415,7 +671,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct ZKPResponseV3[]",
+        "internalType": "struct ZKPResponse[]",
         "name": "responses",
         "type": "tuple[]"
       },
@@ -425,7 +681,7 @@
         "type": "bytes"
       }
     ],
-    "name": "submitZKPResponseV3",
+    "name": "submitZKPResponseV2",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -433,9 +689,40 @@
   {
     "inputs": [
       {
-        "internalType": "uint64",
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "requestIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "verifyLinkedProofs",
+    "outputs": [],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "requestId",
-        "type": "uint64"
+        "type": "uint256"
       },
       {
         "internalType": "uint256[]",
@@ -484,6 +771,19 @@
       }
     ],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "version",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "pure",
     "type": "function"
   }
 ]

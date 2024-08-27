@@ -38,32 +38,17 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   /**
    * solidity identifier for function signature:
    * struct ZKPResponse {
-        uint64 requestId;
-        bytes zkProof;
-        bytes crossChainProof;
-        bytes data;
-    }
-   * function submitZKPResponseV2(
-        ZKPResponse[] memory responses
-    ) public
-   */
-  //function submitZKPResponseV2(tuple[](uint64 requestId,bytes zkProof,bytes crossChainProof,bytes data))
-  public static readonly SupportedMethodIdV2 = 'fd41d8d4';
-
-  /**
-   * solidity identifier for function signature:
-   * struct ZKPResponseV3 {
         uint256 requestId;
         bytes zkProof;
         bytes data;
     }
-   * function submitZKPResponseV3(
-        ZKPResponseV3[] memory responses,
+   * function submitZKPResponseV2(
+        ZKPResponse[] memory responses,
         bytes memory crossChainProof
     ) public
    */
-  //function submitZKPResponseV3(tuple[](uint256 requestId,bytes zkProof,bytes data),bytes crossChainProof)
-  public static readonly SupportedMethodIdV3 = '3fba5e46';
+  //function submitZKPResponseV2(tuple[](uint256 requestId,bytes zkProof,bytes data),bytes crossChainProof)
+  public static readonly SupportedMethodIdV2 = '4c3d60fa';
 
   /**
    * supported circuits
@@ -277,12 +262,14 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         {
           requestId: requestID,
           zkProof: zkProofEncoded,
-          crossChainProof: crossChainProofs,
           data: metadata
         }
       ];
 
-      const txData = await verifierContract.submitZKPResponseV2.populateTransaction(payload);
+      const txData = await verifierContract.submitZKPResponseV2.populateTransaction(
+        payload,
+        crossChainProofs
+      );
 
       response.set(requestID, txData.data);
     }
@@ -314,186 +301,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     ethSigner = ethSigner.connect(provider);
 
     const txDataMap = await this.prepareZKPResponseV2TxData(txData, zkProofResponses);
-    const feeData = await provider.getFeeData();
-    const maxFeePerGas = chainConfig.maxFeePerGas
-      ? BigInt(chainConfig.maxFeePerGas)
-      : feeData.maxFeePerGas;
-    const maxPriorityFeePerGas = chainConfig.maxPriorityFeePerGas
-      ? BigInt(chainConfig.maxPriorityFeePerGas)
-      : feeData.maxPriorityFeePerGas;
-
-    const response = new Map<string, ZeroKnowledgeProofResponse>();
-    for (const zkProof of zkProofResponses) {
-      const payload = txDataMap.get(zkProof.id);
-      const request: TransactionRequest = {
-        to: txData.contract_address,
-        data: payload,
-        maxFeePerGas,
-        maxPriorityFeePerGas
-      };
-
-      const gasLimit = await ethSigner.estimateGas(request);
-      request.gasLimit = gasLimit;
-
-      const transactionService = new TransactionService(provider);
-      const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
-      response.set(txnHash, zkProof);
-    }
-
-    return response;
-  }
-
-  /**
-   * {@inheritDoc IOnChainZKPVerifier.prepareZKPResponseV3TxData}
-   */
-  public async prepareZKPResponseV3TxData(
-    txData: ContractInvokeTransactionData,
-    zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<number, string>> {
-    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV3) {
-      throw new Error(
-        `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV3}' is supported.`
-      );
-    }
-    if (!this._didResolverUrl) {
-      throw new Error(`did resolver url required for crosschain verification`);
-    }
-    const verifierContract = new Contract(txData.contract_address, abi);
-
-    const response = new Map<number, string>();
-    for (const zkProof of zkProofResponses) {
-      const requestID = zkProof.id;
-      const inputs = zkProof.pub_signals;
-
-      if (!this._supportedCircuits.includes(zkProof.circuitId as CircuitId)) {
-        throw new Error(`Circuit ${zkProof.circuitId} not supported by OnChainZKPVerifier`);
-      }
-
-      const zkProofEncoded = this.packZkpProof(
-        inputs,
-        zkProof.proof.pi_a.slice(0, 2),
-        [
-          [zkProof.proof.pi_b[0][1], zkProof.proof.pi_b[0][0]],
-          [zkProof.proof.pi_b[1][1], zkProof.proof.pi_b[1][0]]
-        ],
-        zkProof.proof.pi_c.slice(0, 2)
-      );
-
-      const stateInfo = this.getOnChainGistRootStatePubSignals(
-        zkProof.circuitId as
-          | CircuitId.AtomicQueryMTPV2OnChain
-          | CircuitId.AtomicQuerySigV2OnChain
-          | CircuitId.AtomicQueryV3OnChain,
-        zkProof.pub_signals
-      );
-
-      const gistUpdateArr: GlobalStateUpdate[] = [];
-      for (const gist of stateInfo.gists) {
-        let gistResolved;
-        const key = JSON.stringify({
-          DID: DID.parseFromId(gist.id),
-          resolverUrl: this._didResolverUrl,
-          gist: gist.root
-        });
-        if (!gistCache.has(key)) {
-          gistResolved = await resolveDidDocumentEip712MessageAndSignature(
-            DID.parseFromId(gist.id),
-            this._didResolverUrl,
-            { gist: gist.root }
-          );
-          gistCache.set(key, gistResolved as GlobalStateUpdate);
-        } else {
-          gistResolved = gistCache.get(key);
-        }
-        gistUpdateArr.push(gistResolved as GlobalStateUpdate);
-      }
-
-      const stateUpdateArr: IdentityStateUpdate[] = [];
-      for (const state of stateInfo.states) {
-        let stateResolved;
-        const key = JSON.stringify({
-          DID: DID.parseFromId(state.id),
-          resolverUrl: this._didResolverUrl,
-          state: state.state
-        });
-        if (!stateCache.has(key)) {
-          stateResolved = await resolveDidDocumentEip712MessageAndSignature(
-            DID.parseFromId(state.id),
-            this._didResolverUrl,
-            { state: state.state }
-          );
-          stateCache.set(key, stateResolved as IdentityStateUpdate);
-        } else {
-          stateResolved = stateCache.get(key);
-        }
-        stateUpdateArr.push(stateResolved as IdentityStateUpdate);
-      }
-
-      const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
-
-      const metadataArr: { key: string; value: Uint8Array }[] = [];
-      if (zkProof.vp) {
-        for (const key in zkProof.vp.verifiableCredential.credentialSubject) {
-          if (key === '@type') {
-            continue;
-          }
-          const metadataValue = poseidon.hashBytes(
-            byteEncoder.encode(
-              JSON.stringify(zkProof.vp.verifiableCredential.credentialSubject[key])
-            )
-          );
-          const bytesValue = byteEncoder.encode(metadataValue.toString());
-          metadataArr.push({
-            key,
-            value: bytesValue
-          });
-        }
-      }
-
-      const metadata = this.packMetadatas(metadataArr);
-      const payload = [
-        {
-          requestId: requestID,
-          zkProof: zkProofEncoded,
-          data: metadata
-        }
-      ];
-
-      const txData = await verifierContract.submitZKPResponseV3.populateTransaction(
-        payload,
-        crossChainProofs
-      );
-
-      response.set(requestID, txData.data);
-    }
-
-    return response;
-  }
-
-  /**
-   * {@inheritDoc IOnChainZKPVerifier.submitZKPResponseV3}
-   */
-  public async submitZKPResponseV3(
-    ethSigner: Signer,
-    txData: ContractInvokeTransactionData,
-    zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
-    const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
-    if (!chainConfig) {
-      throw new Error(`config for chain id ${txData.chain_id} was not found`);
-    }
-    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV3) {
-      throw new Error(
-        `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV3}' is supported.`
-      );
-    }
-    if (!this._didResolverUrl) {
-      throw new Error(`did resolver url required for crosschain verification`);
-    }
-    const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
-    ethSigner = ethSigner.connect(provider);
-
-    const txDataMap = await this.prepareZKPResponseV3TxData(txData, zkProofResponses);
     const feeData = await provider.getFeeData();
     const maxFeePerGas = chainConfig.maxFeePerGas
       ? BigInt(chainConfig.maxFeePerGas)
