@@ -38,7 +38,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   /**
    * solidity identifier for function signature:
    * struct ZKPResponse {
-        uint256 requestId;
+        uint64 requestId;
         bytes zkProof;
         bytes data;
     }
@@ -47,8 +47,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         bytes memory crossChainProof
     ) public
    */
-  //function submitZKPResponseV2(tuple[](uint256 requestId,bytes zkProof,bytes data),bytes crossChainProof)
-  public static readonly SupportedMethodIdV2 = '4c3d60fa';
+  //function submitZKPResponseV2(tuple[](uint64 requestId,bytes zkProof,bytes data),bytes crossChainProof)
+  public static readonly SupportedMethodIdV2 = 'ade09fcd';
 
   /**
    * supported circuits

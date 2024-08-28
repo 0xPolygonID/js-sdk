@@ -12,9 +12,9 @@
         "type": "string"
       },
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "internalType": "uint256",
@@ -22,9 +22,9 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestIdToCompare",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "internalType": "uint256",
@@ -118,9 +118,9 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "indexed": true,
@@ -155,9 +155,9 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "indexed": true,
@@ -218,9 +218,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       }
     ],
     "name": "disableZKPRequest",
@@ -231,9 +231,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       }
     ],
     "name": "enableZKPRequest",
@@ -249,9 +249,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       }
     ],
     "name": "getProofStatus",
@@ -295,9 +295,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "internalType": "string",
@@ -319,9 +319,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       }
     ],
     "name": "getRequestOwner",
@@ -338,9 +338,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       }
     ],
     "name": "getZKPRequest",
@@ -446,9 +446,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       }
     ],
     "name": "isProofVerified",
@@ -484,9 +484,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       }
     ],
     "name": "isZKPRequestEnabled",
@@ -549,9 +549,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       }
     ],
     "name": "requestIdExists",
@@ -568,9 +568,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "internalType": "address",
@@ -586,9 +586,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "components": [
@@ -621,9 +621,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "internalType": "uint256[]",
@@ -656,9 +656,9 @@
       {
         "components": [
           {
-            "internalType": "uint256",
+            "internalType": "uint64",
             "name": "requestId",
-            "type": "uint256"
+            "type": "uint64"
           },
           {
             "internalType": "bytes",
@@ -707,9 +707,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint256[]",
+        "internalType": "uint64[]",
         "name": "requestIds",
-        "type": "uint256[]"
+        "type": "uint64[]"
       }
     ],
     "name": "verifyLinkedProofs",
@@ -720,9 +720,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint64",
         "name": "requestId",
-        "type": "uint256"
+        "type": "uint64"
       },
       {
         "internalType": "uint256[]",
