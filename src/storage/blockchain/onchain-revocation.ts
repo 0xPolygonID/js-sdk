@@ -1,6 +1,6 @@
 import { RevocationStatus, Issuer } from '../../verifiable';
 import { Contract, JsonRpcProvider, Signer, TransactionReceipt, TransactionRequest } from 'ethers';
-import { Proof, NodeAuxJSON, Hash } from '@iden3/js-merkletree';
+import { Proof, NodeAuxJSON, Hash, ProofJSON } from '@iden3/js-merkletree';
 import { EthConnectionConfig } from './state';
 import abi from '../blockchain/abi/CredentialStatusResolver.json';
 import { ITransactionService, TransactionService } from '../../blockchain';
@@ -132,17 +132,12 @@ export class OnChainRevocationStorage {
     const siblings = mtp.siblings?.map((s) => s.toString());
 
     if (mtp.auxExistence) {
-      const auxIndex = BigInt(mtp.auxIndex.toString());
-      const auxValue = BigInt(mtp.auxValue.toString());
       nodeAux = {
-        key: auxIndex.toString(),
-        value: auxValue.toString()
+        key: mtp.auxIndex.toString(),
+        value: mtp.auxValue.toString()
       };
     }
-    return Proof.fromJSON({
-      existence: mtp.existence,
-      nodeAux,
-      siblings
-    });
+
+    return Proof.fromJSON({ existence: mtp.existence, node_aux: nodeAux, siblings });
   }
 }
