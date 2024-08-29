@@ -55,13 +55,13 @@ export class PlainPacker implements IPacker {
     return MediaType.PlainMessage;
   }
 
-  /** {@inheritDoc IPacker.getEnvelop} */
-  getEnvelop(): string {
+  /** {@inheritDoc IPacker.getEnvelope} */
+  getEnvelope(): string {
     return `env=${this.mediaType()}`;
   }
 
-  /** {@inheritDoc IPacker.isSupported} */
-  isSupported(profile: string) {
+  /** {@inheritDoc IPacker.isProfileSupported} */
+  isProfileSupported(profile: string) {
     const { env, circuits, alg } = parseAcceptProfile(profile);
     if (env !== this.mediaType()) {
       return false;

@@ -103,13 +103,13 @@ export class JWSPacker implements IPacker {
     return MediaType.SignedMessage;
   }
 
-  /** {@inheritDoc IPacker.getEnvelop} */
-  getEnvelop(): string {
+  /** {@inheritDoc IPacker.getEnvelope} */
+  getEnvelope(): string {
     return `env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(',')}`;
   }
 
-  /** {@inheritDoc IPacker.isSupported} */
-  isSupported(profile: string) {
+  /** {@inheritDoc IPacker.isProfileSupported} */
+  isProfileSupported(profile: string) {
     const { env, circuits, alg } = parseAcceptProfile(profile);
     if (env !== this.mediaType()) {
       return false;

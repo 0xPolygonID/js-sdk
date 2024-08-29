@@ -139,11 +139,11 @@ export interface IPacker {
   mediaType(): MediaType;
 
   /**
-   * gets packer envelop with options
+   * gets packer envelope with options
    *
    * @returns {string}
    */
-  getEnvelop(): string;
+  getEnvelope(): string;
 
   /**
    * returns true if profile is supported by packer
@@ -151,7 +151,7 @@ export interface IPacker {
    * @param {string} profile
    * @returns {boolean}
    */
-  isSupported(profile: string): boolean;
+  isProfileSupported(profile: string): boolean;
 }
 /**
  * Params for verification of auth circuit public signals

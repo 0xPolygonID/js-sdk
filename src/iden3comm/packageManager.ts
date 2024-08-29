@@ -28,7 +28,7 @@ export class PackageManager implements IPackageManager {
       return false;
     }
 
-    return p.isSupported(profile);
+    return p.isProfileSupported(profile);
   }
 
   /** {@inheritDoc IPackageManager.getSupportedMediaTypes} */
