@@ -17,6 +17,7 @@ import {
   IdentityStorage,
   InMemoryMerkleTreeStorage,
   IStateStorage,
+  JsonDocumentObject,
   Profile,
   RootInfo,
   StateInfo,
@@ -488,5 +489,72 @@ describe('Verify credential proof', () => {
     );
     const isValid = await credential.verifyProof(ProofType.Iden3SparseMerkleTreeProof, resolverURL);
     expect(isValid).to.be.eq(true);
+  });
+
+  it('W3CCredential.fromJSON deep copy', async () => {
+    const credObject = {
+      id: 'urn:uuid:0f2a2d08-65e5-11ef-bc4e-0a58a9feac02',
+      '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://schema.iden3.io/core/jsonld/iden3proofs.jsonld',
+        'ipfs://QmfK8fsSz5UWm44p5eN9KjsTzi1YEsDCG1LHMFcW9T2Dbe'
+      ],
+      type: ['VerifiableCredential', 'HowManyAttribute'],
+      issuanceDate: '2024-08-29T08:59:54.82008584Z',
+      credentialSubject: {
+        id: 'did:polygonid:privado:test:3LD3n5edw91PGdNh329rqRydBdaQj2Zwrqf7u49gU2',
+        type: 'HowManyAttribute',
+        'att-1-string': 'string',
+        'att-2-int': 22,
+        'att-3-bool': false,
+        'att-4-obj': {
+          'att-bool': true,
+          'att-int': 14,
+          'att-string': 'string2'
+        }
+      },
+      credentialStatus: {
+        id: 'https://issuer-node-api-v2-test.privado.id/v1/agent',
+        revocationNonce: 683471303,
+        type: 'Iden3commRevocationStatusV1.0'
+      },
+      issuer: 'did:polygonid:polygon:amoy:2qUPgJsiQP8sdQuckFEj73bDRU84NYnmzwQJr5M1Fd',
+      credentialSchema: {
+        id: 'https://ipfs.io/ipfs/QmQvWV4BJqV16czvr2Cpc8qe5mGG51sii4YuDyMPjSxYp7',
+        type: 'JsonSchema2023'
+      },
+      proof: [
+        {
+          type: 'BJJSignature2021',
+          issuerData: {
+            id: 'did:polygonid:polygon:amoy:2qUPgJsiQP8sdQuckFEj73bDRU84NYnmzwQJr5M1Fd',
+            state: {
+              claimsTreeRoot: '8a68b09bc81d49cea0e0a0f56990a0b3cb1bb55d963d309fb357356d7897140d',
+              value: '1c44078aa45ec70bebbb98f525edf3177ccb516e12beffd84fbdbaf86ad2bc13'
+            },
+            authCoreClaim:
+              'cca3371a6cb1b715004407e325bd993c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000548961cf73cbd6b488027734ea8dc2dd913b15f2dccf2ce13c7bb1fad409cb1a0504589c8c855e1455cf136d2fd27a4c1cded8915633f8e36a06843ef753b21e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+            mtp: {
+              existence: true,
+              siblings: []
+            },
+            credentialStatus: {
+              id: 'https://issuer-node-api-v2-test.privado.id/v1/agent',
+              revocationNonce: 0,
+              type: 'Iden3commRevocationStatusV1.0',
+              statusIssuer: null
+            }
+          },
+          coreClaim:
+            '31df932e35b3beef628544cf7d28dbcb2200000000000000000000000000000002a2c7b26f04aff4b573354055c1d44e3a35021a75ec5e941c10780719aa0b008489bda654ede194c8fbd7e82417f48813157f04fb917f3a4413be6209d338290000000000000000000000000000000000000000000000000000000000000000c7f1bc2800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+          signature:
+            '4732c4e4350b84087cd43f463bbf4103b1a3561659ae6fb144ba0e78657281233d393fbef1490ba7492c56f3f89fe7e08e47ddcffef20d02f4a40bddfde06702'
+        }
+      ]
+    };
+    const cred = W3CCredential.fromJSON(credObject);
+    delete (credObject.credentialSubject as JsonDocumentObject)['att-4-obj'];
+    expect(cred.credentialSubject['att-4-obj']).not.to.be.eq(undefined);
+    expect(cred.credentialSubject['att-4-obj']['att-bool']).to.be.eq(true);
   });
 });
