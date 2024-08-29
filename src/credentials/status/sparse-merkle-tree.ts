@@ -1,6 +1,6 @@
 import { CredentialStatus, RevocationStatus, Issuer } from '../../verifiable';
 import { CredentialStatusResolver } from './resolver';
-import { Proof } from '@iden3/js-merkletree';
+import { Proof, ProofJSON } from '@iden3/js-merkletree';
 
 /**
  * IssuerResolver is a class that allows to interact with the issuer's http endpoint to get revocation status.
@@ -33,14 +33,7 @@ export class IssuerResolver implements CredentialStatusResolver {
  */
 export interface RevocationStatusResponse {
   issuer: Issuer;
-  mtp: {
-    existence: boolean;
-    siblings: string[];
-    node_aux: {
-      key: string;
-      value: string;
-    };
-  };
+  mtp: ProofJSON;
 }
 
 /**
@@ -50,14 +43,8 @@ export interface RevocationStatusResponse {
  * @returns {RevocationStatus} RevocationStatus
  */
 export const toRevocationStatus = ({ issuer, mtp }: RevocationStatusResponse): RevocationStatus => {
-  const p = Proof.fromJSON({
-    nodeAux: mtp.node_aux,
-    existence: mtp.existence,
-    siblings: mtp.siblings
-  });
-
   return {
-    mtp: p,
+    mtp: Proof.fromJSON(mtp),
     issuer
   };
 };

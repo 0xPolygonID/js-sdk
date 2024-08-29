@@ -1,5 +1,10 @@
 import { BasicMessage } from '../';
-import { PaymentRequestDataType, PaymentRequestType, PaymentType } from '../../../verifiable';
+import {
+  PaymentRequestDataType,
+  PaymentRequestType,
+  PaymentType,
+  SupportedCurrencies
+} from '../../../verifiable';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** @beta PaymentRequestMessage is struct the represents payment-request message */
@@ -33,7 +38,7 @@ export type PaymentRequestDataInfo = {
   id: string;
   chainId: string;
   address: string;
-  currency: string;
+  currency: SupportedCurrencies;
   signature?: string;
 };
 

@@ -53,45 +53,34 @@ export class Query {
   }
 
   validateValueArraySize(maxArrSize: number): void {
-    switch (this.values.length) {
-      case 0: {
-        const zeroArrSizeOps = [Operators.NOOP, Operators.SD, Operators.NULLIFY];
-        if (!zeroArrSizeOps.includes(this.operator)) {
-          throw new Error(CircuitError.InvalidValuesArrSize);
-        }
-        return;
-      }
-      case 1: {
-        const oneArrSizeOps = [
-          Operators.EQ,
-          Operators.LT,
-          Operators.GT,
-          Operators.NE,
-          Operators.LTE,
-          Operators.GTE,
-          Operators.EXISTS
-        ];
-        if (!oneArrSizeOps.includes(this.operator)) {
-          throw new Error(CircuitError.InvalidValuesArrSize);
-        }
-        return;
-      }
-      case 2: {
-        const twoArrSizeOps = [Operators.BETWEEN, Operators.NONBETWEEN];
-        if (!twoArrSizeOps.includes(this.operator)) {
-          throw new Error(CircuitError.InvalidValuesArrSize);
-        }
-        return;
-      }
-      default: {
-        const maxArrSizeOps = [Operators.IN, Operators.NIN];
-        if (!maxArrSizeOps.includes(this.operator)) {
-          throw new Error(CircuitError.InvalidOperationType);
-        }
-        if (!this.values.length || this.values.length > maxArrSize) {
-          throw new Error(CircuitError.InvalidValuesArrSize);
-        }
-      }
+    if (
+      [Operators.NOOP, Operators.SD, Operators.NULLIFY].includes(this.operator) &&
+      this.values.length !== 0
+    ) {
+      throw new Error(CircuitError.InvalidValuesArrSize);
+    } else if (
+      [
+        Operators.EQ,
+        Operators.LT,
+        Operators.GT,
+        Operators.NE,
+        Operators.LTE,
+        Operators.GTE,
+        Operators.EXISTS
+      ].includes(this.operator) &&
+      this.values.length !== 1
+    ) {
+      throw new Error(CircuitError.InvalidValuesArrSize);
+    } else if (
+      [Operators.BETWEEN, Operators.NONBETWEEN].includes(this.operator) &&
+      this.values.length !== 2
+    ) {
+      throw new Error(CircuitError.InvalidValuesArrSize);
+    } else if (
+      [Operators.IN, Operators.NIN].includes(this.operator) &&
+      this.values.length > maxArrSize
+    ) {
+      throw new Error(CircuitError.InvalidValuesArrSize);
     }
   }
 }
