@@ -258,13 +258,11 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       }
 
       const metadata = this.packMetadatas(metadataArr);
-      payload.push([
-        {
-          requestId: requestID,
-          zkProof: zkProofEncoded,
-          data: metadata
-        }
-      ]);
+      payload.push({
+        requestId: requestID,
+        zkProof: zkProofEncoded,
+        data: metadata
+      });
     }
 
     const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
