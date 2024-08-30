@@ -82,10 +82,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<number, string>> {
-    const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
-    if (!chainConfig) {
-      throw new Error(`config for chain id ${txData.chain_id} was not found`);
-    }
     if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodId) {
       throw new Error(
         `submit doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodId}' is supported.`
