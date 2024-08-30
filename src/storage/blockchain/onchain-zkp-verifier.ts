@@ -17,8 +17,8 @@ import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
 import { poseidon } from '@iden3/js-crypto';
 
 // Cache for resolved gists and states
-const gistCache = new Map<string, GlobalStateUpdate>();
-const stateCache = new Map<string, IdentityStateUpdate>();
+// const gistCache = new Map<string, GlobalStateUpdate>();
+// const stateCache = new Map<string, IdentityStateUpdate>();
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
@@ -169,7 +169,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   public async prepareZKPResponseV2TxData(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<number, string>> {
+  ): Promise<string> {
     if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV2) {
       throw new Error(
         `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV2}' is supported.`
@@ -180,7 +180,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     }
     const verifierContract = new Contract(txData.contract_address, abi);
 
-    const response = new Map<number, string>();
+    const gistUpdateArr = [];
+    const stateUpdateArr = [];
+    const payload = [];
     for (const zkProof of zkProofResponses) {
       const requestID = zkProof.id;
       const inputs = zkProof.pub_signals;
@@ -207,6 +209,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         zkProof.pub_signals
       );
 
+      // todo: check if we already have gist resolved for this gist
       const gistUpdateResolutions = [];
       for (const gist of stateInfo.gists) {
         gistUpdateResolutions.push(
@@ -218,6 +221,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         );
       }
 
+      // todo: check if we already have state resolved for this gist
       const stateUpdateResolutions = [];
       for (const state of stateInfo.states) {
         stateUpdateResolutions.push(
@@ -229,10 +233,10 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         );
       }
 
-      const gistUpdateArr = (await Promise.all(gistUpdateResolutions)) as GlobalStateUpdate[];
-      const stateUpdateArr = (await Promise.all(stateUpdateResolutions)) as IdentityStateUpdate[];
-
-      const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
+      gistUpdateArr.push(...((await Promise.all(gistUpdateResolutions)) as GlobalStateUpdate[]));
+      stateUpdateArr.push(
+        ...((await Promise.all(stateUpdateResolutions)) as IdentityStateUpdate[])
+      );
 
       const metadataArr: { key: string; value: Uint8Array }[] = [];
       if (zkProof.vp) {
@@ -254,23 +258,20 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       }
 
       const metadata = this.packMetadatas(metadataArr);
-      const payload = [
+      payload.push([
         {
           requestId: requestID,
           zkProof: zkProofEncoded,
           data: metadata
         }
-      ];
-
-      const txData = await verifierContract.submitZKPResponseV2.populateTransaction(
-        payload,
-        crossChainProofs
-      );
-
-      response.set(requestID, txData.data);
+      ]);
     }
 
-    return response;
+    const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
+
+    return (
+      await verifierContract.submitZKPResponseV2.populateTransaction(payload, crossChainProofs)
+    ).data;
   }
 
   /**
@@ -280,7 +281,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
+  ): Promise<string> {
     const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
@@ -296,7 +297,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
     ethSigner = ethSigner.connect(provider);
 
-    const txDataMap = await this.prepareZKPResponseV2TxData(txData, zkProofResponses);
+    const txRequestData = await this.prepareZKPResponseV2TxData(txData, zkProofResponses);
     const feeData = await provider.getFeeData();
     const maxFeePerGas = chainConfig.maxFeePerGas
       ? BigInt(chainConfig.maxFeePerGas)
@@ -305,25 +306,19 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       ? BigInt(chainConfig.maxPriorityFeePerGas)
       : feeData.maxPriorityFeePerGas;
 
-    const response = new Map<string, ZeroKnowledgeProofResponse>();
-    for (const zkProof of zkProofResponses) {
-      const payload = txDataMap.get(zkProof.id);
-      const request: TransactionRequest = {
-        to: txData.contract_address,
-        data: payload,
-        maxFeePerGas,
-        maxPriorityFeePerGas
-      };
+    const request: TransactionRequest = {
+      to: txData.contract_address,
+      data: txRequestData,
+      maxFeePerGas,
+      maxPriorityFeePerGas
+    };
 
-      const gasLimit = await ethSigner.estimateGas(request);
-      request.gasLimit = gasLimit;
+    const gasLimit = await ethSigner.estimateGas(request);
+    request.gasLimit = gasLimit;
 
-      const transactionService = new TransactionService(provider);
-      const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
-      response.set(txnHash, zkProof);
-    }
-
-    return response;
+    const transactionService = new TransactionService(provider);
+    const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
+    return txnHash;
   }
 
   private packZkpProof(inputs: string[], a: string[], b: string[][], c: string[]): string {

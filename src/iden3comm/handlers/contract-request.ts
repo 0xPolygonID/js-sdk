@@ -36,7 +36,7 @@ export interface IContractRequestHandler {
     did: DID,
     request: Uint8Array,
     opts?: ContractInvokeHandlerOptions
-  ): Promise<Map<string, ZeroKnowledgeProofResponse>>;
+  ): Promise<Map<string, ZeroKnowledgeProofResponse> | string>;
 }
 
 /** ContractInvokeHandlerOptions represents contract invoke handler options */
@@ -102,7 +102,7 @@ export class ContractRequestHandler
   private async handleContractInvoke(
     message: ContractInvokeRequest,
     ctx: ContractMessageHandlerOptions
-  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
+  ): Promise<Map<string, ZeroKnowledgeProofResponse> | string> {
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for contract invoke request');
     }
@@ -176,7 +176,7 @@ export class ContractRequestHandler
     did: DID,
     request: Uint8Array,
     opts: ContractInvokeHandlerOptions
-  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
+  ): Promise<Map<string, ZeroKnowledgeProofResponse> | string> {
     const ciRequest = await this.parseContractInvokeRequest(request);
 
     return this.handleContractInvoke(ciRequest, {
@@ -200,7 +200,7 @@ export class ContractRequestHandler
     opts?: {
       challenge?: bigint;
     }
-  ): Promise<Map<number, string>> {
+  ): Promise<Map<number, string> | string> {
     const message = await this.parseContractInvokeRequest(request);
 
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
