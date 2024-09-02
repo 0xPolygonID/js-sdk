@@ -17,6 +17,11 @@ import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
 import { poseidon } from '@iden3/js-crypto';
 
 const maxGasLimit = 10000000n;
+
+// Cache for resolved gists and states
+const gistCache = new Map<string, GlobalStateUpdate>();
+const stateCache = new Map<string, IdentityStateUpdate>();
+
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
  * and submitZKPResponse.
@@ -211,9 +216,13 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         zkProof.pub_signals
       );
 
-      // todo: check if we already have gist resolved for this gist
       const gistUpdateResolutions = [];
       for (const gist of stateInfo.gists) {
+        const gistCached = gistCache.get(JSON.stringify(gist)) as GlobalStateUpdate;
+
+        if (gistCached) {
+          continue;
+        }
         gistUpdateResolutions.push(
           resolveDidDocumentEip712MessageAndSignature(
             DID.parseFromId(gist.id),
@@ -223,9 +232,13 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         );
       }
 
-      // todo: check if we already have state resolved for this gist
       const stateUpdateResolutions = [];
       for (const state of stateInfo.states) {
+        const stateCached = stateCache.get(JSON.stringify(state)) as IdentityStateUpdate;
+
+        if (stateCached) {
+          continue;
+        }
         stateUpdateResolutions.push(
           resolveDidDocumentEip712MessageAndSignature(
             DID.parseFromId(state.id),
@@ -235,10 +248,14 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         );
       }
 
-      gistUpdateArr.push(...((await Promise.all(gistUpdateResolutions)) as GlobalStateUpdate[]));
-      stateUpdateArr.push(
-        ...((await Promise.all(stateUpdateResolutions)) as IdentityStateUpdate[])
-      );
+      if (gistUpdateResolutions.length > 0) {
+        gistUpdateArr.push(...((await Promise.all(gistUpdateResolutions)) as GlobalStateUpdate[]));
+      }
+      if (stateUpdateResolutions.length > 0) {
+        stateUpdateArr.push(
+          ...((await Promise.all(stateUpdateResolutions)) as IdentityStateUpdate[])
+        );
+      }
 
       const metadataArr: { key: string; value: Uint8Array }[] = [];
       if (zkProof.vp) {
