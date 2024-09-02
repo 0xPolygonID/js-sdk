@@ -32,21 +32,32 @@ export interface IOnChainZKPVerifier {
    * @param {Signer} ethSigner - tx signer
    * @param {txData} ContractInvokeTransactionData - transaction data
    * @param {ZeroKnowledgeProofResponse[]} zkProofResponses - zkProofResponses
-   * @returns {Promise<Map<string, ZeroKnowledgeProofResponse>>} - map of transaction hash - ZeroKnowledgeProofResponse
+   * @returns {Promise<Map<string, ZeroKnowledgeProofResponse[]>>} - map of transaction hash - ZeroKnowledgeProofResponse[]
    */
   submitZKPResponseV2(
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<string>;
+  ): Promise<Map<string, ZeroKnowledgeProofResponse[]>>;
 
   /**
-   * Returns the Map of ZKP Responses to transaction data args for the ZKP verifier contract submission.
+   * Returns the Map of request id to transaction data args for the ZKP verifier contract submission.
+   * For each request id new transaction data is created.
    * @param txData
    * @param zkProofResponses
    */
-  prepareZKPResponseTxData(
+  prepareZKPResponseSubmitV1TxData(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>>;
+  ): Promise<Map<number, JsonDocumentObjectValue[]>>;
+
+  /**
+   * Returns args for the ZKP verifier contract submission V2 (single tx).
+   * @param txData
+   * @param zkProofResponses
+   */
+  prepareZKPResponseSingleTxData(
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ): Promise<JsonDocumentObjectValue[]>;
 }

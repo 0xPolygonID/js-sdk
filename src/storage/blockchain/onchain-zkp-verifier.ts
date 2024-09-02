@@ -78,21 +78,18 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   ) {}
 
   /**
-   * {@inheritDoc IOnChainZKPVerifier.prepareZKPResponseTxData}
+   * {@inheritDoc IOnChainZKPVerifier.prepareZKPResponseSubmitV1TxData}
    */
-  public async prepareZKPResponseTxData(
+  public async prepareZKPResponseSubmitV1TxData(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>> {
-    if (txData.method_id.replace('0x', '') === OnChainZKPVerifier.SupportedMethodIdV2) {
-      return this.prepareZKPResponseV2TxData(txData, zkProofResponses);
-    }
+  ): Promise<Map<number, JsonDocumentObjectValue[]>> {
     if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodId) {
       throw new Error(
         `submit doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodId}' is supported.`
       );
     }
-    const response = new Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>();
+    const response = new Map<number, JsonDocumentObjectValue[]>();
     for (const zkProof of zkProofResponses) {
       const requestID = zkProof.id;
       const inputs = zkProof.pub_signals;
@@ -108,7 +105,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         zkProof.proof.pi_c.slice(0, 2)
       ];
 
-      response.set([zkProof], payload);
+      response.set(requestID, payload);
     }
 
     return response;
@@ -134,7 +131,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
     ethSigner = ethSigner.connect(provider);
 
-    const txDataMap = await this.prepareZKPResponseTxData(txData, zkProofResponses);
+    const txDataMap = await this.prepareZKPResponseSubmitV1TxData(txData, zkProofResponses);
     const response = new Map<string, ZeroKnowledgeProofResponse>();
 
     const feeData = await provider.getFeeData();
@@ -147,7 +144,11 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
     const verifierContract = new Contract(txData.contract_address, abi);
 
-    for (const [[zkProof], value] of txDataMap) {
+    for (const [requestId, value] of txDataMap) {
+      const zkProof = zkProofResponses.find((i) => i.id == requestId);
+      if (!zkProof) {
+        throw new Error(`zkProof not found for request id ${requestId}`);
+      }
       const payload = await verifierContract.submitZKPResponse.populateTransaction(...value);
       const request: TransactionRequest = {
         to: txData.contract_address,
@@ -179,7 +180,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<string> {
+  ): Promise<Map<string, ZeroKnowledgeProofResponse[]>> {
     const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
@@ -195,11 +196,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
     ethSigner = ethSigner.connect(provider);
 
-    const txRequestMap = await this.prepareZKPResponseV2TxData(txData, zkProofResponses);
-    const txRequestParams = txRequestMap.get(zkProofResponses);
-    if (!txRequestParams) {
-      throw new Error('no transaction args found for requests');
-    }
+    const txDataArgs = await this.prepareZKPResponseSubmitV1TxData(txData, zkProofResponses);
     const feeData = await provider.getFeeData();
     const maxFeePerGas = chainConfig.maxFeePerGas
       ? BigInt(chainConfig.maxFeePerGas)
@@ -210,7 +207,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
     const verifierContract = new Contract(txData.contract_address, abi);
     const txRequestData = await verifierContract.submitZKPResponseV2.populateTransaction(
-      ...txRequestParams
+      ...txDataArgs
     );
 
     const request: TransactionRequest = {
@@ -230,13 +227,13 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
     const transactionService = new TransactionService(provider);
     const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
-    return txnHash;
+    return new Map<string, ZeroKnowledgeProofResponse[]>().set(txnHash, zkProofResponses);
   }
 
-  private async prepareZKPResponseV2TxData(
+  public async prepareZKPResponseSingleTxData(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>> {
+  ): Promise<JsonDocumentObjectValue[]> {
     if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV2) {
       throw new Error(
         `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV2}' is supported.`
@@ -355,9 +352,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     }
 
     const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
-
-    const response = new Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>();
-    return response.set(zkProofResponses, [payload, crossChainProofs]);
+    return [payload, crossChainProofs];
   }
 
   private packZkpProof(inputs: string[], a: string[], b: string[][], c: string[]): string {
