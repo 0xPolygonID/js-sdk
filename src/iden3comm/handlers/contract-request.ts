@@ -1,7 +1,12 @@
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
-import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
+import {
+  BasicMessage,
+  IPackageManager,
+  JsonDocumentObjectValue,
+  ZeroKnowledgeProofResponse
+} from '../types';
 import { ContractInvokeRequest } from '../types/protocol/contract-request';
 import { DID, ChainIds } from '@iden3/js-iden3-core';
 import { IOnChainZKPVerifier, OnChainZKPVerifier } from '../../storage';
@@ -200,7 +205,7 @@ export class ContractRequestHandler
     opts?: {
       challenge?: bigint;
     }
-  ): Promise<Map<number, string> | string> {
+  ): Promise<Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>> {
     const message = await this.parseContractInvokeRequest(request);
 
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
@@ -222,22 +227,6 @@ export class ContractRequestHandler
       { challenge: opts?.challenge, supportedCircuits: this._supportedCircuits }
     );
 
-    const methodId = message.body.transaction_data.method_id.replace('0x', '');
-    switch (methodId) {
-      case OnChainZKPVerifier.SupportedMethodIdV2:
-        return this._zkpVerifier.prepareZKPResponseV2TxData(
-          message.body.transaction_data,
-          zkpResponses
-        );
-      case OnChainZKPVerifier.SupportedMethodId:
-        return this._zkpVerifier.prepareZKPResponseTxData(
-          message.body.transaction_data,
-          zkpResponses
-        );
-      default:
-        throw new Error(
-          `Not supported method id. Only '${OnChainZKPVerifier.SupportedMethodIdV2} and ${OnChainZKPVerifier.SupportedMethodId} are supported.'`
-        );
-    }
+    return this._zkpVerifier.prepareZKPResponseTxData(message.body.transaction_data, zkpResponses);
   }
 }

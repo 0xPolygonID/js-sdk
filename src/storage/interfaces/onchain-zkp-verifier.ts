@@ -1,5 +1,9 @@
 import { Signer } from 'ethers';
-import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
+import {
+  ContractInvokeTransactionData,
+  JsonDocumentObjectValue,
+  ZeroKnowledgeProofResponse
+} from '../../iden3comm';
 
 /**
  * Interface that defines methods for ZKP verifier
@@ -37,22 +41,12 @@ export interface IOnChainZKPVerifier {
   ): Promise<string>;
 
   /**
-   * Returns the Map of request id to transaction data for the ZKP verifier contract submission.
+   * Returns the Map of ZKP Responses to transaction data args for the ZKP verifier contract submission.
    * @param txData
    * @param zkProofResponses
    */
   prepareZKPResponseTxData(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<number, string>>;
-
-  /**
-   * Returns transaction data for the ZKP verifier contract submission V2. (one tx call for all responses)
-   * @param txData
-   * @param zkProofResponses
-   */
-  prepareZKPResponseV2TxData(
-    txData: ContractInvokeTransactionData,
-    zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<string>;
+  ): Promise<Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>>;
 }

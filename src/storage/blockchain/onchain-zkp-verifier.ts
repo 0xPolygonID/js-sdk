@@ -1,7 +1,11 @@
 import { JsonRpcProvider, Signer, Contract, TransactionRequest, ethers } from 'ethers';
 import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
-import { ContractInvokeTransactionData, ZeroKnowledgeProofResponse } from '../../iden3comm';
+import {
+  ContractInvokeTransactionData,
+  JsonDocumentObjectValue,
+  ZeroKnowledgeProofResponse
+} from '../../iden3comm';
 import abi from './abi/ZkpVerifier.json';
 import { TransactionService } from '../../blockchain';
 import { DID } from '@iden3/js-iden3-core';
@@ -79,14 +83,16 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   public async prepareZKPResponseTxData(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<number, string>> {
+  ): Promise<Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>> {
+    if (txData.method_id.replace('0x', '') === OnChainZKPVerifier.SupportedMethodIdV2) {
+      return this.prepareZKPResponseV2TxData(txData, zkProofResponses);
+    }
     if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodId) {
       throw new Error(
         `submit doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodId}' is supported.`
       );
     }
-    const verifierContract = new Contract(txData.contract_address, abi);
-    const response = new Map<number, string>();
+    const response = new Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>();
     for (const zkProof of zkProofResponses) {
       const requestID = zkProof.id;
       const inputs = zkProof.pub_signals;
@@ -102,8 +108,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         zkProof.proof.pi_c.slice(0, 2)
       ];
 
-      const txData = await verifierContract.submitZKPResponse.populateTransaction(...payload);
-      response.set(requestID, txData.data);
+      response.set([zkProof], payload);
     }
 
     return response;
@@ -140,12 +145,13 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       ? BigInt(chainConfig.maxPriorityFeePerGas)
       : feeData.maxPriorityFeePerGas;
 
-    for (const zkProof of zkProofResponses) {
-      const payload = txDataMap.get(zkProof.id);
+    const verifierContract = new Contract(txData.contract_address, abi);
 
+    for (const [[zkProof], value] of txDataMap) {
+      const payload = await verifierContract.submitZKPResponse.populateTransaction(...value);
       const request: TransactionRequest = {
         to: txData.contract_address,
-        data: payload,
+        data: payload.data,
         maxFeePerGas,
         maxPriorityFeePerGas
       };
@@ -166,13 +172,19 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     return response;
   }
 
+ 
   /**
-   * {@inheritDoc IOnChainZKPVerifier.prepareZKPResponseV2TxData}
+   * {@inheritDoc IOnChainZKPVerifier.submitZKPResponseV2}
    */
-  public async prepareZKPResponseV2TxData(
+  public async submitZKPResponseV2(
+    ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<string> {
+    const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
+    if (!chainConfig) {
+      throw new Error(`config for chain id ${txData.chain_id} was not found`);
+    }
     if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV2) {
       throw new Error(
         `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV2}' is supported.`
@@ -181,8 +193,59 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     if (!this._didResolverUrl) {
       throw new Error(`did resolver url required for crosschain verification`);
     }
-    const verifierContract = new Contract(txData.contract_address, abi);
+    const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
+    ethSigner = ethSigner.connect(provider);
 
+    const txRequestMap = await this.prepareZKPResponseV2TxData(txData, zkProofResponses);
+    const txRequestParams = txRequestMap.get(zkProofResponses);
+    if (!txRequestParams) {
+      throw new Error('no transaction args found for requests');
+    }
+    const feeData = await provider.getFeeData();
+    const maxFeePerGas = chainConfig.maxFeePerGas
+      ? BigInt(chainConfig.maxFeePerGas)
+      : feeData.maxFeePerGas;
+    const maxPriorityFeePerGas = chainConfig.maxPriorityFeePerGas
+      ? BigInt(chainConfig.maxPriorityFeePerGas)
+      : feeData.maxPriorityFeePerGas;
+
+    const verifierContract = new Contract(txData.contract_address, abi);
+    const txRequestData = await verifierContract.submitZKPResponseV2.populateTransaction(
+      ...txRequestParams
+    );
+
+    const request: TransactionRequest = {
+      to: txData.contract_address,
+      data: txRequestData.data,
+      maxFeePerGas,
+      maxPriorityFeePerGas
+    };
+
+    let gasLimit;
+    try {
+      gasLimit = await ethSigner.estimateGas(request);
+    } catch (e) {
+      gasLimit = maxGasLimit;
+    }
+    request.gasLimit = gasLimit;
+
+    const transactionService = new TransactionService(provider);
+    const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
+    return txnHash;
+  }
+
+  private async prepareZKPResponseV2TxData(
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ): Promise<Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>> {
+    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV2) {
+      throw new Error(
+        `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV2}' is supported.`
+      );
+    }
+    if (!this._didResolverUrl) {
+      throw new Error(`did resolver url required for crosschain verification`);
+    }
     const gistUpdateArr = [];
     const stateUpdateArr = [];
     const payload = [];
@@ -294,61 +357,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
     const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
 
-    return (
-      await verifierContract.submitZKPResponseV2.populateTransaction(payload, crossChainProofs)
-    ).data;
-  }
-
-  /**
-   * {@inheritDoc IOnChainZKPVerifier.submitZKPResponseV2}
-   */
-  public async submitZKPResponseV2(
-    ethSigner: Signer,
-    txData: ContractInvokeTransactionData,
-    zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<string> {
-    const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
-    if (!chainConfig) {
-      throw new Error(`config for chain id ${txData.chain_id} was not found`);
-    }
-    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV2) {
-      throw new Error(
-        `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV2}' is supported.`
-      );
-    }
-    if (!this._didResolverUrl) {
-      throw new Error(`did resolver url required for crosschain verification`);
-    }
-    const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
-    ethSigner = ethSigner.connect(provider);
-
-    const txRequestData = await this.prepareZKPResponseV2TxData(txData, zkProofResponses);
-    const feeData = await provider.getFeeData();
-    const maxFeePerGas = chainConfig.maxFeePerGas
-      ? BigInt(chainConfig.maxFeePerGas)
-      : feeData.maxFeePerGas;
-    const maxPriorityFeePerGas = chainConfig.maxPriorityFeePerGas
-      ? BigInt(chainConfig.maxPriorityFeePerGas)
-      : feeData.maxPriorityFeePerGas;
-
-    const request: TransactionRequest = {
-      to: txData.contract_address,
-      data: txRequestData,
-      maxFeePerGas,
-      maxPriorityFeePerGas
-    };
-
-    let gasLimit;
-    try {
-      gasLimit = await ethSigner.estimateGas(request);
-    } catch (e) {
-      gasLimit = maxGasLimit;
-    }
-    request.gasLimit = gasLimit;
-
-    const transactionService = new TransactionService(provider);
-    const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
-    return txnHash;
+    const response = new Map<ZeroKnowledgeProofResponse[], JsonDocumentObjectValue[]>();
+    return response.set(zkProofResponses, [payload, crossChainProofs]);
   }
 
   private packZkpProof(inputs: string[], a: string[], b: string[][], c: string[]): string {
