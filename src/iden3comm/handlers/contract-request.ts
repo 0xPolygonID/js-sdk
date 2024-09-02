@@ -17,7 +17,7 @@ import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handl
  */
 export interface IContractRequestHandler {
   /**
-   * unpacks contract invoker request
+   * unpacks contract invoke request
    * @beta
    * @param {Uint8Array} request - raw byte message
    * @returns `Promise<ContractInvokeRequest>`
@@ -25,7 +25,7 @@ export interface IContractRequestHandler {
   parseContractInvokeRequest(request: Uint8Array): Promise<ContractInvokeRequest>;
 
   /**
-   * handle contract invoker request
+   * handle contract invoke request
    * @beta
    * @param {did} did  - sender DID
    * @param {Uint8Array} request - raw byte message
@@ -206,7 +206,7 @@ export class ContractRequestHandler
   }
 
   /**
-   * handle contract invoker request
+   * handle contract invoke request
    * supports only 0xb68967e2 method id
    * @beta
    * @deprecated
