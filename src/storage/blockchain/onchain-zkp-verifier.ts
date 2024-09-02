@@ -172,7 +172,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     return response;
   }
 
- 
   /**
    * {@inheritDoc IOnChainZKPVerifier.submitZKPResponseV2}
    */
