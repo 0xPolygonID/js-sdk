@@ -16,10 +16,7 @@ import { byteEncoder, resolveDidDocumentEip712MessageAndSignature } from '../../
 import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
 import { poseidon } from '@iden3/js-crypto';
 
-// Cache for resolved gists and states
-// const gistCache = new Map<string, GlobalStateUpdate>();
-// const stateCache = new Map<string, IdentityStateUpdate>();
-
+const maxGasLimit = 10000000n;
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
  * and submitZKPResponse.
@@ -152,7 +149,12 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         maxPriorityFeePerGas
       };
 
-      const gasLimit = await ethSigner.estimateGas(request);
+      let gasLimit;
+      try {
+        gasLimit = await ethSigner.estimateGas(request);
+      } catch (e) {
+        gasLimit = maxGasLimit;
+      }
       request.gasLimit = gasLimit;
 
       const transactionService = new TransactionService(provider);
@@ -311,7 +313,12 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       maxPriorityFeePerGas
     };
 
-    const gasLimit = await ethSigner.estimateGas(request);
+    let gasLimit;
+    try {
+      gasLimit = await ethSigner.estimateGas(request);
+    } catch (e) {
+      gasLimit = maxGasLimit;
+    }
     request.gasLimit = gasLimit;
 
     const transactionService = new TransactionService(provider);
