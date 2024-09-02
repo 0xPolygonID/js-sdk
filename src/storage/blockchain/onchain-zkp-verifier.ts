@@ -196,7 +196,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
     ethSigner = ethSigner.connect(provider);
 
-    const txDataArgs = await this.prepareZKPResponseSubmitV1TxData(txData, zkProofResponses);
+    const txDataArgs = await this.prepareZKPResponseSingleTxData(txData, zkProofResponses);
     const feeData = await provider.getFeeData();
     const maxFeePerGas = chainConfig.maxFeePerGas
       ? BigInt(chainConfig.maxFeePerGas)
