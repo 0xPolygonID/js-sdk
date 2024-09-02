@@ -38,6 +38,7 @@ import {
   DataPrepareHandlerFunc,
   IContractRequestHandler,
   IPackageManager,
+  JsonDocumentObjectValue,
   PackageManager,
   ProvingParams,
   StateVerificationFunc,
@@ -124,13 +125,22 @@ describe('contract-request', () => {
       return response;
     },
 
-    submitZKPResponseV2: async () => {
-      const response = 'txhash1';
+    submitZKPResponseV2: async (
+      signer: Signer,
+      txData: ContractInvokeTransactionData,
+      zkProofResponses: ZeroKnowledgeProofResponse[]
+    ) => {
+      const response = new Map<string, ZeroKnowledgeProofResponse[]>();
+      response.set('txhash1', zkProofResponses);
       return response;
     },
 
-    prepareZKPResponseTxData: async () => {
-      return new Map();
+    prepareZKPResponseSubmitV1TxData: async () => {
+      return new Map<number, JsonDocumentObjectValue[]>();
+    },
+
+    prepareZKPResponseSingleTxData: async () => {
+      return [];
     }
   };
 
