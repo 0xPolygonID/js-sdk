@@ -124,21 +124,13 @@ describe('contract-request', () => {
       return response;
     },
 
-    submitZKPResponseV2: async (
-      signer: Signer,
-      txData: ContractInvokeTransactionData,
-      zkProofResponses: ZeroKnowledgeProofResponse[]
-    ) => {
+    submitZKPResponseV2: async () => {
       const response = 'txhash1';
       return response;
     },
 
     prepareZKPResponseTxData: async () => {
       return new Map();
-    },
-
-    prepareZKPResponseV2TxData: async () => {
-      return '';
     }
   };
 
