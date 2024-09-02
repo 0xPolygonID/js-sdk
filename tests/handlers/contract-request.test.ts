@@ -129,8 +129,7 @@ describe('contract-request', () => {
       txData: ContractInvokeTransactionData,
       zkProofResponses: ZeroKnowledgeProofResponse[]
     ) => {
-      const response = new Map<string, ZeroKnowledgeProofResponse>();
-      response.set('txhash1', zkProofResponses[0]);
+      const response = 'txhash1';
       return response;
     },
 
@@ -139,7 +138,7 @@ describe('contract-request', () => {
     },
 
     prepareZKPResponseV2TxData: async () => {
-      return new Map();
+      return '';
     }
   };
 
@@ -320,7 +319,7 @@ describe('contract-request', () => {
       options
     );
 
-    expect(ciResponse.has('txhash1')).to.be.true;
+    expect((ciResponse as Map<string, ZeroKnowledgeProofResponse>).has('txhash1')).to.be.true;
   });
 
   // SKIPPED : integration test
@@ -471,9 +470,12 @@ describe('contract-request', () => {
     );
 
     expect(ciResponse).not.be.undefined;
-    expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(
-      proofReq.id
-    );
+    expect(
+      (
+        (ciResponse as Map<string, ZeroKnowledgeProofResponse>).values().next()
+          .value as ZeroKnowledgeProofResponse
+      ).id
+    ).to.be.equal(proofReq.id);
   });
   // V3 integration test
   it.skip('contract request flow V3 - integration test', async () => {
@@ -645,9 +647,12 @@ describe('contract-request', () => {
     );
 
     expect(ciResponse).not.be.undefined;
-    expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(
-      proofReqs[0].id
-    );
+    expect(
+      (
+        (ciResponse as Map<string, ZeroKnowledgeProofResponse>).values().next()
+          .value as ZeroKnowledgeProofResponse
+      ).id
+    ).to.be.equal(proofReqs[0].id);
   });
 
   // cross chain integration test
@@ -803,9 +808,12 @@ describe('contract-request', () => {
     );
 
     expect(ciResponse).not.be.undefined;
-    expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(
-      proofReqs[0].id
-    );
+    expect(
+      (
+        (ciResponse as Map<string, ZeroKnowledgeProofResponse>).values().next()
+          .value as ZeroKnowledgeProofResponse
+      ).id
+    ).to.be.equal(proofReqs[0].id);
   });
 
   it.skip('contract request flow V3 sig `email-verified` transak req - integration test', async () => {
@@ -994,8 +1002,11 @@ describe('contract-request', () => {
     );
 
     expect(ciResponse).not.be.undefined;
-    expect((ciResponse.values().next().value as ZeroKnowledgeProofResponse).id).to.be.equal(
-      proofReqs[0].id
-    );
+    expect(
+      (
+        (ciResponse as Map<string, ZeroKnowledgeProofResponse>).values().next()
+          .value as ZeroKnowledgeProofResponse
+      ).id
+    ).to.be.equal(proofReqs[0].id);
   });
 });

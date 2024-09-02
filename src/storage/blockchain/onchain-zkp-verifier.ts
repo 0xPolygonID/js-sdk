@@ -18,10 +18,6 @@ import { poseidon } from '@iden3/js-crypto';
 
 const maxGasLimit = 10000000n;
 
-// Cache for resolved gists and states
-const gistCache = new Map<string, GlobalStateUpdate>();
-const stateCache = new Map<string, IdentityStateUpdate>();
-
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
  * and submitZKPResponse.
@@ -190,6 +186,10 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const gistUpdateArr = [];
     const stateUpdateArr = [];
     const payload = [];
+    // Resolved gists and states to avoid duplicate requests
+    const gistUpdateResolutionsPending: string[] = [];
+    const stateUpdateResolutionsPending: string[] = [];
+
     for (const zkProof of zkProofResponses) {
       const requestID = zkProof.id;
       const inputs = zkProof.pub_signals;
@@ -218,11 +218,15 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
       const gistUpdateResolutions = [];
       for (const gist of stateInfo.gists) {
-        const gistCached = gistCache.get(JSON.stringify(gist)) as GlobalStateUpdate;
+        const gistResolutionPending = gistUpdateResolutionsPending.find(
+          (g) => g == JSON.stringify(gist)
+        );
 
-        if (gistCached) {
+        if (gistResolutionPending) {
           continue;
         }
+        gistUpdateResolutionsPending.push(JSON.stringify(gist));
+
         gistUpdateResolutions.push(
           resolveDidDocumentEip712MessageAndSignature(
             DID.parseFromId(gist.id),
@@ -234,11 +238,15 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
       const stateUpdateResolutions = [];
       for (const state of stateInfo.states) {
-        const stateCached = stateCache.get(JSON.stringify(state)) as IdentityStateUpdate;
+        const stateResolutionPending = stateUpdateResolutionsPending.find(
+          (s) => s == JSON.stringify(state)
+        );
 
-        if (stateCached) {
+        if (stateResolutionPending) {
           continue;
         }
+        stateUpdateResolutionsPending.push(JSON.stringify(state));
+
         stateUpdateResolutions.push(
           resolveDidDocumentEip712MessageAndSignature(
             DID.parseFromId(state.id),
