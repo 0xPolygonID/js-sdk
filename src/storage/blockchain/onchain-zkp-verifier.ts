@@ -16,9 +16,10 @@ import {
   CircuitId,
   StatesInfo
 } from '../../circuits';
-import { byteEncoder, resolveDidDocumentEip712MessageAndSignature } from '../../utils';
+import { byteEncoder, DIDDocumentSignature, resolveDidDocument } from '../../utils';
 import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
 import { poseidon } from '@iden3/js-crypto';
+import { Hash } from '@iden3/js-merkletree';
 
 const maxGasLimit = 10000000n;
 
@@ -285,7 +286,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         gistUpdateResolutionsPending.push(JSON.stringify(gist));
 
         gistUpdateResolutions.push(
-          resolveDidDocumentEip712MessageAndSignature(
+          this.resolveDidDocumentEip712MessageAndSignature(
             DID.parseFromId(gist.id),
             this._opts.didResolverUrl,
             { gist: gist.root }
@@ -305,10 +306,12 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         stateUpdateResolutionsPending.push(JSON.stringify(state));
 
         stateUpdateResolutions.push(
-          resolveDidDocumentEip712MessageAndSignature(
+          this.resolveDidDocumentEip712MessageAndSignature(
             DID.parseFromId(state.id),
             this._opts.didResolverUrl,
-            { state: state.state }
+            {
+              state: state.state
+            }
           )
         );
       }
@@ -449,5 +452,46 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const encodedInputs = byteEncoder.encode(JSON.stringify(inputs));
     atomicQueryPubSignals.pubSignalsUnmarshal(encodedInputs);
     return atomicQueryPubSignals.getStatesInfo();
+  }
+
+  private async resolveDidDocumentEip712MessageAndSignature(
+    did: DID,
+    resolverUrl: string,
+    opts?: {
+      state?: Hash;
+      gist?: Hash;
+    }
+  ) {
+    const didDoc = await resolveDidDocument(did, resolverUrl, {
+      ...opts,
+      signature: DIDDocumentSignature.EthereumEip712Signature2021
+    });
+    if (!didDoc.didResolutionMetadata.proof?.length) {
+      throw new Error('No proof found in resolved DID document');
+    }
+    const message = didDoc.didResolutionMetadata.proof[0].eip712.message;
+    const signature = didDoc.didResolutionMetadata.proof[0].proofValue;
+    const isGistRequest = opts?.gist && !opts.state;
+    if (isGistRequest) {
+      return {
+        globalStateMsg: {
+          timestamp: message.timestamp,
+          idType: message.idType,
+          root: message.root,
+          replacedAtTimestamp: message.replacedAtTimestamp
+        },
+        signature
+      };
+    }
+
+    return {
+      idStateMsg: {
+        timestamp: message.timestamp,
+        id: message.id,
+        state: message.state,
+        replacedAtTimestamp: message.replacedAtTimestamp
+      },
+      signature
+    };
   }
 }

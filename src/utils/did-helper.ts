@@ -1,10 +1,16 @@
 import { Hex } from '@iden3/js-crypto';
 import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
-import { DIDResolutionResult, VerificationMethod } from 'did-resolver';
+import { DIDResolutionResult, VerificationMethod, DIDResolutionMetadata } from 'did-resolver';
 import { keccak256 } from 'js-sha3';
 import { hexToBytes } from './encoding';
-import { GlobalStateUpdate, IdentityStateUpdate } from '../storage';
+
+/**
+ * Supported DID Document Signatures
+ */
+export enum DIDDocumentSignature {
+  EthereumEip712Signature2021 = 'EthereumEip712Signature2021'
+}
 
 /**
  * Checks if state is genesis state
@@ -100,54 +106,38 @@ function emptyStateDID(did: DID) {
   return emptyDID;
 }
 
-export const resolveDidDocumentEip712MessageAndSignature = async (
+export const resolveDidDocument = async (
   did: DID,
   resolverUrl: string,
   opts?: {
     state?: Hash;
     gist?: Hash;
+    signature?: DIDDocumentSignature;
   }
-): Promise<IdentityStateUpdate | GlobalStateUpdate> => {
+): Promise<DIDResolutionMetadata> => {
   let didString = did.string().replace(/:/g, '%3A');
   // for gist resolve we have to `hide` user did (look into resolver implementation)
   const isGistRequest = opts?.gist && !opts.state;
   if (isGistRequest) {
     didString = emptyStateDID(did).string();
   }
-  let url = `${resolverUrl}/1.0/identifiers/${didString}?signature=EthereumEip712Signature2021`;
+  let url = `${resolverUrl}/1.0/identifiers/${didString}`;
+
+  if (opts?.signature) {
+    url += `?signature=${opts.signature}`;
+  }
+
   if (opts?.state) {
-    url += `&state=${opts.state.hex()}`;
+    url += `${url.includes('?') ? '&' : '?'}state=${opts.state.hex()}`;
   }
 
   if (opts?.gist) {
-    url += `&gist=${opts.gist.hex()}`;
+    url += `${url.includes('?') ? '&' : '?'}gist=${opts.gist.hex()}`;
   }
   const resp = await fetch(url);
   const data = await resp.json();
-  const message = data.didResolutionMetadata.proof[0].eip712.message;
-  const signature = data.didResolutionMetadata.proof[0].proofValue;
 
-  if (isGistRequest) {
-    return {
-      globalStateMsg: {
-        timestamp: message.timestamp,
-        idType: message.idType,
-        root: message.root,
-        replacedAtTimestamp: message.replacedAtTimestamp
-      },
-      signature
-    };
-  }
-
-  return {
-    idStateMsg: {
-      timestamp: message.timestamp,
-      id: message.id,
-      state: message.state,
-      replacedAtTimestamp: message.replacedAtTimestamp
-    },
-    signature
-  };
+  return data;
 };
 
 export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): DID => {
