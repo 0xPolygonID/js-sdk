@@ -770,7 +770,9 @@ describe('contract-request', () => {
     conf.url = amoyVerifierRpcUrl;
     conf.chainId = 80002; // amoy chain id
 
-    const zkpVerifier = new OnChainZKPVerifier([conf], 'https://resolver-dev.privado.id');
+    const zkpVerifier = new OnChainZKPVerifier([conf], {
+      didResolverUrl: 'https://resolver-dev.privado.id'
+    });
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
@@ -957,10 +959,9 @@ describe('contract-request', () => {
       }
     ];
 
-    const zkpVerifier = new OnChainZKPVerifier(
-      [amoyStateEthConfig],
-      'https://resolver-dev.privado.id'
-    );
+    const zkpVerifier = new OnChainZKPVerifier([amoyStateEthConfig], {
+      didResolverUrl: 'https://resolver-dev.privado.id'
+    });
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
