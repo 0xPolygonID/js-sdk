@@ -36,7 +36,7 @@ export interface IContractRequestHandler {
     did: DID,
     request: Uint8Array,
     opts?: ContractInvokeHandlerOptions
-  ): Promise<Map<string, ZeroKnowledgeProofResponse> | string>;
+  ): Promise<Map<string, ZeroKnowledgeProofResponse>>;
 }
 
 /** ContractInvokeHandlerOptions represents contract invoke handler options */
