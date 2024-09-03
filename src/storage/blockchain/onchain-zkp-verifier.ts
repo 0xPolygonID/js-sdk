@@ -23,6 +23,26 @@ import { poseidon } from '@iden3/js-crypto';
 const maxGasLimit = 10000000n;
 
 /**
+ * Supported function signature for SubmitZKPResponse
+ */
+export enum FunctionSignatures {
+  /**
+   * solidity identifier for function signature:
+   * function submitZKPResponse(uint64 requestId, uint256[] calldata inputs,
+   * uint256[2] calldata a, uint256[2][2] calldata b, uint256[2] calldata c) public
+   */
+  SumbitZKPResponseV1 = 'b68967e2',
+  //function submitZKPResponseV2(tuple[](uint64 requestId,bytes zkProof,bytes data),bytes crossChainProof)
+  SumbitZKPResponseV2 = 'ade09fcd'
+}
+/**
+ * OnChainZKPVerifierOptions represents OnChainZKPVerifier options
+ */
+export type OnChainZKPVerifierOptions = {
+  didResolverUrl?: string;
+};
+
+/**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
  * and submitZKPResponse.
  *
@@ -30,28 +50,6 @@ const maxGasLimit = 10000000n;
  * @class OnChainZKPVerifier
  */
 export class OnChainZKPVerifier implements IOnChainZKPVerifier {
-  /**
-   * solidity identifier for function signature:
-   * function submitZKPResponse(uint64 requestId, uint256[] calldata inputs,
-   * uint256[2] calldata a, uint256[2][2] calldata b, uint256[2] calldata c) public
-   */
-  public static readonly SupportedMethodId = 'b68967e2';
-
-  /**
-   * solidity identifier for function signature:
-   * struct ZKPResponse {
-        uint64 requestId;
-        bytes zkProof;
-        bytes data;
-    }
-   * function submitZKPResponseV2(
-        ZKPResponse[] memory responses,
-        bytes memory crossChainProof
-    ) public
-   */
-  //function submitZKPResponseV2(tuple[](uint64 requestId,bytes zkProof,bytes data),bytes crossChainProof)
-  public static readonly SupportedMethodIdV2 = 'ade09fcd';
-
   /**
    * supported circuits
    */
@@ -74,7 +72,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
   constructor(
     private readonly _configs: EthConnectionConfig[],
-    private readonly _didResolverUrl?: string
+    private readonly _opts?: OnChainZKPVerifierOptions
   ) {}
 
   /**
@@ -84,9 +82,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<number, JsonDocumentObjectValue[]>> {
-    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodId) {
+    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SumbitZKPResponseV1) {
       throw new Error(
-        `submit doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodId}' is supported.`
+        `prepareZKPResponseSubmitV1TxData function doesn't implement requested method id. Only '0x${FunctionSignatures.SumbitZKPResponseV1}' is supported.`
       );
     }
     const response = new Map<number, JsonDocumentObjectValue[]>();
@@ -123,9 +121,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
     }
-    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodId) {
+    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SumbitZKPResponseV1) {
       throw new Error(
-        `submit doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodId}' is supported.`
+        `submitZKPResponse function doesn't implement requested method id. Only '0x${FunctionSignatures.SumbitZKPResponseV1}' is supported.`
       );
     }
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
@@ -185,18 +183,18 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
     }
-    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV2) {
+    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SumbitZKPResponseV2) {
       throw new Error(
-        `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV2}' is supported.`
+        `submitZKPResponseV2 function doesn't implement requested method id. Only '0x${FunctionSignatures.SumbitZKPResponseV2}' is supported.`
       );
     }
-    if (!this._didResolverUrl) {
+    if (!this._opts?.didResolverUrl) {
       throw new Error(`did resolver url required for crosschain verification`);
     }
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
     ethSigner = ethSigner.connect(provider);
 
-    const txDataArgs = await this.prepareZKPResponseSingleTxData(txData, zkProofResponses);
+    const txDataArgs = await this.prepareZKPResponseSubmitV2TxData(txData, zkProofResponses);
     const feeData = await provider.getFeeData();
     const maxFeePerGas = chainConfig.maxFeePerGas
       ? BigInt(chainConfig.maxFeePerGas)
@@ -230,16 +228,16 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     return new Map<string, ZeroKnowledgeProofResponse[]>().set(txnHash, zkProofResponses);
   }
 
-  public async prepareZKPResponseSingleTxData(
+  public async prepareZKPResponseSubmitV2TxData(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<JsonDocumentObjectValue[]> {
-    if (txData.method_id.replace('0x', '') !== OnChainZKPVerifier.SupportedMethodIdV2) {
+    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SumbitZKPResponseV2) {
       throw new Error(
-        `submit cross chain doesn't implement requested method id. Only '0x${OnChainZKPVerifier.SupportedMethodIdV2}' is supported.`
+        `submit cross chain doesn't implement requested method id. Only '0x${FunctionSignatures.SumbitZKPResponseV2}' is supported.`
       );
     }
-    if (!this._didResolverUrl) {
+    if (!this._opts?.didResolverUrl) {
       throw new Error(`did resolver url required for crosschain verification`);
     }
     const gistUpdateArr = [];
@@ -289,7 +287,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         gistUpdateResolutions.push(
           resolveDidDocumentEip712MessageAndSignature(
             DID.parseFromId(gist.id),
-            this._didResolverUrl,
+            this._opts.didResolverUrl,
             { gist: gist.root }
           )
         );
@@ -309,7 +307,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         stateUpdateResolutions.push(
           resolveDidDocumentEip712MessageAndSignature(
             DID.parseFromId(state.id),
-            this._didResolverUrl,
+            this._opts.didResolverUrl,
             { state: state.state }
           )
         );

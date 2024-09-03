@@ -4,7 +4,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
 import { DID, ChainIds } from '@iden3/js-iden3-core';
-import { IOnChainZKPVerifier, OnChainZKPVerifier } from '../../storage';
+import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { processZeroKnowledgeProofRequests } from './common';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
@@ -131,13 +131,13 @@ export class ContractRequestHandler
 
     const methodId = message.body.transaction_data.method_id.replace('0x', '');
     switch (methodId) {
-      case OnChainZKPVerifier.SupportedMethodIdV2:
+      case FunctionSignatures.SumbitZKPResponseV2:
         return this._zkpVerifier.submitZKPResponseV2(
           ethSigner,
           message.body.transaction_data,
           zkpResponses
         );
-      case OnChainZKPVerifier.SupportedMethodId: {
+      case FunctionSignatures.SumbitZKPResponseV1: {
         const txHashZkpResponseMap = await this._zkpVerifier.submitZKPResponse(
           ethSigner,
           message.body.transaction_data,
@@ -151,7 +151,7 @@ export class ContractRequestHandler
       }
       default:
         throw new Error(
-          `Not supported method id. Only '${OnChainZKPVerifier.SupportedMethodIdV2} and ${OnChainZKPVerifier.SupportedMethodId} are supported.'`
+          `Not supported method id. Only '${FunctionSignatures.SumbitZKPResponseV1} and ${FunctionSignatures.SumbitZKPResponseV2} are supported.'`
         );
     }
   }
@@ -174,17 +174,19 @@ export class ContractRequestHandler
 
   /**
    * creates contract invoke response
+   * @private
    * @beta
    * @param {ContractInvokeRequest} request - ContractInvokeRequest
    * @param { Map<string, ZeroKnowledgeProofResponse[]>} responses - map tx hash to array of ZeroKnowledgeProofResponses
    * @returns `Promise<ContractInvokeResponse>`
    */
-  async createContractInvokeResponse(
+  private async createContractInvokeResponse(
     request: ContractInvokeRequest,
     responses: Map<string, ZeroKnowledgeProofResponse[]>
   ): Promise<ContractInvokeResponse> {
     const response: ContractInvokeResponse = {
       id: request.id,
+      thid: request.thid,
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_RESPONSE_MESSAGE_TYPE,
       from: request.to,
       to: request.from,
@@ -222,7 +224,7 @@ export class ContractRequestHandler
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
     const ciRequest = await this.parseContractInvokeRequest(request);
 
-    if (ciRequest.body.transaction_data.method_id !== OnChainZKPVerifier.SupportedMethodId) {
+    if (ciRequest.body.transaction_data.method_id !== FunctionSignatures.SumbitZKPResponseV1) {
       throw new Error(`please use handle method to work with other method ids`);
     }
 

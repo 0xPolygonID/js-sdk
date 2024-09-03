@@ -139,7 +139,7 @@ describe('contract-request', () => {
       return new Map<number, JsonDocumentObjectValue[]>();
     },
 
-    prepareZKPResponseSingleTxData: async () => {
+    prepareZKPResponseSubmitV2TxData: async () => {
       return [];
     }
   };

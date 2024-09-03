@@ -56,7 +56,7 @@ export interface IOnChainZKPVerifier {
    * @param txData
    * @param zkProofResponses
    */
-  prepareZKPResponseSingleTxData(
+  prepareZKPResponseSubmitV2TxData(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<JsonDocumentObjectValue[]>;

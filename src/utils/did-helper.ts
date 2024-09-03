@@ -102,7 +102,7 @@ function emptyStateDID(did: DID) {
 
 export const resolveDidDocumentEip712MessageAndSignature = async (
   did: DID,
-  resolveURL: string,
+  resolverUrl: string,
   opts?: {
     state?: Hash;
     gist?: Hash;
@@ -114,7 +114,7 @@ export const resolveDidDocumentEip712MessageAndSignature = async (
   if (isGistRequest) {
     didString = emptyStateDID(did).string();
   }
-  let url = `${resolveURL}/1.0/identifiers/${didString}?signature=EthereumEip712Signature2021`;
+  let url = `${resolverUrl}/1.0/identifiers/${didString}?signature=EthereumEip712Signature2021`;
   if (opts?.state) {
     url += `&state=${opts.state.hex()}`;
   }
