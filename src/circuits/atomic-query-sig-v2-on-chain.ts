@@ -7,8 +7,10 @@ import {
   bigIntArrayToStringArray,
   existenceToInt,
   getNodeAuxValue,
+  IStateInfoPubSignals,
   prepareCircuitArrayValues,
-  prepareSiblingsStr
+  prepareSiblingsStr,
+  StatesInfo
 } from './common';
 import { byteDecoder, byteEncoder } from '../utils';
 
@@ -312,7 +314,7 @@ export class AtomicQuerySigV2OnChainCircuitInputs {
  * @class AtomicQuerySigV2OnChainPubSignals
  * @extends {BaseConfig}
  */
-export class AtomicQuerySigV2OnChainPubSignals extends BaseConfig {
+export class AtomicQuerySigV2OnChainPubSignals extends BaseConfig implements IStateInfoPubSignals {
   requestID!: bigint;
   userID!: Id;
   issuerID!: Id;
@@ -396,5 +398,16 @@ export class AtomicQuerySigV2OnChainPubSignals extends BaseConfig {
     fieldIdx++;
 
     return this;
+  }
+
+  /** {@inheritDoc IStateInfoPubSignals.getStatesInfo} */
+  getStatesInfo(): StatesInfo {
+    return {
+      states: [
+        { id: this.issuerID, state: this.issuerAuthState },
+        { id: this.issuerID, state: this.issuerClaimNonRevState }
+      ],
+      gists: [{ id: this.userID, root: this.gistRoot }]
+    };
   }
 }

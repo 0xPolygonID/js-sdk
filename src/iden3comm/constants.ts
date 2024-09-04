@@ -36,6 +36,9 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   // ContractInvokeRequestMessageType is type for request of contract invoke request
   CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE:
     `${IDEN3_PROTOCOL}proofs/1.0/contract-invoke-request` as const,
+  // ContractInvokeResponseMessageType is type for response of contract invoke request
+  CONTRACT_INVOKE_RESPONSE_MESSAGE_TYPE:
+    `${IDEN3_PROTOCOL}proofs/1.0/contract-invoke-response` as const,
   // CredentialOnchainOfferMessageType is type of message with credential onchain offering
   CREDENTIAL_ONCHAIN_OFFER_MESSAGE_TYPE: `${IDEN3_PROTOCOL}credentials/1.0/onchain-offer` as const,
   // ProposalRequestMessageType is type for proposal-request message

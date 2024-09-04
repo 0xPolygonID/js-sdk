@@ -40,6 +40,7 @@ import {
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse,
   PROTOCOL_CONSTANTS,
+  VerifiablePresentation,
   JsonDocumentObject
 } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
@@ -220,7 +221,7 @@ export class ProofService implements IProofService {
     const verifyContext: VerifyContext = {
       pubSignals: proofResp.pub_signals,
       query: opts.query,
-      verifiablePresentation: proofResp.vp as JSON,
+      verifiablePresentation: proofResp.vp,
       sender: opts.sender,
       challenge: BigInt(proofResp.id),
       opts: opts.opts,
@@ -340,7 +341,7 @@ export class ProofService implements IProofService {
     );
 
     const sdQueries = queriesMetadata.filter((q) => q.operator === Operators.SD);
-    let vp: object | undefined;
+    let vp: VerifiablePresentation | undefined;
     if (sdQueries.length) {
       vp = createVerifiablePresentation(
         context,

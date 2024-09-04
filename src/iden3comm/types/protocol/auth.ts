@@ -49,5 +49,16 @@ export type ZeroKnowledgeProofRequest = {
 export type ZeroKnowledgeProofResponse = {
   id: number;
   circuitId: string;
-  vp?: object;
+  vp?: VerifiablePresentation;
 } & ZKProof;
+
+/** VerifiablePresentation represents structure of Verifiable Presentation */
+export type VerifiablePresentation = {
+  '@context': string | (string | object)[];
+  '@type': string;
+  verifiableCredential: {
+    '@context': string | string[];
+    '@type': string | string[];
+    credentialSubject: JsonDocumentObject;
+  };
+};

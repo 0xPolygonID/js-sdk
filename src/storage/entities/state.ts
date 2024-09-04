@@ -45,3 +45,51 @@ export interface RootInfo {
   createdAtBlock: bigint;
   replacedAtBlock: bigint;
 }
+
+/**
+ * identity state message
+ *
+ * @public
+ * @interface IdentityStateMsg
+ */
+export interface IdentityStateMsg {
+  timestamp: number;
+  id: bigint;
+  state: bigint;
+  replacedAtTimestamp: number;
+}
+
+/**
+ * global state message
+ *
+ * @public
+ * @interface GlobalStateMsg
+ */
+export interface GlobalStateMsg {
+  timestamp: number;
+  idType: string;
+  root: bigint;
+  replacedAtTimestamp: number;
+}
+
+/**
+ * identity state update
+ *
+ * @public
+ * @interface IdentityStateUpdate
+ */
+export interface IdentityStateUpdate {
+  idStateMsg: IdentityStateMsg;
+  signature: string;
+}
+
+/**
+ * global state update
+ *
+ * @public
+ * @interface GlobalStateUpdate
+ */
+export interface GlobalStateUpdate {
+  globalStateMsg: GlobalStateMsg;
+  signature: string;
+}
