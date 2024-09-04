@@ -2,8 +2,7 @@ import { VerifiableConstants } from './constants';
 import { Options, Path } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from './credential';
 import { QueryMetadata } from '../proof';
-import { VerifiablePresentation } from '../iden3comm';
-import { JsonDocumentObject } from '../iden3comm';
+import { VerifiablePresentation, JsonDocumentObject } from '../iden3comm';
 
 export const stringByPath = (obj: { [key: string]: unknown }, path: string): string => {
   const parts = path.split('.');

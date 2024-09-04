@@ -182,9 +182,9 @@ export class ContractRequestHandler
    */
   private async createContractInvokeResponse(
     request: ContractInvokeRequest,
-    responses: Map<string, ZeroKnowledgeProofResponse[]>
+    txHashToZkpResponseMap: Map<string, ZeroKnowledgeProofResponse[]>
   ): Promise<ContractInvokeResponse> {
-    const response: ContractInvokeResponse = {
+    const contractInvokeResponse: ContractInvokeResponse = {
       id: request.id,
       thid: request.thid,
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_RESPONSE_MESSAGE_TYPE,
@@ -196,15 +196,15 @@ export class ContractRequestHandler
         scope: []
       }
     };
-    for (const [txHash, zkpResponses] of responses) {
+    for (const [txHash, zkpResponses] of txHashToZkpResponseMap) {
       for (const zkpResponse of zkpResponses) {
-        response.body.scope.push({
+        contractInvokeResponse.body.scope.push({
           txHash,
           ...zkpResponse
         });
       }
     }
-    return response;
+    return contractInvokeResponse;
   }
 
   /**

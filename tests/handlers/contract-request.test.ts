@@ -12,8 +12,6 @@ import {
   defaultEthConnectionConfig,
   hexToBytes
 } from '../../src';
-import { BjjProvider, KMS, KmsKeyType } from '../../src/kms';
-import { InMemoryPrivateKeyStore } from '../../src/kms/store';
 import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
@@ -38,7 +36,6 @@ import {
   DataPrepareHandlerFunc,
   IContractRequestHandler,
   IPackageManager,
-  JsonDocumentObjectValue,
   PackageManager,
   ProvingParams,
   StateVerificationFunc,
@@ -56,7 +53,7 @@ import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, JsonRpcProvider, Signer } from 'ethers';
-import { RPC_URL } from '../helpers';
+import { registerKeyProvidersInMemoryKMS, RPC_URL } from '../helpers';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -189,10 +186,7 @@ describe('contract-request', () => {
   };
 
   beforeEach(async () => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
-    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
-    const kms = new KMS();
-    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+    const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = {
       credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
       identity: new IdentityStorage(
@@ -331,10 +325,7 @@ describe('contract-request', () => {
     stateEthConfig.contractAddress = '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124';
     stateEthConfig.chainId = 80002;
 
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
-    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
-    const kms = new KMS();
-    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+    const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = {
       credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
       identity: new IdentityStorage(
@@ -485,10 +476,7 @@ describe('contract-request', () => {
     stateEthConfig.url = rpcUrl;
     stateEthConfig.contractAddress = '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124';
 
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
-    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
-    const kms = new KMS();
-    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+    const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = {
       credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
       identity: new IdentityStorage(
@@ -668,10 +656,7 @@ describe('contract-request', () => {
     issuerStateEthConfig.url = privadoTestRpcUrl;
     issuerStateEthConfig.contractAddress = privadoTestStateContract; // privado test state contract
 
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
-    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
-    const kms = new KMS();
-    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+    const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = {
       credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
       identity: new IdentityStorage(
@@ -849,10 +834,7 @@ describe('contract-request', () => {
       chainId: 80002
     };
 
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
-    const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
-    const kms = new KMS();
-    kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
+    const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = {
       credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
       identity: new IdentityStorage(
