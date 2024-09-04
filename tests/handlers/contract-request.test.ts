@@ -135,11 +135,11 @@ describe('contract-request', () => {
       return response;
     },
 
-    prepareZKPResponseSubmitV1TxData: async () => {
-      return new Map<number, JsonDocumentObjectValue[]>();
+    prepareTxArgsSubmitV1: async () => {
+      return [];
     },
 
-    prepareZKPResponseSubmitV2TxData: async () => {
+    prepareTxArgsSubmitV2: async () => {
       return [];
     }
   };
