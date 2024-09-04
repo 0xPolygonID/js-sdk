@@ -41,22 +41,21 @@ export interface IOnChainZKPVerifier {
   ): Promise<Map<string, ZeroKnowledgeProofResponse[]>>;
 
   /**
-   * Returns the Map of request id to transaction data args for the ZKP verifier contract submission.
-   * For each request id new transaction data is created.
+   * Returns tx args for the ZKP verifier contract submission (singe tx args for each response).
    * @param txData
-   * @param zkProofResponses
+   * @param zkProofResponse
    */
-  prepareZKPResponseSubmitV1TxData(
+  prepareTxArgsSubmitV1(
     txData: ContractInvokeTransactionData,
-    zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<number, JsonDocumentObjectValue[]>>;
+    zkProofResponse: ZeroKnowledgeProofResponse
+  ): Promise<JsonDocumentObjectValue[]>;
 
   /**
-   * Returns args for the ZKP verifier contract submission V2 (single tx).
+   * Returns args for the ZKP verifier contract submission V2 (single tx args for an array of responses).
    * @param txData
    * @param zkProofResponses
    */
-  prepareZKPResponseSubmitV2TxData(
+  prepareTxArgsSubmitV2(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<JsonDocumentObjectValue[]>;

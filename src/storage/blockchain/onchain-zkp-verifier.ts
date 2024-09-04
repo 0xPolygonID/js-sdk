@@ -77,37 +77,32 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   ) {}
 
   /**
-   * {@inheritDoc IOnChainZKPVerifier.prepareZKPResponseSubmitV1TxData}
+   * {@inheritDoc IOnChainZKPVerifier.prepareTxArgsSubmitV1}
    */
-  public async prepareZKPResponseSubmitV1TxData(
+  public async prepareTxArgsSubmitV1(
     txData: ContractInvokeTransactionData,
-    zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<number, JsonDocumentObjectValue[]>> {
+    zkProofResponse: ZeroKnowledgeProofResponse
+  ): Promise<JsonDocumentObjectValue[]> {
     if (txData.method_id.replace('0x', '') !== FunctionSignatures.SumbitZKPResponseV1) {
       throw new Error(
-        `prepareZKPResponseSubmitV1TxData function doesn't implement requested method id. Only '0x${FunctionSignatures.SumbitZKPResponseV1}' is supported.`
+        `prepareTxArgsSubmitV1 function doesn't implement requested method id. Only '0x${FunctionSignatures.SumbitZKPResponseV1}' is supported.`
       );
     }
-    const response = new Map<number, JsonDocumentObjectValue[]>();
-    for (const zkProof of zkProofResponses) {
-      const requestID = zkProof.id;
-      const inputs = zkProof.pub_signals;
+    const requestID = zkProofResponse.id;
+    const inputs = zkProofResponse.pub_signals;
 
-      const payload = [
-        requestID,
-        inputs,
-        zkProof.proof.pi_a.slice(0, 2),
-        [
-          [zkProof.proof.pi_b[0][1], zkProof.proof.pi_b[0][0]],
-          [zkProof.proof.pi_b[1][1], zkProof.proof.pi_b[1][0]]
-        ],
-        zkProof.proof.pi_c.slice(0, 2)
-      ];
+    const payload = [
+      requestID,
+      inputs,
+      zkProofResponse.proof.pi_a.slice(0, 2),
+      [
+        [zkProofResponse.proof.pi_b[0][1], zkProofResponse.proof.pi_b[0][0]],
+        [zkProofResponse.proof.pi_b[1][1], zkProofResponse.proof.pi_b[1][0]]
+      ],
+      zkProofResponse.proof.pi_c.slice(0, 2)
+    ];
 
-      response.set(requestID, payload);
-    }
-
-    return response;
+    return payload;
   }
 
   /**
@@ -129,8 +124,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     }
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
     ethSigner = ethSigner.connect(provider);
-
-    const txDataMap = await this.prepareZKPResponseSubmitV1TxData(txData, zkProofResponses);
     const response = new Map<string, ZeroKnowledgeProofResponse>();
 
     const feeData = await provider.getFeeData();
@@ -143,12 +136,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
     const verifierContract = new Contract(txData.contract_address, abi);
 
-    for (const [requestId, value] of txDataMap) {
-      const zkProof = zkProofResponses.find((i) => i.id == requestId);
-      if (!zkProof) {
-        throw new Error(`zkProof not found for request id ${requestId}`);
-      }
-      const payload = await verifierContract.submitZKPResponse.populateTransaction(...value);
+    for (const zkProofResponse of zkProofResponses) {
+      const txArgs = await this.prepareTxArgsSubmitV1(txData, zkProofResponse);
+      const payload = await verifierContract.submitZKPResponse.populateTransaction(...txArgs);
       const request: TransactionRequest = {
         to: txData.contract_address,
         data: payload.data,
@@ -166,7 +156,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
       const transactionService = new TransactionService(provider);
       const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
-      response.set(txnHash, zkProof);
+      response.set(txnHash, zkProofResponse);
     }
 
     return response;
@@ -195,7 +185,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
     ethSigner = ethSigner.connect(provider);
 
-    const txDataArgs = await this.prepareZKPResponseSubmitV2TxData(txData, zkProofResponses);
+    const txDataArgs = await this.prepareTxArgsSubmitV2(txData, zkProofResponses);
     const feeData = await provider.getFeeData();
     const maxFeePerGas = chainConfig.maxFeePerGas
       ? BigInt(chainConfig.maxFeePerGas)
@@ -229,7 +219,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     return new Map<string, ZeroKnowledgeProofResponse[]>().set(txnHash, zkProofResponses);
   }
 
-  public async prepareZKPResponseSubmitV2TxData(
+  public async prepareTxArgsSubmitV2(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<JsonDocumentObjectValue[]> {
