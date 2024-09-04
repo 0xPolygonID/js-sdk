@@ -2,7 +2,7 @@ import { VerifiableConstants } from './constants';
 import { Options, Path } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from './credential';
 import { QueryMetadata } from '../proof';
-import { JsonDocumentObject } from '../iden3comm';
+import { VerifiablePresentation, JsonDocumentObject } from '../iden3comm';
 
 export const stringByPath = (obj: { [key: string]: unknown }, path: string): string => {
   const parts = path.split('.');
@@ -50,7 +50,7 @@ export const createVerifiablePresentation = (
   tp: string,
   credential: W3CCredential,
   queries: QueryMetadata[]
-): object => {
+): VerifiablePresentation => {
   const baseContext = [VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018];
   const ldContext = baseContext[0] === context ? baseContext : [...baseContext, context];
 

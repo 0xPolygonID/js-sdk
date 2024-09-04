@@ -32,7 +32,12 @@ import { parseQueriesMetadata, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
 import { calculateQueryHashV3 } from './query-hash';
 import { JsonLd } from 'jsonld/jsonld-spec';
-import { PROTOCOL_CONSTANTS, JSONObject, JsonDocumentObject } from '../../iden3comm';
+import {
+  PROTOCOL_CONSTANTS,
+  JSONObject,
+  VerifiablePresentation,
+  JsonDocumentObject
+} from '../../iden3comm';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -41,7 +46,7 @@ import { PROTOCOL_CONSTANTS, JSONObject, JsonDocumentObject } from '../../iden3c
 export type VerifyContext = {
   pubSignals: string[];
   query: ProofQuery;
-  verifiablePresentation?: JSON;
+  verifiablePresentation?: VerifiablePresentation;
   sender: string;
   challenge: bigint;
   opts?: VerifyOpts;
@@ -521,7 +526,7 @@ export class PubSignalsVerifier {
     query: ProofQuery,
     outs: ClaimOutputs,
     opts: VerifyOpts | undefined,
-    verifiablePresentation: JSON | undefined
+    verifiablePresentation: VerifiablePresentation | undefined
   ) {
     if (!query.type) {
       throw new Error(`proof query type is undefined`);

@@ -2,9 +2,9 @@ import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
-import { ContractInvokeRequest } from '../types/protocol/contract-request';
+import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
 import { DID, ChainIds } from '@iden3/js-iden3-core';
-import { IOnChainZKPVerifier } from '../../storage';
+import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { processZeroKnowledgeProofRequests } from './common';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
@@ -17,7 +17,7 @@ import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handl
  */
 export interface IContractRequestHandler {
   /**
-   * unpacks contract invoker request
+   * unpacks contract invoke request
    * @beta
    * @param {Uint8Array} request - raw byte message
    * @returns `Promise<ContractInvokeRequest>`
@@ -25,7 +25,7 @@ export interface IContractRequestHandler {
   parseContractInvokeRequest(request: Uint8Array): Promise<ContractInvokeRequest>;
 
   /**
-   * handle contract invoker request
+   * handle contract invoke request
    * @beta
    * @param {did} did  - sender DID
    * @param {Uint8Array} request - raw byte message
@@ -91,9 +91,11 @@ export class ContractRequestHandler
     ctx: ContractMessageHandlerOptions
   ): Promise<BasicMessage | null> {
     switch (message.type) {
-      case PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE:
-        await this.handleContractInvoke(message as ContractInvokeRequest, ctx);
-        return null;
+      case PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE: {
+        const ciMessage = message as ContractInvokeRequest;
+        const txHashResponsesMap = await this.handleContractInvoke(ciMessage, ctx);
+        return this.createContractInvokeResponse(ciMessage, txHashResponsesMap);
+      }
       default:
         return super.handle(message, ctx);
     }
@@ -102,7 +104,7 @@ export class ContractRequestHandler
   private async handleContractInvoke(
     message: ContractInvokeRequest,
     ctx: ContractMessageHandlerOptions
-  ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
+  ): Promise<Map<string, ZeroKnowledgeProofResponse[]>> {
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for contract invoke request');
     }
@@ -127,11 +129,31 @@ export class ContractRequestHandler
       { ethSigner, challenge, supportedCircuits: this._supportedCircuits }
     );
 
-    return this._zkpVerifier.submitZKPResponse(
-      ethSigner,
-      message.body.transaction_data,
-      zkpResponses
-    );
+    const methodId = message.body.transaction_data.method_id.replace('0x', '');
+    switch (methodId) {
+      case FunctionSignatures.SumbitZKPResponseV2:
+        return this._zkpVerifier.submitZKPResponseV2(
+          ethSigner,
+          message.body.transaction_data,
+          zkpResponses
+        );
+      case FunctionSignatures.SumbitZKPResponseV1: {
+        const txHashZkpResponseMap = await this._zkpVerifier.submitZKPResponse(
+          ethSigner,
+          message.body.transaction_data,
+          zkpResponses
+        );
+        const response = new Map<string, ZeroKnowledgeProofResponse[]>();
+        for (const [txHash, zkpResponse] of txHashZkpResponseMap) {
+          response.set(txHash, [zkpResponse]);
+        }
+        return response;
+      }
+      default:
+        throw new Error(
+          `Not supported method id. Only '${FunctionSignatures.SumbitZKPResponseV1} and ${FunctionSignatures.SumbitZKPResponseV2} are supported.'`
+        );
+    }
   }
 
   /**
@@ -151,8 +173,45 @@ export class ContractRequestHandler
   }
 
   /**
-   * handle contract invoker request
+   * creates contract invoke response
+   * @private
    * @beta
+   * @param {ContractInvokeRequest} request - ContractInvokeRequest
+   * @param { Map<string, ZeroKnowledgeProofResponse[]>} responses - map tx hash to array of ZeroKnowledgeProofResponses
+   * @returns `Promise<ContractInvokeResponse>`
+   */
+  private async createContractInvokeResponse(
+    request: ContractInvokeRequest,
+    txHashToZkpResponseMap: Map<string, ZeroKnowledgeProofResponse[]>
+  ): Promise<ContractInvokeResponse> {
+    const contractInvokeResponse: ContractInvokeResponse = {
+      id: request.id,
+      thid: request.thid,
+      type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_RESPONSE_MESSAGE_TYPE,
+      from: request.to,
+      to: request.from,
+      body: {
+        transaction_data: request.body.transaction_data,
+        reason: request.body.reason,
+        scope: []
+      }
+    };
+    for (const [txHash, zkpResponses] of txHashToZkpResponseMap) {
+      for (const zkpResponse of zkpResponses) {
+        contractInvokeResponse.body.scope.push({
+          txHash,
+          ...zkpResponse
+        });
+      }
+    }
+    return contractInvokeResponse;
+  }
+
+  /**
+   * handle contract invoke request
+   * supports only 0xb68967e2 method id
+   * @beta
+   * @deprecated
    * @param {did} did  - sender DID
    * @param {ContractInvokeRequest} request  - contract invoke request
    * @param {ContractInvokeHandlerOptions} opts - handler options
@@ -165,10 +224,37 @@ export class ContractRequestHandler
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
     const ciRequest = await this.parseContractInvokeRequest(request);
 
-    return this.handleContractInvoke(ciRequest, {
-      senderDid: did,
-      ethSigner: opts.ethSigner,
-      challenge: opts.challenge
-    });
+    if (ciRequest.body.transaction_data.method_id !== FunctionSignatures.SumbitZKPResponseV1) {
+      throw new Error(`please use handle method to work with other method ids`);
+    }
+
+    if (ciRequest.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
+      throw new Error('Invalid message type for contract invoke request');
+    }
+
+    const { ethSigner, challenge } = opts;
+    if (!ethSigner) {
+      throw new Error("Can't sign transaction. Provide Signer in options.");
+    }
+
+    const { chain_id } = ciRequest.body.transaction_data;
+    const networkFlag = Object.keys(ChainIds).find((key) => ChainIds[key] === chain_id);
+
+    if (!networkFlag) {
+      throw new Error(`Invalid chain id ${chain_id}`);
+    }
+    const verifierDid = ciRequest.from ? DID.parse(ciRequest.from) : undefined;
+    const zkpResponses = await processZeroKnowledgeProofRequests(
+      did,
+      ciRequest?.body?.scope,
+      verifierDid,
+      this._proofService,
+      { ethSigner, challenge, supportedCircuits: this._supportedCircuits }
+    );
+    return this._zkpVerifier.submitZKPResponse(
+      ethSigner,
+      ciRequest.body.transaction_data,
+      zkpResponses
+    );
   }
 }

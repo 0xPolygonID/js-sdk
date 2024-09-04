@@ -1,9 +1,16 @@
 import { Hex } from '@iden3/js-crypto';
 import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
-import { DIDResolutionResult, VerificationMethod } from 'did-resolver';
+import { DIDResolutionResult, VerificationMethod, DIDResolutionMetadata } from 'did-resolver';
 import { keccak256 } from 'js-sha3';
 import { hexToBytes } from './encoding';
+
+/**
+ * Supported DID Document Signatures
+ */
+export enum DIDDocumentSignature {
+  EthereumEip712Signature2021 = 'EthereumEip712Signature2021'
+}
 
 /**
  * Checks if state is genesis state
@@ -84,6 +91,53 @@ export const resolveDIDDocumentAuth = async (
   return didResolutionRes.didDocument?.verificationMethod?.find(
     (i) => i.type === 'Iden3StateInfo2023'
   );
+};
+
+function emptyStateDID(did: DID) {
+  const id = DID.idFromDID(did);
+  const didType = buildDIDType(
+    DID.methodFromId(id),
+    DID.blockchainFromId(id),
+    DID.networkIdFromId(id)
+  );
+  const identifier = Id.idGenesisFromIdenState(didType, 0n);
+  const emptyDID = DID.parseFromId(identifier);
+
+  return emptyDID;
+}
+
+export const resolveDidDocument = async (
+  did: DID,
+  resolverUrl: string,
+  opts?: {
+    state?: Hash;
+    gist?: Hash;
+    signature?: DIDDocumentSignature;
+  }
+): Promise<DIDResolutionMetadata> => {
+  let didString = did.string().replace(/:/g, '%3A');
+  // for gist resolve we have to `hide` user did (look into resolver implementation)
+  const isGistRequest = opts?.gist && !opts.state;
+  if (isGistRequest) {
+    didString = emptyStateDID(did).string();
+  }
+  let url = `${resolverUrl}/1.0/identifiers/${didString}`;
+
+  if (opts?.signature) {
+    url += `?signature=${opts.signature}`;
+  }
+
+  if (opts?.state) {
+    url += `${url.includes('?') ? '&' : '?'}state=${opts.state.hex()}`;
+  }
+
+  if (opts?.gist) {
+    url += `${url.includes('?') ? '&' : '?'}gist=${opts.gist.hex()}`;
+  }
+  const resp = await fetch(url);
+  const data = await resp.json();
+
+  return data;
 };
 
 export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): DID => {

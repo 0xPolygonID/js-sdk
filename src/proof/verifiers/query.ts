@@ -8,6 +8,7 @@ import { calculateCoreSchemaHash, ProofQuery, VerifiableConstants } from '../../
 import { QueryMetadata } from '../common';
 import { circuitValidator } from '../provers';
 import { JsonLd } from 'jsonld/jsonld-spec';
+import { VerifiablePresentation } from '../../iden3comm';
 
 /**
  * Options to verify state
@@ -189,7 +190,7 @@ export async function validateOperators(cq: QueryMetadata, outputs: ClaimOutputs
 export async function validateDisclosureV2Circuit(
   cq: QueryMetadata,
   outputs: ClaimOutputs,
-  verifiablePresentation?: JSON,
+  verifiablePresentation?: VerifiablePresentation,
   ldLoader?: DocumentLoader
 ) {
   const bi = await fieldValueFromVerifiablePresentation(
@@ -215,7 +216,7 @@ export async function validateDisclosureV2Circuit(
 export async function validateDisclosureNativeSDSupport(
   cq: QueryMetadata,
   outputs: ClaimOutputs,
-  verifiablePresentation?: JSON,
+  verifiablePresentation?: VerifiablePresentation,
   ldLoader?: DocumentLoader
 ) {
   const bi = await fieldValueFromVerifiablePresentation(
@@ -250,7 +251,7 @@ export async function validateEmptyCredentialSubjectNoopNativeSupport(outputs: C
 
 export const fieldValueFromVerifiablePresentation = async (
   fieldName: string,
-  verifiablePresentation?: JSON,
+  verifiablePresentation?: VerifiablePresentation,
   ldLoader?: DocumentLoader
 ): Promise<bigint> => {
   if (!verifiablePresentation) {
