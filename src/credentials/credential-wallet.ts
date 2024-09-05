@@ -287,6 +287,7 @@ export class CredentialWallet implements ICredentialWallet {
     cr.type = credentialType;
     cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
     cr.refreshService = request.refreshService;
+    cr.displayMethod = request.displayMethod;
     cr.issuanceDate = new Date().toISOString();
     cr.credentialSubject = credentialSubject;
     cr.issuer = issuer.string();
