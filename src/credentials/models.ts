@@ -48,7 +48,7 @@ export interface CredentialRequest {
    */
   displayMethod?: DisplayMethod;
   /**
-   * optional custom context (for not iden3 refresh service or display method)
+   * optional custom context
    */
   context?: string[];
   /**
