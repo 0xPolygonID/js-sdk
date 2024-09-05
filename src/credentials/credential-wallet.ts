@@ -7,7 +7,8 @@ import {
   CredentialStatus,
   RevocationStatus,
   CredentialStatusType,
-  State
+  State,
+  DisplayMethodType
 } from './../verifiable';
 
 import { JSONSchema } from '../schema-processor';
@@ -265,11 +266,20 @@ export class CredentialWallet implements ICredentialWallet {
     if (!schema.$metadata.uris['jsonLdContext']) {
       throw new Error('jsonLdContext is missing is the schema');
     }
+    request.context = request.context ?? [];
+    if (
+      request.displayMethod?.type === DisplayMethodType.Iden3BasicDisplayMethodV1 &&
+      !request.context.includes(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD)
+    ) {
+      request.context.push(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD);
+    }
     const context = [
+      ...request.context,
       VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
       VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
       schema.$metadata.uris['jsonLdContext']
     ];
+
     const credentialType = [
       VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
       request.type
@@ -287,6 +297,7 @@ export class CredentialWallet implements ICredentialWallet {
     cr.type = credentialType;
     cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
     cr.refreshService = request.refreshService;
+    cr.displayMethod = request.displayMethod;
     cr.issuanceDate = new Date().toISOString();
     cr.credentialSubject = credentialSubject;
     cr.issuer = issuer.string();

@@ -1,6 +1,7 @@
 import { JsonDocumentObject } from '../iden3comm';
 import {
   CredentialStatusType,
+  DisplayMethod,
   MerklizedRootPosition,
   RefreshService,
   SubjectPosition
@@ -42,6 +43,14 @@ export interface CredentialRequest {
    * refreshService
    */
   refreshService?: RefreshService;
+  /**
+   * displayMethod
+   */
+  displayMethod?: DisplayMethod;
+  /**
+   * optional custom context
+   */
+  context?: string[];
   /**
    * claim version
    */
