@@ -16,7 +16,7 @@ export const VerifiableConstants = Object.freeze({
   JSONLD_SCHEMA: {
     // JSONLDSchemaIden3Credential is a schema for context with Iden3Credential type
     IDEN3_CREDENTIAL: 'https://schema.iden3.io/core/jsonld/iden3proofs.jsonld',
-    // JSONLDSchemaIden3BasicDisplayMethod is a schema for context with Iden3BasicDisplayMethodV1 type
+    // JSONLDSchemaIden3DisplayMethod is a schema for context with Iden3BasicDisplayMethodV1 type
     IDEN_DISPLAY_METHOD: 'https://schema.iden3.io/core/jsonld/displayMethod.jsonld',
     // JSONLDSchemaW3CCredential2018 is a schema for context with VerifiableCredential type
     W3C_CREDENTIAL_2018: 'https://www.w3.org/2018/credentials/v1',
