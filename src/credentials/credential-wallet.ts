@@ -271,9 +271,9 @@ export class CredentialWallet implements ICredentialWallet {
     }
     if (
       request.displayMethod?.type === DisplayMethodType.Iden3BasicDisplayMethodV1 &&
-      !request.context.includes(VerifiableConstants.JSONLD_SCHEMA.IDEN3_BASIC_DISPLAY_METHOD_V1)
+      !request.context.includes(VerifiableConstants.JSONLD_SCHEMA.IDEN_DISPLAY_METHOD)
     ) {
-      request.context.push(VerifiableConstants.JSONLD_SCHEMA.IDEN3_BASIC_DISPLAY_METHOD_V1);
+      request.context.push(VerifiableConstants.JSONLD_SCHEMA.IDEN_DISPLAY_METHOD);
     }
     const context = [
       ...request.context,
