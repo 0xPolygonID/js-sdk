@@ -131,13 +131,13 @@ export class ContractRequestHandler
 
     const methodId = message.body.transaction_data.method_id.replace('0x', '');
     switch (methodId) {
-      case FunctionSignatures.SumbitZKPResponseV2:
+      case FunctionSignatures.SubmitZKPResponseV2:
         return this._zkpVerifier.submitZKPResponseV2(
           ethSigner,
           message.body.transaction_data,
           zkpResponses
         );
-      case FunctionSignatures.SumbitZKPResponseV1: {
+      case FunctionSignatures.SubmitZKPResponseV1: {
         const txHashZkpResponseMap = await this._zkpVerifier.submitZKPResponse(
           ethSigner,
           message.body.transaction_data,
@@ -151,7 +151,7 @@ export class ContractRequestHandler
       }
       default:
         throw new Error(
-          `Not supported method id. Only '${FunctionSignatures.SumbitZKPResponseV1} and ${FunctionSignatures.SumbitZKPResponseV2} are supported.'`
+          `Not supported method id. Only '${FunctionSignatures.SubmitZKPResponseV1} and ${FunctionSignatures.SubmitZKPResponseV2} are supported.'`
         );
     }
   }
@@ -224,7 +224,7 @@ export class ContractRequestHandler
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
     const ciRequest = await this.parseContractInvokeRequest(request);
 
-    if (ciRequest.body.transaction_data.method_id !== FunctionSignatures.SumbitZKPResponseV1) {
+    if (ciRequest.body.transaction_data.method_id !== FunctionSignatures.SubmitZKPResponseV1) {
       throw new Error(`please use handle method to work with other method ids`);
     }
 
