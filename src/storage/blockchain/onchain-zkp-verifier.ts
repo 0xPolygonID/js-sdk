@@ -32,9 +32,9 @@ export enum FunctionSignatures {
    * function submitZKPResponse(uint64 requestId, uint256[] calldata inputs,
    * uint256[2] calldata a, uint256[2][2] calldata b, uint256[2] calldata c) public
    */
-  SumbitZKPResponseV1 = 'b68967e2',
+  SubmitZKPResponseV1 = 'b68967e2',
   //function submitZKPResponseV2(tuple[](uint64 requestId,bytes zkProof,bytes data),bytes crossChainProof)
-  SumbitZKPResponseV2 = 'ade09fcd'
+  SubmitZKPResponseV2 = 'ade09fcd'
 }
 /**
  * OnChainZKPVerifierOptions represents OnChainZKPVerifier options
@@ -83,9 +83,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     txData: ContractInvokeTransactionData,
     zkProofResponse: ZeroKnowledgeProofResponse
   ): Promise<JsonDocumentObjectValue[]> {
-    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SumbitZKPResponseV1) {
+    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SubmitZKPResponseV1) {
       throw new Error(
-        `prepareTxArgsSubmitV1 function doesn't implement requested method id. Only '0x${FunctionSignatures.SumbitZKPResponseV1}' is supported.`
+        `prepareTxArgsSubmitV1 function doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitZKPResponseV1}' is supported.`
       );
     }
     const requestID = zkProofResponse.id;
@@ -117,9 +117,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
     }
-    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SumbitZKPResponseV1) {
+    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SubmitZKPResponseV1) {
       throw new Error(
-        `submitZKPResponse function doesn't implement requested method id. Only '0x${FunctionSignatures.SumbitZKPResponseV1}' is supported.`
+        `submitZKPResponse function doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitZKPResponseV1}' is supported.`
       );
     }
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
@@ -174,9 +174,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
     }
-    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SumbitZKPResponseV2) {
+    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SubmitZKPResponseV2) {
       throw new Error(
-        `submitZKPResponseV2 function doesn't implement requested method id. Only '0x${FunctionSignatures.SumbitZKPResponseV2}' is supported.`
+        `submitZKPResponseV2 function doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitZKPResponseV2}' is supported.`
       );
     }
     if (!this._opts?.didResolverUrl) {
@@ -223,9 +223,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<JsonDocumentObjectValue[]> {
-    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SumbitZKPResponseV2) {
+    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SubmitZKPResponseV2) {
       throw new Error(
-        `submit cross chain doesn't implement requested method id. Only '0x${FunctionSignatures.SumbitZKPResponseV2}' is supported.`
+        `submit cross chain doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitZKPResponseV2}' is supported.`
       );
     }
     if (!this._opts?.didResolverUrl) {
