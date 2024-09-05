@@ -48,6 +48,10 @@ export interface CredentialRequest {
    */
   displayMethod?: DisplayMethod;
   /**
+   * optional custrom context (for not iden3 refres service or display method)
+   */
+  context?: string[];
+  /**
    * claim version
    */
   version?: number;
