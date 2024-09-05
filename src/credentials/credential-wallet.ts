@@ -267,9 +267,13 @@ export class CredentialWallet implements ICredentialWallet {
     }
     const context = [
       VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
-      VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
-      schema.$metadata.uris['jsonLdContext']
+      VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL
     ];
+    if (request.displayMethod) {
+      context.push(VerifiableConstants.JSONLD_SCHEMA.IDEN3_BASIC_DISPLAY_METHOD_V1);
+    }
+    context.push(schema.$metadata.uris['jsonLdContext']);
+
     const credentialType = [
       VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
       request.type
