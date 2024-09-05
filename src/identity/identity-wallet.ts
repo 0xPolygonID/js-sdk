@@ -666,7 +666,10 @@ export class IdentityWallet implements IIdentityWallet {
     }
 
     // if credential exists with the same credential status type we return this credential
-    if (credentials.length === 1 && credentials[0].credentialStatus.type === opts.revocationOpts.type) {
+    if (
+      credentials.length === 1 &&
+      credentials[0].credentialStatus.type === opts.revocationOpts.type
+    ) {
       return {
         did,
         credential: credentials[0]
@@ -675,9 +678,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     // if credential exists, but its credential status type is different from what user passes - we remove old credential
     // so we can upgrade credential status of auth credential for old identities
-    if (
-      credentials.length === 1
-    ) {
+    if (credentials.length === 1) {
       await this._credentialWallet.remove(credentials[0].id);
     }
 
