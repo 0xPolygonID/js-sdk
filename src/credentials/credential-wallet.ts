@@ -266,9 +266,7 @@ export class CredentialWallet implements ICredentialWallet {
     if (!schema.$metadata.uris['jsonLdContext']) {
       throw new Error('jsonLdContext is missing is the schema');
     }
-    if (!request.context) {
-      request.context = [];
-    }
+    request.context = request.context ?? [];
     if (
       request.displayMethod?.type === DisplayMethodType.Iden3BasicDisplayMethodV1 &&
       !request.context.includes(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD)
