@@ -661,13 +661,27 @@ export class IdentityWallet implements IIdentityWallet {
       allowedIssuers: [did.string()]
     });
 
-    if (credentials.length) {
+    if (credentials.length > 1) {
+      throw new Error('more than 1 auth credential for the same key is located in storage');
+    }
+
+    // if credential exists with the same credential status type we return this credential
+    if (credentials.length === 1 && credentials[0].credentialStatus.type === opts.revocationOpts.type) {
       return {
         did,
         credential: credentials[0]
       };
     }
 
+    // if credential exists, but its credential status type is different from what user passes - we remove old credential
+    // so we can upgrade credential status of auth credential for old identities
+    if (
+      credentials.length === 1
+    ) {
+      await this._credentialWallet.remove(credentials[0].id);
+    }
+
+    // otherwise  we create a new credential
     const credential = await this.createAuthBJJCredential(
       did,
       pubKey,
