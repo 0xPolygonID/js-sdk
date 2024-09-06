@@ -133,7 +133,7 @@ describe('mtp onchain proofs', () => {
   });
 
   const onChainMerklizedTest = async (circuitId: CircuitId) => {
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedsnew');
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedissuer');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
     const { did: userDID } = await idWallet.createIdentity({

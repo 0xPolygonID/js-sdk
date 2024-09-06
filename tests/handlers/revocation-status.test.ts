@@ -31,7 +31,7 @@ import path from 'path';
 
 describe('revocation status', () => {
   let packageMgr: IPackageManager;
-  let rsHandlerr: IRevocationStatusHandler;
+  let rsHandler: IRevocationStatusHandler;
   let idWallet: IdentityWallet;
 
   beforeEach(async () => {
@@ -54,7 +54,7 @@ describe('revocation status', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    rsHandlerr = new RevocationStatusHandler(packageMgr, idWallet);
+    rsHandler = new RevocationStatusHandler(packageMgr, idWallet);
   });
 
   it('revocation status works', async () => {
@@ -84,7 +84,7 @@ describe('revocation status', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(rsReq));
 
-    await rsHandlerr.handleRevocationStatusRequest(userDID, msgBytes);
+    await rsHandler.handleRevocationStatusRequest(userDID, msgBytes);
   });
 
   it(`revocation status - no 'from' field`, async () => {
@@ -114,7 +114,7 @@ describe('revocation status', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(rsReq));
 
     try {
-      await rsHandlerr.handleRevocationStatusRequest(userDID, msgBytes);
+      await rsHandler.handleRevocationStatusRequest(userDID, msgBytes);
       expect.fail();
     } catch (err: unknown) {
       expect((err as Error).message).to.be.equal(`failed request. empty 'from' field`);

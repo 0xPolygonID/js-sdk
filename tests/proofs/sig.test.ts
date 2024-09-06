@@ -398,7 +398,7 @@ describe('sig proofs', () => {
         price: 10,
         deliveryTime: '2023-07-11T16:05:51.140Z',
         postalProviderInformation: {
-          name: 'ukr posta',
+          name: 'postal provider',
           officeNo: 1
         },
         homeAddress: {
@@ -430,7 +430,7 @@ describe('sig proofs', () => {
         deliveryTime: '2023-08-12T11:47:50+00:00',
         homeAddress: {
           expectedFrom: '2023-08-12T11:47:50+00:00',
-          line1: 'Kyiv, Zdanovskoi Y. 35',
+          line1: 'Kyiv, Street One Y. 35',
           line2: 'apt.1'
         },
         id: userDID.string(),
@@ -494,7 +494,7 @@ describe('sig proofs', () => {
         '@type': ['VerifiableCredential', 'DeliveryAddress'],
         credentialSubject: {
           '@type': 'DeliveryAddress',
-          postalProviderInformation: { name: 'ukr posta' }
+          postalProviderInformation: { name: 'postal provider' }
         }
       }
     });

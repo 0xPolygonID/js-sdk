@@ -424,8 +424,8 @@ const credentialFlow = async (storage: IDataStorage) => {
   );
 
   // remove credential error
-  await expect(credentialWallet.remove('unknowId')).to.be.rejectedWith(
-    'item not found to delete: unknowId'
+  await expect(credentialWallet.remove('unknownId')).to.be.rejectedWith(
+    'item not found to delete: unknownId'
   );
 
   await credentialWallet.remove('test1');

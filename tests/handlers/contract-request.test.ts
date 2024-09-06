@@ -647,7 +647,7 @@ describe('contract-request', () => {
 
   // cross chain integration test
   it.skip('cross chain contract request flow - integration test', async () => {
-    const privadoTestRpcUrl = '<>'; // issuer RPC URL - privato test
+    const privadoTestRpcUrl = '<>'; // issuer RPC URL - privado test
     const privadoTestStateContract = '0x975556428F077dB5877Ea2474D783D6C69233742';
     const amoyVerifierRpcUrl = '<>'; // verifier RPC URL - amoy
     const erc20Verifier = '0x74030e4c5d53ef381A889C01f0bBd3B8336F4a4a';
@@ -805,8 +805,8 @@ describe('contract-request', () => {
     ).to.be.equal(proofReqs[0].id);
   });
 
-  it.skip('contract request flow V3 sig `email-verified` transak req - integration test', async () => {
-    const privadoTestRpcUrl = '<>'; // issuer RPC URL - privato test
+  it.skip('contract request flow V3 sig `email-verified` Transak req - integration test', async () => {
+    const privadoTestRpcUrl = '<>'; // issuer RPC URL - privado test
     const privadoMainRpcUrl = '<>';
     const privadoTestStateContract = '0x975556428F077dB5877Ea2474D783D6C69233742';
     const amoyVerifierRpcUrl = '<>'; // verifier RPC URL - amoy

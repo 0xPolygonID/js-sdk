@@ -150,7 +150,7 @@ export class OnChainResolver implements CredentialStatusResolver {
     return network;
   }
 
-  // TODO (illia-korotia): is dirty hack for mock in tests.
+  // TODO: is dirty hack for mock in tests.
   // need to pass to constructor list of state stores not list of network configs
   private _getStateStorageForIssuer(issuerId: Id): IStateStorage {
     const issuerChainId = getChainId(DID.blockchainFromId(issuerId), DID.networkIdFromId(issuerId));
