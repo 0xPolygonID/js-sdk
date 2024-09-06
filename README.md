@@ -1,6 +1,6 @@
-# Polygon ID JS SDK
+# Privado ID JS SDK
 
-SDK to work with Polygon ID using JavaScript and TypeScript languages.
+SDK to work with Privado ID using JavaScript and TypeScript languages.
 
 ## Usage
 
