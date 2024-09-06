@@ -215,7 +215,7 @@ describe('mtp proofs', () => {
   });
 
   const merklizedTest = async (circuitId: CircuitId) => {
-    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedissuer');
+    const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseed1new');
 
     const { did: userDID } = await createIdentity(idWallet, {
       seed: SEED_USER
