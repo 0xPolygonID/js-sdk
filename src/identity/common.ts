@@ -45,10 +45,10 @@ export const defineMerklizedRootPosition = (
  * Returns profile DID based on did and profile nonce
  *
  * @param {DID} [did] - did from which profile will be derived
- * @param {number} [profileNonce] - profile nonce
+ * @param {number | string} [profileNonce] - profile nonce
  * @returns {DID}
  */
-export const generateProfileDID = (did: DID, profileNonce?: number): DID => {
+export const generateProfileDID = (did: DID, profileNonce?: number | string): DID => {
   const id = DID.idFromDID(did);
   const profile = Id.profileId(id, BigInt(profileNonce ?? 0));
   return DID.parseFromId(profile);
