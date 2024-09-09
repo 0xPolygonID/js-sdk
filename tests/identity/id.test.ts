@@ -15,7 +15,8 @@ import {
   NativeProver,
   Iden3SparseMerkleTreeProof,
   BJJSignatureProof2021,
-  TreeState
+  TreeState,
+  IdentityCreationOptions
 } from '../../src';
 import {
   MOCK_STATE_STORAGE,
@@ -26,7 +27,8 @@ import {
   registerKeyProvidersInMemoryKMS,
   WALLET_KEY,
   createEthereumBasedIdentity,
-  SEED_ISSUER
+  SEED_ISSUER,
+  RHS_CONTRACT_ADDRESS
 } from '../helpers';
 import { expect } from 'chai';
 import { Wallet } from 'ethers';
@@ -396,5 +398,55 @@ describe('identity', () => {
     });
     expect(credential).to.be.deep.eq(restoredCredential);
     expect(did.string()).to.be.eq(restoredDid.string());
+  });
+
+  it('replace auth bjj credential', async () => {
+    const idRequest: IdentityCreationOptions = {
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Amoy,
+      seed: SEED_ISSUER,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const { did, credential } = await idWallet.createIdentity(idRequest);
+    expect(did.string()).to.equal(expectedDID);
+
+    let credentials = await credWallet.findByQuery({
+      credentialSubject: {
+        x: {
+          $eq: credential.credentialSubject['x']
+        },
+        y: {
+          $eq: credential.credentialSubject['y']
+        }
+      }
+    });
+    expect(credentials.length).to.be.equal(1);
+
+    idRequest.revocationOpts.type = CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023;
+    idRequest.revocationOpts.id = RHS_CONTRACT_ADDRESS;
+    idRequest.revocationOpts.genesisPublishingDisabled = true;
+
+    const { did: did2, credential: credential2 } = await idWallet.createIdentity(idRequest);
+    expect(did2.string()).to.equal(expectedDID);
+    expect(credential2.credentialStatus.type).to.be.equal(
+      CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023
+    );
+    expect(credential2.credentialStatus.id).to.contain('state');
+
+    credentials = await credWallet.findByQuery({
+      credentialSubject: {
+        x: {
+          $eq: credential2.credentialSubject['x']
+        },
+        y: {
+          $eq: credential2.credentialSubject['y']
+        }
+      }
+    });
+    expect(credentials.length).to.be.equal(1);
   });
 });

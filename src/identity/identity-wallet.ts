@@ -76,13 +76,19 @@ export type IdentityCreationOptions = {
 /**
  * Options for creating Auth BJJ credential
  * seed - seed to generate BJJ key pair
- * revocationOpts -
+ * revocationOpts
+ *  nonce - explicit revocation nonce to use
+ *  onChain - onchain status related option
+ *      txCallback - defines how the TransactionReceipt is handled
+ *      publishMode  - specifies the work of transaction polling type: sync / async / callback
+ *  genesisPublishingDisabled - genesis is publishing by default. Set `true` to prevent genesis publishing
  */
 export type AuthBJJCredentialCreationOptions = {
   revocationOpts: {
     id: string;
     type: CredentialStatusType;
     nonce?: number;
+    genesisPublishingDisabled?: boolean;
     onChain?: {
       txCallback?: (tx: TransactionReceipt) => Promise<void>;
       publishMode?: PublishMode;
@@ -661,13 +667,24 @@ export class IdentityWallet implements IIdentityWallet {
       allowedIssuers: [did.string()]
     });
 
-    if (credentials.length) {
+    // if credential exists with the same credential status type we return this credential
+    if (
+      credentials.length === 1 &&
+      credentials[0].credentialStatus.type === opts.revocationOpts.type
+    ) {
       return {
         did,
         credential: credentials[0]
       };
     }
 
+    // otherwise something is already wrong with storage as it has more than 1 credential in it or credential status type of existing credential is different from what user provides - We should remove everything and create new credential.
+    // in this way credential status of auth credential can be upgraded
+    for (let i = 0; i < credentials.length; i++) {
+      await this._credentialWallet.remove(credentials[i].id);
+    }
+
+    // otherwise  we create a new credential
     const credential = await this.createAuthBJJCredential(
       did,
       pubKey,
@@ -695,10 +712,13 @@ export class IdentityWallet implements IIdentityWallet {
 
     credential.proof = [mtpProof];
 
-    await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
-      rhsUrl: opts.revocationOpts.id,
-      onChain: opts.revocationOpts.onChain
-    });
+    // only if user specified that genesis state publishing is not needed we won't do this.
+    if (!opts.revocationOpts.genesisPublishingDisabled) {
+      await this.publishRevocationInfoByCredentialStatusType(did, opts.revocationOpts.type, {
+        rhsUrl: opts.revocationOpts.id,
+        onChain: opts.revocationOpts.onChain
+      });
+    }
 
     await this._credentialWallet.save(credential);
 
@@ -1248,30 +1268,18 @@ export class IdentityWallet implements IIdentityWallet {
     }
 
     let nodes: ProofNode[] = [];
-    if (opts?.treeModel) {
-      nodes = await getNodesRepresentation(
-        opts.revokedNonces,
-        {
-          revocationTree: opts.treeModel.revocationTree,
-          claimsTree: opts.treeModel.claimsTree,
-          state: opts.treeModel.state,
-          rootsTree: opts.treeModel.rootsTree
-        },
-        opts.treeModel.state
-      );
-    } else {
-      const treeState = await this.getDIDTreeModel(issuerDID);
-      nodes = await getNodesRepresentation(
-        opts?.revokedNonces,
-        {
-          revocationTree: treeState.revocationTree,
-          claimsTree: treeState.claimsTree,
-          state: treeState.state,
-          rootsTree: treeState.rootsTree
-        },
-        treeState.state
-      );
-    }
+
+    const tree = opts?.treeModel ?? (await this.getDIDTreeModel(issuerDID));
+    nodes = await getNodesRepresentation(
+      opts?.revokedNonces ?? [],
+      {
+        revocationTree: tree.revocationTree,
+        claimsTree: tree.claimsTree,
+        state: tree.state,
+        rootsTree: tree.rootsTree
+      },
+      tree.state
+    );
 
     if (!nodes.length) {
       return;
