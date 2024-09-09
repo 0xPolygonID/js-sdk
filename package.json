@@ -50,6 +50,7 @@
   },
   "homepage": "https://github.com/0xPolygonID/js-sdk#readme",
   "devDependencies": {
+    "@cspell/eslint-plugin": "^8.14.2",
     "@gr2m/fetch-mock": "9.11.0-pull-request-644.1",
     "@iden3/eslint-config": "https://github.com/iden3/eslint-config",
     "@microsoft/api-documenter": "^7.8.20",
