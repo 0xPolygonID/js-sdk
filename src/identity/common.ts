@@ -63,7 +63,7 @@ export const generateProfileDID = (did: DID, profileNonce?: number | string): DI
 const isBigInt = (x: number | string): boolean => {
   try {
     return BigInt(x).toString() === x.toString();
-  } catch  {
+  } catch {
     return false; // conversion to BigInt failed, surely it is not a BigInt
   }
 };
