@@ -36,7 +36,7 @@ import { getRandomBytes } from '@iden3/js-crypto';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { ZERO_HASH } from '@iden3/js-merkletree';
 
-describe.only('identity', () => {
+describe('identity', () => {
   let credWallet: ICredentialWallet;
   let idWallet: IdentityWallet;
   let dataStorage: IDataStorage;
@@ -400,8 +400,7 @@ describe.only('identity', () => {
     expect(did.string()).to.be.eq(restoredDid.string());
   });
 
-  it.only('replace auth bjj credential', async () => {
-
+  it('replace auth bjj credential', async () => {
     const idRequest: IdentityCreationOptions = {
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -411,48 +410,43 @@ describe.only('identity', () => {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: RHS_URL
       }
-    }
+    };
     const { did, credential } = await idWallet.createIdentity(idRequest);
     expect(did.string()).to.equal(expectedDID);
 
-
-    let credentials = await credWallet.findByQuery(
-      {
-        credentialSubject: {
-          x: {
-            $eq: credential.credentialSubject['x'],
-          },
-          y: {
-            $eq: credential.credentialSubject['y'],
-          }
+    let credentials = await credWallet.findByQuery({
+      credentialSubject: {
+        x: {
+          $eq: credential.credentialSubject['x']
+        },
+        y: {
+          $eq: credential.credentialSubject['y']
         }
       }
-    )
+    });
     expect(credentials.length).to.be.equal(1);
 
     idRequest.revocationOpts.type = CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023;
     idRequest.revocationOpts.id = RHS_CONTRACT_ADDRESS;
     idRequest.revocationOpts.genesisPublishingDisabled = true;
 
-
     const { did: did2, credential: credential2 } = await idWallet.createIdentity(idRequest);
     expect(did2.string()).to.equal(expectedDID);
-    expect(credential2.credentialStatus.type).to.be.equal(CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023);
-    expect(credential2.credentialStatus.id).to.contain('state')
+    expect(credential2.credentialStatus.type).to.be.equal(
+      CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023
+    );
+    expect(credential2.credentialStatus.id).to.contain('state');
 
-    credentials = await credWallet.findByQuery(
-      {
-        credentialSubject: {
-          x: {
-            $eq: credential2.credentialSubject['x'],
-          },
-          y: {
-            $eq: credential2.credentialSubject['y'],
-          }
+    credentials = await credWallet.findByQuery({
+      credentialSubject: {
+        x: {
+          $eq: credential2.credentialSubject['x']
+        },
+        y: {
+          $eq: credential2.credentialSubject['y']
         }
       }
-    )
+    });
     expect(credentials.length).to.be.equal(1);
-
   });
 });

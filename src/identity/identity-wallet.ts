@@ -76,7 +76,7 @@ export type IdentityCreationOptions = {
 /**
  * Options for creating Auth BJJ credential
  * seed - seed to generate BJJ key pair
- * revocationOpts 
+ * revocationOpts
  *  nonce - explicit revocation nonce to use
  *  onChain - onchain status related option
  *      txCallback - defines how the TransactionReceipt is handled
@@ -679,7 +679,7 @@ export class IdentityWallet implements IIdentityWallet {
     }
 
     // otherwise something is already wrong with storage as it has more than 1 credential in it or credential status type of existing credential is different from what user provides - We should remove everything and create new credential.
-    // in this way credential status of auth credential can be upgraded 
+    // in this way credential status of auth credential can be upgraded
     for (let i = 0; i < credentials.length; i++) {
       await this._credentialWallet.remove(credentials[i].id);
     }
@@ -718,7 +718,6 @@ export class IdentityWallet implements IIdentityWallet {
         rhsUrl: opts.revocationOpts.id,
         onChain: opts.revocationOpts.onChain
       });
-
     }
 
     await this._credentialWallet.save(credential);
@@ -1270,7 +1269,7 @@ export class IdentityWallet implements IIdentityWallet {
 
     let nodes: ProofNode[] = [];
 
-    const tree = opts?.treeModel ??  await this.getDIDTreeModel(issuerDID);
+    const tree = opts?.treeModel ?? (await this.getDIDTreeModel(issuerDID));
     nodes = await getNodesRepresentation(
       opts?.revokedNonces ?? [],
       {
