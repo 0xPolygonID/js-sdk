@@ -52,7 +52,7 @@
   "devDependencies": {
     "@cspell/eslint-plugin": "^8.14.2",
     "@gr2m/fetch-mock": "9.11.0-pull-request-644.1",
-    "@iden3/eslint-config": "https://github.com/iden3/eslint-config",
+    "@iden3/eslint-config": "github:iden3/eslint-config",
     "@microsoft/api-documenter": "^7.8.20",
     "@microsoft/api-extractor": "^7.9.0",
     "@rollup/plugin-commonjs": "^25.0.7",
