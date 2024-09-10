@@ -45,11 +45,25 @@ export const defineMerklizedRootPosition = (
  * Returns profile DID based on did and profile nonce
  *
  * @param {DID} [did] - did from which profile will be derived
- * @param {number} [profileNonce] - profile nonce
+ * @param {number | string} [profileNonce] - profile nonce
  * @returns {DID}
  */
-export const generateProfileDID = (did: DID, profileNonce?: number): DID => {
+export const generateProfileDID = (did: DID, profileNonce?: number | string): DID => {
   const id = DID.idFromDID(did);
-  const profile = Id.profileId(id, BigInt(profileNonce ?? 0));
+
+  profileNonce = profileNonce ?? 0;
+
+  if (!isBigInt(profileNonce)) {
+    throw new Error('profile must be number or decimal string');
+  }
+  const profile = Id.profileId(id, BigInt(profileNonce));
   return DID.parseFromId(profile);
+};
+
+const isBigInt = (x: number | string): boolean => {
+  try {
+    return BigInt(x).toString() === x.toString();
+  } catch {
+    return false; // conversion to BigInt failed, surely it is not a BigInt
+  }
 };

@@ -40,8 +40,8 @@ import {
 import { isEthereumIdentity } from '../../utils';
 
 export type DIDProfileMetadata = {
-  authProfileNonce: number;
-  credentialSubjectProfileNonce: number;
+  authProfileNonce: number | string;
+  credentialSubjectProfileNonce: number | string;
 };
 
 export type ProofGenerationOptions = {

@@ -169,11 +169,11 @@ export interface IIdentityWallet {
    * Creates profile based on genesis identifier
    *
    * @param {DID} did - identity to derive profile from
-   * @param {number} nonce - unique integer number to generate a profile
+   * @param {number |string} nonce - unique integer number to generate a profile
    * @param {string} verifier - verifier identity/alias in a string from
    * @returns `Promise<DID>` - profile did
    */
-  createProfile(did: DID, nonce: number, verifier: string): Promise<DID>;
+  createProfile(did: DID, nonce: number | string, verifier: string): Promise<DID>;
 
   /**
    * Generates a new key
@@ -387,7 +387,7 @@ export interface IIdentityWallet {
    * @param {DID} did -  profile that has been derived or genesis identity
    * @returns `{Promise<{nonce:number, genesisIdentifier: DID}>}`
    */
-  getGenesisDIDMetadata(did: DID): Promise<{ nonce: number; genesisDID: DID }>;
+  getGenesisDIDMetadata(did: DID): Promise<{ nonce: number | string; genesisDID: DID }>;
 
   /**
    *
@@ -786,7 +786,7 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   /** {@inheritDoc IIdentityWallet.getGenesisDIDMetadata} */
-  async getGenesisDIDMetadata(did: DID): Promise<{ nonce: number; genesisDID: DID }> {
+  async getGenesisDIDMetadata(did: DID): Promise<{ nonce: number | string; genesisDID: DID }> {
     // check if it is a genesis identity
     const identity = await this._storage.identity.getIdentity(did.string());
 
@@ -802,7 +802,7 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   /** {@inheritDoc IIdentityWallet.createProfile} */
-  async createProfile(did: DID, nonce: number, verifier: string): Promise<DID> {
+  async createProfile(did: DID, nonce: number | string, verifier: string): Promise<DID> {
     const profileDID = generateProfileDID(did, nonce);
 
     const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
