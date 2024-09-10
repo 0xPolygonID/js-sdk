@@ -11,7 +11,7 @@ export type Identity = {
 /** Profile structure that can be used for profiles  storage */
 export type Profile = {
   id: string;
-  nonce: number;
+  nonce: number | string;
   genesisIdentifier: string;
   verifier: string;
 };

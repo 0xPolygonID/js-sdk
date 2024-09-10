@@ -126,7 +126,6 @@ export interface IProofService {
    *
    * @param {Uint8Array} hash - challenge that will be signed
    * @param {DID} did - identity that will generate a proof
-   * @param {Number} profileNonce - identity that will generate a proof
    * @param {CircuitId} circuitId - circuit id for authentication
    * @returns `Promise<Uint8Array>`
    */
