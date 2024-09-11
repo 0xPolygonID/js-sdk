@@ -44,7 +44,7 @@ const TestClaimDocument = `{
     "givenName": "JOHN",
     "familyName": "SMITH",
     "gender": "Male",
-    "image": "data:image/png;base64,iVBORw0KGgokJggg==",
+    "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII",
     "residentSince": "2015-01-01",
     "lprCategory": "C09",
     "lprNumber": "999-999-999",
