@@ -235,25 +235,25 @@ describe('fetch', () => {
 
     expect(res).to.be.a('Uint8Array');
 
-    const issueanceMsg = await FetchHandler.unpackMessage<CredentialIssuanceMessage>(
+    const issuanceMsg = await FetchHandler.unpackMessage<CredentialIssuanceMessage>(
       packageMgr,
       res,
       PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE
     );
 
-    expect(issueanceMsg).not.to.be.undefined;
-    expect(issueanceMsg.body).not.to.be.undefined;
-    expect(issueanceMsg.body?.credential).not.to.be.undefined;
-    expect(issueanceMsg.body?.credential.id).to.equal(issuedCred.id);
+    expect(issuanceMsg).not.to.be.undefined;
+    expect(issuanceMsg.body).not.to.be.undefined;
+    expect(issuanceMsg.body?.credential).not.to.be.undefined;
+    expect(issuanceMsg.body?.credential.id).to.equal(issuedCred.id);
 
     const newId = uuid.v4();
 
-    issueanceMsg.body = {
-      credential: { ...issueanceMsg.body?.credential, id: newId } as W3CCredential
+    issuanceMsg.body = {
+      credential: { ...issuanceMsg.body?.credential, id: newId } as W3CCredential
     };
 
     await fetchHandler.handleIssuanceResponseMessage(
-      byteEncoder.encode(JSON.stringify(issueanceMsg))
+      byteEncoder.encode(JSON.stringify(issuanceMsg))
     );
 
     const cred2 = await credWallet.findById(newId);
@@ -283,7 +283,7 @@ describe('fetch', () => {
     expect(await credWallet.list()).to.have.length(4);
 
     const response = await msgHandler.handleMessage(bytes, {});
-    // credential saved after handleing message via msgHandler
+    // credential saved after handling message via msgHandler
     expect(response).to.be.null;
     expect(await credWallet.list()).to.have.length(5);
   });

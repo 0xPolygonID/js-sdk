@@ -335,7 +335,7 @@ describe('onchain revocation checks', () => {
     });
 
     const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet, {
-      seed: byteEncoder.encode('soedseedseedseedseedseedseedseed'),
+      seed: byteEncoder.encode('seedseedseedseedseedseed11issuer'),
       revocationOpts: {
         id,
         type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
@@ -350,7 +350,7 @@ describe('onchain revocation checks', () => {
     const callBackUseCase = new Promise((resolve) => {
       (async () => {
         const { did: userDID, credential: userAuthCredential } = await createIdentity(idWallet, {
-          seed: byteEncoder.encode('seedseedseedseedseedseedseedseex'),
+          seed: byteEncoder.encode('seedseedseedseedseedseedseeduser'),
           revocationOpts: {
             id,
             type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,

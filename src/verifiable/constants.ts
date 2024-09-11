@@ -31,7 +31,7 @@ export const VerifiableConstants = Object.freeze({
     PUSH_NOTIFICATION: 'push-notification'
   },
   AUTH: {
-    AUTH_BJJ_CREDENTAIL_HASH: '013fd3f623559d850fb5b02ff012d0e2',
+    AUTH_BJJ_CREDENTIAL_HASH: '013fd3f623559d850fb5b02ff012d0e2',
     AUTH_BJJ_CREDENTIAL_SCHEMA_JSON_URL: 'https://schema.iden3.io/core/json/auth.json',
     AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD_URL: 'https://schema.iden3.io/core/jsonld/auth.jsonld',
     AUTH_BJJ_CREDENTIAL_TYPE: 'AuthBJJCredential',
@@ -63,7 +63,7 @@ export enum CredentialStatusType {
   Iden3ReverseSparseMerkleTreeProof = 'Iden3ReverseSparseMerkleTreeProof',
   // Iden3commRevocationStatusV1 is CredentialStatusType for iden3comm revocation status
   Iden3commRevocationStatusV1 = 'Iden3commRevocationStatusV1.0',
-  // Iden3OnсhainSparseMerkleTreeProof2023 is a proof type for MTP proofs with iden3 metadata from blockchain
+  // Iden3OnchainSparseMerkleTreeProof2023 is a proof type for MTP proofs with iden3 metadata from blockchain
   Iden3OnchainSparseMerkleTreeProof2023 = 'Iden3OnchainSparseMerkleTreeProof2023'
 }
 

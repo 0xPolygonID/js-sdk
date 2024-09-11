@@ -416,7 +416,7 @@ export class W3CCredential {
     resolverURL: string
   ): Promise<boolean> {
     await validateDIDDocumentAuth(proof.issuerData.id, resolverURL, proof.issuerData.state.value);
-    // root from proof == issuerData.state.сlaimsTreeRoot
+    // root from proof == issuerData.state.claimsTreeRoot
     const { hi, hv } = coreClaim.hiHv();
     const rootFromProofValue = await rootFromProof(proof.mtp, hi, hv);
     if (!rootFromProofValue.equals(proof.issuerData.state.claimsTreeRoot)) {

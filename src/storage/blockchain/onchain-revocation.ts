@@ -21,7 +21,7 @@ export class OnChainRevocationStorage {
    *
    * Creates an instance of OnChainIssuer.
    * @public
-   * @param {string} - onhcain contract address
+   * @param {string} - onchain contract address
    * @param {string} - rpc url to connect to the blockchain
    */
 

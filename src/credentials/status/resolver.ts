@@ -26,7 +26,7 @@ export interface CredentialStatusResolveOptions {
 }
 
 /**
- * CredentialStatusResolver is an interface that allows to interact with deifferent types of credential status
+ * CredentialStatusResolver is an interface that allows to interact with different types of credential status
  * to resolve revocation status
  *
  * @public

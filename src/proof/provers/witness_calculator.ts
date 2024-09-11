@@ -308,8 +308,8 @@ function fnvHash(str: any) {
     hash *= BigInt(0x100000001b3);
     hash %= uint64_max;
   }
-  let shash = hash.toString(16);
-  const n = 16 - shash.length;
-  shash = '0'.repeat(n).concat(shash);
-  return shash;
+  let hashHex = hash.toString(16);
+  const n = 16 - hashHex.length;
+  hashHex = '0'.repeat(n).concat(hashHex);
+  return hashHex;
 }
