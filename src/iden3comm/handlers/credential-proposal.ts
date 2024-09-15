@@ -1,4 +1,4 @@
-import { Iden3Metadata, Iden3MetadataType } from '../types/protocol/metadata';
+import { Iden3Metadata } from '../types/protocol/metadata';
 import { PROTOCOL_MESSAGE_TYPE, MediaType } from '../constants';
 import {
   BasicMessage,

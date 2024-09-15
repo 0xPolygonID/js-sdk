@@ -63,9 +63,9 @@ export abstract class AbstractMessageHandler implements IProtocolMessageHandler 
       return;
     }
 
-    const directives = message.attachments.filter(
-      (attachment) => attachment.data['type'] === Iden3AttachmentType.Iden3Directives
-    ).flatMap((attachment) => attachment.data.directives);
+    const directives = message.attachments
+      .filter((attachment) => attachment.data['type'] === Iden3AttachmentType.Iden3Directives)
+      .flatMap((attachment) => attachment.data.directives);
 
     if (!directives.length) {
       return;
