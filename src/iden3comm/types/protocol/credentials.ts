@@ -11,15 +11,17 @@ export type CredentialIssuanceRequestMessageBody = {
 };
 
 /** CredentialIssuanceRequestMessage represent Iden3message for credential request */
-export type CredentialIssuanceRequestMessage = Required<BasicMessage> & {
+export type CredentialIssuanceRequestMessage = BasicMessage & {
   body: CredentialIssuanceRequestMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_REQUEST_MESSAGE_TYPE;
+  to: string;
 };
 
 /** CredentialsOfferMessage represent Iden3message for credential offer */
-export type CredentialsOfferMessage = Required<BasicMessage> & {
+export type CredentialsOfferMessage = BasicMessage & {
   body: CredentialsOfferMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE;
+  to: string;
 };
 
 /** CredentialsOfferMessageBody is struct the represents offer message */
@@ -29,9 +31,10 @@ export type CredentialsOfferMessageBody = {
 };
 
 /** CredentialsOnchainOfferMessage represent Iden3message for credential onchain offer message */
-export type CredentialsOnchainOfferMessage = Required<BasicMessage> & {
+export type CredentialsOnchainOfferMessage = BasicMessage & {
   body: CredentialsOnchainOfferMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ONCHAIN_OFFER_MESSAGE_TYPE;
+  to: string;
 };
 
 /** CredentialsOnchainOfferMessageBody is struct the represents onchain offer message body */
@@ -55,9 +58,10 @@ export type CredentialOffer = {
 };
 
 /** CredentialIssuanceMessage represent Iden3message for credential issuance */
-export type CredentialIssuanceMessage = Required<BasicMessage> & {
+export type CredentialIssuanceMessage = BasicMessage & {
   body: IssuanceMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE;
+  to: string;
 };
 
 /** IssuanceMessageBody is struct the represents message when credential is issued */
@@ -69,6 +73,7 @@ export type IssuanceMessageBody = {
 export type CredentialFetchRequestMessage = BasicMessage & {
   body: CredentialFetchRequestMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE;
+  to: string;
 };
 
 /** CredentialFetchRequestMessageBody is msg body for fetch request */
@@ -84,9 +89,10 @@ export type Schema = {
 };
 
 /** CredentialRefreshMessage represent Iden3message for credential refresh request */
-export type CredentialRefreshMessage = Required<BasicMessage> & {
+export type CredentialRefreshMessage = BasicMessage & {
   body: CredentialRefreshMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_REFRESH_MESSAGE_TYPE;
+  to: string;
 };
 
 /** CredentialRefreshMessageBody is msg body for refresh request */

@@ -5,32 +5,30 @@ import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
 export type AuthorizationResponseMessage = BasicMessage & {
   body: AuthorizationMessageResponseBody;
-  from: string;
-  to: string;
   type: typeof PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
+  to: string;
 };
 
 /** AuthorizationMessageResponseBody is struct the represents authorization response data */
-export type AuthorizationMessageResponseBody = {
+export type AuthorizationMessageResponseBody = BasicMessage['body'] & {
   did_doc?: JsonDocumentObject;
   message?: string;
-  scope: Array<ZeroKnowledgeProofResponse>;
+  scope: ZeroKnowledgeProofResponse[];
 };
 
 /** AuthorizationRequestMessage is struct the represents iden3message authorization request */
 export type AuthorizationRequestMessage = BasicMessage & {
   body: AuthorizationRequestMessageBody;
-  from: string;
   type: typeof PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE;
 };
 
 /** AuthorizationRequestMessageBody is body for authorization request */
-export type AuthorizationRequestMessageBody = {
+export type AuthorizationRequestMessageBody = BasicMessage['body'] & {
   callbackUrl: string;
   reason?: string;
   message?: string;
   did_doc?: JsonDocumentObject;
-  scope: Array<ZeroKnowledgeProofRequest>;
+  scope: ZeroKnowledgeProofRequest[];
 };
 
 /** ZeroKnowledgeProofRequest represents structure of zkp request object */

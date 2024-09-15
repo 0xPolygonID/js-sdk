@@ -108,7 +108,8 @@ describe('revocation status', () => {
       body: {
         revocation_nonce: 1000
       },
-      to: issuerDID.string()
+      to: issuerDID.string(),
+      from: userDID.string()
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(rsReq));

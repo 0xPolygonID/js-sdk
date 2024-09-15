@@ -1,4 +1,4 @@
-import { BasicMessage, IPackageManager } from '../types';
+import { BasicMessage, Iden3AttachmentType, IPackageManager } from '../types';
 import { AuthMessageHandlerOptions } from './auth';
 import { RevocationStatusMessageHandlerOptions } from './revocation-status';
 import { ContractMessageHandlerOptions } from './contract-request';
@@ -6,6 +6,9 @@ import { PaymentHandlerOptions, PaymentRequestMessageHandlerOptions } from './pa
 import { MediaType } from '../constants';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
+import { IMetadataStorage } from '../../storage';
+import * as uuid from 'uuid';
+
 /**
  * iden3  Protocol message handler interface
  */
@@ -43,6 +46,49 @@ export abstract class AbstractMessageHandler implements IProtocolMessageHandler 
   ): Promise<BasicMessage | null> {
     if (this.nextMessageHandler) return this.nextMessageHandler.handle(message, context);
     return Promise.reject('Message handler not provided or message not supported');
+  }
+
+  public async processMessageAttachments(
+    message: BasicMessage,
+    opts?: { metadataStorage?: IMetadataStorage }
+  ): Promise<void> {
+    if (!message.attachments) {
+      return;
+    }
+    const metadataStorage = opts?.metadataStorage;
+    const threadId = message.thid;
+
+    if (!threadId) {
+      console.warn('message should contain thid to process attachments');
+      return;
+    }
+
+    const directives = message.attachments.filter(
+      (attachment) => attachment.data['type'] === Iden3AttachmentType.Iden3Directives
+    ).flatMap((attachment) => attachment.data.directives);
+
+    if (!directives.length) {
+      return;
+    }
+
+    if (!metadataStorage) {
+      console.warn('Metadata storage not provided but required for processing message attachments');
+      return;
+    }
+
+    const metadataPromises = directives.map((directive) => {
+      return metadataStorage.save(threadId, {
+        id: uuid.v4(),
+        thid: threadId,
+        purpose: directive.purpose,
+        date: new Date().toISOString(),
+        type: 'directive',
+        status: 'pending',
+        jsonString: JSON.stringify(directive)
+      });
+    });
+
+    await Promise.all(metadataPromises);
   }
 }
 

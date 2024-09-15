@@ -4,7 +4,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
 import { DID, ChainIds } from '@iden3/js-iden3-core';
-import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
+import { FunctionSignatures, IMetadataStorage, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { processZeroKnowledgeProofRequests } from './common';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
@@ -81,7 +81,8 @@ export class ContractRequestHandler
   constructor(
     private readonly _packerMgr: IPackageManager,
     private readonly _proofService: IProofService,
-    private readonly _zkpVerifier: IOnChainZKPVerifier
+    private readonly _zkpVerifier: IOnChainZKPVerifier,
+    private readonly _opts?: { MetadataStorage: IMetadataStorage }
   ) {
     super();
   }
@@ -90,6 +91,7 @@ export class ContractRequestHandler
     message: BasicMessage,
     ctx: ContractMessageHandlerOptions
   ): Promise<BasicMessage | null> {
+    await this.processMessageAttachments(message, { metadataStorage: this._opts?.MetadataStorage });
     switch (message.type) {
       case PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE: {
         const ciMessage = message as ContractInvokeRequest;
@@ -184,6 +186,9 @@ export class ContractRequestHandler
     request: ContractInvokeRequest,
     txHashToZkpResponseMap: Map<string, ZeroKnowledgeProofResponse[]>
   ): Promise<ContractInvokeResponse> {
+    if (!request.to) {
+      throw new Error('Invalid contract invoke request');
+    }
     const contractInvokeResponse: ContractInvokeResponse = {
       id: request.id,
       thid: request.thid,

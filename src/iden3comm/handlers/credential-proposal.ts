@@ -1,3 +1,4 @@
+import { Iden3Metadata, Iden3MetadataType } from '../types/protocol/metadata';
 import { PROTOCOL_MESSAGE_TYPE, MediaType } from '../constants';
 import {
   BasicMessage,
@@ -21,12 +22,14 @@ import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { IMetadataStorage } from '../../storage';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; data?: JsonDocumentObject };
+  metadata?: { type: string; data?: JsonDocumentObject } | Iden3Metadata;
   did_doc?: JsonDocumentObject;
+  thid?: string;
 };
 
 /**
@@ -45,7 +48,7 @@ export function createProposalRequest(
   const uuidv4 = uuid.v4();
   const request: ProposalRequestMessage = {
     id: uuidv4,
-    thid: uuidv4,
+    thid: opts.thid ?? uuidv4,
     from: sender.string(),
     to: receiver.string(),
     typ: MediaType.PlainMessage,
@@ -99,6 +102,20 @@ export interface ICredentialProposalHandler {
   parseProposalRequest(request: Uint8Array): Promise<ProposalRequestMessage>;
 
   /**
+   * @beta
+   * creates proposal-request
+   * @param {ProposalRequestCreationOptions} params - creation options
+   * @returns `Promise<ProposalRequestMessage>`
+   */
+  createProposalRequestPacked(
+    params: {
+      thid: string;
+      sender: DID;
+      receiver: DID;
+    } & ProposalRequestCreationOptions
+  ): Promise<ProposalRequestMessage>;
+
+  /**
    *  @beta
    * handle proposal-request
    * @param {Uint8Array} request - raw byte message
@@ -140,6 +157,7 @@ export type CredentialProposalHandlerParams = {
   agentUrl: string;
   proposalResolverFn: (context: string, type: string) => Promise<Proposal>;
   packerParams: PackerParams;
+  metadataStorage?: IMetadataStorage;
 };
 
 /**
@@ -167,6 +185,48 @@ export class CredentialProposalHandler
     private readonly _params: CredentialProposalHandlerParams
   ) {
     super();
+  }
+
+  /**
+   * @inheritdoc ICredentialProposalHandler#createProposalRequest
+   */
+  async createProposalRequestPacked(
+    params: {
+      thid: string;
+      sender: DID;
+      receiver: DID;
+    } & ProposalRequestCreationOptions
+  ): Promise<ProposalRequestMessage> {
+    if (!this._params.metadataStorage) {
+      throw new Error('metadata storage is required');
+    }
+
+    const directives =
+      await this._params.metadataStorage.getUnprocessedMetadataForThreadIdAndPurpose(
+        params.thid,
+        PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE
+      );
+
+    const metadata = directives.length
+      ? ({
+          type: 'Iden3Metadata',
+          data: directives.map((directive) => {
+            const directiveData = JSON.parse(directive.jsonString);
+            delete directiveData.purpose;
+            return directiveData;
+          })
+        } as Iden3Metadata)
+      : params.metadata;
+
+    const request = createProposalRequest(params.sender, params.receiver, {
+      credentials: params.credentials,
+      metadata,
+
+      did_doc: params.did_doc,
+      thid: params.thid
+    });
+
+    return request;
   }
 
   public async handle(

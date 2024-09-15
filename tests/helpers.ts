@@ -32,7 +32,8 @@ import {
   W3CCredential,
   ZKPPacker,
   byteEncoder,
-  VerifyOpts
+  VerifyOpts,
+  Proposal
 } from '../src';
 import { proving } from '@iden3/js-jwz';
 import { JsonRpcProvider } from 'ethers';
@@ -265,4 +266,26 @@ export const getPackageMgr = async (
 export const TEST_VERIFICATION_OPTS: VerifyOpts = {
   acceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minutes
   acceptedProofGenerationDelay: 10 * 365 * 24 * 60 * 60 * 1000 // 10 years
+};
+
+export const PROPOSAL_RESOLVER_FN_STUB = (context: string, type: string): Promise<Proposal> => {
+  if (
+    context ===
+      'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld' &&
+    type === 'KYCAgeCredential'
+  ) {
+    return Promise.resolve({
+      credentials: [
+        {
+          type,
+          context
+        }
+      ],
+      type: 'WebVerificationForm',
+      url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
+      description: 'you can pass the verification on our KYC provider by following the next link'
+    });
+  }
+
+  throw new Error(`not supported credential, type: ${type}, context: ${context}`);
 };
