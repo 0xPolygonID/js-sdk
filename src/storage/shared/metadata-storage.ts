@@ -6,7 +6,7 @@ import { IIden3MessageStorage } from '../interfaces/message';
  */
 export class Iden3MessageStorage implements IIden3MessageStorage {
   private static keyName = 'id';
-  static readonly storageKey = 'metadata';
+  static readonly storageKey = 'messages';
 
   /**
    * Creates an instance of MetadataStorage.
