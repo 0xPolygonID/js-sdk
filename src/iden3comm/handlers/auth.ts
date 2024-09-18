@@ -21,7 +21,7 @@ import { byteDecoder, byteEncoder } from '../../utils';
 import { processZeroKnowledgeProofRequests } from './common';
 import { CircuitId } from '../../circuits';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
-import { IMetadataStorage } from '../../storage';
+import { IIden3MessageStorage } from '../../storage';
 
 /**
  *  createAuthorizationRequest is a function to create protocol authorization request
@@ -189,7 +189,7 @@ export class AuthHandler
     private readonly _packerMgr: IPackageManager,
     private readonly _proofService: IProofService,
     private readonly _opts?: {
-      metadataStorage: IMetadataStorage;
+      messageStorage: IIden3MessageStorage;
     }
   ) {
     super();
@@ -199,8 +199,8 @@ export class AuthHandler
     message: BasicMessage,
     ctx: AuthMessageHandlerOptions
   ): Promise<BasicMessage | null> {
-    await this.processMessageAttachments(message, {
-      metadataStorage: this._opts?.metadataStorage
+    await this.processMessage(message, {
+      messageStorage: this._opts?.messageStorage
     });
 
     switch (message.type) {

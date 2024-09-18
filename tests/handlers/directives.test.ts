@@ -18,12 +18,12 @@ import {
   CredentialStatusResolverRegistry,
   PROTOCOL_CONSTANTS,
   InMemoryDataSource,
-  Metadata,
-  MetadataStorage,
+  Iden3MessageStorage,
   Iden3AttachmentType,
-  IMetadataStorage,
+  IIden3MessageStorage,
   CredentialProposalHandler,
-  ICredentialProposalHandler
+  ICredentialProposalHandler,
+  MessageModel
 } from '../../src';
 import { DID } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
@@ -49,7 +49,7 @@ describe('directives', () => {
   let packageMgr: IPackageManager;
   let userDID: DID;
   let issuerDID: DID;
-  let metadataStorage: IMetadataStorage;
+  let messageStorage: IIden3MessageStorage;
   let proposalRequestHandler: ICredentialProposalHandler;
 
   beforeEach(async () => {
@@ -76,9 +76,9 @@ describe('directives', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    metadataStorage = new MetadataStorage(new InMemoryDataSource<Metadata>());
+    messageStorage = new Iden3MessageStorage(new InMemoryDataSource<MessageModel>());
     authHandler = new AuthHandler(packageMgr, proofService, {
-      metadataStorage
+      messageStorage: messageStorage
     });
 
     proposalRequestHandler = new CredentialProposalHandler(packageMgr, idWallet, {
@@ -108,7 +108,7 @@ describe('directives', () => {
       packerParams: {
         mediaType: MediaType.PlainMessage
       },
-      metadataStorage
+      metadataStorage: messageStorage
     });
 
     const { did: didUser } = await createIdentity(idWallet, {
@@ -184,14 +184,9 @@ describe('directives', () => {
       'no credential satisfied query'
     );
     expect(authReq.thid).not.to.be.undefined;
-    const metadata = await metadataStorage.get(authReq.thid!);
+    const metadata = await messageStorage.get(authReq.thid!);
     console.log('metadata', metadata);
-    expect(
-      await metadataStorage.getUnprocessedMetadataForThreadIdAndPurpose(
-        authReq.thid!,
-        PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE
-      )
-    ).not.to.be.undefined;
+    expect(await messageStorage.getMessageByThreadId(authReq.thid!, 'pending')).not.to.be.undefined;
 
     // user wants to issue credential
 
@@ -204,5 +199,18 @@ describe('directives', () => {
     });
     console.log('proposalReq', proposalReq);
     expect(proposalReq).not.to.be.undefined;
+    const [authRequest, proposalRequest] = (await messageStorage.load()).sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    expect(authRequest.type).to.be.eq(
+      PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE
+    );
+    expect(proposalRequest.type).to.be.eq(
+      PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE
+    );
+    expect(proposalRequest.thid).not.to.be.eq(authRequest.thid);
+    expect(proposalRequest.correlationId).to.be.eq(authReq.id);
+    expect(proposalRequest.correlationThid).to.be.eq(authReq.thid);
   });
 });

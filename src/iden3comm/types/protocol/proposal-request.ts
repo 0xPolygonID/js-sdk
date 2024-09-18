@@ -1,6 +1,5 @@
 import { BasicMessage, JsonDocumentObject } from '../';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
-import { Iden3Metadata } from './metadata';
 
 /** @beta ProposalRequestMessage is struct the represents proposal-request message */
 export type ProposalRequestMessage = BasicMessage & {
@@ -11,7 +10,7 @@ export type ProposalRequestMessage = BasicMessage & {
 /** @beta ProposalRequestMessageBody is struct the represents body for proposal-request */
 export type ProposalRequestMessageBody = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; data?: JsonDocumentObject } | Iden3Metadata;
+  metadata?: { type: string; data?: JsonDocumentObject | JsonDocumentObject[] };
   did_doc?: JsonDocumentObject;
 };
 

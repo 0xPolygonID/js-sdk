@@ -1,4 +1,3 @@
-import { Iden3Metadata } from '../types/protocol/metadata';
 import { PROTOCOL_MESSAGE_TYPE, MediaType } from '../constants';
 import {
   BasicMessage,
@@ -22,12 +21,12 @@ import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
-import { IMetadataStorage } from '../../storage';
+import { IIden3MessageStorage } from '../../storage';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; data?: JsonDocumentObject } | Iden3Metadata;
+  metadata?: { type: string; data?: JsonDocumentObject | JsonDocumentObject[] };
   did_doc?: JsonDocumentObject;
   thid?: string;
 };
@@ -157,7 +156,7 @@ export type CredentialProposalHandlerParams = {
   agentUrl: string;
   proposalResolverFn: (context: string, type: string) => Promise<Proposal>;
   packerParams: PackerParams;
-  metadataStorage?: IMetadataStorage;
+  metadataStorage?: IIden3MessageStorage;
 };
 
 /**
@@ -201,29 +200,54 @@ export class CredentialProposalHandler
       throw new Error('metadata storage is required');
     }
 
-    const directives =
-      await this._params.metadataStorage.getUnprocessedMetadataForThreadIdAndPurpose(
-        params.thid,
-        PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE
+    const messages: BasicMessage[] = (
+      await this._params.metadataStorage.getMessageByThreadId(params.thid, 'pending')
+    ).map((message) => JSON.parse(message.jsonString));
+
+    //TODO: handle multiple messages
+    if (messages.length > 1) {
+      throw new Error('multiple messages are not supported');
+    }
+
+    const directives = (messages[0].attachments ?? [])
+      // .flatMap((message) => message.attachments ?? [])
+      .filter(
+        (attachment) =>
+          attachment?.data?.type === 'Iden3Directives' && attachment?.data?.directives.length
+      )
+      .flatMap((attachment) => attachment.data.directives ?? [])
+      .filter(
+        (directive) => directive.purpose === PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE
       );
 
     const metadata = directives.length
-      ? ({
+      ? {
           type: 'Iden3Metadata',
-          data: directives.map((directive) => {
-            const directiveData = JSON.parse(directive.jsonString);
-            delete directiveData.purpose;
-            return directiveData;
+          data: directives.map((directive: JsonDocumentObject) => {
+            delete directive.purpose;
+            return directive;
           })
-        } as Iden3Metadata)
+        }
       : params.metadata;
 
     const request = createProposalRequest(params.sender, params.receiver, {
       credentials: params.credentials,
       metadata,
-
       did_doc: params.did_doc,
-      thid: params.thid
+      thid: uuid.v4()
+    });
+
+    // todo: is it correct and right place to save the message before sending it?
+    //
+    await this._params.metadataStorage.save(params.thid, {
+      id: request.id,
+      thid: request.thid,
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+      correlationId: messages[0].id,
+      type: request.type,
+      correlationThid: messages[0].thid,
+      jsonString: JSON.stringify(request)
     });
 
     return request;

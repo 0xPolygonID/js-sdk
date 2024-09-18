@@ -4,7 +4,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
 import { DID, ChainIds } from '@iden3/js-iden3-core';
-import { FunctionSignatures, IMetadataStorage, IOnChainZKPVerifier } from '../../storage';
+import { FunctionSignatures, IIden3MessageStorage, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { processZeroKnowledgeProofRequests } from './common';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
@@ -82,7 +82,7 @@ export class ContractRequestHandler
     private readonly _packerMgr: IPackageManager,
     private readonly _proofService: IProofService,
     private readonly _zkpVerifier: IOnChainZKPVerifier,
-    private readonly _opts?: { MetadataStorage: IMetadataStorage }
+    private readonly _opts?: { messageStorage: IIden3MessageStorage }
   ) {
     super();
   }
@@ -91,7 +91,7 @@ export class ContractRequestHandler
     message: BasicMessage,
     ctx: ContractMessageHandlerOptions
   ): Promise<BasicMessage | null> {
-    await this.processMessageAttachments(message, { metadataStorage: this._opts?.MetadataStorage });
+    await this.processMessage(message, { messageStorage: this._opts?.messageStorage });
     switch (message.type) {
       case PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE: {
         const ciMessage = message as ContractInvokeRequest;
