@@ -178,7 +178,8 @@ export class ZKPPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getSupportedProfiles} */
   getSupportedProfiles(): string[] {
-    return [`env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(
+    return [
+      `env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(
         ','
       )}&circuitIds=${this.getSupportedCircuitIds().join(',')}`
     ];
