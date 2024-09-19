@@ -29,6 +29,7 @@ export type AuthorizationRequestMessageBody = {
   callbackUrl: string;
   reason?: string;
   message?: string;
+  accept?: string[];
   did_doc?: JsonDocumentObject;
   scope: Array<ZeroKnowledgeProofRequest>;
 };
