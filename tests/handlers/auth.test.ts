@@ -2392,7 +2392,7 @@ describe('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     await expect(authHandler.handleAuthorizationRequest(userDID, msgBytes)).to.be.rejectedWith(
-      'no profile meets `access` header requirements'
+      'no packer with profile which meets `access` header requirements'
     );
   });
 });

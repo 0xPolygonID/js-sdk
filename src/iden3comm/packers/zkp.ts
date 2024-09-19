@@ -176,11 +176,12 @@ export class ZKPPacker implements IPacker {
     return MediaType.ZKPMessage;
   }
 
-  /** {@inheritDoc IPacker.getEnvelope} */
-  getEnvelope(): string {
-    return `env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(
-      ','
-    )}&circuitIds=${this.getSupportedCircuitIds().join(',')}`;
+  /** {@inheritDoc IPacker.getSupportedProfiles} */
+  getSupportedProfiles(): string[] {
+    return [`env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(
+        ','
+      )}&circuitIds=${this.getSupportedCircuitIds().join(',')}`
+    ];
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */

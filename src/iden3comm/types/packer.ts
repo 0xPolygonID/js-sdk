@@ -139,11 +139,11 @@ export interface IPacker {
   mediaType(): MediaType;
 
   /**
-   * gets packer envelope with options
+   * gets packer envelope (supported profiles) with options
    *
    * @returns {string}
    */
-  getEnvelope(): string;
+  getSupportedProfiles(): string[];
 
   /**
    * returns true if profile is supported by packer

@@ -55,9 +55,9 @@ export class PlainPacker implements IPacker {
     return MediaType.PlainMessage;
   }
 
-  /** {@inheritDoc IPacker.getEnvelope} */
-  getEnvelope(): string {
-    return `env=${this.mediaType()}`;
+  /** {@inheritDoc IPacker.getSupportedProfiles} */
+  getSupportedProfiles(): string[] {
+    return [`env=${this.mediaType()}`];
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */

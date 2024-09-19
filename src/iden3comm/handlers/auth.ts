@@ -253,13 +253,13 @@ export class AuthHandler
           continue;
         }
         // 2. check packer support
-        if (this._packerMgr.isSupported(env, acceptProfile)) {
+        if (this._packerMgr.isProfileSupported(env, acceptProfile)) {
           supportedMediaTypes.push(env);
         }
       }
 
       if (!supportedMediaTypes.length) {
-        throw new Error('no profile meets `access` header requirements');
+        throw new Error('no packer with profile which meets `access` header requirements');
       }
 
       mediaType = supportedMediaTypes[0];

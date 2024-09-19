@@ -103,9 +103,9 @@ export class JWSPacker implements IPacker {
     return MediaType.SignedMessage;
   }
 
-  /** {@inheritDoc IPacker.getEnvelope} */
-  getEnvelope(): string {
-    return `env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(',')}`;
+  /** {@inheritDoc IPacker.getSupportedProfiles} */
+  getSupportedProfiles(): string[] {
+    return [`env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(',')}`];
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */

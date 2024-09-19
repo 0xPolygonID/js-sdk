@@ -88,7 +88,7 @@ export interface IPackageManager {
    * @param {MediaType} mediaType
    * @returns AcceptJwzAlgorithms[] | AcceptJwsAlgorithms[]
    */
-  isSupported(mediaType: MediaType, profile: string): boolean;
+  isProfileSupported(mediaType: MediaType, profile: string): boolean;
 }
 /**
  * EnvelopeStub is used to stub the jwt based envelops

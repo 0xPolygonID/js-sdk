@@ -21,8 +21,8 @@ export class PackageManager implements IPackageManager {
     this.packers = new Map<MediaType, IPacker>();
   }
 
-  /** {@inheritDoc IPackageManager.isSupported} */
-  isSupported(mediaType: MediaType, profile: string): boolean {
+  /** {@inheritDoc IPackageManager.isProfileSupported} */
+  isProfileSupported(mediaType: MediaType, profile: string): boolean {
     const p = this.packers.get(mediaType);
     if (!p) {
       return false;
