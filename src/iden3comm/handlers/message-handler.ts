@@ -1,4 +1,4 @@
-import { BasicMessage, IPackageManager } from '../types';
+import { BasicMessage, Iden3Directive, IPackageManager } from '../types';
 import { AuthMessageHandlerOptions } from './auth';
 import { RevocationStatusMessageHandlerOptions } from './revocation-status';
 import { ContractMessageHandlerOptions } from './contract-request';
@@ -6,6 +6,8 @@ import { PaymentHandlerOptions, PaymentRequestMessageHandlerOptions } from './pa
 import { MediaType } from '../constants';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
+import { extractDirectiveFromMessage } from '../utils';
+import { Iden3AttachmentType } from '../types/protocol/directives';
 /**
  * iden3  Protocol message handler interface
  */
@@ -149,5 +151,36 @@ export class MessageHandler {
     }
 
     return this._params.packageManager.packMessage(MediaType.PlainMessage, response, packerParams);
+  }
+
+  protected propagateDirective(request: BasicMessage, response: BasicMessage): BasicMessage {
+    const directives = extractDirectiveFromMessage(request);
+    const attachedDirectives = (response.attachments ?? [])
+      .filter((att) => att.data.type === Iden3AttachmentType.Iden3Directives)
+      .reduce((acc: Iden3Directive[], att) => {
+        const dir = att.data.directives;
+        return [...acc, ...dir];
+      }, directives);
+
+    if (!attachedDirectives.length) {
+      return response;
+    }
+
+    const resultedAttachments = [
+      ...(response.attachments ?? []).filter(
+        (att) => att.data.type !== Iden3AttachmentType.Iden3Directives
+      ),
+      {
+        data: {
+          type: Iden3AttachmentType.Iden3Directives,
+          directives: attachedDirectives
+        }
+      }
+    ];
+
+    return {
+      ...response,
+      attachments: resultedAttachments
+    };
   }
 }

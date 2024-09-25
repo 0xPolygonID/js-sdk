@@ -11,6 +11,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 export type PaymentRequestMessage = BasicMessage & {
   body: PaymentRequestMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE;
+  to: string;
 };
 
 /** @beta PaymentRequestMessageBody is struct the represents body for payment-request */

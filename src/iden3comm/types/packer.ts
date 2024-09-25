@@ -5,6 +5,7 @@ import { CircuitId } from '../../circuits';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
 import { StateVerificationOpts } from './models';
+import { Attachment } from './protocol/directives';
 
 /**
  *  Protocol message type
@@ -44,8 +45,9 @@ export type BasicMessage = {
   type: ProtocolMessage;
   thid?: string;
   body?: unknown;
-  from?: string;
+  from: string;
   to?: string;
+  attachments?: Attachment[];
 };
 
 /**
