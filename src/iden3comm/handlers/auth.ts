@@ -21,6 +21,7 @@ import { byteDecoder, byteEncoder } from '../../utils';
 import { processZeroKnowledgeProofRequests } from './common';
 import { CircuitId } from '../../circuits';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { IIden3MessageStorage } from '../../storage';
 
 /**
  *  createAuthorizationRequest is a function to create protocol authorization request
@@ -186,12 +187,24 @@ export class AuthHandler
    */
   constructor(
     private readonly _packerMgr: IPackageManager,
-    private readonly _proofService: IProofService
+    private readonly _proofService: IProofService,
+    private readonly _opts?: {
+      messageStorage: IIden3MessageStorage;
+    }
   ) {
     super();
   }
 
-  handle(message: BasicMessage, ctx: AuthMessageHandlerOptions): Promise<BasicMessage | null> {
+  async handle(
+    message: BasicMessage,
+    ctx: AuthMessageHandlerOptions
+  ): Promise<BasicMessage | null> {
+    if (this._opts?.messageStorage) {
+      await this.processMessage(message, {
+        messageStorage: this._opts.messageStorage
+      });
+    }
+
     switch (message.type) {
       case PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE:
         return this.handleAuthRequest(
@@ -286,7 +299,7 @@ export class AuthHandler
       throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
     }
 
-    const authResponse = await this.handleAuthRequest(authRequest, {
+    const authResponse = await this.handle(authRequest, {
       senderDid: did,
       mediaType: opts.mediaType
     });
@@ -307,7 +320,7 @@ export class AuthHandler
       })
     );
 
-    return { authRequest, authResponse, token };
+    return { authRequest, authResponse: authResponse as AuthorizationResponseMessage, token };
   }
 
   private async handleAuthResponse(
@@ -408,7 +421,7 @@ export class AuthHandler
     request: AuthorizationRequestMessage;
     response: AuthorizationResponseMessage;
   }> {
-    const authResp = (await this.handleAuthResponse(response, {
+    const authResp = (await this.handle(response, {
       request,
       acceptedStateTransitionDelay: opts?.acceptedStateTransitionDelay,
       acceptedProofGenerationDelay: opts?.acceptedProofGenerationDelay

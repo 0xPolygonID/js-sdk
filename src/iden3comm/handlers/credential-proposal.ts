@@ -3,6 +3,7 @@ import {
   BasicMessage,
   CredentialOffer,
   CredentialsOfferMessage,
+  Iden3DirectiveType,
   IPackageManager,
   JsonDocumentObject,
   PackerParams
@@ -18,15 +19,17 @@ import {
   ProposalMessage
 } from '../types/protocol/proposal-request';
 import { IIdentityWallet } from '../../identity';
-import { byteEncoder } from '../../utils';
+import { byteDecoder, byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { IIden3MessageStorage } from '../../storage';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; data?: JsonDocumentObject };
+  metadata?: { type: string; data?: JsonDocumentObject | JsonDocumentObject[] };
   did_doc?: JsonDocumentObject;
+  thid?: string;
 };
 
 /**
@@ -45,7 +48,7 @@ export function createProposalRequest(
   const uuidv4 = uuid.v4();
   const request: ProposalRequestMessage = {
     id: uuidv4,
-    thid: uuidv4,
+    thid: opts.thid ?? uuidv4,
     from: sender.string(),
     to: receiver.string(),
     typ: MediaType.PlainMessage,
@@ -99,6 +102,20 @@ export interface ICredentialProposalHandler {
   parseProposalRequest(request: Uint8Array): Promise<ProposalRequestMessage>;
 
   /**
+   * @beta
+   * creates proposal-request
+   * @param {ProposalRequestCreationOptions} params - creation options
+   * @returns `Promise<ProposalRequestMessage>`
+   */
+  createProposalRequestPacked(
+    params: {
+      thid: string;
+      sender: DID;
+      receiver: DID;
+    } & ProposalRequestCreationOptions
+  ): Promise<{ request: ProposalRequestMessage; token: string }>;
+
+  /**
    *  @beta
    * handle proposal-request
    * @param {Uint8Array} request - raw byte message
@@ -138,8 +155,13 @@ export type ProposalHandlerOptions = {
 /** @beta CredentialProposalHandlerParams represents credential proposal handler params */
 export type CredentialProposalHandlerParams = {
   agentUrl: string;
-  proposalResolverFn: (context: string, type: string) => Promise<Proposal>;
+  proposalResolverFn: (
+    context: string,
+    type: string,
+    request?: ProposalRequestMessage
+  ) => Promise<Proposal>;
   packerParams: PackerParams;
+  messageStorage?: IIden3MessageStorage;
 };
 
 /**
@@ -167,6 +189,121 @@ export class CredentialProposalHandler
     private readonly _params: CredentialProposalHandlerParams
   ) {
     super();
+  }
+
+  /**
+   * @inheritdoc ICredentialProposalHandler#createProposalRequest
+   */
+  async createProposalRequestPacked(
+    params: {
+      thid: string;
+      sender: DID;
+      receiver: DID;
+    } & ProposalRequestCreationOptions
+  ): Promise<{ request: ProposalRequestMessage; token: string }> {
+    if (!this._params.messageStorage) {
+      throw new Error('metadata storage is required');
+    }
+
+    const thid = uuid.v4();
+
+    const messages: BasicMessage[] = (
+      await this._params.messageStorage.getMessagesByThreadId(params.thid, 'pending')
+    ).map((message) => JSON.parse(message.jsonString));
+
+    if (!messages.length) {
+      throw new Error('no pending messages found');
+      // const request = createProposalRequest(params.sender, params.receiver, {
+      //   credentials: params.credentials,
+      //   metadata: params.metadata,
+      //   did_doc: params.did_doc,
+      //   thid
+      // });
+      // const msgBytes = byteEncoder.encode(JSON.stringify(request));
+      // const token = byteDecoder.decode(
+      //   await this._packerMgr.pack(MediaType.PlainMessage, msgBytes, {
+      //     senderDID: params.sender,
+      //     ...this._params.packerParams
+      //   })
+      // );
+      // return { request, token };
+    }
+
+    //TODO: handle multiple messages
+    if (messages.length > 1) {
+      throw new Error('multiple messages are not supported');
+    }
+
+    const directives = (messages[0].attachments ?? [])
+      .filter(
+        (attachment) =>
+          attachment?.data?.type === 'Iden3Directives' && attachment?.data?.directives.length
+      )
+      .flatMap((attachment) => attachment.data.directives ?? [])
+      .filter(
+        (directive) => directive.purpose === PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE
+      );
+
+    const credentialsToRequest: ProposalRequestCredential[] = [...params.credentials];
+    // let metadata = {...params.metadata};
+    //TODO: how to merge metadata?
+
+    const result = directives.reduce<{
+      metadata: {
+        type: string;
+        data: JsonDocumentObject[];
+      };
+      credentialsToRequest: ProposalRequestCredential[];
+    }>(
+      (acc, directive) => {
+        if (directive.type !== Iden3DirectiveType.TransparentPaymentDirective) {
+          return acc;
+        }
+        const directiveCredentials: ProposalRequestCredential[] = directive.credentials ?? [];
+        acc.credentialsToRequest = [...acc.credentialsToRequest, ...directiveCredentials];
+        delete directive.purpose;
+        acc.metadata.data = [...acc.metadata.data, directive];
+        return acc;
+      },
+      {
+        metadata: {
+          type: 'Iden3Metadata',
+          data: []
+        },
+        credentialsToRequest
+      }
+    );
+
+    const msg = createProposalRequest(params.sender, params.receiver, {
+      credentials: result.credentialsToRequest,
+      metadata: result.metadata,
+      did_doc: params.did_doc,
+      thid
+    });
+
+    // todo: is it correct and right place to save the message before sending it?
+    //
+    await this._params.messageStorage.save(msg.id, {
+      id: msg.id,
+      thid: msg.thid,
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+      correlationId: messages[0].id,
+      type: msg.type,
+      correlationThId: messages[0].thid,
+      jsonString: JSON.stringify(msg)
+    });
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(msg));
+
+    const token = byteDecoder.decode(
+      await this._packerMgr.pack(messages[0]?.typ ?? MediaType.PlainMessage, msgBytes, {
+        senderDID: params.sender,
+        ...this._params.packerParams
+      })
+    );
+
+    return { request: msg, token };
   }
 
   public async handle(
@@ -266,7 +403,11 @@ export class CredentialProposalHandler
       }
 
       // credential not found in the wallet, prepare proposal protocol message
-      const proposal = await this._params.proposalResolverFn(cred.context, cred.type);
+      const proposal = await this._params.proposalResolverFn(
+        cred.context,
+        cred.type,
+        proposalRequest
+      );
       if (!proposal) {
         throw new Error(`can't resolve Proposal for type: ${cred.type}, context: ${cred.context}`);
       }

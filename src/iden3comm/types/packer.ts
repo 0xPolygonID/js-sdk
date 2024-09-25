@@ -2,9 +2,11 @@ import { DID } from '@iden3/js-iden3-core';
 import { DataPrepareHandlerFunc, VerificationHandlerFunc } from '../packers';
 import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
-import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../constants';
+import { PROTOCOL_MESSAGE_TYPE, MediaType } from '../constants';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
 import { StateVerificationOpts } from './models';
+import { Iden3Metadata } from './protocol/metadata';
+import { Attachment } from './protocol/directive';
 
 /**
  *  Protocol message type
@@ -43,9 +45,10 @@ export type BasicMessage = {
   typ?: MediaType;
   type: ProtocolMessage;
   thid?: string;
-  body?: unknown;
-  from?: string;
+  body?: unknown | { metadata?: Iden3Metadata };
+  from: string;
   to?: string;
+  attachments?: Attachment[];
 };
 
 /**

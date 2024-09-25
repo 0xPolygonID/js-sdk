@@ -1,6 +1,7 @@
 import { ICredentialStorage } from './credentials';
 import { IIdentityStorage } from './identity';
 import { IMerkleTreeStorage } from './merkletree';
+import { IIden3MessageStorage } from './message';
 import { IStateStorage } from './state';
 
 /**
@@ -14,4 +15,5 @@ export interface IDataStorage {
   identity: IIdentityStorage;
   mt: IMerkleTreeStorage;
   states: IStateStorage;
+  message?: IIden3MessageStorage;
 }

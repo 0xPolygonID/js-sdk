@@ -6,6 +6,8 @@ import { PaymentHandlerOptions, PaymentRequestMessageHandlerOptions } from './pa
 import { MediaType } from '../constants';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
+import { IIden3MessageStorage } from '../../storage';
+
 /**
  * iden3  Protocol message handler interface
  */
@@ -43,6 +45,42 @@ export abstract class AbstractMessageHandler implements IProtocolMessageHandler 
   ): Promise<BasicMessage | null> {
     if (this.nextMessageHandler) return this.nextMessageHandler.handle(message, context);
     return Promise.reject('Message handler not provided or message not supported');
+  }
+
+  public async processMessage(
+    message: BasicMessage,
+    opts?: { messageStorage?: IIden3MessageStorage }
+  ): Promise<void> {
+    if (!message.attachments) {
+      return;
+    }
+    const messageStorage = opts?.messageStorage;
+    const threadId = message.thid;
+
+    if (!threadId) {
+      console.warn('message should contain thid to process attachments');
+      return;
+    }
+
+    if (!messageStorage) {
+      console.warn('Metadata storage not provided but required for processing message attachments');
+      return;
+    }
+
+    const alreadySavedMessage = await messageStorage.get(message.id);
+    if (alreadySavedMessage) {
+      console.warn('Message already saved');
+      return;
+    }
+
+    await messageStorage.save(message.id, {
+      id: message.id,
+      thid: threadId,
+      createdAt: new Date().toISOString(),
+      type: message.type,
+      status: 'pending',
+      jsonString: JSON.stringify(message)
+    });
   }
 }
 
