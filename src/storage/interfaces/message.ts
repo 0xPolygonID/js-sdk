@@ -8,12 +8,12 @@ import { IDataSource } from './data-source';
 export interface IIden3MessageStorage extends IDataSource<MessageModel> {
   /**
    * Retrieves messages by thread ID.
-   * @param thid - The thread ID.
+   * @param corelationThreadId - The thread ID.
    * @param status - Optional. The status of the messages to retrieve.
    * @returns A promise that resolves to an array of MessageModel objects.
    */
-  getMessageByThreadId(
-    thid: string,
+  getMessagesByThreadId(
+    corelationThreadId: string,
     status?: 'pending' | 'processed' | 'failed'
   ): Promise<MessageModel[]>;
 
@@ -27,4 +27,6 @@ export interface IIden3MessageStorage extends IDataSource<MessageModel> {
     correlationId: string,
     status?: 'pending' | 'processed' | 'failed'
   ): Promise<MessageModel[]>;
+
+  updateStatusByThId(thid: string, status: 'pending' | 'processed' | 'failed'): Promise<void>;
 }

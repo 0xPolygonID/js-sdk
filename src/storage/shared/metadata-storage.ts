@@ -9,7 +9,7 @@ export class Iden3MessageStorage implements IIden3MessageStorage {
   static readonly storageKey = 'messages';
 
   /**
-   * Creates an instance of MetadataStorage.
+   * Creates an instance of MessageStorage.
    * @param {IDataSource<Metadata>} _dataSource - The data source to store metadata.
    */
   constructor(private readonly _dataSource: IDataSource<MessageModel>) {}
@@ -18,7 +18,7 @@ export class Iden3MessageStorage implements IIden3MessageStorage {
    * Retrieves all unprocessed metadata.
    * @returns {Promise<Metadata[]>} A promise that resolves to an array of unprocessed metadata.
    */
-  async getMessageByThreadId(thid: string, status = 'pending'): Promise<MessageModel[]> {
+  async getMessagesByThreadId(thid: string, status = 'pending'): Promise<MessageModel[]> {
     const data = await this._dataSource.load();
     return data.filter((metadata) => metadata.status === status && metadata.thid === thid);
   }
@@ -55,6 +55,18 @@ export class Iden3MessageStorage implements IIden3MessageStorage {
    */
   save(key: string, value: MessageModel): Promise<void> {
     return this._dataSource.save(key, value, Iden3MessageStorage.keyName);
+  }
+
+  async updateStatusByThId(
+    thId: string,
+    status: 'pending' | 'processed' | 'failed'
+  ): Promise<void> {
+    const data = await this.load();
+    const metadata = data.filter((metadata) => metadata.thid === thId);
+    metadata.forEach((m) => {
+      m.status = status;
+    });
+    await Promise.all(metadata.map((m) => this.save(m.id, m)));
   }
 
   /**

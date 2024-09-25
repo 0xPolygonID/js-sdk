@@ -23,7 +23,9 @@ import {
   IIden3MessageStorage,
   CredentialProposalHandler,
   ICredentialProposalHandler,
-  MessageModel
+  MessageModel,
+  Proposal,
+  Iden3DirectiveType
 } from '../../src';
 import { DID } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
@@ -83,32 +85,11 @@ describe('directives', () => {
 
     proposalRequestHandler = new CredentialProposalHandler(packageMgr, idWallet, {
       agentUrl: 'http://localhost:8001/api/v1/agent',
-      proposalResolverFn: async (context: string, type: string) => {
-        if (
-          context ===
-            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld' &&
-          type === 'KYCAgeCredential'
-        ) {
-          return {
-            credentials: [
-              {
-                type,
-                context
-              }
-            ],
-            type: 'WebVerificationForm',
-            url: 'http://issuer-agent.com/verify?anyUniqueIdentifierOfSession=55',
-            description:
-              'you can pass the verification on our KYC provider by following the next link'
-          };
-        }
-
-        throw new Error(`not supported credential, type: ${type}, context: ${context}`);
-      },
+      proposalResolverFn: () => Promise.resolve({} as Proposal),
       packerParams: {
         mediaType: MediaType.PlainMessage
       },
-      metadataStorage: messageStorage
+      messageStorage: messageStorage
     });
 
     const { did: didUser } = await createIdentity(idWallet, {
@@ -120,7 +101,7 @@ describe('directives', () => {
     issuerDID = didIssuer;
   });
 
-  it.only('request-response flow', async () => {
+  it('request-response flow', async () => {
     // verifier sends auth request to user, user has no credential yet, but auth request contains directive
     const id = uuid.v4();
     const authReq: AuthorizationRequestMessage = {
@@ -160,9 +141,9 @@ describe('directives', () => {
             context: 'https://directive.iden3.io/v1/context.json',
             directives: [
               {
-                type: 'TransparentPaymentDirective',
+                type: Iden3DirectiveType.TransparentPaymentDirective,
                 purpose: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
-                credential: [
+                credentials: [
                   {
                     context:
                       'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
@@ -179,6 +160,8 @@ describe('directives', () => {
       ]
     };
 
+    console.log(JSON.stringify(authReq, null, 2));
+
     const msgBytes = await packageMgr.packMessage(authReq.typ as MediaType, authReq, {});
     await expect(authHandler.handleAuthorizationRequest(userDID, msgBytes)).to.rejectedWith(
       'no credential satisfied query'
@@ -186,17 +169,19 @@ describe('directives', () => {
     expect(authReq.thid).not.to.be.undefined;
     const metadata = await messageStorage.get(authReq.thid!);
     console.log('metadata', metadata);
-    expect(await messageStorage.getMessageByThreadId(authReq.thid!, 'pending')).not.to.be.undefined;
+    expect(await messageStorage.getMessagesByThreadId(authReq.thid!, 'pending')).not.to.be
+      .undefined;
 
     // user wants to issue credential
 
     // user sends proposal request to issuer
-    const proposalReq = await proposalRequestHandler.createProposalRequestPacked({
-      thid: authReq.thid!,
-      sender: userDID,
-      receiver: issuerDID,
-      credentials: []
-    });
+    const { request: proposalReq, token } =
+      await proposalRequestHandler.createProposalRequestPacked({
+        thid: authReq.thid!,
+        sender: userDID,
+        receiver: issuerDID,
+        credentials: []
+      });
     console.log('proposalReq', proposalReq);
     expect(proposalReq).not.to.be.undefined;
     const [authRequest, proposalRequest] = (await messageStorage.load()).sort(
@@ -211,6 +196,7 @@ describe('directives', () => {
     );
     expect(proposalRequest.thid).not.to.be.eq(authRequest.thid);
     expect(proposalRequest.correlationId).to.be.eq(authReq.id);
-    expect(proposalRequest.correlationThid).to.be.eq(authReq.thid);
+    expect(proposalRequest.correlationThId).to.be.eq(authReq.thid);
+    expect(token).not.to.be.undefined;
   });
 });

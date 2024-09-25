@@ -199,9 +199,11 @@ export class AuthHandler
     message: BasicMessage,
     ctx: AuthMessageHandlerOptions
   ): Promise<BasicMessage | null> {
-    await this.processMessage(message, {
-      messageStorage: this._opts?.messageStorage
-    });
+    if (this._opts?.messageStorage) {
+      await this.processMessage(message, {
+        messageStorage: this._opts.messageStorage
+      });
+    }
 
     switch (message.type) {
       case PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE:

@@ -7,7 +7,6 @@ import { MediaType } from '../constants';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { IIden3MessageStorage } from '../../storage';
-import * as uuid from 'uuid';
 
 /**
  * iden3  Protocol message handler interface
@@ -74,8 +73,8 @@ export abstract class AbstractMessageHandler implements IProtocolMessageHandler 
       return;
     }
 
-    await messageStorage.save(threadId, {
-      id: uuid.v4(),
+    await messageStorage.save(message.id, {
+      id: message.id,
       thid: threadId,
       createdAt: new Date().toISOString(),
       type: message.type,

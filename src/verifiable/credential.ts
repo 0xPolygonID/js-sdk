@@ -53,8 +53,14 @@ export class W3CCredential {
   proof?: object | unknown[];
 
   toJSON() {
+    const cred: W3CCredential = Object.entries(this).reduce((acc: W3CCredential, [key, v]) => {
+      if (v !== undefined && v !== null) {
+        acc[key as keyof W3CCredential] = v;
+      }
+      return acc;
+    }, new W3CCredential());
     return {
-      ...this,
+      ...cred,
       proof: Array.isArray(this.proof)
         ? this.proof.map(this.proofToJSON)
         : this.proofToJSON(this.proof)

@@ -3,14 +3,8 @@ export type MessageModel = {
   createdAt: string;
   thid?: string;
   correlationId?: string;
-  correlationThid?: string;
+  correlationThId?: string;
   type: string;
   status: 'pending' | 'processed' | 'failed';
   jsonString: string;
 };
-
-// message history
-// from to
-// parent thid
-// cred offer request gets new thid
-//
