@@ -687,7 +687,11 @@ describe('contract-request', () => {
         new InMemoryDataSource<Profile>()
       ),
       mt: new InMemoryMerkleTreeStorage(40),
-      states: new EthStateStorage([issuerAmoyStateEthConfig, userStateEthConfig, issuerStateEthConfig])
+      states: new EthStateStorage([
+        issuerAmoyStateEthConfig,
+        userStateEthConfig,
+        issuerStateEthConfig
+      ])
     };
     const circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, '../proofs/testdata')
@@ -805,7 +809,7 @@ describe('contract-request', () => {
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
       thid: id,
       body: ciRequestBody,
-      from: "did:iden3:polygon:amoy:x6x5sor7zpySUbxeFoAZUYbUh68LQ4ipcvJLRYM6c"
+      from: 'did:iden3:polygon:amoy:x6x5sor7zpySUbxeFoAZUYbUh68LQ4ipcvJLRYM6c'
     };
 
     const ethSigner = new ethers.Wallet(walletKey);

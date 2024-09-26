@@ -114,8 +114,8 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
     const valueProof = this.query?.valueProof ?? new ValueProof();
 
     const treeState = this.skipClaimRevocationCheck
-    ? this.claim.signatureProof?.issuerAuthNonRevProof.treeState
-    : this.claim.nonRevProof?.treeState;
+      ? this.claim.signatureProof?.issuerAuthNonRevProof.treeState
+      : this.claim.nonRevProof?.treeState;
 
     const s: Partial<AtomicQuerySigV2OnChainCircuitInputs> = {
       requestID: this.requestID.toString(),
@@ -124,15 +124,9 @@ export class AtomicQuerySigV2OnChainInputs extends BaseConfig {
       claimSubjectProfileNonce: this.claimSubjectProfileNonce?.toString(),
       issuerID: this.claim.issuerID?.bigInt().toString(),
       issuerClaim: this.claim.claim?.marshalJson(),
-      issuerClaimNonRevClaimsTreeRoot: treeState?.claimsRoot
-        ?.bigInt()
-        .toString(),
-      issuerClaimNonRevRevTreeRoot: treeState?.revocationRoot
-        ?.bigInt()
-        .toString(),
-      issuerClaimNonRevRootsTreeRoot: treeState?.rootOfRoots
-        ?.bigInt()
-        .toString(),
+      issuerClaimNonRevClaimsTreeRoot: treeState?.claimsRoot?.bigInt().toString(),
+      issuerClaimNonRevRevTreeRoot: treeState?.revocationRoot?.bigInt().toString(),
+      issuerClaimNonRevRootsTreeRoot: treeState?.rootOfRoots?.bigInt().toString(),
       issuerClaimNonRevState: treeState?.state?.bigInt().toString(),
       issuerClaimNonRevMtp:
         this.claim.nonRevProof?.proof &&
