@@ -650,12 +650,12 @@ describe('contract-request', () => {
 
   // cross chain integration test
   it.skip('cross chain contract request flow - integration test', async () => {
-    const privadoTestRpcUrl = '<>';
-    const privadoMainRpcUrl = '<>';
-    const amoyRpcUrl = '<>';
-    const amoyStateContract = '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124';
-    const privadoStateContract = '0x975556428F077dB5877Ea2474D783D6C69233742';
-    const lineaSepoliaRpc = '<>';
+    const privadoTestRpcUrl = '< >';
+    const privadoMainRpcUrl = '< >';
+    const amoyRpcUrl = '< >';
+    const amoyStateContract = '< >';
+    const privadoStateContract = '< >';
+    const lineaSepoliaRpc = '< >';
     const erc20Verifier = '0xcfe3f46048cb9dAa40c90fd574F6E1deB534b9e7';
 
     const issuerAmoyStateEthConfig = {
@@ -757,7 +757,7 @@ describe('contract-request', () => {
     const proofReqs: ZeroKnowledgeProofRequest[] = [
       {
         id: 138,
-        circuitId: CircuitId.AtomicQuerySigV2,
+        circuitId: CircuitId.AtomicQuerySigV2OnChain,
         optional: false,
         query: {
           skipClaimRevocationCheck: true,
@@ -767,7 +767,7 @@ describe('contract-request', () => {
             'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
           credentialSubject: {
             birthday: {
-              $lt: 20500101
+              $ne: 20500101
             }
           }
         }
