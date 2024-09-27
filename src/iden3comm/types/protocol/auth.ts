@@ -3,7 +3,11 @@ import { BasicMessage, JsonDocumentObject } from '../packer';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 import { ProofType } from '../../../verifiable';
 import { CircuitId } from '../../../circuits';
-import { DIDDocument } from 'did-resolver';
+import {
+  DIDDocument as DidResolverDidDocument,
+  VerificationMethod as DidResolverVerificationMethod
+} from 'did-resolver';
+import { RootInfo, StateInfo } from '../../../storage';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
 export type AuthorizationResponseMessage = BasicMessage & {
@@ -74,4 +78,16 @@ export type VerifiablePresentation = {
     '@type': string | string[];
     credentialSubject: JsonDocumentObject;
   };
+};
+
+/** DIDDocument represents structure of DID Document */
+export type DIDDocument = DidResolverDidDocument & {
+  verificationMethod?: VerificationMethod[];
+};
+
+/** VerificationMethod represents structure of Verification Method */
+export type VerificationMethod = DidResolverVerificationMethod & {
+  published?: boolean;
+  info?: StateInfo;
+  global?: RootInfo;
 };

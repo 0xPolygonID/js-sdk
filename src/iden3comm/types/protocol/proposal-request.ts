@@ -1,5 +1,4 @@
-import { DIDDocument } from 'did-resolver';
-import { BasicMessage, JsonDocumentObject } from '../';
+import { BasicMessage, DIDDocument, JsonDocumentObject } from '../';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** @beta ProposalRequestMessage is struct the represents proposal-request message */

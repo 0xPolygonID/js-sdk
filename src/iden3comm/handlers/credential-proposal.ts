@@ -3,6 +3,7 @@ import {
   BasicMessage,
   CredentialOffer,
   CredentialsOfferMessage,
+  DIDDocument,
   IPackageManager,
   JsonDocumentObject,
   PackerParams
@@ -21,7 +22,6 @@ import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
-import { DIDDocument } from 'did-resolver';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
