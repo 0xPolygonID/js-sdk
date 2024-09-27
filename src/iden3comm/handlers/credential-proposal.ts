@@ -21,12 +21,13 @@ import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { DIDDocument } from 'did-resolver';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
   metadata?: { type: string; data?: JsonDocumentObject };
-  did_doc?: JsonDocumentObject;
+  did_doc?: DIDDocument;
 };
 
 /**

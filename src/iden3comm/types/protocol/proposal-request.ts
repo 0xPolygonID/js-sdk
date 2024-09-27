@@ -1,3 +1,4 @@
+import { DIDDocument } from 'did-resolver';
 import { BasicMessage, JsonDocumentObject } from '../';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
@@ -11,7 +12,7 @@ export type ProposalRequestMessage = BasicMessage & {
 export type ProposalRequestMessageBody = {
   credentials: ProposalRequestCredential[];
   metadata?: { type: string; data?: JsonDocumentObject };
-  did_doc?: JsonDocumentObject;
+  did_doc?: DIDDocument;
 };
 
 /** @beta  ProposalMessage is struct the represents proposal message */

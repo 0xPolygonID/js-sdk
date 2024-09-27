@@ -3,6 +3,7 @@ import { BasicMessage, JsonDocumentObject } from '../packer';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 import { ProofType } from '../../../verifiable';
 import { CircuitId } from '../../../circuits';
+import { DIDDocument } from 'did-resolver';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
 export type AuthorizationResponseMessage = BasicMessage & {
@@ -14,7 +15,7 @@ export type AuthorizationResponseMessage = BasicMessage & {
 
 /** AuthorizationMessageResponseBody is struct the represents authorization response data */
 export type AuthorizationMessageResponseBody = {
-  did_doc?: JsonDocumentObject;
+  did_doc?: DIDDocument;
   message?: string;
   scope: Array<ZeroKnowledgeProofResponse>;
 };
@@ -31,7 +32,7 @@ export type AuthorizationRequestMessageBody = {
   callbackUrl: string;
   reason?: string;
   message?: string;
-  did_doc?: JsonDocumentObject;
+  did_doc?: DIDDocument;
   scope: Array<ZeroKnowledgeProofRequest>;
 };
 

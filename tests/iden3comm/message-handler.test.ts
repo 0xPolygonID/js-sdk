@@ -148,7 +148,6 @@ describe('MessageHandler', () => {
         callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
         reason: 'reason',
         message: 'message',
-        did_doc: {},
         scope: [
           {
             id: 1,
