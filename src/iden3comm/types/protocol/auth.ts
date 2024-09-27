@@ -1,6 +1,8 @@
 import { ZKProof } from '@iden3/js-jwz';
 import { BasicMessage, JsonDocumentObject } from '../packer';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
+import { ProofType } from '../../../verifiable';
+import { CircuitId } from '../../../circuits';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
 export type AuthorizationResponseMessage = BasicMessage & {
@@ -36,12 +38,23 @@ export type AuthorizationRequestMessageBody = {
 /** ZeroKnowledgeProofRequest represents structure of zkp request object */
 export type ZeroKnowledgeProofRequest = {
   id: number;
-  circuitId: string;
+  circuitId: CircuitId;
   optional?: boolean;
-  query: JsonDocumentObject;
+  query: ZeroKnowledgeProofQuery;
   params?: {
     nullifierSessionId?: string | number;
   };
+};
+
+/** ZeroKnowledgeProofQuery represents structure of zkp request query object */
+export type ZeroKnowledgeProofQuery = {
+  allowedIssuers: string[];
+  context: string;
+  credentialSubject?: JsonDocumentObject;
+  proofType?: ProofType;
+  skipClaimRevocationCheck?: boolean;
+  groupId?: number;
+  type: string;
 };
 
 /** ZeroKnowledgeProofResponse represents structure of zkp response */
