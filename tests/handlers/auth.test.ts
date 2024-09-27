@@ -835,7 +835,7 @@ describe('auth', () => {
 
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 23,
-      circuitId: 'credentialAtomicQueryMTPV2',
+      circuitId: CircuitId.AtomicQueryMTPV2,
       query: {
         allowedIssuers: ['*'],
         context:
@@ -997,7 +997,7 @@ describe('auth', () => {
 
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 84239,
-      circuitId: 'credentialAtomicQuerySigV2',
+      circuitId: CircuitId.AtomicQuerySigV2,
       query: {
         allowedIssuers: ['*'],
         context:
@@ -1318,7 +1318,7 @@ describe('auth', () => {
               context:
                 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
               credentialSubject: { documentType: { $eq: 99 } },
-              proofType: 'Iden3SparseMerkleTreeProof',
+              proofType: ProofType.Iden3SparseMerkleTreeProof,
               type: 'KYCAgeCredential'
             }
           }
@@ -1779,7 +1779,7 @@ describe('auth', () => {
 
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: 'credentialAtomicQuerySigV2',
+      circuitId: CircuitId.AtomicQuerySigV2,
       query: {
         allowedIssuers: ['*'],
         context:
