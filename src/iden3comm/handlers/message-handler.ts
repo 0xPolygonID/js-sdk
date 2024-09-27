@@ -151,5 +151,5 @@ export class MessageHandler {
     }
 
     return this._params.packageManager.packMessage(MediaType.PlainMessage, response, packerParams);
-  } 
+  }
 }
