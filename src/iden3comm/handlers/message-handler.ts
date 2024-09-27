@@ -151,36 +151,5 @@ export class MessageHandler {
     }
 
     return this._params.packageManager.packMessage(MediaType.PlainMessage, response, packerParams);
-  }
-
-  protected propagateDirective(request: BasicMessage, response: BasicMessage): BasicMessage {
-    const directives = extractDirectiveFromMessage(request);
-    const attachedDirectives = (response.attachments ?? [])
-      .filter((att) => att.data.type === Iden3AttachmentType.Iden3Directives)
-      .reduce((acc: Iden3Directive[], att) => {
-        const dir = att.data.directives;
-        return [...acc, ...dir];
-      }, directives);
-
-    if (!attachedDirectives.length) {
-      return response;
-    }
-
-    const resultedAttachments = [
-      ...(response.attachments ?? []).filter(
-        (att) => att.data.type !== Iden3AttachmentType.Iden3Directives
-      ),
-      {
-        data: {
-          type: Iden3AttachmentType.Iden3Directives,
-          directives: attachedDirectives
-        }
-      }
-    ];
-
-    return {
-      ...response,
-      attachments: resultedAttachments
-    };
-  }
+  } 
 }

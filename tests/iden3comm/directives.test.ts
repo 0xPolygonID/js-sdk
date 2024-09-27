@@ -38,7 +38,7 @@ import {
 import { MediaType } from '../../src/iden3comm/constants';
 import { extractDirectiveFromMessage } from '../../src/iden3comm/utils';
 
-describe.only('directives', () => {
+describe('directives', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -93,7 +93,7 @@ describe.only('directives', () => {
     issuerDID = didIssuer;
   });
 
-  it.only('propagate directive from auth request to the proposal request message', async () => {
+  it('propagate directive from auth request to the proposal request message', async () => {
     // verifier sends auth request to user, user has no credential yet, but auth request contains directive
     const id = uuid.v4();
     const authReq: AuthorizationRequestMessage = {
