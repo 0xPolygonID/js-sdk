@@ -1,6 +1,13 @@
 import { ZKProof } from '@iden3/js-jwz';
 import { BasicMessage, JsonDocumentObject } from '../packer';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
+import { ProofType } from '../../../verifiable';
+import { CircuitId } from '../../../circuits';
+import {
+  DIDDocument as DidResolverDidDocument,
+  VerificationMethod as DidResolverVerificationMethod
+} from 'did-resolver';
+import { RootInfo, StateInfo } from '../../../storage';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
 export type AuthorizationResponseMessage = BasicMessage & {
@@ -12,7 +19,7 @@ export type AuthorizationResponseMessage = BasicMessage & {
 
 /** AuthorizationMessageResponseBody is struct the represents authorization response data */
 export type AuthorizationMessageResponseBody = {
-  did_doc?: JsonDocumentObject;
+  did_doc?: DIDDocument;
   message?: string;
   scope: Array<ZeroKnowledgeProofResponse>;
 };
@@ -29,19 +36,30 @@ export type AuthorizationRequestMessageBody = {
   callbackUrl: string;
   reason?: string;
   message?: string;
-  did_doc?: JsonDocumentObject;
+  did_doc?: DIDDocument;
   scope: Array<ZeroKnowledgeProofRequest>;
 };
 
 /** ZeroKnowledgeProofRequest represents structure of zkp request object */
 export type ZeroKnowledgeProofRequest = {
   id: number;
-  circuitId: string;
+  circuitId: CircuitId;
   optional?: boolean;
-  query: JsonDocumentObject;
+  query: ZeroKnowledgeProofQuery;
   params?: {
     nullifierSessionId?: string | number;
   };
+};
+
+/** ZeroKnowledgeProofQuery represents structure of zkp request query object */
+export type ZeroKnowledgeProofQuery = {
+  allowedIssuers: string[];
+  context: string;
+  credentialSubject?: JsonDocumentObject;
+  proofType?: ProofType;
+  skipClaimRevocationCheck?: boolean;
+  groupId?: number;
+  type: string;
 };
 
 /** ZeroKnowledgeProofResponse represents structure of zkp response */
@@ -60,4 +78,16 @@ export type VerifiablePresentation = {
     '@type': string | string[];
     credentialSubject: JsonDocumentObject;
   };
+};
+
+/** DIDDocument represents structure of DID Document */
+export type DIDDocument = DidResolverDidDocument & {
+  verificationMethod?: VerificationMethod[];
+};
+
+/** VerificationMethod represents structure of Verification Method */
+export type VerificationMethod = DidResolverVerificationMethod & {
+  published?: boolean;
+  info?: StateInfo;
+  global?: RootInfo;
 };
