@@ -1,10 +1,5 @@
 import { BasicMessage } from '../';
-import {
-  PaymentRequestDataType,
-  PaymentRequestType,
-  PaymentType,
-  SupportedCurrencies
-} from '../../../verifiable';
+import { PaymentRequestType, SupportedCurrencies } from '../../../verifiable';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** @beta PaymentRequestMessage is struct the represents payment-request message */
@@ -26,20 +21,49 @@ export type PaymentRequestInfo = {
     context: string;
   }[];
   type: PaymentRequestType;
-  data: PaymentRequestDataInfo;
+  data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1[];
   expiration?: string;
   description?: string;
 };
 
-/** @beta PaymentRequestDataInfo is struct the represents payment data info for payment-request */
-export type PaymentRequestDataInfo = {
-  type: PaymentRequestDataType;
+/** @beta Iden3PaymentRequestCryptoV1 is struct the represents payment data info for payment-request */
+export type Iden3PaymentRequestCryptoV1 = {
+  type: 'Iden3PaymentRequestCryptoV1';
   amount: string;
   id: string;
   chainId: string;
   address: string;
   currency: SupportedCurrencies;
   signature?: string;
+};
+
+export type Iden3PaymentRailsRequestV1 = {
+  type: 'Iden3PaymentRailsRequestV1';
+  recipient: string;
+  value: string;
+  expirationDate: string;
+  nonce: string;
+  metadata: string;
+  proof: EthereumEip712Signature2021 | EthereumEip712Signature2021[];
+};
+
+export type EthereumEip712Signature2021 = {
+  type: 'EthereumEip712Signature2021';
+  proofPurpose: string;
+  proofValue: string;
+  verificationMethod: string;
+  created: string;
+  eip712: {
+    types: string;
+    primaryType: string;
+    domain: {
+      name: string;
+      version: string;
+      chainId: string;
+      verifyingContract: string;
+      salt: string;
+    };
+  };
 };
 
 /** @beta  PaymentMessage is struct the represents payment message */
@@ -50,14 +74,24 @@ export type PaymentMessage = BasicMessage & {
 
 /** @beta  PaymentMessageBody is struct the represents body for payment message */
 export type PaymentMessageBody = {
-  payments: PaymentInfo[];
+  payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsResponseV1)[];
 };
 
-/** @beta PaymentInfo is struct the represents payment info for payment */
-export type PaymentInfo = {
+/** @beta Iden3PaymentCryptoV1 is struct the represents payment info for payment */
+export type Iden3PaymentCryptoV1 = {
   id: string;
-  type: PaymentType;
+  type: 'Iden3PaymentCryptoV1';
   paymentData: {
     txId: string;
+  };
+};
+
+/** @beta Iden3PaymentRailsResponseV1 is struct the represents payment info for Iden3PaymentRailsRequestV1 */
+export type Iden3PaymentRailsResponseV1 = {
+  nonce: string;
+  type: 'Iden3PaymentRailsResponseV1';
+  paymentData: {
+    txId: string;
+    chainId: string;
   };
 };

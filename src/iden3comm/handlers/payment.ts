@@ -8,9 +8,12 @@ import { proving } from '@iden3/js-jwz';
 import { byteEncoder } from '../../utils';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 import {
-  PaymentInfo,
+  Iden3PaymentCryptoV1,
+  Iden3PaymentRailsRequestV1,
+  Iden3PaymentRailsResponseV1,
+  Iden3PaymentRequestCryptoV1,
   PaymentMessage,
-  PaymentRequestDataInfo,
+  PaymentMessageBody,
   PaymentRequestInfo,
   PaymentRequestMessage
 } from '../types/protocol/payment';
@@ -52,10 +55,14 @@ export function createPaymentRequest(
  * createPayment is a function to create protocol payment message
  * @param {DID} sender - sender did
  * @param {DID} receiver - receiver did
- * @param {PaymentInfo[]} payments - payments
+ * @param {PaymentMessageBody} body - payments
  * @returns `PaymentMessage`
  */
-export function createPayment(sender: DID, receiver: DID, payments: PaymentInfo[]): PaymentMessage {
+export function createPayment(
+  sender: DID,
+  receiver: DID,
+  body: PaymentMessageBody
+): PaymentMessage {
   const uuidv4 = uuid.v4();
   const request: PaymentMessage = {
     id: uuidv4,
@@ -64,9 +71,7 @@ export function createPayment(sender: DID, receiver: DID, payments: PaymentInfo[
     to: receiver.string(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE,
-    body: {
-      payments
-    }
+    body
   };
   return request;
 }
@@ -110,13 +115,19 @@ export interface IPaymentHandler {
 
 /** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
 export type PaymentRequestMessageHandlerOptions = {
-  paymentHandler: (data: PaymentRequestDataInfo) => Promise<string>;
+  paymentHandler: (
+    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1
+  ) => Promise<string>;
+  multichainSelectedChainId?: string;
 };
 
 /** @beta PaymentHandlerOptions represents payment handler options */
 export type PaymentHandlerOptions = {
   paymentRequest: PaymentRequestMessage;
-  paymentValidationHandler: (txId: string, data: PaymentRequestDataInfo) => Promise<void>;
+  paymentValidationHandler: (
+    txId: string,
+    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1
+  ) => Promise<void>;
 };
 
 /** @beta PaymentHandlerParams represents payment handler params */
@@ -202,11 +213,52 @@ export class PaymentHandler
     const senderDID = DID.parse(paymentRequest.to);
     const receiverDID = DID.parse(paymentRequest.from);
 
-    const payments: PaymentInfo[] = [];
+    const payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsResponseV1)[] = [];
     for (let i = 0; i < paymentRequest.body.payments.length; i++) {
       const paymentReq = paymentRequest.body.payments[i];
       if (paymentReq.type !== PaymentRequestType.PaymentRequest) {
         throw new Error(`failed request. not supported '${paymentReq.type}' payment type `);
+      }
+
+      // if multichain request
+      if (Array.isArray(paymentReq.data)) {
+        if (!ctx.multichainSelectedChainId) {
+          throw new Error(`failed request. no selected chain id`);
+        }
+
+        const selectedPayment = paymentReq.data.find((p) => {
+          const proofs = Array.isArray(p.proof) ? p.proof : [p.proof];
+          const eip712Signature2021Proof = proofs.filter(
+            (p) => p.type === 'EthereumEip712Signature2021'
+          )[0];
+          if (!eip712Signature2021Proof) {
+            return false;
+          }
+          return eip712Signature2021Proof.eip712.domain.chainId === ctx.multichainSelectedChainId;
+        });
+
+        if (!selectedPayment) {
+          throw new Error(
+            `failed request. no payment in request for chain id ${ctx.multichainSelectedChainId}`
+          );
+        }
+
+        if (selectedPayment.type !== PaymentRequestDataType.Iden3PaymentRailsRequestV1) {
+          throw new Error(`failed request. not supported '${selectedPayment.type}' payment type `);
+        }
+
+        const txId = await ctx.paymentHandler(selectedPayment);
+
+        payments.push({
+          nonce: selectedPayment.nonce,
+          type: PaymentType.Iden3PaymentRailsResponseV1,
+          paymentData: {
+            txId,
+            chainId: ctx.multichainSelectedChainId
+          }
+        });
+
+        continue;
       }
 
       if (paymentReq.data.type !== PaymentRequestDataType.Iden3PaymentRequestCryptoV1) {
@@ -224,7 +276,7 @@ export class PaymentHandler
       });
     }
 
-    const paymentMessage = createPayment(senderDID, receiverDID, payments);
+    const paymentMessage = createPayment(senderDID, receiverDID, { payments });
     const response = await this.packMessage(paymentMessage, senderDID);
 
     const agentResult = await fetch(paymentRequest.body.agent, {
@@ -291,14 +343,43 @@ export class PaymentHandler
 
     for (let i = 0; i < payment.body.payments.length; i++) {
       const p = payment.body.payments[i];
-      const paymentRequestData = opts.paymentRequest.body.payments.find((r) => r.data.id === p.id);
-      if (!paymentRequestData) {
-        throw new Error(`can't find payment request for payment id ${p.id}`);
+      let data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1 | undefined;
+      switch (p.type) {
+        case PaymentType.Iden3PaymentCryptoV1: {
+          data = opts.paymentRequest.body.payments.find(
+            (r) => (r.data as Iden3PaymentRequestCryptoV1).id === p.id
+          )?.data as Iden3PaymentRequestCryptoV1;
+          if (!data) {
+            throw new Error(`can't find payment request for payment id ${p.id}`);
+          }
+          break;
+        }
+        case PaymentType.Iden3PaymentRailsResponseV1: {
+          for (let j = 0; j < opts.paymentRequest.body.payments.length; j++) {
+            const paymentReq = opts.paymentRequest.body.payments[j];
+            if (Array.isArray(paymentReq.data)) {
+              const selectedPayment = paymentReq.data.find(
+                (r) => (r as Iden3PaymentRailsRequestV1).nonce === p.nonce
+              ) as Iden3PaymentRailsRequestV1;
+              if (selectedPayment) {
+                data = selectedPayment;
+                break;
+              }
+            }
+          }
+
+          if (!data) {
+            throw new Error(`can't find payment request for payment nonce ${p.nonce}`);
+          }
+          break;
+        }
+        default:
+          throw new Error(`failed request. not supported '${p.type}' payment type `);
       }
       if (!opts.paymentValidationHandler) {
         throw new Error(`please provide payment validation handler in options`);
       }
-      await opts.paymentValidationHandler(p.paymentData.txId, paymentRequestData.data);
+      await opts.paymentValidationHandler(p.paymentData.txId, data);
     }
   }
 

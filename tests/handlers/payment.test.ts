@@ -42,7 +42,8 @@ import {
   PaymentHandler
 } from '../../src/iden3comm/handlers/payment';
 import {
-  PaymentRequestDataInfo,
+  Iden3PaymentRailsRequestV1,
+  Iden3PaymentRequestCryptoV1,
   PaymentRequestInfo
 } from '../../src/iden3comm/types/protocol/payment';
 import { Contract, ethers, JsonRpcProvider } from 'ethers';
@@ -99,25 +100,30 @@ describe('payment-request handler', () => {
 
   const paymentIntegrationHandlerFunc =
     (sessionId: string, did: string) =>
-    async (data: PaymentRequestDataInfo): Promise<string> => {
+    async (data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1): Promise<string> => {
+      const iden3PaymentRequestCryptoV1 = data as Iden3PaymentRequestCryptoV1;
       const rpcProvider = new JsonRpcProvider(RPC_URL);
       const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-      const payContract = new Contract(data.address, payContractAbi, ethSigner);
-      if (data.currency !== SupportedCurrencies.ETH) {
+      const payContract = new Contract(
+        iden3PaymentRequestCryptoV1.address,
+        payContractAbi,
+        ethSigner
+      );
+      if (iden3PaymentRequestCryptoV1.currency !== SupportedCurrencies.ETH) {
         throw new Error('integration can only pay in eth currency');
       }
-      const options = { value: ethers.parseUnits(data.amount, 'ether') };
+      const options = { value: ethers.parseUnits(iden3PaymentRequestCryptoV1.amount, 'ether') };
       const txData = await payContract.pay(sessionId, did, options);
       return txData.hash;
     };
 
   const paymentValidationIntegrationHandlerFunc = async (
     txId: string,
-    data: PaymentRequestDataInfo
+    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1
   ): Promise<void> => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const tx = await rpcProvider.getTransaction(txId);
-    if (tx?.value !== ethers.parseUnits(data.amount, 'ether')) {
+    if (tx?.value !== ethers.parseUnits((data as Iden3PaymentRequestCryptoV1).amount, 'ether')) {
       throw new Error('invalid value');
     }
   };
@@ -230,15 +236,17 @@ describe('payment-request handler', () => {
 
   it('payment handler', async () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
-    const payment = createPayment(userDID, issuerDID, [
-      {
-        id: paymentRequest.body.payments[0].data.id,
-        type: PaymentType.Iden3PaymentCryptoV1,
-        paymentData: {
-          txId: '0x312312334'
+    const payment = createPayment(userDID, issuerDID, {
+      payments: [
+        {
+          id: (paymentRequest.body.payments[0].data as Iden3PaymentRequestCryptoV1).id,
+          type: PaymentType.Iden3PaymentCryptoV1,
+          paymentData: {
+            txId: '0x312312334'
+          }
         }
-      }
-    ]);
+      ]
+    });
 
     await paymentHandler.handlePayment(payment, {
       paymentRequest,
@@ -270,15 +278,17 @@ describe('payment-request handler', () => {
 
   it.skip('payment handler (integration test)', async () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
-    const payment = createPayment(userDID, issuerDID, [
-      {
-        id: paymentRequest.body.payments[0].data.id,
-        type: PaymentType.Iden3PaymentCryptoV1,
-        paymentData: {
-          txId: '0xe9bea8e7adfe1092a8a4ca2cd75f4d21cc54b9b7a31bd8374b558d11b58a6a1a'
+    const payment = createPayment(userDID, issuerDID, {
+      payments: [
+        {
+          id: (paymentRequest.body.payments[0].data as Iden3PaymentRequestCryptoV1).id,
+          type: PaymentType.Iden3PaymentCryptoV1,
+          paymentData: {
+            txId: '0xe9bea8e7adfe1092a8a4ca2cd75f4d21cc54b9b7a31bd8374b558d11b58a6a1a'
+          }
         }
-      }
-    ]);
+      ]
+    });
 
     await paymentHandler.handlePayment(payment, {
       paymentRequest,

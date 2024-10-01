@@ -128,7 +128,8 @@ export enum PaymentRequestType {
  * @enum {string}
  */
 export enum PaymentRequestDataType {
-  Iden3PaymentRequestCryptoV1 = 'Iden3PaymentRequestCryptoV1'
+  Iden3PaymentRequestCryptoV1 = 'Iden3PaymentRequestCryptoV1',
+  Iden3PaymentRailsRequestV1 = 'Iden3PaymentRailsRequestV1'
 }
 
 /**
@@ -137,7 +138,8 @@ export enum PaymentRequestDataType {
  * @enum {string}
  */
 export enum PaymentType {
-  Iden3PaymentCryptoV1 = 'Iden3PaymentCryptoV1'
+  Iden3PaymentCryptoV1 = 'Iden3PaymentCryptoV1',
+  Iden3PaymentRailsResponseV1 = 'Iden3PaymentRailsResponseV1'
 }
 
 /**
