@@ -16,7 +16,8 @@ import {
   PaymentType,
   BasicMessage,
   createProposal,
-  SupportedCurrencies
+  SupportedCurrencies,
+  SupportedPaymentProofType
 } from '../../src';
 
 import {
@@ -50,7 +51,7 @@ import { Contract, ethers, JsonRpcProvider } from 'ethers';
 import fetchMock from '@gr2m/fetch-mock';
 import { fail } from 'assert';
 
-describe.only('payment-request handler', () => {
+describe('payment-request handler', () => {
   let packageMgr: IPackageManager;
   let paymentHandler: IPaymentHandler;
   let userDID, issuerDID: DID;
@@ -312,7 +313,7 @@ describe.only('payment-request handler', () => {
         metadata: '0x',
         proof: [
           {
-            type: 'EthereumEip712Signature2021',
+            type: SupportedPaymentProofType.EthereumEip712Signature2021,
             proofPurpose: 'assertionMethod',
             proofValue:
               '0xa05292e9874240c5c2bbdf5a8fefff870c9fc801bde823189fc013d8ce39c7e5431bf0585f01c7e191ea7bbb7110a22e018d7f3ea0ed81a5f6a3b7b828f70f2d1c',

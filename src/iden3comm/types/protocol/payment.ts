@@ -1,5 +1,10 @@
 import { BasicMessage } from '../';
-import { PaymentRequestType, SupportedCurrencies } from '../../../verifiable';
+import {
+  PaymentRequestDataType,
+  PaymentRequestType,
+  SupportedCurrencies,
+  SupportedPaymentProofType
+} from '../../../verifiable';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** @beta PaymentRequestMessage is struct the represents payment-request message */
@@ -28,7 +33,7 @@ export type PaymentRequestInfo = {
 
 /** @beta Iden3PaymentRequestCryptoV1 is struct the represents payment data info for payment-request */
 export type Iden3PaymentRequestCryptoV1 = {
-  type: 'Iden3PaymentRequestCryptoV1';
+  type: PaymentRequestDataType.Iden3PaymentRequestCryptoV1;
   amount: string;
   id: string;
   chainId: string;
@@ -38,7 +43,7 @@ export type Iden3PaymentRequestCryptoV1 = {
 };
 
 export type Iden3PaymentRailsRequestV1 = {
-  type: 'Iden3PaymentRailsRequestV1';
+  type: PaymentRequestDataType.Iden3PaymentRailsRequestV1;
   recipient: string;
   value: string;
   expirationDate: string;
@@ -48,7 +53,7 @@ export type Iden3PaymentRailsRequestV1 = {
 };
 
 export type EthereumEip712Signature2021 = {
-  type: 'EthereumEip712Signature2021';
+  type: SupportedPaymentProofType.EthereumEip712Signature2021;
   proofPurpose: string;
   proofValue: string;
   verificationMethod: string;

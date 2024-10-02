@@ -17,7 +17,12 @@ import {
   PaymentRequestInfo,
   PaymentRequestMessage
 } from '../types/protocol/payment';
-import { PaymentRequestDataType, PaymentRequestType, PaymentType } from '../../verifiable';
+import {
+  PaymentRequestDataType,
+  PaymentRequestType,
+  PaymentType,
+  SupportedPaymentProofType
+} from '../../verifiable';
 
 /**
  * @beta
@@ -232,7 +237,7 @@ export class PaymentHandler
         const selectedPayment = paymentReq.data.find((p) => {
           const proofs = Array.isArray(p.proof) ? p.proof : [p.proof];
           const eip712Signature2021Proof = proofs.filter(
-            (p) => p.type === 'EthereumEip712Signature2021'
+            (p) => p.type === SupportedPaymentProofType.EthereumEip712Signature2021
           )[0];
           if (!eip712Signature2021Proof) {
             return false;

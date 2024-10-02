@@ -143,6 +143,15 @@ export enum PaymentType {
 }
 
 /**
+ * SupportedPaymentProofType type for payment proofs
+ * @beta
+ * @enum {string}
+ */
+export enum SupportedPaymentProofType {
+  EthereumEip712Signature2021 = 'EthereumEip712Signature2021'
+}
+
+/**
  * Media types for Payment supported currencies
  * @beta
  * @enum {number}
