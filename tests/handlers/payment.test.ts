@@ -233,11 +233,15 @@ describe.only('payment-request handler', () => {
         const txData = await payContract.pay(sessionId, did, options);
         return txData.hash;
       } else if (data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1) {
-        const payContract = new Contract(data.proof[0].address, mcPayContractAbi, ethSigner);
+        const payContract = new Contract(
+          data.proof[0].eip712.domain.verifyingContract,
+          mcPayContractAbi,
+          ethSigner
+        );
         const paymentData = {
           recipient: data.recipient,
           value: data.value,
-          expirationDate: data.expirationDate,
+          expirationDate: new Date(data.expirationDate).getTime(),
           nonce: data.nonce,
           metadata: data.metadata
         };
@@ -256,10 +260,19 @@ describe.only('payment-request handler', () => {
   ): Promise<void> => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const tx = await rpcProvider.getTransaction(txId);
-    if (tx?.value !== ethers.parseUnits((data as Iden3PaymentRequestCryptoV1).amount, 'ether')) {
-      throw new Error('invalid value');
+    if (data.type === PaymentRequestDataType.Iden3PaymentRequestCryptoV1) {
+      if (tx?.value !== ethers.parseUnits(data.amount, 'ether')) {
+        throw new Error('invalid value');
+      }
+    } else if (data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1) {
+      if (tx?.value !== BigInt(data.value)) {
+        throw new Error('invalid value');
+      }
+    } else {
+      throw new Error('invalid payment request data type');
     }
   };
+
   const agent = 'https://agent-url.com';
   const paymentReqCryptoV1Info: PaymentRequestInfo = {
     credentials: [
@@ -292,31 +305,33 @@ describe.only('payment-request handler', () => {
     data: [
       {
         type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
-        recipient: '0x2C2007d72f533FfD409F0D9f515983e95bF14992',
+        recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
         value: '100',
         expirationDate: new Date(new Date().setHours(new Date().getHours() + 1)).toISOString(),
         nonce: '25',
         metadata: '0x',
-        proof: {
-          type: 'EthereumEip712Signature2021',
-          proofPurpose: 'assertionMethod',
-          proofValue:
-            '0xa05292e9874240c5c2bbdf5a8fefff870c9fc801bde823189fc013d8ce39c7e5431bf0585f01c7e191ea7bbb7110a22e018d7f3ea0ed81a5f6a3b7b828f70f2d1c',
-          verificationMethod:
-            'did:pkh:eip155:0:0x3e1cFE1b83E7C1CdB0c9558236c1f6C7B203C34e#blockchainAccountId',
-          created: new Date().toISOString(),
-          eip712: {
-            types: 'https://example.com/schemas/v1',
-            primaryType: 'Iden3PaymentRailsRequestV1',
-            domain: {
-              name: 'MCPayment',
-              version: '1.0.0',
-              chainId: '80002',
-              verifyingContract: '0xb648dCD9c6A67629387fB7226d067bC8a80dB63C',
-              salt: ''
+        proof: [
+          {
+            type: 'EthereumEip712Signature2021',
+            proofPurpose: 'assertionMethod',
+            proofValue:
+              '0xa05292e9874240c5c2bbdf5a8fefff870c9fc801bde823189fc013d8ce39c7e5431bf0585f01c7e191ea7bbb7110a22e018d7f3ea0ed81a5f6a3b7b828f70f2d1c',
+            verificationMethod:
+              'did:pkh:eip155:0:0x3e1cFE1b83E7C1CdB0c9558236c1f6C7B203C34e#blockchainAccountId',
+            created: new Date().toISOString(),
+            eip712: {
+              types: 'https://example.com/schemas/v1',
+              primaryType: 'Iden3PaymentRailsRequestV1',
+              domain: {
+                name: 'MCPayment',
+                version: '1.0.0',
+                chainId: '80002',
+                verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',
+                salt: ''
+              }
             }
           }
-        }
+        ]
       }
     ],
     expiration: '2125558127',
@@ -485,7 +500,7 @@ describe.only('payment-request handler', () => {
     });
   });
 
-  it.skip('payment-request handler (integration test)', async () => {
+  it.skip('payment-request handler (Iden3PaymentRequestCryptoV1, integration test)', async () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
       paymentReqCryptoV1Info
     ]);
@@ -507,7 +522,59 @@ describe.only('payment-request handler', () => {
     );
   });
 
-  it.skip('payment handler (integration test)', async () => {
+  it.skip('payment-request handler (Iden3PaymentRailsRequestV1, integration test)', async () => {
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+      paymentReqPaymentRailsV1Info
+    ]);
+
+    // issuer prepares and signs the payment request
+    const nonce = BigInt(26); // change nonce for each test
+    const data = paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1;
+    data.nonce = nonce.toString();
+
+    const domainData = data.proof[0].eip712.domain;
+    delete domainData.salt; // todo: should we support salt?
+    const types = {
+      Iden3PaymentRailsRequestV1: [
+        { name: 'recipient', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'expirationDate', type: 'uint256' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'metadata', type: 'bytes' }
+      ]
+    };
+    const paymentData = {
+      recipient: data.recipient,
+      value: data.value,
+      expirationDate: new Date(data.expirationDate).getTime(),
+      nonce: nonce,
+      metadata: '0x'
+    };
+
+    const rpcProvider = new JsonRpcProvider(RPC_URL);
+    const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
+    const signature = await ethSigner.signTypedData(domainData, types, paymentData);
+    data.proof[0].proofValue = signature;
+
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(paymentRequest)),
+      {}
+    );
+    const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
+      paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>')
+    });
+    if (!agentMessageBytes) {
+      fail('handlePaymentRequest is not expected null response');
+    }
+    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+
+    expect((agentMessage as BasicMessage).type).to.be.eq(
+      PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
+    );
+  });
+
+  it.skip('payment handler (Iden3PaymentRequestCryptoV1, integration test)', async () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
       paymentReqCryptoV1Info
     ]);
@@ -522,7 +589,32 @@ describe.only('payment-request handler', () => {
         }
       ]
     });
+    await paymentHandler.handlePayment(payment, {
+      paymentRequest,
+      paymentValidationHandler: paymentValidationIntegrationHandlerFunc
+    });
+  });
 
+  it.skip('payment handler (Iden3PaymentRailsRequestV1, integration test)', async () => {
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+      paymentReqPaymentRailsV1Info
+    ]);
+
+    const data = paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1;
+    data.nonce = '26';
+
+    const payment = createPayment(userDID, issuerDID, {
+      payments: [
+        {
+          nonce: '26',
+          type: PaymentType.Iden3PaymentRailsResponseV1,
+          paymentData: {
+            txId: '0xbbfab123780717247c15a96be859bf774d582769c63044d130c77b06d850e393',
+            chainId: '80002'
+          }
+        }
+      ]
+    });
     await paymentHandler.handlePayment(payment, {
       paymentRequest,
       paymentValidationHandler: paymentValidationIntegrationHandlerFunc
