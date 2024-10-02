@@ -535,7 +535,7 @@ describe('payment-request handler', () => {
 
     const domainData = data.proof[0].eip712.domain;
     delete domainData.salt; // todo: should we support salt?
-    const types = {
+    const types = { // todo: fetch this from the `type` URL in request
       Iden3PaymentRailsRequestV1: [
         { name: 'recipient', type: 'address' },
         { name: 'value', type: 'uint256' },
