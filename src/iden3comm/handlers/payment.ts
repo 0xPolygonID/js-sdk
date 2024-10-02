@@ -2,7 +2,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
 import { BasicMessage, IPackageManager, PackerParams } from '../types';
 
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getChainId } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
 import { proving } from '@iden3/js-jwz';
 import { byteEncoder } from '../../utils';
@@ -222,9 +222,12 @@ export class PaymentHandler
 
       // if multichain request
       if (Array.isArray(paymentReq.data)) {
-        if (!ctx.multichainSelectedChainId) {
-          throw new Error(`failed request. no selected chain id`);
-        }
+        const issuerId = DID.idFromDID(receiverDID);
+        const issuerChainId = getChainId(
+          DID.blockchainFromId(issuerId),
+          DID.networkIdFromId(issuerId)
+        );
+        ctx.multichainSelectedChainId = ctx.multichainSelectedChainId || issuerChainId.toString();
 
         const selectedPayment = paymentReq.data.find((p) => {
           const proofs = Array.isArray(p.proof) ? p.proof : [p.proof];

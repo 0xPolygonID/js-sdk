@@ -50,7 +50,7 @@ import { Contract, ethers, JsonRpcProvider } from 'ethers';
 import fetchMock from '@gr2m/fetch-mock';
 import { fail } from 'assert';
 
-describe('payment-request handler', () => {
+describe.only('payment-request handler', () => {
   let packageMgr: IPackageManager;
   let paymentHandler: IPaymentHandler;
   let userDID, issuerDID: DID;
@@ -98,23 +98,156 @@ describe('payment-request handler', () => {
     }
   ];
 
+  const mcPayContractAbi = [
+    {
+      inputs: [],
+      name: 'InvalidInitialization',
+      type: 'error'
+    },
+    {
+      inputs: [
+        {
+          internalType: 'string',
+          name: 'message',
+          type: 'string'
+        }
+      ],
+      name: 'InvalidSignature',
+      type: 'error'
+    },
+    {
+      inputs: [],
+      name: 'NotInitializing',
+      type: 'error'
+    },
+    {
+      inputs: [
+        {
+          internalType: 'address',
+          name: 'owner',
+          type: 'address'
+        }
+      ],
+      name: 'OwnableInvalidOwner',
+      type: 'error'
+    },
+    {
+      inputs: [
+        {
+          internalType: 'address',
+          name: 'account',
+          type: 'address'
+        }
+      ],
+      name: 'OwnableUnauthorizedAccount',
+      type: 'error'
+    },
+    {
+      inputs: [
+        {
+          internalType: 'string',
+          name: 'message',
+          type: 'string'
+        }
+      ],
+      name: 'PaymentError',
+      type: 'error'
+    },
+    {
+      anonymous: false,
+      inputs: [
+        {
+          indexed: true,
+          internalType: 'address',
+          name: 'recipient',
+          type: 'address'
+        },
+        {
+          indexed: true,
+          internalType: 'uint256',
+          name: 'nonce',
+          type: 'uint256'
+        }
+      ],
+      name: 'Payment',
+      type: 'event'
+    },
+    {
+      inputs: [
+        {
+          components: [
+            {
+              internalType: 'address',
+              name: 'recipient',
+              type: 'address'
+            },
+            {
+              internalType: 'uint256',
+              name: 'value',
+              type: 'uint256'
+            },
+            {
+              internalType: 'uint256',
+              name: 'expirationDate',
+              type: 'uint256'
+            },
+            {
+              internalType: 'uint256',
+              name: 'nonce',
+              type: 'uint256'
+            },
+            {
+              internalType: 'bytes',
+              name: 'metadata',
+              type: 'bytes'
+            }
+          ],
+          internalType: 'struct MCPayment.Iden3PaymentRailsRequestV1',
+          name: 'paymentData',
+          type: 'tuple'
+        },
+        {
+          internalType: 'bytes',
+          name: 'signature',
+          type: 'bytes'
+        }
+      ],
+      name: 'pay',
+      outputs: [],
+      stateMutability: 'payable',
+      type: 'function'
+    }
+  ];
+
   const paymentIntegrationHandlerFunc =
     (sessionId: string, did: string) =>
     async (data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1): Promise<string> => {
-      const iden3PaymentRequestCryptoV1 = data as Iden3PaymentRequestCryptoV1;
       const rpcProvider = new JsonRpcProvider(RPC_URL);
       const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-      const payContract = new Contract(
-        iden3PaymentRequestCryptoV1.address,
-        payContractAbi,
-        ethSigner
-      );
-      if (iden3PaymentRequestCryptoV1.currency !== SupportedCurrencies.ETH) {
-        throw new Error('integration can only pay in eth currency');
+      if (data.type === PaymentRequestDataType.Iden3PaymentRequestCryptoV1) {
+        const payContract = new Contract(data.address, payContractAbi, ethSigner);
+        if (data.currency !== SupportedCurrencies.ETH) {
+          throw new Error('integration can only pay in eth currency');
+        }
+        const options = { value: ethers.parseUnits(data.amount, 'ether') };
+        const txData = await payContract.pay(sessionId, did, options);
+        return txData.hash;
+      } else if (data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1) {
+        const payContract = new Contract(data.proof[0].address, mcPayContractAbi, ethSigner);
+        const paymentData = {
+          recipient: data.recipient,
+          value: data.value,
+          expirationDate: data.expirationDate,
+          nonce: data.nonce,
+          metadata: data.metadata
+        };
+
+        const options = { value: data.value };
+        const txData = await payContract.pay(paymentData, data.proof[0].proofValue, options);
+        return txData.hash;
+      } else {
+        throw new Error('invalid payment request data type');
       }
-      const options = { value: ethers.parseUnits(iden3PaymentRequestCryptoV1.amount, 'ether') };
-      const txData = await payContract.pay(sessionId, did, options);
-      return txData.hash;
     };
 
   const paymentValidationIntegrationHandlerFunc = async (
@@ -128,7 +261,7 @@ describe('payment-request handler', () => {
     }
   };
   const agent = 'https://agent-url.com';
-  const paymentReqInfo: PaymentRequestInfo = {
+  const paymentReqCryptoV1Info: PaymentRequestInfo = {
     credentials: [
       {
         type: 'AML',
@@ -145,7 +278,49 @@ describe('payment-request handler', () => {
       currency: SupportedCurrencies.ETH
     },
     expiration: '2125558127',
-    description: 'payment-request integration test'
+    description: 'Iden3PaymentRequestCryptoV1 payment-request integration test'
+  };
+
+  const paymentReqPaymentRailsV1Info: PaymentRequestInfo = {
+    credentials: [
+      {
+        type: 'AML',
+        context: 'http://test.com'
+      }
+    ],
+    type: PaymentRequestType.PaymentRequest,
+    data: [
+      {
+        type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
+        recipient: '0x2C2007d72f533FfD409F0D9f515983e95bF14992',
+        value: '100',
+        expirationDate: new Date(new Date().setHours(new Date().getHours() + 1)).toISOString(),
+        nonce: '25',
+        metadata: '0x',
+        proof: {
+          type: 'EthereumEip712Signature2021',
+          proofPurpose: 'assertionMethod',
+          proofValue:
+            '0xa05292e9874240c5c2bbdf5a8fefff870c9fc801bde823189fc013d8ce39c7e5431bf0585f01c7e191ea7bbb7110a22e018d7f3ea0ed81a5f6a3b7b828f70f2d1c',
+          verificationMethod:
+            'did:pkh:eip155:0:0x3e1cFE1b83E7C1CdB0c9558236c1f6C7B203C34e#blockchainAccountId',
+          created: new Date().toISOString(),
+          eip712: {
+            types: 'https://example.com/schemas/v1',
+            primaryType: 'Iden3PaymentRailsRequestV1',
+            domain: {
+              name: 'MCPayment',
+              version: '1.0.0',
+              chainId: '80002',
+              verifyingContract: '0xb648dCD9c6A67629387fB7226d067bC8a80dB63C',
+              salt: ''
+            }
+          }
+        }
+      }
+    ],
+    expiration: '2125558127',
+    description: 'Iden3PaymentRailsRequestV1 payment-request integration test'
   };
 
   const paymentHandlerFuncMock = async (): Promise<string> => {
@@ -199,8 +374,10 @@ describe('payment-request handler', () => {
     fetchMock.post('https://agent-url.com', JSON.stringify(agentMessageResponse));
   });
 
-  it('payment-request handler test', async () => {
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
+  it('payment-request handler test (Iden3PaymentRequestCryptoV1)', async () => {
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+      paymentReqCryptoV1Info
+    ]);
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
@@ -219,10 +396,35 @@ describe('payment-request handler', () => {
     );
   });
 
+  it('payment-request handler test (Iden3PaymentRailsRequestV1)', async () => {
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+      paymentReqPaymentRailsV1Info
+    ]);
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(paymentRequest)),
+      {}
+    );
+    const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
+      paymentHandler: paymentHandlerFuncMock,
+      multichainSelectedChainId: '80002'
+    });
+    if (!agentMessageBytes) {
+      fail('handlePaymentRequest is not expected null response');
+    }
+    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+
+    expect((agentMessage as BasicMessage).type).to.be.eq(
+      PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
+    );
+  });
+
   it('payment-request handler test with empty agent response', async () => {
     fetchMock.post('https://agent-url.com', '', { overwriteRoutes: true });
 
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+      paymentReqCryptoV1Info
+    ]);
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
@@ -234,8 +436,10 @@ describe('payment-request handler', () => {
     expect(agentMessageBytes).to.be.null;
   });
 
-  it('payment handler', async () => {
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
+  it('payment handler (Iden3PaymentRequestCryptoV1)', async () => {
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+      paymentReqCryptoV1Info
+    ]);
     const payment = createPayment(userDID, issuerDID, {
       payments: [
         {
@@ -256,8 +460,35 @@ describe('payment-request handler', () => {
     });
   });
 
+  it('payment handler (Iden3PaymentRailsRequestV1)', async () => {
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+      paymentReqPaymentRailsV1Info
+    ]);
+    const payment = createPayment(userDID, issuerDID, {
+      payments: [
+        {
+          nonce: (paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1).nonce,
+          type: PaymentType.Iden3PaymentRailsResponseV1,
+          paymentData: {
+            txId: '0x312312334',
+            chainId: '80002'
+          }
+        }
+      ]
+    });
+
+    await paymentHandler.handlePayment(payment, {
+      paymentRequest,
+      paymentValidationHandler: async () => {
+        Promise.resolve();
+      }
+    });
+  });
+
   it.skip('payment-request handler (integration test)', async () => {
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+      paymentReqCryptoV1Info
+    ]);
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
@@ -277,7 +508,9 @@ describe('payment-request handler', () => {
   });
 
   it.skip('payment handler (integration test)', async () => {
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [paymentReqInfo]);
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+      paymentReqCryptoV1Info
+    ]);
     const payment = createPayment(userDID, issuerDID, {
       payments: [
         {
