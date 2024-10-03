@@ -38,6 +38,7 @@ import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants'
 import { DID } from '@iden3/js-iden3-core';
 import {
   createPayment,
+  createPaymentRailsV1,
   createPaymentRequest,
   IPaymentHandler,
   PaymentHandler
@@ -456,17 +457,15 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
       paymentReqCryptoV1Info
     ]);
-    const payment = createPayment(userDID, issuerDID, {
-      payments: [
-        {
-          id: (paymentRequest.body.payments[0].data as Iden3PaymentRequestCryptoV1).id,
-          type: PaymentType.Iden3PaymentCryptoV1,
-          paymentData: {
-            txId: '0x312312334'
-          }
+    const payment = createPayment(userDID, issuerDID, [
+      {
+        id: (paymentRequest.body.payments[0].data as Iden3PaymentRequestCryptoV1).id,
+        type: PaymentType.Iden3PaymentCryptoV1,
+        paymentData: {
+          txId: '0x312312334'
         }
-      ]
-    });
+      }
+    ]);
 
     await paymentHandler.handlePayment(payment, {
       paymentRequest,
@@ -480,18 +479,16 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
       paymentReqPaymentRailsV1Info
     ]);
-    const payment = createPayment(userDID, issuerDID, {
-      payments: [
-        {
-          nonce: (paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1).nonce,
-          type: PaymentType.Iden3PaymentRailsResponseV1,
-          paymentData: {
-            txId: '0x312312334',
-            chainId: '80002'
-          }
+    const payment = createPayment(userDID, issuerDID, [
+      {
+        nonce: (paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1).nonce,
+        type: PaymentType.Iden3PaymentRailsResponseV1,
+        paymentData: {
+          txId: '0x312312334',
+          chainId: '80002'
         }
-      ]
-    });
+      }
+    ]);
 
     await paymentHandler.handlePayment(payment, {
       paymentRequest,
@@ -524,39 +521,40 @@ describe('payment-request handler', () => {
   });
 
   it.skip('payment-request handler (Iden3PaymentRailsRequestV1, integration test)', async () => {
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
-      paymentReqPaymentRailsV1Info
-    ]);
-
-    // issuer prepares and signs the payment request
-    const nonce = BigInt(26); // change nonce for each test
-    const data = paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1;
-    data.nonce = nonce.toString();
-
-    const domainData = data.proof[0].eip712.domain;
-    delete domainData.salt; // todo: should we support salt?
-    const types = {
-      // todo: fetch this from the `type` URL in request
-      Iden3PaymentRailsRequestV1: [
-        { name: 'recipient', type: 'address' },
-        { name: 'value', type: 'uint256' },
-        { name: 'expirationDate', type: 'uint256' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'metadata', type: 'bytes' }
-      ]
-    };
-    const paymentData = {
-      recipient: data.recipient,
-      value: data.value,
-      expirationDate: new Date(data.expirationDate).getTime(),
-      nonce: nonce,
-      metadata: '0x'
-    };
-
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const signature = await ethSigner.signTypedData(domainData, types, paymentData);
-    data.proof[0].proofValue = signature;
+    const paymentRequest = await createPaymentRailsV1(issuerDID, userDID, agent, ethSigner, {
+      payments: [
+        {
+          credentials: [
+            {
+              type: 'AML',
+              context: 'http://test.com'
+            }
+          ],
+          description: 'Iden3PaymentRailsRequestV1 payment-request integration test',
+          expiration: new Date(new Date().setHours(new Date().getHours() + 1)),
+          chains: [
+            {
+              nonce: 32n,
+              value: 100n,
+              chainId: '80002',
+              recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+              verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',
+              expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
+            },
+            {
+              nonce: 44n,
+              value: 10000n,
+              chainId: '1101',
+              recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+              verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',
+              expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
+            }
+          ]
+        }
+      ]
+    });
 
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
@@ -564,7 +562,8 @@ describe('payment-request handler', () => {
       {}
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>')
+      paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
+      multichainSelectedChainId: '80002'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -580,17 +579,15 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
       paymentReqCryptoV1Info
     ]);
-    const payment = createPayment(userDID, issuerDID, {
-      payments: [
-        {
-          id: (paymentRequest.body.payments[0].data as Iden3PaymentRequestCryptoV1).id,
-          type: PaymentType.Iden3PaymentCryptoV1,
-          paymentData: {
-            txId: '0xe9bea8e7adfe1092a8a4ca2cd75f4d21cc54b9b7a31bd8374b558d11b58a6a1a'
-          }
+    const payment = createPayment(userDID, issuerDID, [
+      {
+        id: (paymentRequest.body.payments[0].data as Iden3PaymentRequestCryptoV1).id,
+        type: PaymentType.Iden3PaymentCryptoV1,
+        paymentData: {
+          txId: '0xe9bea8e7adfe1092a8a4ca2cd75f4d21cc54b9b7a31bd8374b558d11b58a6a1a'
         }
-      ]
-    });
+      }
+    ]);
     await paymentHandler.handlePayment(payment, {
       paymentRequest,
       paymentValidationHandler: paymentValidationIntegrationHandlerFunc
@@ -603,20 +600,18 @@ describe('payment-request handler', () => {
     ]);
 
     const data = paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1;
-    data.nonce = '26';
+    data.nonce = '28';
 
-    const payment = createPayment(userDID, issuerDID, {
-      payments: [
-        {
-          nonce: '26',
-          type: PaymentType.Iden3PaymentRailsResponseV1,
-          paymentData: {
-            txId: '0xbbfab123780717247c15a96be859bf774d582769c63044d130c77b06d850e393',
-            chainId: '80002'
-          }
+    const payment = createPayment(userDID, issuerDID, [
+      {
+        nonce: data.nonce,
+        type: PaymentType.Iden3PaymentRailsResponseV1,
+        paymentData: {
+          txId: '0xea5d9f4396d403b3e88b13fba4f2e5e12347488a76f08544c6bc1efc1961de4c',
+          chainId: '80002'
         }
-      ]
-    });
+      }
+    ]);
     await paymentHandler.handlePayment(payment, {
       paymentRequest,
       paymentValidationHandler: paymentValidationIntegrationHandlerFunc
