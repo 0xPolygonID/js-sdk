@@ -99,7 +99,7 @@ export async function createPaymentRailsV1(
       const { nonce, value, chainId, recipient, verifyingContract, expirationDate } =
         opts.payments[i].chains[j];
 
-      if (recipient !== await signer.getAddress()) {
+      if (recipient !== (await signer.getAddress())) {
         throw new Error('recipient is not the signer');
       }
       const typeUrl = 'https://schema.iden3.io/core/json/Iden3PaymentRailsRequestV1.json';
