@@ -99,16 +99,10 @@ export async function createPaymentRailsV1(
       const { nonce, value, chainId, recipient, verifyingContract, expirationDate } =
         opts.payments[i].chains[j];
 
-      const types = {
-        // todo: fetch this from the `type` URL in request
-        Iden3PaymentRailsRequestV1: [
-          { name: 'recipient', type: 'address' },
-          { name: 'value', type: 'uint256' },
-          { name: 'expirationDate', type: 'uint256' },
-          { name: 'nonce', type: 'uint256' },
-          { name: 'metadata', type: 'bytes' }
-        ]
-      };
+      const typeUrl = 'https://schema.iden3.io/core/json/Iden3PaymentRailsRequestV1.json';
+      const typesFetchResult = await fetch(typeUrl);
+      const types = await typesFetchResult.json()
+      delete types.EIP712Domain;
       const paymentData = {
         recipient,
         value,
@@ -139,7 +133,7 @@ export async function createPaymentRailsV1(
             verificationMethod: `did:pkh:eip155:${chainId}:${recipient}#blockchainAccountId`,
             created: new Date().toISOString(),
             eip712: {
-              types: 'https://example.com/schemas/v1', // todo: type here
+              types: typeUrl,
               primaryType: 'Iden3PaymentRailsRequestV1',
               domain: {
                 ...domain,
