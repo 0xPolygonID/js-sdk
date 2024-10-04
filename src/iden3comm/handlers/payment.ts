@@ -8,13 +8,21 @@ import { proving } from '@iden3/js-jwz';
 import { byteEncoder } from '../../utils';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 import {
-  PaymentInfo,
+  Iden3PaymentCryptoV1,
+  Iden3PaymentRailsRequestV1,
+  Iden3PaymentRailsResponseV1,
+  Iden3PaymentRequestCryptoV1,
   PaymentMessage,
-  PaymentRequestDataInfo,
   PaymentRequestInfo,
   PaymentRequestMessage
 } from '../types/protocol/payment';
-import { PaymentRequestDataType, PaymentRequestType, PaymentType } from '../../verifiable';
+import {
+  PaymentRequestDataType,
+  PaymentRequestType,
+  PaymentType,
+  SupportedPaymentProofType
+} from '../../verifiable';
+import { Signer } from 'ethers';
 
 /**
  * @beta
@@ -49,13 +57,120 @@ export function createPaymentRequest(
 
 /**
  * @beta
+ * createPaymentRailsV1 is a function to create protocol payment message
+ * @param {DID} sender - sender did
+ * @param {DID} receiver - receiver did
+ * @param {Signer} signer - receiver did
+ * @param {string} agent - agent URL
+ * @param opts - payment options
+ * @returns {Promise<PaymentRequestMessage>}
+ */
+export async function createPaymentRailsV1(
+  sender: DID,
+  receiver: DID,
+  agent: string,
+  signer: Signer,
+  opts: {
+    payments: [
+      {
+        credentials: {
+          type: string;
+          context: string;
+        }[];
+        expiration?: Date;
+        description?: string;
+        chains: {
+          nonce: bigint;
+          value: bigint;
+          chainId: string;
+          recipient: string;
+          verifyingContract: string;
+          expirationDate?: Date;
+        }[];
+      }
+    ];
+  }
+): Promise<PaymentRequestMessage> {
+  const payments: PaymentRequestInfo[] = [];
+  for (let i = 0; i < opts.payments.length; i++) {
+    const { credentials, expiration, description } = opts.payments[i];
+    const dataArr: Iden3PaymentRailsRequestV1[] = [];
+    for (let j = 0; j < opts.payments[i].chains.length; j++) {
+      const { nonce, value, chainId, recipient, verifyingContract, expirationDate } =
+        opts.payments[i].chains[j];
+
+      if (recipient !== (await signer.getAddress())) {
+        throw new Error('recipient is not the signer');
+      }
+      const typeUrl = 'https://schema.iden3.io/core/json/Iden3PaymentRailsRequestV1.json';
+      const typesFetchResult = await fetch(typeUrl);
+      const types = await typesFetchResult.json();
+      delete types.EIP712Domain;
+      const paymentData = {
+        recipient,
+        value,
+        expirationDate: expirationDate?.getTime() ?? 0,
+        nonce,
+        metadata: '0x'
+      };
+
+      const domain = {
+        name: 'MCPayment',
+        version: '1.0.0',
+        chainId,
+        verifyingContract
+      };
+      const signature = await signer.signTypedData(domain, types, paymentData);
+      dataArr.push({
+        type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
+        recipient,
+        value: value.toString(),
+        expirationDate: expirationDate?.toISOString() ?? '',
+        nonce: nonce.toString(),
+        metadata: '0x',
+        proof: [
+          {
+            type: SupportedPaymentProofType.EthereumEip712Signature2021,
+            proofPurpose: 'assertionMethod',
+            proofValue: signature,
+            verificationMethod: `did:pkh:eip155:${chainId}:${recipient}#blockchainAccountId`,
+            created: new Date().toISOString(),
+            eip712: {
+              types: typeUrl,
+              primaryType: 'Iden3PaymentRailsRequestV1',
+              domain: {
+                ...domain,
+                salt: ''
+              }
+            }
+          }
+        ]
+      });
+    }
+    payments.push({
+      type: PaymentRequestType.PaymentRequest,
+      data: dataArr,
+      credentials,
+      expiration: expiration?.toISOString(),
+      description
+    });
+  }
+  return createPaymentRequest(sender, receiver, agent, payments);
+}
+
+/**
+ * @beta
  * createPayment is a function to create protocol payment message
  * @param {DID} sender - sender did
  * @param {DID} receiver - receiver did
- * @param {PaymentInfo[]} payments - payments
+ * @param {PaymentMessageBody} body - payments
  * @returns `PaymentMessage`
  */
-export function createPayment(sender: DID, receiver: DID, payments: PaymentInfo[]): PaymentMessage {
+export function createPayment(
+  sender: DID,
+  receiver: DID,
+  payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsResponseV1)[]
+): PaymentMessage {
   const uuidv4 = uuid.v4();
   const request: PaymentMessage = {
     id: uuidv4,
@@ -110,13 +225,19 @@ export interface IPaymentHandler {
 
 /** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
 export type PaymentRequestMessageHandlerOptions = {
-  paymentHandler: (data: PaymentRequestDataInfo) => Promise<string>;
+  paymentHandler: (
+    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1
+  ) => Promise<string>;
+  multichainSelectedChainId?: string;
 };
 
 /** @beta PaymentHandlerOptions represents payment handler options */
 export type PaymentHandlerOptions = {
   paymentRequest: PaymentRequestMessage;
-  paymentValidationHandler: (txId: string, data: PaymentRequestDataInfo) => Promise<void>;
+  paymentValidationHandler: (
+    txId: string,
+    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1
+  ) => Promise<void>;
 };
 
 /** @beta PaymentHandlerParams represents payment handler params */
@@ -202,11 +323,56 @@ export class PaymentHandler
     const senderDID = DID.parse(paymentRequest.to);
     const receiverDID = DID.parse(paymentRequest.from);
 
-    const payments: PaymentInfo[] = [];
+    const payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsResponseV1)[] = [];
     for (let i = 0; i < paymentRequest.body.payments.length; i++) {
       const paymentReq = paymentRequest.body.payments[i];
       if (paymentReq.type !== PaymentRequestType.PaymentRequest) {
         throw new Error(`failed request. not supported '${paymentReq.type}' payment type `);
+      }
+
+      if (paymentReq.expiration && new Date(paymentReq.expiration) < new Date()) {
+        throw new Error(`failed request. expired request`);
+      }
+
+      // if multichain request
+      if (Array.isArray(paymentReq.data)) {
+        if (!ctx.multichainSelectedChainId) {
+          throw new Error(`failed request. please provide multichainSelectedChainId`);
+        }
+        const selectedPayment = paymentReq.data.find((p) => {
+          const proofs = Array.isArray(p.proof) ? p.proof : [p.proof];
+          return (
+            proofs.filter(
+              (p) =>
+                p.type === SupportedPaymentProofType.EthereumEip712Signature2021 &&
+                p.eip712.domain.chainId === ctx.multichainSelectedChainId
+            )[0] &&
+            (!p.expirationDate || new Date(p.expirationDate) > new Date())
+          );
+        });
+
+        if (!selectedPayment) {
+          throw new Error(
+            `failed request. no payment in request for chain id ${ctx.multichainSelectedChainId}`
+          );
+        }
+
+        if (selectedPayment.type !== PaymentRequestDataType.Iden3PaymentRailsRequestV1) {
+          throw new Error(`failed request. not supported '${selectedPayment.type}' payment type `);
+        }
+
+        const txId = await ctx.paymentHandler(selectedPayment);
+
+        payments.push({
+          nonce: selectedPayment.nonce,
+          type: PaymentType.Iden3PaymentRailsResponseV1,
+          paymentData: {
+            txId,
+            chainId: ctx.multichainSelectedChainId
+          }
+        });
+
+        continue;
       }
 
       if (paymentReq.data.type !== PaymentRequestDataType.Iden3PaymentRequestCryptoV1) {
@@ -291,14 +457,43 @@ export class PaymentHandler
 
     for (let i = 0; i < payment.body.payments.length; i++) {
       const p = payment.body.payments[i];
-      const paymentRequestData = opts.paymentRequest.body.payments.find((r) => r.data.id === p.id);
-      if (!paymentRequestData) {
-        throw new Error(`can't find payment request for payment id ${p.id}`);
+      let data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1 | undefined;
+      switch (p.type) {
+        case PaymentType.Iden3PaymentCryptoV1: {
+          data = opts.paymentRequest.body.payments.find(
+            (r) => (r.data as Iden3PaymentRequestCryptoV1).id === p.id
+          )?.data as Iden3PaymentRequestCryptoV1;
+          if (!data) {
+            throw new Error(`can't find payment request for payment id ${p.id}`);
+          }
+          break;
+        }
+        case PaymentType.Iden3PaymentRailsResponseV1: {
+          for (let j = 0; j < opts.paymentRequest.body.payments.length; j++) {
+            const paymentReq = opts.paymentRequest.body.payments[j];
+            if (Array.isArray(paymentReq.data)) {
+              const selectedPayment = paymentReq.data.find(
+                (r) => (r as Iden3PaymentRailsRequestV1).nonce === p.nonce
+              ) as Iden3PaymentRailsRequestV1;
+              if (selectedPayment) {
+                data = selectedPayment;
+                break;
+              }
+            }
+          }
+
+          if (!data) {
+            throw new Error(`can't find payment request for payment nonce ${p.nonce}`);
+          }
+          break;
+        }
+        default:
+          throw new Error(`failed request. not supported '${p.type}' payment type `);
       }
       if (!opts.paymentValidationHandler) {
         throw new Error(`please provide payment validation handler in options`);
       }
-      await opts.paymentValidationHandler(p.paymentData.txId, paymentRequestData.data);
+      await opts.paymentValidationHandler(p.paymentData.txId, data);
     }
   }
 
