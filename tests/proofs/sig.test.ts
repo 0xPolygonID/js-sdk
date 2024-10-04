@@ -309,7 +309,7 @@ describe('sig proofs', () => {
         scope: [
           {
             id: 1,
-            circuitId: 'credentialAtomicQuerySigV2',
+            circuitId: CircuitId.AtomicQuerySigV2,
             query: {
               allowedIssuers: ['*'],
               context: 'ipfs://QmZ1zsLspwnjifxsncqDkB7EHb2pnaRnBPc5kqQcVxW5rV',
@@ -477,7 +477,7 @@ describe('sig proofs', () => {
     expect(credsForMyUserDID.length).to.equal(1);
     const vpReq = {
       id: 1,
-      circuitId: 'credentialAtomicQuerySigV2',
+      circuitId: CircuitId.AtomicQuerySigV2,
       query
     };
     const { proof, vp } = await proofService.generateProof(vpReq, userDID);
@@ -500,7 +500,7 @@ describe('sig proofs', () => {
     });
     const deliveryVPReq = {
       id: 1,
-      circuitId: 'credentialAtomicQuerySigV2',
+      circuitId: CircuitId.AtomicQuerySigV2,
       query: {
         ...deliveryCredQuery,
         credentialSubject: { 'postalProviderInformation.insured': {} }
@@ -540,7 +540,7 @@ describe('sig proofs', () => {
         reason: 'test flow',
         scope: [
           {
-            circuitId: 'credentialAtomicQueryV3-beta.1',
+            circuitId: CircuitId.AtomicQueryV3,
             id: 1711115116,
             query: {
               allowedIssuers: ['*'],
@@ -612,7 +612,7 @@ describe('sig proofs', () => {
         reason: 'test flow',
         scope: [
           {
-            circuitId: 'credentialAtomicQueryV3-beta.1',
+            circuitId: CircuitId.AtomicQueryV3,
             id: 1711115116,
             query: {
               allowedIssuers: ['*'],

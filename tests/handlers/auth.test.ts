@@ -157,7 +157,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
@@ -227,7 +226,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
@@ -386,7 +384,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: proofReqs
     };
 
@@ -550,7 +547,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: proofReqs
     };
 
@@ -792,7 +788,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: proofReqs
     };
 
@@ -835,7 +830,7 @@ describe('auth', () => {
 
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 23,
-      circuitId: 'credentialAtomicQueryMTPV2',
+      circuitId: CircuitId.AtomicQueryMTPV2,
       query: {
         allowedIssuers: ['*'],
         context:
@@ -997,7 +992,7 @@ describe('auth', () => {
 
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 84239,
-      circuitId: 'credentialAtomicQuerySigV2',
+      circuitId: CircuitId.AtomicQuerySigV2,
       query: {
         allowedIssuers: ['*'],
         context:
@@ -1318,7 +1313,7 @@ describe('auth', () => {
               context:
                 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
               credentialSubject: { documentType: { $eq: 99 } },
-              proofType: 'Iden3SparseMerkleTreeProof',
+              proofType: ProofType.Iden3SparseMerkleTreeProof,
               type: 'KYCAgeCredential'
             }
           }
@@ -1467,7 +1462,6 @@ describe('auth', () => {
         callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
         reason: 'reason',
         message: 'message',
-        did_doc: {},
         scope: [
           {
             id: 1,
@@ -1779,7 +1773,7 @@ describe('auth', () => {
 
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: 'credentialAtomicQuerySigV2',
+      circuitId: CircuitId.AtomicQuerySigV2,
       query: {
         allowedIssuers: ['*'],
         context:
@@ -2092,7 +2086,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: proofReqs
     };
 
@@ -2157,7 +2150,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 

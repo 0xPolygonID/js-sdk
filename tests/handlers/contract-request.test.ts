@@ -31,7 +31,9 @@ import {
   ContractInvokeHandlerOptions,
   ContractInvokeRequest,
   ContractInvokeRequestBody,
+  ContractInvokeResponse,
   ContractInvokeTransactionData,
+  ContractMessageHandlerOptions,
   ContractRequestHandler,
   DataPrepareHandlerFunc,
   IContractRequestHandler,
@@ -54,6 +56,7 @@ import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, JsonRpcProvider, Signer } from 'ethers';
 import { registerKeyProvidersInMemoryKMS, RPC_URL } from '../helpers';
+import { AbstractMessageHandler } from '../../src/iden3comm/handlers/message-handler';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -649,14 +652,34 @@ describe('contract-request', () => {
 
   // cross chain integration test
   it.skip('cross chain contract request flow - integration test', async () => {
-    const privadoTestRpcUrl = '<>'; // issuer RPC URL - privado test
-    const privadoTestStateContract = '0x975556428F077dB5877Ea2474D783D6C69233742';
-    const amoyVerifierRpcUrl = '<>'; // verifier RPC URL - amoy
-    const erc20Verifier = '0x74030e4c5d53ef381A889C01f0bBd3B8336F4a4a';
+    const privadoTestRpcUrl = '< >';
+    const privadoMainRpcUrl = '< >';
+    const amoyRpcUrl = '< >';
+    const amoyStateContract = '< >';
+    const privadoStateContract = '< >';
+    const lineaSepoliaRpc = '< >';
+    const erc20Verifier = '0xcfe3f46048cb9dAa40c90fd574F6E1deB534b9e7';
 
-    const issuerStateEthConfig = defaultEthConnectionConfig;
-    issuerStateEthConfig.url = privadoTestRpcUrl;
-    issuerStateEthConfig.contractAddress = privadoTestStateContract; // privado test state contract
+    const issuerAmoyStateEthConfig = {
+      ...defaultEthConnectionConfig,
+      url: amoyRpcUrl,
+      contractAddress: amoyStateContract,
+      chainId: 80002
+    };
+
+    const issuerStateEthConfig = {
+      ...defaultEthConnectionConfig,
+      url: privadoTestRpcUrl,
+      contractAddress: privadoStateContract,
+      chainId: 21001
+    };
+
+    const userStateEthConfig = {
+      ...defaultEthConnectionConfig,
+      url: privadoMainRpcUrl,
+      contractAddress: privadoStateContract,
+      chainId: 21000
+    };
 
     const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = {
@@ -666,7 +689,11 @@ describe('contract-request', () => {
         new InMemoryDataSource<Profile>()
       ),
       mt: new InMemoryMerkleTreeStorage(40),
-      states: new EthStateStorage(issuerStateEthConfig)
+      states: new EthStateStorage([
+        issuerAmoyStateEthConfig,
+        userStateEthConfig,
+        issuerStateEthConfig
+      ])
     };
     const circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, '../proofs/testdata')
@@ -704,8 +731,8 @@ describe('contract-request', () => {
 
     const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
-      blockchain: Blockchain.Privado,
-      networkId: NetworkId.Test,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Amoy,
       seed: seedPhraseIssuer,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -735,27 +762,30 @@ describe('contract-request', () => {
 
     const proofReqs: ZeroKnowledgeProofRequest[] = [
       {
-        id: 4, // 2 - mtp, 4 - sig
+        id: 138,
         circuitId: CircuitId.AtomicQuerySigV2OnChain,
         optional: false,
         query: {
+          skipClaimRevocationCheck: true,
           allowedIssuers: ['*'],
           type: claimReq.type,
           context:
             'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
           credentialSubject: {
             birthday: {
-              $lt: 20020101
+              $ne: 20500101
             }
           }
         }
       }
     ];
 
-    const conf = defaultEthConnectionConfig;
-    conf.contractAddress = erc20Verifier;
-    conf.url = amoyVerifierRpcUrl;
-    conf.chainId = 80002; // amoy chain id
+    const conf = {
+      ...defaultEthConnectionConfig,
+      contractAddress: erc20Verifier,
+      url: lineaSepoliaRpc,
+      chainId: 59141
+    };
 
     const zkpVerifier = new OnChainZKPVerifier([conf], {
       didResolverUrl: 'https://resolver-dev.privado.id'
@@ -764,7 +794,7 @@ describe('contract-request', () => {
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: erc20Verifier,
-      method_id: 'fd41d8d4',
+      method_id: 'ade09fcd',
       chain_id: conf.chainId
     };
 
@@ -781,31 +811,26 @@ describe('contract-request', () => {
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
       thid: id,
       body: ciRequestBody,
-      from: issuerDID.string()
+      from: 'did:iden3:polygon:amoy:x6x5sor7zpySUbxeFoAZUYbUh68LQ4ipcvJLRYM6c'
     };
 
     const ethSigner = new ethers.Wallet(walletKey);
 
     const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
 
-    const options: ContractInvokeHandlerOptions = {
+    const options: ContractMessageHandlerOptions = {
       ethSigner,
-      challenge
+      challenge,
+      senderDid: userDID
     };
-    const msgBytes = byteEncoder.encode(JSON.stringify(ciRequest));
-    const ciResponse = await contractRequestHandler.handleContractInvokeRequest(
-      userDID,
-      msgBytes,
+    const ciResponse = await (contractRequestHandler as unknown as AbstractMessageHandler).handle(
+      ciRequest,
       options
     );
 
     expect(ciResponse).not.be.undefined;
-    expect(
-      (
-        (ciResponse as Map<string, ZeroKnowledgeProofResponse>).values().next()
-          .value as ZeroKnowledgeProofResponse
-      ).id
-    ).to.be.equal(proofReqs[0].id);
+    console.log(ciResponse);
+    expect((ciResponse as unknown as ContractInvokeResponse).body.scope[0].txHash).not.be.undefined;
   });
 
   it.skip('contract request flow V3 sig `email-verified` Transak req - integration test', async () => {

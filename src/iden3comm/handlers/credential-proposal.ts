@@ -3,6 +3,7 @@ import {
   BasicMessage,
   CredentialOffer,
   CredentialsOfferMessage,
+  DIDDocument,
   Iden3Directive,
   Iden3DirectiveType,
   IPackageManager,
@@ -31,7 +32,7 @@ export type ProposalRequestCreationOptions = {
     type: string;
     data: JsonDocumentObject | JsonDocumentObject[];
   };
-  did_doc?: JsonDocumentObject;
+  did_doc?: DIDDocument;
   thid?: string;
 };
 

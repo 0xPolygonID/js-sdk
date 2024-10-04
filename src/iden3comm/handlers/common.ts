@@ -2,6 +2,7 @@ import { getRandomBytes } from '@iden3/js-crypto';
 import {
   JsonDocumentObject,
   JWSPackerParams,
+  ZeroKnowledgeProofQuery,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
@@ -18,11 +19,11 @@ import { Signer } from 'ethers';
  * Returns a Map where the key is the groupId and the value is an object containing the query and linkNonce.
  *
  * @param requestScope - An array of ZeroKnowledgeProofRequest objects.
- * @returns A Map<number, { query: JsonDocumentObject; linkNonce: number }> representing the grouped queries.
+ * @returns A Map<number, { query: ZeroKnowledgeProofQuery; linkNonce: number }> representing the grouped queries.
  */
 const getGroupedQueries = (
   requestScope: ZeroKnowledgeProofRequest[]
-): Map<number, { query: JsonDocumentObject; linkNonce: number }> =>
+): Map<number, { query: ZeroKnowledgeProofQuery; linkNonce: number }> =>
   requestScope.reduce((acc, proofReq) => {
     const groupId = proofReq.query.groupId as number | undefined;
     if (!groupId) {
@@ -54,7 +55,7 @@ const getGroupedQueries = (
     });
 
     return acc;
-  }, new Map<number, { query: JsonDocumentObject; linkNonce: number }>());
+  }, new Map<number, { query: ZeroKnowledgeProofQuery; linkNonce: number }>());
 
 /**
  * Processes zero knowledge proof requests.
