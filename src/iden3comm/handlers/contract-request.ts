@@ -184,6 +184,9 @@ export class ContractRequestHandler
     request: ContractInvokeRequest,
     txHashToZkpResponseMap: Map<string, ZeroKnowledgeProofResponse[]>
   ): Promise<ContractInvokeResponse> {
+    if (!request.to) {
+      throw new Error('Invalid contract invoke request. Missing to field');
+    }
     const contractInvokeResponse: ContractInvokeResponse = {
       id: request.id,
       thid: request.thid,
