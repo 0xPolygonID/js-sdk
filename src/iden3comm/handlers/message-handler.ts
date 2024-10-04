@@ -1,4 +1,4 @@
-import { BasicMessage, Iden3Directive, IPackageManager } from '../types';
+import { BasicMessage, IPackageManager } from '../types';
 import { AuthMessageHandlerOptions } from './auth';
 import { RevocationStatusMessageHandlerOptions } from './revocation-status';
 import { ContractMessageHandlerOptions } from './contract-request';
