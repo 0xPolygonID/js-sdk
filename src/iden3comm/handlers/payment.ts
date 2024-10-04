@@ -101,7 +101,7 @@ export async function createPaymentRailsV1(
 
       const typeUrl = 'https://schema.iden3.io/core/json/Iden3PaymentRailsRequestV1.json';
       const typesFetchResult = await fetch(typeUrl);
-      const types = await typesFetchResult.json()
+      const types = await typesFetchResult.json();
       delete types.EIP712Domain;
       const paymentData = {
         recipient,
