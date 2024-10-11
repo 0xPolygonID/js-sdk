@@ -365,7 +365,9 @@ export class PaymentHandler
         }
 
         if (selectedPayment.currency !== SupportedCurrencies.ETHWEI) {
-          throw new Error(`failed request. not supported '${selectedPayment.currency}' currency. Only ${SupportedCurrencies.ETHWEI} is supported`);
+          throw new Error(
+            `failed request. not supported '${selectedPayment.currency}' currency. Only ${SupportedCurrencies.ETHWEI} is supported`
+          );
         }
 
         const txId = await ctx.paymentHandler(selectedPayment);
