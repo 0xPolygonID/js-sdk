@@ -242,13 +242,13 @@ describe('payment-request handler', () => {
         );
         const paymentData = {
           recipient: data.recipient,
-          value: data.value,
+          amount: data.amount,
           expirationDate: new Date(data.expirationDate).getTime(),
           nonce: data.nonce,
           metadata: data.metadata
         };
 
-        const options = { value: data.value };
+        const options = { value: data.amount };
         const txData = await payContract.pay(paymentData, data.proof[0].proofValue, options);
         return txData.hash;
       } else {
@@ -267,7 +267,7 @@ describe('payment-request handler', () => {
         throw new Error('invalid value');
       }
     } else if (data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1) {
-      if (tx?.value !== BigInt(data.value)) {
+      if (tx?.value !== BigInt(data.amount)) {
         throw new Error('invalid value');
       }
     } else {
@@ -308,7 +308,8 @@ describe('payment-request handler', () => {
       {
         type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-        value: '100',
+        amount: '100',
+        currency: SupportedCurrencies.ETHWEI,
         expirationDate: new Date(new Date().setHours(new Date().getHours() + 1)).toISOString(),
         nonce: '25',
         metadata: '0x',
@@ -537,7 +538,8 @@ describe('payment-request handler', () => {
           chains: [
             {
               nonce: 32n,
-              value: 100n,
+              amount: 100n,
+              currency: SupportedCurrencies.ETHWEI,
               chainId: '80002',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
               verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',
@@ -545,7 +547,8 @@ describe('payment-request handler', () => {
             },
             {
               nonce: 44n,
-              value: 10000n,
+              amount: 10000n,
+              currency: SupportedCurrencies.ETHWEI,
               chainId: '1101',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
               verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',

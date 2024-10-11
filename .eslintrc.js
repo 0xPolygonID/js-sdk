@@ -10,7 +10,7 @@ module.exports = {
         ...spellcheckerRule,
         cspell: {
           ...cspellConfig,
-          ignoreWords: ['unmarshal', 'JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw', 'gdwj', 'fwor', 'multichain']
+          ignoreWords: ['unmarshal', 'JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw', 'gdwj', 'fwor', 'multichain', "ETHWEI"]
         }
       }
     ]

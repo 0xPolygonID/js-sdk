@@ -45,7 +45,8 @@ export type Iden3PaymentRequestCryptoV1 = {
 export type Iden3PaymentRailsRequestV1 = {
   type: PaymentRequestDataType.Iden3PaymentRailsRequestV1;
   recipient: string;
-  value: string;
+  amount: string;
+  currency: SupportedCurrencies;
   expirationDate: string;
   nonce: string;
   metadata: string;

@@ -20,6 +20,7 @@ import {
   PaymentRequestDataType,
   PaymentRequestType,
   PaymentType,
+  SupportedCurrencies,
   SupportedPaymentProofType
 } from '../../verifiable';
 import { Signer } from 'ethers';
@@ -81,7 +82,8 @@ export async function createPaymentRailsV1(
         description?: string;
         chains: {
           nonce: bigint;
-          value: bigint;
+          amount: bigint;
+          currency: SupportedCurrencies;
           chainId: string;
           recipient: string;
           verifyingContract: string;
@@ -96,7 +98,7 @@ export async function createPaymentRailsV1(
     const { credentials, expiration, description } = opts.payments[i];
     const dataArr: Iden3PaymentRailsRequestV1[] = [];
     for (let j = 0; j < opts.payments[i].chains.length; j++) {
-      const { nonce, value, chainId, recipient, verifyingContract, expirationDate } =
+      const { nonce, amount, currency, chainId, recipient, verifyingContract, expirationDate } =
         opts.payments[i].chains[j];
 
       if (recipient !== (await signer.getAddress())) {
@@ -108,7 +110,7 @@ export async function createPaymentRailsV1(
       delete types.EIP712Domain;
       const paymentData = {
         recipient,
-        value,
+        amount,
         expirationDate: expirationDate?.getTime() ?? 0,
         nonce,
         metadata: '0x'
@@ -124,7 +126,8 @@ export async function createPaymentRailsV1(
       dataArr.push({
         type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
         recipient,
-        value: value.toString(),
+        amount: amount.toString(),
+        currency,
         expirationDate: expirationDate?.toISOString() ?? '',
         nonce: nonce.toString(),
         metadata: '0x',
@@ -359,6 +362,10 @@ export class PaymentHandler
 
         if (selectedPayment.type !== PaymentRequestDataType.Iden3PaymentRailsRequestV1) {
           throw new Error(`failed request. not supported '${selectedPayment.type}' payment type `);
+        }
+
+        if (selectedPayment.currency !== SupportedCurrencies.ETHWEI) {
+          throw new Error(`failed request. not supported '${selectedPayment.currency}' currency `);
         }
 
         const txId = await ctx.paymentHandler(selectedPayment);

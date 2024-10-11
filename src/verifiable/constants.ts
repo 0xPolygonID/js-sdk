@@ -158,6 +158,7 @@ export enum SupportedPaymentProofType {
  */
 export enum SupportedCurrencies {
   ETH = 'ETH',
+  ETHWEI = 'ETHWEI',
   MATIC = 'MATIC'
 }
 
