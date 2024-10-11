@@ -331,10 +331,6 @@ export class PaymentHandler
         throw new Error(`failed request. not supported '${paymentReq.type}' payment type `);
       }
 
-      if (paymentReq.expiration && new Date(paymentReq.expiration) < new Date()) {
-        throw new Error(`failed request. expired request`);
-      }
-
       // if multichain request
       if (Array.isArray(paymentReq.data)) {
         if (!ctx.multichainSelectedChainId) {
@@ -384,6 +380,10 @@ export class PaymentHandler
 
       if (paymentReq.data.type !== PaymentRequestDataType.Iden3PaymentRequestCryptoV1) {
         throw new Error(`failed request. not supported '${paymentReq.data.type}' payment type `);
+      }
+
+      if (paymentReq.data.expiration && new Date(paymentReq.data.expiration) < new Date()) {
+        throw new Error(`failed request. expired request`);
       }
 
       const txId = await ctx.paymentHandler(paymentReq.data);

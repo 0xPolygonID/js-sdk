@@ -290,9 +290,9 @@ describe('payment-request handler', () => {
       id: '12432',
       chainId: '80002',
       address: '0x2C2007d72f533FfD409F0D9f515983e95bF14992',
-      currency: SupportedCurrencies.ETH
+      currency: SupportedCurrencies.ETH,
+      expiration: '2125558127',
     },
-    expiration: '2125558127',
     description: 'Iden3PaymentRequestCryptoV1 payment-request integration test'
   };
 
@@ -337,7 +337,6 @@ describe('payment-request handler', () => {
         ]
       }
     ],
-    expiration: '2125558127',
     description: 'Iden3PaymentRailsRequestV1 payment-request integration test'
   };
 

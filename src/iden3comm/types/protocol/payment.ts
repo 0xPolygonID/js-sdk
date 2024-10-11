@@ -27,7 +27,6 @@ export type PaymentRequestInfo = {
   }[];
   type: PaymentRequestType;
   data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1[];
-  expiration?: string;
   description?: string;
 };
 
@@ -40,6 +39,7 @@ export type Iden3PaymentRequestCryptoV1 = {
   address: string;
   currency: SupportedCurrencies;
   signature?: string;
+  expiration?: string;
 };
 
 export type Iden3PaymentRailsRequestV1 = {
