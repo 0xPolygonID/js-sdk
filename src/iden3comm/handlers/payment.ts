@@ -78,7 +78,6 @@ export async function createPaymentRailsV1(
           type: string;
           context: string;
         }[];
-        expiration?: Date;
         description?: string;
         chains: {
           nonce: bigint;
@@ -95,7 +94,7 @@ export async function createPaymentRailsV1(
 ): Promise<PaymentRequestMessage> {
   const payments: PaymentRequestInfo[] = [];
   for (let i = 0; i < opts.payments.length; i++) {
-    const { credentials, expiration, description } = opts.payments[i];
+    const { credentials, description } = opts.payments[i];
     const dataArr: Iden3PaymentRailsRequestV1[] = [];
     for (let j = 0; j < opts.payments[i].chains.length; j++) {
       const { nonce, amount, currency, chainId, recipient, verifyingContract, expirationDate } =
@@ -154,7 +153,6 @@ export async function createPaymentRailsV1(
       type: PaymentRequestType.PaymentRequest,
       data: dataArr,
       credentials,
-      expiration: expiration?.toISOString(),
       description
     });
   }

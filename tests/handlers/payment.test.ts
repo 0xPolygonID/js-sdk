@@ -534,7 +534,6 @@ describe('payment-request handler', () => {
             }
           ],
           description: 'Iden3PaymentRailsRequestV1 payment-request integration test',
-          expiration: new Date(new Date().setHours(new Date().getHours() + 1)),
           chains: [
             {
               nonce: 32n,
