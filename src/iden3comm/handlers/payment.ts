@@ -18,7 +18,6 @@ import {
 } from '../types/protocol/payment';
 import {
   PaymentRequestDataType,
-  PaymentRequestType,
   PaymentType,
   SupportedCurrencies,
   SupportedPaymentProofType
@@ -150,7 +149,6 @@ export async function createPaymentRailsV1(
       });
     }
     payments.push({
-      type: PaymentRequestType.PaymentRequest,
       data: dataArr,
       credentials,
       description
@@ -327,9 +325,6 @@ export class PaymentHandler
     const payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsV1)[] = [];
     for (let i = 0; i < paymentRequest.body.payments.length; i++) {
       const paymentReq = paymentRequest.body.payments[i];
-      if (paymentReq.type !== PaymentRequestType.PaymentRequest) {
-        throw new Error(`failed request. not supported '${paymentReq.type}' payment type `);
-      }
 
       // if multichain request
       if (Array.isArray(paymentReq.data)) {

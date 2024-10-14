@@ -1,7 +1,6 @@
 import { BasicMessage } from '../';
 import {
   PaymentRequestDataType,
-  PaymentRequestType,
   SupportedCurrencies,
   SupportedPaymentProofType
 } from '../../../verifiable';
@@ -25,7 +24,6 @@ export type PaymentRequestInfo = {
     type: string;
     context: string;
   }[];
-  type: PaymentRequestType;
   data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1[];
   description?: string;
 };

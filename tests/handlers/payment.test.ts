@@ -283,7 +283,6 @@ describe('payment-request handler', () => {
         context: 'http://test.com'
       }
     ],
-    type: PaymentRequestType.PaymentRequest,
     data: {
       type: PaymentRequestDataType.Iden3PaymentRequestCryptoV1,
       amount: '0.001',
@@ -303,7 +302,6 @@ describe('payment-request handler', () => {
         context: 'http://test.com'
       }
     ],
-    type: PaymentRequestType.PaymentRequest,
     data: [
       {
         type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
