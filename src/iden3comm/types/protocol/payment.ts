@@ -80,7 +80,7 @@ export type PaymentMessage = BasicMessage & {
 
 /** @beta  PaymentMessageBody is struct the represents body for payment message */
 export type PaymentMessageBody = {
-  payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsResponseV1)[];
+  payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsV1)[];
 };
 
 /** @beta Iden3PaymentCryptoV1 is struct the represents payment info for payment */
@@ -92,10 +92,10 @@ export type Iden3PaymentCryptoV1 = {
   };
 };
 
-/** @beta Iden3PaymentRailsResponseV1 is struct the represents payment info for Iden3PaymentRailsRequestV1 */
-export type Iden3PaymentRailsResponseV1 = {
+/** @beta Iden3PaymentRailsV1 is struct the represents payment info for Iden3PaymentRailsRequestV1 */
+export type Iden3PaymentRailsV1 = {
   nonce: string;
-  type: 'Iden3PaymentRailsResponseV1';
+  type: 'Iden3PaymentRailsV1';
   paymentData: {
     txId: string;
     chainId: string;

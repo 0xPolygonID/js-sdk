@@ -482,7 +482,7 @@ describe('payment-request handler', () => {
     const payment = createPayment(userDID, issuerDID, [
       {
         nonce: (paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1).nonce,
-        type: PaymentType.Iden3PaymentRailsResponseV1,
+        type: PaymentType.Iden3PaymentRailsV1,
         paymentData: {
           txId: '0x312312334',
           chainId: '80002'
@@ -606,7 +606,7 @@ describe('payment-request handler', () => {
     const payment = createPayment(userDID, issuerDID, [
       {
         nonce: data.nonce,
-        type: PaymentType.Iden3PaymentRailsResponseV1,
+        type: PaymentType.Iden3PaymentRailsV1,
         paymentData: {
           txId: '0xea5d9f4396d403b3e88b13fba4f2e5e12347488a76f08544c6bc1efc1961de4c',
           chainId: '80002'

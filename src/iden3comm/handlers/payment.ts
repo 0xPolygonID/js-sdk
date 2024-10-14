@@ -10,7 +10,7 @@ import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handl
 import {
   Iden3PaymentCryptoV1,
   Iden3PaymentRailsRequestV1,
-  Iden3PaymentRailsResponseV1,
+  Iden3PaymentRailsV1,
   Iden3PaymentRequestCryptoV1,
   PaymentMessage,
   PaymentRequestInfo,
@@ -170,7 +170,7 @@ export async function createPaymentRailsV1(
 export function createPayment(
   sender: DID,
   receiver: DID,
-  payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsResponseV1)[]
+  payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsV1)[]
 ): PaymentMessage {
   const uuidv4 = uuid.v4();
   const request: PaymentMessage = {
@@ -324,7 +324,7 @@ export class PaymentHandler
     const senderDID = DID.parse(paymentRequest.to);
     const receiverDID = DID.parse(paymentRequest.from);
 
-    const payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsResponseV1)[] = [];
+    const payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsV1)[] = [];
     for (let i = 0; i < paymentRequest.body.payments.length; i++) {
       const paymentReq = paymentRequest.body.payments[i];
       if (paymentReq.type !== PaymentRequestType.PaymentRequest) {
@@ -368,7 +368,7 @@ export class PaymentHandler
 
         payments.push({
           nonce: selectedPayment.nonce,
-          type: PaymentType.Iden3PaymentRailsResponseV1,
+          type: PaymentType.Iden3PaymentRailsV1,
           paymentData: {
             txId,
             chainId: ctx.multichainSelectedChainId
@@ -475,7 +475,7 @@ export class PaymentHandler
           }
           break;
         }
-        case PaymentType.Iden3PaymentRailsResponseV1: {
+        case PaymentType.Iden3PaymentRailsV1: {
           for (let j = 0; j < opts.paymentRequest.body.payments.length; j++) {
             const paymentReq = opts.paymentRequest.body.payments[j];
             if (Array.isArray(paymentReq.data)) {

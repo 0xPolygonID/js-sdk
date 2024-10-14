@@ -139,7 +139,7 @@ export enum PaymentRequestDataType {
  */
 export enum PaymentType {
   Iden3PaymentCryptoV1 = 'Iden3PaymentCryptoV1',
-  Iden3PaymentRailsResponseV1 = 'Iden3PaymentRailsResponseV1'
+  Iden3PaymentRailsV1 = 'Iden3PaymentRailsV1'
 }
 
 /**
