@@ -113,7 +113,6 @@ export enum RefreshServiceType {
   Iden3RefreshService2023 = 'Iden3RefreshService2023'
 }
 
-
 /**
  * PaymentRequestDataType type for payment requests
  * @beta
