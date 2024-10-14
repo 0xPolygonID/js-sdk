@@ -10,7 +10,6 @@ import {
   CircuitId,
   PlainPacker,
   PackageManager,
-  PaymentRequestType,
   PaymentRequestDataType,
   byteEncoder,
   PaymentType,
