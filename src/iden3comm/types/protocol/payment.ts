@@ -31,6 +31,7 @@ export type PaymentRequestInfo = {
 /** @beta Iden3PaymentRequestCryptoV1 is struct the represents payment data info for payment-request */
 export type Iden3PaymentRequestCryptoV1 = {
   type: PaymentRequestDataType.Iden3PaymentRequestCryptoV1;
+  '@context'?: string | (string | object)[];
   amount: string;
   id: string;
   chainId: string;
@@ -42,6 +43,7 @@ export type Iden3PaymentRequestCryptoV1 = {
 
 export type Iden3PaymentRailsRequestV1 = {
   type: PaymentRequestDataType.Iden3PaymentRailsRequestV1;
+  '@context': string | (string | object)[];
   recipient: string;
   amount: string;
   currency: SupportedCurrencies;
@@ -85,6 +87,7 @@ export type PaymentMessageBody = {
 export type Iden3PaymentCryptoV1 = {
   id: string;
   type: 'Iden3PaymentCryptoV1';
+  '@context'?: string | (string | object)[];
   paymentData: {
     txId: string;
   };
@@ -94,6 +97,7 @@ export type Iden3PaymentCryptoV1 = {
 export type Iden3PaymentRailsV1 = {
   nonce: string;
   type: 'Iden3PaymentRailsV1';
+  '@context': string | (string | object)[];
   paymentData: {
     txId: string;
     chainId: string;

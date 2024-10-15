@@ -304,6 +304,10 @@ describe('payment-request handler', () => {
     data: [
       {
         type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
+        '@context': [
+          'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsRequestV1',
+          'https://w3id.org/security/suites/eip712sig-2021/v1'
+        ],
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
         amount: '100',
         currency: SupportedCurrencies.ETHWEI,
@@ -480,6 +484,7 @@ describe('payment-request handler', () => {
       {
         nonce: (paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1).nonce,
         type: PaymentType.Iden3PaymentRailsV1,
+        '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         paymentData: {
           txId: '0x312312334',
           chainId: '80002'
@@ -604,6 +609,7 @@ describe('payment-request handler', () => {
       {
         nonce: data.nonce,
         type: PaymentType.Iden3PaymentRailsV1,
+        '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         paymentData: {
           txId: '0xea5d9f4396d403b3e88b13fba4f2e5e12347488a76f08544c6bc1efc1961de4c',
           chainId: '80002'

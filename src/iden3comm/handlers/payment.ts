@@ -123,6 +123,10 @@ export async function createPaymentRailsV1(
       const signature = await signer.signTypedData(domain, types, paymentData);
       dataArr.push({
         type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
+        '@context': [
+          'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsRequestV1',
+          'https://w3id.org/security/suites/eip712sig-2021/v1'
+        ],
         recipient,
         amount: amount.toString(),
         currency,
@@ -364,6 +368,7 @@ export class PaymentHandler
         payments.push({
           nonce: selectedPayment.nonce,
           type: PaymentType.Iden3PaymentRailsV1,
+          '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
           paymentData: {
             txId,
             chainId: ctx.multichainSelectedChainId
@@ -385,6 +390,7 @@ export class PaymentHandler
 
       payments.push({
         id: paymentReq.data.id,
+        '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         type: PaymentType.Iden3PaymentCryptoV1,
         paymentData: {
           txId
