@@ -13,6 +13,7 @@ export type ContractInvokeRequestBody = {
   reason?: string;
   transaction_data: ContractInvokeTransactionData;
   scope: Array<ZeroKnowledgeProofRequest>;
+  did_doc?: DIDDocument;
 };
 
 /** ContractInvokeResponse represents structure of contract invoke response object */
