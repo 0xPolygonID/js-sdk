@@ -1,6 +1,6 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 import { BasicMessage } from '../packer';
-import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from './auth';
+import { DIDDocument, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from './auth';
 
 /** ContractInvokeRequest represents structure of contract invoke request object */
 export type ContractInvokeRequest = BasicMessage & {
@@ -10,9 +10,10 @@ export type ContractInvokeRequest = BasicMessage & {
 
 /** ContractInvokeRequestBody represents structure of contract invoke request body object */
 export type ContractInvokeRequestBody = {
-  reason: string;
+  reason?: string;
   transaction_data: ContractInvokeTransactionData;
   scope: Array<ZeroKnowledgeProofRequest>;
+  did_doc?: DIDDocument;
 };
 
 /** ContractInvokeResponse represents structure of contract invoke response object */
@@ -25,7 +26,7 @@ export type ContractInvokeResponse = BasicMessage & {
 export type ContractInvokeResponseBody = {
   scope: Array<OnChainZeroKnowledgeProofResponse>;
   transaction_data: ContractInvokeTransactionData;
-  reason: string;
+  did_doc?: DIDDocument;
 };
 
 /** OnChainZeroKnowledgeProofResponse represents structure of onchain zero knowledge proof response */
