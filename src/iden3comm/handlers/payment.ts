@@ -409,7 +409,7 @@ export type PaymentHandlerOptions = {
   paymentRequest: PaymentRequestMessage;
   paymentValidationHandler: (
     txId: string,
-    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1
+    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1
   ) => Promise<void>;
 };
 
@@ -667,7 +667,11 @@ export class PaymentHandler
 
     for (let i = 0; i < payment.body.payments.length; i++) {
       const p = payment.body.payments[i];
-      let data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1 | undefined;
+      let data:
+        | Iden3PaymentRequestCryptoV1
+        | Iden3PaymentRailsRequestV1
+        | Iden3PaymentRailsERC20RequestV1
+        | undefined;
       switch (p.type) {
         case PaymentType.Iden3PaymentCryptoV1: {
           data = opts.paymentRequest.body.payments.find(
@@ -678,7 +682,8 @@ export class PaymentHandler
           }
           break;
         }
-        case PaymentType.Iden3PaymentRailsV1: {
+        case PaymentType.Iden3PaymentRailsV1:
+        case PaymentType.Iden3PaymentRailsERC20V1: {
           for (let j = 0; j < opts.paymentRequest.body.payments.length; j++) {
             const paymentReq = opts.paymentRequest.body.payments[j];
             if (Array.isArray(paymentReq.data)) {

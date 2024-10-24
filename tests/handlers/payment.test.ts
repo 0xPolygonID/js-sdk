@@ -620,14 +620,14 @@ describe('payment-request handler', () => {
     });
   });
 
-  it('payment handler (Iden3PaymentRailsERC20RequestV1)', async () => {
+  it('payment handler (Iden3PaymentRailsERC20V1)', async () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
-      paymentReqPaymentRailsV1Info
+      paymentReqPaymentRailsERC20V1Info
     ]);
     const payment = createPayment(userDID, issuerDID, [
       {
         nonce: (paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1).nonce,
-        type: PaymentType.Iden3PaymentRailsV1,
+        type: PaymentType.Iden3PaymentRailsERC20V1,
         '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         paymentData: {
           txId: '0x312312334',
@@ -857,7 +857,7 @@ describe('payment-request handler', () => {
     });
   });
 
-  it.skip('payment handler (Iden3PaymentRailsERC20RequestV1, integration test)', async () => {
+  it.skip('payment handler (Iden3PaymentRailsERC20V1, integration test)', async () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
       paymentReqPaymentRailsERC20V1Info
     ]);
@@ -868,7 +868,7 @@ describe('payment-request handler', () => {
     const payment = createPayment(userDID, issuerDID, [
       {
         nonce: data.nonce,
-        type: PaymentType.Iden3PaymentRailsV1,
+        type: PaymentType.Iden3PaymentRailsERC20V1,
         '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         paymentData: {
           txId: '0x72de0354aee61a9083424a4b852ec80db4f236e31b63345dc3efefc3b197ecca',
