@@ -24,7 +24,9 @@ export type PaymentRequestInfo = {
     type: string;
     context: string;
   }[];
-  data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1[];
+  data:
+    | Iden3PaymentRequestCryptoV1
+    | (Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1)[];
   description?: string;
 };
 
@@ -51,6 +53,11 @@ export type Iden3PaymentRailsRequestV1 = {
   nonce: string;
   metadata: string;
   proof: EthereumEip712Signature2021 | EthereumEip712Signature2021[];
+};
+
+export type Iden3PaymentRailsERC20RequestV1 = Omit<Required<Iden3PaymentRailsRequestV1>, 'type'> & {
+  tokenAddress: string;
+  type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
 };
 
 export type EthereumEip712Signature2021 = {
@@ -80,7 +87,7 @@ export type PaymentMessage = BasicMessage & {
 
 /** @beta  PaymentMessageBody is struct the represents body for payment message */
 export type PaymentMessageBody = {
-  payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsV1)[];
+  payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsV1 | Iden3PaymentRailsERC20V1)[];
 };
 
 /** @beta Iden3PaymentCryptoV1 is struct the represents payment info for payment */
@@ -97,6 +104,17 @@ export type Iden3PaymentCryptoV1 = {
 export type Iden3PaymentRailsV1 = {
   nonce: string;
   type: 'Iden3PaymentRailsV1';
+  '@context': string | (string | object)[];
+  paymentData: {
+    txId: string;
+    chainId: string;
+  };
+};
+
+/** @beta Iden3PaymentRailsERC20V1 is struct the represents payment info for Iden3PaymentRailsERC20RequestV1 */
+export type Iden3PaymentRailsERC20V1 = {
+  nonce: string;
+  type: 'Iden3PaymentRailsERC20V1';
   '@context': string | (string | object)[];
   paymentData: {
     txId: string;

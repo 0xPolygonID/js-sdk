@@ -120,7 +120,8 @@ export enum RefreshServiceType {
  */
 export enum PaymentRequestDataType {
   Iden3PaymentRequestCryptoV1 = 'Iden3PaymentRequestCryptoV1',
-  Iden3PaymentRailsRequestV1 = 'Iden3PaymentRailsRequestV1'
+  Iden3PaymentRailsRequestV1 = 'Iden3PaymentRailsRequestV1',
+  Iden3PaymentRailsERC20RequestV1 = 'Iden3PaymentRailsERC20RequestV1'
 }
 
 /**
@@ -130,7 +131,8 @@ export enum PaymentRequestDataType {
  */
 export enum PaymentType {
   Iden3PaymentCryptoV1 = 'Iden3PaymentCryptoV1',
-  Iden3PaymentRailsV1 = 'Iden3PaymentRailsV1'
+  Iden3PaymentRailsV1 = 'Iden3PaymentRailsV1',
+  Iden3PaymentRailsERC20V1 = 'Iden3PaymentRailsERC20V1'
 }
 
 /**
@@ -150,7 +152,8 @@ export enum SupportedPaymentProofType {
 export enum SupportedCurrencies {
   ETH = 'ETH',
   ETHWEI = 'ETHWEI',
-  MATIC = 'MATIC'
+  MATIC = 'MATIC',
+  ERC20Token = 'ERC20Token'
 }
 
 /**
