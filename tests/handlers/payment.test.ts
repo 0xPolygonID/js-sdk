@@ -103,257 +103,6 @@ describe('payment-request handler', () => {
 
   const mcPayContractAbi = [
     {
-      inputs: [],
-      name: 'InvalidInitialization',
-      type: 'error'
-    },
-    {
-      inputs: [
-        {
-          internalType: 'string',
-          name: 'message',
-          type: 'string'
-        }
-      ],
-      name: 'InvalidOwnerPercentage',
-      type: 'error'
-    },
-    {
-      inputs: [
-        {
-          internalType: 'string',
-          name: 'message',
-          type: 'string'
-        }
-      ],
-      name: 'InvalidSignature',
-      type: 'error'
-    },
-    {
-      inputs: [],
-      name: 'NotInitializing',
-      type: 'error'
-    },
-    {
-      inputs: [
-        {
-          internalType: 'address',
-          name: 'owner',
-          type: 'address'
-        }
-      ],
-      name: 'OwnableInvalidOwner',
-      type: 'error'
-    },
-    {
-      inputs: [
-        {
-          internalType: 'address',
-          name: 'account',
-          type: 'address'
-        }
-      ],
-      name: 'OwnableUnauthorizedAccount',
-      type: 'error'
-    },
-    {
-      inputs: [
-        {
-          internalType: 'address',
-          name: 'recipient',
-          type: 'address'
-        },
-        {
-          internalType: 'uint256',
-          name: 'nonce',
-          type: 'uint256'
-        },
-        {
-          internalType: 'string',
-          name: 'message',
-          type: 'string'
-        }
-      ],
-      name: 'PaymentError',
-      type: 'error'
-    },
-    {
-      inputs: [
-        {
-          internalType: 'string',
-          name: 'message',
-          type: 'string'
-        }
-      ],
-      name: 'WithdrawError',
-      type: 'error'
-    },
-    {
-      anonymous: false,
-      inputs: [],
-      name: 'EIP712DomainChanged',
-      type: 'event'
-    },
-    {
-      anonymous: false,
-      inputs: [
-        {
-          indexed: false,
-          internalType: 'uint64',
-          name: 'version',
-          type: 'uint64'
-        }
-      ],
-      name: 'Initialized',
-      type: 'event'
-    },
-    {
-      anonymous: false,
-      inputs: [
-        {
-          indexed: true,
-          internalType: 'address',
-          name: 'previousOwner',
-          type: 'address'
-        },
-        {
-          indexed: true,
-          internalType: 'address',
-          name: 'newOwner',
-          type: 'address'
-        }
-      ],
-      name: 'OwnershipTransferStarted',
-      type: 'event'
-    },
-    {
-      anonymous: false,
-      inputs: [
-        {
-          indexed: true,
-          internalType: 'address',
-          name: 'previousOwner',
-          type: 'address'
-        },
-        {
-          indexed: true,
-          internalType: 'address',
-          name: 'newOwner',
-          type: 'address'
-        }
-      ],
-      name: 'OwnershipTransferred',
-      type: 'event'
-    },
-    {
-      anonymous: false,
-      inputs: [
-        {
-          indexed: true,
-          internalType: 'address',
-          name: 'recipient',
-          type: 'address'
-        },
-        {
-          indexed: true,
-          internalType: 'uint256',
-          name: 'nonce',
-          type: 'uint256'
-        }
-      ],
-      name: 'Payment',
-      type: 'event'
-    },
-    {
-      inputs: [],
-      name: 'ERC_20_PAYMENT_DATA_TYPE_HASH',
-      outputs: [
-        {
-          internalType: 'bytes32',
-          name: '',
-          type: 'bytes32'
-        }
-      ],
-      stateMutability: 'view',
-      type: 'function'
-    },
-    {
-      inputs: [],
-      name: 'PAYMENT_DATA_TYPE_HASH',
-      outputs: [
-        {
-          internalType: 'bytes32',
-          name: '',
-          type: 'bytes32'
-        }
-      ],
-      stateMutability: 'view',
-      type: 'function'
-    },
-    {
-      inputs: [],
-      name: 'VERSION',
-      outputs: [
-        {
-          internalType: 'string',
-          name: '',
-          type: 'string'
-        }
-      ],
-      stateMutability: 'view',
-      type: 'function'
-    },
-    {
-      inputs: [],
-      name: 'acceptOwnership',
-      outputs: [],
-      stateMutability: 'nonpayable',
-      type: 'function'
-    },
-    {
-      inputs: [],
-      name: 'eip712Domain',
-      outputs: [
-        {
-          internalType: 'bytes1',
-          name: 'fields',
-          type: 'bytes1'
-        },
-        {
-          internalType: 'string',
-          name: 'name',
-          type: 'string'
-        },
-        {
-          internalType: 'string',
-          name: 'version',
-          type: 'string'
-        },
-        {
-          internalType: 'uint256',
-          name: 'chainId',
-          type: 'uint256'
-        },
-        {
-          internalType: 'address',
-          name: 'verifyingContract',
-          type: 'address'
-        },
-        {
-          internalType: 'bytes32',
-          name: 'salt',
-          type: 'bytes32'
-        },
-        {
-          internalType: 'uint256[]',
-          name: 'extensions',
-          type: 'uint256[]'
-        }
-      ],
-      stateMutability: 'view',
-      type: 'function'
-    },
-    {
       inputs: [
         {
           components: [
@@ -409,69 +158,6 @@ describe('payment-request handler', () => {
           internalType: 'address',
           name: 'recipient',
           type: 'address'
-        }
-      ],
-      name: 'getBalance',
-      outputs: [
-        {
-          internalType: 'uint256',
-          name: '',
-          type: 'uint256'
-        }
-      ],
-      stateMutability: 'view',
-      type: 'function'
-    },
-    {
-      inputs: [],
-      name: 'getOwnerBalance',
-      outputs: [
-        {
-          internalType: 'uint256',
-          name: '',
-          type: 'uint256'
-        }
-      ],
-      stateMutability: 'view',
-      type: 'function'
-    },
-    {
-      inputs: [],
-      name: 'getOwnerPercentage',
-      outputs: [
-        {
-          internalType: 'uint8',
-          name: '',
-          type: 'uint8'
-        }
-      ],
-      stateMutability: 'view',
-      type: 'function'
-    },
-    {
-      inputs: [
-        {
-          internalType: 'address',
-          name: 'owner',
-          type: 'address'
-        },
-        {
-          internalType: 'uint8',
-          name: 'ownerPercentage',
-          type: 'uint8'
-        }
-      ],
-      name: 'initialize',
-      outputs: [],
-      stateMutability: 'nonpayable',
-      type: 'function'
-    },
-    {
-      inputs: [
-        {
-          internalType: 'address',
-          name: 'recipient',
-          type: 'address'
         },
         {
           internalType: 'uint256',
@@ -488,33 +174,6 @@ describe('payment-request handler', () => {
         }
       ],
       stateMutability: 'view',
-      type: 'function'
-    },
-    {
-      inputs: [],
-      name: 'issuerWithdraw',
-      outputs: [],
-      stateMutability: 'nonpayable',
-      type: 'function'
-    },
-    {
-      inputs: [],
-      name: 'owner',
-      outputs: [
-        {
-          internalType: 'address',
-          name: '',
-          type: 'address'
-        }
-      ],
-      stateMutability: 'view',
-      type: 'function'
-    },
-    {
-      inputs: [],
-      name: 'ownerWithdraw',
-      outputs: [],
-      stateMutability: 'nonpayable',
       type: 'function'
     },
     {
@@ -561,146 +220,32 @@ describe('payment-request handler', () => {
       outputs: [],
       stateMutability: 'payable',
       type: 'function'
-    },
+    }
+  ];
+
+  const erc20Abi = [
     {
-      inputs: [],
-      name: 'pendingOwner',
+      inputs: [
+        {
+          internalType: 'address',
+          name: 'spender',
+          type: 'address'
+        },
+        {
+          internalType: 'uint256',
+          name: 'value',
+          type: 'uint256'
+        }
+      ],
+      name: 'approve',
       outputs: [
         {
-          internalType: 'address',
+          internalType: 'bool',
           name: '',
-          type: 'address'
+          type: 'bool'
         }
       ],
-      stateMutability: 'view',
-      type: 'function'
-    },
-    {
-      inputs: [],
-      name: 'renounceOwnership',
-      outputs: [],
       stateMutability: 'nonpayable',
-      type: 'function'
-    },
-    {
-      inputs: [
-        {
-          internalType: 'address',
-          name: 'newOwner',
-          type: 'address'
-        }
-      ],
-      name: 'transferOwnership',
-      outputs: [],
-      stateMutability: 'nonpayable',
-      type: 'function'
-    },
-    {
-      inputs: [
-        {
-          internalType: 'uint8',
-          name: 'ownerPercentage',
-          type: 'uint8'
-        }
-      ],
-      name: 'updateOwnerPercentage',
-      outputs: [],
-      stateMutability: 'nonpayable',
-      type: 'function'
-    },
-    {
-      inputs: [
-        {
-          components: [
-            {
-              internalType: 'address',
-              name: 'tokenAddress',
-              type: 'address'
-            },
-            {
-              internalType: 'address',
-              name: 'recipient',
-              type: 'address'
-            },
-            {
-              internalType: 'uint256',
-              name: 'amount',
-              type: 'uint256'
-            },
-            {
-              internalType: 'uint256',
-              name: 'expirationDate',
-              type: 'uint256'
-            },
-            {
-              internalType: 'uint256',
-              name: 'nonce',
-              type: 'uint256'
-            },
-            {
-              internalType: 'bytes',
-              name: 'metadata',
-              type: 'bytes'
-            }
-          ],
-          internalType: 'struct MCPayment.Iden3PaymentRailsERC20RequestV1',
-          name: 'paymentData',
-          type: 'tuple'
-        },
-        {
-          internalType: 'bytes',
-          name: 'signature',
-          type: 'bytes'
-        }
-      ],
-      name: 'verifyERC20Signature',
-      outputs: [],
-      stateMutability: 'view',
-      type: 'function'
-    },
-    {
-      inputs: [
-        {
-          components: [
-            {
-              internalType: 'address',
-              name: 'recipient',
-              type: 'address'
-            },
-            {
-              internalType: 'uint256',
-              name: 'amount',
-              type: 'uint256'
-            },
-            {
-              internalType: 'uint256',
-              name: 'expirationDate',
-              type: 'uint256'
-            },
-            {
-              internalType: 'uint256',
-              name: 'nonce',
-              type: 'uint256'
-            },
-            {
-              internalType: 'bytes',
-              name: 'metadata',
-              type: 'bytes'
-            }
-          ],
-          internalType: 'struct MCPayment.Iden3PaymentRailsRequestV1',
-          name: 'paymentData',
-          type: 'tuple'
-        },
-        {
-          internalType: 'bytes',
-          name: 'signature',
-          type: 'bytes'
-        }
-      ],
-      name: 'verifySignature',
-      outputs: [],
-      stateMutability: 'view',
       type: 'function'
     }
   ];
@@ -755,8 +300,7 @@ describe('payment-request handler', () => {
           metadata: data.metadata
         };
 
-        const options = { value: data.amount };
-        const txData = await payContract.pay(paymentData, data.proof[0].proofValue, options);
+        const txData = await payContract.erc20Payment(paymentData, data.proof[0].proofValue);
         return txData.hash;
       } else {
         throw new Error('invalid payment request data type');
@@ -765,7 +309,7 @@ describe('payment-request handler', () => {
 
   const paymentValidationIntegrationHandlerFunc = async (
     txId: string,
-    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1
+    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1
   ): Promise<void> => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const tx = await rpcProvider.getTransaction(txId);
@@ -776,6 +320,25 @@ describe('payment-request handler', () => {
     } else if (data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1) {
       if (tx?.value !== BigInt(data.amount)) {
         throw new Error('invalid value');
+      }
+      const payContract = new Contract(
+        data.proof[0].eip712.domain.verifyingContract,
+        mcPayContractAbi,
+        rpcProvider
+      );
+      const isSuccess = await payContract.isPaymentDone(data.recipient, data.nonce);
+      if (!isSuccess) {
+        throw new Error('payment failed');
+      }
+    } else if (data.type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1) {
+      const payContract = new Contract(
+        data.proof[0].eip712.domain.verifyingContract,
+        mcPayContractAbi,
+        rpcProvider
+      );
+      const isSuccess = await payContract.isPaymentDone(data.recipient, data.nonce);
+      if (!isSuccess) {
+        throw new Error('payment failed');
       }
     } else {
       throw new Error('invalid payment request data type');
@@ -820,7 +383,7 @@ describe('payment-request handler', () => {
         amount: '100',
         currency: SupportedCurrencies.ETHWEI,
         expirationDate: new Date(new Date().setHours(new Date().getHours() + 1)).toISOString(),
-        nonce: '25',
+        nonce: '132',
         metadata: '0x',
         proof: [
           {
@@ -838,7 +401,7 @@ describe('payment-request handler', () => {
                 name: 'MCPayment',
                 version: '1.0.0',
                 chainId: '80002',
-                verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',
+                verifyingContract: '0xccc1640e846b12578e00f2e17e361c1728cb949d',
                 salt: ''
               }
             }
@@ -863,12 +426,12 @@ describe('payment-request handler', () => {
           'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsRequestV1',
           'https://w3id.org/security/suites/eip712sig-2021/v1'
         ],
-        tokenAddress: '0x2C2007d72f533FfD409F0D9f515983e95bF14992',
+        tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-        amount: '100',
-        currency: SupportedCurrencies.ETHWEI,
+        amount: '1',
+        currency: SupportedCurrencies.ERC20Token,
         expirationDate: new Date(new Date().setHours(new Date().getHours() + 1)).toISOString(),
-        nonce: '25',
+        nonce: '32',
         metadata: '0x',
         proof: [
           {
@@ -886,7 +449,7 @@ describe('payment-request handler', () => {
                 name: 'MCPayment',
                 version: '1.0.0',
                 chainId: '80002',
-                verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',
+                verifyingContract: '0xCCc1640E846b12578E00F2E17e361c1728cb949D',
                 salt: ''
               }
             }
@@ -1142,12 +705,12 @@ describe('payment-request handler', () => {
           description: 'Iden3PaymentRailsRequestV1 payment-request integration test',
           chains: [
             {
-              nonce: 32n,
+              nonce: 132n,
               amount: 100n,
               currency: SupportedCurrencies.ETHWEI,
               chainId: '80002',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-              verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',
+              verifyingContract: '0xccc1640e846b12578e00f2e17e361c1728cb949d',
               expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
             },
             {
@@ -1156,7 +719,7 @@ describe('payment-request handler', () => {
               currency: SupportedCurrencies.ETHWEI,
               chainId: '1101',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-              verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',
+              verifyingContract: '0xccc1640e846b12578e00f2e17e361c1728cb949d',
               expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
             }
           ]
@@ -1195,26 +758,26 @@ describe('payment-request handler', () => {
               context: 'http://test.com'
             }
           ],
-          description: 'Iden3PaymentRailsRequestV1 payment-request integration test',
+          description: 'Iden3PaymentRailsERC20RequestV1 payment-request integration test',
           chains: [
             {
-              tokenAddress: '',
-              nonce: 32n,
-              amount: 100n,
+              tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
+              nonce: 39n,
+              amount: 30n,
               currency: SupportedCurrencies.ERC20Token,
               chainId: '80002',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-              verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',
+              verifyingContract: '0xCCc1640E846b12578E00F2E17e361c1728cb949D',
               expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
             },
             {
-              tokenAddress: '',
+              tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
               nonce: 44n,
-              amount: 10000n,
+              amount: 30n,
               currency: SupportedCurrencies.ERC20Token,
               chainId: '1101',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-              verifyingContract: '0x8e08d46D77a06CeF290268a5553669f165751c70',
+              verifyingContract: '0xCCc1640E846b12578E00F2E17e361c1728cb949D',
               expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
             }
           ]
@@ -1229,7 +792,16 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      multichainSelectedChainId: '80002'
+      multichainSelectedChainId: '80002',
+      erc20TokenApproveHandler: async (data: Iden3PaymentRailsERC20RequestV1) => {
+        const token = new Contract(data.tokenAddress, erc20Abi, ethSigner);
+        const txData = await token.approve(
+          data.proof[0].eip712.domain.verifyingContract,
+          data.amount
+        );
+        await txData.wait(3);
+        return txData.hash;
+      }
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -1266,7 +838,7 @@ describe('payment-request handler', () => {
     ]);
 
     const data = paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1;
-    data.nonce = '28';
+    data.nonce = '132';
 
     const payment = createPayment(userDID, issuerDID, [
       {
@@ -1275,6 +847,31 @@ describe('payment-request handler', () => {
         '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         paymentData: {
           txId: '0xea5d9f4396d403b3e88b13fba4f2e5e12347488a76f08544c6bc1efc1961de4c',
+          chainId: '80002'
+        }
+      }
+    ]);
+    await paymentHandler.handlePayment(payment, {
+      paymentRequest,
+      paymentValidationHandler: paymentValidationIntegrationHandlerFunc
+    });
+  });
+
+  it.skip('payment handler (Iden3PaymentRailsERC20RequestV1, integration test)', async () => {
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+      paymentReqPaymentRailsERC20V1Info
+    ]);
+
+    const data = paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1;
+    data.nonce = '39';
+
+    const payment = createPayment(userDID, issuerDID, [
+      {
+        nonce: data.nonce,
+        type: PaymentType.Iden3PaymentRailsV1,
+        '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
+        paymentData: {
+          txId: '0x72de0354aee61a9083424a4b852ec80db4f236e31b63345dc3efefc3b197ecca',
           chainId: '80002'
         }
       }

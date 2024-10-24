@@ -242,7 +242,7 @@ export async function createERC20PaymentRailsV1(
             'type:': 'address'
           }
         ],
-        Iden3PaymentRailsRequestV1: [
+        Iden3PaymentRailsERC20RequestV1: [
           {
             name: 'tokenAddress',
             type: 'address'
