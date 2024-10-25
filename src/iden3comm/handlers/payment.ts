@@ -159,10 +159,7 @@ export async function createPaymentRailsV1(
             eip712: {
               types: typeUrl,
               primaryType: 'Iden3PaymentRailsRequestV1',
-              domain: {
-                ...domain,
-                salt: ''
-              }
+              domain
             }
           }
         ]
@@ -314,10 +311,7 @@ export async function createERC20PaymentRailsV1(
             eip712: {
               types: typeUrl,
               primaryType: 'Iden3PaymentRailsRequestV1',
-              domain: {
-                ...domain,
-                salt: ''
-              }
+              domain
             }
           }
         ]

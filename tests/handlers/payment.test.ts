@@ -401,8 +401,7 @@ describe('payment-request handler', () => {
                 name: 'MCPayment',
                 version: '1.0.0',
                 chainId: '80002',
-                verifyingContract: '0xccc1640e846b12578e00f2e17e361c1728cb949d',
-                salt: ''
+                verifyingContract: '0xccc1640e846b12578e00f2e17e361c1728cb949d'
               }
             }
           }
@@ -449,8 +448,7 @@ describe('payment-request handler', () => {
                 name: 'MCPayment',
                 version: '1.0.0',
                 chainId: '80002',
-                verifyingContract: '0xCCc1640E846b12578E00F2E17e361c1728cb949D',
-                salt: ''
+                verifyingContract: '0xCCc1640E846b12578E00F2E17e361c1728cb949D'
               }
             }
           }
@@ -762,7 +760,7 @@ describe('payment-request handler', () => {
           chains: [
             {
               tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
-              nonce: 39n,
+              nonce: 40n,
               amount: 30n,
               currency: SupportedCurrencies.ERC20Token,
               chainId: '80002',

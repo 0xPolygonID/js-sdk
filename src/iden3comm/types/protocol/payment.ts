@@ -73,7 +73,6 @@ export type EthereumEip712Signature2021 = {
       version: string;
       chainId: string;
       verifyingContract: string;
-      salt: string;
     };
   };
 };
