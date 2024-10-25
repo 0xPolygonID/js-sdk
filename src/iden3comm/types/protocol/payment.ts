@@ -39,7 +39,6 @@ export type Iden3PaymentRequestCryptoV1 = {
   chainId: string;
   address: string;
   currency: SupportedCurrencies;
-  signature?: string;
   expiration?: string;
 };
 
