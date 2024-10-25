@@ -283,11 +283,7 @@ describe('payment-request handler', () => {
         };
 
         const options = { value: data.amount };
-        const txData = await payContract.pay(
-          paymentData,
-          data.proof[0].proofValue,
-          options
-        );
+        const txData = await payContract.pay(paymentData, data.proof[0].proofValue, options);
         return txData.hash;
       } else if (data.type == PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1) {
         const payContract = new Contract(
