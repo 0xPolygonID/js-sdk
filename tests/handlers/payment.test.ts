@@ -147,7 +147,7 @@ describe('payment-request handler', () => {
           type: 'bytes'
         }
       ],
-      name: 'erc20Payment',
+      name: 'payERC20Token',
       outputs: [],
       stateMutability: 'nonpayable',
       type: 'function'
@@ -216,7 +216,7 @@ describe('payment-request handler', () => {
           type: 'bytes'
         }
       ],
-      name: 'pay',
+      name: 'payNativeCurrency',
       outputs: [],
       stateMutability: 'payable',
       type: 'function'
@@ -283,7 +283,11 @@ describe('payment-request handler', () => {
         };
 
         const options = { value: data.amount };
-        const txData = await payContract.pay(paymentData, data.proof[0].proofValue, options);
+        const txData = await payContract.payNativeCurrency(
+          paymentData,
+          data.proof[0].proofValue,
+          options
+        );
         return txData.hash;
       } else if (data.type == PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1) {
         const payContract = new Contract(
@@ -300,7 +304,7 @@ describe('payment-request handler', () => {
           metadata: data.metadata
         };
 
-        const txData = await payContract.erc20Payment(paymentData, data.proof[0].proofValue);
+        const txData = await payContract.payERC20Token(paymentData, data.proof[0].proofValue);
         return txData.hash;
       } else {
         throw new Error('invalid payment request data type');
@@ -401,7 +405,7 @@ describe('payment-request handler', () => {
                 name: 'MCPayment',
                 version: '1.0.0',
                 chainId: '80002',
-                verifyingContract: '0xccc1640e846b12578e00f2e17e361c1728cb949d'
+                verifyingContract: '0x92Af66c4f744359a3796665c244193Cd303E6Fd8'
               }
             }
           }
@@ -448,7 +452,7 @@ describe('payment-request handler', () => {
                 name: 'MCPayment',
                 version: '1.0.0',
                 chainId: '80002',
-                verifyingContract: '0xCCc1640E846b12578E00F2E17e361c1728cb949D'
+                verifyingContract: '0x92Af66c4f744359a3796665c244193Cd303E6Fd8'
               }
             }
           }
@@ -703,21 +707,21 @@ describe('payment-request handler', () => {
           description: 'Iden3PaymentRailsRequestV1 payment-request integration test',
           chains: [
             {
-              nonce: 132n,
+              nonce: 1n,
               amount: 100n,
               currency: SupportedCurrencies.ETH_WEI,
               chainId: '80002',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-              verifyingContract: '0xccc1640e846b12578e00f2e17e361c1728cb949d',
+              verifyingContract: '0x92Af66c4f744359a3796665c244193Cd303E6Fd8',
               expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
             },
             {
-              nonce: 44n,
+              nonce: 1n,
               amount: 10000n,
               currency: SupportedCurrencies.ETH_WEI,
               chainId: '1101',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-              verifyingContract: '0xccc1640e846b12578e00f2e17e361c1728cb949d',
+              verifyingContract: '0x92Af66c4f744359a3796665c244193Cd303E6Fd8',
               expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
             }
           ]
@@ -760,22 +764,22 @@ describe('payment-request handler', () => {
           chains: [
             {
               tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
-              nonce: 40n,
+              nonce: 2n,
               amount: 30n,
               currency: SupportedCurrencies.ERC20Token,
               chainId: '80002',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-              verifyingContract: '0xCCc1640E846b12578E00F2E17e361c1728cb949D',
+              verifyingContract: '0x92Af66c4f744359a3796665c244193Cd303E6Fd8',
               expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
             },
             {
               tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
-              nonce: 44n,
+              nonce: 2n,
               amount: 30n,
               currency: SupportedCurrencies.ERC20Token,
               chainId: '1101',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-              verifyingContract: '0xCCc1640E846b12578E00F2E17e361c1728cb949D',
+              verifyingContract: '0x92Af66c4f744359a3796665c244193Cd303E6Fd8',
               expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
             }
           ]
@@ -836,7 +840,7 @@ describe('payment-request handler', () => {
     ]);
 
     const data = paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1;
-    data.nonce = '132';
+    data.nonce = '1';
 
     const payment = createPayment(userDID, issuerDID, [
       {
@@ -861,7 +865,7 @@ describe('payment-request handler', () => {
     ]);
 
     const data = paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1;
-    data.nonce = '39';
+    data.nonce = '2';
 
     const payment = createPayment(userDID, issuerDID, [
       {
