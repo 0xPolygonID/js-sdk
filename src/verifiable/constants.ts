@@ -151,7 +151,8 @@ export enum SupportedPaymentProofType {
  */
 export enum SupportedCurrencies {
   ETH = 'ETH',
-  ETHWEI = 'ETHWEI',
+  ETH_WEI = 'ETHWEI',
+  ETH_GWEI = 'ETHGWEI',
   MATIC = 'MATIC',
   ERC20Token = 'ERC20Token'
 }

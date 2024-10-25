@@ -59,6 +59,28 @@ export function createPaymentRequest(
 
 /**
  * @beta
+ * PaymentRailsChainInfo represents chain info for payment rails
+ */
+export type PaymentRailsChainInfo = {
+  nonce: bigint;
+  amount: bigint;
+  currency: SupportedCurrencies;
+  chainId: string;
+  recipient: string;
+  verifyingContract: string;
+  expirationDate?: Date;
+};
+
+/**
+ * @beta
+ * ERC20PaymentRailsChainInfo represents chain info for ERC-20 payment rails
+ */
+export type ERC20PaymentRailsChainInfo = PaymentRailsChainInfo & {
+  tokenAddress: string;
+};
+
+/**
+ * @beta
  * createPaymentRailsV1 is a function to create protocol payment message
  * @param {DID} sender - sender did
  * @param {DID} receiver - receiver did
@@ -80,15 +102,7 @@ export async function createPaymentRailsV1(
           context: string;
         }[];
         description?: string;
-        chains: {
-          nonce: bigint;
-          amount: bigint;
-          currency: SupportedCurrencies;
-          chainId: string;
-          recipient: string;
-          verifyingContract: string;
-          expirationDate?: Date;
-        }[];
+        chains: PaymentRailsChainInfo[];
       }
     ];
   }
@@ -186,16 +200,7 @@ export async function createERC20PaymentRailsV1(
           context: string;
         }[];
         description?: string;
-        chains: {
-          tokenAddress: string;
-          nonce: bigint;
-          amount: bigint;
-          currency: SupportedCurrencies;
-          chainId: string;
-          recipient: string;
-          verifyingContract: string;
-          expirationDate?: Date;
-        }[];
+        chains: ERC20PaymentRailsChainInfo[];
       }
     ];
   }
@@ -508,11 +513,11 @@ export class PaymentHandler
         const selectedPayments = paymentReq.data.filter((p) => {
           const proofs = Array.isArray(p.proof) ? p.proof : [p.proof];
           return (
-            proofs.filter(
+            proofs.find(
               (p) =>
                 p.type === SupportedPaymentProofType.EthereumEip712Signature2021 &&
                 p.eip712.domain.chainId === ctx.multichainSelectedChainId
-            )[0] &&
+            ) &&
             (!p.expirationDate || new Date(p.expirationDate) > new Date())
           );
         });
@@ -546,11 +551,11 @@ export class PaymentHandler
         }
 
         if (
-          selectedPayment.currency !== SupportedCurrencies.ETHWEI &&
+          selectedPayment.currency !== SupportedCurrencies.ETH_WEI &&
           selectedPayment.currency !== SupportedCurrencies.ERC20Token
         ) {
           throw new Error(
-            `failed request. not supported '${selectedPayment.currency}' currency. Only ${SupportedCurrencies.ETHWEI} is supported`
+            `failed request. not supported '${selectedPayment.currency}' currency. Only ${SupportedCurrencies.ETH_WEI} is supported`
           );
         }
 

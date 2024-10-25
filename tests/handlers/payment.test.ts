@@ -381,7 +381,7 @@ describe('payment-request handler', () => {
         ],
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
         amount: '100',
-        currency: SupportedCurrencies.ETHWEI,
+        currency: SupportedCurrencies.ETH_WEI,
         expirationDate: new Date(new Date().setHours(new Date().getHours() + 1)).toISOString(),
         nonce: '132',
         metadata: '0x',
@@ -707,7 +707,7 @@ describe('payment-request handler', () => {
             {
               nonce: 132n,
               amount: 100n,
-              currency: SupportedCurrencies.ETHWEI,
+              currency: SupportedCurrencies.ETH_WEI,
               chainId: '80002',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
               verifyingContract: '0xccc1640e846b12578e00f2e17e361c1728cb949d',
@@ -716,7 +716,7 @@ describe('payment-request handler', () => {
             {
               nonce: 44n,
               amount: 10000n,
-              currency: SupportedCurrencies.ETHWEI,
+              currency: SupportedCurrencies.ETH_WEI,
               chainId: '1101',
               recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
               verifyingContract: '0xccc1640e846b12578e00f2e17e361c1728cb949d',
