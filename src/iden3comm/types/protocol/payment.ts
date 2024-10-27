@@ -56,6 +56,7 @@ export type Iden3PaymentRailsRequestV1 = {
 
 export type Iden3PaymentRailsERC20RequestV1 = Omit<Required<Iden3PaymentRailsRequestV1>, 'type'> & {
   tokenAddress: string;
+  ERC20PermitSupported?: boolean;
   type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
 };
 

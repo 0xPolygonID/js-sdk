@@ -24,7 +24,72 @@ import {
   SupportedCurrencies,
   SupportedPaymentProofType
 } from '../../verifiable';
-import { Signer } from 'ethers';
+import { Contract, Signer } from 'ethers';
+
+const erc20PermitAbi = [
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'owner',
+        type: 'address'
+      }
+    ],
+    name: 'nonces',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256'
+      }
+    ],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'eip712Domain',
+    outputs: [
+      {
+        internalType: 'bytes1',
+        name: 'fields',
+        type: 'bytes1'
+      },
+      {
+        internalType: 'string',
+        name: 'name',
+        type: 'string'
+      },
+      {
+        internalType: 'string',
+        name: 'version',
+        type: 'string'
+      },
+      {
+        internalType: 'uint256',
+        name: 'chainId',
+        type: 'uint256'
+      },
+      {
+        internalType: 'address',
+        name: 'verifyingContract',
+        type: 'address'
+      },
+      {
+        internalType: 'bytes32',
+        name: 'salt',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'uint256[]',
+        name: 'extensions',
+        type: 'uint256[]'
+      }
+    ],
+    stateMutability: 'view',
+    type: 'function'
+  }
+];
 
 /**
  * @beta
@@ -77,6 +142,7 @@ export type PaymentRailsChainInfo = {
  */
 export type ERC20PaymentRailsChainInfo = PaymentRailsChainInfo & {
   tokenAddress: string;
+  ERC20PermitSupported?: boolean;
 };
 
 /**
@@ -209,6 +275,7 @@ export async function createERC20PaymentRailsV1(
     for (let j = 0; j < opts.payments[i].chains.length; j++) {
       const {
         tokenAddress,
+        ERC20PermitSupported,
         nonce,
         amount,
         currency,
@@ -291,9 +358,10 @@ export async function createERC20PaymentRailsV1(
       dataArr.push({
         type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1,
         '@context': [
-          'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsRequestV1',
+          'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsERC20RequestV1',
           'https://w3id.org/security/suites/eip712sig-2021/v1'
         ],
+        ERC20PermitSupported,
         tokenAddress,
         recipient,
         amount: amount.toString(),
@@ -324,6 +392,45 @@ export async function createERC20PaymentRailsV1(
     });
   }
   return createPaymentRequest(sender, receiver, agent, payments);
+}
+
+export async function getPermitSignature(
+  signer: Signer, // User who owns the tokens
+  tokenAddress: string, // EIP-2612 contract address
+  spender: string, // The contract address that will spend tokens
+  value: bigint, // Amount of tokens to approve
+  deadline: number // Timestamp when the permit expires
+) {
+  const erc20PermitContract = new Contract(tokenAddress, erc20PermitAbi, signer);
+
+  const nonce = await erc20PermitContract.nonces(await signer.getAddress());
+  const domainData = await erc20PermitContract.eip712Domain();
+  const domain = {
+    name: domainData[1],
+    version: domainData[2],
+    chainId: domainData[3],
+    verifyingContract: tokenAddress
+  };
+
+  const types = {
+    Permit: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+      { name: 'value', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'deadline', type: 'uint256' }
+    ]
+  };
+
+  const message = {
+    owner: await signer.getAddress(),
+    spender: spender,
+    value: value,
+    nonce: nonce,
+    deadline: deadline
+  };
+
+  return signer.signTypedData(domain, types, message);
 }
 
 /**
@@ -553,7 +660,10 @@ export class PaymentHandler
           );
         }
 
-        if (selectedPayment.type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1) {
+        if (
+          selectedPayment.type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 &&
+          !selectedPayment.ERC20PermitSupported
+        ) {
           if (!ctx.erc20TokenApproveHandler) {
             throw new Error(`please provide erc20TokenApproveHandler in context`);
           }

@@ -40,6 +40,7 @@ import {
   createPayment,
   createPaymentRailsV1,
   createPaymentRequest,
+  getPermitSignature,
   IPaymentHandler,
   PaymentHandler
 } from '../../src/iden3comm/handlers/payment';
@@ -148,6 +149,61 @@ describe('payment-request handler', () => {
         }
       ],
       name: 'payERC20',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function'
+    },
+    {
+      inputs: [
+        {
+          internalType: 'bytes',
+          name: 'permitSignature',
+          type: 'bytes'
+        },
+        {
+          components: [
+            {
+              internalType: 'address',
+              name: 'tokenAddress',
+              type: 'address'
+            },
+            {
+              internalType: 'address',
+              name: 'recipient',
+              type: 'address'
+            },
+            {
+              internalType: 'uint256',
+              name: 'amount',
+              type: 'uint256'
+            },
+            {
+              internalType: 'uint256',
+              name: 'expirationDate',
+              type: 'uint256'
+            },
+            {
+              internalType: 'uint256',
+              name: 'nonce',
+              type: 'uint256'
+            },
+            {
+              internalType: 'bytes',
+              name: 'metadata',
+              type: 'bytes'
+            }
+          ],
+          internalType: 'struct MCPayment.Iden3PaymentRailsERC20RequestV1',
+          name: 'paymentData',
+          type: 'tuple'
+        },
+        {
+          internalType: 'bytes',
+          name: 'signature',
+          type: 'bytes'
+        }
+      ],
+      name: 'payERC20Permit',
       outputs: [],
       stateMutability: 'nonpayable',
       type: 'function'
@@ -299,6 +355,22 @@ describe('payment-request handler', () => {
           nonce: data.nonce,
           metadata: data.metadata
         };
+
+        if (data.ERC20PermitSupported) {
+          const permitSignature = getPermitSignature(
+            ethSigner,
+            data.tokenAddress,
+            await payContract.getAddress(),
+            BigInt(data.amount),
+            new Date(data.expirationDate).getTime()
+          );
+          const txData = await payContract.payERC20Permit(
+            permitSignature,
+            paymentData,
+            data.proof[0].proofValue
+          );
+          return txData.hash;
+        }
 
         const txData = await payContract.payERC20(paymentData, data.proof[0].proofValue);
         return txData.hash;
@@ -800,6 +872,65 @@ describe('payment-request handler', () => {
         await txData.wait(3);
         return txData.hash;
       }
+    });
+    if (!agentMessageBytes) {
+      fail('handlePaymentRequest is not expected null response');
+    }
+    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+
+    expect((agentMessage as BasicMessage).type).to.be.eq(
+      PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
+    );
+  });
+
+  it.skip('payment-request handler (Iden3PaymentRailsERC20RequestV1 Permit, integration test)', async () => {
+    const rpcProvider = new JsonRpcProvider(RPC_URL);
+    const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
+    const paymentRequest = await createERC20PaymentRailsV1(issuerDID, userDID, agent, ethSigner, {
+      payments: [
+        {
+          credentials: [
+            {
+              type: 'AML',
+              context: 'http://test.com'
+            }
+          ],
+          description: 'Iden3PaymentRailsERC20RequestV1 payment-request integration test',
+          chains: [
+            {
+              tokenAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A',
+              ERC20PermitSupported: true,
+              nonce: 2n,
+              amount: 30n,
+              currency: SupportedCurrencies.ERC20Token,
+              chainId: '80002',
+              recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+              verifyingContract: '0x6f742EBA99C3043663f995a7f566e9F012C07925',
+              expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
+            },
+            {
+              tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
+              nonce: 2n,
+              amount: 30n,
+              currency: SupportedCurrencies.ERC20Token,
+              chainId: '1101',
+              recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+              verifyingContract: '0x40F63e736146ACC1D30844093d41cbFcF515559a',
+              expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
+            }
+          ]
+        }
+      ]
+    });
+
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(paymentRequest)),
+      {}
+    );
+    const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
+      paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
+      multichainSelectedChainId: '80002'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
