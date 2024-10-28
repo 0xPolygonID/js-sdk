@@ -16,7 +16,8 @@ import {
   BasicMessage,
   createProposal,
   SupportedCurrencies,
-  SupportedPaymentProofType
+  SupportedPaymentProofType,
+  PaymentFeatures
 } from '../../src';
 
 import {
@@ -356,7 +357,7 @@ describe('payment-request handler', () => {
           metadata: data.metadata
         };
 
-        if (data.ERC20PermitSupported) {
+        if (data.features?.includes(PaymentFeatures.EIP_2612)) {
           const permitSignature = getPermitSignature(
             ethSigner,
             data.tokenAddress,
@@ -899,7 +900,7 @@ describe('payment-request handler', () => {
           chains: [
             {
               tokenAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A',
-              ERC20PermitSupported: true,
+              features: [PaymentFeatures.EIP_2612],
               nonce: 2n,
               amount: 30n,
               currency: SupportedCurrencies.ERC20Token,

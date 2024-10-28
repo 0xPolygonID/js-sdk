@@ -19,6 +19,7 @@ import {
   PaymentRequestMessage
 } from '../types/protocol/payment';
 import {
+  PaymentFeatures,
   PaymentRequestDataType,
   PaymentType,
   SupportedCurrencies,
@@ -142,7 +143,7 @@ export type PaymentRailsChainInfo = {
  */
 export type ERC20PaymentRailsChainInfo = PaymentRailsChainInfo & {
   tokenAddress: string;
-  ERC20PermitSupported?: boolean;
+  features?: PaymentFeatures[];
 };
 
 /**
@@ -275,7 +276,7 @@ export async function createERC20PaymentRailsV1(
     for (let j = 0; j < opts.payments[i].chains.length; j++) {
       const {
         tokenAddress,
-        ERC20PermitSupported,
+        features,
         nonce,
         amount,
         currency,
@@ -361,7 +362,7 @@ export async function createERC20PaymentRailsV1(
           'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsERC20RequestV1',
           'https://w3id.org/security/suites/eip712sig-2021/v1'
         ],
-        ERC20PermitSupported,
+        features: features || [],
         tokenAddress,
         recipient,
         amount: amount.toString(),
@@ -662,7 +663,7 @@ export class PaymentHandler
 
         if (
           selectedPayment.type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 &&
-          !selectedPayment.ERC20PermitSupported
+          !selectedPayment.features?.includes(PaymentFeatures.EIP_2612)
         ) {
           if (!ctx.erc20TokenApproveHandler) {
             throw new Error(`please provide erc20TokenApproveHandler in context`);

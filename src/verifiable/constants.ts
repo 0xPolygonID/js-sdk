@@ -147,7 +147,7 @@ export enum SupportedPaymentProofType {
 /**
  * Media types for Payment supported currencies
  * @beta
- * @enum {number}
+ * @enum {string}
  */
 export enum SupportedCurrencies {
   ETH = 'ETH',
@@ -155,6 +155,15 @@ export enum SupportedCurrencies {
   ETH_GWEI = 'ETHGWEI',
   MATIC = 'MATIC',
   ERC20Token = 'ERC20Token'
+}
+
+/**
+ * Supported features for payment-request
+ * @beta
+ * @enum {string}
+ */
+export enum PaymentFeatures {
+  EIP_2612 = 'EIP-2612'
 }
 
 /**
