@@ -86,9 +86,15 @@ export const circuitValidator: {
   [k in CircuitId]: { maxQueriesCount: number; supportedOperations: Operators[] };
 } = {
   [CircuitId.AtomicQueryMTPV2]: { maxQueriesCount: 1, supportedOperations: v2Operations },
-  [CircuitId.AtomicQueryMTPV2OnChain]: { maxQueriesCount: 1, supportedOperations: v2OnChainOperations },
+  [CircuitId.AtomicQueryMTPV2OnChain]: {
+    maxQueriesCount: 1,
+    supportedOperations: v2OnChainOperations
+  },
   [CircuitId.AtomicQuerySigV2]: { maxQueriesCount: 1, supportedOperations: v2Operations },
-  [CircuitId.AtomicQuerySigV2OnChain]: { maxQueriesCount: 1, supportedOperations: v2OnChainOperations },
+  [CircuitId.AtomicQuerySigV2OnChain]: {
+    maxQueriesCount: 1,
+    supportedOperations: v2OnChainOperations
+  },
   [CircuitId.AtomicQueryV3]: { maxQueriesCount: 1, supportedOperations: allOperations },
   [CircuitId.AtomicQueryV3OnChain]: { maxQueriesCount: 1, supportedOperations: allOperations },
   [CircuitId.AuthV2]: { maxQueriesCount: 0, supportedOperations: [] },
