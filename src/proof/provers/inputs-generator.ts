@@ -71,7 +71,8 @@ const v2Operations = [
   Operators.GT,
   Operators.IN,
   Operators.NIN,
-  Operators.NE
+  Operators.NE,
+  Operators.SD
 ];
 const v2OnChainOperations = [
   Operators.EQ,

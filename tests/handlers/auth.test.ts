@@ -1760,6 +1760,59 @@ describe('auth', () => {
     expect(tokenStr).to.be.a('string');
   });
 
+  it('auth request: v2 sig sd', async () => {
+    const sender = 'did:polygonid:polygon:mumbai:2qJ689kpoJxcSzB5sAFJtPsSBSrHF5dq722BHMqURL';
+    const callback = 'https://test.com/callback';
+    const reason = 'age verification';
+    const request: AuthorizationRequestMessage = createAuthorizationRequestWithMessage(
+      reason,
+      '',
+      sender,
+      callback
+    );
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v4.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    await credWallet.save(issuerCred);
+
+    const proofRequest: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      query: {
+        allowedIssuers: ['*'],
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
+        type: 'KYCAgeCredential',
+        credentialSubject: {
+          birthday: {}
+        }
+      }
+    };
+    request.body.scope.push(proofRequest);
+    request.id = '28494007-9c49-4f1a-9694-7700c08865bf';
+    request.thid = '7f38a193-0918-4a48-9fac-36adfdb8b542';
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(request));
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    const tokenStr = authRes.token;
+    expect(tokenStr).to.be.a('string');
+  });
+
   it('auth response: TestVerify v2 sig sd', async () => {
     const sender = 'did:polygonid:polygon:mumbai:2qJ689kpoJxcSzB5sAFJtPsSBSrHF5dq722BHMqURL';
     const callback = 'https://test.com/callback';
