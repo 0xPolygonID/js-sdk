@@ -163,6 +163,12 @@ export interface IProofService {
     query: ProofQuery,
     opts?: { skipClaimRevocationCheck: boolean }
   ): Promise<{ cred: W3CCredential; revStatus: RevocationStatus | undefined }>;
+
+  /**
+   * Returns prover instance
+   * @returns {IZKProver}
+   */
+  getProver(): IZKProver;
 }
 /**
  * Proof service is an implementation of IProofService
@@ -198,6 +204,11 @@ export class ProofService implements IProofService {
       opts?.documentLoader ?? cacheLoader(opts),
       _stateStorage
     );
+  }
+
+  /** {@inheritdoc IProofService.getProver} */
+  getProver(): IZKProver {
+    return this._prover;
   }
 
   /** {@inheritdoc IProofService.verifyProof} */

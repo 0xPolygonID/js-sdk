@@ -8,15 +8,16 @@ import {
 } from '../../iden3comm';
 import abi from './abi/ZkpVerifier.json';
 import { TransactionService } from '../../blockchain';
-import { DID } from '@iden3/js-iden3-core';
+import { DID, Id } from '@iden3/js-iden3-core';
 import {
   AtomicQueryMTPV2OnChainPubSignals,
   AtomicQuerySigV2OnChainPubSignals,
   AtomicQueryV3OnChainPubSignals,
+  AuthV2PubSignals,
   CircuitId,
   StatesInfo
 } from '../../circuits';
-import { byteEncoder, DIDDocumentSignature, resolveDidDocument } from '../../utils';
+import { byteEncoder, DIDDocumentSignature, getChainIdFromId, resolveDidDocument } from '../../utils';
 import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
 import { poseidon } from '@iden3/js-crypto';
 import { Hash } from '@iden3/js-merkletree';
@@ -43,6 +44,12 @@ export type OnChainZKPVerifierOptions = {
   didResolverUrl?: string;
 };
 
+type OnChainZKPVerifierCircuitId =
+  | CircuitId.AuthV2
+  | CircuitId.AtomicQueryMTPV2OnChain
+  | CircuitId.AtomicQuerySigV2OnChain
+  | CircuitId.AtomicQueryV3OnChain;
+
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
  * and submitZKPResponse.
@@ -54,11 +61,19 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   /**
    * supported circuits
    */
-  private readonly _supportedCircuits = [
+  private readonly _supportedCircuits: OnChainZKPVerifierCircuitId[] = [
+    CircuitId.AuthV2,
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
     CircuitId.AtomicQueryV3OnChain
   ];
+
+  private readonly _supportedCircuitsPubSignalsMap = {
+    [CircuitId.AtomicQueryMTPV2OnChain]: AtomicQueryMTPV2OnChainPubSignals,
+    [CircuitId.AtomicQuerySigV2OnChain]: AtomicQuerySigV2OnChainPubSignals,
+    [CircuitId.AtomicQueryV3OnChain]: AtomicQueryV3OnChainPubSignals,
+    [CircuitId.AuthV2]: AuthV2PubSignals
+  };
 
   /**
    * abi coder to encode/decode structures to solidity bytes
@@ -219,6 +234,44 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     return new Map<string, ZeroKnowledgeProofResponse[]>().set(txnHash, zkProofResponses);
   }
 
+  private getCrossChainResolvers(
+    source: {
+      id: Id;
+      root?: Hash;
+      state?: Hash;
+    }[],
+    txDataChainId: number,
+    type: 'gist' | 'state',
+    didResolverUrl: string
+  ) {
+    return [
+      ...new Set(
+        source.map((info) =>
+          JSON.stringify({
+            id: info.id.string(),
+            [type]: type === 'gist' ? info.root?.string() : info.state?.string()
+          })
+        )
+      )
+    ].reduce((acc: Promise<unknown>[], s: string) => {
+      const info = JSON.parse(s);
+      const id = Id.fromString(info.id);
+      const chainId = getChainIdFromId(id);
+
+      if (txDataChainId === chainId) {
+        return acc;
+      }
+      const promise = this.resolveDidDocumentEip712MessageAndSignature(
+        DID.parseFromId(Id.fromString(info.id)),
+        didResolverUrl,
+        {
+          [type]: Hash.fromString(info[type])
+        }
+      );
+      return [...acc, promise];
+    }, []);
+  }
+
   public async prepareTxArgsSubmitV2(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
@@ -228,22 +281,30 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         `submit cross chain doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitZKPResponseV2}' is supported.`
       );
     }
-    if (!this._opts?.didResolverUrl) {
-      throw new Error(`did resolver url required for crosschain verification`);
+    const didResolverUrl = this._opts?.didResolverUrl;
+    if (!didResolverUrl) {
+      throw new Error(`did resolver url required for cross chain verification`);
     }
-    const gistUpdateArr = [];
-    const stateUpdateArr = [];
+    const gistUpdates = [];
+    const stateUpdates = [];
     const payload = [];
-    // Resolved gists and states to avoid duplicate requests
-    const gistUpdateResolutionsPending: string[] = [];
-    const stateUpdateResolutionsPending: string[] = [];
+    const emptyBytes = '0x';
 
     for (const zkProof of zkProofResponses) {
-      const requestID = zkProof.id;
-      const inputs = zkProof.pub_signals;
+      const { id: requestId, pub_signals: inputs } = zkProof;
+      const proofCircuitId = zkProof.circuitId as OnChainZKPVerifierCircuitId;
 
-      if (!this._supportedCircuits.includes(zkProof.circuitId as CircuitId)) {
+      if (!this._supportedCircuits.includes(proofCircuitId)) {
         throw new Error(`Circuit ${zkProof.circuitId} not supported by OnChainZKPVerifier`);
+      }
+
+      if (inputs.length === 0) {
+        payload.push({
+          requestId: requestId,
+          zkProof: emptyBytes,
+          data: emptyBytes
+        });
+        continue;
       }
 
       const zkProofEncoded = this.packZkpProof(
@@ -256,61 +317,28 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         zkProof.proof.pi_c.slice(0, 2)
       );
 
-      const stateInfo = this.getOnChainGistRootStatePubSignals(
-        zkProof.circuitId as
-          | CircuitId.AtomicQueryMTPV2OnChain
-          | CircuitId.AtomicQuerySigV2OnChain
-          | CircuitId.AtomicQueryV3OnChain,
-        zkProof.pub_signals
+      const stateInfo = this.getOnChainGistRootStatePubSignals(proofCircuitId, inputs);
+
+      const chainId = txData.chain_id;
+      const gistUpdateResolutions = this.getCrossChainResolvers(
+        stateInfo.gists,
+        chainId,
+        'gist',
+        didResolverUrl
       );
 
-      const gistUpdateResolutions = [];
-      for (const gist of stateInfo.gists) {
-        const gistResolutionPending = gistUpdateResolutionsPending.find(
-          (g) => g == JSON.stringify(gist)
-        );
-
-        if (gistResolutionPending) {
-          continue;
-        }
-        gistUpdateResolutionsPending.push(JSON.stringify(gist));
-
-        gistUpdateResolutions.push(
-          this.resolveDidDocumentEip712MessageAndSignature(
-            DID.parseFromId(gist.id),
-            this._opts.didResolverUrl,
-            { gist: gist.root }
-          )
-        );
-      }
-
-      const stateUpdateResolutions = [];
-      for (const state of stateInfo.states) {
-        const stateResolutionPending = stateUpdateResolutionsPending.find(
-          (s) => s == JSON.stringify(state)
-        );
-
-        if (stateResolutionPending) {
-          continue;
-        }
-        stateUpdateResolutionsPending.push(JSON.stringify(state));
-
-        stateUpdateResolutions.push(
-          this.resolveDidDocumentEip712MessageAndSignature(
-            DID.parseFromId(state.id),
-            this._opts.didResolverUrl,
-            {
-              state: state.state
-            }
-          )
-        );
-      }
+      const stateUpdateResolutions = this.getCrossChainResolvers(
+        stateInfo.states,
+        chainId,
+        'state',
+        didResolverUrl
+      );
 
       if (gistUpdateResolutions.length > 0) {
-        gistUpdateArr.push(...((await Promise.all(gistUpdateResolutions)) as GlobalStateUpdate[]));
+        gistUpdates.push(...((await Promise.all(gistUpdateResolutions)) as GlobalStateUpdate[]));
       }
       if (stateUpdateResolutions.length > 0) {
-        stateUpdateArr.push(
+        stateUpdates.push(
           ...((await Promise.all(stateUpdateResolutions)) as IdentityStateUpdate[])
         );
       }
@@ -334,15 +362,18 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         }
       }
 
-      const metadata = metadataArr.length ? this.packMetadatas(metadataArr) : '0x';
+      const metadata = metadataArr.length ? this.packMetadatas(metadataArr) : emptyBytes;
       payload.push({
-        requestId: requestID,
+        requestId: requestId,
         zkProof: zkProofEncoded,
         data: metadata
       });
     }
 
-    const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
+    const crossChainProofs =
+      gistUpdates.length || stateUpdates.length
+        ? this.packCrossChainProofs(gistUpdates, stateUpdates)
+        : emptyBytes;
     return [payload, crossChainProofs];
   }
 
@@ -421,24 +452,14 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   }
 
   private getOnChainGistRootStatePubSignals(
-    onChainCircuitId:
-      | CircuitId.AtomicQueryMTPV2OnChain
-      | CircuitId.AtomicQuerySigV2OnChain
-      | CircuitId.AtomicQueryV3OnChain,
+    onChainCircuitId: OnChainZKPVerifierCircuitId,
     inputs: string[]
   ): StatesInfo {
-    let atomicQueryPubSignals;
-    switch (onChainCircuitId) {
-      case CircuitId.AtomicQueryMTPV2OnChain:
-        atomicQueryPubSignals = new AtomicQueryMTPV2OnChainPubSignals();
-        break;
-      case CircuitId.AtomicQuerySigV2OnChain:
-        atomicQueryPubSignals = new AtomicQuerySigV2OnChainPubSignals();
-        break;
-      case CircuitId.AtomicQueryV3OnChain:
-        atomicQueryPubSignals = new AtomicQueryV3OnChainPubSignals();
-        break;
+    const PubSignals = this._supportedCircuitsPubSignalsMap[onChainCircuitId];
+    if (!PubSignals) {
+      throw new Error(`Circuit ${onChainCircuitId} not supported by OnChainZKPVerifier`);
     }
+    const atomicQueryPubSignals = new PubSignals();
     const encodedInputs = byteEncoder.encode(JSON.stringify(inputs));
     atomicQueryPubSignals.pubSignalsUnmarshal(encodedInputs);
     return atomicQueryPubSignals.getStatesInfo();

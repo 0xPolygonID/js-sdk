@@ -8,7 +8,7 @@ import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { processZeroKnowledgeProofRequests } from './common';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
-
+import { prepareAuthV2ZeroKnowledgeResponse } from '../utils';
 /**
  * Interface that allows the processing of the contract request
  *
@@ -65,6 +65,7 @@ export class ContractRequestHandler
   implements IContractRequestHandler, IProtocolMessageHandler
 {
   private readonly _supportedCircuits = [
+    CircuitId.AuthV2,
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
     CircuitId.AtomicQueryV3OnChain
@@ -121,13 +122,30 @@ export class ContractRequestHandler
       throw new Error(`Invalid chain id ${chain_id}`);
     }
     const verifierDid = message.from ? DID.parse(message.from) : undefined;
-    const zkpResponses = await processZeroKnowledgeProofRequests(
-      did,
-      message?.body?.scope,
-      verifierDid,
-      this._proofService,
-      { ethSigner, challenge, supportedCircuits: this._supportedCircuits }
-    );
+
+    const { scope = [] } = message.body;
+
+    let zkpResponses: ZeroKnowledgeProofResponse[] = [];
+
+    if (scope.length) {
+      zkpResponses = await processZeroKnowledgeProofRequests(
+        did,
+        scope,
+        verifierDid,
+        this._proofService,
+        {
+          ethSigner,
+          challenge,
+          supportedCircuits: this._supportedCircuits
+        }
+      );
+    } else {
+      zkpResponses = await prepareAuthV2ZeroKnowledgeResponse(
+        await ctx.ethSigner.getAddress(),
+        did,
+        this._proofService
+      );
+    }
 
     const methodId = message.body.transaction_data.method_id.replace('0x', '');
     switch (methodId) {

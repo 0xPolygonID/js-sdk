@@ -1,5 +1,5 @@
 import { Hex } from '@iden3/js-crypto';
-import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-core';
+import { Id, buildDIDType, genesisFromEthAddress, DID, ChainIds } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import { DIDResolutionResult, VerificationMethod, DIDResolutionMetadata } from 'did-resolver';
 import { keccak256 } from 'js-sha3';
@@ -134,10 +134,13 @@ export const resolveDidDocument = async (
   if (opts?.gist) {
     url += `${url.includes('?') ? '&' : '?'}gist=${opts.gist.hex()}`;
   }
-  const resp = await fetch(url);
-  const data = await resp.json();
-
-  return data;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    return data;
+  } catch (e) {
+    throw new Error(`Failed to resolve DID document for ${did} ${e}`);
+  }
 };
 
 export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): DID => {
@@ -152,3 +155,10 @@ export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): D
   const identifier = new Id(didType, genesis);
   return DID.parseFromId(identifier);
 };
+
+
+export function getChainIdFromId(id: Id): number {
+  const { blockchain, networkId } = DID.decodePartsFromId(id);
+  const chainKey = `${blockchain}:${networkId}`;
+  return ChainIds[chainKey];
+}

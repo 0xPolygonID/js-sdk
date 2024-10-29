@@ -1,7 +1,13 @@
 import { Hash, Proof } from '@iden3/js-merkletree';
 import { Claim, Id } from '@iden3/js-iden3-core';
 import { CircuitError, GISTProof, TreeState } from './models';
-import { BaseConfig, getNodeAuxValue, prepareSiblingsStr } from './common';
+import {
+  BaseConfig,
+  getNodeAuxValue,
+  IStateInfoPubSignals,
+  prepareSiblingsStr,
+  StatesInfo
+} from './common';
 import { Signature } from '@iden3/js-crypto';
 import { byteDecoder, byteEncoder } from '../utils';
 
@@ -117,7 +123,7 @@ interface AuthV2CircuitInputs {
  * @public
  * @class AuthV2PubSignals
  */
-export class AuthV2PubSignals {
+export class AuthV2PubSignals implements IStateInfoPubSignals {
   userID!: Id;
   challenge!: bigint;
   GISTRoot!: Hash;
@@ -142,5 +148,12 @@ export class AuthV2PubSignals {
 
     this.GISTRoot = Hash.fromString(sVals[2]);
     return this;
+  }
+
+  getStatesInfo(): StatesInfo {
+    return {
+      states: [],
+      gists: [{ id: this.userID, root: this.GISTRoot }]
+    };
   }
 }
