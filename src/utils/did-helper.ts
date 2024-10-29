@@ -156,7 +156,6 @@ export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): D
   return DID.parseFromId(identifier);
 };
 
-
 export function getChainIdFromId(id: Id): number {
   const { blockchain, networkId } = DID.decodePartsFromId(id);
   const chainKey = `${blockchain}:${networkId}`;

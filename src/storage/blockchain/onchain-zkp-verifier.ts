@@ -17,7 +17,12 @@ import {
   CircuitId,
   StatesInfo
 } from '../../circuits';
-import { byteEncoder, DIDDocumentSignature, getChainIdFromId, resolveDidDocument } from '../../utils';
+import {
+  byteEncoder,
+  DIDDocumentSignature,
+  getChainIdFromId,
+  resolveDidDocument
+} from '../../utils';
 import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
 import { poseidon } from '@iden3/js-crypto';
 import { Hash } from '@iden3/js-merkletree';

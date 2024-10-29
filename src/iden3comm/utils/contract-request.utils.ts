@@ -8,7 +8,7 @@ import { ZeroKnowledgeProofResponse } from '../types';
 
 /**
  * Retrieves the AuthV2 request ID.
- * 
+ *
  * @returns The AuthV2 request ID.
  */
 export function getAuthV2RequestId(): number {
@@ -17,7 +17,6 @@ export function getAuthV2RequestId(): number {
   const id = dataView.getUint32(0);
   return id;
 }
-
 
 /**
  * Prepares the zero-knowledge proof response for the AuthV2 circuit.

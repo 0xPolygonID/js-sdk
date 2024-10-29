@@ -57,7 +57,6 @@ import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { ethers, JsonRpcProvider, Signer } from 'ethers';
 import {
-  createEthereumBasedIdentity,
   createIdentity,
   getInMemoryDataStorage,
   registerKeyProvidersInMemoryKMS,
@@ -65,7 +64,6 @@ import {
   SEED_USER
 } from '../helpers';
 import { AbstractMessageHandler } from '../../src/iden3comm/handlers/message-handler';
-import { Hex } from '@iden3/js-crypto';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -735,9 +733,8 @@ describe('contract-request', () => {
     const { did: userDID } = await createIdentity(idWallet, {
       seed: SEED_USER,
       blockchain: Blockchain.Privado,
-      networkId: NetworkId.Main,
+      networkId: NetworkId.Main
     });
-
 
     const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet);
     expect(issuerAuthCredential).not.to.be.undefined;
