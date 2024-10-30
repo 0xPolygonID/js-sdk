@@ -25,7 +25,7 @@ import {
   SupportedCurrencies,
   SupportedPaymentProofType
 } from '../../verifiable';
-import { Contract, Signer } from 'ethers';
+import { Signer } from 'ethers';
 
 /**
  * @beta
@@ -557,49 +557,29 @@ export class PaymentHandler
       throw new Error(`failed request. empty 'payments' field in body`);
     }
 
+    if (!params.paymentValidationHandler) {
+      throw new Error(`please provide payment validation handler in options`);
+    }
+
     for (let i = 0; i < payment.body.payments.length; i++) {
       const p = payment.body.payments[i];
-      let data:
-        | Iden3PaymentRequestCryptoV1
-        | Iden3PaymentRailsRequestV1
-        | Iden3PaymentRailsERC20RequestV1
-        | undefined;
-      switch (p.type) {
-        case PaymentType.Iden3PaymentCryptoV1: {
-          data = params.paymentRequest.body.payments.find(
-            (r) => (r.data as Iden3PaymentRequestCryptoV1).id === p.id
-          )?.data as Iden3PaymentRequestCryptoV1;
-          if (!data) {
-            throw new Error(`can't find payment request for payment id ${p.id}`);
-          }
-          break;
-        }
-        case PaymentType.Iden3PaymentRailsV1:
-        case PaymentType.Iden3PaymentRailsERC20V1: {
-          for (let j = 0; j < params.paymentRequest.body.payments.length; j++) {
-            const paymentReq = params.paymentRequest.body.payments[j];
-            if (Array.isArray(paymentReq.data)) {
-              const selectedPayment = paymentReq.data.find(
-                (r) => (r as { nonce: string }).nonce === p.nonce
-              );
-              if (selectedPayment) {
-                data = selectedPayment;
-                break;
-              }
-            }
-          }
-          if (!data) {
-            throw new Error(`can't find payment request for payment nonce ${p.nonce}`);
-          }
-          break;
-        }
-        default:
-          throw new Error(`failed request. not supported '${p.type}' payment type `);
+      const nonce = p.type === PaymentType.Iden3PaymentCryptoV1 ? p.id : p.nonce;
+      const requestDataArr = params.paymentRequest.body.payments
+        .map((r) => (Array.isArray(r.data) ? r.data : [r.data]))
+        .flat();
+      const requestData = requestDataArr.find((r) =>
+        r.type === PaymentRequestDataType.Iden3PaymentRequestCryptoV1
+          ? r.id === nonce
+          : r.nonce === nonce
+      );
+      if (!requestData) {
+        throw new Error(
+          `can't find payment request for payment ${
+            p.type === PaymentType.Iden3PaymentCryptoV1 ? 'id' : 'nonce'
+          } ${nonce}`
+        );
       }
-      if (!params.paymentValidationHandler) {
-        throw new Error(`please provide payment validation handler in options`);
-      }
-      await params.paymentValidationHandler(p.paymentData.txId, data);
+      await params.paymentValidationHandler(p.paymentData.txId, requestData);
     }
   }
 
@@ -628,7 +608,7 @@ export class PaymentHandler
 
     return {
       id: data.id,
-      '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
+      '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentCryptoV1',
       type: PaymentType.Iden3PaymentCryptoV1,
       paymentData: {
         txId
@@ -645,7 +625,7 @@ export class PaymentHandler
     return {
       nonce: data.nonce,
       type: PaymentType.Iden3PaymentRailsV1,
-      '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
+      '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsV1',
       paymentData: {
         txId,
         chainId: proof.eip712.domain.chainId
@@ -671,7 +651,7 @@ export class PaymentHandler
     return {
       nonce: data.nonce,
       type: PaymentType.Iden3PaymentRailsERC20V1,
-      '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
+      '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsERC20V1',
       paymentData: {
         txId,
         chainId: proof.eip712.domain.chainId,
