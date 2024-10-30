@@ -289,56 +289,9 @@ export async function createERC20PaymentRailsV1(
       if (recipient !== (await signer.getAddress())) {
         throw new Error('recipient is not the signer');
       }
-      const typeUrl = 'https://schema.iden3.io/core/json/Iden3PaymentRailsRequestV1.json'; // todo: REPLACE TO NEW URL
+      const typeUrl = 'https://schema.iden3.io/core/json/Iden3PaymentRailsERC20RequestV1.json';
       const typesFetchResult = await fetch(typeUrl);
-      let types = await typesFetchResult.json();
-
-      types = {
-        EIP712Domain: [
-          {
-            name: 'name',
-            type: 'string'
-          },
-          {
-            name: 'version',
-            type: 'string'
-          },
-          {
-            name: 'chainId',
-            type: 'uint256'
-          },
-          {
-            name: 'verifyingContract',
-            'type:': 'address'
-          }
-        ],
-        Iden3PaymentRailsERC20RequestV1: [
-          {
-            name: 'tokenAddress',
-            type: 'address'
-          },
-          {
-            name: 'recipient',
-            type: 'address'
-          },
-          {
-            name: 'amount',
-            type: 'uint256'
-          },
-          {
-            name: 'expirationDate',
-            type: 'uint256'
-          },
-          {
-            name: 'nonce',
-            type: 'uint256'
-          },
-          {
-            name: 'metadata',
-            type: 'bytes'
-          }
-        ]
-      };
+      const types = await typesFetchResult.json();
       delete types.EIP712Domain;
       const paymentData = {
         tokenAddress,
@@ -504,10 +457,7 @@ export type PaymentRequestMessageHandlerOptions = {
   paymentHandler: (
     data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1
   ) => Promise<string>;
-  multichainSelectedChainId?: string;
-  selectedPaymentType?:
-    | PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
-    | PaymentRequestDataType.Iden3PaymentRailsRequestV1;
+  nonce?: string;
   erc20TokenApproveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>;
 };
 
@@ -609,38 +559,17 @@ export class PaymentHandler
 
       // if multichain request
       if (Array.isArray(paymentReq.data)) {
-        if (!ctx.multichainSelectedChainId) {
-          throw new Error(`failed request. please provide multichainSelectedChainId`);
+        if (!ctx.nonce) {
+          throw new Error(`failed request. please provide payment nonce in context`);
         }
-        const selectedPayments = paymentReq.data.filter((p) => {
-          const proofs = Array.isArray(p.proof) ? p.proof : [p.proof];
+        const selectedPayment = paymentReq.data.find((p) => {
           return (
-            proofs.find(
-              (p) =>
-                p.type === SupportedPaymentProofType.EthereumEip712Signature2021 &&
-                p.eip712.domain.chainId === ctx.multichainSelectedChainId
-            ) &&
-            (!p.expirationDate || new Date(p.expirationDate) > new Date())
+            p.nonce === ctx.nonce && (!p.expirationDate || new Date(p.expirationDate) > new Date())
           );
         });
 
-        if (!selectedPayments.length) {
-          throw new Error(
-            `failed request. no payment in request for chain id ${ctx.multichainSelectedChainId}`
-          );
-        }
-
-        let selectedPayment = selectedPayments[0];
-        if (ctx.selectedPaymentType) {
-          const selectedPaymentByType = selectedPayments.find(
-            (p) => p.type === ctx.selectedPaymentType
-          );
-          if (!selectedPaymentByType) {
-            throw new Error(
-              `failed request. no payment in request for chain id ${ctx.multichainSelectedChainId} and type ${ctx.selectedPaymentType}`
-            );
-          }
-          selectedPayment = selectedPaymentByType;
+        if (!selectedPayment) {
+          throw new Error(`failed request. no payment in request for nonce ${ctx.nonce}`);
         }
 
         if (
@@ -653,27 +582,22 @@ export class PaymentHandler
         }
 
         if (
-          selectedPayment.currency !== SupportedCurrencies.ETH_WEI &&
-          selectedPayment.currency !== SupportedCurrencies.ERC20Token
-        ) {
-          throw new Error(
-            `failed request. not supported '${selectedPayment.currency}' currency. Only ${SupportedCurrencies.ETH_WEI} is supported`
-          );
-        }
-
-        if (
           selectedPayment.type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 &&
           !selectedPayment.features?.includes(PaymentFeatures.EIP_2612)
         ) {
           if (!ctx.erc20TokenApproveHandler) {
-            throw new Error(`please provide erc20TokenApproveHandler in context`);
+            throw new Error(
+              `please provide erc20TokenApproveHandler in context for ERC-20 payment type`
+            );
           }
 
           await ctx.erc20TokenApproveHandler(selectedPayment);
         }
 
         const txId = await ctx.paymentHandler(selectedPayment);
-
+        const proof = Array.isArray(selectedPayment.proof)
+          ? selectedPayment.proof[0]
+          : selectedPayment.proof;
         payments.push({
           nonce: selectedPayment.nonce,
           type:
@@ -683,7 +607,7 @@ export class PaymentHandler
           '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
           paymentData: {
             txId,
-            chainId: ctx.multichainSelectedChainId
+            chainId: proof.eip712.domain.chainId
           }
         });
 

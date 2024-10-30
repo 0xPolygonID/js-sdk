@@ -615,7 +615,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentHandlerFuncMock,
-      multichainSelectedChainId: '80002'
+      nonce: '132'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -638,8 +638,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentHandlerFuncMock,
-      multichainSelectedChainId: '80002',
-      selectedPaymentType: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1,
+      nonce: '32',
       erc20TokenApproveHandler: () => Promise.resolve('0x312312334')
     });
     if (!agentMessageBytes) {
@@ -785,7 +784,7 @@ describe('payment-request handler', () => {
               expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
             },
             {
-              nonce: 1n,
+              nonce: 2n,
               amount: 10000n,
               currency: SupportedCurrencies.ETH_WEI,
               chainId: '1101',
@@ -805,7 +804,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      multichainSelectedChainId: '80002'
+      nonce: '1'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -833,7 +832,7 @@ describe('payment-request handler', () => {
           chains: [
             {
               tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
-              nonce: 2n,
+              nonce: 22n,
               amount: 30n,
               currency: SupportedCurrencies.ERC20Token,
               chainId: '80002',
@@ -843,7 +842,7 @@ describe('payment-request handler', () => {
             },
             {
               tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
-              nonce: 2n,
+              nonce: 23n,
               amount: 30n,
               currency: SupportedCurrencies.ERC20Token,
               chainId: '1101',
@@ -863,7 +862,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      multichainSelectedChainId: '80002',
+      nonce: '22',
       erc20TokenApproveHandler: async (data: Iden3PaymentRailsERC20RequestV1) => {
         const token = new Contract(data.tokenAddress, erc20Abi, ethSigner);
         const txData = await token.approve(
@@ -901,7 +900,7 @@ describe('payment-request handler', () => {
             {
               tokenAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A',
               features: [PaymentFeatures.EIP_2612],
-              nonce: 2n,
+              nonce: 33n,
               amount: 30n,
               currency: SupportedCurrencies.ERC20Token,
               chainId: '80002',
@@ -911,7 +910,7 @@ describe('payment-request handler', () => {
             },
             {
               tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
-              nonce: 2n,
+              nonce: 34n,
               amount: 30n,
               currency: SupportedCurrencies.ERC20Token,
               chainId: '1101',
@@ -931,7 +930,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      multichainSelectedChainId: '80002'
+      nonce: '33'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
