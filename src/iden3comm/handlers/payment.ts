@@ -658,13 +658,11 @@ export class PaymentHandler
     paymentHandler: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>,
     approveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>
   ): Promise<Iden3PaymentRailsERC20V1> {
-    if (!data.features?.includes(PaymentFeatures.EIP_2612)) {
-      if (!approveHandler) {
-        throw new Error(
-          `please provide erc20TokenApproveHandler in context for ERC-20 payment type`
-        );
-      }
+    if (!data.features?.includes(PaymentFeatures.EIP_2612) && !approveHandler) {
+      throw new Error(`please provide erc20TokenApproveHandler in context for ERC-20 payment type`);
+    }
 
+    if (approveHandler) {
       await approveHandler(data);
     }
 
