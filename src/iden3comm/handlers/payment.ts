@@ -482,7 +482,11 @@ export class PaymentHandler
           break;
         case PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1:
           payments.push(
-            await this.handleIden3PaymentRailsERC20RequestV1(selectedPayment, ctx.paymentHandler)
+            await this.handleIden3PaymentRailsERC20RequestV1(
+              selectedPayment,
+              ctx.paymentHandler,
+              ctx.erc20TokenApproveHandler
+            )
           );
           break;
       }
