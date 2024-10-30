@@ -96,26 +96,24 @@ export async function createPaymentRailsV1(
   receiver: DID,
   agent: string,
   signer: Signer,
-  opts: {
-    payments: [
-      {
-        credentials: {
-          type: string;
-          context: string;
-        }[];
-        description?: string;
-        chains: PaymentRailsChainInfo[];
-      }
-    ];
-  }
+  payments: [
+    {
+      credentials: {
+        type: string;
+        context: string;
+      }[];
+      description?: string;
+      chains: PaymentRailsChainInfo[];
+    }
+  ]
 ): Promise<PaymentRequestMessage> {
-  const payments: PaymentRequestInfo[] = [];
-  for (let i = 0; i < opts.payments.length; i++) {
-    const { credentials, description } = opts.payments[i];
+  const paymentRequestInfo: PaymentRequestInfo[] = [];
+  for (let i = 0; i < payments.length; i++) {
+    const { credentials, description } = payments[i];
     const dataArr: Iden3PaymentRailsRequestV1[] = [];
-    for (let j = 0; j < opts.payments[i].chains.length; j++) {
+    for (let j = 0; j < payments[i].chains.length; j++) {
       const { nonce, amount, currency, chainId, recipient, verifyingContract, expirationDate } =
-        opts.payments[i].chains[j];
+        payments[i].chains[j];
 
       if (recipient !== (await signer.getAddress())) {
         throw new Error('recipient is not the signer');
@@ -167,13 +165,13 @@ export async function createPaymentRailsV1(
         ]
       });
     }
-    payments.push({
+    paymentRequestInfo.push({
       data: dataArr,
       credentials,
       description
     });
   }
-  return createPaymentRequest(sender, receiver, agent, payments);
+  return createPaymentRequest(sender, receiver, agent, paymentRequestInfo);
 }
 
 /**
@@ -191,24 +189,22 @@ export async function createERC20PaymentRailsV1(
   receiver: DID,
   agent: string,
   signer: Signer,
-  opts: {
-    payments: [
-      {
-        credentials: {
-          type: string;
-          context: string;
-        }[];
-        description?: string;
-        chains: ERC20PaymentRailsChainInfo[];
-      }
-    ];
-  }
+  payments: [
+    {
+      credentials: {
+        type: string;
+        context: string;
+      }[];
+      description?: string;
+      chains: ERC20PaymentRailsChainInfo[];
+    }
+  ]
 ): Promise<PaymentRequestMessage> {
-  const payments: PaymentRequestInfo[] = [];
-  for (let i = 0; i < opts.payments.length; i++) {
-    const { credentials, description } = opts.payments[i];
+  const paymentRequestInfo: PaymentRequestInfo[] = [];
+  for (let i = 0; i < payments.length; i++) {
+    const { credentials, description } = payments[i];
     const dataArr: Iden3PaymentRailsERC20RequestV1[] = [];
-    for (let j = 0; j < opts.payments[i].chains.length; j++) {
+    for (let j = 0; j < payments[i].chains.length; j++) {
       const {
         tokenAddress,
         features,
@@ -219,7 +215,7 @@ export async function createERC20PaymentRailsV1(
         recipient,
         verifyingContract,
         expirationDate
-      } = opts.payments[i].chains[j];
+      } = payments[i].chains[j];
 
       if (recipient !== (await signer.getAddress())) {
         throw new Error('recipient is not the signer');
@@ -274,13 +270,13 @@ export async function createERC20PaymentRailsV1(
         ]
       });
     }
-    payments.push({
+    paymentRequestInfo.push({
       data: dataArr,
       credentials,
       description
     });
   }
-  return createPaymentRequest(sender, receiver, agent, payments);
+  return createPaymentRequest(sender, receiver, agent, paymentRequestInfo);
 }
 
 /**
