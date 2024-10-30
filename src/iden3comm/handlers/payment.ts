@@ -27,71 +27,6 @@ import {
 } from '../../verifiable';
 import { Contract, Signer } from 'ethers';
 
-const erc20PermitAbi = [
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'owner',
-        type: 'address'
-      }
-    ],
-    name: 'nonces',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256'
-      }
-    ],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'eip712Domain',
-    outputs: [
-      {
-        internalType: 'bytes1',
-        name: 'fields',
-        type: 'bytes1'
-      },
-      {
-        internalType: 'string',
-        name: 'name',
-        type: 'string'
-      },
-      {
-        internalType: 'string',
-        name: 'version',
-        type: 'string'
-      },
-      {
-        internalType: 'uint256',
-        name: 'chainId',
-        type: 'uint256'
-      },
-      {
-        internalType: 'address',
-        name: 'verifyingContract',
-        type: 'address'
-      },
-      {
-        internalType: 'bytes32',
-        name: 'salt',
-        type: 'bytes32'
-      },
-      {
-        internalType: 'uint256[]',
-        name: 'extensions',
-        type: 'uint256[]'
-      }
-    ],
-    stateMutability: 'view',
-    type: 'function'
-  }
-];
-
 /**
  * @beta
  * createPaymentRequest is a function to create protocol payment-request message
@@ -348,45 +283,6 @@ export async function createERC20PaymentRailsV1(
   return createPaymentRequest(sender, receiver, agent, payments);
 }
 
-export async function getPermitSignature(
-  signer: Signer, // User who owns the tokens
-  tokenAddress: string, // EIP-2612 contract address
-  spender: string, // The contract address that will spend tokens
-  value: bigint, // Amount of tokens to approve
-  deadline: number // Timestamp when the permit expires
-) {
-  const erc20PermitContract = new Contract(tokenAddress, erc20PermitAbi, signer);
-
-  const nonce = await erc20PermitContract.nonces(await signer.getAddress());
-  const domainData = await erc20PermitContract.eip712Domain();
-  const domain = {
-    name: domainData[1],
-    version: domainData[2],
-    chainId: domainData[3],
-    verifyingContract: tokenAddress
-  };
-
-  const types = {
-    Permit: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-      { name: 'value', type: 'uint256' },
-      { name: 'nonce', type: 'uint256' },
-      { name: 'deadline', type: 'uint256' }
-    ]
-  };
-
-  const message = {
-    owner: await signer.getAddress(),
-    spender: spender,
-    value: value,
-    nonce: nonce,
-    deadline: deadline
-  };
-
-  return signer.signTypedData(domain, types, message);
-}
-
 /**
  * @beta
  * createPayment is a function to create protocol payment message
@@ -457,7 +353,10 @@ export type PaymentRequestMessageHandlerOptions = {
   paymentHandler: (
     data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1
   ) => Promise<string>;
-  nonce?: string;
+  /*
+   selected payment nonce (for Iden3PaymentRequestCryptoV1 type it should be equal to Payment id field)
+  */
+  nonce: string;
   erc20TokenApproveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>;
 };
 
@@ -556,82 +455,37 @@ export class PaymentHandler
     const payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsV1 | Iden3PaymentRailsERC20V1)[] = [];
     for (let i = 0; i < paymentRequest.body.payments.length; i++) {
       const paymentReq = paymentRequest.body.payments[i];
+      const dataArray = Array.isArray(paymentReq.data) ? paymentReq.data : [paymentReq.data];
+      const selectedPayment =
+        dataArray.length === 1
+          ? dataArray[0]
+          : dataArray.find((p) => {
+              return p.type === PaymentRequestDataType.Iden3PaymentRequestCryptoV1
+                ? p.id === ctx.nonce
+                : p.nonce === ctx.nonce;
+            });
 
-      // if multichain request
-      if (Array.isArray(paymentReq.data)) {
-        if (!ctx.nonce) {
-          throw new Error(`failed request. please provide payment nonce in context`);
-        }
-        const selectedPayment = paymentReq.data.find((p) => {
-          return (
-            p.nonce === ctx.nonce && (!p.expirationDate || new Date(p.expirationDate) > new Date())
+      if (!selectedPayment) {
+        throw new Error(`failed request. no payment in request for nonce ${ctx.nonce}`);
+      }
+
+      switch (selectedPayment.type) {
+        case PaymentRequestDataType.Iden3PaymentRequestCryptoV1:
+          payments.push(
+            await this.handleIden3PaymentRequestCryptoV1(selectedPayment, ctx.paymentHandler)
           );
-        });
-
-        if (!selectedPayment) {
-          throw new Error(`failed request. no payment in request for nonce ${ctx.nonce}`);
-        }
-
-        if (
-          selectedPayment.type !== PaymentRequestDataType.Iden3PaymentRailsRequestV1 &&
-          selectedPayment.type !== PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
-        ) {
-          throw new Error(
-            `failed request. not supported '${selectedPayment['type']}' payment type `
+          break;
+        case PaymentRequestDataType.Iden3PaymentRailsRequestV1:
+          payments.push(
+            await this.handleIden3PaymentRailsRequestV1(selectedPayment, ctx.paymentHandler)
           );
-        }
-
-        if (
-          selectedPayment.type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 &&
-          !selectedPayment.features?.includes(PaymentFeatures.EIP_2612)
-        ) {
-          if (!ctx.erc20TokenApproveHandler) {
-            throw new Error(
-              `please provide erc20TokenApproveHandler in context for ERC-20 payment type`
-            );
-          }
-
-          await ctx.erc20TokenApproveHandler(selectedPayment);
-        }
-
-        const txId = await ctx.paymentHandler(selectedPayment);
-        const proof = Array.isArray(selectedPayment.proof)
-          ? selectedPayment.proof[0]
-          : selectedPayment.proof;
-        payments.push({
-          nonce: selectedPayment.nonce,
-          type:
-            selectedPayment.type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
-              ? PaymentType.Iden3PaymentRailsERC20V1
-              : PaymentType.Iden3PaymentRailsV1,
-          '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
-          paymentData: {
-            txId,
-            chainId: proof.eip712.domain.chainId
-          }
-        });
-
-        continue;
+          break;
+        case PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1:
+          payments.push(
+            await this.handleIden3PaymentRailsERC20RequestV1(selectedPayment, ctx.paymentHandler)
+          );
+          break;
       }
-
-      if (paymentReq.data.type !== PaymentRequestDataType.Iden3PaymentRequestCryptoV1) {
-        throw new Error(`failed request. not supported '${paymentReq.data.type}' payment type `);
-      }
-
-      if (paymentReq.data.expiration && new Date(paymentReq.data.expiration) < new Date()) {
-        throw new Error(`failed request. expired request`);
-      }
-
-      const txId = await ctx.paymentHandler(paymentReq.data);
-
-      payments.push({
-        id: paymentReq.data.id,
-        '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
-        type: PaymentType.Iden3PaymentCryptoV1,
-        paymentData: {
-          txId
-        }
-      });
     }
 
     const paymentMessage = createPayment(senderDID, receiverDID, payments);
@@ -688,10 +542,10 @@ export class PaymentHandler
   /**
    * @inheritdoc IPaymentHandler#handlePayment
    */
-  async handlePayment(payment: PaymentMessage, opts: PaymentHandlerOptions) {
-    if (opts.paymentRequest.from !== payment.to) {
+  async handlePayment(payment: PaymentMessage, params: PaymentHandlerOptions) {
+    if (params.paymentRequest.from !== payment.to) {
       throw new Error(
-        `sender of the request is not a target of response - expected ${opts.paymentRequest.from}, given ${payment.to}`
+        `sender of the request is not a target of response - expected ${params.paymentRequest.from}, given ${payment.to}`
       );
     }
 
@@ -708,7 +562,7 @@ export class PaymentHandler
         | undefined;
       switch (p.type) {
         case PaymentType.Iden3PaymentCryptoV1: {
-          data = opts.paymentRequest.body.payments.find(
+          data = params.paymentRequest.body.payments.find(
             (r) => (r.data as Iden3PaymentRequestCryptoV1).id === p.id
           )?.data as Iden3PaymentRequestCryptoV1;
           if (!data) {
@@ -718,19 +572,18 @@ export class PaymentHandler
         }
         case PaymentType.Iden3PaymentRailsV1:
         case PaymentType.Iden3PaymentRailsERC20V1: {
-          for (let j = 0; j < opts.paymentRequest.body.payments.length; j++) {
-            const paymentReq = opts.paymentRequest.body.payments[j];
+          for (let j = 0; j < params.paymentRequest.body.payments.length; j++) {
+            const paymentReq = params.paymentRequest.body.payments[j];
             if (Array.isArray(paymentReq.data)) {
               const selectedPayment = paymentReq.data.find(
-                (r) => (r as Iden3PaymentRailsRequestV1).nonce === p.nonce
-              ) as Iden3PaymentRailsRequestV1;
+                (r) => (r as { nonce: string }).nonce === p.nonce
+              );
               if (selectedPayment) {
                 data = selectedPayment;
                 break;
               }
             }
           }
-
           if (!data) {
             throw new Error(`can't find payment request for payment nonce ${p.nonce}`);
           }
@@ -739,10 +592,10 @@ export class PaymentHandler
         default:
           throw new Error(`failed request. not supported '${p.type}' payment type `);
       }
-      if (!opts.paymentValidationHandler) {
+      if (!params.paymentValidationHandler) {
         throw new Error(`please provide payment validation handler in options`);
       }
-      await opts.paymentValidationHandler(p.paymentData.txId, data);
+      await params.paymentValidationHandler(p.paymentData.txId, data);
     }
   }
 
@@ -758,5 +611,70 @@ export class PaymentHandler
       senderDID,
       ...packerOpts
     });
+  }
+
+  private async handleIden3PaymentRequestCryptoV1(
+    data: Iden3PaymentRequestCryptoV1,
+    paymentHandler: (data: Iden3PaymentRequestCryptoV1) => Promise<string>
+  ): Promise<Iden3PaymentCryptoV1> {
+    if (data.expiration && new Date(data.expiration) < new Date()) {
+      throw new Error(`failed request. expired request`);
+    }
+    const txId = await paymentHandler(data);
+
+    return {
+      id: data.id,
+      '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
+      type: PaymentType.Iden3PaymentCryptoV1,
+      paymentData: {
+        txId
+      }
+    };
+  }
+
+  private async handleIden3PaymentRailsRequestV1(
+    data: Iden3PaymentRailsRequestV1,
+    paymentHandler: (data: Iden3PaymentRailsRequestV1) => Promise<string>
+  ): Promise<Iden3PaymentRailsV1> {
+    const txId = await paymentHandler(data);
+    const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
+    return {
+      nonce: data.nonce,
+      type: PaymentType.Iden3PaymentRailsV1,
+      '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
+      paymentData: {
+        txId,
+        chainId: proof.eip712.domain.chainId
+      }
+    };
+  }
+
+  private async handleIden3PaymentRailsERC20RequestV1(
+    data: Iden3PaymentRailsERC20RequestV1,
+    paymentHandler: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>,
+    approveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>
+  ): Promise<Iden3PaymentRailsERC20V1> {
+    if (!data.features?.includes(PaymentFeatures.EIP_2612)) {
+      if (!approveHandler) {
+        throw new Error(
+          `please provide erc20TokenApproveHandler in context for ERC-20 payment type`
+        );
+      }
+
+      await approveHandler(data);
+    }
+
+    const txId = await paymentHandler(data);
+    const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
+    return {
+      nonce: data.nonce,
+      type: PaymentType.Iden3PaymentRailsERC20V1,
+      '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
+      paymentData: {
+        txId,
+        chainId: proof.eip712.domain.chainId,
+        tokenAddress: data.tokenAddress
+      }
+    };
   }
 }

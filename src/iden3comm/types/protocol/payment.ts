@@ -27,7 +27,11 @@ export type PaymentRequestInfo = {
   }[];
   data:
     | Iden3PaymentRequestCryptoV1
-    | (Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1)[];
+    | (
+        | Iden3PaymentRequestCryptoV1
+        | Iden3PaymentRailsRequestV1
+        | Iden3PaymentRailsERC20RequestV1
+      )[];
   description?: string;
 };
 
@@ -119,5 +123,6 @@ export type Iden3PaymentRailsERC20V1 = {
   paymentData: {
     txId: string;
     chainId: string;
+    tokenAddress: string;
   };
 };

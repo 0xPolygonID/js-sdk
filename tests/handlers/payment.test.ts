@@ -17,7 +17,8 @@ import {
   createProposal,
   SupportedCurrencies,
   SupportedPaymentProofType,
-  PaymentFeatures
+  PaymentFeatures,
+  getPermitSignature
 } from '../../src';
 
 import {
@@ -41,7 +42,6 @@ import {
   createPayment,
   createPaymentRailsV1,
   createPaymentRequest,
-  getPermitSignature,
   IPaymentHandler,
   PaymentHandler
 } from '../../src/iden3comm/handlers/payment';
@@ -592,7 +592,8 @@ describe('payment-request handler', () => {
       {}
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentHandlerFuncMock
+      paymentHandler: paymentHandlerFuncMock,
+      nonce: '12432'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -663,7 +664,8 @@ describe('payment-request handler', () => {
       {}
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentHandlerFuncMock
+      paymentHandler: paymentHandlerFuncMock,
+      nonce: '12432'
     });
     expect(agentMessageBytes).to.be.null;
   });
@@ -701,7 +703,8 @@ describe('payment-request handler', () => {
         '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         paymentData: {
           txId: '0x312312334',
-          chainId: '80002'
+          chainId: '80002',
+          tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3'
         }
       }
     ]);
@@ -748,7 +751,8 @@ describe('payment-request handler', () => {
       {}
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
-      paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>')
+      paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
+      nonce: '12432'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -1001,7 +1005,8 @@ describe('payment-request handler', () => {
         '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         paymentData: {
           txId: '0x72de0354aee61a9083424a4b852ec80db4f236e31b63345dc3efefc3b197ecca',
-          chainId: '80002'
+          chainId: '80002',
+          tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3'
         }
       }
     ]);
