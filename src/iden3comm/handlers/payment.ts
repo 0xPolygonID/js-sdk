@@ -620,6 +620,9 @@ export class PaymentHandler
     data: Iden3PaymentRailsRequestV1,
     paymentHandler: (data: Iden3PaymentRailsRequestV1) => Promise<string>
   ): Promise<Iden3PaymentRailsV1> {
+    if (data.expirationDate && new Date(data.expirationDate) < new Date()) {
+      throw new Error(`failed request. expired request`);
+    }
     const txId = await paymentHandler(data);
     const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
     return {
@@ -638,6 +641,10 @@ export class PaymentHandler
     paymentHandler: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>,
     approveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>
   ): Promise<Iden3PaymentRailsERC20V1> {
+    if (data.expirationDate && new Date(data.expirationDate) < new Date()) {
+      throw new Error(`failed request. expired request`);
+    }
+
     if (!data.features?.includes(PaymentFeatures.EIP_2612) && !approveHandler) {
       throw new Error(`please provide erc20TokenApproveHandler in context for ERC-20 payment type`);
     }
