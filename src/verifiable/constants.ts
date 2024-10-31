@@ -154,7 +154,8 @@ export enum SupportedCurrencies {
   ETH_WEI = 'ETHWEI',
   ETH_GWEI = 'ETHGWEI',
   MATIC = 'MATIC',
-  ERC20Token = 'ERC20Token'
+  USDT = 'USDT',
+  USDC = 'USDC'
 }
 
 /**

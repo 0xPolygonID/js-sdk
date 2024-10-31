@@ -38,9 +38,7 @@ import path from 'path';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { DID } from '@iden3/js-iden3-core';
 import {
-  createERC20PaymentRailsV1,
   createPayment,
-  createPaymentRailsV1,
   createPaymentRequest,
   IPaymentHandler,
   PaymentHandler
@@ -474,7 +472,7 @@ describe('payment-request handler', () => {
                 name: 'MCPayment',
                 version: '1.0.0',
                 chainId: '80002',
-                verifyingContract: '0x40F63e736146ACC1D30844093d41cbFcF515559a'
+                verifyingContract: '0x380dd90852d3Fe75B4f08D0c47416D6c4E0dC774'
               }
             }
           }
@@ -501,7 +499,7 @@ describe('payment-request handler', () => {
         tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
         amount: '1',
-        currency: SupportedCurrencies.ERC20Token,
+        currency: 'TST',
         expirationDate: new Date(new Date().setHours(new Date().getHours() + 1)).toISOString(),
         nonce: '32',
         metadata: '0x',
@@ -521,7 +519,7 @@ describe('payment-request handler', () => {
                 name: 'MCPayment',
                 version: '1.0.0',
                 chainId: '80002',
-                verifyingContract: '0x40F63e736146ACC1D30844093d41cbFcF515559a'
+                verifyingContract: '0x380dd90852d3Fe75B4f08D0c47416D6c4E0dC774'
               }
             }
           }
@@ -562,7 +560,28 @@ describe('payment-request handler', () => {
     paymentHandler = new PaymentHandler(packageMgr, {
       packerParams: {
         mediaType: MediaType.PlainMessage
-      }
+      },
+      multiChainPaymentConfig: [
+        {
+          chainId: '80002',
+          paymentContract: '0x380dd90852d3Fe75B4f08D0c47416D6c4E0dC774',
+          recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+          erc20TokenAddressArr: [
+            { symbol: 'TST', address: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A' }
+          ]
+        },
+        {
+          chainId: '1101',
+          paymentContract: '0x380dd90852d3Fe75B4f08D0c47416D6c4E0dC774',
+          recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+          erc20TokenAddressArr: [
+            {
+              symbol: SupportedCurrencies.USDT,
+              address: '0x1e4a5963abfd975d8c9021ce480b42188849d41d'
+            }
+          ]
+        }
+      ]
     });
 
     const userIdentity = await createIdentity(idWallet, {
@@ -767,37 +786,39 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const paymentRequest = await createPaymentRailsV1(issuerDID, userDID, agent, ethSigner, [
-      {
-        credentials: [
-          {
-            type: 'AML',
-            context: 'http://test.com'
-          }
-        ],
-        description: 'Iden3PaymentRailsRequestV1 payment-request integration test',
-        chains: [
-          {
-            nonce: 1n,
-            amount: 100n,
-            currency: SupportedCurrencies.ETH_WEI,
-            chainId: '80002',
-            recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-            verifyingContract: '0x40F63e736146ACC1D30844093d41cbFcF515559a',
-            expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
-          },
-          {
-            nonce: 2n,
-            amount: 10000n,
-            currency: SupportedCurrencies.ETH_WEI,
-            chainId: '1101',
-            recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-            verifyingContract: '0x40F63e736146ACC1D30844093d41cbFcF515559a',
-            expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
-          }
-        ]
-      }
-    ]);
+    const paymentRequest = await paymentHandler.createPaymentRailsV1(
+      issuerDID,
+      userDID,
+      agent,
+      ethSigner,
+      [
+        {
+          credentials: [
+            {
+              type: 'AML',
+              context: 'http://test.com'
+            }
+          ],
+          description: 'Iden3PaymentRailsRequestV1 payment-request integration test',
+          chains: [
+            {
+              nonce: 10002n,
+              amount: 100n,
+              currency: SupportedCurrencies.ETH_WEI,
+              chainId: '80002',
+              type: PaymentRequestDataType.Iden3PaymentRailsRequestV1
+            },
+            {
+              nonce: 10001112n,
+              amount: 10000n,
+              currency: SupportedCurrencies.ETH_WEI,
+              chainId: '1101',
+              type: PaymentRequestDataType.Iden3PaymentRailsRequestV1
+            }
+          ]
+        }
+      ]
+    );
 
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
@@ -806,7 +827,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '1'
+      nonce: '10002'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -821,39 +842,39 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsERC20RequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const paymentRequest = await createERC20PaymentRailsV1(issuerDID, userDID, agent, ethSigner, [
-      {
-        credentials: [
-          {
-            type: 'AML',
-            context: 'http://test.com'
-          }
-        ],
-        description: 'Iden3PaymentRailsERC20RequestV1 payment-request integration test',
-        chains: [
-          {
-            tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
-            nonce: 22n,
-            amount: 30n,
-            currency: SupportedCurrencies.ERC20Token,
-            chainId: '80002',
-            recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-            verifyingContract: '0x40F63e736146ACC1D30844093d41cbFcF515559a',
-            expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
-          },
-          {
-            tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
-            nonce: 23n,
-            amount: 30n,
-            currency: SupportedCurrencies.ERC20Token,
-            chainId: '1101',
-            recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-            verifyingContract: '0x40F63e736146ACC1D30844093d41cbFcF515559a',
-            expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
-          }
-        ]
-      }
-    ]);
+    const paymentRequest = await paymentHandler.createPaymentRailsV1(
+      issuerDID,
+      userDID,
+      agent,
+      ethSigner,
+      [
+        {
+          credentials: [
+            {
+              type: 'AML',
+              context: 'http://test.com'
+            }
+          ],
+          description: 'Iden3PaymentRailsERC20RequestV1 payment-request integration test',
+          chains: [
+            {
+              nonce: 22003n,
+              amount: 30n,
+              currency: 'TST',
+              chainId: '80002',
+              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+            },
+            {
+              nonce: 220011122n,
+              amount: 30n,
+              currency: SupportedCurrencies.USDT,
+              chainId: '1101',
+              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+            }
+          ]
+        }
+      ]
+    );
 
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
@@ -862,14 +883,14 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '22',
+      nonce: '22003',
       erc20TokenApproveHandler: async (data: Iden3PaymentRailsERC20RequestV1) => {
         const token = new Contract(data.tokenAddress, erc20Abi, ethSigner);
         const txData = await token.approve(
           data.proof[0].eip712.domain.verifyingContract,
           data.amount
         );
-        await txData.wait(3);
+        await txData.wait(1);
         return txData.hash;
       }
     });
@@ -886,40 +907,40 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsERC20RequestV1 Permit, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const paymentRequest = await createERC20PaymentRailsV1(issuerDID, userDID, agent, ethSigner, [
-      {
-        credentials: [
-          {
-            type: 'AML',
-            context: 'http://test.com'
-          }
-        ],
-        description: 'Iden3PaymentRailsERC20RequestV1 payment-request integration test',
-        chains: [
-          {
-            tokenAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A',
-            features: [PaymentFeatures.EIP_2612],
-            nonce: 33n,
-            amount: 30n,
-            currency: SupportedCurrencies.ERC20Token,
-            chainId: '80002',
-            recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-            verifyingContract: '0x6f742EBA99C3043663f995a7f566e9F012C07925',
-            expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
-          },
-          {
-            tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3',
-            nonce: 34n,
-            amount: 30n,
-            currency: SupportedCurrencies.ERC20Token,
-            chainId: '1101',
-            recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-            verifyingContract: '0x40F63e736146ACC1D30844093d41cbFcF515559a',
-            expirationDate: new Date(new Date().setHours(new Date().getHours() + 1))
-          }
-        ]
-      }
-    ]);
+    const paymentRequest = await paymentHandler.createPaymentRailsV1(
+      issuerDID,
+      userDID,
+      agent,
+      ethSigner,
+      [
+        {
+          credentials: [
+            {
+              type: 'AML',
+              context: 'http://test.com'
+            }
+          ],
+          description: 'Iden3PaymentRailsERC20RequestV1 payment-request integration test',
+          chains: [
+            {
+              features: [PaymentFeatures.EIP_2612],
+              nonce: 330003n,
+              amount: 30n,
+              currency: 'TST',
+              chainId: '80002',
+              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+            },
+            {
+              nonce: 330001122n,
+              amount: 30n,
+              currency: SupportedCurrencies.USDT,
+              chainId: '1101',
+              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+            }
+          ]
+        }
+      ]
+    );
 
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
@@ -928,7 +949,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '33'
+      nonce: '330003'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -965,7 +986,7 @@ describe('payment-request handler', () => {
     ]);
 
     const data = paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1;
-    data.nonce = '1';
+    data.nonce = '10001';
 
     const payment = createPayment(userDID, issuerDID, [
       {
@@ -973,7 +994,7 @@ describe('payment-request handler', () => {
         type: PaymentType.Iden3PaymentRailsV1,
         '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         paymentData: {
-          txId: '0xea5d9f4396d403b3e88b13fba4f2e5e12347488a76f08544c6bc1efc1961de4c',
+          txId: '0x59b54f1a3a53d48d891c750db7c300acf8e0dc6bb7daccbf42ce8f62d2957bae',
           chainId: '80002'
         }
       }
@@ -990,7 +1011,7 @@ describe('payment-request handler', () => {
     ]);
 
     const data = paymentRequest.body.payments[0].data[0] as Iden3PaymentRailsRequestV1;
-    data.nonce = '2';
+    data.nonce = '330001';
 
     const payment = createPayment(userDID, issuerDID, [
       {
@@ -998,9 +1019,9 @@ describe('payment-request handler', () => {
         type: PaymentType.Iden3PaymentRailsERC20V1,
         '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         paymentData: {
-          txId: '0x72de0354aee61a9083424a4b852ec80db4f236e31b63345dc3efefc3b197ecca',
+          txId: '0xfd270399a07a7dfc9e184699e8ff8c8b2c59327f27841401b28dc910307d4cb0',
           chainId: '80002',
-          tokenAddress: '0x5fb4a5c46d7f2067AA235fbEA350A0261eAF71E3'
+          tokenAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A'
         }
       }
     ]);

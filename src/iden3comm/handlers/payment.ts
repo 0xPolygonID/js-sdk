@@ -8,12 +8,14 @@ import { proving } from '@iden3/js-jwz';
 import { byteEncoder } from '../../utils';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 import {
+  EthereumEip712Signature2021,
   Iden3PaymentCryptoV1,
   Iden3PaymentRailsERC20RequestV1,
   Iden3PaymentRailsERC20V1,
   Iden3PaymentRailsRequestV1,
   Iden3PaymentRailsV1,
   Iden3PaymentRequestCryptoV1,
+  MultiChainPaymentConfig,
   PaymentMessage,
   PaymentRequestInfo,
   PaymentRequestMessage
@@ -60,224 +62,32 @@ export function createPaymentRequest(
 
 /**
  * @beta
+ * PaymentRailsInfo represents payment info for payment rails
+ */
+export type PaymentRailsInfo = {
+  credentials: {
+    type: string;
+    context: string;
+  }[];
+  description?: string;
+  chains: PaymentRailsChainInfo[];
+};
+
+/**
+ * @beta
  * PaymentRailsChainInfo represents chain info for payment rails
  */
 export type PaymentRailsChainInfo = {
   nonce: bigint;
   amount: bigint;
-  currency: SupportedCurrencies;
+  currency: SupportedCurrencies | string;
   chainId: string;
-  recipient: string;
-  verifyingContract: string;
   expirationDate?: Date;
-};
-
-/**
- * @beta
- * ERC20PaymentRailsChainInfo represents chain info for ERC-20 payment rails
- */
-export type ERC20PaymentRailsChainInfo = PaymentRailsChainInfo & {
-  tokenAddress: string;
   features?: PaymentFeatures[];
+  type:
+    | PaymentRequestDataType.Iden3PaymentRailsRequestV1
+    | PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
 };
-
-/**
- * @beta
- * createPaymentRailsV1 is a function to create protocol payment message
- * @param {DID} sender - sender did
- * @param {DID} receiver - receiver did
- * @param {Signer} signer - receiver did
- * @param {string} agent - agent URL
- * @param opts - payment options
- * @returns {Promise<PaymentRequestMessage>}
- */
-export async function createPaymentRailsV1(
-  sender: DID,
-  receiver: DID,
-  agent: string,
-  signer: Signer,
-  payments: [
-    {
-      credentials: {
-        type: string;
-        context: string;
-      }[];
-      description?: string;
-      chains: PaymentRailsChainInfo[];
-    }
-  ]
-): Promise<PaymentRequestMessage> {
-  const paymentRequestInfo: PaymentRequestInfo[] = [];
-  for (let i = 0; i < payments.length; i++) {
-    const { credentials, description } = payments[i];
-    const dataArr: Iden3PaymentRailsRequestV1[] = [];
-    for (let j = 0; j < payments[i].chains.length; j++) {
-      const { nonce, amount, currency, chainId, recipient, verifyingContract, expirationDate } =
-        payments[i].chains[j];
-
-      if (recipient !== (await signer.getAddress())) {
-        throw new Error('recipient is not the signer');
-      }
-      const typeUrl = 'https://schema.iden3.io/core/json/Iden3PaymentRailsRequestV1.json';
-      const typesFetchResult = await fetch(typeUrl);
-      const types = await typesFetchResult.json();
-      delete types.EIP712Domain;
-      const paymentData = {
-        recipient,
-        amount,
-        expirationDate: expirationDate?.getTime() ?? 0,
-        nonce,
-        metadata: '0x'
-      };
-
-      const domain = {
-        name: 'MCPayment',
-        version: '1.0.0',
-        chainId,
-        verifyingContract
-      };
-      const signature = await signer.signTypedData(domain, types, paymentData);
-      dataArr.push({
-        type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
-        '@context': [
-          'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsRequestV1',
-          'https://w3id.org/security/suites/eip712sig-2021/v1'
-        ],
-        recipient,
-        amount: amount.toString(),
-        currency,
-        expirationDate: expirationDate?.toISOString() ?? '',
-        nonce: nonce.toString(),
-        metadata: '0x',
-        proof: [
-          {
-            type: SupportedPaymentProofType.EthereumEip712Signature2021,
-            proofPurpose: 'assertionMethod',
-            proofValue: signature,
-            verificationMethod: `did:pkh:eip155:${chainId}:${recipient}#blockchainAccountId`,
-            created: new Date().toISOString(),
-            eip712: {
-              types: typeUrl,
-              primaryType: 'Iden3PaymentRailsRequestV1',
-              domain
-            }
-          }
-        ]
-      });
-    }
-    paymentRequestInfo.push({
-      data: dataArr,
-      credentials,
-      description
-    });
-  }
-  return createPaymentRequest(sender, receiver, agent, paymentRequestInfo);
-}
-
-/**
- * @beta
- * createPaymentRailsV1 is a function to create protocol payment message
- * @param {DID} sender - sender did
- * @param {DID} receiver - receiver did
- * @param {Signer} signer - receiver did
- * @param {string} agent - agent URL
- * @param opts - payment options
- * @returns {Promise<PaymentRequestMessage>}
- */
-export async function createERC20PaymentRailsV1(
-  sender: DID,
-  receiver: DID,
-  agent: string,
-  signer: Signer,
-  payments: [
-    {
-      credentials: {
-        type: string;
-        context: string;
-      }[];
-      description?: string;
-      chains: ERC20PaymentRailsChainInfo[];
-    }
-  ]
-): Promise<PaymentRequestMessage> {
-  const paymentRequestInfo: PaymentRequestInfo[] = [];
-  for (let i = 0; i < payments.length; i++) {
-    const { credentials, description } = payments[i];
-    const dataArr: Iden3PaymentRailsERC20RequestV1[] = [];
-    for (let j = 0; j < payments[i].chains.length; j++) {
-      const {
-        tokenAddress,
-        features,
-        nonce,
-        amount,
-        currency,
-        chainId,
-        recipient,
-        verifyingContract,
-        expirationDate
-      } = payments[i].chains[j];
-
-      if (recipient !== (await signer.getAddress())) {
-        throw new Error('recipient is not the signer');
-      }
-      const typeUrl = 'https://schema.iden3.io/core/json/Iden3PaymentRailsERC20RequestV1.json';
-      const typesFetchResult = await fetch(typeUrl);
-      const types = await typesFetchResult.json();
-      delete types.EIP712Domain;
-      const paymentData = {
-        tokenAddress,
-        recipient,
-        amount,
-        expirationDate: expirationDate?.getTime() ?? 0,
-        nonce,
-        metadata: '0x'
-      };
-
-      const domain = {
-        name: 'MCPayment',
-        version: '1.0.0',
-        chainId,
-        verifyingContract
-      };
-      const signature = await signer.signTypedData(domain, types, paymentData);
-      dataArr.push({
-        type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1,
-        '@context': [
-          'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsERC20RequestV1',
-          'https://w3id.org/security/suites/eip712sig-2021/v1'
-        ],
-        features: features || [],
-        tokenAddress,
-        recipient,
-        amount: amount.toString(),
-        currency,
-        expirationDate: expirationDate?.toISOString() ?? '',
-        nonce: nonce.toString(),
-        metadata: '0x',
-        proof: [
-          {
-            type: SupportedPaymentProofType.EthereumEip712Signature2021,
-            proofPurpose: 'assertionMethod',
-            proofValue: signature,
-            verificationMethod: `did:pkh:eip155:${chainId}:${recipient}#blockchainAccountId`,
-            created: new Date().toISOString(),
-            eip712: {
-              types: typeUrl,
-              primaryType: 'Iden3PaymentRailsRequestV1',
-              domain
-            }
-          }
-        ]
-      });
-    }
-    paymentRequestInfo.push({
-      data: dataArr,
-      credentials,
-      description
-    });
-  }
-  return createPaymentRequest(sender, receiver, agent, paymentRequestInfo);
-}
 
 /**
  * @beta
@@ -342,6 +152,24 @@ export interface IPaymentHandler {
    * @returns `Promise<void>`
    */
   handlePayment(payment: PaymentMessage, opts: PaymentHandlerOptions): Promise<void>;
+
+  /**
+   * @beta
+   * createPaymentRailsV1 is a function to create protocol payment message
+   * @param {DID} sender - sender did
+   * @param {DID} receiver - receiver did
+   * @param {string} agent - agent URL
+   * @param {Signer} signer - receiver did
+   * @param payments - payment options
+   * @returns {Promise<PaymentRequestMessage>}
+   */
+  createPaymentRailsV1(
+    sender: DID,
+    receiver: DID,
+    agent: string,
+    signer: Signer,
+    payments: PaymentRailsInfo[]
+  ): Promise<PaymentRequestMessage>;
 }
 
 /** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
@@ -368,6 +196,7 @@ export type PaymentHandlerOptions = {
 /** @beta PaymentHandlerParams represents payment handler params */
 export type PaymentHandlerParams = {
   packerParams: PackerParams;
+  multiChainPaymentConfig?: MultiChainPaymentConfig[];
 };
 
 /**
@@ -577,6 +406,129 @@ export class PaymentHandler
       }
       await params.paymentValidationHandler(p.paymentData.txId, requestData);
     }
+  }
+
+  /**
+   * @inheritdoc createERC20PaymentRailsV1#createPaymentRailsV1
+   */
+  async createPaymentRailsV1(
+    sender: DID,
+    receiver: DID,
+    agent: string,
+    signer: Signer,
+    payments: PaymentRailsInfo[]
+  ): Promise<PaymentRequestMessage> {
+    const paymentRequestInfo: PaymentRequestInfo[] = [];
+    for (let i = 0; i < payments.length; i++) {
+      const { credentials, description } = payments[i];
+      const dataArr: (Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1)[] = [];
+      for (let j = 0; j < payments[i].chains.length; j++) {
+        const { features, nonce, amount, currency, chainId, expirationDate, type } =
+          payments[i].chains[j];
+
+        const multiChainConfig = this._params.multiChainPaymentConfig?.find(
+          (c) => c.chainId === chainId
+        );
+        if (!multiChainConfig) {
+          throw new Error(`failed request. no config for chain ${chainId}`);
+        }
+        const { recipient, paymentContract, erc20TokenAddressArr } = multiChainConfig;
+        if (recipient !== (await signer.getAddress())) {
+          throw new Error('recipient is not the signer');
+        }
+
+        const tokenAddress = erc20TokenAddressArr.find((t) => t.symbol === currency)?.address;
+        if (type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 && !tokenAddress) {
+          throw new Error(`failed request. no token address for currency ${currency}`);
+        }
+        const expiration = expirationDate
+          ? expirationDate.getTime()
+          : new Date(new Date().setHours(new Date().getHours() + 1)).getTime();
+        const typeUrl = `https://schema.iden3.io/core/json/${type}.json`;
+        const typesFetchResult = await fetch(typeUrl);
+        const types = await typesFetchResult.json();
+        delete types.EIP712Domain;
+        const paymentData =
+          type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
+            ? {
+                recipient,
+                amount,
+                expirationDate: expiration,
+                nonce,
+                metadata: '0x'
+              }
+            : {
+                tokenAddress,
+                recipient,
+                amount,
+                expirationDate: expiration,
+                nonce,
+                metadata: '0x'
+              };
+
+        const domain = {
+          name: 'MCPayment',
+          version: '1.0.0',
+          chainId,
+          verifyingContract: paymentContract
+        };
+        const signature = await signer.signTypedData(domain, types, paymentData);
+        const proof: EthereumEip712Signature2021[] = [
+          {
+            type: SupportedPaymentProofType.EthereumEip712Signature2021,
+            proofPurpose: 'assertionMethod',
+            proofValue: signature,
+            verificationMethod: `did:pkh:eip155:${chainId}:${recipient}#blockchainAccountId`,
+            created: new Date().toISOString(),
+            eip712: {
+              types: typeUrl,
+              primaryType: 'Iden3PaymentRailsRequestV1',
+              domain
+            }
+          }
+        ];
+
+        dataArr.push(
+          type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
+            ? {
+                type,
+                '@context': [
+                  `https://schema.iden3.io/core/jsonld/payment.jsonld#${type}`,
+                  'https://w3id.org/security/suites/eip712sig-2021/v1'
+                ],
+                recipient,
+                amount: amount.toString(),
+                currency,
+                expirationDate: new Date(expiration).toISOString(),
+                nonce: nonce.toString(),
+                metadata: '0x',
+                proof
+              }
+            : {
+                type,
+                '@context': [
+                  `https://schema.iden3.io/core/jsonld/payment.jsonld#${type}`,
+                  'https://w3id.org/security/suites/eip712sig-2021/v1'
+                ],
+                features: features || [],
+                tokenAddress: tokenAddress || '',
+                recipient,
+                amount: amount.toString(),
+                currency,
+                expirationDate: new Date(expiration).toISOString(),
+                nonce: nonce.toString(),
+                metadata: '0x',
+                proof
+              }
+        );
+      }
+      paymentRequestInfo.push({
+        data: dataArr,
+        credentials,
+        description
+      });
+    }
+    return createPaymentRequest(sender, receiver, agent, paymentRequestInfo);
   }
 
   private async packMessage(message: BasicMessage, senderDID: DID): Promise<Uint8Array> {
