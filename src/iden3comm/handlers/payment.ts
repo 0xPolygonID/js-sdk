@@ -482,38 +482,24 @@ export class PaymentHandler
           }
         ];
 
+        const d: Iden3PaymentRailsRequestV1 = {
+          type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
+          '@context': [
+            `https://schema.iden3.io/core/jsonld/payment.jsonld#${type}`,
+            'https://w3id.org/security/suites/eip712sig-2021/v1'
+          ],
+          recipient,
+          amount: amount.toString(),
+          currency,
+          expirationDate: new Date(expiration).toISOString(),
+          nonce: nonce.toString(),
+          metadata: '0x',
+          proof
+        };
         dataArr.push(
           type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
-            ? {
-                type,
-                '@context': [
-                  `https://schema.iden3.io/core/jsonld/payment.jsonld#${type}`,
-                  'https://w3id.org/security/suites/eip712sig-2021/v1'
-                ],
-                recipient,
-                amount: amount.toString(),
-                currency,
-                expirationDate: expiration,
-                nonce: nonce.toString(),
-                metadata: '0x',
-                proof
-              }
-            : {
-                type,
-                '@context': [
-                  `https://schema.iden3.io/core/jsonld/payment.jsonld#${type}`,
-                  'https://w3id.org/security/suites/eip712sig-2021/v1'
-                ],
-                features: features || [],
-                tokenAddress: tokenAddress || '',
-                recipient,
-                amount: amount.toString(),
-                currency,
-                expirationDate: expiration,
-                nonce: nonce.toString(),
-                metadata: '0x',
-                proof
-              }
+            ? d
+            : { ...d, type, tokenAddress: tokenAddress || '', features: features || [] }
         );
       }
       paymentRequestInfo.push({
