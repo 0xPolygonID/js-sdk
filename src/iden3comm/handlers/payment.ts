@@ -18,7 +18,9 @@ import {
   MultiChainPaymentConfig,
   PaymentMessage,
   PaymentRequestInfo,
-  PaymentRequestMessage
+  PaymentRequestMessage,
+  PaymentRequestTypeUnion,
+  PaymentTypeUnion
 } from '../types/protocol/payment';
 import {
   PaymentFeatures,
@@ -82,7 +84,7 @@ export type PaymentRailsChainInfo = {
   amount: bigint;
   currency: SupportedCurrencies | string;
   chainId: string;
-  expirationDate?: Date;
+  expirationDate?: string;
   features?: PaymentFeatures[];
   type:
     | PaymentRequestDataType.Iden3PaymentRailsRequestV1
@@ -100,7 +102,7 @@ export type PaymentRailsChainInfo = {
 export function createPayment(
   sender: DID,
   receiver: DID,
-  payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsV1 | Iden3PaymentRailsERC20V1)[]
+  payments: PaymentTypeUnion[]
 ): PaymentMessage {
   const uuidv4 = uuid.v4();
   const request: PaymentMessage = {
@@ -174,9 +176,7 @@ export interface IPaymentHandler {
 
 /** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
 export type PaymentRequestMessageHandlerOptions = {
-  paymentHandler: (
-    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1
-  ) => Promise<string>;
+  paymentHandler: (data: PaymentRequestTypeUnion) => Promise<string>;
   /*
    selected payment nonce (for Iden3PaymentRequestCryptoV1 type it should be equal to Payment id field)
   */
@@ -187,10 +187,7 @@ export type PaymentRequestMessageHandlerOptions = {
 /** @beta PaymentHandlerOptions represents payment handler options */
 export type PaymentHandlerOptions = {
   paymentRequest: PaymentRequestMessage;
-  paymentValidationHandler: (
-    txId: string,
-    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1
-  ) => Promise<void>;
+  paymentValidationHandler: (txId: string, data: PaymentRequestTypeUnion) => Promise<void>;
 };
 
 /** @beta PaymentHandlerParams represents payment handler params */
@@ -277,18 +274,16 @@ export class PaymentHandler
     const senderDID = DID.parse(paymentRequest.to);
     const receiverDID = DID.parse(paymentRequest.from);
 
-    const payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsV1 | Iden3PaymentRailsERC20V1)[] = [];
+    const payments: PaymentTypeUnion[] = [];
     for (let i = 0; i < paymentRequest.body.payments.length; i++) {
-      const paymentReq = paymentRequest.body.payments[i];
-      const dataArray = Array.isArray(paymentReq.data) ? paymentReq.data : [paymentReq.data];
-      const selectedPayment =
-        dataArray.length === 1
-          ? dataArray[0]
-          : dataArray.find((p) => {
-              return p.type === PaymentRequestDataType.Iden3PaymentRequestCryptoV1
-                ? p.id === ctx.nonce
-                : p.nonce === ctx.nonce;
-            });
+      const { data } = paymentRequest.body.payments[i];
+      const selectedPayment = Array.isArray(data)
+        ? data.find((p) => {
+            return p.type === PaymentRequestDataType.Iden3PaymentRequestCryptoV1
+              ? p.id === ctx.nonce
+              : p.nonce === ctx.nonce;
+          })
+        : data;
 
       if (!selectedPayment) {
         throw new Error(`failed request. no payment in request for nonce ${ctx.nonce}`);
@@ -441,9 +436,8 @@ export class PaymentHandler
         if (type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 && !tokenAddress) {
           throw new Error(`failed request. no token address for currency ${currency}`);
         }
-        const expiration = expirationDate
-          ? expirationDate.getTime()
-          : new Date(new Date().setHours(new Date().getHours() + 1)).getTime();
+        const expiration =
+          expirationDate ?? new Date(new Date().setHours(new Date().getHours() + 1)).toISOString();
         const typeUrl = `https://schema.iden3.io/core/json/${type}.json`;
         const typesFetchResult = await fetch(typeUrl);
         const types = await typesFetchResult.json();
@@ -499,7 +493,7 @@ export class PaymentHandler
                 recipient,
                 amount: amount.toString(),
                 currency,
-                expirationDate: new Date(expiration).toISOString(),
+                expirationDate: expiration,
                 nonce: nonce.toString(),
                 metadata: '0x',
                 proof
@@ -515,7 +509,7 @@ export class PaymentHandler
                 recipient,
                 amount: amount.toString(),
                 currency,
-                expirationDate: new Date(expiration).toISOString(),
+                expirationDate: expiration,
                 nonce: nonce.toString(),
                 metadata: '0x',
                 proof

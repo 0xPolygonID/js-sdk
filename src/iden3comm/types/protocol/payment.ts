@@ -91,7 +91,7 @@ export type PaymentMessage = BasicMessage & {
 
 /** @beta  PaymentMessageBody is struct the represents body for payment message */
 export type PaymentMessageBody = {
-  payments: (Iden3PaymentCryptoV1 | Iden3PaymentRailsV1 | Iden3PaymentRailsERC20V1)[];
+  payments: PaymentTypeUnion[];
 };
 
 /** @beta Iden3PaymentCryptoV1 is struct the represents payment info for payment */
@@ -137,3 +137,21 @@ export type MultiChainPaymentConfig = {
     address: string;
   }[];
 };
+
+/**
+ * @beta
+ * PaymentRequestTypeUnion is a type of supported payment request types
+ */
+export type PaymentRequestTypeUnion =
+  | Iden3PaymentRequestCryptoV1
+  | Iden3PaymentRailsRequestV1
+  | Iden3PaymentRailsERC20RequestV1;
+
+/**
+ * @beta
+ * PaymentTypeUnion is a type of supported payment types
+ */
+export type PaymentTypeUnion =
+  | Iden3PaymentCryptoV1
+  | Iden3PaymentRailsV1
+  | Iden3PaymentRailsERC20V1;

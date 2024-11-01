@@ -47,7 +47,8 @@ import {
   Iden3PaymentRailsERC20RequestV1,
   Iden3PaymentRailsRequestV1,
   Iden3PaymentRequestCryptoV1,
-  PaymentRequestInfo
+  PaymentRequestInfo,
+  PaymentRequestTypeUnion
 } from '../../src/iden3comm/types/protocol/payment';
 import { Contract, ethers, JsonRpcProvider } from 'ethers';
 import fetchMock from '@gr2m/fetch-mock';
@@ -380,7 +381,7 @@ describe('payment-request handler', () => {
 
   const paymentValidationIntegrationHandlerFunc = async (
     txId: string,
-    data: Iden3PaymentRequestCryptoV1 | Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1
+    data: PaymentRequestTypeUnion
   ): Promise<void> => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const tx = await rpcProvider.getTransaction(txId);
