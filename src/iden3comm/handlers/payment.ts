@@ -404,7 +404,7 @@ export class PaymentHandler
   }
 
   /**
-   * @inheritdoc createERC20PaymentRailsV1#createPaymentRailsV1
+   * @inheritdoc IPaymentHandler#createPaymentRailsV1
    */
   async createPaymentRailsV1(
     sender: DID,
@@ -436,8 +436,8 @@ export class PaymentHandler
         if (type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 && !tokenAddress) {
           throw new Error(`failed request. no token address for currency ${currency}`);
         }
-        const expiration =
-          expirationDate ?? new Date(new Date().setHours(new Date().getHours() + 1)).toISOString();
+        const expirationTime =
+          expirationDate ?? new Date(new Date().setHours(new Date().getHours() + 1)).getTime();
         const typeUrl = `https://schema.iden3.io/core/json/${type}.json`;
         const typesFetchResult = await fetch(typeUrl);
         const types = await typesFetchResult.json();
@@ -447,7 +447,7 @@ export class PaymentHandler
             ? {
                 recipient,
                 amount,
-                expirationDate: expiration,
+                expirationDate: expirationTime,
                 nonce,
                 metadata: '0x'
               }
@@ -455,7 +455,7 @@ export class PaymentHandler
                 tokenAddress,
                 recipient,
                 amount,
-                expirationDate: expiration,
+                expirationDate: expirationTime,
                 nonce,
                 metadata: '0x'
               };
@@ -491,7 +491,7 @@ export class PaymentHandler
           recipient,
           amount: amount.toString(),
           currency,
-          expirationDate: new Date(expiration).toISOString(),
+          expirationDate: new Date(expirationTime).toISOString(),
           nonce: nonce.toString(),
           metadata: '0x',
           proof
