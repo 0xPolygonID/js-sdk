@@ -7,12 +7,12 @@ import { IProofService } from '../../proof';
 import { ZeroKnowledgeProofResponse } from '../types';
 
 /**
- * Retrieves the AuthV2 request ID.
- *
- * @returns The AuthV2 request ID.
+ * Retrieves the request ID from circuit string.
+ * CircuitId.AuthV2 - 940499666
+ * @returns The request ID.
  */
-export function getAuthV2RequestId(): number {
-  const circuitHash = keccak256(byteEncoder.encode(CircuitId.AuthV2));
+export function calculateRequestIdForCircuit(circuitId: CircuitId): number {
+  const circuitHash = keccak256(byteEncoder.encode(circuitId));
   const dataView = new DataView(Hex.decodeString(circuitHash.replace('0x', '')).buffer);
   const id = dataView.getUint32(0);
   return id;
@@ -31,7 +31,8 @@ export async function prepareAuthV2ZeroKnowledgeResponse(
   proofService: IProofService
 ): Promise<ZeroKnowledgeProofResponse[]> {
   const circuitId = CircuitId.AuthV2;
-  const id = getAuthV2RequestId();
+  // calculateRequestIdForCircuit(CircuitId.AuthV2);
+  const id = 940499666;
 
   if (isEthereumIdentity(senderDid)) {
     return [
