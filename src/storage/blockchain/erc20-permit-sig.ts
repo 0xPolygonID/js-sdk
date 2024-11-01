@@ -1,69 +1,6 @@
 import { Contract, Signer } from 'ethers';
 
-const erc20PermitAbi = [
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: 'owner',
-        type: 'address'
-      }
-    ],
-    name: 'nonces',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256'
-      }
-    ],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'eip712Domain',
-    outputs: [
-      {
-        internalType: 'bytes1',
-        name: 'fields',
-        type: 'bytes1'
-      },
-      {
-        internalType: 'string',
-        name: 'name',
-        type: 'string'
-      },
-      {
-        internalType: 'string',
-        name: 'version',
-        type: 'string'
-      },
-      {
-        internalType: 'uint256',
-        name: 'chainId',
-        type: 'uint256'
-      },
-      {
-        internalType: 'address',
-        name: 'verifyingContract',
-        type: 'address'
-      },
-      {
-        internalType: 'bytes32',
-        name: 'salt',
-        type: 'bytes32'
-      },
-      {
-        internalType: 'uint256[]',
-        name: 'extensions',
-        type: 'uint256[]'
-      }
-    ],
-    stateMutability: 'view',
-    type: 'function'
-  }
-];
+import abi from './abi/ERC20Permit.json';
 
 /**
  * @beta
@@ -82,11 +19,10 @@ export async function getPermitSignature(
   value: bigint,
   deadline: number
 ) {
-  const erc20PermitContract = new Contract(tokenAddress, erc20PermitAbi, signer);
+  const erc20PermitContract = new Contract(tokenAddress, abi, signer);
   const nonce = await erc20PermitContract.nonces(await signer.getAddress());
   const domainData = await erc20PermitContract.eip712Domain();
   const domain = {
-    name: domainData[1],
     version: domainData[2],
     chainId: domainData[3],
     verifyingContract: tokenAddress
