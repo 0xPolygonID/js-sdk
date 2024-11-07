@@ -116,15 +116,19 @@ describe('auth', () => {
     issuerDID = didIssuer;
   });
 
-  it('request-response flow identity (not profile)', async () => {
+  it.only('request-response flow identity (not profile)', async () => {
     const claimReq: CredentialRequest = {
-      credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
-      type: 'KYCAgeCredential',
+      credentialSchema: 'ipfs://QmWDmZQrtvidcNK7d6rJwq7ZSi8SUygJaKepN7NhKtGryc',
+      type: 'operators',
       credentialSubject: {
         id: userDID.string(),
-        birthday: 19960424,
-        documentType: 99
+        boolean1: true,
+        'date-time1': '2024-11-04T12:39:00Z',
+        integer1: 4321,
+        'non-negative-integer1': '654321',
+        number1: 1234,
+        'positive-integer1': '123456789',
+        string1: 'abcd'
       },
       expiration: 2793526400,
       revocationOpts: {
@@ -132,24 +136,25 @@ describe('auth', () => {
         id: RHS_URL
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
+      ipfsNodeURL: IPFS_URL
+    });
 
     await credWallet.save(issuerCred);
 
     const proofReq: ZeroKnowledgeProofRequest = {
-      id: 1,
-      circuitId: CircuitId.AtomicQuerySigV2,
+      id: 1730736196,
+      circuitId: CircuitId.AtomicQueryV3,
       optional: false,
       query: {
         allowedIssuers: ['*'],
-        type: claimReq.type,
-        context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+        context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
         credentialSubject: {
-          documentType: {
-            $eq: 99
+          'positive-integer1': {
+            $between: ['123456789', '1123456789']
           }
-        }
+        },
+        type: 'operators'
       }
     };
 
@@ -157,7 +162,7 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      scope: [proofReq as ZeroKnowledgeProofRequest]
+      scope: [proofReq]
     };
 
     const id = uuid.v4();
