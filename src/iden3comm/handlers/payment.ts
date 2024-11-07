@@ -29,7 +29,7 @@ import {
   SupportedCurrencies,
   SupportedPaymentProofType
 } from '../../verifiable';
-import { Signer } from 'ethers';
+import { Signer, ethers } from 'ethers';
 
 /**
  * @beta
@@ -60,6 +60,38 @@ export function createPaymentRequest(
     }
   };
   return request;
+}
+
+export async function verifyEIP712TypedData(
+  data: Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1
+): Promise<string> {
+  const paymentData =
+    data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
+      ? {
+          recipient: data.recipient,
+          amount: data.amount,
+          expirationDate: new Date(data.expirationDate).getTime(),
+          nonce: data.nonce,
+          metadata: '0x'
+        }
+      : {
+          tokenAddress: data.tokenAddress,
+          recipient: data.recipient,
+          amount: data.amount,
+          expirationDate: new Date(data.expirationDate).getTime(),
+          nonce: data.nonce,
+          metadata: '0x'
+        };
+  const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
+  const typesFetchResult = await fetch(proof.eip712.types);
+  const types = await typesFetchResult.json();
+  delete types.EIP712Domain;
+  const signer = ethers.verifyTypedData(proof.eip712.domain, types, paymentData, proof.proofValue);
+  const verificationMethodSigner = proof.verificationMethod.split('#')[0].split(':').slice(-1)[0];
+  if (signer !== verificationMethodSigner) {
+    throw new Error(`failed request. invalid signature`);
+  }
+  return signer;
 }
 
 /**
@@ -194,6 +226,10 @@ export type PaymentHandlerOptions = {
 export type PaymentHandlerParams = {
   packerParams: PackerParams;
   multiChainPaymentConfig?: MultiChainPaymentConfig[];
+  /*
+   * allowed signers for payment request (if not provided, any signer is allowed)
+   */
+  allowedSigners?: string[];
 };
 
 /**
@@ -428,9 +464,6 @@ export class PaymentHandler
           throw new Error(`failed request. no config for chain ${chainId}`);
         }
         const { recipient, paymentContract, erc20TokenAddressArr } = multiChainConfig;
-        if (recipient !== (await signer.getAddress())) {
-          throw new Error('recipient is not the signer');
-        }
 
         const tokenAddress = erc20TokenAddressArr.find((t) => t.symbol === currency)?.address;
         if (type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 && !tokenAddress) {
@@ -472,7 +505,7 @@ export class PaymentHandler
             type: SupportedPaymentProofType.EthereumEip712Signature2021,
             proofPurpose: 'assertionMethod',
             proofValue: signature,
-            verificationMethod: `did:pkh:eip155:${chainId}:${recipient}#blockchainAccountId`,
+            verificationMethod: `did:pkh:eip155:${chainId}:${await signer.getAddress()}#blockchainAccountId`,
             created: new Date().toISOString(),
             eip712: {
               types: typeUrl,
@@ -551,6 +584,10 @@ export class PaymentHandler
     if (data.expirationDate && new Date(data.expirationDate) < new Date()) {
       throw new Error(`failed request. expired request`);
     }
+    const signer = await verifyEIP712TypedData(data);
+    if (this._params.allowedSigners && !this._params.allowedSigners.includes(signer)) {
+      throw new Error(`failed request. signer is not in the allowed signers list`);
+    }
     const txId = await paymentHandler(data);
     const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
     return {
@@ -573,6 +610,10 @@ export class PaymentHandler
       throw new Error(`failed request. expired request`);
     }
 
+    const signer = await verifyEIP712TypedData(data);
+    if (this._params.allowedSigners && !this._params.allowedSigners.includes(signer)) {
+      throw new Error(`failed request. signer is not in the allowed signers list`);
+    }
     if (!data.features?.includes(PaymentFeatures.EIP_2612) && !approveHandler) {
       throw new Error(`please provide erc20TokenApproveHandler in context for ERC-20 payment type`);
     }
