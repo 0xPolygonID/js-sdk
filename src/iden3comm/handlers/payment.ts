@@ -30,6 +30,7 @@ import {
   SupportedPaymentProofType
 } from '../../verifiable';
 import { Signer, ethers } from 'ethers';
+import { Resolvable } from 'did-resolver';
 
 /**
  * @beta
@@ -63,7 +64,8 @@ export function createPaymentRequest(
 }
 
 export async function verifyEIP712TypedData(
-  data: Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1
+  data: Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1,
+  resolver: Resolvable
 ): Promise<string> {
   const paymentData =
     data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
@@ -86,12 +88,28 @@ export async function verifyEIP712TypedData(
   const typesFetchResult = await fetch(proof.eip712.types);
   const types = await typesFetchResult.json();
   delete types.EIP712Domain;
-  const signer = ethers.verifyTypedData(proof.eip712.domain, types, paymentData, proof.proofValue);
-  const verificationMethodSigner = proof.verificationMethod.split('#')[0].split(':').slice(-1)[0];
-  if (signer !== verificationMethodSigner) {
-    throw new Error(`failed request. invalid signature`);
+  const recovered = ethers.verifyTypedData(
+    proof.eip712.domain,
+    types,
+    paymentData,
+    proof.proofValue
+  );
+
+  const { didDocument } = await resolver.resolve(proof.verificationMethod);
+  if (didDocument?.verificationMethod) {
+    for (const verificationMethod of didDocument.verificationMethod) {
+      if (
+        verificationMethod.blockchainAccountId?.split(':').slice(-1)[0].toLowerCase() ===
+        recovered.toLowerCase()
+      ) {
+        return recovered;
+      }
+    }
+  } else {
+    throw new Error('resolver_error: issuer DIDDocument does not contain any verificationMethods');
   }
-  return signer;
+
+  throw new Error(`failed request. signature verification failed`);
 }
 
 /**
@@ -225,6 +243,7 @@ export type PaymentHandlerOptions = {
 /** @beta PaymentHandlerParams represents payment handler params */
 export type PaymentHandlerParams = {
   packerParams: PackerParams;
+  documentResolver: Resolvable;
   multiChainPaymentConfig?: MultiChainPaymentConfig[];
   /*
    * allowed signers for payment request (if not provided, any signer is allowed)
@@ -506,7 +525,7 @@ export class PaymentHandler
             type: SupportedPaymentProofType.EthereumEip712Signature2021,
             proofPurpose: 'assertionMethod',
             proofValue: signature,
-            verificationMethod: `did:pkh:eip155:${chainId}:${await signer.getAddress()}#blockchainAccountId`,
+            verificationMethod: `did:pkh:eip155:${chainId}:${await signer.getAddress()}`,
             created: new Date().toISOString(),
             eip712: {
               types: typeUrl,
@@ -585,7 +604,7 @@ export class PaymentHandler
     if (data.expirationDate && new Date(data.expirationDate) < new Date()) {
       throw new Error(`failed request. expired request`);
     }
-    const signer = await verifyEIP712TypedData(data);
+    const signer = await verifyEIP712TypedData(data, this._params.documentResolver);
     if (this._params.allowedSigners && !this._params.allowedSigners.includes(signer)) {
       throw new Error(`failed request. signer is not in the allowed signers list`);
     }
@@ -611,7 +630,7 @@ export class PaymentHandler
       throw new Error(`failed request. expired request`);
     }
 
-    const signer = await verifyEIP712TypedData(data);
+    const signer = await verifyEIP712TypedData(data, this._params.documentResolver);
     if (this._params.allowedSigners && !this._params.allowedSigners.includes(signer)) {
       throw new Error(`failed request. signer is not in the allowed signers list`);
     }

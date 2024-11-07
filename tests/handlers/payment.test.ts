@@ -28,7 +28,6 @@ import {
   registerKeyProvidersInMemoryKMS,
   createIdentity,
   SEED_USER,
-  SEED_ISSUER,
   WALLET_KEY,
   RPC_URL
 } from '../helpers';
@@ -53,6 +52,7 @@ import {
 import { Contract, ethers, JsonRpcProvider } from 'ethers';
 import fetchMock from '@gr2m/fetch-mock';
 import { fail } from 'assert';
+import { DIDResolutionResult } from 'did-resolver';
 
 describe('payment-request handler', () => {
   let packageMgr: IPackageManager;
@@ -463,8 +463,7 @@ describe('payment-request handler', () => {
             proofPurpose: 'assertionMethod',
             proofValue:
               '0x756e11c55fe8f4d2867c2e14e52a06baba29e4b789b4521aafa1623ad96c67aa23dc042bfebd4711ed2db5f145c853a5487b878d8e113e1ede0c41553f6318dd1c',
-            verificationMethod:
-              'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId',
+            verificationMethod: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
             created: new Date().toISOString(),
             eip712: {
               types: 'https://schema.iden3.io/core/json/Iden3PaymentRailsRequestV1.json',
@@ -510,8 +509,7 @@ describe('payment-request handler', () => {
             proofPurpose: 'assertionMethod',
             proofValue:
               '0xcb5a8d39a536768fabaafbf17f24954acf7c7d7a6f9a8b75ad5f9c29d324cdaf63de8cebfde508a5a03b60e1a4b765b21f7f3cd60dfed27ce5208432e3fd4c481b',
-            verificationMethod:
-              'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId',
+            verificationMethod: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
             created: new Date().toISOString(),
             eip712: {
               types: 'https://schema.iden3.io/core/json/Iden3PaymentRailsERC20RequestV1.json',
@@ -553,6 +551,34 @@ describe('payment-request handler', () => {
     const idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
+    const didExampleRecovery = {
+      '@context': [
+        'https://www.w3.org/ns/did/v1',
+        {
+          EcdsaSecp256k1RecoveryMethod2020:
+            'https://identity.foundation/EcdsaSecp256k1RecoverySignature2020#EcdsaSecp256k1RecoveryMethod2020',
+          blockchainAccountId: 'https://w3id.org/security#blockchainAccountId'
+        }
+      ],
+      id: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+      verificationMethod: [
+        {
+          id: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId',
+          type: 'EcdsaSecp256k1RecoveryMethod2020',
+          controller: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+          blockchainAccountId: 'eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a'
+        }
+      ],
+      authentication: [
+        'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId'
+      ],
+      assertionMethod: [
+        'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId'
+      ]
+    };
+    const resolveDIDDocument = {
+      resolve: () => Promise.resolve({ didDocument: didExampleRecovery } as DIDResolutionResult)
+    };
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
       proofService.generateAuthV2Inputs.bind(proofService),
@@ -562,6 +588,7 @@ describe('payment-request handler', () => {
       packerParams: {
         mediaType: MediaType.PlainMessage
       },
+      documentResolver: resolveDIDDocument,
       multiChainPaymentConfig: [
         {
           chainId: '80002',
@@ -590,12 +617,7 @@ describe('payment-request handler', () => {
     });
 
     userDID = userIdentity.did;
-
-    const issuerIdentity = await createIdentity(idWallet, {
-      seed: SEED_ISSUER
-    });
-
-    issuerDID = issuerIdentity.did;
+    issuerDID = DID.parse('did:iden3:polygon:amoy:x6x5sor7zpyZX9yNpm8h1rPBDSN9idaEhDj1Qm8Q9');
 
     agentMessageResponse = createProposal(issuerDID, userDID, []);
     fetchMock.spy();
