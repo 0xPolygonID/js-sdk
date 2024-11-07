@@ -1,8 +1,8 @@
 import commonJS from '@rollup/plugin-commonjs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
-import packageJson from './package.json' assert { type: 'json' };
-import tsConfig from './tsconfig.json' assert { type: 'json' };
+import packageJson from './package.json' with { type: 'json' };
+import tsConfig from './tsconfig.json' with { type: 'json' };
 import virtual from '@rollup/plugin-virtual';
 import json from '@rollup/plugin-json';
 const empty = 'export default {}';
