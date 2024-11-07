@@ -106,10 +106,10 @@ export async function verifyEIP712TypedData(
       }
     }
   } else {
-    throw new Error('resolver_error: issuer DIDDocument does not contain any verificationMethods');
+    throw new Error('failed request. issuer DIDDocument does not contain any verificationMethods');
   }
 
-  throw new Error(`failed request. signature verification failed`);
+  throw new Error(`failed request. no matching verificationMethod`);
 }
 
 /**
