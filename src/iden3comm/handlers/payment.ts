@@ -469,8 +469,9 @@ export class PaymentHandler
         if (type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 && !tokenAddress) {
           throw new Error(`failed request. no token address for currency ${currency}`);
         }
-        const expirationTime =
-          expirationDate ?? new Date(new Date().setHours(new Date().getHours() + 1)).getTime();
+        const expirationTime = expirationDate
+          ? new Date(expirationDate).getTime()
+          : new Date(new Date().setHours(new Date().getHours() + 1)).getTime();
         const typeUrl = `https://schema.iden3.io/core/json/${type}.json`;
         const typesFetchResult = await fetch(typeUrl);
         const types = await typesFetchResult.json();
