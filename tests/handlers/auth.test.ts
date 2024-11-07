@@ -116,7 +116,7 @@ describe('auth', () => {
     issuerDID = didIssuer;
   });
 
-  it.only('request-response flow identity (not profile)', async () => {
+  it('request-response flow identity (not profile)', async () => {
     const claimReq: CredentialRequest = {
       credentialSchema: 'ipfs://QmWDmZQrtvidcNK7d6rJwq7ZSi8SUygJaKepN7NhKtGryc',
       type: 'operators',
