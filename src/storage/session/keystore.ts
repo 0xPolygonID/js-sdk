@@ -48,12 +48,14 @@ export type Callback<Keys, T extends EventTypes<Keys>> = (
 ) => void
 
 export interface ConstructorOptions {
-  name?: string
+  name?: string,
+  onChanged: (keyName: string) => void,
+  onExpired: () => void
 }
 
 // --
 
-export default class SessionKeystore<Keys = string> {
+export class SessionKeystore<Keys = string> {
   // Members
   readonly name: string
   readonly #storageKey: string
@@ -63,7 +65,14 @@ export default class SessionKeystore<Keys = string> {
 
   // --
 
-  constructor(opts: ConstructorOptions = {}) {
+  constructor(opts: ConstructorOptions = {
+    onChanged: function (keyName: string): void {
+      throw new Error(`Function not implemented. keyName: ${keyName}`)
+    },
+    onExpired: function (): void {
+      throw new Error('Function not implemented.')
+    }
+  }) {
     this.name = opts.name || 'default'
     this.#storageKey = `session-keystore:${this.name}`
     this.#emitter = mitt()
