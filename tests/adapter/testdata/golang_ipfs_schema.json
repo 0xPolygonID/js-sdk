@@ -1,0 +1,56 @@
+{
+  "@context": [
+      "https://www.w3.org/2018/credentials/v1",
+      "https://schema.iden3.io/core/jsonld/iden3proofs.jsonld",
+      "ipfs://Qma5B4jNwiHtRd5RXGoRncV79EZvB7LsfpHgv8Vi4xitV1",
+      "https://schema.iden3.io/core/jsonld/displayMethod.jsonld"
+  ],
+  "credentialSchema": {
+      "id": "ipfs://QmcC7i1PCU8ymJscGjs8pqmZEWtBGWPFLmQ8s7P6QzELN6",
+      "type": "JsonSchema2023"
+  },
+  "credentialStatus": {
+      "id": "did:polygonid:polygon:amoy:2qQ68JkRcf3z3923i5rrszrsJ4kdu4GKWARQ5eftsB/credentialStatus?revocationNonce=0&contractAddress=80002:0xFDb204CCC55794C861366dBc2Cd6BBBd25752894",
+      "revocationNonce": 0,
+      "type": "Iden3OnchainSparseMerkleTreeProof2023"
+  },
+  "credentialSubject": {
+      "address": "657065114158124047812701241180089030040156354062",
+      "balance": "34206141476401658683",
+      "id": "did:polygonid:polygon:amoy:2qZYiH9CFMoo6oTjSEot3qzkHFHhjLRLKp8yfwCYng",
+      "type": "Balance"
+  },
+  "displayMethod": {
+      "id": "ipfs://QmS8eY8ZCiAAW8qgx3T6SQ3HDGeddwLZsjPXNAZExQwRY4",
+      "type": "Iden3BasicDisplayMethodV1"
+  },
+  "expirationDate": "2024-05-24T16:23:56.000Z",
+  "id": "urn:iden3:onchain:80002:0xFDb204CCC55794C861366dBc2Cd6BBBd25752894:0",
+  "issuanceDate": "2024-04-24T16:23:56.000Z",
+  "issuer": "did:polygonid:polygon:amoy:2qQ68JkRcf3z3923i5rrszrsJ4kdu4GKWARQ5eftsB",
+  "proof": [
+      {
+          "coreClaim": "f52f1795c533d7b4aa4e7ab02485f86f0a0000000000000000000000000000000213d0591345a3d71ee61cd299b38959df8dea1f4a4f75a2bd4f25b8215f0d000eb6cb518d3dd33341899bcec9dcc68998d117730000000000000000000000003b3baddd70a0b4da01000000000000000000000000000000000000000000000000000000000000001cbf50660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "issuerData": {
+              "id": "did:polygonid:polygon:amoy:2qQ68JkRcf3z3923i5rrszrsJ4kdu4GKWARQ5eftsB",
+              "state": {
+                  "claimsTreeRoot": "3ca701ead4d7da0eb5c4950ac0950a7ae92f4acc853a24698489f5a9b08fc72e",
+                  "revocationTreeRoot": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "rootOfRoots": "19a633fecfa2117672bbcfb65307e3bd73101cd3dd49b849ea231b5927afc70e",
+                  "value": "6f5dd91f13004cca5c8b31524239de77ce149a9073d7ace737a1b7cffb96ab26"
+              }
+          },
+          "mtp": {
+              "existence": true,
+              "siblings": [
+                  "4692761366944891051814480185546124875872606319832740381039122455881379612023"
+              ]
+          },
+          "type": "Iden3SparseMerkleTreeProof"
+      }
+  ],
+  "type": [
+      "VerifiableCredential",
+      "Balance"
+  ]
+}
