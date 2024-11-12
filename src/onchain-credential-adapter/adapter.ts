@@ -9,7 +9,7 @@ enum AdapterVersion {
   'v0.0.1' = '0.0.1'
 }
 
-/** 
+/**
  * Represents an adapter for interacting with on-chain credentials.
  *
  * @public

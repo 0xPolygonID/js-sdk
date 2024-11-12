@@ -44,7 +44,7 @@ export class OnchainNonMerklizedIssuerAdapter {
   private readonly _issuerDid: DID;
 
   private readonly _merklizationOptions?: Options;
-  
+
   /**
    * Initializes an instance of `OnchainNonMerklizedIssuerAdapter`.
    *
@@ -69,7 +69,7 @@ export class OnchainNonMerklizedIssuerAdapter {
     this._merklizationOptions = merklizationOptions;
   }
 
-   /**
+  /**
    * Checks if the contract supports required interfaces.
    * Throws an error if any required interface is unsupported.
    *
