@@ -10,6 +10,7 @@ import { expect } from 'chai';
 import w3cHttpSchemaExpect from './testdata/golang_http_schema.json';
 import w3cIpfsSchemaExpect from './testdata/golang_ipfs_schema.json';
 import { W3CCredential } from '../../src/verifiable';
+import { IPFS_URL } from '../helpers';
 
 const chainInfo = (did: DID): { contractAddress: string; chainId: number } => {
   const issuerId = DID.idFromDID(did);
@@ -162,7 +163,7 @@ describe('Convertor v0.0.1', () => {
       chainId,
       issuerDid,
       {
-        ipfsGatewayURL: 'https://ipfs.io'
+        ipfsNodeURL: IPFS_URL
       }
     );
     const w3cCredential = await adapter.convertOnChainInfoToW3CCredential(
