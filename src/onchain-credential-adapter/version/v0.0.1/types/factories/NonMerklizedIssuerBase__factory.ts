@@ -2,1222 +2,1218 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import { Contract, Interface, type ContractRunner } from "ethers";
+import { Contract, Interface, type ContractRunner } from 'ethers';
 import type {
   NonMerklizedIssuerBase,
-  NonMerklizedIssuerBaseInterface,
-} from "../NonMerklizedIssuerBase";
+  NonMerklizedIssuerBaseInterface
+} from '../NonMerklizedIssuerBase';
 
 const _abi = [
   {
     inputs: [],
-    name: "CREDENTIAL_ADAPTER_VERSION",
+    name: 'CREDENTIAL_ADAPTER_VERSION',
     outputs: [
       {
-        internalType: "string",
-        name: "",
-        type: "string",
-      },
+        internalType: 'string',
+        name: '',
+        type: 'string'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "claimIndexHash",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: 'claimIndexHash',
+        type: 'uint256'
+      }
     ],
-    name: "getClaimProof",
+    name: 'getClaimProof',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "root",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'root',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "existence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'existence',
+            type: 'bool'
           },
           {
-            internalType: "uint256[]",
-            name: "siblings",
-            type: "uint256[]",
+            internalType: 'uint256[]',
+            name: 'siblings',
+            type: 'uint256[]'
           },
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'index',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "value",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'value',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "auxExistence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'auxExistence',
+            type: 'bool'
           },
           {
-            internalType: "uint256",
-            name: "auxIndex",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'auxIndex',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "auxValue",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'auxValue',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct SmtLib.Proof",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct SmtLib.Proof',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "claimIndexHash",
-        type: "uint256",
+        internalType: 'uint256',
+        name: 'claimIndexHash',
+        type: 'uint256'
       },
       {
-        internalType: "uint256",
-        name: "root",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: 'root',
+        type: 'uint256'
+      }
     ],
-    name: "getClaimProofByRoot",
+    name: 'getClaimProofByRoot',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "root",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'root',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "existence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'existence',
+            type: 'bool'
           },
           {
-            internalType: "uint256[]",
-            name: "siblings",
-            type: "uint256[]",
+            internalType: 'uint256[]',
+            name: 'siblings',
+            type: 'uint256[]'
           },
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'index',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "value",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'value',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "auxExistence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'auxExistence',
+            type: 'bool'
           },
           {
-            internalType: "uint256",
-            name: "auxIndex",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'auxIndex',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "auxValue",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'auxValue',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct SmtLib.Proof",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct SmtLib.Proof',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "claimIndexHash",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: 'claimIndexHash',
+        type: 'uint256'
+      }
     ],
-    name: "getClaimProofWithStateInfo",
+    name: 'getClaimProofWithStateInfo',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "root",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'root',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "existence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'existence',
+            type: 'bool'
           },
           {
-            internalType: "uint256[]",
-            name: "siblings",
-            type: "uint256[]",
+            internalType: 'uint256[]',
+            name: 'siblings',
+            type: 'uint256[]'
           },
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'index',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "value",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'value',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "auxExistence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'auxExistence',
+            type: 'bool'
           },
           {
-            internalType: "uint256",
-            name: "auxIndex",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'auxIndex',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "auxValue",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'auxValue',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct SmtLib.Proof",
-        name: "",
-        type: "tuple",
+        internalType: 'struct SmtLib.Proof',
+        name: '',
+        type: 'tuple'
       },
       {
         components: [
           {
-            internalType: "uint256",
-            name: "state",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'state',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "claimsRoot",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'claimsRoot',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "revocationsRoot",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'revocationsRoot',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "rootsRoot",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'rootsRoot',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct IdentityLib.StateInfo",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct IdentityLib.StateInfo',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getClaimsTreeRoot",
+    name: 'getClaimsTreeRoot',
     outputs: [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "_userId",
-        type: "uint256",
+        internalType: 'uint256',
+        name: '_userId',
+        type: 'uint256'
       },
       {
-        internalType: "uint256",
-        name: "_credentialId",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '_credentialId',
+        type: 'uint256'
+      }
     ],
-    name: "getCredential",
+    name: 'getCredential',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "id",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'id',
+            type: 'uint256'
           },
           {
-            internalType: "string[]",
-            name: "context",
-            type: "string[]",
+            internalType: 'string[]',
+            name: 'context',
+            type: 'string[]'
           },
           {
-            internalType: "string",
-            name: "_type",
-            type: "string",
+            internalType: 'string',
+            name: '_type',
+            type: 'string'
           },
           {
-            internalType: "uint64",
-            name: "issuanceDate",
-            type: "uint64",
+            internalType: 'uint64',
+            name: 'issuanceDate',
+            type: 'uint64'
           },
           {
             components: [
               {
-                internalType: "string",
-                name: "id",
-                type: "string",
+                internalType: 'string',
+                name: 'id',
+                type: 'string'
               },
               {
-                internalType: "string",
-                name: "_type",
-                type: "string",
-              },
+                internalType: 'string',
+                name: '_type',
+                type: 'string'
+              }
             ],
-            internalType: "struct INonMerklizedIssuer.CredentialSchema",
-            name: "credentialSchema",
-            type: "tuple",
+            internalType: 'struct INonMerklizedIssuer.CredentialSchema',
+            name: 'credentialSchema',
+            type: 'tuple'
           },
           {
             components: [
               {
-                internalType: "string",
-                name: "id",
-                type: "string",
+                internalType: 'string',
+                name: 'id',
+                type: 'string'
               },
               {
-                internalType: "string",
-                name: "_type",
-                type: "string",
-              },
+                internalType: 'string',
+                name: '_type',
+                type: 'string'
+              }
             ],
-            internalType: "struct INonMerklizedIssuer.DisplayMethod",
-            name: "displayMethod",
-            type: "tuple",
-          },
+            internalType: 'struct INonMerklizedIssuer.DisplayMethod',
+            name: 'displayMethod',
+            type: 'tuple'
+          }
         ],
-        internalType: "struct INonMerklizedIssuer.CredentialData",
-        name: "",
-        type: "tuple",
+        internalType: 'struct INonMerklizedIssuer.CredentialData',
+        name: '',
+        type: 'tuple'
       },
       {
-        internalType: "uint256[8]",
-        name: "",
-        type: "uint256[8]",
+        internalType: 'uint256[8]',
+        name: '',
+        type: 'uint256[8]'
       },
       {
         components: [
           {
-            internalType: "string",
-            name: "key",
-            type: "string",
+            internalType: 'string',
+            name: 'key',
+            type: 'string'
           },
           {
-            internalType: "uint256",
-            name: "value",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'value',
+            type: 'uint256'
           },
           {
-            internalType: "bytes",
-            name: "rawValue",
-            type: "bytes",
-          },
+            internalType: 'bytes',
+            name: 'rawValue',
+            type: 'bytes'
+          }
         ],
-        internalType: "struct INonMerklizedIssuer.SubjectField[]",
-        name: "",
-        type: "tuple[]",
-      },
+        internalType: 'struct INonMerklizedIssuer.SubjectField[]',
+        name: '',
+        type: 'tuple[]'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getCredentialAdapterVersion",
+    name: 'getCredentialAdapterVersion',
     outputs: [
       {
-        internalType: "string",
-        name: "",
-        type: "string",
-      },
+        internalType: 'string',
+        name: '',
+        type: 'string'
+      }
     ],
-    stateMutability: "pure",
-    type: "function",
+    stateMutability: 'pure',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getId",
+    name: 'getId',
     outputs: [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getIsOldStateGenesis",
+    name: 'getIsOldStateGenesis',
     outputs: [
       {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
+        internalType: 'bool',
+        name: '',
+        type: 'bool'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getLatestPublishedClaimsRoot",
+    name: 'getLatestPublishedClaimsRoot',
     outputs: [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getLatestPublishedRevocationsRoot",
+    name: 'getLatestPublishedRevocationsRoot',
     outputs: [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getLatestPublishedRootsRoot",
+    name: 'getLatestPublishedRootsRoot',
     outputs: [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getLatestPublishedState",
+    name: 'getLatestPublishedState',
     outputs: [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint64",
-        name: "revocationNonce",
-        type: "uint64",
-      },
+        internalType: 'uint64',
+        name: 'revocationNonce',
+        type: 'uint64'
+      }
     ],
-    name: "getRevocationProof",
+    name: 'getRevocationProof',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "root",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'root',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "existence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'existence',
+            type: 'bool'
           },
           {
-            internalType: "uint256[]",
-            name: "siblings",
-            type: "uint256[]",
+            internalType: 'uint256[]',
+            name: 'siblings',
+            type: 'uint256[]'
           },
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'index',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "value",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'value',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "auxExistence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'auxExistence',
+            type: 'bool'
           },
           {
-            internalType: "uint256",
-            name: "auxIndex",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'auxIndex',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "auxValue",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'auxValue',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct SmtLib.Proof",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct SmtLib.Proof',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint64",
-        name: "revocationNonce",
-        type: "uint64",
+        internalType: 'uint64',
+        name: 'revocationNonce',
+        type: 'uint64'
       },
       {
-        internalType: "uint256",
-        name: "root",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: 'root',
+        type: 'uint256'
+      }
     ],
-    name: "getRevocationProofByRoot",
+    name: 'getRevocationProofByRoot',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "root",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'root',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "existence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'existence',
+            type: 'bool'
           },
           {
-            internalType: "uint256[]",
-            name: "siblings",
-            type: "uint256[]",
+            internalType: 'uint256[]',
+            name: 'siblings',
+            type: 'uint256[]'
           },
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'index',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "value",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'value',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "auxExistence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'auxExistence',
+            type: 'bool'
           },
           {
-            internalType: "uint256",
-            name: "auxIndex",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'auxIndex',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "auxValue",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'auxValue',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct SmtLib.Proof",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct SmtLib.Proof',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint64",
-        name: "revocationNonce",
-        type: "uint64",
-      },
+        internalType: 'uint64',
+        name: 'revocationNonce',
+        type: 'uint64'
+      }
     ],
-    name: "getRevocationProofWithStateInfo",
+    name: 'getRevocationProofWithStateInfo',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "root",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'root',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "existence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'existence',
+            type: 'bool'
           },
           {
-            internalType: "uint256[]",
-            name: "siblings",
-            type: "uint256[]",
+            internalType: 'uint256[]',
+            name: 'siblings',
+            type: 'uint256[]'
           },
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'index',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "value",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'value',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "auxExistence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'auxExistence',
+            type: 'bool'
           },
           {
-            internalType: "uint256",
-            name: "auxIndex",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'auxIndex',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "auxValue",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'auxValue',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct SmtLib.Proof",
-        name: "",
-        type: "tuple",
+        internalType: 'struct SmtLib.Proof',
+        name: '',
+        type: 'tuple'
       },
       {
         components: [
           {
-            internalType: "uint256",
-            name: "state",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'state',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "claimsRoot",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'claimsRoot',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "revocationsRoot",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'revocationsRoot',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "rootsRoot",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'rootsRoot',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct IdentityLib.StateInfo",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct IdentityLib.StateInfo',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "id",
-        type: "uint256",
+        internalType: 'uint256',
+        name: 'id',
+        type: 'uint256'
       },
       {
-        internalType: "uint64",
-        name: "nonce",
-        type: "uint64",
-      },
+        internalType: 'uint64',
+        name: 'nonce',
+        type: 'uint64'
+      }
     ],
-    name: "getRevocationStatus",
-    outputs: [
-      {
-        components: [
-          {
-            components: [
-              {
-                internalType: "uint256",
-                name: "state",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "claimsTreeRoot",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "revocationTreeRoot",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "rootOfRoots",
-                type: "uint256",
-              },
-            ],
-            internalType:
-              "struct IOnchainCredentialStatusResolver.IdentityStateRoots",
-            name: "issuer",
-            type: "tuple",
-          },
-          {
-            components: [
-              {
-                internalType: "uint256",
-                name: "root",
-                type: "uint256",
-              },
-              {
-                internalType: "bool",
-                name: "existence",
-                type: "bool",
-              },
-              {
-                internalType: "uint256[]",
-                name: "siblings",
-                type: "uint256[]",
-              },
-              {
-                internalType: "uint256",
-                name: "index",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "value",
-                type: "uint256",
-              },
-              {
-                internalType: "bool",
-                name: "auxExistence",
-                type: "bool",
-              },
-              {
-                internalType: "uint256",
-                name: "auxIndex",
-                type: "uint256",
-              },
-              {
-                internalType: "uint256",
-                name: "auxValue",
-                type: "uint256",
-              },
-            ],
-            internalType: "struct IOnchainCredentialStatusResolver.Proof",
-            name: "mtp",
-            type: "tuple",
-          },
-        ],
-        internalType:
-          "struct IOnchainCredentialStatusResolver.CredentialStatus",
-        name: "",
-        type: "tuple",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "id",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "state",
-        type: "uint256",
-      },
-      {
-        internalType: "uint64",
-        name: "nonce",
-        type: "uint64",
-      },
-    ],
-    name: "getRevocationStatusByIdAndState",
+    name: 'getRevocationStatus',
     outputs: [
       {
         components: [
           {
             components: [
               {
-                internalType: "uint256",
-                name: "state",
-                type: "uint256",
+                internalType: 'uint256',
+                name: 'state',
+                type: 'uint256'
               },
               {
-                internalType: "uint256",
-                name: "claimsTreeRoot",
-                type: "uint256",
+                internalType: 'uint256',
+                name: 'claimsTreeRoot',
+                type: 'uint256'
               },
               {
-                internalType: "uint256",
-                name: "revocationTreeRoot",
-                type: "uint256",
+                internalType: 'uint256',
+                name: 'revocationTreeRoot',
+                type: 'uint256'
               },
               {
-                internalType: "uint256",
-                name: "rootOfRoots",
-                type: "uint256",
-              },
+                internalType: 'uint256',
+                name: 'rootOfRoots',
+                type: 'uint256'
+              }
             ],
-            internalType:
-              "struct IOnchainCredentialStatusResolver.IdentityStateRoots",
-            name: "issuer",
-            type: "tuple",
+            internalType: 'struct IOnchainCredentialStatusResolver.IdentityStateRoots',
+            name: 'issuer',
+            type: 'tuple'
           },
           {
             components: [
               {
-                internalType: "uint256",
-                name: "root",
-                type: "uint256",
+                internalType: 'uint256',
+                name: 'root',
+                type: 'uint256'
               },
               {
-                internalType: "bool",
-                name: "existence",
-                type: "bool",
+                internalType: 'bool',
+                name: 'existence',
+                type: 'bool'
               },
               {
-                internalType: "uint256[]",
-                name: "siblings",
-                type: "uint256[]",
+                internalType: 'uint256[]',
+                name: 'siblings',
+                type: 'uint256[]'
               },
               {
-                internalType: "uint256",
-                name: "index",
-                type: "uint256",
+                internalType: 'uint256',
+                name: 'index',
+                type: 'uint256'
               },
               {
-                internalType: "uint256",
-                name: "value",
-                type: "uint256",
+                internalType: 'uint256',
+                name: 'value',
+                type: 'uint256'
               },
               {
-                internalType: "bool",
-                name: "auxExistence",
-                type: "bool",
+                internalType: 'bool',
+                name: 'auxExistence',
+                type: 'bool'
               },
               {
-                internalType: "uint256",
-                name: "auxIndex",
-                type: "uint256",
+                internalType: 'uint256',
+                name: 'auxIndex',
+                type: 'uint256'
               },
               {
-                internalType: "uint256",
-                name: "auxValue",
-                type: "uint256",
-              },
+                internalType: 'uint256',
+                name: 'auxValue',
+                type: 'uint256'
+              }
             ],
-            internalType: "struct IOnchainCredentialStatusResolver.Proof",
-            name: "mtp",
-            type: "tuple",
-          },
+            internalType: 'struct IOnchainCredentialStatusResolver.Proof',
+            name: 'mtp',
+            type: 'tuple'
+          }
         ],
-        internalType:
-          "struct IOnchainCredentialStatusResolver.CredentialStatus",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct IOnchainCredentialStatusResolver.CredentialStatus',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint256',
+        name: 'id',
+        type: 'uint256'
+      },
+      {
+        internalType: 'uint256',
+        name: 'state',
+        type: 'uint256'
+      },
+      {
+        internalType: 'uint64',
+        name: 'nonce',
+        type: 'uint64'
+      }
+    ],
+    name: 'getRevocationStatusByIdAndState',
+    outputs: [
+      {
+        components: [
+          {
+            components: [
+              {
+                internalType: 'uint256',
+                name: 'state',
+                type: 'uint256'
+              },
+              {
+                internalType: 'uint256',
+                name: 'claimsTreeRoot',
+                type: 'uint256'
+              },
+              {
+                internalType: 'uint256',
+                name: 'revocationTreeRoot',
+                type: 'uint256'
+              },
+              {
+                internalType: 'uint256',
+                name: 'rootOfRoots',
+                type: 'uint256'
+              }
+            ],
+            internalType: 'struct IOnchainCredentialStatusResolver.IdentityStateRoots',
+            name: 'issuer',
+            type: 'tuple'
+          },
+          {
+            components: [
+              {
+                internalType: 'uint256',
+                name: 'root',
+                type: 'uint256'
+              },
+              {
+                internalType: 'bool',
+                name: 'existence',
+                type: 'bool'
+              },
+              {
+                internalType: 'uint256[]',
+                name: 'siblings',
+                type: 'uint256[]'
+              },
+              {
+                internalType: 'uint256',
+                name: 'index',
+                type: 'uint256'
+              },
+              {
+                internalType: 'uint256',
+                name: 'value',
+                type: 'uint256'
+              },
+              {
+                internalType: 'bool',
+                name: 'auxExistence',
+                type: 'bool'
+              },
+              {
+                internalType: 'uint256',
+                name: 'auxIndex',
+                type: 'uint256'
+              },
+              {
+                internalType: 'uint256',
+                name: 'auxValue',
+                type: 'uint256'
+              }
+            ],
+            internalType: 'struct IOnchainCredentialStatusResolver.Proof',
+            name: 'mtp',
+            type: 'tuple'
+          }
+        ],
+        internalType: 'struct IOnchainCredentialStatusResolver.CredentialStatus',
+        name: '',
+        type: 'tuple'
+      }
+    ],
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getRevocationsTreeRoot",
+    name: 'getRevocationsTreeRoot',
     outputs: [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "rootsTreeRoot",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: 'rootsTreeRoot',
+        type: 'uint256'
+      }
     ],
-    name: "getRootProof",
+    name: 'getRootProof',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "root",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'root',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "existence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'existence',
+            type: 'bool'
           },
           {
-            internalType: "uint256[]",
-            name: "siblings",
-            type: "uint256[]",
+            internalType: 'uint256[]',
+            name: 'siblings',
+            type: 'uint256[]'
           },
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'index',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "value",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'value',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "auxExistence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'auxExistence',
+            type: 'bool'
           },
           {
-            internalType: "uint256",
-            name: "auxIndex",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'auxIndex',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "auxValue",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'auxValue',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct SmtLib.Proof",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct SmtLib.Proof',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "claimsTreeRoot",
-        type: "uint256",
+        internalType: 'uint256',
+        name: 'claimsTreeRoot',
+        type: 'uint256'
       },
       {
-        internalType: "uint256",
-        name: "root",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: 'root',
+        type: 'uint256'
+      }
     ],
-    name: "getRootProofByRoot",
+    name: 'getRootProofByRoot',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "root",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'root',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "existence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'existence',
+            type: 'bool'
           },
           {
-            internalType: "uint256[]",
-            name: "siblings",
-            type: "uint256[]",
+            internalType: 'uint256[]',
+            name: 'siblings',
+            type: 'uint256[]'
           },
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'index',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "value",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'value',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "auxExistence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'auxExistence',
+            type: 'bool'
           },
           {
-            internalType: "uint256",
-            name: "auxIndex",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'auxIndex',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "auxValue",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'auxValue',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct SmtLib.Proof",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct SmtLib.Proof',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "rootsTreeRoot",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: 'rootsTreeRoot',
+        type: 'uint256'
+      }
     ],
-    name: "getRootProofWithStateInfo",
+    name: 'getRootProofWithStateInfo',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "root",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'root',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "existence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'existence',
+            type: 'bool'
           },
           {
-            internalType: "uint256[]",
-            name: "siblings",
-            type: "uint256[]",
+            internalType: 'uint256[]',
+            name: 'siblings',
+            type: 'uint256[]'
           },
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'index',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "value",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'value',
+            type: 'uint256'
           },
           {
-            internalType: "bool",
-            name: "auxExistence",
-            type: "bool",
+            internalType: 'bool',
+            name: 'auxExistence',
+            type: 'bool'
           },
           {
-            internalType: "uint256",
-            name: "auxIndex",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'auxIndex',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "auxValue",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'auxValue',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct SmtLib.Proof",
-        name: "",
-        type: "tuple",
+        internalType: 'struct SmtLib.Proof',
+        name: '',
+        type: 'tuple'
       },
       {
         components: [
           {
-            internalType: "uint256",
-            name: "state",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'state',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "claimsRoot",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'claimsRoot',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "revocationsRoot",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'revocationsRoot',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "rootsRoot",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'rootsRoot',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct IdentityLib.StateInfo",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct IdentityLib.StateInfo',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "state",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: 'state',
+        type: 'uint256'
+      }
     ],
-    name: "getRootsByState",
+    name: 'getRootsByState',
     outputs: [
       {
         components: [
           {
-            internalType: "uint256",
-            name: "claimsRoot",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'claimsRoot',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "revocationsRoot",
-            type: "uint256",
+            internalType: 'uint256',
+            name: 'revocationsRoot',
+            type: 'uint256'
           },
           {
-            internalType: "uint256",
-            name: "rootsRoot",
-            type: "uint256",
-          },
+            internalType: 'uint256',
+            name: 'rootsRoot',
+            type: 'uint256'
+          }
         ],
-        internalType: "struct IdentityLib.Roots",
-        name: "",
-        type: "tuple",
-      },
+        internalType: 'struct IdentityLib.Roots',
+        name: '',
+        type: 'tuple'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getRootsTreeRoot",
+    name: 'getRootsTreeRoot',
     outputs: [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [],
-    name: "getSmtDepth",
+    name: 'getSmtDepth',
     outputs: [
       {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256'
+      }
     ],
-    stateMutability: "pure",
-    type: "function",
+    stateMutability: 'pure',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "_userId",
-        type: "uint256",
-      },
+        internalType: 'uint256',
+        name: '_userId',
+        type: 'uint256'
+      }
     ],
-    name: "getUserCredentialIds",
+    name: 'getUserCredentialIds',
     outputs: [
       {
-        internalType: "uint256[]",
-        name: "",
-        type: "uint256[]",
-      },
+        internalType: 'uint256[]',
+        name: '',
+        type: 'uint256[]'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "address",
-        name: "_stateContractAddr",
-        type: "address",
+        internalType: 'address',
+        name: '_stateContractAddr',
+        type: 'address'
       },
       {
-        internalType: "bytes2",
-        name: "idType",
-        type: "bytes2",
-      },
+        internalType: 'bytes2',
+        name: 'idType',
+        type: 'bytes2'
+      }
     ],
-    name: "initialize",
+    name: 'initialize',
     outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
+    stateMutability: 'nonpayable',
+    type: 'function'
   },
   {
     inputs: [
       {
-        internalType: "bytes4",
-        name: "interfaceId",
-        type: "bytes4",
-      },
+        internalType: 'bytes4',
+        name: 'interfaceId',
+        type: 'bytes4'
+      }
     ],
-    name: "supportsInterface",
+    name: 'supportsInterface',
     outputs: [
       {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
+        internalType: 'bool',
+        name: '',
+        type: 'bool'
+      }
     ],
-    stateMutability: "view",
-    type: "function",
-  },
+    stateMutability: 'view',
+    type: 'function'
+  }
 ] as const;
 
 export class NonMerklizedIssuerBase__factory {
@@ -1225,14 +1221,7 @@ export class NonMerklizedIssuerBase__factory {
   static createInterface(): NonMerklizedIssuerBaseInterface {
     return new Interface(_abi) as NonMerklizedIssuerBaseInterface;
   }
-  static connect(
-    address: string,
-    runner?: ContractRunner | null
-  ): NonMerklizedIssuerBase {
-    return new Contract(
-      address,
-      _abi,
-      runner
-    ) as unknown as NonMerklizedIssuerBase;
+  static connect(address: string, runner?: ContractRunner | null): NonMerklizedIssuerBase {
+    return new Contract(address, _abi, runner) as unknown as NonMerklizedIssuerBase;
   }
 }

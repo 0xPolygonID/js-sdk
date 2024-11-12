@@ -11,15 +11,15 @@ import type {
   AddressLike,
   ContractRunner,
   ContractMethod,
-  Listener,
-} from "ethers";
+  Listener
+} from 'ethers';
 import type {
   TypedContractEvent,
   TypedDeferredTopicFilter,
   TypedEventLog,
   TypedListener,
-  TypedContractMethod,
-} from "./common";
+  TypedContractMethod
+} from './common';
 
 export declare namespace SmtLib {
   export type ProofStruct = {
@@ -133,11 +133,11 @@ export declare namespace INonMerklizedIssuer {
     rawValue: BytesLike;
   };
 
-  export type SubjectFieldStructOutput = [
-    key: string,
-    value: bigint,
-    rawValue: string
-  ] & { key: string; value: bigint; rawValue: string };
+  export type SubjectFieldStructOutput = [key: string, value: bigint, rawValue: string] & {
+    key: string;
+    value: bigint;
+    rawValue: string;
+  };
 }
 
 export declare namespace IOnchainCredentialStatusResolver {
@@ -208,252 +208,129 @@ export declare namespace IOnchainCredentialStatusResolver {
 export interface NonMerklizedIssuerBaseInterface extends Interface {
   getFunction(
     nameOrSignature:
-      | "CREDENTIAL_ADAPTER_VERSION"
-      | "getClaimProof"
-      | "getClaimProofByRoot"
-      | "getClaimProofWithStateInfo"
-      | "getClaimsTreeRoot"
-      | "getCredential"
-      | "getCredentialAdapterVersion"
-      | "getId"
-      | "getIsOldStateGenesis"
-      | "getLatestPublishedClaimsRoot"
-      | "getLatestPublishedRevocationsRoot"
-      | "getLatestPublishedRootsRoot"
-      | "getLatestPublishedState"
-      | "getRevocationProof"
-      | "getRevocationProofByRoot"
-      | "getRevocationProofWithStateInfo"
-      | "getRevocationStatus"
-      | "getRevocationStatusByIdAndState"
-      | "getRevocationsTreeRoot"
-      | "getRootProof"
-      | "getRootProofByRoot"
-      | "getRootProofWithStateInfo"
-      | "getRootsByState"
-      | "getRootsTreeRoot"
-      | "getSmtDepth"
-      | "getUserCredentialIds"
-      | "initialize"
-      | "supportsInterface"
+      | 'CREDENTIAL_ADAPTER_VERSION'
+      | 'getClaimProof'
+      | 'getClaimProofByRoot'
+      | 'getClaimProofWithStateInfo'
+      | 'getClaimsTreeRoot'
+      | 'getCredential'
+      | 'getCredentialAdapterVersion'
+      | 'getId'
+      | 'getIsOldStateGenesis'
+      | 'getLatestPublishedClaimsRoot'
+      | 'getLatestPublishedRevocationsRoot'
+      | 'getLatestPublishedRootsRoot'
+      | 'getLatestPublishedState'
+      | 'getRevocationProof'
+      | 'getRevocationProofByRoot'
+      | 'getRevocationProofWithStateInfo'
+      | 'getRevocationStatus'
+      | 'getRevocationStatusByIdAndState'
+      | 'getRevocationsTreeRoot'
+      | 'getRootProof'
+      | 'getRootProofByRoot'
+      | 'getRootProofWithStateInfo'
+      | 'getRootsByState'
+      | 'getRootsTreeRoot'
+      | 'getSmtDepth'
+      | 'getUserCredentialIds'
+      | 'initialize'
+      | 'supportsInterface'
   ): FunctionFragment;
 
+  encodeFunctionData(functionFragment: 'CREDENTIAL_ADAPTER_VERSION', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getClaimProof', values: [BigNumberish]): string;
   encodeFunctionData(
-    functionFragment: "CREDENTIAL_ADAPTER_VERSION",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getClaimProof",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getClaimProofByRoot",
+    functionFragment: 'getClaimProofByRoot',
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getClaimProofWithStateInfo",
+    functionFragment: 'getClaimProofWithStateInfo',
     values: [BigNumberish]
   ): string;
+  encodeFunctionData(functionFragment: 'getClaimsTreeRoot', values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "getClaimsTreeRoot",
+    functionFragment: 'getCredential',
+    values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(functionFragment: 'getCredentialAdapterVersion', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getId', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getIsOldStateGenesis', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getLatestPublishedClaimsRoot', values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: 'getLatestPublishedRevocationsRoot',
     values?: undefined
   ): string;
+  encodeFunctionData(functionFragment: 'getLatestPublishedRootsRoot', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getLatestPublishedState', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getRevocationProof', values: [BigNumberish]): string;
   encodeFunctionData(
-    functionFragment: "getCredential",
+    functionFragment: 'getRevocationProofByRoot',
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getCredentialAdapterVersion",
-    values?: undefined
-  ): string;
-  encodeFunctionData(functionFragment: "getId", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "getIsOldStateGenesis",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getLatestPublishedClaimsRoot",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getLatestPublishedRevocationsRoot",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getLatestPublishedRootsRoot",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getLatestPublishedState",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getRevocationProof",
+    functionFragment: 'getRevocationProofWithStateInfo',
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getRevocationProofByRoot",
+    functionFragment: 'getRevocationStatus',
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getRevocationProofWithStateInfo",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getRevocationStatus",
-    values: [BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getRevocationStatusByIdAndState",
+    functionFragment: 'getRevocationStatusByIdAndState',
     values: [BigNumberish, BigNumberish, BigNumberish]
   ): string;
+  encodeFunctionData(functionFragment: 'getRevocationsTreeRoot', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getRootProof', values: [BigNumberish]): string;
   encodeFunctionData(
-    functionFragment: "getRevocationsTreeRoot",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getRootProof",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getRootProofByRoot",
+    functionFragment: 'getRootProofByRoot',
     values: [BigNumberish, BigNumberish]
   ): string;
-  encodeFunctionData(
-    functionFragment: "getRootProofWithStateInfo",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getRootsByState",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getRootsTreeRoot",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getSmtDepth",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getUserCredentialIds",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "initialize",
-    values: [AddressLike, BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "supportsInterface",
-    values: [BytesLike]
-  ): string;
+  encodeFunctionData(functionFragment: 'getRootProofWithStateInfo', values: [BigNumberish]): string;
+  encodeFunctionData(functionFragment: 'getRootsByState', values: [BigNumberish]): string;
+  encodeFunctionData(functionFragment: 'getRootsTreeRoot', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getSmtDepth', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getUserCredentialIds', values: [BigNumberish]): string;
+  encodeFunctionData(functionFragment: 'initialize', values: [AddressLike, BytesLike]): string;
+  encodeFunctionData(functionFragment: 'supportsInterface', values: [BytesLike]): string;
 
+  decodeFunctionResult(functionFragment: 'CREDENTIAL_ADAPTER_VERSION', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getClaimProof', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getClaimProofByRoot', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getClaimProofWithStateInfo', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getClaimsTreeRoot', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getCredential', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getCredentialAdapterVersion', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getId', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getIsOldStateGenesis', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getLatestPublishedClaimsRoot', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "CREDENTIAL_ADAPTER_VERSION",
+    functionFragment: 'getLatestPublishedRevocationsRoot',
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: 'getLatestPublishedRootsRoot', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getLatestPublishedState', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getRevocationProof', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getRevocationProofByRoot', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "getClaimProof",
+    functionFragment: 'getRevocationProofWithStateInfo',
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: 'getRevocationStatus', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "getClaimProofByRoot",
+    functionFragment: 'getRevocationStatusByIdAndState',
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "getClaimProofWithStateInfo",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getClaimsTreeRoot",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getCredential",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getCredentialAdapterVersion",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "getId", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "getIsOldStateGenesis",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getLatestPublishedClaimsRoot",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getLatestPublishedRevocationsRoot",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getLatestPublishedRootsRoot",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getLatestPublishedState",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRevocationProof",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRevocationProofByRoot",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRevocationProofWithStateInfo",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRevocationStatus",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRevocationStatusByIdAndState",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRevocationsTreeRoot",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRootProof",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRootProofByRoot",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRootProofWithStateInfo",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRootsByState",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRootsTreeRoot",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getSmtDepth",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getUserCredentialIds",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "supportsInterface",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: 'getRevocationsTreeRoot', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getRootProof', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getRootProofByRoot', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getRootProofWithStateInfo', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getRootsByState', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getRootsTreeRoot', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getSmtDepth', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getUserCredentialIds', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'initialize', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'supportsInterface', data: BytesLike): Result;
 }
 
 export interface NonMerklizedIssuerBase extends BaseContract {
@@ -495,31 +372,29 @@ export interface NonMerklizedIssuerBase extends BaseContract {
     event: TCEvent
   ): Promise<Array<TypedListener<TCEvent>>>;
   listeners(eventName?: string): Promise<Array<Listener>>;
-  removeAllListeners<TCEvent extends TypedContractEvent>(
-    event?: TCEvent
-  ): Promise<this>;
+  removeAllListeners<TCEvent extends TypedContractEvent>(event?: TCEvent): Promise<this>;
 
-  CREDENTIAL_ADAPTER_VERSION: TypedContractMethod<[], [string], "view">;
+  CREDENTIAL_ADAPTER_VERSION: TypedContractMethod<[], [string], 'view'>;
 
   getClaimProof: TypedContractMethod<
     [claimIndexHash: BigNumberish],
     [SmtLib.ProofStructOutput],
-    "view"
+    'view'
   >;
 
   getClaimProofByRoot: TypedContractMethod<
     [claimIndexHash: BigNumberish, root: BigNumberish],
     [SmtLib.ProofStructOutput],
-    "view"
+    'view'
   >;
 
   getClaimProofWithStateInfo: TypedContractMethod<
     [claimIndexHash: BigNumberish],
     [[SmtLib.ProofStructOutput, IdentityLib.StateInfoStructOutput]],
-    "view"
+    'view'
   >;
 
-  getClaimsTreeRoot: TypedContractMethod<[], [bigint], "view">;
+  getClaimsTreeRoot: TypedContractMethod<[], [bigint], 'view'>;
 
   getCredential: TypedContractMethod<
     [_userId: BigNumberish, _credentialId: BigNumberish],
@@ -530,134 +405,118 @@ export interface NonMerklizedIssuerBase extends BaseContract {
         INonMerklizedIssuer.SubjectFieldStructOutput[]
       ]
     ],
-    "view"
+    'view'
   >;
 
-  getCredentialAdapterVersion: TypedContractMethod<[], [string], "view">;
+  getCredentialAdapterVersion: TypedContractMethod<[], [string], 'view'>;
 
-  getId: TypedContractMethod<[], [bigint], "view">;
+  getId: TypedContractMethod<[], [bigint], 'view'>;
 
-  getIsOldStateGenesis: TypedContractMethod<[], [boolean], "view">;
+  getIsOldStateGenesis: TypedContractMethod<[], [boolean], 'view'>;
 
-  getLatestPublishedClaimsRoot: TypedContractMethod<[], [bigint], "view">;
+  getLatestPublishedClaimsRoot: TypedContractMethod<[], [bigint], 'view'>;
 
-  getLatestPublishedRevocationsRoot: TypedContractMethod<[], [bigint], "view">;
+  getLatestPublishedRevocationsRoot: TypedContractMethod<[], [bigint], 'view'>;
 
-  getLatestPublishedRootsRoot: TypedContractMethod<[], [bigint], "view">;
+  getLatestPublishedRootsRoot: TypedContractMethod<[], [bigint], 'view'>;
 
-  getLatestPublishedState: TypedContractMethod<[], [bigint], "view">;
+  getLatestPublishedState: TypedContractMethod<[], [bigint], 'view'>;
 
   getRevocationProof: TypedContractMethod<
     [revocationNonce: BigNumberish],
     [SmtLib.ProofStructOutput],
-    "view"
+    'view'
   >;
 
   getRevocationProofByRoot: TypedContractMethod<
     [revocationNonce: BigNumberish, root: BigNumberish],
     [SmtLib.ProofStructOutput],
-    "view"
+    'view'
   >;
 
   getRevocationProofWithStateInfo: TypedContractMethod<
     [revocationNonce: BigNumberish],
     [[SmtLib.ProofStructOutput, IdentityLib.StateInfoStructOutput]],
-    "view"
+    'view'
   >;
 
   getRevocationStatus: TypedContractMethod<
     [id: BigNumberish, nonce: BigNumberish],
     [IOnchainCredentialStatusResolver.CredentialStatusStructOutput],
-    "view"
+    'view'
   >;
 
   getRevocationStatusByIdAndState: TypedContractMethod<
     [id: BigNumberish, state: BigNumberish, nonce: BigNumberish],
     [IOnchainCredentialStatusResolver.CredentialStatusStructOutput],
-    "view"
+    'view'
   >;
 
-  getRevocationsTreeRoot: TypedContractMethod<[], [bigint], "view">;
+  getRevocationsTreeRoot: TypedContractMethod<[], [bigint], 'view'>;
 
   getRootProof: TypedContractMethod<
     [rootsTreeRoot: BigNumberish],
     [SmtLib.ProofStructOutput],
-    "view"
+    'view'
   >;
 
   getRootProofByRoot: TypedContractMethod<
     [claimsTreeRoot: BigNumberish, root: BigNumberish],
     [SmtLib.ProofStructOutput],
-    "view"
+    'view'
   >;
 
   getRootProofWithStateInfo: TypedContractMethod<
     [rootsTreeRoot: BigNumberish],
     [[SmtLib.ProofStructOutput, IdentityLib.StateInfoStructOutput]],
-    "view"
+    'view'
   >;
 
   getRootsByState: TypedContractMethod<
     [state: BigNumberish],
     [IdentityLib.RootsStructOutput],
-    "view"
+    'view'
   >;
 
-  getRootsTreeRoot: TypedContractMethod<[], [bigint], "view">;
+  getRootsTreeRoot: TypedContractMethod<[], [bigint], 'view'>;
 
-  getSmtDepth: TypedContractMethod<[], [bigint], "view">;
+  getSmtDepth: TypedContractMethod<[], [bigint], 'view'>;
 
-  getUserCredentialIds: TypedContractMethod<
-    [_userId: BigNumberish],
-    [bigint[]],
-    "view"
-  >;
+  getUserCredentialIds: TypedContractMethod<[_userId: BigNumberish], [bigint[]], 'view'>;
 
   initialize: TypedContractMethod<
     [_stateContractAddr: AddressLike, idType: BytesLike],
     [void],
-    "nonpayable"
+    'nonpayable'
   >;
 
-  supportsInterface: TypedContractMethod<
-    [interfaceId: BytesLike],
-    [boolean],
-    "view"
-  >;
+  supportsInterface: TypedContractMethod<[interfaceId: BytesLike], [boolean], 'view'>;
 
-  getFunction<T extends ContractMethod = ContractMethod>(
-    key: string | FunctionFragment
-  ): T;
+  getFunction<T extends ContractMethod = ContractMethod>(key: string | FunctionFragment): T;
 
   getFunction(
-    nameOrSignature: "CREDENTIAL_ADAPTER_VERSION"
-  ): TypedContractMethod<[], [string], "view">;
+    nameOrSignature: 'CREDENTIAL_ADAPTER_VERSION'
+  ): TypedContractMethod<[], [string], 'view'>;
   getFunction(
-    nameOrSignature: "getClaimProof"
-  ): TypedContractMethod<
-    [claimIndexHash: BigNumberish],
-    [SmtLib.ProofStructOutput],
-    "view"
-  >;
+    nameOrSignature: 'getClaimProof'
+  ): TypedContractMethod<[claimIndexHash: BigNumberish], [SmtLib.ProofStructOutput], 'view'>;
   getFunction(
-    nameOrSignature: "getClaimProofByRoot"
+    nameOrSignature: 'getClaimProofByRoot'
   ): TypedContractMethod<
     [claimIndexHash: BigNumberish, root: BigNumberish],
     [SmtLib.ProofStructOutput],
-    "view"
+    'view'
   >;
   getFunction(
-    nameOrSignature: "getClaimProofWithStateInfo"
+    nameOrSignature: 'getClaimProofWithStateInfo'
   ): TypedContractMethod<
     [claimIndexHash: BigNumberish],
     [[SmtLib.ProofStructOutput, IdentityLib.StateInfoStructOutput]],
-    "view"
+    'view'
   >;
+  getFunction(nameOrSignature: 'getClaimsTreeRoot'): TypedContractMethod<[], [bigint], 'view'>;
   getFunction(
-    nameOrSignature: "getClaimsTreeRoot"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "getCredential"
+    nameOrSignature: 'getCredential'
   ): TypedContractMethod<
     [_userId: BigNumberish, _credentialId: BigNumberish],
     [
@@ -667,114 +526,92 @@ export interface NonMerklizedIssuerBase extends BaseContract {
         INonMerklizedIssuer.SubjectFieldStructOutput[]
       ]
     ],
-    "view"
+    'view'
   >;
   getFunction(
-    nameOrSignature: "getCredentialAdapterVersion"
-  ): TypedContractMethod<[], [string], "view">;
+    nameOrSignature: 'getCredentialAdapterVersion'
+  ): TypedContractMethod<[], [string], 'view'>;
+  getFunction(nameOrSignature: 'getId'): TypedContractMethod<[], [bigint], 'view'>;
+  getFunction(nameOrSignature: 'getIsOldStateGenesis'): TypedContractMethod<[], [boolean], 'view'>;
   getFunction(
-    nameOrSignature: "getId"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: 'getLatestPublishedClaimsRoot'
+  ): TypedContractMethod<[], [bigint], 'view'>;
   getFunction(
-    nameOrSignature: "getIsOldStateGenesis"
-  ): TypedContractMethod<[], [boolean], "view">;
+    nameOrSignature: 'getLatestPublishedRevocationsRoot'
+  ): TypedContractMethod<[], [bigint], 'view'>;
   getFunction(
-    nameOrSignature: "getLatestPublishedClaimsRoot"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: 'getLatestPublishedRootsRoot'
+  ): TypedContractMethod<[], [bigint], 'view'>;
   getFunction(
-    nameOrSignature: "getLatestPublishedRevocationsRoot"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: 'getLatestPublishedState'
+  ): TypedContractMethod<[], [bigint], 'view'>;
   getFunction(
-    nameOrSignature: "getLatestPublishedRootsRoot"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: 'getRevocationProof'
+  ): TypedContractMethod<[revocationNonce: BigNumberish], [SmtLib.ProofStructOutput], 'view'>;
   getFunction(
-    nameOrSignature: "getLatestPublishedState"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "getRevocationProof"
-  ): TypedContractMethod<
-    [revocationNonce: BigNumberish],
-    [SmtLib.ProofStructOutput],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getRevocationProofByRoot"
+    nameOrSignature: 'getRevocationProofByRoot'
   ): TypedContractMethod<
     [revocationNonce: BigNumberish, root: BigNumberish],
     [SmtLib.ProofStructOutput],
-    "view"
+    'view'
   >;
   getFunction(
-    nameOrSignature: "getRevocationProofWithStateInfo"
+    nameOrSignature: 'getRevocationProofWithStateInfo'
   ): TypedContractMethod<
     [revocationNonce: BigNumberish],
     [[SmtLib.ProofStructOutput, IdentityLib.StateInfoStructOutput]],
-    "view"
+    'view'
   >;
   getFunction(
-    nameOrSignature: "getRevocationStatus"
+    nameOrSignature: 'getRevocationStatus'
   ): TypedContractMethod<
     [id: BigNumberish, nonce: BigNumberish],
     [IOnchainCredentialStatusResolver.CredentialStatusStructOutput],
-    "view"
+    'view'
   >;
   getFunction(
-    nameOrSignature: "getRevocationStatusByIdAndState"
+    nameOrSignature: 'getRevocationStatusByIdAndState'
   ): TypedContractMethod<
     [id: BigNumberish, state: BigNumberish, nonce: BigNumberish],
     [IOnchainCredentialStatusResolver.CredentialStatusStructOutput],
-    "view"
+    'view'
   >;
+  getFunction(nameOrSignature: 'getRevocationsTreeRoot'): TypedContractMethod<[], [bigint], 'view'>;
   getFunction(
-    nameOrSignature: "getRevocationsTreeRoot"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: 'getRootProof'
+  ): TypedContractMethod<[rootsTreeRoot: BigNumberish], [SmtLib.ProofStructOutput], 'view'>;
   getFunction(
-    nameOrSignature: "getRootProof"
-  ): TypedContractMethod<
-    [rootsTreeRoot: BigNumberish],
-    [SmtLib.ProofStructOutput],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getRootProofByRoot"
+    nameOrSignature: 'getRootProofByRoot'
   ): TypedContractMethod<
     [claimsTreeRoot: BigNumberish, root: BigNumberish],
     [SmtLib.ProofStructOutput],
-    "view"
+    'view'
   >;
   getFunction(
-    nameOrSignature: "getRootProofWithStateInfo"
+    nameOrSignature: 'getRootProofWithStateInfo'
   ): TypedContractMethod<
     [rootsTreeRoot: BigNumberish],
     [[SmtLib.ProofStructOutput, IdentityLib.StateInfoStructOutput]],
-    "view"
+    'view'
   >;
   getFunction(
-    nameOrSignature: "getRootsByState"
-  ): TypedContractMethod<
-    [state: BigNumberish],
-    [IdentityLib.RootsStructOutput],
-    "view"
-  >;
+    nameOrSignature: 'getRootsByState'
+  ): TypedContractMethod<[state: BigNumberish], [IdentityLib.RootsStructOutput], 'view'>;
+  getFunction(nameOrSignature: 'getRootsTreeRoot'): TypedContractMethod<[], [bigint], 'view'>;
+  getFunction(nameOrSignature: 'getSmtDepth'): TypedContractMethod<[], [bigint], 'view'>;
   getFunction(
-    nameOrSignature: "getRootsTreeRoot"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: 'getUserCredentialIds'
+  ): TypedContractMethod<[_userId: BigNumberish], [bigint[]], 'view'>;
   getFunction(
-    nameOrSignature: "getSmtDepth"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "getUserCredentialIds"
-  ): TypedContractMethod<[_userId: BigNumberish], [bigint[]], "view">;
-  getFunction(
-    nameOrSignature: "initialize"
+    nameOrSignature: 'initialize'
   ): TypedContractMethod<
     [_stateContractAddr: AddressLike, idType: BytesLike],
     [void],
-    "nonpayable"
+    'nonpayable'
   >;
   getFunction(
-    nameOrSignature: "supportsInterface"
-  ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
+    nameOrSignature: 'supportsInterface'
+  ): TypedContractMethod<[interfaceId: BytesLike], [boolean], 'view'>;
 
   filters: {};
 }
