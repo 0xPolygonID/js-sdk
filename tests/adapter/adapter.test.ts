@@ -3,7 +3,7 @@ import { RPC_URL, IPFS_URL } from '../helpers';
 import { DID } from '@iden3/js-iden3-core';
 import balanceCredentialHttpSchema from './testdata/balance_credential_http_schema.json';
 import balanceCredentialIpfsSchema from './testdata/balance_credential_ipfs_schema.json';
-import { W3CCredential } from '@0xpolygonid/js-sdk';
+import { W3CCredential } from '../../src/verifiable';
 import { expect } from 'chai';
 
 describe('Adapter', () => {
@@ -16,7 +16,6 @@ describe('Adapter', () => {
     );
     const adapter = new Adapter(RPC_URL, issuerDid);
     const cred = await adapter.getCredential(userId, BigInt(6));
-    // @ts-ignore
     expect(W3CCredential.fromJSON(balanceCredentialHttpSchema)).to.deep.equal(cred);
   });
 
@@ -31,7 +30,6 @@ describe('Adapter', () => {
       ipfsGatewayURL: IPFS_URL
     });
     const cred = await adapter.getCredential(userId, BigInt(0));
-    // @ts-ignore
     expect(W3CCredential.fromJSON(balanceCredentialIpfsSchema)).to.deep.equal(cred);
   });
 });
