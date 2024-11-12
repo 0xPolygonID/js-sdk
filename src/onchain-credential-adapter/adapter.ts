@@ -9,6 +9,13 @@ enum AdapterVersion {
   'v0.0.1' = '0.0.1'
 }
 
+/** 
+ * Represents an adapter for interacting with on-chain credentials.
+ *
+ * @public
+ * @beta
+ * @class Adapter
+ */
 export class Adapter {
   private readonly _url: string;
   private readonly _chainId: number;
@@ -19,6 +26,12 @@ export class Adapter {
 
   private readonly _merklizationOptions?: Options;
 
+  /**
+   * Initializes an instance of `Adapter`.
+   * @param url The URL of the blockchain RPC provider.
+   * @param did The decentralized identifier (DID) of the issuer.
+   * @param merklizationOptions Optional settings for merklization.
+   */
   constructor(url: string, did: DID, options?: Options) {
     const issuerId = DID.idFromDID(did);
     this._contractAddress = ethers.getAddress(ethers.hexlify(Id.ethAddressFromId(issuerId)));
@@ -36,6 +49,11 @@ export class Adapter {
     this._url = url;
   }
 
+  /**
+   * Retrieves a credential from the on-chain non-merklized contract.
+   * @param userId The user's core.Id.
+   * @param credentialId The unique identifier of the credential.
+   */
   public async getCredential(userId: Id, credentialId: bigint): Promise<W3CCredential> {
     const response = await this._contract.getCredentialAdapterVersion();
     switch (response) {

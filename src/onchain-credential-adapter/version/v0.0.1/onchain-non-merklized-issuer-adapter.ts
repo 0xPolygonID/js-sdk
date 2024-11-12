@@ -28,6 +28,14 @@ const booleanHashTrue =
 const booleanHashFalse =
   '19014214495641488759237505126948346942972912379615652741039992445865937985820';
 
+/**
+ * `OnchainNonMerklizedIssuerAdapter` provides functionality to interact with a non-merklized on-chain credential issuer.
+ * This adapter enables interface detection, credential retrieval, and conversion to the W3C Verifiable Credential format.
+ *
+ * @public
+ * @beta
+ * @class OnchainNonMerklizedIssuerAdapter
+ */
 export class OnchainNonMerklizedIssuerAdapter {
   private readonly _contract: NonMerklizedIssuerBase;
   private readonly _contractAddress: string;
@@ -36,7 +44,16 @@ export class OnchainNonMerklizedIssuerAdapter {
   private readonly _issuerDid: DID;
 
   private readonly _merklizationOptions?: Options;
-
+  
+  /**
+   * Initializes an instance of `OnchainNonMerklizedIssuerAdapter`.
+   *
+   * @param url The URL of the blockchain RPC provider.
+   * @param contractAddress The contract address of the non-merklized issuer.
+   * @param chainId The chain ID of the blockchain network.
+   * @param issuerDid The decentralized identifier (DID) of the issuer.
+   * @param merklizationOptions Optional settings for merklization.
+   */
   constructor(
     url: string,
     contractAddress: string,
@@ -52,6 +69,12 @@ export class OnchainNonMerklizedIssuerAdapter {
     this._merklizationOptions = merklizationOptions;
   }
 
+   /**
+   * Checks if the contract supports required interfaces.
+   * Throws an error if any required interface is unsupported.
+   *
+   * @throws Error - If required interfaces are not supported.
+   */
   public async isSupportsInterface() {
     const supportedInterfaces = [
       { name: 'Interface detection ERC-165', value: interfaceDetection },
@@ -75,8 +98,13 @@ export class OnchainNonMerklizedIssuerAdapter {
     }
   }
 
+  /**
+   * Retrieves a credential from the on-chain non-merklized contract.
+   * @param userId The user's core.Id.
+   * @param credentialId The unique identifier of the credential.
+   */
   public async getCredential(
-    issuerId: Id,
+    userId: Id,
     credentialId: bigint
   ): Promise<{
     credentialData: INonMerklizedIssuer.CredentialDataStructOutput;
@@ -84,10 +112,17 @@ export class OnchainNonMerklizedIssuerAdapter {
     credentialSubjectFields: INonMerklizedIssuer.SubjectFieldStructOutput[];
   }> {
     const [credentialData, coreClaimBigInts, credentialSubjectFields] =
-      await this._contract.getCredential(issuerId.bigInt(), credentialId);
+      await this._contract.getCredential(userId.bigInt(), credentialId);
     return { credentialData, coreClaimBigInts, credentialSubjectFields };
   }
 
+  /**
+   * Converts on-chain credential to a verifiable credential.
+   *
+   * @param credentialData Data structure of the credential from the contract.
+   * @param coreClaimBigInts Claim data in bigint format.
+   * @param credentialSubjectFields Subject fields of the credential.
+   */
   public async convertOnChainInfoToW3CCredential(
     credentialData: INonMerklizedIssuer.CredentialDataStructOutput,
     coreClaimBigInts: bigint[],
