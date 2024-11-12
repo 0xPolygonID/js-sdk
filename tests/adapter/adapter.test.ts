@@ -16,6 +16,7 @@ describe('Adapter', () => {
     );
     const adapter = new Adapter(RPC_URL, issuerDid);
     const cred = await adapter.getCredential(userId, BigInt(6));
+    // @ts-ignore
     expect(W3CCredential.fromJSON(balanceCredentialHttpSchema)).to.deep.equal(cred);
   });
 
@@ -30,6 +31,7 @@ describe('Adapter', () => {
       ipfsGatewayURL: IPFS_URL
     });
     const cred = await adapter.getCredential(userId, BigInt(0));
+    // @ts-ignore
     expect(W3CCredential.fromJSON(balanceCredentialIpfsSchema)).to.deep.equal(cred);
   });
 });
