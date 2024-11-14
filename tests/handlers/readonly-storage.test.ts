@@ -1,14 +1,14 @@
 import { expect } from 'chai';
-import { DidResolverReadonlyStorage, IStateStorage } from '../../src';
+import { DidResolverStateReadonlyStorage, IStateStorage } from '../../src';
 import { DID } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 
-describe('resolver readonly storage', () => {
+describe.skip('resolver readonly storage', () => {
   let stateStorage: IStateStorage;
   const did = DID.parse('did:polygonid:polygon:amoy:2qV7YACbSYpvuXySSqhBd6E4XAxzLE5kYmPqwxuvwD');
   const id = DID.idFromDID(did);
   beforeEach(async () => {
-    stateStorage = new DidResolverReadonlyStorage('https://resolver-dev.privado.id/');
+    stateStorage = new DidResolverStateReadonlyStorage('http://127.0.0.1:8080');
   });
 
   it('getLatestStateById', async () => {
@@ -22,6 +22,12 @@ describe('resolver readonly storage', () => {
     const info = await stateStorage.getStateInfoByIdAndState(id.bigInt(), state.bigInt());
     expect(info).to.be.an('object');
     expect(info).to.have.property('id');
+  });
+
+  it('getGISTProof', async () => {
+    const proof = await stateStorage.getGISTProof(id.bigInt());
+    expect(proof).to.be.an('object');
+    expect(proof).to.have.property('root');
   });
 
   it('getGISTRootInfo', async () => {

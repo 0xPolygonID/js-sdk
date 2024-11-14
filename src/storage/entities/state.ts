@@ -47,6 +47,16 @@ export interface RootInfo {
 }
 
 /**
+ * global identity state root info from DID resolver document
+ *
+ * @public
+ * @interface   RootInfoWithProof
+ */
+export interface RootInfoWithProof extends RootInfo {
+  proof: StateProof;
+}
+
+/**
  * identity state message
  *
  * @public
