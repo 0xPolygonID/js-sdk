@@ -39,6 +39,7 @@ export interface EventMap<Keys> {
   updated: KeyEvent<Keys>
   deleted: KeyEvent<Keys>
   expired: KeyEvent<Keys>
+  persisting: KeyEvent<Keys>
 }
 
 export type EventTypes<Keys> = keyof EventMap<Keys>
@@ -62,6 +63,7 @@ export class SessionKeystore<Keys = string> {
   #emitter: Emitter
   #store: Map<Keys, ExpirableKeyV1>
   #timeouts: Map<Keys, any>
+  readonly id: number
 
   // --
 
@@ -74,6 +76,7 @@ export class SessionKeystore<Keys = string> {
     }
   }) {
     this.name = opts.name || 'default'
+    this.id = Math.floor(Math.random() * 1000000)
     this.#storageKey = `session-keystore:${this.name}`
     this.#emitter = mitt()
     this.#store = new Map()
@@ -102,6 +105,7 @@ export class SessionKeystore<Keys = string> {
   // API --
 
   set(key: Keys, value: string, expiresAt?: Date | number) {
+    console.log('key', key)
     let d: number | undefined
     if (expiresAt !== undefined) {
       d = typeof expiresAt === 'number' ? expiresAt : expiresAt.valueOf()
@@ -111,20 +115,24 @@ export class SessionKeystore<Keys = string> {
       value,
       expiresAt: d
     }
+    console.log('newItem', newItem)
     const oldItem = this.#store.get(key)
+    console.log('oldItem', oldItem)
     this.#store.set(key, newItem)
     if (this._setTimeout(key) === 'expired') {
       return // Don't call created or updated
     }
     if (!oldItem) {
-      this.#emitter.emit('created', { name: key })
+      this.#emitter.emit('created', { name: key, value: newItem.value })
     } else if (oldItem.value !== newItem.value) {
       this.#emitter.emit('updated', { name: key })
     }
   }
 
   get(key: Keys, now = Date.now()) {
+    console.log('get', key)
     const item = this.#store.get(key)
+    console.log('item', item)
     if (!item) {
       return null
     }
@@ -149,6 +157,7 @@ export class SessionKeystore<Keys = string> {
   // --
 
   persist() {
+    this.#emitter.emit('persisting', { name: this.name });
     /* istanbul ignore next */
     if (typeof window === 'undefined') {
       throw new Error(

@@ -1,7 +1,6 @@
 import crypto from 'crypto' // Node.js crypto module
-import { encodeBase64url, utf8Decoder, utf8Encoder } from '../../utils'
+import { decodeBase64url, encodeBase64url, utf8Decoder, utf8Encoder } from '../../utils'
 import { base64UrlToBytes, bytesToBase64url } from '../../utils/encoding';
-import { decodeBase64url } from 'did-jwt/lib/util';
 
 const randomBytes = (length: number): Uint8Array => {
   if (typeof window === 'undefined') {
