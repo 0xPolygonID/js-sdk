@@ -3,14 +3,21 @@ import { CredentialStatusResolveOptions, CredentialStatusResolver } from './reso
 
 export class DidDocumentCredentialStatusResolver implements CredentialStatusResolver {
   constructor(private readonly didResolverUrl: string) {}
-  resolve(
+  async resolve(
     credentialStatus: CredentialStatus,
     opts?: CredentialStatusResolveOptions | undefined
   ): Promise<RevocationStatus> {
     if (!opts?.issuerDID) {
-        throw new Error('IssuerDID is not set in options');
+      throw new Error('IssuerDID is not set in options');
     }
 
-    throw new Error('Method not implemented.');
+    const didString = opts?.issuerDID.string().replace(/:/g, '%3A');
+    const url = `${this.didResolverUrl}/1.0/credential-status/${didString}`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(credentialStatus)
+    });
+    const data = await resp.json();
+    return data;
   }
 }
