@@ -1,3 +1,4 @@
+import { ProofJSON } from '@iden3/js-merkletree';
 /**
  * state information of identity from chain.
  *
@@ -53,7 +54,7 @@ export interface RootInfo {
  * @interface   RootInfoWithProof
  */
 export interface RootInfoWithProof extends RootInfo {
-  proof: StateProof;
+  proof: ProofJSON;
 }
 
 /**

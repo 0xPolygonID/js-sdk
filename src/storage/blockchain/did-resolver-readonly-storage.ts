@@ -32,14 +32,14 @@ export class DidResolverStateReadonlyStorage implements IStateStorage {
     }
     const { proof } = global;
     return {
-      root: BigInt(proof.root),
+      root: global.root,
       existence: proof.existence,
       siblings: proof.siblings?.map((sibling) => BigInt(sibling)),
-      index: BigInt(proof.index),
-      value: BigInt(proof.value),
-      auxExistence: proof.auxExistence,
-      auxIndex: BigInt(proof.auxIndex),
-      auxValue: BigInt(proof.auxValue)
+      index: BigInt(0),
+      value: BigInt(0),
+      auxExistence: !!proof.node_aux,
+      auxIndex: proof.node_aux ? BigInt(proof.node_aux.key) : BigInt(0),
+      auxValue: proof.node_aux ? BigInt(proof.node_aux.value) : BigInt(0)
     };
   }
 
@@ -65,13 +65,13 @@ export class DidResolverStateReadonlyStorage implements IStateStorage {
   }
 
   getRpcProvider(): JsonRpcProvider {
-    throw new Error('Method not implemented.');
+    return new JsonRpcProvider();
   }
   publishState(): Promise<string> {
-    throw new Error('Method not implemented.');
+    throw new Error('publishState method not implemented.');
   }
   publishStateGeneric(): Promise<string> {
-    throw new Error('Method not implemented.');
+    throw new Error('publishStateGeneric method not implemented.');
   }
 
   private async getStateInfo(id: bigint, state?: bigint): Promise<StateInfo> {
