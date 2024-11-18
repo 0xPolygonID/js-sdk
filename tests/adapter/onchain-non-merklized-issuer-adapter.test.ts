@@ -1,9 +1,9 @@
-import { OnchainNonMerklizedIssuerAdapter } from '../../src/onchain-credential-adapter/version/v0.0.1/onchain-non-merklized-issuer-adapter';
+import { OnchainNonMerklizedIssuerAdapter } from '../../src/storage/blockchain/onchain-issuer-adapter/non-merklized/version/v0.0.1/onchain-non-merklized-issuer-adapter';
 import { ethers } from 'ethers';
 import nock from 'nock';
 import { DID, Id, ChainIds } from '@iden3/js-iden3-core';
-import abi from '../../src/onchain-credential-adapter/version/v0.0.1/NonMerklizedIssuerBase.json';
-import { INonMerklizedIssuer } from '../../src/onchain-credential-adapter/version/v0.0.1/types/NonMerklizedIssuerBase';
+import abi from '../../src/storage/blockchain/onchain-issuer-adapter/non-merklized/version/v0.0.1/NonMerklizedIssuerBase.json';
+import { INonMerklizedIssuer } from '../../src/storage/blockchain/onchain-issuer-adapter/non-merklized/version/v0.0.1/types/NonMerklizedIssuerBase';
 import fs from 'fs';
 import path from 'path';
 import { expect } from 'chai';
@@ -163,7 +163,7 @@ describe('Convertor v0.0.1', () => {
       chainId,
       issuerDid,
       {
-        ipfsNodeURL: IPFS_URL
+        ipfsGatewayURL: IPFS_URL
       }
     );
     const w3cCredential = await adapter.convertOnChainInfoToW3CCredential(

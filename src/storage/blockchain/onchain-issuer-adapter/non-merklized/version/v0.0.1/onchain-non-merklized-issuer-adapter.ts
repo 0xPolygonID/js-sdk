@@ -10,11 +10,11 @@ import {
   Iden3SparseMerkleTreeProof,
   VerifiableConstants,
   W3CCredential
-} from '../../../verifiable';
+} from '../../../../../../verifiable';
 import { Merklizer, Path } from '@iden3/js-jsonld-merklization';
-import { XSDNS } from '../../../circuits';
+import { XSDNS } from '../../../../../../circuits';
 import { Hash, Proof } from '@iden3/js-merkletree';
-import { JsonDocumentObject } from '../../../iden3comm';
+import { JsonDocumentObject } from '../../../../../../iden3comm';
 import { ethers } from 'ethers';
 import { getDateFromUnixTimestamp } from '@iden3/js-iden3-core';
 import { Options } from '@iden3/js-jsonld-merklization';

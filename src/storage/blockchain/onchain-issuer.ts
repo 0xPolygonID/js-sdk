@@ -2,21 +2,22 @@ import { DID, Id, ChainIds } from '@iden3/js-iden3-core';
 import { Contract, ethers } from 'ethers';
 import abi from './abi/INonMerklizedIssuer.json';
 import { Options } from '@iden3/js-jsonld-merklization';
-import { W3CCredential } from '../verifiable';
-import { OnchainNonMerklizedIssuerAdapter } from './version/v0.0.1/onchain-non-merklized-issuer-adapter';
+import { W3CCredential } from '../../verifiable';
+import { OnchainNonMerklizedIssuerAdapter } from './onchain-issuer-adapter/non-merklized/version/v0.0.1/onchain-non-merklized-issuer-adapter';
+import { EthConnectionConfig } from '..';
 
-enum AdapterVersion {
+enum OnchainIssuerVersion {
   'v0.0.1' = '0.0.1'
 }
 
 /**
- * Represents an adapter for interacting with on-chain credentials.
+ * Represents an adapter for interacting with on-chain issuers.
  *
  * @public
  * @beta
- * @class Adapter
+ * @class OnchainIssuer
  */
-export class Adapter {
+export class OnchainIssuer {
   private readonly _url: string;
   private readonly _chainId: number;
   private readonly _contractAddress: string;
@@ -28,11 +29,11 @@ export class Adapter {
 
   /**
    * Initializes an instance of `Adapter`.
-   * @param url The URL of the blockchain RPC provider.
-   * @param did The decentralized identifier (DID) of the issuer.
+   * @param config The configuration for the Ethereum connection.
+   * @param did The decentralized identifier (DID) of the issuer. The DID provides the blockchain and network information.
    * @param merklizationOptions Optional settings for merklization.
    */
-  constructor(url: string, did: DID, options?: Options) {
+  constructor(config: EthConnectionConfig[], did: DID, options?: Options) {
     const issuerId = DID.idFromDID(did);
     this._contractAddress = ethers.getAddress(ethers.hexlify(Id.ethAddressFromId(issuerId)));
     this._chainId = ChainIds[`${DID.blockchainFromId(issuerId)}:${DID.networkIdFromId(issuerId)}`];
@@ -43,10 +44,14 @@ export class Adapter {
         )}`
       );
     }
-    this._merklizationOptions = options;
-    this._contract = new Contract(this._contractAddress, abi, new ethers.JsonRpcProvider(url));
-    this._issuerDid = did;
+    const url = config.find((c) => c.chainId === this._chainId)?.url;
+    if (!url) {
+      throw new Error(`No URL found for chain ID ${this._chainId}`);
+    }
     this._url = url;
+    this._merklizationOptions = options;
+    this._contract = new Contract(this._contractAddress, abi, new ethers.JsonRpcProvider(this._url));
+    this._issuerDid = did;
   }
 
   /**
@@ -57,7 +62,7 @@ export class Adapter {
   public async getCredential(userId: Id, credentialId: bigint): Promise<W3CCredential> {
     const response = await this._contract.getCredentialAdapterVersion();
     switch (response) {
-      case AdapterVersion['v0.0.1']: {
+      case OnchainIssuerVersion['v0.0.1']: {
         const adapter = new OnchainNonMerklizedIssuerAdapter(
           this._url,
           this._contractAddress,
