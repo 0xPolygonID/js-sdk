@@ -50,7 +50,11 @@ export class OnchainIssuer {
     }
     this._url = url;
     this._merklizationOptions = options;
-    this._contract = new Contract(this._contractAddress, abi, new ethers.JsonRpcProvider(this._url));
+    this._contract = new Contract(
+      this._contractAddress,
+      abi,
+      new ethers.JsonRpcProvider(this._url)
+    );
     this._issuerDid = did;
   }
 

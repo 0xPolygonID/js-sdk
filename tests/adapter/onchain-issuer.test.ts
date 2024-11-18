@@ -1,4 +1,4 @@
-import {  OnchainIssuer } from '../../src/storage/blockchain/onchain-issuer';
+import { OnchainIssuer } from '../../src/storage/blockchain/onchain-issuer';
 import { RPC_URL, IPFS_URL } from '../helpers';
 import { DID } from '@iden3/js-iden3-core';
 import balanceCredentialHttpSchema from './testdata/balance_credential_http_schema.json';
@@ -11,7 +11,7 @@ describe('OnchainIssuer', () => {
   const copyDefaultEthConnectionConfig = { ...defaultEthConnectionConfig };
   copyDefaultEthConnectionConfig.url = RPC_URL;
   copyDefaultEthConnectionConfig.chainId = 80002;
-  
+
   it('Test adapter for v0.0.1 HTTP schema', async () => {
     const issuerDid = DID.parse(
       'did:polygonid:polygon:amoy:2qQ68JkRcf3xyDFsGSWU5QqxbKpzM75quxS628JgvJ'
