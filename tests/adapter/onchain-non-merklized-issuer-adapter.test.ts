@@ -163,7 +163,7 @@ describe('Convertor v0.0.1', () => {
       chainId,
       issuerDid,
       {
-        ipfsGatewayURL: IPFS_URL
+        ipfsNodeURL: IPFS_URL
       }
     );
     const w3cCredential = await adapter.convertOnChainInfoToW3CCredential(
