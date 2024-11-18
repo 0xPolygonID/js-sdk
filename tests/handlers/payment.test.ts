@@ -50,11 +50,15 @@ import {
   PaymentRequestTypeUnion
 } from '../../src/iden3comm/types/protocol/payment';
 import { Contract, ethers, JsonRpcProvider } from 'ethers';
-import fetchMock from '@gr2m/fetch-mock';
 import { fail } from 'assert';
 import { DIDResolutionResult } from 'did-resolver';
+import nock from 'nock';
 
 describe('payment-request handler', () => {
+  afterEach(() => {
+    nock.cleanAll();
+  });
+
   let packageMgr: IPackageManager;
   let paymentHandler: IPaymentHandler;
   let userDID, issuerDID: DID;
@@ -532,10 +536,6 @@ describe('payment-request handler', () => {
     return Promise.resolve('0x312312334');
   };
 
-  afterEach(() => {
-    fetchMock.restore();
-  });
-
   beforeEach(async () => {
     const kms = registerKeyProvidersInMemoryKMS();
     const dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
@@ -620,8 +620,8 @@ describe('payment-request handler', () => {
     issuerDID = DID.parse('did:iden3:polygon:amoy:x6x5sor7zpyZX9yNpm8h1rPBDSN9idaEhDj1Qm8Q9');
 
     agentMessageResponse = createProposal(issuerDID, userDID, []);
-    fetchMock.spy();
-    fetchMock.post('https://agent-url.com', JSON.stringify(agentMessageResponse));
+
+    nock(agent).post('/').reply(200, JSON.stringify(agentMessageResponse));
   });
 
   it('payment-request handler test (Iden3PaymentRequestCryptoV1)', async () => {
@@ -695,9 +695,10 @@ describe('payment-request handler', () => {
   });
 
   it('payment-request handler test with empty agent response', async () => {
-    fetchMock.post('https://agent-url.com', '', { overwriteRoutes: true });
+    const newAgent = `${agent}.ua`;
+    nock(newAgent).post('/').reply(200, '');
 
-    const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
+    const paymentRequest = createPaymentRequest(issuerDID, userDID, newAgent, [
       paymentReqCryptoV1Info
     ]);
     const msgBytesRequest = await packageManager.pack(
