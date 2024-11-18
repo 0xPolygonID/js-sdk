@@ -130,7 +130,7 @@ export const credWithRefreshService = createTestCredential({
   expirationDate: '2023-11-11',
   issuanceDate: '2022-11-11',
   refreshService: {
-    id: 'http://test-refresh/100',
+    id: 'http://test-refresh.com/refresh',
     type: 'Iden3RefreshService2023'
   }
 });
