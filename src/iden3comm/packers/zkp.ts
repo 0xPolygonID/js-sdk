@@ -202,9 +202,9 @@ export class ZKPPacker implements IPacker {
     }
 
     let algSupported = !alg?.length;
-    const supportedAlgs = this.getSupportedAlgorithms();
+    const supportedAlgArr = this.getSupportedAlgorithms();
     for (const a of alg || []) {
-      if (supportedAlgs.includes(a as AcceptJwzAlgorithms)) {
+      if (supportedAlgArr.includes(a as AcceptJwzAlgorithms)) {
         algSupported = true;
         break;
       }

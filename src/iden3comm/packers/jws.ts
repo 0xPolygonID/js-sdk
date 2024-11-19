@@ -120,9 +120,9 @@ export class JWSPacker implements IPacker {
     }
 
     let algSupported = !alg?.length;
-    const supportedAlgs = this.getSupportedAlgorithms();
+    const supportedAlgArr = this.getSupportedAlgorithms();
     for (const a of alg || []) {
-      if (supportedAlgs.includes(a as AcceptJwsAlgorithms)) {
+      if (supportedAlgArr.includes(a as AcceptJwsAlgorithms)) {
         algSupported = true;
         break;
       }

@@ -259,7 +259,7 @@ export class AuthHandler
       }
 
       if (!supportedMediaTypes.length) {
-        throw new Error('no packer with profile which meets `access` header requirements');
+        throw new Error('no packer with profile which meets `accept` header requirements');
       }
 
       mediaType = supportedMediaTypes[0];

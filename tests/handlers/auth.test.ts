@@ -2424,7 +2424,7 @@ describe('auth', () => {
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
-      message: 'mesage',
+      message: 'message',
       accept: buildAccept([authV3NotSupportedProfile]),
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
@@ -2441,7 +2441,7 @@ describe('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     await expect(authHandler.handleAuthorizationRequest(userDID, msgBytes)).to.be.rejectedWith(
-      'no packer with profile which meets `access` header requirements'
+      'no packer with profile which meets `accept` header requirements'
     );
   });
 });
