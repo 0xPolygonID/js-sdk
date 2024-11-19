@@ -31,7 +31,7 @@ describe('resolver readonly storage', () => {
   it('getStateInfoByIdAndState', async () => {
     nock(resolverURL)
       .get(
-         // eslint-disable-next-line @cspell/spellchecker
+        // eslint-disable-next-line @cspell/spellchecker
         '/1.0/identifiers/did%3Apolygonid%3Apolygon%3Aamoy%3A2qV7YACbSYpvuXySSqhBd6E4XAxzLE5kYmPqwxuvwD?state=f71ed95c0cf6a6b2a5ee867acfa0244d90be5bbe08b7805ed0766c7676dae521'
       )
       .reply(
