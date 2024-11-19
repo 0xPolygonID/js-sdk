@@ -2425,7 +2425,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'mesage',
-      did_doc: {},
       accept: buildAccept([authV3NotSupportedProfile]),
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
