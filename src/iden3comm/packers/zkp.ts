@@ -193,10 +193,10 @@ export class ZKPPacker implements IPacker {
     }
 
     const supportedCircuitIds = this.getSupportedCircuitIds();
-    const circuitIdSupported = (circuits || []).some((c) => supportedCircuitIds.includes(c));
+    const circuitIdSupported = !circuits?.length || circuits.some((c) => supportedCircuitIds.includes(c));
 
     const supportedAlgArr = this.getSupportedAlgorithms();
-    const algSupported = (alg || []).some((a) =>
+    const algSupported = !alg?.length || alg.some((a) =>
       supportedAlgArr.includes(a as AcceptJwzAlgorithms)
     );
     return algSupported && circuitIdSupported;
