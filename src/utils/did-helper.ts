@@ -119,7 +119,7 @@ export const resolveDidDocument = async (
   // for gist resolve we have to `hide` user did (look into resolver implementation)
   const isGistRequest = opts?.gist && !opts.state;
   if (isGistRequest) {
-    didString = emptyStateDID(did).string();
+    didString = emptyStateDID(did).string().replace(/:/g, '%3A');
   }
   let url = `${resolverUrl}/1.0/identifiers/${didString}`;
 

@@ -7,18 +7,42 @@ import {
 
 import chai from 'chai';
 import spies from 'chai-spies';
+import nock from 'nock';
 
 chai.use(spies);
 const expect = chai.expect;
 
-describe.skip('did document revocation checks', () => {
+describe('did document revocation checks', () => {
   let credentialStatusResolver: CredentialStatusResolver;
 
   beforeEach(async () => {
-    credentialStatusResolver = new DidDocumentCredentialStatusResolver('http://127.0.0.1:8080');
+    credentialStatusResolver = new DidDocumentCredentialStatusResolver(
+      'http://my-universal-resolver'
+    );
   });
 
   it('resolver works', async () => {
+    nock('http://my-universal-resolver')
+      .post(
+        // eslint-disable-next-line @cspell/spellchecker
+        '/1.0/credential-status/did%3Aiden3%3Alinea%3Asepolia%3A28qZMExF5v2HevdLP7utHnAQazQHetsa7tsc4NCwyT'
+      )
+      .reply(
+        200,
+        `{
+        "issuer": {
+            "state": "ce589b4e97b58202088feb0a9de25b53df78fcf7032d4bec0390a562302b4a1e",
+            "rootOfRoots": "27735a9562a6b148e52fa9872e705b56b48f0b52dc2e9b6f1d063cf594c54f26",
+            "claimsTreeRoot": "74730fecdb52486ffc7050496f253ac9ed12032ec29378be99f59d9fe5ba6f24",
+            "revocationTreeRoot": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "mtp": {
+            "existence": false,
+            "siblings": []
+        }
+    }`
+      );
+
     const revocationStatus = await credentialStatusResolver.resolve(
       {
         id: 'did:iden3:linea:sepolia:28qZMExF5v2HevdLP7utHnAQazQHetsa7tsc4NCwyT/credentialStatus?revocationNonce=1000&contractAddress=59141:0x7dF78ED37d0B39Ffb6d4D527Bb1865Bf85B60f81&state=cc17961a8e92bc3836cecee42b7812d67c0d8a7829076337260c4782df124c03',
