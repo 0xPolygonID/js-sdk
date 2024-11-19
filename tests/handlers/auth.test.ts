@@ -126,13 +126,17 @@ describe('auth', () => {
 
   it('request-response flow identity (not profile)', async () => {
     const claimReq: CredentialRequest = {
-      credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
-      type: 'KYCAgeCredential',
+      credentialSchema: 'ipfs://QmWDmZQrtvidcNK7d6rJwq7ZSi8SUygJaKepN7NhKtGryc',
+      type: 'operators',
       credentialSubject: {
         id: userDID.string(),
-        birthday: 19960424,
-        documentType: 99
+        boolean1: true,
+        'date-time1': '2024-11-04T12:39:00Z',
+        integer1: 4321,
+        'non-negative-integer1': '654321',
+        number1: 1234,
+        'positive-integer1': '123456789',
+        string1: 'abcd'
       },
       expiration: 2793526400,
       revocationOpts: {
@@ -140,24 +144,25 @@ describe('auth', () => {
         id: RHS_URL
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
+      ipfsNodeURL: IPFS_URL
+    });
 
     await credWallet.save(issuerCred);
 
     const proofReq: ZeroKnowledgeProofRequest = {
-      id: 1,
-      circuitId: CircuitId.AtomicQuerySigV2,
+      id: 1730736196,
+      circuitId: CircuitId.AtomicQueryV3,
       optional: false,
       query: {
         allowedIssuers: ['*'],
-        type: claimReq.type,
-        context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+        context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
         credentialSubject: {
-          documentType: {
-            $eq: 99
+          'positive-integer1': {
+            $between: ['123456789', '1123456789']
           }
-        }
+        },
+        type: 'operators'
       }
     };
 
@@ -171,9 +176,8 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       accept: buildAccept([profile]),
-      scope: [proofReq as ZeroKnowledgeProofRequest]
+      scope: [proofReq]
     };
 
     const id = uuid.v4();
@@ -242,7 +246,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       accept: buildAccept([defaultAcceptProfile]),
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
@@ -402,7 +405,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: proofReqs
     };
 
@@ -566,7 +568,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: proofReqs
     };
 
@@ -808,7 +809,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: proofReqs
     };
 
@@ -851,7 +851,7 @@ describe('auth', () => {
 
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 23,
-      circuitId: 'credentialAtomicQueryMTPV2',
+      circuitId: CircuitId.AtomicQueryMTPV2,
       query: {
         allowedIssuers: ['*'],
         context:
@@ -1013,7 +1013,7 @@ describe('auth', () => {
 
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 84239,
-      circuitId: 'credentialAtomicQuerySigV2',
+      circuitId: CircuitId.AtomicQuerySigV2,
       query: {
         allowedIssuers: ['*'],
         context:
@@ -1334,7 +1334,7 @@ describe('auth', () => {
               context:
                 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
               credentialSubject: { documentType: { $eq: 99 } },
-              proofType: 'Iden3SparseMerkleTreeProof',
+              proofType: ProofType.Iden3SparseMerkleTreeProof,
               type: 'KYCAgeCredential'
             }
           }
@@ -1483,7 +1483,6 @@ describe('auth', () => {
         callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
         reason: 'reason',
         message: 'message',
-        did_doc: {},
         scope: [
           {
             id: 1,
@@ -1782,6 +1781,59 @@ describe('auth', () => {
     expect(tokenStr).to.be.a('string');
   });
 
+  it('auth request: v2 sig sd', async () => {
+    const sender = 'did:polygonid:polygon:mumbai:2qJ689kpoJxcSzB5sAFJtPsSBSrHF5dq722BHMqURL';
+    const callback = 'https://test.com/callback';
+    const reason = 'age verification';
+    const request: AuthorizationRequestMessage = createAuthorizationRequestWithMessage(
+      reason,
+      '',
+      sender,
+      callback
+    );
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v4.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    await credWallet.save(issuerCred);
+
+    const proofRequest: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      query: {
+        allowedIssuers: ['*'],
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
+        type: 'KYCAgeCredential',
+        credentialSubject: {
+          birthday: {}
+        }
+      }
+    };
+    request.body.scope.push(proofRequest);
+    request.id = '28494007-9c49-4f1a-9694-7700c08865bf';
+    request.thid = '7f38a193-0918-4a48-9fac-36adfdb8b542';
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(request));
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    const tokenStr = authRes.token;
+    expect(tokenStr).to.be.a('string');
+  });
+
   it('auth response: TestVerify v2 sig sd', async () => {
     const sender = 'did:polygonid:polygon:mumbai:2qJ689kpoJxcSzB5sAFJtPsSBSrHF5dq722BHMqURL';
     const callback = 'https://test.com/callback';
@@ -1795,7 +1847,7 @@ describe('auth', () => {
 
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: 'credentialAtomicQuerySigV2',
+      circuitId: CircuitId.AtomicQuerySigV2,
       query: {
         allowedIssuers: ['*'],
         context:
@@ -2108,7 +2160,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: proofReqs
     };
 
@@ -2173,7 +2224,6 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
-      did_doc: {},
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 

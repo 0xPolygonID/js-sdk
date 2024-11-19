@@ -334,7 +334,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         }
       }
 
-      const metadata = this.packMetadatas(metadataArr);
+      const metadata = metadataArr.length ? this.packMetadatas(metadataArr) : '0x';
       payload.push({
         requestId: requestID,
         zkProof: zkProofEncoded,
