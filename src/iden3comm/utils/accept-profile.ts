@@ -89,8 +89,8 @@ export const parseAcceptProfile = (profile: string): AcceptProfile => {
       alg = params[algIndex]
         .split('=')[1]
         .split(',')
-        .map((i) => i.trim())
         .map((i) => {
+          i = i.trim();
           if (!isAcceptJwzAlgorithms(i)) {
             throw new Error(`Algorithm '${i}' not supported for '${env}'`);
           }
@@ -100,8 +100,8 @@ export const parseAcceptProfile = (profile: string): AcceptProfile => {
       alg = params[algIndex]
         .split('=')[1]
         .split(',')
-        .map((i) => i.trim())
         .map((i) => {
+          i = i.trim();
           if (!isAcceptJwsAlgorithms(i)) {
             throw new Error(`Algorithm '${i}' not supported for '${env}'`);
           }

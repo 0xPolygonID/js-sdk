@@ -30,13 +30,13 @@ describe('accept profile utils test', () => {
 
     const accept = buildAccept([
       {
-        protocolVersion: ProtocolVersion.v1,
+        protocolVersion: ProtocolVersion.V1,
         env: MediaType.ZKPMessage,
-        circuits: [AcceptAuthCircuits.authV2, AcceptAuthCircuits.authV3],
-        alg: [AcceptJwzAlgorithms.groth16]
+        circuits: [AcceptAuthCircuits.AuthV2, AcceptAuthCircuits.AuthV3],
+        alg: [AcceptJwzAlgorithms.Groth16]
       },
       {
-        protocolVersion: ProtocolVersion.v1,
+        protocolVersion: ProtocolVersion.V1,
         env: MediaType.SignedMessage,
         alg: [AcceptJwsAlgorithms.ES256KR]
       }

@@ -192,33 +192,22 @@ export class ZKPPacker implements IPacker {
       return false;
     }
 
-    let circuitIdSupported = !circuits?.length;
     const supportedCircuitIds = this.getSupportedCircuitIds();
-    for (const c of circuits || []) {
-      if (supportedCircuitIds.includes(c)) {
-        circuitIdSupported = true;
-        break;
-      }
-    }
+    const circuitIdSupported = (circuits || []).some((c) => supportedCircuitIds.includes(c));
 
-    let algSupported = !alg?.length;
     const supportedAlgArr = this.getSupportedAlgorithms();
-    for (const a of alg || []) {
-      if (supportedAlgArr.includes(a as AcceptJwzAlgorithms)) {
-        algSupported = true;
-        break;
-      }
-    }
-
+    const algSupported = (alg || []).some((a) =>
+      supportedAlgArr.includes(a as AcceptJwzAlgorithms)
+    );
     return algSupported && circuitIdSupported;
   }
 
   private getSupportedAlgorithms(): AcceptJwzAlgorithms[] {
-    return [AcceptJwzAlgorithms.groth16];
+    return [AcceptJwzAlgorithms.Groth16];
   }
 
   private getSupportedCircuitIds(): AcceptAuthCircuits[] {
-    return [AcceptAuthCircuits.authV2];
+    return [AcceptAuthCircuits.AuthV2];
   }
 }
 

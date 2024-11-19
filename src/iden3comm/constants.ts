@@ -82,16 +82,16 @@ export const SUPPORTED_PUBLIC_KEY_TYPES = {
 };
 
 export enum ProtocolVersion {
-  v1 = 'iden3comm/v1'
+  V1 = 'iden3comm/v1'
 }
 
 export enum AcceptAuthCircuits {
-  authV2 = 'authV2',
-  authV3 = 'authV3'
+  AuthV2 = 'authV2',
+  AuthV3 = 'authV3'
 }
 
 export enum AcceptJwzAlgorithms {
-  groth16 = 'groth16'
+  Groth16 = 'groth16'
 }
 
 export enum AcceptJwsAlgorithms {
@@ -100,10 +100,10 @@ export enum AcceptJwsAlgorithms {
 }
 
 export const defaultAcceptProfile: AcceptProfile = {
-  protocolVersion: ProtocolVersion.v1,
+  protocolVersion: ProtocolVersion.V1,
   env: MediaType.ZKPMessage,
-  circuits: [AcceptAuthCircuits.authV2],
-  alg: [AcceptJwzAlgorithms.groth16]
+  circuits: [AcceptAuthCircuits.AuthV2],
+  alg: [AcceptJwzAlgorithms.Groth16]
 };
 
 export const DEFAULT_PROOF_VERIFY_DELAY = 1 * 60 * 60 * 1000; // 1 hour

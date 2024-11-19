@@ -247,8 +247,8 @@ export class AuthHandler
         const { protocolVersion, env } = parseAcceptProfile(acceptProfile);
         const responseTypeVersion = Number(responseType.split('/').at(-2));
         if (
-          protocolVersion !== ProtocolVersion.v1 ||
-          (protocolVersion === ProtocolVersion.v1 &&
+          protocolVersion !== ProtocolVersion.V1 ||
+          (protocolVersion === ProtocolVersion.V1 &&
             (responseTypeVersion < 1 || responseTypeVersion >= 2))
         ) {
           continue;

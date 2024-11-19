@@ -167,9 +167,9 @@ describe('auth', () => {
     };
 
     const profile: AcceptProfile = {
-      protocolVersion: ProtocolVersion.v1,
+      protocolVersion: ProtocolVersion.V1,
       env: MediaType.ZKPMessage,
-      circuits: [AcceptAuthCircuits.authV2]
+      circuits: [AcceptAuthCircuits.AuthV2]
     };
 
     const authReqBody: AuthorizationRequestMessageBody = {
@@ -2417,9 +2417,9 @@ describe('auth', () => {
     };
 
     const authV3NotSupportedProfile: AcceptProfile = {
-      protocolVersion: ProtocolVersion.v1,
+      protocolVersion: ProtocolVersion.V1,
       env: MediaType.ZKPMessage,
-      circuits: [AcceptAuthCircuits.authV3]
+      circuits: [AcceptAuthCircuits.AuthV3]
     };
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
