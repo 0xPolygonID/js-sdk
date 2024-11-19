@@ -36,9 +36,9 @@ export type AuthorizationRequestMessageBody = {
   callbackUrl: string;
   reason?: string;
   message?: string;
-  accept?: string[];
-  scope: Array<ZeroKnowledgeProofRequest>;
   did_doc?: DIDDocument;
+  scope: Array<ZeroKnowledgeProofRequest>;
+  accept?: string[];
 };
 
 /** ZeroKnowledgeProofRequest represents structure of zkp request object */

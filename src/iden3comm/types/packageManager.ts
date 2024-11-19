@@ -76,17 +76,18 @@ export interface IPackageManager {
   getMediaType(envelope: string): MediaType;
 
   /**
-   * gets supported media type by packer manager
+   * gets supported media types by packer manager
    *
    * @returns MediaType[]
    */
   getSupportedMediaTypes(): MediaType[];
 
   /**
-   * gets if media type and algorithms supported by packer manager
+   * returns true if media type and algorithms supported by packer manager
    *
    * @param {MediaType} mediaType
-   * @returns AcceptJwzAlgorithms[] | AcceptJwsAlgorithms[]
+   * @param {string} profile
+   * @returns {boolean}
    */
   isProfileSupported(mediaType: MediaType, profile: string): boolean;
 }
