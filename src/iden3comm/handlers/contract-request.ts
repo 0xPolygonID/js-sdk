@@ -195,7 +195,6 @@ export class ContractRequestHandler
       to: request.from,
       body: {
         transaction_data: request.body.transaction_data,
-        reason: request.body.reason,
         scope: []
       }
     };

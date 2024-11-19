@@ -71,6 +71,15 @@ const v2Operations = [
   Operators.GT,
   Operators.IN,
   Operators.NIN,
+  Operators.NE,
+  Operators.SD
+];
+const v2OnChainOperations = [
+  Operators.EQ,
+  Operators.LT,
+  Operators.GT,
+  Operators.IN,
+  Operators.NIN,
   Operators.NE
 ];
 
@@ -78,9 +87,15 @@ export const circuitValidator: {
   [k in CircuitId]: { maxQueriesCount: number; supportedOperations: Operators[] };
 } = {
   [CircuitId.AtomicQueryMTPV2]: { maxQueriesCount: 1, supportedOperations: v2Operations },
-  [CircuitId.AtomicQueryMTPV2OnChain]: { maxQueriesCount: 1, supportedOperations: v2Operations },
+  [CircuitId.AtomicQueryMTPV2OnChain]: {
+    maxQueriesCount: 1,
+    supportedOperations: v2OnChainOperations
+  },
   [CircuitId.AtomicQuerySigV2]: { maxQueriesCount: 1, supportedOperations: v2Operations },
-  [CircuitId.AtomicQuerySigV2OnChain]: { maxQueriesCount: 1, supportedOperations: v2Operations },
+  [CircuitId.AtomicQuerySigV2OnChain]: {
+    maxQueriesCount: 1,
+    supportedOperations: v2OnChainOperations
+  },
   [CircuitId.AtomicQueryV3]: { maxQueriesCount: 1, supportedOperations: allOperations },
   [CircuitId.AtomicQueryV3OnChain]: { maxQueriesCount: 1, supportedOperations: allOperations },
   [CircuitId.AuthV2]: { maxQueriesCount: 0, supportedOperations: [] },
@@ -296,7 +311,6 @@ export class InputGenerator {
     circuitInputs.challenge = params.challenge;
 
     const query = circuitQueries[0];
-    query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.claim = {
       issuerID: circuitClaimData.issuerId,
@@ -381,7 +395,6 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
-    query.operator = this.transformV2QueryOperator(query.operator);
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
