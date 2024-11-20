@@ -1,14 +1,12 @@
 import { Claim, DID, Id } from '@iden3/js-iden3-core';
-import { NonMerklizedIssuerBase__factory } from './types/factories/NonMerklizedIssuerBase__factory';
-import { NonMerklizedIssuerBase } from './types/NonMerklizedIssuerBase';
-import { INonMerklizedIssuer } from './types/NonMerklizedIssuerBase';
+import { NonMerklizedIssuerBase__factory } from '@iden3/onchain-non-merklized-issuer-base-abi';
+import { NonMerklizedIssuerBase } from '@iden3/onchain-non-merklized-issuer-base-abi';
+import { INonMerklizedIssuer } from '@iden3/onchain-non-merklized-issuer-base-abi';
 import {
-  CredentialStatus,
   CredentialStatusType,
   DisplayMethod,
   DisplayMethodType,
   Iden3SparseMerkleTreeProof,
-  VerifiableConstants,
   W3CCredential
 } from '../../../../../../verifiable';
 import { Merklizer, Path } from '@iden3/js-jsonld-merklization';
@@ -19,14 +17,16 @@ import { ethers } from 'ethers';
 import { getDateFromUnixTimestamp } from '@iden3/js-iden3-core';
 import { Options } from '@iden3/js-jsonld-merklization';
 
-const interfaceDetection = '0x01ffc9a7';
-const interfaceNonMerklizedIssuer = '0x58874949';
-const interfaceGetCredential = '0x5d1ca631';
+enum NonMerklizedIssuerInterfaces {
+  InterfaceDetection = '0x01ffc9a7',
+  InterfaceNonMerklizedIssuer = '0x58874949',
+  InterfaceGetCredential = '0x5d1ca631'
+}
 
-const booleanHashTrue =
-  '18586133768512220936620570745912940619677854269274689475585506675881198879027';
-const booleanHashFalse =
-  '19014214495641488759237505126948346942972912379615652741039992445865937985820';
+enum ValueHashes {
+  BooleanTrue = '18586133768512220936620570745912940619677854269274689475585506675881198879027',
+  BooleanFalse = '19014214495641488759237505126948346942972912379615652741039992445865937985820'
+}
 
 /**
  * `OnchainNonMerklizedIssuerAdapter` provides functionality to interact with a non-merklized on-chain credential issuer.
@@ -48,25 +48,27 @@ export class OnchainNonMerklizedIssuerAdapter {
   /**
    * Initializes an instance of `OnchainNonMerklizedIssuerAdapter`.
    *
-   * @param url The URL of the blockchain RPC provider.
-   * @param contractAddress The contract address of the non-merklized issuer.
+   * @param address The contract address of the non-merklized issuer.
+   * @param rpcUrl The URL of the blockchain RPC provider.
    * @param chainId The chain ID of the blockchain network.
    * @param issuerDid The decentralized identifier (DID) of the issuer.
    * @param merklizationOptions Optional settings for merklization.
    */
   constructor(
-    url: string,
-    contractAddress: string,
-    chainId: number,
-    issuerDid: DID,
-    merklizationOptions?: Options
+    address: string,
+    options: {
+      rpcUrl: string;
+      chainId: number;
+      issuerDid: DID;
+      merklizationOptions?: Options;
+    }
   ) {
-    const rpcProvider = new ethers.JsonRpcProvider(url);
-    this._contract = NonMerklizedIssuerBase__factory.connect(contractAddress, rpcProvider);
-    this._contractAddress = contractAddress;
-    this._chainId = chainId;
-    this._issuerDid = issuerDid;
-    this._merklizationOptions = merklizationOptions;
+    const rpcProvider = new ethers.JsonRpcProvider(options.rpcUrl);
+    this._contract = NonMerklizedIssuerBase__factory.connect(address, rpcProvider);
+    this._contractAddress = address;
+    this._chainId = options.chainId;
+    this._issuerDid = options.issuerDid;
+    this._merklizationOptions = options.merklizationOptions;
   }
 
   /**
@@ -77,9 +79,18 @@ export class OnchainNonMerklizedIssuerAdapter {
    */
   public async isSupportsInterface() {
     const supportedInterfaces = [
-      { name: 'Interface detection ERC-165', value: interfaceDetection },
-      { name: 'Interface non-merklized issuer', value: interfaceNonMerklizedIssuer },
-      { name: 'Interface get credential', value: interfaceGetCredential }
+      {
+        name: 'Interface detection ERC-165',
+        value: NonMerklizedIssuerInterfaces.InterfaceDetection
+      },
+      {
+        name: 'Interface non-merklized issuer',
+        value: NonMerklizedIssuerInterfaces.InterfaceNonMerklizedIssuer
+      },
+      {
+        name: 'Interface get credential',
+        value: NonMerklizedIssuerInterfaces.InterfaceGetCredential
+      }
     ];
 
     const unsupportedInterfaces = await Promise.all(
@@ -130,55 +141,37 @@ export class OnchainNonMerklizedIssuerAdapter {
   ): Promise<W3CCredential> {
     const c = new Claim().unMarshalJson(JSON.stringify(coreClaimBigInts.map((b) => b.toString())));
 
-    const context = [
-      VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
-      VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
-      ...credentialData.context
-    ];
     const credentialSubject = await this.convertCredentialSubject(
       c,
       credentialData.context,
       credentialData._type,
       credentialSubjectFields
     );
-    const existenceProof = await this.existenceProof(c);
-    const credentialStatus = this.credentialStatus(Number(c.getRevocationNonce()));
 
-    const w3c = new W3CCredential();
-    w3c.id = this.credentialId(credentialData.id);
-    w3c['@context'] = context;
-    w3c.credentialSubject = credentialSubject;
-    w3c.credentialStatus = credentialStatus;
-    w3c.issuer = this._issuerDid.string();
-    w3c.credentialSchema = {
-      id: credentialData.credentialSchema.id,
-      type: credentialData.credentialSchema._type
+    const credentialRequest = {
+      id: this.credentialId(credentialData.id),
+      credentialSchema: credentialData.credentialSchema.id,
+      type: credentialData._type,
+      credentialSubject: credentialSubject,
+      expiration: c.getExpirationDate()?.getTime(),
+      displayMethod: this.convertDisplayMethod(credentialData.displayMethod),
+      context: credentialData.context,
+      revocationOpts: {
+        id: this._contractAddress,
+        nonce: Number(c.getRevocationNonce()),
+        type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023
+      },
+      issuanceDate: getDateFromUnixTimestamp(Number(credentialData.issuanceDate)).getTime()
     };
-    w3c.proof = [existenceProof];
-    w3c.type = [
-      VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
-      credentialData._type
-    ];
-    w3c.issuanceDate = getDateFromUnixTimestamp(Number(credentialData.issuanceDate)).toISOString();
-    w3c.expirationDate = c.getExpirationDate()?.toISOString();
-    w3c.displayMethod = this.convertDisplayMethod(credentialData.displayMethod);
 
+    const existenceProof = await this.existenceProof(c);
+    const w3c = new W3CCredential().fromCredentialRequest(this._issuerDid, credentialRequest);
+    w3c.proof = [existenceProof];
     return w3c;
   }
 
   private credentialId(id: bigint): string {
     return `urn:iden3:onchain:${this._chainId}:${this._contractAddress}:${id}`;
-  }
-
-  private credentialStatus(nonce: number): CredentialStatus {
-    const id = `${this._issuerDid.string()}/credentialStatus?revocationNonce=${nonce}&contractAddress=${
-      this._chainId
-    }:${this._contractAddress}`;
-    return {
-      id: id,
-      type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
-      revocationNonce: nonce
-    };
   }
 
   private async convertCredentialSubject(
@@ -201,10 +194,10 @@ export class OnchainNonMerklizedIssuerAdapter {
       switch (dataType) {
         case XSDNS.Boolean: {
           switch (f.rawValue.toString()) {
-            case booleanHashTrue:
+            case ValueHashes.BooleanTrue:
               credentialSubject[f.key] = true;
               break;
-            case booleanHashFalse:
+            case ValueHashes.BooleanFalse:
               credentialSubject[f.key] = false;
               break;
           }

@@ -1,6 +1,6 @@
-import { DID, Id, ChainIds } from '@iden3/js-iden3-core';
+import { DID, Id, chainIDfromDID } from '@iden3/js-iden3-core';
 import { Contract, ethers } from 'ethers';
-import abi from './abi/INonMerklizedIssuer.json';
+import { INonMerklizedIssuerABI as abi } from '@iden3/onchain-non-merklized-issuer-base-abi';
 import { Options } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from '../../verifiable';
 import { OnchainNonMerklizedIssuerAdapter } from './onchain-issuer-adapter/non-merklized/version/v0.0.1/onchain-non-merklized-issuer-adapter';
@@ -36,14 +36,7 @@ export class OnchainIssuer {
   constructor(config: EthConnectionConfig[], did: DID, options?: Options) {
     const issuerId = DID.idFromDID(did);
     this._contractAddress = ethers.getAddress(ethers.hexlify(Id.ethAddressFromId(issuerId)));
-    this._chainId = ChainIds[`${DID.blockchainFromId(issuerId)}:${DID.networkIdFromId(issuerId)}`];
-    if (!this._chainId) {
-      throw new Error(
-        `Unsupported blockchain ${DID.blockchainFromId(issuerId)} or network ${DID.networkIdFromId(
-          issuerId
-        )}`
-      );
-    }
+    this._chainId = chainIDfromDID(did);
     const url = config.find((c) => c.chainId === this._chainId)?.url;
     if (!url) {
       throw new Error(`No URL found for chain ID ${this._chainId}`);
@@ -67,13 +60,12 @@ export class OnchainIssuer {
     const response = await this._contract.getCredentialAdapterVersion();
     switch (response) {
       case OnchainIssuerVersion['v0.0.1']: {
-        const adapter = new OnchainNonMerklizedIssuerAdapter(
-          this._url,
-          this._contractAddress,
-          this._chainId,
-          this._issuerDid,
-          this._merklizationOptions
-        );
+        const adapter = new OnchainNonMerklizedIssuerAdapter(this._contractAddress, {
+          rpcUrl: this._url,
+          chainId: this._chainId,
+          issuerDid: this._issuerDid,
+          merklizationOptions: this._merklizationOptions
+        });
         await adapter.isSupportsInterface();
         const { credentialData, coreClaimBigInts, credentialSubjectFields } =
           await adapter.getCredential(userId, credentialId);

@@ -2,15 +2,20 @@ import { OnchainNonMerklizedIssuerAdapter } from '../../src/storage/blockchain/o
 import { ethers } from 'ethers';
 import nock from 'nock';
 import { DID, Id, ChainIds } from '@iden3/js-iden3-core';
-import abi from '../../src/storage/blockchain/onchain-issuer-adapter/non-merklized/version/v0.0.1/NonMerklizedIssuerBase.json';
-import { INonMerklizedIssuer } from '../../src/storage/blockchain/onchain-issuer-adapter/non-merklized/version/v0.0.1/types/NonMerklizedIssuerBase';
+import {
+  NonMerklizedIssuerBaseABI as abi,
+  INonMerklizedIssuer
+} from '@iden3/onchain-non-merklized-issuer-base-abi';
 import fs from 'fs';
 import path from 'path';
 import { expect } from 'chai';
-import w3cHttpSchemaExpect from './testdata/golang_http_schema.json';
-import w3cIpfsSchemaExpect from './testdata/golang_ipfs_schema.json';
 import { W3CCredential } from '../../src/verifiable';
 import { IPFS_URL } from '../helpers';
+
+const w3cHttpSchemaExpect =
+  '{"id":"urn:iden3:onchain:80001:0xc84e8ac5385E0813f01aA9C698ED44C831961670:0","@context":["https://www.w3.org/2018/credentials/v1","https://schema.iden3.io/core/jsonld/iden3proofs.jsonld","https://gist.githubusercontent.com/ilya-korotya/660496c859f8d31a7d2a92ca5e970967/raw/6b5fc14fe630c17bfa52e05e08fdc8394c5ea0ce/non-merklized-non-zero-balance.jsonld","https://schema.iden3.io/core/jsonld/displayMethod.jsonld"],"type":["VerifiableCredential","Balance"],"expirationDate":"2024-03-23T11:05:26.000Z","issuanceDate":"2024-02-22T11:05:26.000Z","credentialSubject":{"address":"657065114158124047812701241180089030040156354062","balance":"174130123440549329","id":"did:polygonid:polygon:mumbai:2qJFtKfABTJi2yUAcUhuvUnDojuNwUJjhuXQDhUg3e","type":"Balance"},"credentialStatus":{"id":"did:polygonid:polygon:mumbai:2qCU58EJgrEMJvPfhUCnFCwuKQTkX8VmJX2sJCH6C8/credentialStatus?revocationNonce=0\u0026contractAddress=80001:0xc84e8ac5385E0813f01aA9C698ED44C831961670","type":"Iden3OnchainSparseMerkleTreeProof2023","revocationNonce":0},"issuer":"did:polygonid:polygon:mumbai:2qCU58EJgrEMJvPfhUCnFCwuKQTkX8VmJX2sJCH6C8","credentialSchema":{"id":"https://gist.githubusercontent.com/ilya-korotya/e10cd79a8cc26ab6e40400a11838617e/raw/575edc33d485e2a4c806baad97e21117f3c90a9f/non-merklized-non-zero-balance.json","type":"JsonSchema2023"},"proof":[{"type":"Iden3SparseMerkleTreeProof","issuerData":{"id":"did:polygonid:polygon:mumbai:2qCU58EJgrEMJvPfhUCnFCwuKQTkX8VmJX2sJCH6C8","state":{"rootOfRoots":"19a633fecfa2117672bbcfb65307e3bd73101cd3dd49b849ea231b5927afc70e","claimsTreeRoot":"3ca701ead4d7da0eb5c4950ac0950a7ae92f4acc853a24698489f5a9b08fc72e","revocationTreeRoot":"0000000000000000000000000000000000000000000000000000000000000000","value":"6f5dd91f13004cca5c8b31524239de77ce149a9073d7ace737a1b7cffb96ab26"}},"coreClaim":"f52f1795c533d7b4aa4e7ab02485f86f0a00000000000000000000000000000002127f89ff6f78c9637e437575d1123c3862b93876abb197b010ea1dad600d000eb6cb518d3dd33341899bcec9dcc68998d11773000000000000000000000000d16d5eb86ca26a02000000000000000000000000000000000000000000000000000000000000000076b7fe650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","mtp":{"existence":true,"siblings":["4692761366944891051814480185546124875872606319832740381039122455881379612023"]}}],"displayMethod":{"id":"ipfs://QmS8eY8ZCiAAW8qgx3T6SQ3HDGeddwLZsjPXNAZExQwRY4","type":"Iden3BasicDisplayMethodV1"}}';
+const w3cIpfsSchemaExpect =
+  '{"@context":["https://www.w3.org/2018/credentials/v1","https://schema.iden3.io/core/jsonld/iden3proofs.jsonld","ipfs://Qma5B4jNwiHtRd5RXGoRncV79EZvB7LsfpHgv8Vi4xitV1","https://schema.iden3.io/core/jsonld/displayMethod.jsonld"],"credentialSchema":{"id":"ipfs://QmcC7i1PCU8ymJscGjs8pqmZEWtBGWPFLmQ8s7P6QzELN6","type":"JsonSchema2023"},"credentialStatus":{"id":"did:polygonid:polygon:amoy:2qQ68JkRcf3z3923i5rrszrsJ4kdu4GKWARQ5eftsB/credentialStatus?revocationNonce=0&contractAddress=80002:0xFDb204CCC55794C861366dBc2Cd6BBBd25752894","revocationNonce":0,"type":"Iden3OnchainSparseMerkleTreeProof2023"},"credentialSubject":{"address":"657065114158124047812701241180089030040156354062","balance":"34206141476401658683","id":"did:polygonid:polygon:amoy:2qZYiH9CFMoo6oTjSEot3qzkHFHhjLRLKp8yfwCYng","type":"Balance"},"displayMethod":{"id":"ipfs://QmS8eY8ZCiAAW8qgx3T6SQ3HDGeddwLZsjPXNAZExQwRY4","type":"Iden3BasicDisplayMethodV1"},"expirationDate":"2024-05-24T16:23:56.000Z","id":"urn:iden3:onchain:80002:0xFDb204CCC55794C861366dBc2Cd6BBBd25752894:0","issuanceDate":"2024-04-24T16:23:56.000Z","issuer":"did:polygonid:polygon:amoy:2qQ68JkRcf3z3923i5rrszrsJ4kdu4GKWARQ5eftsB","proof":[{"coreClaim":"f52f1795c533d7b4aa4e7ab02485f86f0a0000000000000000000000000000000213d0591345a3d71ee61cd299b38959df8dea1f4a4f75a2bd4f25b8215f0d000eb6cb518d3dd33341899bcec9dcc68998d117730000000000000000000000003b3baddd70a0b4da01000000000000000000000000000000000000000000000000000000000000001cbf50660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","issuerData":{"id":"did:polygonid:polygon:amoy:2qQ68JkRcf3z3923i5rrszrsJ4kdu4GKWARQ5eftsB","state":{"claimsTreeRoot":"3ca701ead4d7da0eb5c4950ac0950a7ae92f4acc853a24698489f5a9b08fc72e","revocationTreeRoot":"0000000000000000000000000000000000000000000000000000000000000000","rootOfRoots":"19a633fecfa2117672bbcfb65307e3bd73101cd3dd49b849ea231b5927afc70e","value":"6f5dd91f13004cca5c8b31524239de77ce149a9073d7ace737a1b7cffb96ab26"}},"mtp":{"existence":true,"siblings":["4692761366944891051814480185546124875872606319832740381039122455881379612023"]},"type":"Iden3SparseMerkleTreeProof"}],"type":["VerifiableCredential","Balance"]}';
 
 const chainInfo = (did: DID): { contractAddress: string; chainId: number } => {
   const issuerId = DID.idFromDID(did);
@@ -82,12 +87,11 @@ describe('Convertor v0.0.1', () => {
     const res = iface.decodeFunctionResult('getCredential', hexResponse);
 
     const { chainId, contractAddress } = chainInfo(issuerDid);
-    const adapter = new OnchainNonMerklizedIssuerAdapter(
-      'http://localhost:8545',
-      contractAddress,
-      chainId,
-      issuerDid
-    );
+    const adapter = new OnchainNonMerklizedIssuerAdapter(contractAddress, {
+      rpcUrl: 'http://localhost:8545',
+      chainId: chainId,
+      issuerDid: issuerDid
+    });
     const w3cCredential = await adapter.convertOnChainInfoToW3CCredential(
       res[0] as INonMerklizedIssuer.CredentialDataStructOutput,
       res[1] as bigint[],
@@ -157,15 +161,14 @@ describe('Convertor v0.0.1', () => {
     const res = iface.decodeFunctionResult('getCredential', hexResponse);
 
     const { chainId, contractAddress } = chainInfo(issuerDid);
-    const adapter = new OnchainNonMerklizedIssuerAdapter(
-      'http://localhost:8545',
-      contractAddress,
-      chainId,
-      issuerDid,
-      {
-        ipfsNodeURL: IPFS_URL
+    const adapter = new OnchainNonMerklizedIssuerAdapter(contractAddress, {
+      rpcUrl: 'http://localhost:8545',
+      chainId: chainId,
+      issuerDid: issuerDid,
+      merklizationOptions: {
+        ipfsGatewayURL: IPFS_URL
       }
-    );
+    });
     const w3cCredential = await adapter.convertOnChainInfoToW3CCredential(
       res[0] as INonMerklizedIssuer.CredentialDataStructOutput,
       res[1] as bigint[],
