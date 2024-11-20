@@ -35,7 +35,7 @@
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"strict\": false, \"module\": \"CommonJS\"}' mocha",
     "lint": "eslint --fix --ext .ts src/** tests/**",
     "lint:check": "eslint --ext .ts src/** tests/**",
-ap    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "format:check": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --check",
     "watch": "tsc --watch"
   },
