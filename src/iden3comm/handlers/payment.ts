@@ -58,7 +58,8 @@ export function createPaymentRequest(
     body: {
       agent,
       payments
-    }
+    },
+    created_time: Math.floor(Date.now() / 1000)
   };
   return request;
 }
@@ -164,7 +165,8 @@ export function createPayment(
     type: PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE,
     body: {
       payments
-    }
+    },
+    created_time: Math.floor(Date.now() / 1000)
   };
   return request;
 }
@@ -310,6 +312,12 @@ export class PaymentHandler
     paymentRequest: PaymentRequestMessage,
     ctx: PaymentRequestMessageHandlerOptions
   ): Promise<BasicMessage | null> {
+    if (
+      paymentRequest?.expires_time &&
+      paymentRequest.expires_time < Math.floor(Date.now() / 1000)
+    ) {
+      throw new Error('Message expired');
+    }
     if (!paymentRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
@@ -422,6 +430,9 @@ export class PaymentHandler
    * @inheritdoc IPaymentHandler#handlePayment
    */
   async handlePayment(payment: PaymentMessage, params: PaymentHandlerOptions) {
+    if (payment?.expires_time && payment.expires_time < Math.floor(Date.now() / 1000)) {
+      throw new Error('Message expired');
+    }
     if (params.paymentRequest.from !== payment.to) {
       throw new Error(
         `sender of the request is not a target of response - expected ${params.paymentRequest.from}, given ${payment.to}`

@@ -38,6 +38,9 @@ export type JsonDocumentObjectValue =
   | JsonDocumentObject
   | JsonDocumentObjectValue[];
 
+/**
+ * Basic message with all possible fields optional
+ */
 export type BasicMessage = {
   id: string;
   typ?: MediaType;
@@ -46,6 +49,16 @@ export type BasicMessage = {
   body?: unknown;
   from?: string;
   to?: string;
+  created_time?: number;
+  expires_time?: number;
+};
+
+/**
+ * Basic message with all possible fields required
+ */
+export type RequiredBasicMessage = Omit<Required<BasicMessage>, 'created_time' | 'expires_time'> & {
+  created_time?: number;
+  expires_time?: number;
 };
 
 /**

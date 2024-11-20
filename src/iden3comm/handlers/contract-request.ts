@@ -105,6 +105,9 @@ export class ContractRequestHandler
     message: ContractInvokeRequest,
     ctx: ContractMessageHandlerOptions
   ): Promise<Map<string, ZeroKnowledgeProofResponse[]>> {
+    if (message?.expires_time && message.expires_time < Math.floor(Date.now() / 1000)) {
+      throw new Error('Message expired');
+    }
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for contract invoke request');
     }
@@ -193,7 +196,8 @@ export class ContractRequestHandler
       body: {
         transaction_data: request.body.transaction_data,
         scope: []
-      }
+      },
+      created_time: Math.floor(Date.now() / 1000)
     };
     for (const [txHash, zkpResponses] of txHashToZkpResponseMap) {
       for (const zkpResponse of zkpResponses) {
@@ -222,7 +226,9 @@ export class ContractRequestHandler
     opts: ContractInvokeHandlerOptions
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
     const ciRequest = await this.parseContractInvokeRequest(request);
-
+    if (ciRequest?.expires_time && ciRequest.expires_time < Math.floor(Date.now() / 1000)) {
+      throw new Error('Message expired');
+    }
     if (ciRequest.body.transaction_data.method_id !== FunctionSignatures.SubmitZKPResponseV1) {
       throw new Error(`please use handle method to work with other method ids`);
     }

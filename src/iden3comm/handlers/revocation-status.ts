@@ -117,6 +117,9 @@ export class RevocationStatusHandler
     rsRequest: RevocationStatusRequestMessage,
     context: RevocationStatusMessageHandlerOptions
   ): Promise<BasicMessage | null> {
+    if (rsRequest?.expires_time && rsRequest.expires_time < Math.floor(Date.now() / 1000)) {
+      throw new Error('Message expired');
+    }
     if (!rsRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }

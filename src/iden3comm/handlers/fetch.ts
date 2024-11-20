@@ -136,6 +136,9 @@ export class FetchHandler
       packerOptions?: JWSPackerParams;
     }
   ): Promise<W3CCredential[] | BasicMessage> {
+    if (offerMessage?.expires_time && offerMessage.expires_time < Math.floor(Date.now() / 1000)) {
+      throw new Error('Message expired');
+    }
     if (!ctx.mediaType) {
       ctx.mediaType = MediaType.ZKPMessage;
     }
@@ -247,6 +250,9 @@ export class FetchHandler
   private async handleFetchRequest(
     msgRequest: CredentialFetchRequestMessage
   ): Promise<CredentialIssuanceMessage> {
+    if (msgRequest?.expires_time && msgRequest.expires_time < Math.floor(Date.now() / 1000)) {
+      throw new Error('Message expired');
+    }
     if (!msgRequest.to) {
       throw new Error("failed request. empty 'to' field");
     }
@@ -309,6 +315,9 @@ export class FetchHandler
   }
 
   private async handleIssuanceResponseMsg(issuanceMsg: CredentialIssuanceMessage): Promise<null> {
+    if (issuanceMsg?.expires_time && issuanceMsg.expires_time < Math.floor(Date.now() / 1000)) {
+      throw new Error('Message expired');
+    }
     if (!this.opts?.credentialWallet) {
       throw new Error('please provide credential wallet in options');
     }

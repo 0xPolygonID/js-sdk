@@ -51,7 +51,8 @@ export function createProposalRequest(
     to: receiver.string(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
-    body: opts
+    body: opts,
+    created_time: Math.floor(Date.now() / 1000)
   };
   return request;
 }
@@ -79,7 +80,8 @@ export function createProposal(
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE,
     body: {
       proposals: proposals || []
-    }
+    },
+    created_time: Math.floor(Date.now() / 1000)
   };
   return request;
 }
@@ -202,6 +204,12 @@ export class CredentialProposalHandler
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ctx?: ProposalRequestHandlerOptions
   ): Promise<ProposalMessage | CredentialsOfferMessage | undefined> {
+    if (
+      proposalRequest?.expires_time &&
+      proposalRequest.expires_time < Math.floor(Date.now() / 1000)
+    ) {
+      throw new Error('Message expired');
+    }
     if (!proposalRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
@@ -309,6 +317,12 @@ export class CredentialProposalHandler
     const proposalRequest = await this.parseProposalRequest(request);
     if (!proposalRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
+    }
+    if (
+      proposalRequest?.expires_time &&
+      proposalRequest.expires_time < Math.floor(Date.now() / 1000)
+    ) {
+      throw new Error('Message expired');
     }
 
     const senderDID = DID.parse(proposalRequest.from);
