@@ -274,7 +274,8 @@ export class CredentialWallet implements ICredentialWallet {
       request.context.push(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD);
     }
     request.context.push(schema.$metadata.uris['jsonLdContext']);
-    request.expiration = request.expiration ? request.expiration * 1000 : 0;
+    request.expiration =
+      !request.expiration || request.expiration === 0 ? undefined : request.expiration * 1000;
     request.id = request.id ? request.id : `urn:${uuid.v4()}`;
     request.issuanceDate = request.issuanceDate ? request.issuanceDate * 1000 : Date.now();
 
