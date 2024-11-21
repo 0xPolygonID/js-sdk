@@ -239,7 +239,11 @@ export class AuthHandler
     }
 
     const responseType = PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
-    const mediaType = this.getSupportedMediaTypeByProfile(ctx, responseType, authRequest.body.accept);
+    const mediaType = this.getSupportedMediaTypeByProfile(
+      ctx,
+      responseType,
+      authRequest.body.accept
+    );
     const from = DID.parse(authRequest.from);
 
     const responseScope = await processZeroKnowledgeProofRequests(
