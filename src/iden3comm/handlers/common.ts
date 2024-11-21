@@ -136,6 +136,11 @@ export const processZeroKnowledgeProofRequests = async (
   return zkpResponses;
 };
 
+/**
+ * Verifies that the expires_time field of a message is not in the past. Throws an error if it is.
+ *
+ * @param message - Basic message to verify.
+ */
 export const verifyExpiresTime = (message: BasicMessage) => {
   if (message?.expires_time && message.expires_time < Math.floor(Date.now() / 1000)) {
     throw new Error('Message expired');
