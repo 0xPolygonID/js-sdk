@@ -16,16 +16,17 @@
     }
   },
   "types": "dist/types/index.d.ts",
-  "source": "./src/index.ts",
+  "source": "src/index.ts",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "scripts": {
     "clean": "rimraf ./dist",
-    "build": "npm run clean && npm run build:node && npm run build:browser",
+    "build": "npm run build:browser",
     "build:node": "npm run build:tsc && npm run build:esm",
     "build:esm": "tsc --outDir dist/node/esm  --declaration --declarationDir dist/types",
-    "build:browser": "rollup -c rollup.config.mjs --failAfterWarnings --filterLogs \"/* @__PURE__ */\"",
+    "build:browser": "rollup --verbose -c rollup.config.mjs --failAfterWarnings --filterLogs \"/* @__PURE__ */\"",
     "build:tsc": "tsc --module commonjs --outDir dist/node/cjs",
     "doc:extract": "ts-node ./scripts/doc-extract.ts",
     "doc:documenter": "ts-node ./scripts/doc-documenter.ts",
@@ -103,7 +104,7 @@
     "ajv-formats": "2.1.1",
     "did-jwt": "8.0.4",
     "did-resolver": "4.1.0",
-    "ethers": "^6.13.1",
+    "ethers": "6.13.4",
     "idb-keyval": "6.2.0",
     "js-sha3": "0.9.3",
     "jsonld": "8.3.1",

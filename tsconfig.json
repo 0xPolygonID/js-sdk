@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "outDir": "dist/cjs",
-    "module": "ES2020",
-    "target": "es2020",
+    "module": "ES2022",
+    "target": "es2022",
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
@@ -10,7 +10,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true,
-    "typeRoots": ["node_modules/@types"]
+    "typeRoots": ["node_modules/@types"],
+    "inlineSources": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "declarationDir": "dist/types"
   },
   "include": ["src", "types"]
 }

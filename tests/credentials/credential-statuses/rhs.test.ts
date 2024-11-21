@@ -28,6 +28,26 @@ describe('rhs', () => {
   let credWallet: CredentialWallet;
   let dataStorage: IDataStorage;
 
+  const emptyGistProof = {
+    root: 0n,
+    existence: false,
+    siblings: [],
+    index: 0n,
+    value: 0n,
+    auxExistence: false,
+    auxIndex: 0n,
+    auxValue: 0n
+  };
+
+  const emptyRootInfo = {
+    root: 0n,
+    replacedByRoot: 0n,
+    createdAtTimestamp: 0n,
+    replacedAtTimestamp: 0n,
+    createdAtBlock: 0n,
+    replacedAtBlock: 0n
+  };
+
   const mockStateStorageForGenesisState: IStateStorage = {
     getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
@@ -42,28 +62,12 @@ describe('rhs', () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
     },
     getGISTProof: (): Promise<StateProof> => {
-      return Promise.resolve({
-        root: 0n,
-        existence: false,
-        siblings: [],
-        index: 0n,
-        value: 0n,
-        auxExistence: false,
-        auxIndex: 0n,
-        auxValue: 0n
-      });
+      return Promise.resolve(emptyGistProof);
     },
     getGISTRootInfo: (): Promise<RootInfo> => {
-      return Promise.resolve({
-        root: 0n,
-        replacedByRoot: 0n,
-        createdAtTimestamp: 0n,
-        replacedAtTimestamp: 0n,
-        createdAtBlock: 0n,
-        replacedAtBlock: 0n
-      });
+      return Promise.resolve(emptyRootInfo);
     },
-    getRpcProvider() {
+    getProvider() {
       return new JsonRpcProvider(RPC_URL);
     }
   };
@@ -90,28 +94,12 @@ describe('rhs', () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
     },
     getGISTProof: (): Promise<StateProof> => {
-      return Promise.resolve({
-        root: 0n,
-        existence: false,
-        siblings: [],
-        index: 0n,
-        value: 0n,
-        auxExistence: false,
-        auxIndex: 0n,
-        auxValue: 0n
-      });
+      return Promise.resolve(emptyGistProof);
     },
     getGISTRootInfo: (): Promise<RootInfo> => {
-      return Promise.resolve({
-        root: 0n,
-        replacedByRoot: 0n,
-        createdAtTimestamp: 0n,
-        replacedAtTimestamp: 0n,
-        createdAtBlock: 0n,
-        replacedAtBlock: 0n
-      });
+      return Promise.resolve(emptyRootInfo);
     },
-    getRpcProvider() {
+    getProvider() {
       return new JsonRpcProvider(RPC_URL);
     }
   };
@@ -137,28 +125,12 @@ describe('rhs', () => {
       return '0xc837f95c984892dbcc3ac41812ecb145fedc26d7003202c50e1b87e226a9b33c';
     },
     getGISTProof: (): Promise<StateProof> => {
-      return Promise.resolve({
-        root: 0n,
-        existence: false,
-        siblings: [],
-        index: 0n,
-        value: 0n,
-        auxExistence: false,
-        auxIndex: 0n,
-        auxValue: 0n
-      });
+      return Promise.resolve(emptyGistProof);
     },
     getGISTRootInfo: (): Promise<RootInfo> => {
-      return Promise.resolve({
-        root: 0n,
-        replacedByRoot: 0n,
-        createdAtTimestamp: 0n,
-        replacedAtTimestamp: 0n,
-        createdAtBlock: 0n,
-        replacedAtBlock: 0n
-      });
+      return Promise.resolve(emptyRootInfo);
     },
-    getRpcProvider() {
+    getProvider() {
       return new JsonRpcProvider(RPC_URL);
     }
   };

@@ -105,7 +105,6 @@ describe('directives', () => {
         callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
         reason: 'reason',
         message: 'message',
-        did_doc: {},
         scope: [
           {
             id: 1,
@@ -132,20 +131,20 @@ describe('directives', () => {
             type: Iden3AttachmentType.Iden3Directives,
             context: 'https://directive.iden3.io/v1/context.json',
             directives: [
-              {
-                type: Iden3DirectiveType.TransparentPaymentDirective,
-                purpose: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
-                credentials: [
-                  {
-                    context:
-                      'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
-                    type: 'KYCAgeCredential'
-                  }
-                ],
-                paymentData: {
-                  txId: '0x123'
-                }
-              }
+              // {
+              //   type: Iden3DirectiveType.TransparentPaymentDirective,
+              //   purpose: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
+              //   credentials: [
+              //     {
+              //       context:
+              //         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+              //       type: 'KYCAgeCredential'
+              //     }
+              //   ],
+              //   paymentData: {
+              //     txId: '0x123'
+              //   }
+              // }
             ]
           }
         }

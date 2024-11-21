@@ -304,7 +304,7 @@ describe('auth', () => {
     const res = await idWallet.addCredentialsToMerkleTree([employeeCred], issuerDID);
     await idWallet.publishStateToRHS(issuerDID, RHS_URL);
 
-    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getProvider());
 
     const txId = await proofService.transitState(
       issuerDID,
@@ -411,7 +411,7 @@ describe('auth', () => {
   });
 
   it('auth flow identity (profile) with ethereum identity issuer with circuits V3', async () => {
-    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getProvider());
 
     const { did: didIssuer, credential: issuerAuthCredential } =
       await idWallet.createEthereumBasedIdentity({
@@ -652,7 +652,7 @@ describe('auth', () => {
 
     expect(userAuthCredential).not.to.be.undefined;
 
-    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getProvider());
 
     const { did: didIssuer, credential: issuerAuthCredential } =
       await idWallet.createEthereumBasedIdentity({
@@ -1674,7 +1674,7 @@ describe('auth', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getProvider());
     const txId = await proofService.transitState(
       issuerDID,
       res.oldTreeState,
@@ -2059,7 +2059,7 @@ describe('auth', () => {
     const res = await idWallet.addCredentialsToMerkleTree([employeeCred], issuerDID);
     await idWallet.publishStateToRHS(issuerDID, RHS_URL);
 
-    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getProvider());
 
     const txId = await proofService.transitState(
       issuerDID,
@@ -2240,7 +2240,7 @@ describe('auth', () => {
     });
     const prover = new NativeProver(circuitStorage);
 
-    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getProvider());
     const opts = {
       seed: SEED_USER,
       revocationOpts: {

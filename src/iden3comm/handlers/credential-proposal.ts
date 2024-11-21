@@ -206,7 +206,7 @@ export class CredentialProposalHandler
       directives?: Iden3Directive[];
     } & ProposalRequestCreationOptions
   ): Promise<{ request: ProposalRequestMessage; token: string }> {
-    const thid = uuid.v4();
+    const thid = params.thid ?? uuid.v4();
 
     const directives = (params.directives ?? []).filter(
       (directive) => directive.purpose === PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE
@@ -225,7 +225,9 @@ export class CredentialProposalHandler
         if (directive.type !== Iden3DirectiveType.TransparentPaymentDirective) {
           return acc;
         }
-        const directiveCredentials: ProposalRequestCredential[] = directive.credentials ?? [];
+        const directiveCredentials: ProposalRequestCredential[] = (
+          directive.paymentData ?? []
+        ).flatMap((p) => p.credentials);
         acc.credentialsToRequest = [...acc.credentialsToRequest, ...directiveCredentials];
         delete directive.purpose;
         const meta = Array.isArray(acc.metadata.data) ? acc.metadata.data : [acc.metadata.data];

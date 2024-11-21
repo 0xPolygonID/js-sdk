@@ -1,4 +1,11 @@
-import { Block, JsonRpcProvider, Signer, TransactionReceipt, TransactionRequest } from 'ethers';
+import {
+  Block,
+  JsonRpcProvider,
+  Provider,
+  Signer,
+  TransactionReceipt,
+  TransactionRequest
+} from 'ethers';
 
 /**
  * Resend transaction options
@@ -63,9 +70,9 @@ export interface ITransactionService {
 export class TransactionService implements ITransactionService {
   /**
    * Creates an instance of TransactionService.
-   * @param {JsonRpcProvider} - RPC provider
+   * @param {Provider} - RPC provider
    */
-  constructor(private readonly _provider: JsonRpcProvider) {}
+  constructor(private readonly _provider: Provider) {}
 
   /** {@inheritDoc ITransactionService.getTransactionReceiptAndBlock} */
   async getTransactionReceiptAndBlock(
