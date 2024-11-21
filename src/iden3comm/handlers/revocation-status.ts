@@ -16,6 +16,7 @@ import { byteEncoder } from '../../utils';
 import { proving } from '@iden3/js-jwz';
 import { IIdentityWallet } from '../../identity';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { verifyExpiresTime } from './common';
 
 /**
  * Defines the options for a RevocationStatusMessageHandler.
@@ -117,9 +118,7 @@ export class RevocationStatusHandler
     rsRequest: RevocationStatusRequestMessage,
     context: RevocationStatusMessageHandlerOptions
   ): Promise<BasicMessage | null> {
-    if (rsRequest?.expires_time && rsRequest.expires_time < Math.floor(Date.now() / 1000)) {
-      throw new Error('Message expired');
-    }
+    verifyExpiresTime(rsRequest);
     if (!rsRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }

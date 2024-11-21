@@ -6,7 +6,7 @@ import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol
 import { DID, ChainIds } from '@iden3/js-iden3-core';
 import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
-import { processZeroKnowledgeProofRequests } from './common';
+import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 
 /**
@@ -105,9 +105,7 @@ export class ContractRequestHandler
     message: ContractInvokeRequest,
     ctx: ContractMessageHandlerOptions
   ): Promise<Map<string, ZeroKnowledgeProofResponse[]>> {
-    if (message?.expires_time && message.expires_time < Math.floor(Date.now() / 1000)) {
-      throw new Error('Message expired');
-    }
+    verifyExpiresTime(message);
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for contract invoke request');
     }
@@ -226,9 +224,7 @@ export class ContractRequestHandler
     opts: ContractInvokeHandlerOptions
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
     const ciRequest = await this.parseContractInvokeRequest(request);
-    if (ciRequest?.expires_time && ciRequest.expires_time < Math.floor(Date.now() / 1000)) {
-      throw new Error('Message expired');
-    }
+    verifyExpiresTime(ciRequest);
     if (ciRequest.body.transaction_data.method_id !== FunctionSignatures.SubmitZKPResponseV1) {
       throw new Error(`please use handle method to work with other method ids`);
     }

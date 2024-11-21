@@ -22,6 +22,7 @@ import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { verifyExpiresTime } from './common';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
@@ -204,12 +205,7 @@ export class CredentialProposalHandler
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ctx?: ProposalRequestHandlerOptions
   ): Promise<ProposalMessage | CredentialsOfferMessage | undefined> {
-    if (
-      proposalRequest?.expires_time &&
-      proposalRequest.expires_time < Math.floor(Date.now() / 1000)
-    ) {
-      throw new Error('Message expired');
-    }
+    verifyExpiresTime(proposalRequest);
     if (!proposalRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
@@ -318,12 +314,7 @@ export class CredentialProposalHandler
     if (!proposalRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
     }
-    if (
-      proposalRequest?.expires_time &&
-      proposalRequest.expires_time < Math.floor(Date.now() / 1000)
-    ) {
-      throw new Error('Message expired');
-    }
+    verifyExpiresTime(proposalRequest);
 
     const senderDID = DID.parse(proposalRequest.from);
     const message = await this.handleProposalRequestMessage(proposalRequest);

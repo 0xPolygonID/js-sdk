@@ -1,5 +1,6 @@
 import { getRandomBytes } from '@iden3/js-crypto';
 import {
+  BasicMessage,
   JsonDocumentObject,
   JWSPackerParams,
   ZeroKnowledgeProofQuery,
@@ -133,4 +134,10 @@ export const processZeroKnowledgeProofRequests = async (
   }
 
   return zkpResponses;
+};
+
+export const verifyExpiresTime = (message: BasicMessage) => {
+  if (message?.expires_time && message.expires_time < Math.floor(Date.now() / 1000)) {
+    throw new Error('Message expired');
+  }
 };

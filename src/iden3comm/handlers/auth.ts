@@ -18,7 +18,7 @@ import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { processZeroKnowledgeProofRequests } from './common';
+import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
 import { CircuitId } from '../../circuits';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 
@@ -229,9 +229,7 @@ export class AuthHandler
     if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for authorization request');
     }
-    if (authRequest?.expires_time && authRequest.expires_time < Math.floor(Date.now() / 1000)) {
-      throw new Error('Message expired');
-    }
+    verifyExpiresTime(authRequest);
     // override sender did if it's explicitly specified in the auth request
     const to = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
     const mediaType = ctx.mediaType || MediaType.ZKPMessage;
@@ -318,9 +316,7 @@ export class AuthHandler
     ctx: AuthRespOptions
   ): Promise<BasicMessage | null> {
     const request = ctx.request;
-    if (response?.expires_time && response.expires_time < Math.floor(Date.now() / 1000)) {
-      throw new Error('Message expired');
-    }
+    verifyExpiresTime(response);
     if (response.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE) {
       throw new Error('Invalid message type for authorization response');
     }
