@@ -266,20 +266,21 @@ export class CredentialWallet implements ICredentialWallet {
     if (!schema.$metadata.uris['jsonLdContext']) {
       throw new Error('jsonLdContext is missing is the schema');
     }
-    request.context = request.context ?? [];
+    // do copy of request to avoid mutation
+    const r = { ...request };
+    r.context = r.context ?? [];
     if (
-      request.displayMethod?.type === DisplayMethodType.Iden3BasicDisplayMethodV1 &&
-      !request.context.includes(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD)
+      r.displayMethod?.type === DisplayMethodType.Iden3BasicDisplayMethodV1 &&
+      !r.context.includes(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD)
     ) {
-      request.context.push(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD);
+      r.context.push(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD);
     }
-    request.context.push(schema.$metadata.uris['jsonLdContext']);
-    request.expiration =
-      !request.expiration || request.expiration === 0 ? undefined : request.expiration * 1000;
-    request.id = request.id ? request.id : `urn:${uuid.v4()}`;
-    request.issuanceDate = request.issuanceDate ? request.issuanceDate * 1000 : Date.now();
+    r.context.push(schema.$metadata.uris['jsonLdContext']);
+    r.expiration = !r.expiration || r.expiration == 0 ? undefined : r.expiration * 1000;
+    r.id = r.id ? r.id : `urn:${uuid.v4()}`;
+    r.issuanceDate = r.issuanceDate ? r.issuanceDate * 1000 : Date.now();
 
-    return new W3CCredential().fromCredentialRequest(issuer, request);
+    return new W3CCredential().fromCredentialRequest(issuer, r);
   };
 
   /**
