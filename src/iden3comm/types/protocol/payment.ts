@@ -1,9 +1,9 @@
 import { BasicMessage } from '../';
 import {
+  PaymentFeatures,
   PaymentRequestDataType,
-  PaymentRequestType,
-  PaymentType,
-  SupportedCurrencies
+  SupportedCurrencies,
+  SupportedPaymentProofType
 } from '../../../verifiable';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
@@ -26,21 +26,62 @@ export type PaymentRequestInfo = {
     type: string;
     context: string;
   }[];
-  type: PaymentRequestType;
-  data: PaymentRequestDataInfo;
-  expiration?: string;
+  data:
+    | Iden3PaymentRequestCryptoV1
+    | (
+        | Iden3PaymentRequestCryptoV1
+        | Iden3PaymentRailsRequestV1
+        | Iden3PaymentRailsERC20RequestV1
+      )[];
   description?: string;
 };
 
-/** @beta PaymentRequestDataInfo is struct the represents payment data info for payment-request */
-export type PaymentRequestDataInfo = {
-  type: PaymentRequestDataType;
+/** @beta Iden3PaymentRequestCryptoV1 is struct the represents payment data info for payment-request */
+export type Iden3PaymentRequestCryptoV1 = {
+  type: PaymentRequestDataType.Iden3PaymentRequestCryptoV1;
+  '@context'?: string | (string | object)[];
   amount: string;
   id: string;
   chainId: string;
   address: string;
-  currency: SupportedCurrencies;
-  signature?: string;
+  currency: SupportedCurrencies | string;
+  expiration?: string;
+};
+
+export type Iden3PaymentRailsRequestV1 = {
+  type: PaymentRequestDataType.Iden3PaymentRailsRequestV1;
+  '@context': string | (string | object)[];
+  recipient: string;
+  amount: string;
+  currency: SupportedCurrencies | string;
+  expirationDate: string;
+  nonce: string;
+  metadata: string;
+  proof: EthereumEip712Signature2021 | EthereumEip712Signature2021[];
+};
+
+export type Iden3PaymentRailsERC20RequestV1 = Omit<Required<Iden3PaymentRailsRequestV1>, 'type'> & {
+  tokenAddress: string;
+  features?: PaymentFeatures[];
+  type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
+};
+
+export type EthereumEip712Signature2021 = {
+  type: SupportedPaymentProofType.EthereumEip712Signature2021;
+  proofPurpose: string;
+  proofValue: string;
+  verificationMethod: string;
+  created: string;
+  eip712: {
+    types: string;
+    primaryType: string;
+    domain: {
+      name: string;
+      version: string;
+      chainId: string;
+      verifyingContract: string;
+    };
+  };
 };
 
 /** @beta  PaymentMessage is struct the represents payment message */
@@ -51,14 +92,67 @@ export type PaymentMessage = BasicMessage & {
 
 /** @beta  PaymentMessageBody is struct the represents body for payment message */
 export type PaymentMessageBody = {
-  payments: PaymentInfo[];
+  payments: PaymentTypeUnion[];
 };
 
-/** @beta PaymentInfo is struct the represents payment info for payment */
-export type PaymentInfo = {
+/** @beta Iden3PaymentCryptoV1 is struct the represents payment info for payment */
+export type Iden3PaymentCryptoV1 = {
   id: string;
-  type: PaymentType;
+  type: 'Iden3PaymentCryptoV1';
+  '@context'?: string | (string | object)[];
   paymentData: {
     txId: string;
   };
 };
+
+/** @beta Iden3PaymentRailsV1 is struct the represents payment info for Iden3PaymentRailsRequestV1 */
+export type Iden3PaymentRailsV1 = {
+  nonce: string;
+  type: 'Iden3PaymentRailsV1';
+  '@context': string | (string | object)[];
+  paymentData: {
+    txId: string;
+    chainId: string;
+  };
+};
+
+/** @beta Iden3PaymentRailsERC20V1 is struct the represents payment info for Iden3PaymentRailsERC20RequestV1 */
+export type Iden3PaymentRailsERC20V1 = {
+  nonce: string;
+  type: 'Iden3PaymentRailsERC20V1';
+  '@context': string | (string | object)[];
+  paymentData: {
+    txId: string;
+    chainId: string;
+    tokenAddress: string;
+  };
+};
+
+/** @beta MultiChainPaymentConfig is struct that represents payments contracts information for different chains */
+export type MultiChainPaymentConfig = {
+  chainId: string;
+  paymentContract: string;
+  recipient: string;
+  erc20TokenAddressArr: {
+    symbol: string;
+    address: string;
+  }[];
+};
+
+/**
+ * @beta
+ * PaymentRequestTypeUnion is a type of supported payment request types
+ */
+export type PaymentRequestTypeUnion =
+  | Iden3PaymentRequestCryptoV1
+  | Iden3PaymentRailsRequestV1
+  | Iden3PaymentRailsERC20RequestV1;
+
+/**
+ * @beta
+ * PaymentTypeUnion is a type of supported payment types
+ */
+export type PaymentTypeUnion =
+  | Iden3PaymentCryptoV1
+  | Iden3PaymentRailsV1
+  | Iden3PaymentRailsERC20V1;
