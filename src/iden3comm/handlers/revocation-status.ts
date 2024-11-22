@@ -64,6 +64,7 @@ export type RevocationStatusHandlerOptions = {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
   treeState?: TreeState;
+  allowExpiredMessages?: boolean;
 };
 
 /**
@@ -118,7 +119,6 @@ export class RevocationStatusHandler
     rsRequest: RevocationStatusRequestMessage,
     context: RevocationStatusMessageHandlerOptions
   ): Promise<BasicMessage | null> {
-    verifyExpiresTime(rsRequest);
     if (!rsRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
@@ -195,7 +195,9 @@ export class RevocationStatusHandler
     }
 
     const rsRequest = await this.parseRevocationStatusRequest(request);
-
+    if (!opts.allowExpiredMessages) {
+      verifyExpiresTime(rsRequest);
+    }
     const response = await this.handleRevocationStatusRequestMessage(rsRequest, {
       senderDid: did,
       mediaType: opts.mediaType,

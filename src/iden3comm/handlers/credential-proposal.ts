@@ -132,11 +132,14 @@ export interface ICredentialProposalHandler {
 }
 
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
-export type ProposalRequestHandlerOptions = object;
+export type ProposalRequestHandlerOptions = {
+  allowExpiredMessages?: boolean;
+};
 
 /** @beta ProposalHandlerOptions represents proposal handler options */
 export type ProposalHandlerOptions = {
   proposalRequest?: ProposalRequestMessage;
+  allowExpiredMessages?: boolean;
 };
 
 /** @beta CredentialProposalHandlerParams represents credential proposal handler params */
@@ -205,7 +208,6 @@ export class CredentialProposalHandler
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ctx?: ProposalRequestHandlerOptions
   ): Promise<ProposalMessage | CredentialsOfferMessage | undefined> {
-    verifyExpiresTime(proposalRequest);
     if (!proposalRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
@@ -314,7 +316,9 @@ export class CredentialProposalHandler
     if (!proposalRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
     }
-    verifyExpiresTime(proposalRequest);
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(proposalRequest);
+    }
 
     const senderDID = DID.parse(proposalRequest.from);
     const message = await this.handleProposalRequestMessage(proposalRequest);
@@ -337,6 +341,9 @@ export class CredentialProposalHandler
    * @inheritdoc ICredentialProposalHandler#handleProposal
    */
   async handleProposal(proposal: ProposalMessage, opts?: ProposalHandlerOptions) {
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(proposal);
+    }
     if (opts?.proposalRequest && opts.proposalRequest.from !== proposal.to) {
       throw new Error(
         `sender of the request is not a target of response - expected ${opts.proposalRequest.from}, given ${proposal.to}`

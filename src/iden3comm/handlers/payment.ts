@@ -235,12 +235,14 @@ export type PaymentRequestMessageHandlerOptions = {
   */
   nonce: string;
   erc20TokenApproveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>;
+  allowExpiredMessages?: boolean;
 };
 
 /** @beta PaymentHandlerOptions represents payment handler options */
 export type PaymentHandlerOptions = {
   paymentRequest: PaymentRequestMessage;
   paymentValidationHandler: (txId: string, data: PaymentRequestTypeUnion) => Promise<void>;
+  allowExpiredMessages?: boolean;
 };
 
 /** @beta PaymentHandlerParams represents payment handler params */
@@ -313,7 +315,6 @@ export class PaymentHandler
     paymentRequest: PaymentRequestMessage,
     ctx: PaymentRequestMessageHandlerOptions
   ): Promise<BasicMessage | null> {
-    verifyExpiresTime(paymentRequest);
     if (!paymentRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
@@ -412,7 +413,9 @@ export class PaymentHandler
     if (!paymentRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
-
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(paymentRequest);
+    }
     const agentMessage = await this.handlePaymentRequestMessage(paymentRequest, opts);
     if (!agentMessage) {
       return null;
@@ -426,7 +429,9 @@ export class PaymentHandler
    * @inheritdoc IPaymentHandler#handlePayment
    */
   async handlePayment(payment: PaymentMessage, params: PaymentHandlerOptions) {
-    verifyExpiresTime(payment);
+    if (!params?.allowExpiredMessages) {
+      verifyExpiresTime(payment);
+    }
     if (params.paymentRequest.from !== payment.to) {
       throw new Error(
         `sender of the request is not a target of response - expected ${params.paymentRequest.from}, given ${payment.to}`

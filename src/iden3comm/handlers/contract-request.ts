@@ -43,6 +43,7 @@ export interface IContractRequestHandler {
 export type ContractInvokeHandlerOptions = {
   ethSigner: Signer;
   challenge?: bigint;
+  allowExpiredMessages?: boolean;
 };
 
 export type ContractMessageHandlerOptions = {
@@ -105,7 +106,6 @@ export class ContractRequestHandler
     message: ContractInvokeRequest,
     ctx: ContractMessageHandlerOptions
   ): Promise<Map<string, ZeroKnowledgeProofResponse[]>> {
-    verifyExpiresTime(message);
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for contract invoke request');
     }
@@ -224,7 +224,9 @@ export class ContractRequestHandler
     opts: ContractInvokeHandlerOptions
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
     const ciRequest = await this.parseContractInvokeRequest(request);
-    verifyExpiresTime(ciRequest);
+    if (!opts.allowExpiredMessages) {
+      verifyExpiresTime(ciRequest);
+    }
     if (ciRequest.body.transaction_data.method_id !== FunctionSignatures.SubmitZKPResponseV1) {
       throw new Error(`please use handle method to work with other method ids`);
     }

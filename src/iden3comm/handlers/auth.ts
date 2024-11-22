@@ -92,6 +92,7 @@ export function createAuthorizationRequestWithMessage(
 export type AuthResponseHandlerOptions = StateVerificationOpts & {
   // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
   acceptedProofGenerationDelay?: number;
+  allowExpiredMessages?: boolean;
 };
 
 /**
@@ -173,6 +174,7 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
 export interface AuthHandlerOptions {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
+  allowExpiredMessages?: boolean;
 }
 
 /**
@@ -244,7 +246,6 @@ export class AuthHandler
     if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for authorization request');
     }
-    verifyExpiresTime(authRequest);
     // override sender did if it's explicitly specified in the auth request
     const to = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
     const guid = uuid.v4();
@@ -296,7 +297,9 @@ export class AuthHandler
     authResponse: AuthorizationResponseMessage;
   }> {
     const authRequest = await this.parseAuthorizationRequest(request);
-
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(authRequest);
+    }
     if (!opts) {
       opts = {
         mediaType: MediaType.ZKPMessage
@@ -336,7 +339,6 @@ export class AuthHandler
     ctx: AuthRespOptions
   ): Promise<BasicMessage | null> {
     const request = ctx.request;
-    verifyExpiresTime(response);
     if (response.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE) {
       throw new Error('Invalid message type for authorization response');
     }
@@ -430,6 +432,9 @@ export class AuthHandler
     request: AuthorizationRequestMessage;
     response: AuthorizationResponseMessage;
   }> {
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(response);
+    }
     const authResp = (await this.handleAuthResponse(response, {
       request,
       acceptedStateTransitionDelay: opts?.acceptedStateTransitionDelay,
