@@ -24,18 +24,29 @@ import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handl
 import { parseAcceptProfile } from '../utils';
 
 /**
+ * Options to pass to createAuthorizationRequest function
+ * @public
+ */
+export type AuthorizationRequestCreateOptions = {
+  accept?: string[];
+  scope?: ZeroKnowledgeProofRequest[];
+};
+
+/**
  *  createAuthorizationRequest is a function to create protocol authorization request
  * @param {string} reason - reason to request proof
  * @param {string} sender - sender did
  * @param {string} callbackUrl - callback that user should use to send response
+ * @param {AuthorizationRequestCreateOptions} opts - authorization request options
  * @returns `Promise<AuthorizationRequestMessage>`
  */
 export function createAuthorizationRequest(
   reason: string,
   sender: string,
-  callbackUrl: string
+  callbackUrl: string,
+  opts?: AuthorizationRequestCreateOptions
 ): AuthorizationRequestMessage {
-  return createAuthorizationRequestWithMessage(reason, '', sender, callbackUrl);
+  return createAuthorizationRequestWithMessage(reason, '', sender, callbackUrl, opts);
 }
 /**
  *  createAuthorizationRequestWithMessage is a function to create protocol authorization request with explicit message to sign
@@ -43,13 +54,15 @@ export function createAuthorizationRequest(
  * @param {string} message - message to sign in the response
  * @param {string} sender - sender did
  * @param {string} callbackUrl - callback that user should use to send response
+ * @param {AuthorizationRequestCreateOptions} opts - authorization request options
  * @returns `Promise<AuthorizationRequestMessage>`
  */
 export function createAuthorizationRequestWithMessage(
   reason: string,
   message: string,
   sender: string,
-  callbackUrl: string
+  callbackUrl: string,
+  opts?: AuthorizationRequestCreateOptions
 ): AuthorizationRequestMessage {
   const uuidv4 = uuid.v4();
   const request: AuthorizationRequestMessage = {
@@ -59,10 +72,11 @@ export function createAuthorizationRequestWithMessage(
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
     body: {
+      accept: opts?.accept,
       reason: reason,
       message: message,
       callbackUrl: callbackUrl,
-      scope: []
+      scope: opts?.scope ?? []
     }
   };
   return request;

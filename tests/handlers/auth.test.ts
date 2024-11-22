@@ -43,7 +43,8 @@ import {
   NativeProver,
   VerifiableConstants,
   buildAccept,
-  AcceptProfile
+  AcceptProfile,
+  createAuthorizationRequest
 } from '../../src';
 import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -172,23 +173,15 @@ describe('auth', () => {
       circuits: [AcceptAuthCircuits.AuthV2]
     };
 
-    const authReqBody: AuthorizationRequestMessageBody = {
-      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
-      reason: 'reason',
-      message: 'message',
-      accept: buildAccept([profile]),
-      scope: [proofReq]
-    };
-
-    const id = uuid.v4();
-    const authReq: AuthorizationRequestMessage = {
-      id,
-      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
-      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
-      thid: id,
-      body: authReqBody,
-      from: issuerDID.string()
-    };
+    const authReq = createAuthorizationRequest(
+      'reason',
+      issuerDID.string(),
+      'http://localhost:8080/callback?id=1234442-123123-123123',
+      {
+        scope: [proofReq],
+        accept: buildAccept([profile])
+      }
+    );
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
@@ -836,19 +829,6 @@ describe('auth', () => {
     const userId = 'did:polygonid:polygon:mumbai:2qPDLXDaU1xa1ERTb1XKBfPCB3o2wA46q49neiXWwY';
     const reason = 'test';
     const message = 'message to sign';
-    const request: AuthorizationRequestMessage = createAuthorizationRequestWithMessage(
-      reason,
-      message,
-      sender,
-      callback
-    );
-    expect(request.body.scope.length).to.be.eq(0);
-    expect(request.body.callbackUrl).to.be.eq(callback);
-    expect(request.body.reason).to.be.eq(reason);
-    expect(request.from).to.be.eq(sender);
-
-    request.thid = '7f38a193-0918-4a48-9fac-36adfdb8b542';
-
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 23,
       circuitId: CircuitId.AtomicQueryMTPV2,
@@ -864,10 +844,20 @@ describe('auth', () => {
         }
       }
     };
-    request.body.scope.push(proofRequest);
-
+    const request: AuthorizationRequestMessage = createAuthorizationRequestWithMessage(
+      reason,
+      message,
+      sender,
+      callback,
+      {
+        scope: [proofRequest]
+      }
+    );
     expect(request.body.scope.length).to.be.eq(1);
-
+    expect(request.body.callbackUrl).to.be.eq(callback);
+    expect(request.body.reason).to.be.eq(reason);
+    expect(request.from).to.be.eq(sender);
+    request.thid = '7f38a193-0918-4a48-9fac-36adfdb8b542';
     const mtpProof: ZeroKnowledgeProofResponse = {
       id: proofRequest.id,
       circuitId: 'credentialAtomicQueryMTPV2',
