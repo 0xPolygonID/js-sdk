@@ -150,6 +150,21 @@ export interface IPacker {
    * @returns The media type as a MediaType.
    */
   mediaType(): MediaType;
+
+  /**
+   * gets packer envelope (supported profiles) with options
+   *
+   * @returns {string}
+   */
+  getSupportedProfiles(): string[];
+
+  /**
+   * returns true if profile is supported by packer
+   *
+   * @param {string} profile
+   * @returns {boolean}
+   */
+  isProfileSupported(profile: string): boolean;
 }
 /**
  * Params for verification of auth circuit public signals

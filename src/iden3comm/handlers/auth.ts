@@ -1,4 +1,4 @@
-import { MediaType } from '../constants';
+import { MediaType, ProtocolVersion } from '../constants';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
@@ -21,20 +21,32 @@ import { byteDecoder, byteEncoder } from '../../utils';
 import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
 import { CircuitId } from '../../circuits';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { parseAcceptProfile } from '../utils';
+
+/**
+ * Options to pass to createAuthorizationRequest function
+ * @public
+ */
+export type AuthorizationRequestCreateOptions = {
+  accept?: string[];
+  scope?: ZeroKnowledgeProofRequest[];
+};
 
 /**
  *  createAuthorizationRequest is a function to create protocol authorization request
  * @param {string} reason - reason to request proof
  * @param {string} sender - sender did
  * @param {string} callbackUrl - callback that user should use to send response
+ * @param {AuthorizationRequestCreateOptions} opts - authorization request options
  * @returns `Promise<AuthorizationRequestMessage>`
  */
 export function createAuthorizationRequest(
   reason: string,
   sender: string,
-  callbackUrl: string
+  callbackUrl: string,
+  opts?: AuthorizationRequestCreateOptions
 ): AuthorizationRequestMessage {
-  return createAuthorizationRequestWithMessage(reason, '', sender, callbackUrl);
+  return createAuthorizationRequestWithMessage(reason, '', sender, callbackUrl, opts);
 }
 /**
  *  createAuthorizationRequestWithMessage is a function to create protocol authorization request with explicit message to sign
@@ -42,13 +54,15 @@ export function createAuthorizationRequest(
  * @param {string} message - message to sign in the response
  * @param {string} sender - sender did
  * @param {string} callbackUrl - callback that user should use to send response
+ * @param {AuthorizationRequestCreateOptions} opts - authorization request options
  * @returns `Promise<AuthorizationRequestMessage>`
  */
 export function createAuthorizationRequestWithMessage(
   reason: string,
   message: string,
   sender: string,
-  callbackUrl: string
+  callbackUrl: string,
+  opts?: AuthorizationRequestCreateOptions
 ): AuthorizationRequestMessage {
   const uuidv4 = uuid.v4();
   const request: AuthorizationRequestMessage = {
@@ -58,10 +72,11 @@ export function createAuthorizationRequestWithMessage(
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
     body: {
+      accept: opts?.accept,
       reason: reason,
       message: message,
       callbackUrl: callbackUrl,
-      scope: []
+      scope: opts?.scope ?? []
     },
     created_time: Math.floor(Date.now() / 1000)
   };
@@ -232,13 +247,18 @@ export class AuthHandler
     verifyExpiresTime(authRequest);
     // override sender did if it's explicitly specified in the auth request
     const to = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
-    const mediaType = ctx.mediaType || MediaType.ZKPMessage;
     const guid = uuid.v4();
 
     if (!authRequest.from) {
       throw new Error('auth request should contain from field');
     }
 
+    const responseType = PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
+    const mediaType = this.getSupportedMediaTypeByProfile(
+      ctx,
+      responseType,
+      authRequest.body.accept
+    );
     const from = DID.parse(authRequest.from);
 
     const responseScope = await processZeroKnowledgeProofRequests(
@@ -251,8 +271,8 @@ export class AuthHandler
 
     return {
       id: guid,
-      typ: ctx.mediaType,
-      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
+      typ: mediaType,
+      type: responseType,
       thid: authRequest.thid ?? guid,
       body: {
         message: authRequest?.body?.message,
@@ -451,5 +471,44 @@ export class AuthHandler
         groupIdValidationMap[groupId] = [...(groupIdValidationMap[groupId] ?? []), proofRequest];
       }
     }
+  }
+
+  private getSupportedMediaTypeByProfile(
+    ctx: AuthReqOptions,
+    responseType: string,
+    profile?: string[] | undefined
+  ): MediaType {
+    let mediaType: MediaType;
+    if (profile?.length) {
+      const supportedMediaTypes: MediaType[] = [];
+      for (const acceptProfile of profile) {
+        // 1. check protocol version
+        const { protocolVersion, env } = parseAcceptProfile(acceptProfile);
+        const responseTypeVersion = Number(responseType.split('/').at(-2));
+        if (
+          protocolVersion !== ProtocolVersion.V1 ||
+          (protocolVersion === ProtocolVersion.V1 &&
+            (responseTypeVersion < 1 || responseTypeVersion >= 2))
+        ) {
+          continue;
+        }
+        // 2. check packer support
+        if (this._packerMgr.isProfileSupported(env, acceptProfile)) {
+          supportedMediaTypes.push(env);
+        }
+      }
+
+      if (!supportedMediaTypes.length) {
+        throw new Error('no packer with profile which meets `accept` header requirements');
+      }
+
+      mediaType = supportedMediaTypes[0];
+      if (ctx.mediaType && supportedMediaTypes.includes(ctx.mediaType)) {
+        mediaType = ctx.mediaType;
+      }
+    } else {
+      mediaType = ctx.mediaType || MediaType.ZKPMessage;
+    }
+    return mediaType;
   }
 }

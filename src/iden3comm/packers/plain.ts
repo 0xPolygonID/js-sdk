@@ -1,6 +1,7 @@
 import { BasicMessage, IPacker } from '../types';
 import { MediaType } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
+import { parseAcceptProfile } from '../utils';
 
 /**
  * Plain packer just serializes bytes to JSON and adds media type
@@ -52,5 +53,28 @@ export class PlainPacker implements IPacker {
    */
   mediaType(): MediaType {
     return MediaType.PlainMessage;
+  }
+
+  /** {@inheritDoc IPacker.getSupportedProfiles} */
+  getSupportedProfiles(): string[] {
+    return [`env=${this.mediaType()}`];
+  }
+
+  /** {@inheritDoc IPacker.isProfileSupported} */
+  isProfileSupported(profile: string) {
+    const { env, circuits, alg } = parseAcceptProfile(profile);
+    if (env !== this.mediaType()) {
+      return false;
+    }
+
+    if (circuits) {
+      throw new Error(`Circuits are not supported for ${env} media type`);
+    }
+
+    if (alg) {
+      throw new Error(`Algorithms are not supported for ${env} media type`);
+    }
+
+    return true;
   }
 }
