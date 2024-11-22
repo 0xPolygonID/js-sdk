@@ -65,7 +65,7 @@ export class W3CCredential {
    * @param request - Credential request
    * @returns - W3C Credential
    */
-  fromCredentialRequest(issuer: DID, request: CredentialRequest): W3CCredential {
+  static fromCredentialRequest(issuer: DID, request: CredentialRequest): W3CCredential {
     if (!request.id) {
       throw new Error('Credential id is required');
     }
@@ -97,7 +97,7 @@ export class W3CCredential {
       id: request.credentialSchema,
       type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
     };
-    cr.credentialStatus = this.buildCredentialStatus(request, issuer);
+    cr.credentialStatus = W3CCredential.buildCredentialStatus(request, issuer);
 
     request.expiration && (cr.expirationDate = new Date(request.expiration).toISOString());
     request.refreshService && (cr.refreshService = request.refreshService);
@@ -112,7 +112,7 @@ export class W3CCredential {
    * @param {CredentialRequest} request
    * @returns `CredentialStatus`
    */
-  private buildCredentialStatus(request: CredentialRequest, issuer: DID): CredentialStatus {
+  private static buildCredentialStatus(request: CredentialRequest, issuer: DID): CredentialStatus {
     const credentialStatus: CredentialStatus = {
       id: request.revocationOpts.id,
       type: request.revocationOpts.type,

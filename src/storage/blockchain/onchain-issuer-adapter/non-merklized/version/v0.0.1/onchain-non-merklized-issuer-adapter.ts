@@ -165,7 +165,7 @@ export class OnchainNonMerklizedIssuerAdapter {
     };
 
     const existenceProof = await this.existenceProof(c);
-    const w3c = new W3CCredential().fromCredentialRequest(this._issuerDid, credentialRequest);
+    const w3c = W3CCredential.fromCredentialRequest(this._issuerDid, credentialRequest);
     w3c.proof = [existenceProof];
     return w3c;
   }
@@ -294,7 +294,7 @@ export class OnchainNonMerklizedIssuerAdapter {
   private convertDisplayMethod(
     onchainDisplayMethod: INonMerklizedIssuer.DisplayMethodStructOutput
   ): DisplayMethod | undefined {
-    if (onchainDisplayMethod.id === '' && onchainDisplayMethod._type === '') {
+    if (!onchainDisplayMethod.id || !onchainDisplayMethod._type) {
       return undefined;
     }
     switch (onchainDisplayMethod._type) {
@@ -303,6 +303,9 @@ export class OnchainNonMerklizedIssuerAdapter {
           id: onchainDisplayMethod.id,
           type: DisplayMethodType.Iden3BasicDisplayMethodV1
         };
+      }
+      default: {
+        throw new Error(`Unsupported display method type ${onchainDisplayMethod._type}`);
       }
     }
   }
