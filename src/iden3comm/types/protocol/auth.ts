@@ -36,6 +36,7 @@ export type AuthorizationRequestMessageBody = BasicMessage['body'] & {
   message?: string;
   did_doc?: DIDDocument;
   scope: ZeroKnowledgeProofRequest[];
+  accept?: string[];
 };
 
 /** ZeroKnowledgeProofRequest represents structure of zkp request object */
