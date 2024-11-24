@@ -231,7 +231,7 @@ export class CredentialProposalHandler
         acc.credentialsToRequest = [...acc.credentialsToRequest, ...directiveCredentials];
         delete directive.purpose;
         const meta = Array.isArray(acc.metadata.data) ? acc.metadata.data : [acc.metadata.data];
-        acc.metadata.data = [...meta, directive];
+        acc.metadata.data = [...meta, directive as JsonDocumentObject];
         return acc;
       },
       {

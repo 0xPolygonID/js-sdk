@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "clean": "rimraf ./dist",
-    "build": "npm run build:browser",
+    "build": "npm run build:node && npm run build:browser",
     "build:node": "npm run build:tsc && npm run build:esm",
     "build:esm": "tsc --outDir dist/node/esm  --declaration --declarationDir dist/types",
     "build:browser": "rollup --verbose -c rollup.config.mjs --failAfterWarnings --filterLogs \"/* @__PURE__ */\"",
