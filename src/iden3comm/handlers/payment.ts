@@ -38,7 +38,7 @@ export type PaymentRequestCreationOptions = {
   expires_time?: Date;
 };
 
-/** @beta PaymentCreationOptions represents proposal creation options */
+/** @beta PaymentCreationOptions represents payment creation options */
 export type PaymentCreationOptions = {
   expires_time?: Date;
 };
