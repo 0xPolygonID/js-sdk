@@ -1,4 +1,4 @@
-import { DID, getChainId } from '@iden3/js-iden3-core';
+import { DID } from '@iden3/js-iden3-core';
 import { IDataStorage } from '../storage/interfaces';
 import {
   W3CCredential,
