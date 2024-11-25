@@ -15,7 +15,11 @@ import { TreeState } from '../../circuits';
 import { byteEncoder } from '../../utils';
 import { proving } from '@iden3/js-jwz';
 import { IIdentityWallet } from '../../identity';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
 import { verifyExpiresTime } from './common';
 
 /**
@@ -60,11 +64,10 @@ export interface IRevocationStatusHandler {
 }
 
 /** RevocationStatusHandlerOptions represents revocation status handler options */
-export type RevocationStatusHandlerOptions = {
+export type RevocationStatusHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
   treeState?: TreeState;
-  allowExpiredMessages?: boolean;
 };
 
 /**

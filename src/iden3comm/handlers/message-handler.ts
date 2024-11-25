@@ -7,6 +7,14 @@ import { MediaType } from '../constants';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { verifyExpiresTime } from './common';
+
+/**
+ * iden3 Basic protocol message handler options
+ */
+export type BasicHandlerOptions = {
+  allowExpiredMessages?: boolean;
+};
+
 /**
  * iden3  Protocol message handler interface
  */

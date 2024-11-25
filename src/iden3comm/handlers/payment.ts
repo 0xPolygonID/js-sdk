@@ -2,11 +2,15 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
 import { BasicMessage, IPackageManager, PackerParams } from '../types';
 
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
 import { proving } from '@iden3/js-jwz';
 import { byteEncoder } from '../../utils';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
 import {
   EthereumEip712Signature2021,
   Iden3PaymentCryptoV1,
@@ -71,8 +75,8 @@ export function createPaymentRequest(
       agent,
       payments
     },
-    created_time: Math.floor(Date.now() / 1000),
-    expires_time: opts?.expires_time ? Math.floor(opts.expires_time.getTime() / 1000) : undefined
+    created_time: getUnixTimestamp(new Date()),
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
   return request;
 }
@@ -180,8 +184,8 @@ export function createPayment(
     body: {
       payments
     },
-    created_time: Math.floor(Date.now() / 1000),
-    expires_time: opts?.expires_time ? Math.floor(opts.expires_time.getTime() / 1000) : undefined
+    created_time: getUnixTimestamp(new Date()),
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
   return request;
 }
@@ -242,21 +246,19 @@ export interface IPaymentHandler {
 }
 
 /** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
-export type PaymentRequestMessageHandlerOptions = {
+export type PaymentRequestMessageHandlerOptions = BasicHandlerOptions & {
   paymentHandler: (data: PaymentRequestTypeUnion) => Promise<string>;
   /*
    selected payment nonce (for Iden3PaymentRequestCryptoV1 type it should be equal to Payment id field)
   */
   nonce: string;
   erc20TokenApproveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>;
-  allowExpiredMessages?: boolean;
 };
 
 /** @beta PaymentHandlerOptions represents payment handler options */
-export type PaymentHandlerOptions = {
+export type PaymentHandlerOptions = BasicHandlerOptions & {
   paymentRequest: PaymentRequestMessage;
   paymentValidationHandler: (txId: string, data: PaymentRequestTypeUnion) => Promise<void>;
-  allowExpiredMessages?: boolean;
 };
 
 /** @beta PaymentHandlerParams represents payment handler params */

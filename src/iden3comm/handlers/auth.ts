@@ -12,7 +12,7 @@ import {
   ZeroKnowledgeProofRequest,
   JSONObject
 } from '../types';
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
@@ -20,7 +20,11 @@ import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
 import { CircuitId } from '../../circuits';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
 import { parseAcceptProfile } from '../utils';
 
 /**
@@ -79,8 +83,8 @@ export function createAuthorizationRequestWithMessage(
       callbackUrl: callbackUrl,
       scope: opts?.scope ?? []
     },
-    created_time: Math.floor(Date.now() / 1000),
-    expires_time: opts?.expires_time ? Math.floor(opts.expires_time.getTime() / 1000) : undefined
+    created_time: getUnixTimestamp(new Date()),
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
   return request;
 }
@@ -91,11 +95,11 @@ export function createAuthorizationRequestWithMessage(
  *
  * @public
  */
-export type AuthResponseHandlerOptions = StateVerificationOpts & {
-  // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
-  acceptedProofGenerationDelay?: number;
-  allowExpiredMessages?: boolean;
-};
+export type AuthResponseHandlerOptions = StateVerificationOpts &
+  BasicHandlerOptions & {
+    // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
+    acceptedProofGenerationDelay?: number;
+  };
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
@@ -173,11 +177,10 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
  * @public
  * @interface AuthHandlerOptions
  */
-export interface AuthHandlerOptions {
+export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
-  allowExpiredMessages?: boolean;
-}
+};
 
 /**
  *

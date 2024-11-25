@@ -9,7 +9,7 @@ import {
   PackerParams
 } from '../types';
 
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
 import { proving } from '@iden3/js-jwz';
 import {
@@ -21,7 +21,11 @@ import {
 import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
 import { verifyExpiresTime } from './common';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
@@ -59,8 +63,8 @@ export function createProposalRequest(
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
     body: opts,
-    created_time: Math.floor(Date.now() / 1000),
-    expires_time: opts?.expires_time ? Math.floor(opts.expires_time.getTime() / 1000) : undefined
+    created_time: getUnixTimestamp(new Date()),
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
   return request;
 }
@@ -90,8 +94,8 @@ export function createProposal(
     body: {
       proposals: proposals || []
     },
-    created_time: Math.floor(Date.now() / 1000),
-    expires_time: opts?.expires_time ? Math.floor(opts.expires_time.getTime() / 1000) : undefined
+    created_time: getUnixTimestamp(new Date()),
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
   return request;
 }
@@ -141,14 +145,11 @@ export interface ICredentialProposalHandler {
 }
 
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
-export type ProposalRequestHandlerOptions = {
-  allowExpiredMessages?: boolean;
-};
+export type ProposalRequestHandlerOptions = BasicHandlerOptions;
 
 /** @beta ProposalHandlerOptions represents proposal handler options */
-export type ProposalHandlerOptions = {
+export type ProposalHandlerOptions = BasicHandlerOptions & {
   proposalRequest?: ProposalRequestMessage;
-  allowExpiredMessages?: boolean;
 };
 
 /** @beta CredentialProposalHandlerParams represents credential proposal handler params */

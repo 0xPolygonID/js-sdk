@@ -18,7 +18,11 @@ import { byteDecoder, byteEncoder } from '../../utils';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
 import { verifyExpiresTime } from './common';
 
 /**
@@ -28,13 +32,12 @@ import { verifyExpiresTime } from './common';
  * @public
  * @interface FetchHandlerOptions
  */
-export type FetchHandlerOptions = {
+export type FetchHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
   headers?: {
     [key: string]: string;
   };
-  allowExpiredMessages?: boolean;
 };
 
 /**
@@ -44,9 +47,7 @@ export type FetchHandlerOptions = {
  * @public
  * @interface FetchRequestOptions
  */
-export type FetchRequestOptions = {
-  allowExpiredMessages?: boolean;
-};
+export type FetchRequestOptions = BasicHandlerOptions;
 
 /**
  *
@@ -55,9 +56,7 @@ export type FetchRequestOptions = {
  * @public
  * @interface IssuanceResponseOptions
  */
-export type IssuanceResponseOptions = {
-  allowExpiredMessages?: boolean;
-};
+export type IssuanceResponseOptions = BasicHandlerOptions;
 
 export type FetchMessageHandlerOptions = FetchHandlerOptions;
 

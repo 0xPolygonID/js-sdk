@@ -9,7 +9,7 @@ import {
 } from '../types';
 import { mergeObjects } from '../../utils';
 import { RevocationStatus, W3CCredential } from '../../verifiable';
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { MediaType } from '../constants';
@@ -142,7 +142,7 @@ export const processZeroKnowledgeProofRequests = async (
  * @param message - Basic message to verify.
  */
 export const verifyExpiresTime = (message: BasicMessage) => {
-  if (message?.expires_time && message.expires_time < Math.floor(Date.now() / 1000)) {
+  if (message?.expires_time && message.expires_time < getUnixTimestamp(new Date())) {
     throw new Error('Message expired');
   }
 };
