@@ -2,11 +2,15 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
 import { BasicMessage, IPackageManager, PackerParams } from '../types';
 
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
 import { proving } from '@iden3/js-jwz';
 import { byteEncoder } from '../../utils';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
 import {
   EthereumEip712Signature2021,
   Iden3PaymentCryptoV1,
@@ -31,6 +35,17 @@ import {
 } from '../../verifiable';
 import { Signer, ethers } from 'ethers';
 import { Resolvable } from 'did-resolver';
+import { verifyExpiresTime } from './common';
+
+/** @beta PaymentRequestCreationOptions represents payment-request creation options */
+export type PaymentRequestCreationOptions = {
+  expires_time?: Date;
+};
+
+/** @beta PaymentCreationOptions represents payment creation options */
+export type PaymentCreationOptions = {
+  expires_time?: Date;
+};
 
 /**
  * @beta
@@ -45,7 +60,8 @@ export function createPaymentRequest(
   sender: DID,
   receiver: DID,
   agent: string,
-  payments: PaymentRequestInfo[]
+  payments: PaymentRequestInfo[],
+  opts?: PaymentRequestCreationOptions
 ): PaymentRequestMessage {
   const uuidv4 = uuid.v4();
   const request: PaymentRequestMessage = {
@@ -58,7 +74,9 @@ export function createPaymentRequest(
     body: {
       agent,
       payments
-    }
+    },
+    created_time: getUnixTimestamp(new Date()),
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
   return request;
 }
@@ -152,7 +170,8 @@ export type PaymentRailsChainInfo = {
 export function createPayment(
   sender: DID,
   receiver: DID,
-  payments: PaymentTypeUnion[]
+  payments: PaymentTypeUnion[],
+  opts?: PaymentCreationOptions
 ): PaymentMessage {
   const uuidv4 = uuid.v4();
   const request: PaymentMessage = {
@@ -164,7 +183,9 @@ export function createPayment(
     type: PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE,
     body: {
       payments
-    }
+    },
+    created_time: getUnixTimestamp(new Date()),
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
   return request;
 }
@@ -225,7 +246,7 @@ export interface IPaymentHandler {
 }
 
 /** @beta PaymentRequestMessageHandlerOptions represents payment-request handler options */
-export type PaymentRequestMessageHandlerOptions = {
+export type PaymentRequestMessageHandlerOptions = BasicHandlerOptions & {
   paymentHandler: (data: PaymentRequestTypeUnion) => Promise<string>;
   /*
    selected payment nonce (for Iden3PaymentRequestCryptoV1 type it should be equal to Payment id field)
@@ -235,7 +256,7 @@ export type PaymentRequestMessageHandlerOptions = {
 };
 
 /** @beta PaymentHandlerOptions represents payment handler options */
-export type PaymentHandlerOptions = {
+export type PaymentHandlerOptions = BasicHandlerOptions & {
   paymentRequest: PaymentRequestMessage;
   paymentValidationHandler: (txId: string, data: PaymentRequestTypeUnion) => Promise<void>;
 };
@@ -408,7 +429,9 @@ export class PaymentHandler
     if (!paymentRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
-
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(paymentRequest);
+    }
     const agentMessage = await this.handlePaymentRequestMessage(paymentRequest, opts);
     if (!agentMessage) {
       return null;
@@ -422,6 +445,9 @@ export class PaymentHandler
    * @inheritdoc IPaymentHandler#handlePayment
    */
   async handlePayment(payment: PaymentMessage, params: PaymentHandlerOptions) {
+    if (!params?.allowExpiredMessages) {
+      verifyExpiresTime(payment);
+    }
     if (params.paymentRequest.from !== payment.to) {
       throw new Error(
         `sender of the request is not a target of response - expected ${params.paymentRequest.from}, given ${payment.to}`
