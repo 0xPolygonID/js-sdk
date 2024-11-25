@@ -11,7 +11,7 @@ import {
   PackerParams
 } from '../types';
 
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
 import { proving } from '@iden3/js-jwz';
 import {
@@ -23,7 +23,12 @@ import {
 import { IIdentityWallet } from '../../identity';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
+import { verifyExpiresTime } from './common';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
@@ -34,6 +39,12 @@ export type ProposalRequestCreationOptions = {
   };
   did_doc?: DIDDocument;
   thid?: string;
+  expires_time?: Date;
+};
+
+/** @beta ProposalCreationOptions represents proposal creation options */
+export type ProposalCreationOptions = {
+  expires_time?: Date;
 };
 
 /**
@@ -57,7 +68,9 @@ export function createProposalRequest(
     to: receiver.string(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
-    body: opts
+    body: opts,
+    created_time: getUnixTimestamp(new Date()),
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
   return request;
 }
@@ -73,7 +86,8 @@ export function createProposalRequest(
 export function createProposal(
   sender: DID,
   receiver: DID,
-  proposals?: Proposal[]
+  proposals?: Proposal[],
+  opts?: ProposalCreationOptions
 ): ProposalMessage {
   const uuidv4 = uuid.v4();
   const request: ProposalMessage = {
@@ -85,7 +99,9 @@ export function createProposal(
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE,
     body: {
       proposals: proposals || []
-    }
+    },
+    created_time: getUnixTimestamp(new Date()),
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
   return request;
 }
@@ -150,10 +166,10 @@ export interface ICredentialProposalHandler {
 }
 
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
-export type ProposalRequestHandlerOptions = object;
+export type ProposalRequestHandlerOptions = BasicHandlerOptions;
 
 /** @beta ProposalHandlerOptions represents proposal handler options */
-export type ProposalHandlerOptions = {
+export type ProposalHandlerOptions = BasicHandlerOptions & {
   proposalRequest?: ProposalRequestMessage;
 };
 
@@ -406,6 +422,9 @@ export class CredentialProposalHandler
     if (!proposalRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
     }
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(proposalRequest);
+    }
 
     const senderDID = DID.parse(proposalRequest.from);
     const message = await this.handleProposalRequestMessage(proposalRequest);
@@ -428,6 +447,9 @@ export class CredentialProposalHandler
    * @inheritdoc ICredentialProposalHandler#handleProposal
    */
   async handleProposal(proposal: ProposalMessage, opts?: ProposalHandlerOptions) {
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(proposal);
+    }
     if (opts?.proposalRequest && opts.proposalRequest.from !== proposal.to) {
       throw new Error(
         `sender of the request is not a target of response - expected ${opts.proposalRequest.from}, given ${proposal.to}`

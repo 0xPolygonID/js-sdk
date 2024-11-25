@@ -12,15 +12,19 @@ import {
   ZeroKnowledgeProofRequest,
   JSONObject
 } from '../types';
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { processZeroKnowledgeProofRequests } from './common';
+import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
 import { CircuitId } from '../../circuits';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
 import { parseAcceptProfile } from '../utils';
 
 /**
@@ -30,6 +34,7 @@ import { parseAcceptProfile } from '../utils';
 export type AuthorizationRequestCreateOptions = {
   accept?: string[];
   scope?: ZeroKnowledgeProofRequest[];
+  expires_time?: Date;
 };
 
 /**
@@ -77,7 +82,9 @@ export function createAuthorizationRequestWithMessage(
       message: message,
       callbackUrl: callbackUrl,
       scope: opts?.scope ?? []
-    }
+    },
+    created_time: getUnixTimestamp(new Date()),
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
   return request;
 }
@@ -88,10 +95,11 @@ export function createAuthorizationRequestWithMessage(
  *
  * @public
  */
-export type AuthResponseHandlerOptions = StateVerificationOpts & {
-  // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
-  acceptedProofGenerationDelay?: number;
-};
+export type AuthResponseHandlerOptions = StateVerificationOpts &
+  BasicHandlerOptions & {
+    // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
+    acceptedProofGenerationDelay?: number;
+  };
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
@@ -169,10 +177,10 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
  * @public
  * @interface AuthHandlerOptions
  */
-export interface AuthHandlerOptions {
+export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
-}
+};
 
 /**
  *
@@ -243,7 +251,6 @@ export class AuthHandler
     if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for authorization request');
     }
-
     // override sender did if it's explicitly specified in the auth request
     const to = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
     const guid = uuid.v4();
@@ -295,7 +302,9 @@ export class AuthHandler
     authResponse: AuthorizationResponseMessage;
   }> {
     const authRequest = await this.parseAuthorizationRequest(request);
-
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(authRequest);
+    }
     if (!opts) {
       opts = {
         mediaType: MediaType.ZKPMessage
@@ -428,6 +437,9 @@ export class AuthHandler
     request: AuthorizationRequestMessage;
     response: AuthorizationResponseMessage;
   }> {
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(response);
+    }
     const authResp = (await this.handleAuthResponse(response, {
       request,
       acceptedStateTransitionDelay: opts?.acceptedStateTransitionDelay,

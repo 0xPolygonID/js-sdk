@@ -1,6 +1,6 @@
 import { W3CCredential } from '../../../verifiable';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
-import { BasicMessage, JsonDocumentObject } from '../packer';
+import { BasicMessage, JsonDocumentObject, RequiredBasicMessage } from '../packer';
 import { ContractInvokeTransactionData } from './contract-request';
 
 /** CredentialIssuanceRequestMessageBody represents data for credential issuance request */
@@ -11,14 +11,14 @@ export type CredentialIssuanceRequestMessageBody = {
 };
 
 /** CredentialIssuanceRequestMessage represent Iden3message for credential request */
-export type CredentialIssuanceRequestMessage = BasicMessage & {
+export type CredentialIssuanceRequestMessage = RequiredBasicMessage & {
   body: CredentialIssuanceRequestMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_REQUEST_MESSAGE_TYPE;
   to: string;
 };
 
 /** CredentialsOfferMessage represent Iden3message for credential offer */
-export type CredentialsOfferMessage = BasicMessage & {
+export type CredentialsOfferMessage = RequiredBasicMessage & {
   body: CredentialsOfferMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE;
   to: string;
@@ -31,7 +31,7 @@ export type CredentialsOfferMessageBody = {
 };
 
 /** CredentialsOnchainOfferMessage represent Iden3message for credential onchain offer message */
-export type CredentialsOnchainOfferMessage = BasicMessage & {
+export type CredentialsOnchainOfferMessage = RequiredBasicMessage & {
   body: CredentialsOnchainOfferMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ONCHAIN_OFFER_MESSAGE_TYPE;
   to: string;
@@ -58,7 +58,7 @@ export type CredentialOffer = {
 };
 
 /** CredentialIssuanceMessage represent Iden3message for credential issuance */
-export type CredentialIssuanceMessage = BasicMessage & {
+export type CredentialIssuanceMessage = RequiredBasicMessage & {
   body: IssuanceMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE;
   to: string;
@@ -89,7 +89,7 @@ export type Schema = {
 };
 
 /** CredentialRefreshMessage represent Iden3message for credential refresh request */
-export type CredentialRefreshMessage = BasicMessage & {
+export type CredentialRefreshMessage = RequiredBasicMessage & {
   body: CredentialRefreshMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.CREDENTIAL_REFRESH_MESSAGE_TYPE;
   to: string;
