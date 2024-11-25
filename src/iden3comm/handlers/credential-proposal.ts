@@ -29,6 +29,12 @@ export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
   metadata?: { type: string; data?: JsonDocumentObject };
   did_doc?: DIDDocument;
+  expires_time?: Date;
+};
+
+/** @beta ProposalCreationOptions represents proposal creation options */
+export type ProposalCreationOptions = {
+  expires_time?: Date;
 };
 
 /**
@@ -53,7 +59,8 @@ export function createProposalRequest(
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
     body: opts,
-    created_time: Math.floor(Date.now() / 1000)
+    created_time: Math.floor(Date.now() / 1000),
+    expires_time: opts?.expires_time ? Math.floor(opts.expires_time.getTime() / 1000) : undefined
   };
   return request;
 }
@@ -69,7 +76,8 @@ export function createProposalRequest(
 export function createProposal(
   sender: DID,
   receiver: DID,
-  proposals?: Proposal[]
+  proposals?: Proposal[],
+  opts?: ProposalCreationOptions
 ): ProposalMessage {
   const uuidv4 = uuid.v4();
   const request: ProposalMessage = {
@@ -82,7 +90,8 @@ export function createProposal(
     body: {
       proposals: proposals || []
     },
-    created_time: Math.floor(Date.now() / 1000)
+    created_time: Math.floor(Date.now() / 1000),
+    expires_time: opts?.expires_time ? Math.floor(opts.expires_time.getTime() / 1000) : undefined
   };
   return request;
 }

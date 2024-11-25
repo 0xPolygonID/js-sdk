@@ -33,6 +33,16 @@ import { Signer, ethers } from 'ethers';
 import { Resolvable } from 'did-resolver';
 import { verifyExpiresTime } from './common';
 
+/** @beta PaymentRequestCreationOptions represents payment-request creation options */
+export type PaymentRequestCreationOptions = {
+  expires_time?: Date;
+};
+
+/** @beta PaymentCreationOptions represents proposal creation options */
+export type PaymentCreationOptions = {
+  expires_time?: Date;
+};
+
 /**
  * @beta
  * createPaymentRequest is a function to create protocol payment-request message
@@ -46,7 +56,8 @@ export function createPaymentRequest(
   sender: DID,
   receiver: DID,
   agent: string,
-  payments: PaymentRequestInfo[]
+  payments: PaymentRequestInfo[],
+  opts?: PaymentRequestCreationOptions
 ): PaymentRequestMessage {
   const uuidv4 = uuid.v4();
   const request: PaymentRequestMessage = {
@@ -60,7 +71,8 @@ export function createPaymentRequest(
       agent,
       payments
     },
-    created_time: Math.floor(Date.now() / 1000)
+    created_time: Math.floor(Date.now() / 1000),
+    expires_time: opts?.expires_time ? Math.floor(opts.expires_time.getTime() / 1000) : undefined
   };
   return request;
 }
@@ -154,7 +166,8 @@ export type PaymentRailsChainInfo = {
 export function createPayment(
   sender: DID,
   receiver: DID,
-  payments: PaymentTypeUnion[]
+  payments: PaymentTypeUnion[],
+  opts?: PaymentCreationOptions
 ): PaymentMessage {
   const uuidv4 = uuid.v4();
   const request: PaymentMessage = {
@@ -167,7 +180,8 @@ export function createPayment(
     body: {
       payments
     },
-    created_time: Math.floor(Date.now() / 1000)
+    created_time: Math.floor(Date.now() / 1000),
+    expires_time: opts?.expires_time ? Math.floor(opts.expires_time.getTime() / 1000) : undefined
   };
   return request;
 }

@@ -30,6 +30,7 @@ import { parseAcceptProfile } from '../utils';
 export type AuthorizationRequestCreateOptions = {
   accept?: string[];
   scope?: ZeroKnowledgeProofRequest[];
+  expires_time?: Date;
 };
 
 /**
@@ -78,7 +79,8 @@ export function createAuthorizationRequestWithMessage(
       callbackUrl: callbackUrl,
       scope: opts?.scope ?? []
     },
-    created_time: Math.floor(Date.now() / 1000)
+    created_time: Math.floor(Date.now() / 1000),
+    expires_time: opts?.expires_time ? Math.floor(opts.expires_time.getTime() / 1000) : undefined
   };
   return request;
 }
