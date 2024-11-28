@@ -45,16 +45,7 @@ export interface RootInfo {
   replacedAtTimestamp: bigint;
   createdAtBlock: bigint;
   replacedAtBlock: bigint;
-}
-
-/**
- * global identity state root info from DID resolver document
- *
- * @public
- * @interface   RootInfoWithProof
- */
-export interface RootInfoWithProof extends RootInfo {
-  proof: ProofJSON;
+  proof?: ProofJSON;
 }
 
 /**

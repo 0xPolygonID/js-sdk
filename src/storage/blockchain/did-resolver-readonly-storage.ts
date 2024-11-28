@@ -31,6 +31,9 @@ export class DidResolverStateReadonlyStorage implements IStateStorage {
       throw new Error('GIST root not found');
     }
     const { proof } = global;
+    if (!proof) {
+      throw new Error('GIST proof not found');
+    }
     return {
       root: global.root,
       existence: proof.existence,

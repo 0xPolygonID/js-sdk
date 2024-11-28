@@ -7,7 +7,7 @@ import {
   DIDDocument as DidResolverDidDocument,
   VerificationMethod as DidResolverVerificationMethod
 } from 'did-resolver';
-import { RootInfoWithProof, StateInfo } from '../../../storage';
+import { RootInfo, StateInfo } from '../../../storage';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
 export type AuthorizationResponseMessage = BasicMessage & {
@@ -89,5 +89,5 @@ export type DIDDocument = DidResolverDidDocument & {
 export type VerificationMethod = DidResolverVerificationMethod & {
   published?: boolean;
   info?: StateInfo;
-  global?: RootInfoWithProof;
+  global?: RootInfo;
 };
