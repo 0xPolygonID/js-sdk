@@ -361,7 +361,7 @@ describe('payment-request handler', () => {
         };
 
         if (data.features?.includes(PaymentFeatures.EIP_2612)) {
-          const permitSignature = getPermitSignature(
+          const permitSignature = await getPermitSignature(
             ethSigner,
             data.tokenAddress,
             await payContract.getAddress(),

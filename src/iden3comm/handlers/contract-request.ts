@@ -3,11 +3,15 @@ import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
-import { DID, ChainIds } from '@iden3/js-iden3-core';
+import { DID, ChainIds, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
-import { processZeroKnowledgeProofRequests } from './common';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
 
 /**
  * Interface that allows the processing of the contract request
@@ -40,7 +44,7 @@ export interface IContractRequestHandler {
 }
 
 /** ContractInvokeHandlerOptions represents contract invoke handler options */
-export type ContractInvokeHandlerOptions = {
+export type ContractInvokeHandlerOptions = BasicHandlerOptions & {
   ethSigner: Signer;
   challenge?: bigint;
 };
@@ -193,7 +197,8 @@ export class ContractRequestHandler
       body: {
         transaction_data: request.body.transaction_data,
         scope: []
-      }
+      },
+      created_time: getUnixTimestamp(new Date())
     };
     for (const [txHash, zkpResponses] of txHashToZkpResponseMap) {
       for (const zkpResponse of zkpResponses) {
@@ -222,7 +227,9 @@ export class ContractRequestHandler
     opts: ContractInvokeHandlerOptions
   ): Promise<Map<string, ZeroKnowledgeProofResponse>> {
     const ciRequest = await this.parseContractInvokeRequest(request);
-
+    if (!opts.allowExpiredMessages) {
+      verifyExpiresTime(ciRequest);
+    }
     if (ciRequest.body.transaction_data.method_id !== FunctionSignatures.SubmitZKPResponseV1) {
       throw new Error(`please use handle method to work with other method ids`);
     }

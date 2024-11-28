@@ -6,6 +6,15 @@ import { PaymentHandlerOptions, PaymentRequestMessageHandlerOptions } from './pa
 import { MediaType } from '../constants';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
+import { verifyExpiresTime } from './common';
+
+/**
+ * iden3 Basic protocol message handler options
+ */
+export type BasicHandlerOptions = {
+  allowExpiredMessages?: boolean;
+};
+
 /**
  * iden3  Protocol message handler interface
  */
@@ -41,6 +50,9 @@ export abstract class AbstractMessageHandler implements IProtocolMessageHandler 
     message: BasicMessage,
     context: { [key: string]: unknown }
   ): Promise<BasicMessage | null> {
+    if (!context.allowExpiredMessages) {
+      verifyExpiresTime(message);
+    }
     if (this.nextMessageHandler) return this.nextMessageHandler.handle(message, context);
     return Promise.reject('Message handler not provided or message not supported');
   }

@@ -41,7 +41,10 @@ import {
   StateInfo,
   hexToBytes,
   NativeProver,
-  VerifiableConstants
+  VerifiableConstants,
+  buildAccept,
+  AcceptProfile,
+  createAuthorizationRequest
 } from '../../src';
 import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -64,6 +67,12 @@ import {
   MOCK_STATE_STORAGE
 } from '../helpers';
 import { getRandomBytes } from '@iden3/js-crypto';
+import {
+  AcceptAuthCircuits,
+  defaultAcceptProfile,
+  MediaType,
+  ProtocolVersion
+} from '../../src/iden3comm/constants';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -158,22 +167,21 @@ describe('auth', () => {
       }
     };
 
-    const authReqBody: AuthorizationRequestMessageBody = {
-      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
-      reason: 'reason',
-      message: 'message',
-      scope: [proofReq]
+    const profile: AcceptProfile = {
+      protocolVersion: ProtocolVersion.V1,
+      env: MediaType.ZKPMessage,
+      circuits: [AcceptAuthCircuits.AuthV2]
     };
 
-    const id = uuid.v4();
-    const authReq: AuthorizationRequestMessage = {
-      id,
-      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
-      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
-      thid: id,
-      body: authReqBody,
-      from: issuerDID.string()
-    };
+    const authReq = createAuthorizationRequest(
+      'reason',
+      issuerDID.string(),
+      'http://localhost:8080/callback?id=1234442-123123-123123',
+      {
+        scope: [proofReq],
+        accept: buildAccept([profile])
+      }
+    );
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
@@ -231,6 +239,7 @@ describe('auth', () => {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
       message: 'message',
+      accept: buildAccept([defaultAcceptProfile]),
       scope: [proofReq as ZeroKnowledgeProofRequest]
     };
 
@@ -820,19 +829,6 @@ describe('auth', () => {
     const userId = 'did:polygonid:polygon:mumbai:2qPDLXDaU1xa1ERTb1XKBfPCB3o2wA46q49neiXWwY';
     const reason = 'test';
     const message = 'message to sign';
-    const request: AuthorizationRequestMessage = createAuthorizationRequestWithMessage(
-      reason,
-      message,
-      sender,
-      callback
-    );
-    expect(request.body.scope.length).to.be.eq(0);
-    expect(request.body.callbackUrl).to.be.eq(callback);
-    expect(request.body.reason).to.be.eq(reason);
-    expect(request.from).to.be.eq(sender);
-
-    request.thid = '7f38a193-0918-4a48-9fac-36adfdb8b542';
-
     const proofRequest: ZeroKnowledgeProofRequest = {
       id: 23,
       circuitId: CircuitId.AtomicQueryMTPV2,
@@ -848,10 +844,20 @@ describe('auth', () => {
         }
       }
     };
-    request.body.scope.push(proofRequest);
-
+    const request: AuthorizationRequestMessage = createAuthorizationRequestWithMessage(
+      reason,
+      message,
+      sender,
+      callback,
+      {
+        scope: [proofRequest]
+      }
+    );
     expect(request.body.scope.length).to.be.eq(1);
-
+    expect(request.body.callbackUrl).to.be.eq(callback);
+    expect(request.body.reason).to.be.eq(reason);
+    expect(request.from).to.be.eq(sender);
+    request.thid = '7f38a193-0918-4a48-9fac-36adfdb8b542';
     const mtpProof: ZeroKnowledgeProofResponse = {
       id: proofRequest.id,
       circuitId: 'credentialAtomicQueryMTPV2',
@@ -2360,6 +2366,72 @@ describe('auth', () => {
     // this should not work because we revoked user keys
     await expect(handleAuthorizationRequest(userDID, authReqBody)).to.rejectedWith(
       VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND
+    );
+  });
+
+  it('request-response flow identity - accept header not supported', async () => {
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQuerySigV2,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+        credentialSubject: {
+          documentType: {
+            $eq: 99
+          }
+        }
+      }
+    };
+
+    const authV3NotSupportedProfile: AcceptProfile = {
+      protocolVersion: ProtocolVersion.V1,
+      env: MediaType.ZKPMessage,
+      circuits: [AcceptAuthCircuits.AuthV3]
+    };
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'message',
+      accept: buildAccept([authV3NotSupportedProfile]),
+      scope: [proofReq as ZeroKnowledgeProofRequest]
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    await expect(authHandler.handleAuthorizationRequest(userDID, msgBytes)).to.be.rejectedWith(
+      'no packer with profile which meets `accept` header requirements'
     );
   });
 });

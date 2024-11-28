@@ -1,3 +1,5 @@
+import { AcceptProfile } from './types';
+
 const IDEN3_PROTOCOL = 'https://iden3-communication.io/';
 /**
  * Constants for Iden3 protocol
@@ -77,6 +79,31 @@ export const SUPPORTED_PUBLIC_KEY_TYPES = {
     'EcdsaSecp256k1RecoveryMethod2020',
     'JsonWebKey2020'
   ]
+};
+
+export enum ProtocolVersion {
+  V1 = 'iden3comm/v1'
+}
+
+export enum AcceptAuthCircuits {
+  AuthV2 = 'authV2',
+  AuthV3 = 'authV3'
+}
+
+export enum AcceptJwzAlgorithms {
+  Groth16 = 'groth16'
+}
+
+export enum AcceptJwsAlgorithms {
+  ES256K = 'ES256K',
+  ES256KR = 'ES256K-R'
+}
+
+export const defaultAcceptProfile: AcceptProfile = {
+  protocolVersion: ProtocolVersion.V1,
+  env: MediaType.ZKPMessage,
+  circuits: [AcceptAuthCircuits.AuthV2],
+  alg: [AcceptJwzAlgorithms.Groth16]
 };
 
 export const DEFAULT_PROOF_VERIFY_DELAY = 1 * 60 * 60 * 1000; // 1 hour

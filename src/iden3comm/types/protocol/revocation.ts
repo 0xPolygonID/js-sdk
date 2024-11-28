@@ -1,4 +1,4 @@
-import { BasicMessage } from '../';
+import { BasicMessage, RequiredBasicMessage } from '../';
 import { RevocationStatus } from '../../../verifiable';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
@@ -14,7 +14,7 @@ export type RevocationStatusRequestMessageBody = {
 };
 
 /** RevocationStatusResponseMessage is struct the represents body for proof generation request */
-export type RevocationStatusResponseMessage = Required<BasicMessage> & {
+export type RevocationStatusResponseMessage = RequiredBasicMessage & {
   body: RevocationStatusResponseMessageBody;
   type: typeof PROTOCOL_MESSAGE_TYPE.REVOCATION_STATUS_RESPONSE_MESSAGE_TYPE;
 };
