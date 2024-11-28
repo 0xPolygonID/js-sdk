@@ -128,6 +128,15 @@ export class OnchainNonMerklizedIssuerAdapter {
   }
 
   /**
+   * Retrieves the credential IDs of a user.
+   * @param userId The user's core.Id.
+   * @returns An array of credential IDs.
+   */
+  public async getUserCredentialsIds(userId: Id): Promise<bigint[]> {
+    return this._contract.getUserCredentialIds(userId.bigInt());
+  }
+
+  /**
    * Converts on-chain credential to a verifiable credential.
    *
    * @param credentialData Data structure of the credential from the contract.

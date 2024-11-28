@@ -4,7 +4,8 @@ import { INonMerklizedIssuerABI as abi } from '@iden3/onchain-non-merklized-issu
 import { Options } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from '../../verifiable';
 import { OnchainNonMerklizedIssuerAdapter } from './onchain-issuer-adapter/non-merklized/version/v0.0.1/onchain-non-merklized-issuer-adapter';
-import { EthConnectionConfig } from '..';
+import { EthConnectionConfig } from './state';
+import { IOnchainIssuer } from '../interfaces/onchain-issuer';
 
 enum OnchainIssuerVersion {
   'v0.0.1' = '0.0.1'
@@ -17,7 +18,7 @@ enum OnchainIssuerVersion {
  * @beta
  * @class OnchainIssuer
  */
-export class OnchainIssuer {
+export class OnchainIssuer implements IOnchainIssuer {
   private readonly _url: string;
   private readonly _chainId: number;
   private readonly _contractAddress: string;
@@ -52,7 +53,7 @@ export class OnchainIssuer {
   }
 
   /**
-   * Retrieves a credential from the on-chain non-merklized contract.
+   * Retrieves a credential from the on-chain issuer.
    * @param userId The user's core.Id.
    * @param credentialId The unique identifier of the credential.
    */
@@ -74,6 +75,28 @@ export class OnchainIssuer {
           coreClaimBigInts,
           credentialSubjectFields
         );
+      }
+      default:
+        throw new Error(`Unsupported adapter version ${response}`);
+    }
+  }
+
+  /**
+   * Retrieves the credential identifiers for a user from the on-chain issuer.
+   * @param userId The user's core.Id.
+   */
+  public async getUserCredentialIds(userId: Id): Promise<bigint[]> {
+    const response = await this._contract.getCredentialAdapterVersion();
+    switch (response) {
+      case OnchainIssuerVersion['v0.0.1']: {
+        const adapter = new OnchainNonMerklizedIssuerAdapter(this._contractAddress, {
+          rpcUrl: this._url,
+          chainId: this._chainId,
+          issuerDid: this._issuerDid,
+          merklizationOptions: this._merklizationOptions
+        });
+        await adapter.isSupportsInterface();
+        return await adapter.getUserCredentialsIds(userId);
       }
       default:
         throw new Error(`Unsupported adapter version ${response}`);
