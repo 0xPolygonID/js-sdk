@@ -11,8 +11,6 @@ import {
   registerKeyProvidersInMemoryKMS
 } from '../../helpers';
 import { DID } from '@iden3/js-iden3-core';
-import fetchMock from '@gr2m/fetch-mock';
-import { Proof, ZERO_HASH } from '@iden3/js-merkletree';
 
 describe('SparseMerkleTreeProof', () => {
   let idWallet: IdentityWallet;
@@ -51,22 +49,6 @@ describe('SparseMerkleTreeProof', () => {
     });
     expect(issuerAuthCredential).not.to.be.undefined;
     issuerDID = didIssuer;
-    const mockRevStatus = JSON.stringify({
-      mtp: new Proof(),
-      issuer: {
-        state: ZERO_HASH.hex(),
-        claimsTreeRoot: ZERO_HASH.hex(),
-        revocationTreeRoot: ZERO_HASH.hex(),
-        rootOfRoots: ZERO_HASH.hex()
-      }
-    });
-    fetchMock.spy();
-    fetchMock.mock(`begin:${walletUrl}`, mockRevStatus);
-    fetchMock.mock(`begin:${issuerWalletUrl}`, mockRevStatus);
-  });
-
-  afterEach(() => {
-    fetchMock.restore();
   });
 
   it('issue credential', async () => {

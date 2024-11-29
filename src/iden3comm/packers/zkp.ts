@@ -20,9 +20,10 @@ import {
   ErrStateVerificationFailed,
   ErrUnknownCircuitID
 } from '../errors';
-import { MediaType } from '../constants';
+import { AcceptAuthCircuits, AcceptJwzAlgorithms, MediaType } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { DEFAULT_AUTH_VERIFY_DELAY } from '../constants';
+import { parseAcceptProfile } from '../utils';
 
 const { getProvingMethod } = proving;
 
@@ -173,6 +174,40 @@ export class ZKPPacker implements IPacker {
 
   mediaType(): MediaType {
     return MediaType.ZKPMessage;
+  }
+
+  /** {@inheritDoc IPacker.getSupportedProfiles} */
+  getSupportedProfiles(): string[] {
+    return [
+      `env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(
+        ','
+      )}&circuitIds=${this.getSupportedCircuitIds().join(',')}`
+    ];
+  }
+
+  /** {@inheritDoc IPacker.isProfileSupported} */
+  isProfileSupported(profile: string) {
+    const { env, circuits, alg } = parseAcceptProfile(profile);
+    if (env !== this.mediaType()) {
+      return false;
+    }
+
+    const supportedCircuitIds = this.getSupportedCircuitIds();
+    const circuitIdSupported =
+      !circuits?.length || circuits.some((c) => supportedCircuitIds.includes(c));
+
+    const supportedAlgArr = this.getSupportedAlgorithms();
+    const algSupported =
+      !alg?.length || alg.some((a) => supportedAlgArr.includes(a as AcceptJwzAlgorithms));
+    return algSupported && circuitIdSupported;
+  }
+
+  private getSupportedAlgorithms(): AcceptJwzAlgorithms[] {
+    return [AcceptJwzAlgorithms.Groth16];
+  }
+
+  private getSupportedCircuitIds(): AcceptAuthCircuits[] {
+    return [AcceptAuthCircuits.AuthV2];
   }
 }
 

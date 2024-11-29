@@ -163,11 +163,14 @@ const betweenOperator = (
     throw new Error('$between/$nonbetween operator value should be 2 elements array');
   }
 
+  const [min, max] = b.map(BigInt);
+  const predicate = (val: bigint) => val >= min && val <= max;
+
   if (Array.isArray(a)) {
-    return a.every((val) => val >= b[0] && val <= b[1]);
+    return a.map(BigInt).every(predicate);
   }
 
-  return a >= b[0] && a <= b[1];
+  return predicate(BigInt(a));
 };
 
 export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFunction } = {
@@ -182,7 +185,7 @@ export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFun
   $gt: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     greaterThan(a, b),
   $lt: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
-    !greaterThan(a, b),
+    !greaterThanOrEqual(a, b),
   $ne: (a, b) => !equalsComparator(a, b),
   $gte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     greaterThanOrEqual(a, b),

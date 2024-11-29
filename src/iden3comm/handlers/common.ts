@@ -1,5 +1,6 @@
 import { getRandomBytes } from '@iden3/js-crypto';
 import {
+  BasicMessage,
   JsonDocumentObject,
   JWSPackerParams,
   ZeroKnowledgeProofQuery,
@@ -8,7 +9,7 @@ import {
 } from '../types';
 import { mergeObjects } from '../../utils';
 import { RevocationStatus, W3CCredential } from '../../verifiable';
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { MediaType } from '../constants';
@@ -133,4 +134,15 @@ export const processZeroKnowledgeProofRequests = async (
   }
 
   return zkpResponses;
+};
+
+/**
+ * Verifies that the expires_time field of a message is not in the past. Throws an error if it is.
+ *
+ * @param message - Basic message to verify.
+ */
+export const verifyExpiresTime = (message: BasicMessage) => {
+  if (message?.expires_time && message.expires_time < getUnixTimestamp(new Date())) {
+    throw new Error('Message expired');
+  }
 };
