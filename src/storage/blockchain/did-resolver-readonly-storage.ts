@@ -20,13 +20,7 @@ export class DidResolverStateReadonlyStorage implements IStateStorage {
       DID.parseFromId(Id.fromBigInt(id)),
       this.resolverUrl
     );
-    const vm = (didDocument as DIDDocument).verificationMethod?.find(
-      (i) => i.type === 'Iden3StateInfo2023'
-    );
-    if (!vm) {
-      throw new Error('Iden3StateInfo2023 verification method not found');
-    }
-    const { global } = vm as VerificationMethod;
+    const { global } = this.getIden3StateInfo2023(didDocument);
     if (!global) {
       throw new Error('GIST root not found');
     }
@@ -54,13 +48,7 @@ export class DidResolverStateReadonlyStorage implements IStateStorage {
         gist: Hash.fromBigInt(root)
       }
     );
-    const vm = (didDocument as DIDDocument).verificationMethod?.find(
-      (i) => i.type === 'Iden3StateInfo2023'
-    );
-    if (!vm) {
-      throw new Error('Iden3StateInfo2023 verification method not found');
-    }
-    const { global } = vm as VerificationMethod;
+    const { global } = this.getIden3StateInfo2023(didDocument);
     if (!global) {
       throw new Error('GIST root not found');
     }
@@ -70,9 +58,11 @@ export class DidResolverStateReadonlyStorage implements IStateStorage {
   getRpcProvider(): JsonRpcProvider {
     return new JsonRpcProvider();
   }
+
   publishState(): Promise<string> {
     throw new Error('publishState method not implemented.');
   }
+
   publishStateGeneric(): Promise<string> {
     throw new Error('publishStateGeneric method not implemented.');
   }
@@ -84,13 +74,17 @@ export class DidResolverStateReadonlyStorage implements IStateStorage {
       this.resolverUrl,
       opts
     );
-    const vm = (didDocument as DIDDocument).verificationMethod?.find(
-      (i) => i.type === 'Iden3StateInfo2023'
+    const { info } = this.getIden3StateInfo2023(didDocument);
+    return { ...info };
+  }
+
+  private getIden3StateInfo2023(didDocument: DIDDocument): VerificationMethod {
+    const vm: VerificationMethod | undefined = didDocument.verificationMethod?.find(
+      (i: VerificationMethod) => i.type === 'Iden3StateInfo2023'
     );
     if (!vm) {
       throw new Error('Iden3StateInfo2023 verification method not found');
     }
-    const { info } = vm as VerificationMethod;
-    return { ...info };
+    return vm;
   }
 }

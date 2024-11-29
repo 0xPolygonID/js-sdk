@@ -11,8 +11,9 @@ export class DidDocumentCredentialStatusResolver implements CredentialStatusReso
       throw new Error('IssuerDID is not set in options');
     }
 
-    const didString = opts?.issuerDID.string().replace(/:/g, '%3A');
-    const url = `${this.didResolverUrl}/1.0/credential-status/${didString}`;
+    const url = `${this.didResolverUrl}/1.0/credential-status/${encodeURIComponent(
+      opts.issuerDID.string()
+    )}`;
     const resp = await fetch(url, {
       method: 'POST',
       body: JSON.stringify(credentialStatus)

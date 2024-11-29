@@ -384,7 +384,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     );
   }
 
-  private static packGlobalStateMsg(msg: GlobalStateUpdate): string {
+  public static packGlobalStateMsg(msg: GlobalStateUpdate): string {
     return new ethers.AbiCoder().encode(
       [
         'tuple(' +
