@@ -12,7 +12,6 @@ import {
   BasicHandlerOptions,
   IProtocolMessageHandler
 } from './message-handler';
-import { prepareAuthV2ZeroKnowledgeResponse } from '../utils';
 /**
  * Interface that allows the processing of the contract request
  *
@@ -129,27 +128,17 @@ export class ContractRequestHandler
 
     const { scope = [] } = message.body;
 
-    let zkpResponses: ZeroKnowledgeProofResponse[] = [];
-
-    if (scope.length) {
-      zkpResponses = await processZeroKnowledgeProofRequests(
-        did,
-        scope,
-        verifierDid,
-        this._proofService,
-        {
-          ethSigner,
-          challenge,
-          supportedCircuits: this._supportedCircuits
-        }
-      );
-    } else {
-      zkpResponses = await prepareAuthV2ZeroKnowledgeResponse(
-        await ctx.ethSigner.getAddress(),
-        did,
-        this._proofService
-      );
-    }
+    const zkpResponses = await processZeroKnowledgeProofRequests(
+      did,
+      scope,
+      verifierDid,
+      this._proofService,
+      {
+        ethSigner,
+        challenge,
+        supportedCircuits: this._supportedCircuits
+      }
+    );
 
     const methodId = message.body.transaction_data.method_id.replace('0x', '');
     switch (methodId) {
