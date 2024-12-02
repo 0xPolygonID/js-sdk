@@ -55,6 +55,7 @@ export async function getPermitSignature(
  * @beta
  * getERC20Decimals is a function to retrieve the number of decimals of an ERC20 token
  * @param {string} tokenAddress - Token address
+ * @param {ethers.ContractRunner} runner - Contract runner
  */
 export async function getERC20Decimals(
   tokenAddress: string,
