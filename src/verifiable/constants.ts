@@ -154,6 +154,7 @@ export enum SupportedCurrencies {
   ETH_WEI = 'ETHWEI',
   ETH_GWEI = 'ETHGWEI',
   MATIC = 'MATIC',
+  POL = 'POL',
   USDT = 'USDT',
   USDC = 'USDC'
 }

@@ -1,6 +1,7 @@
-import { Contract, Signer } from 'ethers';
+import { Contract, Signer, ethers } from 'ethers';
 
-import abi from './abi/ERC20Permit.json';
+import permitAbi from './abi/ERC20Permit.json';
+import erc20Abi from './abi/ERC20.json';
 
 /**
  * @beta
@@ -19,7 +20,7 @@ export async function getPermitSignature(
   value: bigint,
   deadline: number
 ) {
-  const erc20PermitContract = new Contract(tokenAddress, abi, signer);
+  const erc20PermitContract = new Contract(tokenAddress, permitAbi, signer);
   const nonce = await erc20PermitContract.nonces(await signer.getAddress());
   const domainData = await erc20PermitContract.eip712Domain();
   const domain = {
@@ -48,4 +49,17 @@ export async function getPermitSignature(
   };
 
   return signer.signTypedData(domain, types, message);
+}
+
+/**
+ * @beta
+ * getERC20Decimals is a function to retrieve the number of decimals of an ERC20 token
+ * @param {string} tokenAddress - Token address
+ */
+export async function getERC20Decimals(
+  tokenAddress: string,
+  runner: ethers.ContractRunner
+): Promise<number> {
+  const erc20Contract = new Contract(tokenAddress, erc20Abi, runner);
+  return erc20Contract.decimals();
 }
