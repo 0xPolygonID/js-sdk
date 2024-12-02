@@ -94,7 +94,7 @@ export async function verifyEIP712TypedData(
       ? {
           recipient: data.recipient,
           amount: convertedAmount,
-          expirationDate: data.expirationDate,
+          expirationDate: getUnixTimestamp(new Date(data.expirationDate)),
           nonce: data.nonce,
           metadata: '0x'
         }
@@ -102,7 +102,7 @@ export async function verifyEIP712TypedData(
           tokenAddress: data.tokenAddress,
           recipient: data.recipient,
           amount: convertedAmount,
-          expirationDate: data.expirationDate,
+          expirationDate: getUnixTimestamp(new Date(data.expirationDate)),
           nonce: data.nonce,
           metadata: '0x'
         };
@@ -603,7 +603,7 @@ export class PaymentHandler
           recipient,
           amount: amount.toString(),
           currency,
-          expirationDate: getUnixTimestamp(expirationDateRequired).toString(),
+          expirationDate: expirationDateRequired.toISOString(),
           nonce: nonce.toString(),
           metadata: '0x',
           proof

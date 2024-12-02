@@ -467,7 +467,7 @@ describe('payment-request handler', () => {
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
         amount: '0.00003',
         currency: SupportedCurrencies.ETH_GWEI,
-        expirationDate: '2362135500',
+        expirationDate: '2044-11-07T12:45:00.000Z',
         nonce: '411390',
         metadata: '0x',
         proof: [
@@ -513,7 +513,7 @@ describe('payment-request handler', () => {
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
         amount: '0.00003',
         currency: 'USDT',
-        expirationDate: '2362135500',
+        expirationDate: '2044-11-07T12:45:00.000Z',
         nonce: '411390',
         metadata: '0x',
         proof: [
