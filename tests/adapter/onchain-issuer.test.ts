@@ -21,12 +21,11 @@ describe('OnchainIssuer', () => {
     const issuerDid = DID.parse(
       'did:polygonid:polygon:amoy:2qQ68JkRcf3xyDFsGSWU5QqxbKpzM75quxS628JgvJ'
     );
-    const userId = DID.idFromDID(
-      DID.parse('did:polygonid:polygon:amoy:2qQ68JkRcf3xyDFsGSWU5QqxbKpzM75quxS628JgvJ')
+    const userDid = DID.parse(
+      'did:polygonid:polygon:amoy:2qQ68JkRcf3xyDFsGSWU5QqxbKpzM75quxS628JgvJ'
     );
-    const adapter = new OnchainIssuer([copyDefaultEthConnectionConfig], issuerDid);
-    const cred = await adapter.getCredential(userId, BigInt(6));
-    console.log(JSON.stringify(cred.toJSON(), null, 2));
+    const adapter = new OnchainIssuer([copyDefaultEthConnectionConfig]);
+    const cred = await adapter.getCredential(issuerDid, userDid, BigInt(6));
     expect(W3CCredential.fromJSON(balanceCredentialHttpSchema)).to.deep.equal(cred);
   });
 
@@ -34,13 +33,13 @@ describe('OnchainIssuer', () => {
     const issuerDid = DID.parse(
       'did:polygonid:polygon:amoy:2qQ68JkRcf3z3923i5rrszrsJ4kdu4GKWARQ5eftsB'
     );
-    const userId = DID.idFromDID(
-      DID.parse('did:polygonid:polygon:amoy:2qZYiH9CFMoo6oTjSEot3qzkHFHhjLRLKp8yfwCYng')
+    const userId = DID.parse(
+      'did:polygonid:polygon:amoy:2qZYiH9CFMoo6oTjSEot3qzkHFHhjLRLKp8yfwCYng'
     );
-    const adapter = new OnchainIssuer([copyDefaultEthConnectionConfig], issuerDid, {
+    const adapter = new OnchainIssuer([copyDefaultEthConnectionConfig], {
       ipfsNodeURL: IPFS_URL
     });
-    const cred = await adapter.getCredential(userId, BigInt(0));
+    const cred = await adapter.getCredential(issuerDid, userId, BigInt(0));
     expect(W3CCredential.fromJSON(balanceCredentialIpfsSchema)).to.deep.equal(cred);
   });
 });

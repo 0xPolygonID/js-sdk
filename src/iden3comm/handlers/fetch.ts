@@ -149,17 +149,17 @@ export class FetchHandler
     if (!this.opts?.onchainIssuer) {
       throw new Error('onchain issuer is not provided');
     }
-
     const credentials: W3CCredential[] = [];
     for (const credentialInfo of offerMessage.body.credentials) {
-      const userId = DID.idFromDID(DID.parse(offerMessage.from));
+      const issuerDID = DID.parse(offerMessage.from);
+      const userDID = DID.parse(offerMessage.to);
       const credential = await this.opts.onchainIssuer.getCredential(
-        userId,
+        issuerDID,
+        userDID,
         BigInt(credentialInfo.id)
       );
       credentials.push(credential);
     }
-
     return credentials;
   }
 

@@ -1,4 +1,4 @@
-import { Id } from '@iden3/js-iden3-core';
+import { Id, DID } from '@iden3/js-iden3-core';
 import { W3CCredential } from '../../verifiable';
 
 /**
@@ -8,6 +8,6 @@ import { W3CCredential } from '../../verifiable';
  * @interface IOnchainIssuer
  */
 export interface IOnchainIssuer {
-  getCredential(userId: Id, credentialId: bigint): Promise<W3CCredential>;
-  getUserCredentialIds(userId: Id): Promise<bigint[]>;
+  getCredential(issuerDID: DID, userDID: DID, credentialId: bigint): Promise<W3CCredential>;
+  getUserCredentialIds(issuerDID: DID, userDID: DID): Promise<bigint[]>;
 }

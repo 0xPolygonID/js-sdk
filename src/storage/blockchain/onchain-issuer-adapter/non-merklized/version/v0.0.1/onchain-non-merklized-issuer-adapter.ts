@@ -16,6 +16,7 @@ import { JsonDocumentObject } from '../../../../../../iden3comm';
 import { ethers } from 'ethers';
 import { getDateFromUnixTimestamp } from '@iden3/js-iden3-core';
 import { Options } from '@iden3/js-jsonld-merklization';
+import { EthConnectionConfig } from '../../../../state';
 
 enum NonMerklizedIssuerInterfaces {
   InterfaceDetection = '0x01ffc9a7',
@@ -48,25 +49,30 @@ export class OnchainNonMerklizedIssuerAdapter {
   /**
    * Initializes an instance of `OnchainNonMerklizedIssuerAdapter`.
    *
-   * @param address The contract address of the non-merklized issuer.
-   * @param rpcUrl The URL of the blockchain RPC provider.
-   * @param chainId The chain ID of the blockchain network.
+   * @param ethConnectionConfig The configuration for the Ethereum connection.
    * @param issuerDid The decentralized identifier (DID) of the issuer.
    * @param merklizationOptions Optional settings for merklization.
    */
   constructor(
-    address: string,
+    ethConnectionConfig: EthConnectionConfig,
     options: {
-      rpcUrl: string;
-      chainId: number;
       issuerDid: DID;
       merklizationOptions?: Options;
     }
   ) {
-    const rpcProvider = new ethers.JsonRpcProvider(options.rpcUrl);
-    this._contract = NonMerklizedIssuerBase__factory.connect(address, rpcProvider);
-    this._contractAddress = address;
-    this._chainId = options.chainId;
+    if (!ethConnectionConfig.chainId) {
+      throw new Error('Chain ID is required');
+    }
+    this._chainId = ethConnectionConfig.chainId;
+
+    this._contractAddress = ethers.getAddress(
+      ethers.hexlify(Id.ethAddressFromId(DID.idFromDID(options.issuerDid)))
+    );
+    this._contract = NonMerklizedIssuerBase__factory.connect(
+      this._contractAddress,
+      new ethers.JsonRpcProvider(ethConnectionConfig.url)
+    );
+
     this._issuerDid = options.issuerDid;
     this._merklizationOptions = options.merklizationOptions;
   }
