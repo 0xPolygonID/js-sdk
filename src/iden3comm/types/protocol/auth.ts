@@ -38,6 +38,7 @@ export type AuthorizationRequestMessageBody = {
   message?: string;
   did_doc?: DIDDocument;
   scope: Array<ZeroKnowledgeProofRequest>;
+  accept?: string[];
 };
 
 /** ZeroKnowledgeProofRequest represents structure of zkp request object */

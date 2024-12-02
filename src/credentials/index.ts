@@ -4,6 +4,7 @@ export * from './status/sparse-merkle-tree';
 export * from './status/resolver';
 export * from './status/agent-revocation';
 export * from './status/credential-status-publisher';
+export * from './status/did-resolver-revocation';
 export * from './credential-wallet';
 export * from './rhs';
 export * from './utils';

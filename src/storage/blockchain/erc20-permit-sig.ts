@@ -23,6 +23,7 @@ export async function getPermitSignature(
   const nonce = await erc20PermitContract.nonces(await signer.getAddress());
   const domainData = await erc20PermitContract.eip712Domain();
   const domain = {
+    name: domainData[1],
     version: domainData[2],
     chainId: domainData[3],
     verifyingContract: tokenAddress

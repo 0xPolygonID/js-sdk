@@ -19,7 +19,12 @@ import { byteDecoder, byteEncoder } from '../../utils';
 import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
+import { verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
 
 /**
@@ -29,13 +34,31 @@ import { IOnchainIssuer } from '../../storage';
  * @public
  * @interface FetchHandlerOptions
  */
-export type FetchHandlerOptions = {
+export type FetchHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
   headers?: {
     [key: string]: string;
   };
 };
+
+/**
+ *
+ * Options to pass to fetch request handler
+ *
+ * @public
+ * @interface FetchRequestOptions
+ */
+export type FetchRequestOptions = BasicHandlerOptions;
+
+/**
+ *
+ * Options to pass to issuance response handler
+ *
+ * @public
+ * @interface IssuanceResponseOptions
+ */
+export type IssuanceResponseOptions = BasicHandlerOptions;
 
 export type FetchMessageHandlerOptions = FetchHandlerOptions;
 
@@ -66,7 +89,10 @@ export interface IFetchHandler {
    * @returns A promise that resolves to the response message.
    * @throws An error if the request is invalid or if the credential is not found.
    */
-  handleCredentialFetchRequest(basicMessage: Uint8Array): Promise<Uint8Array>;
+  handleCredentialFetchRequest(
+    basicMessage: Uint8Array,
+    opts?: FetchRequestOptions
+  ): Promise<Uint8Array>;
 
   /**
    * Handles the issuance response message.
@@ -75,7 +101,10 @@ export interface IFetchHandler {
    * @returns A promise that resolves to a Uint8Array.
    * @throws An error if the credential wallet is not provided in the options or if the credential is missing in the issuance response message.
    */
-  handleIssuanceResponseMessage(basicMessage: Uint8Array): Promise<Uint8Array>;
+  handleIssuanceResponseMessage(
+    basicMessage: Uint8Array,
+    opts?: IssuanceResponseOptions
+  ): Promise<Uint8Array>;
 }
 /**
  *
@@ -265,7 +294,9 @@ export class FetchHandler
       offer,
       PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE
     );
-
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(offerMessage);
+    }
     const result = await this.handleOfferMessage(offerMessage, {
       mediaType: opts?.mediaType,
       headers: opts?.headers,
@@ -341,13 +372,18 @@ export class FetchHandler
   /**
    * @inheritdoc IFetchHandler#handleCredentialFetchRequest
    */
-  async handleCredentialFetchRequest(envelope: Uint8Array): Promise<Uint8Array> {
+  async handleCredentialFetchRequest(
+    envelope: Uint8Array,
+    opts?: FetchRequestOptions
+  ): Promise<Uint8Array> {
     const msgRequest = await FetchHandler.unpackMessage<CredentialFetchRequestMessage>(
       this._packerMgr,
       envelope,
       PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE
     );
-
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(msgRequest);
+    }
     const request = await this.handleFetchRequest(msgRequest);
 
     return this._packerMgr.pack(
@@ -374,15 +410,19 @@ export class FetchHandler
   /**
    * @inheritdoc IFetchHandler#handleIssuanceResponseMessage
    */
-  async handleIssuanceResponseMessage(envelop: Uint8Array): Promise<Uint8Array> {
+  async handleIssuanceResponseMessage(
+    envelop: Uint8Array,
+    opts?: IssuanceResponseOptions
+  ): Promise<Uint8Array> {
     const issuanceMsg = await FetchHandler.unpackMessage<CredentialIssuanceMessage>(
       this._packerMgr,
       envelop,
       PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE
     );
-
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(issuanceMsg);
+    }
     await this.handleIssuanceResponseMsg(issuanceMsg);
-
     return Uint8Array.from([]);
   }
 

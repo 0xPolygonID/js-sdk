@@ -82,7 +82,7 @@ export const resolveDIDDocumentAuth = async (
   resolveURL: string,
   state?: Hash
 ): Promise<VerificationMethod | undefined> => {
-  let url = `${resolveURL}/${did.string().replace(/:/g, '%3A')}`;
+  let url = `${resolveURL}/${encodeURIComponent(did.string())}`;
   if (state) {
     url += `?state=${state.hex()}`;
   }
@@ -115,11 +115,11 @@ export const resolveDidDocument = async (
     signature?: DIDDocumentSignature;
   }
 ): Promise<DIDResolutionMetadata> => {
-  let didString = did.string().replace(/:/g, '%3A');
+  let didString = encodeURIComponent(did.string());
   // for gist resolve we have to `hide` user did (look into resolver implementation)
   const isGistRequest = opts?.gist && !opts.state;
   if (isGistRequest) {
-    didString = emptyStateDID(did).string();
+    didString = encodeURIComponent(emptyStateDID(did).string());
   }
   let url = `${resolverUrl}/1.0/identifiers/${didString}`;
 
