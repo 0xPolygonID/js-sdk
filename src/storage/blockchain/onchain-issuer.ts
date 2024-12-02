@@ -47,7 +47,7 @@ export class OnchainIssuer implements IOnchainIssuer {
           issuerDid: issuerDID,
           merklizationOptions: this._merklizationOptions
         });
-        await adapter.isSupportsInterface();
+        await adapter.isInterfaceSupported();
         const { credentialData, coreClaimBigInts, credentialSubjectFields } =
           await adapter.getCredential(DID.idFromDID(userDID), credentialId);
         return await adapter.convertOnChainInfoToW3CCredential(
@@ -75,7 +75,7 @@ export class OnchainIssuer implements IOnchainIssuer {
           issuerDid: issuerDID,
           merklizationOptions: this._merklizationOptions
         });
-        await adapter.isSupportsInterface();
+        await adapter.isInterfaceSupported();
         return await adapter.getUserCredentialsIds(DID.idFromDID(userDID));
       }
       default:

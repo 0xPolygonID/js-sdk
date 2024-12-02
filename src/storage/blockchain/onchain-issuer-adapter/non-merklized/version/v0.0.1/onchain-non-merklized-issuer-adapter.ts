@@ -83,7 +83,7 @@ export class OnchainNonMerklizedIssuerAdapter {
    *
    * @throws Error - If required interfaces are not supported.
    */
-  public async isSupportsInterface() {
+  public async isInterfaceSupported() {
     const supportedInterfaces = [
       {
         name: 'Interface detection ERC-165',
