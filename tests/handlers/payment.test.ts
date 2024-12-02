@@ -35,7 +35,7 @@ import {
 import { expect } from 'chai';
 import path from 'path';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { DID } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import {
   convertPaymentAmount,
   createPayment,
@@ -342,7 +342,7 @@ describe('payment-request handler', () => {
         const paymentData = {
           recipient: data.recipient,
           amount: convertedAmount,
-          expirationDate: data.expirationDate,
+          expirationDate: getUnixTimestamp(new Date(data.expirationDate)),
           nonce: data.nonce,
           metadata: data.metadata
         };
@@ -364,7 +364,7 @@ describe('payment-request handler', () => {
           tokenAddress: data.tokenAddress,
           recipient: data.recipient,
           amount: convertedAmount,
-          expirationDate: data.expirationDate,
+          expirationDate: getUnixTimestamp(new Date(data.expirationDate)),
           nonce: data.nonce,
           metadata: data.metadata
         };
@@ -375,7 +375,7 @@ describe('payment-request handler', () => {
             data.tokenAddress,
             await payContract.getAddress(),
             convertedAmount,
-            +data.expirationDate
+            getUnixTimestamp(new Date(data.expirationDate))
           );
           const txData = await payContract.payERC20Permit(
             permitSignature,
@@ -835,7 +835,7 @@ describe('payment-request handler', () => {
           description: 'Iden3PaymentRailsRequestV1 payment-request integration test',
           chains: [
             {
-              nonce: 1000412n,
+              nonce: 1000413n,
               amount: '0.001',
               currency: SupportedCurrencies.ETH_GWEI,
               chainId: '80002',
@@ -860,7 +860,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '1000412'
+      nonce: '1000413'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -891,7 +891,7 @@ describe('payment-request handler', () => {
           description: 'Iden3PaymentRailsERC20RequestV1 payment-request integration test',
           chains: [
             {
-              nonce: 220011n,
+              nonce: 220012n,
               amount: '0.000001',
               currency: 'USDT',
               chainId: '80002',
@@ -909,8 +909,6 @@ describe('payment-request handler', () => {
       ]
     );
 
-    console.log(JSON.stringify(paymentRequest));
-
     const msgBytesRequest = await packageManager.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
@@ -918,7 +916,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '220011',
+      nonce: '220012',
       erc20TokenApproveHandler: async (data: Iden3PaymentRailsERC20RequestV1) => {
         const token = new Contract(data.tokenAddress, erc20Abi, ethSigner);
         const convertedAmount = await convertPaymentAmount(
@@ -963,7 +961,7 @@ describe('payment-request handler', () => {
           chains: [
             {
               features: [PaymentFeatures.EIP_2612],
-              nonce: 330004n,
+              nonce: 330005n,
               amount: '0.000002',
               currency: 'USDT',
               chainId: '80002',
@@ -988,7 +986,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '330004'
+      nonce: '330005'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
