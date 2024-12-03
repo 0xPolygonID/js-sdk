@@ -55,8 +55,8 @@ export class OnchainNonMerklizedIssuerAdapter {
    */
   constructor(
     ethConnectionConfig: EthConnectionConfig,
-    options: {
-      issuerDid: DID;
+    issuerDid: DID,
+    options?: {
       merklizationOptions?: Options;
     }
   ) {
@@ -66,15 +66,15 @@ export class OnchainNonMerklizedIssuerAdapter {
     this._chainId = ethConnectionConfig.chainId;
 
     this._contractAddress = ethers.getAddress(
-      ethers.hexlify(Id.ethAddressFromId(DID.idFromDID(options.issuerDid)))
+      ethers.hexlify(Id.ethAddressFromId(DID.idFromDID(issuerDid)))
     );
     this._contract = NonMerklizedIssuerBase__factory.connect(
       this._contractAddress,
       new ethers.JsonRpcProvider(ethConnectionConfig.url)
     );
 
-    this._issuerDid = options.issuerDid;
-    this._merklizationOptions = options.merklizationOptions;
+    this._issuerDid = issuerDid;
+    this._merklizationOptions = options?.merklizationOptions;
   }
 
   /**

@@ -43,8 +43,7 @@ export class OnchainIssuer implements IOnchainIssuer {
     const response = await contract.getCredentialAdapterVersion();
     switch (response) {
       case '0.0.1': {
-        const adapter = new OnchainNonMerklizedIssuerAdapter(connection, {
-          issuerDid: issuerDID,
+        const adapter = new OnchainNonMerklizedIssuerAdapter(connection, issuerDID, {
           merklizationOptions: this._merklizationOptions
         });
         await adapter.isInterfaceSupported();
@@ -71,8 +70,7 @@ export class OnchainIssuer implements IOnchainIssuer {
     const response = await contract.getCredentialAdapterVersion();
     switch (response) {
       case '0.0.1': {
-        const adapter = new OnchainNonMerklizedIssuerAdapter(connection, {
-          issuerDid: issuerDID,
+        const adapter = new OnchainNonMerklizedIssuerAdapter(connection, issuerDID, {
           merklizationOptions: this._merklizationOptions
         });
         await adapter.isInterfaceSupported();

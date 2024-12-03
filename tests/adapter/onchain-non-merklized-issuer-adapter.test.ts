@@ -85,9 +85,7 @@ describe('Convertor v0.0.1', () => {
         url: 'http://localhost:8545',
         chainId: 80001
       },
-      {
-        issuerDid: issuerDid
-      }
+      issuerDid
     );
     const w3cCredential = await adapter.convertOnChainInfoToW3CCredential(
       res[0] as INonMerklizedIssuer.CredentialDataStructOutput,
@@ -159,8 +157,8 @@ describe('Convertor v0.0.1', () => {
         url: 'http://localhost:8545',
         chainId: 80002
       },
+      issuerDid,
       {
-        issuerDid: issuerDid,
         merklizationOptions: {
           ipfsNodeURL: IPFS_URL
         }
