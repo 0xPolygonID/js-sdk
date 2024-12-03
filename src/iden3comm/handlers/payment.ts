@@ -33,7 +33,7 @@ import {
   SupportedCurrencies,
   SupportedPaymentProofType
 } from '../../verifiable';
-import { Signer, ethers } from 'ethers';
+import { Signer, ethers, parseEther, parseUnits } from 'ethers';
 import { Resolvable } from 'did-resolver';
 import { verifyExpiresTime } from './common';
 
@@ -85,20 +85,24 @@ export async function verifyEIP712TypedData(
   data: Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1,
   resolver: Resolvable
 ): Promise<string> {
+  const convertedAmount = await convertPaymentAmount(
+    data.amount,
+    data.currency as SupportedCurrencies
+  );
   const paymentData =
     data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
       ? {
           recipient: data.recipient,
-          amount: data.amount,
-          expirationDate: new Date(data.expirationDate).getTime(),
+          amount: convertedAmount,
+          expirationDate: getUnixTimestamp(new Date(data.expirationDate)),
           nonce: data.nonce,
           metadata: '0x'
         }
       : {
           tokenAddress: data.tokenAddress,
           recipient: data.recipient,
-          amount: data.amount,
-          expirationDate: new Date(data.expirationDate).getTime(),
+          amount: convertedAmount,
+          expirationDate: getUnixTimestamp(new Date(data.expirationDate)),
           nonce: data.nonce,
           metadata: '0x'
         };
@@ -130,6 +134,34 @@ export async function verifyEIP712TypedData(
   throw new Error(`failed request. no matching verificationMethod`);
 }
 
+export async function convertPaymentAmount(
+  amount: string,
+  currency: SupportedCurrencies
+): Promise<bigint> {
+  let convertedAmount = 0n;
+  switch (currency) {
+    case SupportedCurrencies.ETH:
+    case SupportedCurrencies.POL:
+    case SupportedCurrencies.MATIC:
+      convertedAmount = parseEther(amount.toString());
+      break;
+    case SupportedCurrencies.ETH_WEI:
+      convertedAmount = parseUnits(amount.toString(), 'wei');
+      break;
+    case SupportedCurrencies.ETH_GWEI:
+      convertedAmount = parseUnits(amount.toString(), 'gwei');
+      break;
+    case SupportedCurrencies.USDC:
+    case SupportedCurrencies.USDT: {
+      convertedAmount = parseUnits(amount.toString(), 6);
+      break;
+    }
+    default:
+      throw new Error(`failed request. unsupported currency ${currency}`);
+  }
+  return convertedAmount;
+}
+
 /**
  * @beta
  * PaymentRailsInfo represents payment info for payment rails
@@ -149,10 +181,10 @@ export type PaymentRailsInfo = {
  */
 export type PaymentRailsChainInfo = {
   nonce: bigint;
-  amount: bigint;
+  amount: string;
   currency: SupportedCurrencies | string;
   chainId: string;
-  expirationDate?: string;
+  expirationDate?: Date;
   features?: PaymentFeatures[];
   type:
     | PaymentRequestDataType.Iden3PaymentRailsRequestV1
@@ -514,27 +546,28 @@ export class PaymentHandler
         if (type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 && !tokenAddress) {
           throw new Error(`failed request. no token address for currency ${currency}`);
         }
-        const expirationTime = expirationDate
-          ? new Date(expirationDate).getTime()
-          : new Date(new Date().setHours(new Date().getHours() + 1)).getTime();
+        const expirationDateRequired =
+          expirationDate ?? new Date(new Date().setHours(new Date().getHours() + 1));
         const typeUrl = `https://schema.iden3.io/core/json/${type}.json`;
         const typesFetchResult = await fetch(typeUrl);
         const types = await typesFetchResult.json();
         delete types.EIP712Domain;
+
+        const convertedAmount = await convertPaymentAmount(amount, currency as SupportedCurrencies);
         const paymentData =
           type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
             ? {
                 recipient,
-                amount,
-                expirationDate: expirationTime,
+                amount: convertedAmount,
+                expirationDate: getUnixTimestamp(expirationDateRequired),
                 nonce,
                 metadata: '0x'
               }
             : {
                 tokenAddress,
                 recipient,
-                amount,
-                expirationDate: expirationTime,
+                amount: convertedAmount,
+                expirationDate: getUnixTimestamp(expirationDateRequired),
                 nonce,
                 metadata: '0x'
               };
@@ -570,7 +603,7 @@ export class PaymentHandler
           recipient,
           amount: amount.toString(),
           currency,
-          expirationDate: new Date(expirationTime).toISOString(),
+          expirationDate: expirationDateRequired.toISOString(),
           nonce: nonce.toString(),
           metadata: '0x',
           proof
