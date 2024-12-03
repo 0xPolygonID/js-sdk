@@ -72,7 +72,7 @@ describe('sig onchain proofs', () => {
         replacedAtBlock: 0n
       });
     },
-    getRpcProvider() {
+    getProvider() {
       return new JsonRpcProvider(RPC_URL);
     }
   };

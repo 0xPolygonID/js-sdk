@@ -1,7 +1,7 @@
 import { RootInfo, StateProof } from './../entities/state';
 import { ZKProof } from '@iden3/js-jwz';
 import { IStateStorage, UserStateTransitionInfo } from '../interfaces/state';
-import { Contract, JsonRpcProvider, Signer, TransactionRequest } from 'ethers';
+import { Contract, JsonRpcProvider, Provider, Signer, TransactionRequest } from 'ethers';
 import { StateInfo } from '../entities/state';
 import { StateTransitionPubSignals } from '../../circuits';
 import { byteEncoder } from '../../utils';
@@ -67,7 +67,7 @@ export class EthStateStorage implements IStateStorage {
     const config = Array.isArray(ethConfig) ? ethConfig[0] : ethConfig;
     this.provider = new JsonRpcProvider(config.url);
     this.stateContract = new Contract(config.contractAddress, abi, this.provider);
-    this._transactionService = new TransactionService(this.getRpcProvider());
+    this._transactionService = new TransactionService(this.getProvider());
   }
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
@@ -230,8 +230,8 @@ export class EthStateStorage implements IStateStorage {
     };
   }
 
-  /** {@inheritdoc IStateStorage.getRpcProvider} */
-  getRpcProvider(): JsonRpcProvider {
+  /** {@inheritdoc IStateStorage.getProvider} */
+  getProvider(): Provider {
     return this.provider;
   }
 

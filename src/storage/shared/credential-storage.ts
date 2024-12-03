@@ -31,7 +31,7 @@ export class CredentialStorage implements ICredentialStorage {
 
   /** @inheritdoc */
   async saveCredential(credential: W3CCredential): Promise<void> {
-    return this._dataSource.save(credential.id, credential.toJSON());
+    return this._dataSource.save(credential.id, credential.toJSON() as W3CCredential);
   }
 
   /** {@inheritdoc ICredentialStorage.listCredentials } */

@@ -4,6 +4,8 @@ import {
   CredentialOffer,
   CredentialsOfferMessage,
   DIDDocument,
+  Iden3Directive,
+  Iden3DirectiveType,
   IPackageManager,
   JsonDocumentObject,
   PackerParams
@@ -19,7 +21,7 @@ import {
   ProposalMessage
 } from '../types/protocol/proposal-request';
 import { IIdentityWallet } from '../../identity';
-import { byteEncoder } from '../../utils';
+import { byteDecoder, byteEncoder } from '../../utils';
 import { W3CCredential } from '../../verifiable';
 import {
   AbstractMessageHandler,
@@ -31,8 +33,12 @@ import { verifyExpiresTime } from './common';
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; data?: JsonDocumentObject };
+  metadata?: {
+    type: string;
+    data: JsonDocumentObject | JsonDocumentObject[];
+  };
   did_doc?: DIDDocument;
+  thid?: string;
   expires_time?: Date;
 };
 
@@ -57,7 +63,7 @@ export function createProposalRequest(
   const uuidv4 = uuid.v4();
   const request: ProposalRequestMessage = {
     id: uuidv4,
-    thid: uuidv4,
+    thid: opts.thid ?? uuidv4,
     from: sender.string(),
     to: receiver.string(),
     typ: MediaType.PlainMessage,
@@ -116,6 +122,21 @@ export interface ICredentialProposalHandler {
   parseProposalRequest(request: Uint8Array): Promise<ProposalRequestMessage>;
 
   /**
+   * @beta
+   * creates proposal-request
+   * @param {ProposalRequestCreationOptions} params - creation options
+   * @returns `Promise<ProposalRequestMessage>`
+   */
+  createProposalRequestPacked(
+    params: {
+      thid: string;
+      sender: DID;
+      receiver: DID;
+      directives?: Iden3Directive[];
+    } & ProposalRequestCreationOptions
+  ): Promise<{ request: ProposalRequestMessage; token: string }>;
+
+  /**
    *  @beta
    * handle proposal-request
    * @param {Uint8Array} request - raw byte message
@@ -155,7 +176,11 @@ export type ProposalHandlerOptions = BasicHandlerOptions & {
 /** @beta CredentialProposalHandlerParams represents credential proposal handler params */
 export type CredentialProposalHandlerParams = {
   agentUrl: string;
-  proposalResolverFn: (context: string, type: string) => Promise<Proposal>;
+  proposalResolverFn: (
+    context: string,
+    type: string,
+    request?: ProposalRequestMessage
+  ) => Promise<Proposal>;
   packerParams: PackerParams;
 };
 
@@ -184,6 +209,73 @@ export class CredentialProposalHandler
     private readonly _params: CredentialProposalHandlerParams
   ) {
     super();
+  }
+
+  /**
+   * @inheritdoc ICredentialProposalHandler#createProposalRequest
+   */
+  async createProposalRequestPacked(
+    params: {
+      thid: string;
+      sender: DID;
+      receiver: DID;
+      directives?: Iden3Directive[];
+    } & ProposalRequestCreationOptions
+  ): Promise<{ request: ProposalRequestMessage; token: string }> {
+    const thid = params.thid ?? uuid.v4();
+
+    const directives = (params.directives ?? []).filter(
+      (directive) => directive.purpose === PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE
+    );
+
+    const credentialsToRequest: ProposalRequestCredential[] = [...params.credentials];
+
+    const result = directives.reduce<{
+      metadata: {
+        type: string;
+        data: JsonDocumentObject[];
+      };
+      credentialsToRequest: ProposalRequestCredential[];
+    }>(
+      (acc, directive) => {
+        if (directive.type !== Iden3DirectiveType.TransparentPaymentDirective) {
+          return acc;
+        }
+        const directiveCredentials: ProposalRequestCredential[] = (
+          directive.paymentData ?? []
+        ).flatMap((p) => p.credentials);
+        acc.credentialsToRequest = [...acc.credentialsToRequest, ...directiveCredentials];
+        delete directive.purpose;
+        const meta = Array.isArray(acc.metadata.data) ? acc.metadata.data : [acc.metadata.data];
+        acc.metadata.data = [...meta, directive as JsonDocumentObject];
+        return acc;
+      },
+      {
+        metadata: {
+          type: 'Iden3Metadata',
+          data: []
+        },
+        credentialsToRequest
+      }
+    );
+
+    const msg = createProposalRequest(params.sender, params.receiver, {
+      credentials: result.credentialsToRequest,
+      metadata: result.metadata,
+      did_doc: params.did_doc,
+      thid
+    });
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(msg));
+
+    const token = byteDecoder.decode(
+      await this._packerMgr.pack(msg.typ ?? MediaType.PlainMessage, msgBytes, {
+        senderDID: params.sender,
+        ...this._params.packerParams
+      })
+    );
+
+    return { request: msg, token };
   }
 
   public async handle(
@@ -283,7 +375,11 @@ export class CredentialProposalHandler
       }
 
       // credential not found in the wallet, prepare proposal protocol message
-      const proposal = await this._params.proposalResolverFn(cred.context, cred.type);
+      const proposal = await this._params.proposalResolverFn(
+        cred.context,
+        cred.type,
+        proposalRequest
+      );
       if (!proposal) {
         throw new Error(`can't resolve Proposal for type: ${cred.type}, context: ${cred.context}`);
       }

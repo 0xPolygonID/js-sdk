@@ -295,9 +295,15 @@ export class CredentialWallet implements ICredentialWallet {
     cr.id = `urn:${uuid.v4()}`;
     cr['@context'] = context;
     cr.type = credentialType;
-    cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
-    cr.refreshService = request.refreshService;
-    cr.displayMethod = request.displayMethod;
+    if (expirationDate) {
+      cr.expirationDate = new Date(expirationDate * 1000).toISOString();
+    }
+    if (request.refreshService) {
+      cr.refreshService = request.refreshService;
+    }
+    if (request.displayMethod) {
+      cr.displayMethod = request.displayMethod;
+    }
     cr.issuanceDate = new Date().toISOString();
     cr.credentialSubject = credentialSubject;
     cr.issuer = issuer.string();

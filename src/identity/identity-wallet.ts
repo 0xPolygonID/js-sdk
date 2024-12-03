@@ -507,7 +507,7 @@ export class IdentityWallet implements IIdentityWallet {
   ) {
     this._credentialStatusPublisherRegistry = this.getCredentialStatusPublisherRegistry(_opts);
     this._inputsGenerator = new InputGenerator(this, _credentialWallet, _storage.states);
-    this._transactionService = new TransactionService(_storage.states.getRpcProvider());
+    this._transactionService = new TransactionService(_storage.states.getProvider());
   }
 
   get credentialWallet(): ICredentialWallet {
