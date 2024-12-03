@@ -37,7 +37,9 @@ describe('OnchainIssuer', () => {
       'did:polygonid:polygon:amoy:2qZYiH9CFMoo6oTjSEot3qzkHFHhjLRLKp8yfwCYng'
     );
     const adapter = new OnchainIssuer([copyDefaultEthConnectionConfig], {
-      ipfsNodeURL: IPFS_URL
+      merklizationOptions: {
+        ipfsNodeURL: IPFS_URL
+      }
     });
     const cred = await adapter.getCredential(issuerDid, userId, BigInt(0));
     expect(W3CCredential.fromJSON(balanceCredentialIpfsSchema)).to.deep.equal(cred);

@@ -7,6 +7,10 @@ import { OnchainNonMerklizedIssuerAdapter } from './onchain-issuer-adapter/non-m
 import { EthConnectionConfig } from './state';
 import { IOnchainIssuer } from '../interfaces/onchain-issuer';
 
+interface OnchainIssuerOptions {
+  merklizationOptions?: Options;
+}
+
 /**
  * Represents an adapter for interacting with on-chain issuers.
  *
@@ -16,16 +20,16 @@ import { IOnchainIssuer } from '../interfaces/onchain-issuer';
  */
 export class OnchainIssuer implements IOnchainIssuer {
   private readonly _ethConnectionConfig: EthConnectionConfig[];
-  private readonly _merklizationOptions?: Options;
+  private readonly _onchainIssuerOptions?: OnchainIssuerOptions;
 
   /**
    * Initializes an instance of `Adapter`.
    * @param config The configuration for the Ethereum connection.
    * @param merklizationOptions Optional settings for merklization.
    */
-  constructor(config: EthConnectionConfig[], options?: Options) {
+  constructor(config: EthConnectionConfig[], options?: OnchainIssuerOptions) {
     this._ethConnectionConfig = config;
-    this._merklizationOptions = options;
+    this._onchainIssuerOptions = options;
   }
 
   /**
@@ -44,7 +48,7 @@ export class OnchainIssuer implements IOnchainIssuer {
     switch (response) {
       case '0.0.1': {
         const adapter = new OnchainNonMerklizedIssuerAdapter(connection, issuerDID, {
-          merklizationOptions: this._merklizationOptions
+          merklizationOptions: this._onchainIssuerOptions?.merklizationOptions
         });
         await adapter.isInterfaceSupported();
         const { credentialData, coreClaimBigInts, credentialSubjectFields } =
@@ -71,7 +75,7 @@ export class OnchainIssuer implements IOnchainIssuer {
     switch (response) {
       case '0.0.1': {
         const adapter = new OnchainNonMerklizedIssuerAdapter(connection, issuerDID, {
-          merklizationOptions: this._merklizationOptions
+          merklizationOptions: this._onchainIssuerOptions?.merklizationOptions
         });
         await adapter.isInterfaceSupported();
         return await adapter.getUserCredentialsIds(DID.idFromDID(userDID));
