@@ -24,6 +24,10 @@ export type PublishMode = 'sync' | 'async' | 'callback';
  */
 export interface CredentialRequest {
   /**
+   * Credential ID
+   */
+  id?: string;
+  /**
    * JSON credential schema
    */
   credentialSchema: string;
@@ -64,6 +68,10 @@ export interface CredentialRequest {
    * merklizedRootPosition (index / value / none)
    */
   merklizedRootPosition?: MerklizedRootPosition;
+  /**
+   * issuance Date
+   */
+  issuanceDate?: number;
 
   /**
    * Revocation options

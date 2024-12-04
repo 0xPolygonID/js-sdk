@@ -1,4 +1,4 @@
-import { DID, getChainId } from '@iden3/js-iden3-core';
+import { DID } from '@iden3/js-iden3-core';
 import { IDataStorage } from '../storage/interfaces';
 import {
   W3CCredential,
@@ -266,100 +266,22 @@ export class CredentialWallet implements ICredentialWallet {
     if (!schema.$metadata.uris['jsonLdContext']) {
       throw new Error('jsonLdContext is missing is the schema');
     }
-    request.context = request.context ?? [];
+    // do copy of request to avoid mutation
+    const r = { ...request };
+    r.context = r.context ?? [];
     if (
-      request.displayMethod?.type === DisplayMethodType.Iden3BasicDisplayMethodV1 &&
-      !request.context.includes(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD)
+      r.displayMethod?.type === DisplayMethodType.Iden3BasicDisplayMethodV1 &&
+      !r.context.includes(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD)
     ) {
-      request.context.push(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD);
+      r.context.push(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD);
     }
-    const context = [
-      VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018,
-      ...request.context,
-      VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL,
-      schema.$metadata.uris['jsonLdContext']
-    ];
+    r.context.push(schema.$metadata.uris['jsonLdContext']);
+    r.expiration = r.expiration ? r.expiration * 1000 : undefined;
+    r.id = r.id ? r.id : `urn:${uuid.v4()}`;
+    r.issuanceDate = r.issuanceDate ? r.issuanceDate * 1000 : Date.now();
 
-    const credentialType = [
-      VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
-      request.type
-    ];
-
-    const expirationDate =
-      !request.expiration || request.expiration == 0 ? null : request.expiration;
-
-    const credentialSubject = request.credentialSubject;
-    credentialSubject['type'] = request.type;
-
-    const cr = new W3CCredential();
-    cr.id = `urn:${uuid.v4()}`;
-    cr['@context'] = context;
-    cr.type = credentialType;
-    cr.expirationDate = expirationDate ? new Date(expirationDate * 1000).toISOString() : undefined;
-    cr.refreshService = request.refreshService;
-    cr.displayMethod = request.displayMethod;
-    cr.issuanceDate = new Date().toISOString();
-    cr.credentialSubject = credentialSubject;
-    cr.issuer = issuer.string();
-    cr.credentialSchema = {
-      id: request.credentialSchema,
-      type: VerifiableConstants.JSON_SCHEMA_VALIDATOR
-    };
-
-    cr.credentialStatus = this.buildCredentialStatus(request, issuer);
-
-    return cr;
+    return W3CCredential.fromCredentialRequest(issuer, r);
   };
-
-  /**
-   * Builds credential status
-   * @param {CredentialRequest} request
-   * @returns `CredentialStatus`
-   */
-  private buildCredentialStatus(request: CredentialRequest, issuer: DID): CredentialStatus {
-    const credentialStatus: CredentialStatus = {
-      id: request.revocationOpts.id,
-      type: request.revocationOpts.type,
-      revocationNonce: request.revocationOpts.nonce
-    };
-
-    switch (request.revocationOpts.type) {
-      case CredentialStatusType.SparseMerkleTreeProof:
-        return {
-          ...credentialStatus,
-          id: `${credentialStatus.id.replace(/\/$/, '')}/${credentialStatus.revocationNonce}`
-        };
-      case CredentialStatusType.Iden3ReverseSparseMerkleTreeProof:
-        return {
-          ...credentialStatus,
-          id: request.revocationOpts.issuerState
-            ? `${credentialStatus.id.replace(/\/$/, '')}/node?state=${
-                request.revocationOpts.issuerState
-              }`
-            : `${credentialStatus.id.replace(/\/$/, '')}`
-        };
-      case CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023: {
-        const issuerId = DID.idFromDID(issuer);
-        const chainId = getChainId(DID.blockchainFromId(issuerId), DID.networkIdFromId(issuerId));
-        const searchParams = [
-          ['revocationNonce', request.revocationOpts.nonce?.toString() || ''],
-          ['contractAddress', `${chainId}:${request.revocationOpts.id}`],
-          ['state', request.revocationOpts.issuerState || '']
-        ]
-          .filter(([, value]) => Boolean(value))
-          .map(([key, value]) => `${key}=${value}`)
-          .join('&');
-
-        return {
-          ...credentialStatus,
-          // `[did]:[methodid]:[chain]:[network]:[id]/credentialStatus?(revocationNonce=value)&[contractAddress=[chainID]:[contractAddress]]&(state=issuerState)`
-          id: `${issuer.string()}/credentialStatus?${searchParams}`
-        };
-      }
-      default:
-        return credentialStatus;
-    }
-  }
 
   /**
    * {@inheritDoc ICredentialWallet.findById}

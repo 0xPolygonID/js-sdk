@@ -6,6 +6,7 @@ import {
   CredentialFetchRequestMessage,
   CredentialIssuanceMessage,
   CredentialsOfferMessage,
+  CredentialsOnchainOfferMessage,
   IPackageManager,
   JWSPackerParams,
   MessageFetchRequestMessage
@@ -24,6 +25,7 @@ import {
   IProtocolMessageHandler
 } from './message-handler';
 import { verifyExpiresTime } from './common';
+import { IOnchainIssuer } from '../../storage';
 
 /**
  *
@@ -128,6 +130,7 @@ export class FetchHandler
     private readonly _packerMgr: IPackageManager,
     private readonly opts?: {
       credentialWallet: ICredentialWallet;
+      onchainIssuer?: IOnchainIssuer;
     }
   ) {
     super();
@@ -152,9 +155,41 @@ export class FetchHandler
         return this.handleFetchRequest(message as CredentialFetchRequestMessage);
       case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE:
         return this.handleIssuanceResponseMsg(message as CredentialIssuanceMessage);
+      case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ONCHAIN_OFFER_MESSAGE_TYPE: {
+        const result = await this.handleOnchainOfferMessage(
+          message as CredentialsOnchainOfferMessage
+        );
+        if (Array.isArray(result)) {
+          const credWallet = this.opts?.credentialWallet;
+          if (!credWallet) throw new Error('Credential wallet is not provided');
+          await credWallet.saveAll(result);
+          return null;
+        }
+        return result as BasicMessage;
+      }
       default:
         return super.handle(message, ctx);
     }
+  }
+
+  private async handleOnchainOfferMessage(
+    offerMessage: CredentialsOnchainOfferMessage
+  ): Promise<W3CCredential[]> {
+    if (!this.opts?.onchainIssuer) {
+      throw new Error('onchain issuer is not provided');
+    }
+    const credentials: W3CCredential[] = [];
+    for (const credentialInfo of offerMessage.body.credentials) {
+      const issuerDID = DID.parse(offerMessage.from);
+      const userDID = DID.parse(offerMessage.to);
+      const credential = await this.opts.onchainIssuer.getCredential(
+        issuerDID,
+        userDID,
+        BigInt(credentialInfo.id)
+      );
+      credentials.push(credential);
+    }
+    return credentials;
   }
 
   private async handleOfferMessage(
@@ -273,6 +308,20 @@ export class FetchHandler
     }
 
     throw new Error('invalid protocol message response');
+  }
+
+  /**
+   * Handles only messages with credentials/1.0/onchain-offer type
+   * @beta
+   */
+  async handleOnchainOffer(offer: Uint8Array): Promise<W3CCredential[]> {
+    const offerMessage = await FetchHandler.unpackMessage<CredentialsOnchainOfferMessage>(
+      this._packerMgr,
+      offer,
+      PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ONCHAIN_OFFER_MESSAGE_TYPE
+    );
+
+    return this.handleOnchainOfferMessage(offerMessage);
   }
 
   private async handleFetchRequest(
