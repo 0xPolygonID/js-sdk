@@ -37,7 +37,6 @@ import path from 'path';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import {
-  convertPaymentAmount,
   createPayment,
   createPaymentRequest,
   IPaymentHandler,
@@ -335,19 +334,16 @@ describe('payment-request handler', () => {
           mcPayContractAbi,
           ethSigner
         );
-        const convertedAmount = await convertPaymentAmount(
-          data.amount,
-          data.currency as SupportedCurrencies
-        );
+
         const paymentData = {
           recipient: data.recipient,
-          amount: convertedAmount,
+          amount: data.amount,
           expirationDate: getUnixTimestamp(new Date(data.expirationDate)),
           nonce: data.nonce,
           metadata: data.metadata
         };
 
-        const options = { value: convertedAmount };
+        const options = { value: data.amount };
         const txData = await payContract.pay(paymentData, data.proof[0].proofValue, options);
         return txData.hash;
       } else if (data.type == PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1) {
@@ -356,14 +352,10 @@ describe('payment-request handler', () => {
           mcPayContractAbi,
           ethSigner
         );
-        const convertedAmount = await convertPaymentAmount(
-          data.amount,
-          data.currency as SupportedCurrencies
-        );
         const paymentData = {
           tokenAddress: data.tokenAddress,
           recipient: data.recipient,
-          amount: convertedAmount,
+          amount: data.amount,
           expirationDate: getUnixTimestamp(new Date(data.expirationDate)),
           nonce: data.nonce,
           metadata: data.metadata
@@ -374,7 +366,7 @@ describe('payment-request handler', () => {
             ethSigner,
             data.tokenAddress,
             await payContract.getAddress(),
-            convertedAmount,
+            BigInt(data.amount),
             getUnixTimestamp(new Date(data.expirationDate))
           );
           const txData = await payContract.payERC20Permit(
@@ -465,17 +457,16 @@ describe('payment-request handler', () => {
           'https://w3id.org/security/suites/eip712sig-2021/v1'
         ],
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-        amount: '0.00003',
-        currency: SupportedCurrencies.ETH_GWEI,
-        expirationDate: '2044-11-07T12:45:00.000Z',
-        nonce: '411390',
+        amount: '2',
+        expirationDate: '2024-12-04T18:42:51.337Z',
+        nonce: '411393',
         metadata: '0x',
         proof: [
           {
             type: SupportedPaymentProofType.EthereumEip712Signature2021,
             proofPurpose: 'assertionMethod',
             proofValue:
-              '0xb93fb0ddd4d89c7ae7fcdc7a675f7a949766bc385804adc63f7f5340de68625b21dd046e9d8698d78b3c67ca84f640de1b8eae865092f633c0e6e198d0d5cc971b',
+              '0x6c6cbcc3943ab60f178f2721ccdcfa094b65196c0f0383e8bbf8747afce3fa0c64853872d705d5545f768fa54fa3cdafe4da37545d63ccda56f92ef9ff5ad4101b',
             verificationMethod: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
             created: new Date().toISOString(),
             eip712: {
@@ -509,19 +500,18 @@ describe('payment-request handler', () => {
           'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsERC20RequestV1',
           'https://w3id.org/security/suites/eip712sig-2021/v1'
         ],
-        tokenAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A',
+        tokenAddress: '0x71dcc8Dc5Eb138003d3571255458Bc5692a60eD4',
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-        amount: '0.00003',
-        currency: 'USDT',
-        expirationDate: '2044-11-07T12:45:00.000Z',
-        nonce: '411390',
+        amount: '2',
+        expirationDate: '2024-12-04T18:43:31.082Z',
+        nonce: '411393',
         metadata: '0x',
         proof: [
           {
             type: SupportedPaymentProofType.EthereumEip712Signature2021,
             proofPurpose: 'assertionMethod',
             proofValue:
-              '0xfcc7eef264932f2a1a388a1479299f1614f11ffcb7d885f5d369b5ad202b03023f1a2fa85c70b4e08d8a0e5c97464f31c593bcc3bf9a92ada79ea8a653f199681c',
+              '0xeb1e1d485ba8149c43b391bcadf4afb26f5b3e6cd66724c48ba10abb67c20c9158abf6efeb3a67b340f6bc9302d44bb47cfa0e1918c9cd382e18da154c4bfd011b',
             verificationMethod: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
             created: new Date().toISOString(),
             eip712: {
@@ -601,20 +591,40 @@ describe('payment-request handler', () => {
       multiChainPaymentConfig: [
         {
           chainId: '80002',
-          paymentContract: '0xF8E49b922D5Fb00d3EdD12bd14064f275726D339',
+          paymentRails: '0xF8E49b922D5Fb00d3EdD12bd14064f275726D339',
           recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-          erc20TokenAddressArr: [
-            { symbol: 'USDT', address: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A' }
+          options: [
+            {
+              id: 'amoy-native',
+              type: PaymentRequestDataType.Iden3PaymentRailsRequestV1
+            },
+            {
+              id: 'amoy-usdt',
+              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1,
+              contractAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A'
+            },
+            {
+              id: 'amoy-usdc',
+              features: [PaymentFeatures.EIP_2612],
+              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1,
+              contractAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A'
+            }
           ]
         },
         {
           chainId: '1101',
-          paymentContract: '0x380dd90852d3Fe75B4f08D0c47416D6c4E0dC774',
+          paymentRails: '0x380dd90852d3Fe75B4f08D0c47416D6c4E0dC774',
           recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-          erc20TokenAddressArr: [
+          options: [
             {
-              symbol: SupportedCurrencies.USDT,
-              address: '0x1e4a5963abfd975d8c9021ce480b42188849d41d'
+              id: 'zkevm-native',
+              type: PaymentRequestDataType.Iden3PaymentRailsRequestV1
+            },
+            {
+              id: 'zkevm-usdc',
+              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1,
+              contractAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A',
+              features: [PaymentFeatures.EIP_2612]
             }
           ]
         }
@@ -667,7 +677,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentHandlerFuncMock,
-      nonce: '411390'
+      nonce: '411393'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -690,7 +700,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentHandlerFuncMock,
-      nonce: '411390',
+      nonce: '411393',
       erc20TokenApproveHandler: () => Promise.resolve('0x312312334')
     });
     if (!agentMessageBytes) {
@@ -833,20 +843,18 @@ describe('payment-request handler', () => {
             }
           ],
           description: 'Iden3PaymentRailsRequestV1 payment-request integration test',
-          chains: [
+          options: [
             {
-              nonce: 1000413n,
-              amount: '0.001',
-              currency: SupportedCurrencies.ETH_GWEI,
+              nonce: 1000416n,
+              amount: '1000000000000',
               chainId: '80002',
-              type: PaymentRequestDataType.Iden3PaymentRailsRequestV1
+              optionId: 'amoy-native'
             },
             {
               nonce: 10001123n,
               amount: '2233',
-              currency: SupportedCurrencies.ETH_WEI,
               chainId: '1101',
-              type: PaymentRequestDataType.Iden3PaymentRailsRequestV1
+              optionId: 'zkevm-native'
             }
           ]
         }
@@ -860,7 +868,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '1000413'
+      nonce: '1000416'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -889,20 +897,18 @@ describe('payment-request handler', () => {
             }
           ],
           description: 'Iden3PaymentRailsERC20RequestV1 payment-request integration test',
-          chains: [
+          options: [
             {
-              nonce: 220012n,
-              amount: '0.000001',
-              currency: 'USDT',
+              nonce: 220015n,
+              amount: '1',
               chainId: '80002',
-              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+              optionId: 'amoy-usdt'
             },
             {
               nonce: 220011124n,
-              amount: '0.000001',
-              currency: SupportedCurrencies.USDT,
-              chainId: '1101',
-              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+              amount: '1',
+              optionId: 'zkevm-usdc',
+              chainId: '1101'
             }
           ]
         }
@@ -916,16 +922,12 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '220012',
+      nonce: '220015',
       erc20TokenApproveHandler: async (data: Iden3PaymentRailsERC20RequestV1) => {
         const token = new Contract(data.tokenAddress, erc20Abi, ethSigner);
-        const convertedAmount = await convertPaymentAmount(
-          data.amount,
-          data.currency as SupportedCurrencies
-        );
         const txData = await token.approve(
           data.proof[0].eip712.domain.verifyingContract,
-          convertedAmount
+          data.amount
         );
         await txData.wait(1);
         return txData.hash;
@@ -958,21 +960,18 @@ describe('payment-request handler', () => {
             }
           ],
           description: 'Iden3PaymentRailsERC20RequestV1 payment-request integration test',
-          chains: [
+          options: [
             {
-              features: [PaymentFeatures.EIP_2612],
-              nonce: 330005n,
-              amount: '0.000002',
-              currency: 'USDT',
-              chainId: '80002',
-              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+              nonce: 330007n,
+              amount: '2',
+              optionId: 'amoy-usdc',
+              chainId: '80002'
             },
             {
               nonce: 330001122n,
-              amount: '0.000002',
-              currency: SupportedCurrencies.USDT,
-              chainId: '1101',
-              type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+              amount: '2',
+              optionId: 'zkevm-usdc',
+              chainId: '1101'
             }
           ]
         }
@@ -986,7 +985,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '330005'
+      nonce: '330007'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -1066,28 +1065,5 @@ describe('payment-request handler', () => {
       paymentRequest,
       paymentValidationHandler: paymentValidationIntegrationHandlerFunc
     });
-  });
-
-  it('convertPaymentAmount tests', async () => {
-    const convertedWei = await convertPaymentAmount('100', SupportedCurrencies.ETH_WEI);
-    expect(convertedWei).to.be.eq(BigInt(100));
-
-    const convertedGwei = await convertPaymentAmount('100', SupportedCurrencies.ETH_GWEI);
-    expect(convertedGwei).to.be.eq(BigInt(100000000000));
-
-    const convertedEth = await convertPaymentAmount('100', SupportedCurrencies.ETH);
-    expect(convertedEth).to.be.eq(BigInt(100000000000000000000));
-
-    const convertedMatic = await convertPaymentAmount('100', SupportedCurrencies.MATIC);
-    expect(convertedMatic).to.be.eq(BigInt(100000000000000000000));
-
-    const convertedPol = await convertPaymentAmount('100', SupportedCurrencies.POL);
-    expect(convertedPol).to.be.eq(BigInt(100000000000000000000));
-
-    const convertedUsdt = await convertPaymentAmount('100', SupportedCurrencies.USDT);
-    expect(convertedUsdt).to.be.eq(BigInt(100000000));
-
-    const convertedUsdc = await convertPaymentAmount('100', SupportedCurrencies.USDC);
-    expect(convertedUsdc).to.be.eq(BigInt(100000000));
   });
 });
