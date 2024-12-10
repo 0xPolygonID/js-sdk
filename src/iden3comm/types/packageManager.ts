@@ -83,6 +83,13 @@ export interface IPackageManager {
   getSupportedMediaTypes(): MediaType[];
 
   /**
+   * gets supported accept profiles by packer manager
+   *
+   * @returns MediaType[]
+   */
+  getSupportedProfiles(): string[];
+
+  /**
    * returns true if media type and algorithms supported by packer manager
    *
    * @param {MediaType} mediaType
