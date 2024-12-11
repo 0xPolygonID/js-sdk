@@ -19,7 +19,6 @@ import { getUnixTimestamp } from '@iden3/js-iden3-core';
  */
 export interface DiscoveryProtocolOptions {
   packageManager: IPackageManager;
-  disclosureExpires?: Date;
 }
 
 /**
