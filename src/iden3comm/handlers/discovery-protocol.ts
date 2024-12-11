@@ -9,8 +9,13 @@ import {
   DiscoverFeatureQueriesMessage,
   DiscoveryProtocolFeatureType
 } from '../types/protocol/discovery-protocol';
-import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import {
+  AbstractMessageHandler,
+  BasicHandlerOptions,
+  IProtocolMessageHandler
+} from './message-handler';
 import { getUnixTimestamp } from '@iden3/js-iden3-core';
+import { verifyExpiresTime } from './common';
 
 /**
  * DiscoveryProtocolOptions contains options for DiscoveryProtocolHandler
@@ -20,6 +25,17 @@ import { getUnixTimestamp } from '@iden3/js-iden3-core';
 export interface DiscoveryProtocolOptions {
   packageManager: IPackageManager;
 }
+
+/**
+ *
+ * Options to pass to discovery-protocol handler
+ *
+ * @public
+ * @interface DiscoveryProtocolHandlerOptions
+ */
+export type DiscoveryProtocolHandlerOptions = BasicHandlerOptions & {
+  disclosureExpiresDate?: Date;
+};
 
 /**
  * @beta
@@ -100,9 +116,7 @@ export interface IDiscoveryProtocolHandler {
    */
   handleDiscoveryQuery(
     message: DiscoverFeatureQueriesMessage,
-    opts?: {
-      expires_time?: number;
-    }
+    opts?: DiscoveryProtocolHandlerOptions
   ): Promise<DiscoverFeatureDiscloseMessage>;
 }
 
@@ -147,10 +161,12 @@ export class DiscoveryProtocolHandler
    */
   async handleDiscoveryQuery(
     message: DiscoverFeatureQueriesMessage,
-    opts?: {
-      expires_time?: number;
-    }
+    opts?: DiscoveryProtocolHandlerOptions
   ): Promise<DiscoverFeatureDiscloseMessage> {
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(message);
+    }
+
     if (message.body.queries.length !== 1) {
       throw new Error('Invalid number of queries. Only one query is supported');
     }
@@ -170,7 +186,9 @@ export class DiscoveryProtocolHandler
       createDiscoveryFeatureDiscloseMessage(disclosures, {
         to: message.from,
         from: message.to,
-        expires_time: opts?.expires_time
+        expires_time: opts?.disclosureExpiresDate
+          ? getUnixTimestamp(opts.disclosureExpiresDate)
+          : undefined
       })
     );
   }
