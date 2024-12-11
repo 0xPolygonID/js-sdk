@@ -458,7 +458,7 @@ describe('payment-request handler', () => {
         ],
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
         amount: '2',
-        expirationDate: '2024-12-04T18:42:51.337Z',
+        expirationDate: '2124-12-10T17:25:18.907Z',
         nonce: '411393',
         metadata: '0x',
         proof: [
@@ -466,7 +466,7 @@ describe('payment-request handler', () => {
             type: SupportedPaymentProofType.EthereumEip712Signature2021,
             proofPurpose: 'assertionMethod',
             proofValue:
-              '0x6c6cbcc3943ab60f178f2721ccdcfa094b65196c0f0383e8bbf8747afce3fa0c64853872d705d5545f768fa54fa3cdafe4da37545d63ccda56f92ef9ff5ad4101b',
+              '0x31b57b1be0c22c21359252723a10b21c7c3e438705e1d46d2384feacdd8b429e3f1a3a230ac49fccdeef0aa1f7604020d4d4098c4078c4f24280c91c0dab45611b',
             verificationMethod: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
             created: new Date().toISOString(),
             eip712: {
@@ -503,7 +503,7 @@ describe('payment-request handler', () => {
         tokenAddress: '0x71dcc8Dc5Eb138003d3571255458Bc5692a60eD4',
         recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
         amount: '2',
-        expirationDate: '2024-12-04T18:43:31.082Z',
+        expirationDate: '2124-12-10T17:25:18.907Z',
         nonce: '411393',
         metadata: '0x',
         proof: [
@@ -511,7 +511,7 @@ describe('payment-request handler', () => {
             type: SupportedPaymentProofType.EthereumEip712Signature2021,
             proofPurpose: 'assertionMethod',
             proofValue:
-              '0xeb1e1d485ba8149c43b391bcadf4afb26f5b3e6cd66724c48ba10abb67c20c9158abf6efeb3a67b340f6bc9302d44bb47cfa0e1918c9cd382e18da154c4bfd011b',
+              '0x2b355fbeb6f303ebf3c5a88b335129799c67fa5db3debee8ee265b4d46fbeb7349a1b22e4c012d8a3c48581f8d77d8888337f5f0c9b7a38a0a7869749173937f1b',
             verificationMethod: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
             created: new Date().toISOString(),
             eip712: {
