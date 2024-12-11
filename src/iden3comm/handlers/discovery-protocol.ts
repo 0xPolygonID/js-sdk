@@ -10,6 +10,7 @@ import {
   DiscoveryProtocolFeatureType
 } from '../types/protocol/discovery-protocol';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
+import { getUnixTimestamp } from '@iden3/js-iden3-core';
 
 /**
  * DiscoveryProtocolOptions contains options for DiscoveryProtocolHandler
@@ -18,6 +19,7 @@ import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handl
  */
 export interface DiscoveryProtocolOptions {
   packageManager: IPackageManager;
+  disclosureExpires?: Date;
 }
 
 /**
@@ -30,7 +32,6 @@ export function createDiscoveryFeatureQueryMessage(opts?: {
   featureTypes?: (DiscoveryProtocolFeatureType | string)[];
   from?: string;
   to?: string;
-  created_time?: number;
   expires_time?: number;
 }): DiscoverFeatureQueriesMessage {
   const uuidv4 = uuid.v4();
@@ -49,7 +50,7 @@ export function createDiscoveryFeatureQueryMessage(opts?: {
     },
     from: opts?.from,
     to: opts?.to,
-    created_time: opts?.created_time,
+    created_time: getUnixTimestamp(new Date()),
     expires_time: opts?.expires_time
   };
 }
@@ -66,7 +67,6 @@ export function createDiscoveryFeatureDiscloseMessage(
   opts?: {
     from?: string;
     to?: string;
-    created_time?: number;
     expires_time?: number;
   }
 ): DiscoverFeatureDiscloseMessage {
@@ -80,7 +80,7 @@ export function createDiscoveryFeatureDiscloseMessage(
     },
     from: opts?.from,
     to: opts?.to,
-    created_time: opts?.created_time,
+    created_time: getUnixTimestamp(new Date()),
     expires_time: opts?.expires_time
   };
 }
@@ -96,10 +96,14 @@ export interface IDiscoveryProtocolHandler {
    * handle discovery query message
    *
    * @param {DiscoverFeatureQueriesMessage} message - discover feature queries message
+   * @param {{ expires_time?: number}} opts - discover feature handle options
    * @returns {Promise<DiscoverFeatureDiscloseMessage>} - discover feature disclose message
    */
   handleDiscoveryQuery(
-    message: DiscoverFeatureQueriesMessage
+    message: DiscoverFeatureQueriesMessage,
+    opts?: {
+      expires_time?: number;
+    }
   ): Promise<DiscoverFeatureDiscloseMessage>;
 }
 
@@ -133,7 +137,7 @@ export class DiscoveryProtocolHandler
   ): Promise<BasicMessage | null> {
     switch (message.type) {
       case PROTOCOL_MESSAGE_TYPE.DISCOVERY_PROTOCOL_QUERIES_MESSAGE_TYPE:
-        return await this.handleDiscoveryQuery(message as DiscoverFeatureQueriesMessage);
+        return await this.handleDiscoveryQuery(message as DiscoverFeatureQueriesMessage, context);
       default:
         return super.handle(message, context as { [key: string]: unknown });
     }
@@ -143,7 +147,10 @@ export class DiscoveryProtocolHandler
    * @inheritdoc IDiscoveryProtocolHandler#handleDiscoveryQuery
    */
   async handleDiscoveryQuery(
-    message: DiscoverFeatureQueriesMessage
+    message: DiscoverFeatureQueriesMessage,
+    opts?: {
+      expires_time?: number;
+    }
   ): Promise<DiscoverFeatureDiscloseMessage> {
     if (message.body.queries.length !== 1) {
       throw new Error('Invalid number of queries. Only one query is supported');
@@ -161,7 +168,11 @@ export class DiscoveryProtocolHandler
     ];
 
     return Promise.resolve(
-      createDiscoveryFeatureDiscloseMessage(disclosures, { to: message.from, from: message.to })
+      createDiscoveryFeatureDiscloseMessage(disclosures, {
+        to: message.from,
+        from: message.to,
+        expires_time: opts?.expires_time
+      })
     );
   }
 }

@@ -85,7 +85,7 @@ export interface IPackageManager {
   /**
    * gets supported accept profiles by packer manager
    *
-   * @returns MediaType[]
+   * @returns string[]
    */
   getSupportedProfiles(): string[];
 
