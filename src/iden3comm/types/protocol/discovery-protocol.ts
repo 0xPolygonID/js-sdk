@@ -27,8 +27,11 @@ export type DiscoverFeatureDiscloseMessage = BasicMessage & {
 
 /** @beta DiscoverFeatureDiscloseBody is struct the represents discover feature disclose body */
 export type DiscoverFeatureDiscloseBody = {
-  disclosures: {
-    'feature-type': DiscoveryProtocolFeatureType | string;
-    accept: Array<string>;
-  }[];
+  disclosures: DiscoverFeatureDisclosure[];
+};
+
+/** @beta DiscoverFeatureDisclosure is struct the represents discover feature disclosure */
+export type DiscoverFeatureDisclosure = {
+  'feature-type': DiscoveryProtocolFeatureType | string;
+  accept: Array<string>;
 };

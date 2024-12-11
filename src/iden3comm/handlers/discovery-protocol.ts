@@ -5,18 +5,84 @@ import { BasicMessage, IPackageManager } from '../types';
 import * as uuid from 'uuid';
 import {
   DiscoverFeatureDiscloseMessage,
+  DiscoverFeatureDisclosure,
   DiscoverFeatureQueriesMessage,
   DiscoveryProtocolFeatureType
 } from '../types/protocol/discovery-protocol';
 import { AbstractMessageHandler, IProtocolMessageHandler } from './message-handler';
 
 /**
- * RefreshHandlerOptions contains options for RefreshHandler
+ * DiscoveryProtocolOptions contains options for DiscoveryProtocolHandler
  * @public
- * @interface   RefreshHandlerOptions
+ * @interface   DiscoveryProtocolOptions
  */
 export interface DiscoveryProtocolOptions {
   packageManager: IPackageManager;
+}
+
+/**
+ * @beta
+ * createDiscoveryFeatureQueryMessage is a function to create didcomm protocol discovery-feature query message
+ * @param opts - discovery-feature query options
+ * @returns `DiscoverFeatureQueriesMessage`
+ */
+export function createDiscoveryFeatureQueryMessage(opts?: {
+  featureTypes?: (DiscoveryProtocolFeatureType | string)[];
+  from?: string;
+  to?: string;
+  created_time?: number;
+  expires_time?: number;
+}): DiscoverFeatureQueriesMessage {
+  const uuidv4 = uuid.v4();
+  return {
+    id: uuidv4,
+    thid: uuidv4,
+    type: PROTOCOL_MESSAGE_TYPE.DISCOVERY_PROTOCOL_QUERIES_MESSAGE_TYPE,
+    body: {
+      queries: opts?.featureTypes?.length
+        ? opts.featureTypes.map((featureType) => ({ 'feature-type': featureType }))
+        : [
+            {
+              'feature-type': DiscoveryProtocolFeatureType.Accept
+            }
+          ]
+    },
+    from: opts?.from,
+    to: opts?.to,
+    created_time: opts?.created_time,
+    expires_time: opts?.expires_time
+  };
+}
+
+/**
+ * @beta
+ * createDiscoveryFeatureDiscloseMessage is a function to create didcomm protocol discovery-feature disclose message
+ * @param {DiscoverFeatureDisclosure[]} disclosures - array of disclosures
+ * @param opts - basic message options
+ * @returns `DiscoverFeatureQueriesMessage`
+ */
+export function createDiscoveryFeatureDiscloseMessage(
+  disclosures: DiscoverFeatureDisclosure[],
+  opts?: {
+    from?: string;
+    to?: string;
+    created_time?: number;
+    expires_time?: number;
+  }
+): DiscoverFeatureDiscloseMessage {
+  const uuidv4 = uuid.v4();
+  return {
+    id: uuidv4,
+    thid: uuidv4,
+    type: PROTOCOL_MESSAGE_TYPE.DISCOVERY_PROTOCOL_DISCLOSE_MESSAGE_TYPE,
+    body: {
+      disclosures
+    },
+    from: opts?.from,
+    to: opts?.to,
+    created_time: opts?.created_time,
+    expires_time: opts?.expires_time
+  };
 }
 
 /**
@@ -87,19 +153,15 @@ export class DiscoveryProtocolHandler
       throw new Error('Invalid feature-type. Only "accept" is supported');
     }
 
-    const accept = this._options.packageManager.getSupportedProfiles();
-
-    return Promise.resolve({
-      id: uuid.v4(),
-      type: PROTOCOL_MESSAGE_TYPE.DISCOVERY_PROTOCOL_DISCLOSE_MESSAGE_TYPE,
-      body: {
-        disclosures: [
-          {
-            'feature-type': DiscoveryProtocolFeatureType.Accept,
-            accept
-          }
-        ]
+    const disclosures = [
+      {
+        'feature-type': DiscoveryProtocolFeatureType.Accept,
+        accept: this._options.packageManager.getSupportedProfiles()
       }
-    });
+    ];
+
+    return Promise.resolve(
+      createDiscoveryFeatureDiscloseMessage(disclosures, { to: message.from, from: message.to })
+    );
   }
 }
