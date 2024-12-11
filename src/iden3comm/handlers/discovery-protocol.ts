@@ -18,6 +18,7 @@ import { getUnixTimestamp } from '@iden3/js-iden3-core';
 import { verifyExpiresTime } from './common';
 
 /**
+ * @beta
  * DiscoveryProtocolOptions contains options for DiscoveryProtocolHandler
  * @public
  * @interface   DiscoveryProtocolOptions
@@ -30,8 +31,9 @@ export interface DiscoveryProtocolOptions {
  *
  * Options to pass to discovery-protocol handler
  *
+ * @beta
  * @public
- * @interface DiscoveryProtocolHandlerOptions
+ * @type DiscoveryProtocolHandlerOptions
  */
 export type DiscoveryProtocolHandlerOptions = BasicHandlerOptions & {
   disclosureExpiresDate?: Date;
@@ -103,6 +105,7 @@ export function createDiscoveryFeatureDiscloseMessage(
 /**
  * Interface to work with discovery protocol handler
  *
+ * @beta
  * @public
  * @interface IDiscoveryProtocolHandler
  */
