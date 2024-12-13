@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import {
   DiscoverFeatureQueriesMessage,
+  DiscoverFeatureQueryType,
   IPackageManager,
   JWSPacker,
   KMS,
@@ -41,7 +42,7 @@ describe('discovery-protocol', () => {
       body: { disclosures }
     } = await discoveryProtocolHandler.handleDiscoveryQuery(discoveryFeatureQueryMessage);
     expect(disclosures.length).to.be.eq(1);
-    expect(disclosures[0]['feature-type']).to.be.eq('accept');
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq('accept');
     expect(disclosures[0].accept.length).to.be.eq(1);
     expect(disclosures[0].accept[0]).to.be.eq('env=application/iden3comm-plain-json');
   });
@@ -60,7 +61,7 @@ describe('discovery-protocol', () => {
     expect(disclosures.length).to.be.eq(1);
 
     expect(disclosures[0].accept.length).to.be.eq(2);
-    expect(disclosures[0]['feature-type']).to.be.eq('accept');
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq('accept');
     expect(disclosures[0].accept).to.include('env=application/iden3comm-plain-json');
     expect(disclosures[0].accept).to.include(
       'env=application/iden3comm-signed-json&alg=ES256K,ES256K-R'
@@ -80,7 +81,7 @@ describe('discovery-protocol', () => {
     expect(disclosures.length).to.be.eq(1);
 
     expect(disclosures[0].accept.length).to.be.eq(2);
-    expect(disclosures[0]['feature-type']).to.be.eq('accept');
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq('accept');
     expect(disclosures[0].accept).to.include('env=application/iden3comm-plain-json');
     expect(disclosures[0].accept).to.include(
       'env=application/iden3-zkp-json&alg=groth16&circuitIds=authV2'
@@ -100,7 +101,7 @@ describe('discovery-protocol', () => {
     expect(disclosures.length).to.be.eq(1);
 
     expect(disclosures[0].accept.length).to.be.eq(3);
-    expect(disclosures[0]['feature-type']).to.be.eq('accept');
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq('accept');
     expect(disclosures[0].accept).to.include('env=application/iden3comm-plain-json');
     expect(disclosures[0].accept).to.include(
       'env=application/iden3-zkp-json&alg=groth16&circuitIds=authV2'

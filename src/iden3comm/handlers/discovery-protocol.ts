@@ -7,6 +7,7 @@ import {
   DiscoverFeatureDiscloseMessage,
   DiscoverFeatureDisclosure,
   DiscoverFeatureQueriesMessage,
+  DiscoverFeatureQueryType,
   DiscoveryProtocolFeatureType
 } from '../types/protocol/discovery-protocol';
 import {
@@ -46,7 +47,7 @@ export type DiscoveryProtocolHandlerOptions = BasicHandlerOptions & {
  * @returns `DiscoverFeatureQueriesMessage`
  */
 export function createDiscoveryFeatureQueryMessage(opts?: {
-  featureTypes?: (DiscoveryProtocolFeatureType | string)[];
+  featureTypes?: DiscoveryProtocolFeatureType[];
   from?: string;
   to?: string;
   expires_time?: number;
@@ -58,10 +59,12 @@ export function createDiscoveryFeatureQueryMessage(opts?: {
     type: PROTOCOL_MESSAGE_TYPE.DISCOVERY_PROTOCOL_QUERIES_MESSAGE_TYPE,
     body: {
       queries: opts?.featureTypes?.length
-        ? opts.featureTypes.map((featureType) => ({ 'feature-type': featureType }))
+        ? opts.featureTypes.map((featureType) => ({
+            [DiscoverFeatureQueryType.FeatureType]: featureType
+          }))
         : [
             {
-              'feature-type': DiscoveryProtocolFeatureType.Accept
+              [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Accept
             }
           ]
     },
@@ -174,13 +177,16 @@ export class DiscoveryProtocolHandler
       throw new Error('Invalid number of queries. Only one query is supported');
     }
 
-    if (message.body.queries[0]['feature-type'] !== DiscoveryProtocolFeatureType.Accept) {
+    if (
+      message.body.queries[0][DiscoverFeatureQueryType.FeatureType] !==
+      DiscoveryProtocolFeatureType.Accept
+    ) {
       throw new Error('Invalid feature-type. Only "accept" is supported');
     }
 
     const disclosures = [
       {
-        'feature-type': DiscoveryProtocolFeatureType.Accept,
+        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Accept,
         accept: this._options.packageManager.getSupportedProfiles()
       }
     ];

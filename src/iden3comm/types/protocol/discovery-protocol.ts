@@ -1,6 +1,11 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 import { BasicMessage } from '../packer';
 
+/** @beta DiscoverFeatureQueryType is enum for query type fields */
+export enum DiscoverFeatureQueryType {
+  FeatureType = 'feature-type'
+}
+
 /** @beta DiscoveryProtocolFeatureType is enum for supported feature-types */
 export enum DiscoveryProtocolFeatureType {
   Accept = 'accept'
@@ -15,7 +20,7 @@ export type DiscoverFeatureQueriesMessage = BasicMessage & {
 /** @beta DiscoverFeatureQueriesBody is struct the represents discover feature queries body */
 export type DiscoverFeatureQueriesBody = {
   queries: {
-    'feature-type': DiscoveryProtocolFeatureType | string;
+    [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType;
   }[];
 };
 
@@ -32,6 +37,6 @@ export type DiscoverFeatureDiscloseBody = {
 
 /** @beta DiscoverFeatureDisclosure is struct the represents discover feature disclosure */
 export type DiscoverFeatureDisclosure = {
-  'feature-type': DiscoveryProtocolFeatureType | string;
+  [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType;
   accept: Array<string>;
 };
