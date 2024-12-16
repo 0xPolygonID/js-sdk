@@ -311,11 +311,12 @@ describe('discovery-protocol', () => {
     expect(disclosureIds).to.include(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE);
   });
 
-  it('feature-type: header', async () => {
+  it('feature-type: empty headers', async () => {
     const packageManager: IPackageManager = new PackageManager();
     packageManager.registerPackers([plainPacker]);
     const discoveryProtocolHandler = new DiscoveryProtocolHandler({
-      packageManager
+      packageManager,
+      headers: []
     });
 
     const protocolQueryMessage = createDiscoveryFeatureQueryMessage([
