@@ -20,8 +20,7 @@ import {
   Iden3AttachmentType,
   CredentialProposalHandler,
   ICredentialProposalHandler,
-  Proposal,
-  Iden3DirectiveType
+  Proposal
 } from '../../src';
 import { DID } from '@iden3/js-iden3-core';
 import { expect } from 'chai';

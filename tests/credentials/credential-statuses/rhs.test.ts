@@ -67,7 +67,7 @@ describe('rhs', () => {
     getGISTRootInfo: (): Promise<RootInfo> => {
       return Promise.resolve(emptyRootInfo);
     },
-    getProvider() {
+    getRpcProvider() {
       return new JsonRpcProvider(RPC_URL);
     }
   };
@@ -99,7 +99,7 @@ describe('rhs', () => {
     getGISTRootInfo: (): Promise<RootInfo> => {
       return Promise.resolve(emptyRootInfo);
     },
-    getProvider() {
+    getRpcProvider() {
       return new JsonRpcProvider(RPC_URL);
     }
   };
@@ -130,7 +130,7 @@ describe('rhs', () => {
     getGISTRootInfo: (): Promise<RootInfo> => {
       return Promise.resolve(emptyRootInfo);
     },
-    getProvider() {
+    getRpcProvider() {
       return new JsonRpcProvider(RPC_URL);
     }
   };

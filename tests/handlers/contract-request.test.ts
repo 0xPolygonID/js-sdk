@@ -109,7 +109,7 @@ describe('contract-request', () => {
         replacedAtBlock: 0n
       });
     },
-    getProvider() {
+    getRpcProvider() {
       return new JsonRpcProvider(RPC_URL);
     }
   };

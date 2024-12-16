@@ -67,7 +67,7 @@ export class EthStateStorage implements IStateStorage {
     const config = Array.isArray(ethConfig) ? ethConfig[0] : ethConfig;
     this.provider = new JsonRpcProvider(config.url);
     this.stateContract = new Contract(config.contractAddress, abi, this.provider);
-    this._transactionService = new TransactionService(this.getProvider());
+    this._transactionService = new TransactionService(this.getRpcProvider());
   }
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
@@ -231,7 +231,7 @@ export class EthStateStorage implements IStateStorage {
   }
 
   /** {@inheritdoc IStateStorage.getProvider} */
-  getProvider(): Provider {
+  getRpcProvider(): Provider {
     return this.provider;
   }
 

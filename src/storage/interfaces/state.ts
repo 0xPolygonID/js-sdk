@@ -77,5 +77,5 @@ export interface IStateStorage {
    *
    * @returns `Promise<Provider>`
    */
-  getProvider(): Provider;
+  getRpcProvider(): Provider;
 }

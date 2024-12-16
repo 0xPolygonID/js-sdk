@@ -166,7 +166,7 @@ describe('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet(walletKey, dataStorage.states.getProvider());
+    const ethSigner = new ethers.Wallet(walletKey, dataStorage.states.getRpcProvider());
     const txId = await proofService.transitState(
       issuerDID,
       res.oldTreeState,
@@ -253,7 +253,7 @@ describe('mtp proofs', () => {
 
     // you must store stat info (e.g. state and it's roots)
 
-    const ethSigner = new ethers.Wallet(walletKey, dataStorage.states.getProvider());
+    const ethSigner = new ethers.Wallet(walletKey, dataStorage.states.getRpcProvider());
 
     const txId = await proofService.transitState(
       issuerDID,

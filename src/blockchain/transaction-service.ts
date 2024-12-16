@@ -1,6 +1,5 @@
 import {
   Block,
-  JsonRpcProvider,
   Provider,
   Signer,
   TransactionReceipt,
