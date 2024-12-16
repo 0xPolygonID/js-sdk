@@ -53,7 +53,6 @@ export type Iden3PaymentRailsRequestV1 = {
   '@context': string | (string | object)[];
   recipient: string;
   amount: string;
-  currency: SupportedCurrencies | string;
   expirationDate: string;
   nonce: string;
   metadata: string;
@@ -131,11 +130,15 @@ export type Iden3PaymentRailsERC20V1 = {
 /** @beta MultiChainPaymentConfig is struct that represents payments contracts information for different chains */
 export type MultiChainPaymentConfig = {
   chainId: string;
-  paymentContract: string;
+  paymentRails: string;
   recipient: string;
-  erc20TokenAddressArr: {
-    symbol: string;
-    address: string;
+  options: {
+    id: string;
+    type:
+      | PaymentRequestDataType.Iden3PaymentRailsRequestV1
+      | PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
+    contractAddress?: string;
+    features?: PaymentFeatures[];
   }[];
 };
 

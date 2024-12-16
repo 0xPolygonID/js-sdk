@@ -1,5 +1,6 @@
 import {
   CredentialsOfferMessage,
+  CredentialsOnchainOfferMessage,
   FetchHandler,
   IPackageManager,
   IDataStorage,
@@ -23,6 +24,7 @@ import {
 import {
   MOCK_STATE_STORAGE,
   RHS_URL,
+  RPC_URL,
   SEED_ISSUER,
   SEED_USER,
   createIdentity,
@@ -30,6 +32,9 @@ import {
   getPackageMgr,
   registerKeyProvidersInMemoryKMS
 } from '../helpers';
+
+import { OnchainIssuer } from '../../src/storage/blockchain/onchain-issuer';
+import { defaultEthConnectionConfig } from '../../src';
 
 import * as uuid from 'uuid';
 import { expect } from 'chai';
@@ -137,7 +142,14 @@ describe('fetch', () => {
       proofService.verifyState.bind(proofService)
     );
     fetchHandler = new FetchHandler(packageMgr, {
-      credentialWallet: credWallet
+      credentialWallet: credWallet,
+      onchainIssuer: new OnchainIssuer([
+        {
+          ...defaultEthConnectionConfig,
+          url: RPC_URL,
+          chainId: 80002
+        }
+      ])
     });
 
     msgHandler = new MessageHandler({
@@ -286,5 +298,36 @@ describe('fetch', () => {
     // credential saved after handling message via msgHandler
     expect(response).to.be.null;
     expect(await credWallet.list()).to.have.length(5);
+  });
+
+  it('onchain credential offer', async () => {
+    const { did: userDID } = await createIdentity(idWallet, {
+      seed: SEED_ISSUER
+    });
+
+    const onchainOffer: CredentialsOnchainOfferMessage = {
+      id: uuid.v4(),
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ONCHAIN_OFFER_MESSAGE_TYPE,
+      thid: uuid.v4(),
+      body: {
+        credentials: [{ id: '6', description: 'balance credential' }],
+        transaction_data: {
+          contract_address: '0x19875eA86503734f2f9Ed461463e0312A3b42563',
+          method_id: '0',
+          chain_id: 80002
+        }
+      },
+      from: 'did:polygonid:polygon:amoy:2qQ68JkRcf3xyDFsGSWU5QqxbKpzM75quxS628JgvJ',
+      to: userDID.string()
+    };
+
+    const bytes = await packageMgr.packMessage(
+      PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      onchainOffer,
+      {}
+    );
+    const response = await fetchHandler.handleOnchainOffer(bytes);
+    console.log(response);
   });
 });
