@@ -356,6 +356,7 @@ export class ProofService implements IProofService {
       id: proofReq.id,
       circuitId: proofReq.circuitId,
       vp,
+      groupId,
       proof,
       pub_signals
     };

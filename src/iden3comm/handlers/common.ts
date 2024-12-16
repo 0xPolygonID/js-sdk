@@ -1,5 +1,7 @@
 import { getRandomBytes } from '@iden3/js-crypto';
 import {
+  AcceptProfile,
+  AuthProofResponse,
   BasicMessage,
   JsonDocumentObject,
   JWSPackerParams,
@@ -12,7 +14,7 @@ import { RevocationStatus, W3CCredential } from '../../verifiable';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
-import { MediaType } from '../constants';
+import { defaultAcceptProfile, MediaType } from '../constants';
 import { Signer } from 'ethers';
 
 /**
@@ -134,6 +136,68 @@ export const processZeroKnowledgeProofRequests = async (
   }
 
   return zkpResponses;
+};
+
+
+/**
+ * Processes zero knowledge proof requests.
+ *
+ * @param to - The identifier of the recipient.
+ * @param requests - An array of zero knowledge proof requests.
+ * @param from - The identifier of the sender.
+ * @param proofService - The proof service.
+ * @param opts - Additional options for processing the requests.
+ * @returns A promise that resolves to an array of zero knowledge proof responses.
+ */
+export const processProofAuth = async (
+  to: DID,
+  proofService: IProofService,
+  opts: {
+    supportedCircuits: CircuitId[];
+    acceptProfile?: AcceptProfile;
+  }
+): Promise<AuthProofResponse[]> => {
+  if (!opts.acceptProfile) {
+    opts.acceptProfile = defaultAcceptProfile;
+  }
+
+  const authResponses = [];
+  // First version we only generate proof for ZKPMessage
+  if (opts.acceptProfile.env === MediaType.ZKPMessage) {
+    if (!opts.acceptProfile.circuits) {
+      throw new Error('Circuit not specified');
+    }
+
+    for (const circuitId of opts.acceptProfile.circuits) {
+      if (!opts.supportedCircuits.includes(circuitId as unknown as CircuitId)) {
+        throw new Error(`Circuit ${circuitId} is not supported`);
+      }
+
+      const authProof: ZeroKnowledgeProofRequest = {
+        id: 0,
+        circuitId: circuitId as unknown as CircuitId,
+        optional: false,
+        query: {
+          allowedIssuers: ['*'],
+          context: '',
+          credentialSubject: {},
+          type: 'Auth'
+        }
+      };
+
+      const zkpRes: ZeroKnowledgeProofResponse = await proofService.generateProof(authProof, to);
+      const authRes: AuthProofResponse = {
+        authType: "zk-" + circuitId as string,
+        circuitId: authProof.circuitId,
+        proof: zkpRes.proof,
+        pub_signals: zkpRes.pub_signals
+      };
+      authResponses.push(authRes);
+      break;
+    }
+  }
+
+  return authResponses;
 };
 
 /**

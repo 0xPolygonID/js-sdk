@@ -1,3 +1,4 @@
+import { ZKProof } from '@iden3/js-jwz';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 import { BasicMessage } from '../packer';
 import { DIDDocument, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from './auth';
@@ -14,6 +15,7 @@ export type ContractInvokeRequestBody = {
   transaction_data: ContractInvokeTransactionData;
   scope: Array<ZeroKnowledgeProofRequest>;
   did_doc?: DIDDocument;
+  accept?: string[];
 };
 
 /** ContractInvokeResponse represents structure of contract invoke response object */
@@ -41,3 +43,10 @@ export type ContractInvokeTransactionData = {
   chain_id: number;
   network?: string;
 };
+
+
+/** AuthProofResponse represents structure of zkp response */
+export type AuthProofResponse = {
+  authType: string;
+  circuitId: string;
+} & ZKProof;

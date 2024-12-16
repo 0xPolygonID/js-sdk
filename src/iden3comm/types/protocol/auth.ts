@@ -68,6 +68,7 @@ export type ZeroKnowledgeProofResponse = {
   id: number;
   circuitId: string;
   vp?: VerifiablePresentation;
+  groupId?: number;
 } & ZKProof;
 
 /** VerifiablePresentation represents structure of Verifiable Presentation */
