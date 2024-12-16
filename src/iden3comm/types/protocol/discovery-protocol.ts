@@ -8,7 +8,10 @@ export enum DiscoverFeatureQueryType {
 
 /** @beta DiscoveryProtocolFeatureType is enum for supported feature-types */
 export enum DiscoveryProtocolFeatureType {
-  Accept = 'accept'
+  Accept = 'accept',
+  Protocol = 'protocol',
+  GoalCode = 'goal-code',
+  Header = 'header'
 }
 
 /** @beta DiscoverFeatureQueriesMessage is struct the represents discover feature queries message */
@@ -19,9 +22,13 @@ export type DiscoverFeatureQueriesMessage = BasicMessage & {
 
 /** @beta DiscoverFeatureQueriesBody is struct the represents discover feature queries body */
 export type DiscoverFeatureQueriesBody = {
-  queries: {
-    [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType;
-  }[];
+  queries: DiscoverFeatureQuery[];
+};
+
+/** @beta DiscoverFeatureQuery is struct the represents discover feature query */
+export type DiscoverFeatureQuery = {
+  [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType;
+  match?: string;
 };
 
 /** @beta DiscoverFeatureDiscloseMessage is struct the represents discover feature disclose message */
@@ -38,5 +45,5 @@ export type DiscoverFeatureDiscloseBody = {
 /** @beta DiscoverFeatureDisclosure is struct the represents discover feature disclosure */
 export type DiscoverFeatureDisclosure = {
   [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType;
-  accept: Array<string>;
+  id: string;
 };

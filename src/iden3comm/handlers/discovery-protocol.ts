@@ -1,12 +1,13 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
-import { BasicMessage, IPackageManager } from '../types';
+import { BasicMessage, IPackageManager, ProtocolMessage } from '../types';
 
 import * as uuid from 'uuid';
 import {
   DiscoverFeatureDiscloseMessage,
   DiscoverFeatureDisclosure,
   DiscoverFeatureQueriesMessage,
+  DiscoverFeatureQuery,
   DiscoverFeatureQueryType,
   DiscoveryProtocolFeatureType
 } from '../types/protocol/discovery-protocol';
@@ -17,6 +18,7 @@ import {
 } from './message-handler';
 import { getUnixTimestamp } from '@iden3/js-iden3-core';
 import { verifyExpiresTime } from './common';
+import def from 'ajv/dist/vocabularies/discriminator';
 
 /**
  * @beta
@@ -26,6 +28,7 @@ import { verifyExpiresTime } from './common';
  */
 export interface DiscoveryProtocolOptions {
   packageManager: IPackageManager;
+  supportedProtocols?: Array<ProtocolMessage>;
 }
 
 /**
@@ -46,27 +49,21 @@ export type DiscoveryProtocolHandlerOptions = BasicHandlerOptions & {
  * @param opts - discovery-feature query options
  * @returns `DiscoverFeatureQueriesMessage`
  */
-export function createDiscoveryFeatureQueryMessage(opts?: {
-  featureTypes?: DiscoveryProtocolFeatureType[];
-  from?: string;
-  to?: string;
-  expires_time?: number;
-}): DiscoverFeatureQueriesMessage {
+export function createDiscoveryFeatureQueryMessage(
+  queries: DiscoverFeatureQuery[],
+  opts?: {
+    from?: string;
+    to?: string;
+    expires_time?: number;
+  }
+): DiscoverFeatureQueriesMessage {
   const uuidv4 = uuid.v4();
   return {
     id: uuidv4,
     thid: uuidv4,
     type: PROTOCOL_MESSAGE_TYPE.DISCOVERY_PROTOCOL_QUERIES_MESSAGE_TYPE,
     body: {
-      queries: opts?.featureTypes?.length
-        ? opts.featureTypes.map((featureType) => ({
-            [DiscoverFeatureQueryType.FeatureType]: featureType
-          }))
-        : [
-            {
-              [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Accept
-            }
-          ]
+      queries
     },
     from: opts?.from,
     to: opts?.to,
@@ -173,23 +170,10 @@ export class DiscoveryProtocolHandler
       verifyExpiresTime(message);
     }
 
-    if (message.body.queries.length !== 1) {
-      throw new Error('Invalid number of queries. Only one query is supported');
+    const disclosures: DiscoverFeatureDisclosure[] = [];
+    for (const query of message.body.queries) {
+      disclosures.push(...this.handleQuery(query));
     }
-
-    if (
-      message.body.queries[0][DiscoverFeatureQueryType.FeatureType] !==
-      DiscoveryProtocolFeatureType.Accept
-    ) {
-      throw new Error('Invalid feature-type. Only "accept" is supported');
-    }
-
-    const disclosures = [
-      {
-        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Accept,
-        accept: this._options.packageManager.getSupportedProfiles()
-      }
-    ];
 
     return Promise.resolve(
       createDiscoveryFeatureDiscloseMessage(disclosures, {
@@ -200,5 +184,53 @@ export class DiscoveryProtocolHandler
           : undefined
       })
     );
+  }
+
+  private handleQuery(query: DiscoverFeatureQuery): DiscoverFeatureDisclosure[] {
+    let result: DiscoverFeatureDisclosure[] = [];
+    switch (query[DiscoverFeatureQueryType.FeatureType]) {
+      case DiscoveryProtocolFeatureType.Accept:
+        result = this.handleAcceptQuery();
+        break;
+      case DiscoveryProtocolFeatureType.Protocol:
+        result = this.handleProtocolQuery();
+        break;
+    }
+
+    return this.handleMatch(result, query.match);
+  }
+
+  private handleAcceptQuery(): DiscoverFeatureDisclosure[] {
+    const acceptProfiles = this._options.packageManager.getSupportedProfiles();
+    return acceptProfiles.map((profile) => ({
+      [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Accept,
+      id: profile
+    }));
+  }
+
+  private handleProtocolQuery(): DiscoverFeatureDisclosure[] {
+    return (
+      this._options.supportedProtocols?.map((protocol) => ({
+        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Protocol,
+        id: protocol
+      })) ?? []
+    );
+  }
+
+  private handleMatch(
+    disclosures: DiscoverFeatureDisclosure[],
+    match?: string
+  ): DiscoverFeatureDisclosure[] {
+    if (!match || match === '*') {
+      return disclosures;
+    }
+    const regExp = this.wildcardToRegExp(match);
+    return disclosures.filter((disclosure) => regExp.test(disclosure.id));
+  }
+
+  private wildcardToRegExp(match: string): RegExp {
+    // Escape special regex characters, then replace `*` with `.*`
+    const regexPattern = match.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+    return new RegExp(`^${regexPattern}$`);
   }
 }

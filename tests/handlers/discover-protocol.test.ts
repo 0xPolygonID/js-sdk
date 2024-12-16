@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import {
   DiscoverFeatureQueriesMessage,
   DiscoverFeatureQueryType,
+  DiscoveryProtocolFeatureType,
   IPackageManager,
   JWSPacker,
   KMS,
@@ -14,9 +15,10 @@ import {
   createDiscoveryFeatureQueryMessage
 } from '../../src/iden3comm/handlers/discovery-protocol';
 import { DIDResolutionResult } from 'did-resolver';
+import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 
 describe('discovery-protocol', () => {
-  let discoveryFeatureQueryMessage: DiscoverFeatureQueriesMessage;
+  let acceptQueryMessage: DiscoverFeatureQueriesMessage;
   let jwsPacker: JWSPacker;
   let zkpPacker: ZKPPacker;
   let plainPacker: PlainPacker;
@@ -28,7 +30,9 @@ describe('discovery-protocol', () => {
 
     zkpPacker = new ZKPPacker(new Map(), new Map());
     plainPacker = new PlainPacker();
-    discoveryFeatureQueryMessage = createDiscoveryFeatureQueryMessage();
+    acceptQueryMessage = createDiscoveryFeatureQueryMessage([
+      { [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Accept }
+    ]);
   });
 
   it('plain message accept disclosures', async () => {
@@ -40,11 +44,12 @@ describe('discovery-protocol', () => {
 
     const {
       body: { disclosures }
-    } = await discoveryProtocolHandler.handleDiscoveryQuery(discoveryFeatureQueryMessage);
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(acceptQueryMessage);
     expect(disclosures.length).to.be.eq(1);
-    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq('accept');
-    expect(disclosures[0].accept.length).to.be.eq(1);
-    expect(disclosures[0].accept[0]).to.be.eq('env=application/iden3comm-plain-json');
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Accept
+    );
+    expect(disclosures[0].id).to.be.eq('env=application/iden3comm-plain-json');
   });
 
   it('jws and plain message accept disclosures', async () => {
@@ -57,15 +62,18 @@ describe('discovery-protocol', () => {
 
     const {
       body: { disclosures }
-    } = await discoveryProtocolHandler.handleDiscoveryQuery(discoveryFeatureQueryMessage);
-    expect(disclosures.length).to.be.eq(1);
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(acceptQueryMessage);
+    expect(disclosures.length).to.be.eq(2);
 
-    expect(disclosures[0].accept.length).to.be.eq(2);
-    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq('accept');
-    expect(disclosures[0].accept).to.include('env=application/iden3comm-plain-json');
-    expect(disclosures[0].accept).to.include(
-      'env=application/iden3comm-signed-json&alg=ES256K,ES256K-R'
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Accept
     );
+    expect(disclosures[1][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Accept
+    );
+    const disclosureIds = disclosures.map((d) => d.id);
+    expect(disclosureIds).to.include('env=application/iden3comm-plain-json');
+    expect(disclosureIds).to.include('env=application/iden3comm-signed-json&alg=ES256K,ES256K-R');
   });
 
   it('zkp and plain message accept disclosures', async () => {
@@ -77,13 +85,18 @@ describe('discovery-protocol', () => {
 
     const {
       body: { disclosures }
-    } = await discoveryProtocolHandler.handleDiscoveryQuery(discoveryFeatureQueryMessage);
-    expect(disclosures.length).to.be.eq(1);
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(acceptQueryMessage);
+    expect(disclosures.length).to.be.eq(2);
 
-    expect(disclosures[0].accept.length).to.be.eq(2);
-    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq('accept');
-    expect(disclosures[0].accept).to.include('env=application/iden3comm-plain-json');
-    expect(disclosures[0].accept).to.include(
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Accept
+    );
+    expect(disclosures[1][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Accept
+    );
+    const disclosureIds = disclosures.map((d) => d.id);
+    expect(disclosureIds).to.include('env=application/iden3comm-plain-json');
+    expect(disclosureIds).to.include(
       'env=application/iden3-zkp-json&alg=groth16&circuitIds=authV2'
     );
   });
@@ -97,17 +110,157 @@ describe('discovery-protocol', () => {
 
     const {
       body: { disclosures }
-    } = await discoveryProtocolHandler.handleDiscoveryQuery(discoveryFeatureQueryMessage);
-    expect(disclosures.length).to.be.eq(1);
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(acceptQueryMessage);
+    expect(disclosures.length).to.be.eq(3);
 
-    expect(disclosures[0].accept.length).to.be.eq(3);
-    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq('accept');
-    expect(disclosures[0].accept).to.include('env=application/iden3comm-plain-json');
-    expect(disclosures[0].accept).to.include(
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Accept
+    );
+    expect(disclosures[1][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Accept
+    );
+    expect(disclosures[2][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Accept
+    );
+    const disclosureIds = disclosures.map((d) => d.id);
+    expect(disclosureIds).to.include('env=application/iden3comm-plain-json');
+    expect(disclosureIds).to.include(
       'env=application/iden3-zkp-json&alg=groth16&circuitIds=authV2'
     );
-    expect(disclosures[0].accept).to.include(
-      'env=application/iden3comm-signed-json&alg=ES256K,ES256K-R'
+    expect(disclosureIds).to.include('env=application/iden3comm-signed-json&alg=ES256K,ES256K-R');
+  });
+
+  it('zkp, jws and plain message accept disclosures with exact match', async () => {
+    const packageManager: IPackageManager = new PackageManager();
+    packageManager.registerPackers([new PlainPacker(), plainPacker, zkpPacker, jwsPacker]);
+    const discoveryProtocolHandler = new DiscoveryProtocolHandler({
+      packageManager
+    });
+
+    const acceptQueryMessageWithMatch = createDiscoveryFeatureQueryMessage([
+      {
+        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Accept,
+        match: 'env=application/iden3-zkp-json&alg=groth16&circuitIds=authV2'
+      }
+    ]);
+
+    const {
+      body: { disclosures }
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(acceptQueryMessageWithMatch);
+    expect(disclosures.length).to.be.eq(1);
+
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Accept
     );
+    expect(disclosures[0].id).to.include(
+      'env=application/iden3-zkp-json&alg=groth16&circuitIds=authV2'
+    );
+  });
+
+  it('feature-type: protocol with protocol version match', async () => {
+    const packageManager: IPackageManager = new PackageManager();
+    const discoveryProtocolHandler = new DiscoveryProtocolHandler({
+      packageManager,
+      supportedProtocols: [
+        PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+        PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE
+      ]
+    });
+
+    const protocolQueryMessage = createDiscoveryFeatureQueryMessage([
+      {
+        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Protocol,
+        match: 'https://iden3-communication.io/authorization/1.*'
+      }
+    ]);
+
+    const {
+      body: { disclosures }
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(protocolQueryMessage);
+    expect(disclosures.length).to.be.eq(2);
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Protocol
+    );
+    expect(disclosures[1][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Protocol
+    );
+    const disclosureIds = disclosures.map((d) => d.id);
+    expect(disclosureIds).to.include(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE);
+    expect(disclosureIds).to.include(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE);
+  });
+
+  it('feature-type: protocol with protocol version mismatch', async () => {
+    const packageManager: IPackageManager = new PackageManager();
+    const discoveryProtocolHandler = new DiscoveryProtocolHandler({
+      packageManager,
+      supportedProtocols: [
+        PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+        PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE
+      ]
+    });
+
+    const protocolQueryMessage = createDiscoveryFeatureQueryMessage([
+      {
+        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Protocol,
+        match: 'https://iden3-communication.io/authorization/44.*'
+      }
+    ]);
+
+    const {
+      body: { disclosures }
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(protocolQueryMessage);
+    expect(disclosures.length).to.be.eq(0);
+  });
+
+  it('feature-type: protocol and accept', async () => {
+    const packageManager: IPackageManager = new PackageManager();
+    packageManager.registerPackers([plainPacker]);
+    const discoveryProtocolHandler = new DiscoveryProtocolHandler({
+      packageManager,
+      supportedProtocols: [
+        PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+        PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE
+      ]
+    });
+
+    const protocolQueryMessage = createDiscoveryFeatureQueryMessage([
+      { [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Accept },
+      { [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Protocol }
+    ]);
+
+    const {
+      body: { disclosures }
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(protocolQueryMessage);
+    expect(disclosures.length).to.be.eq(3);
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Accept
+    );
+    expect(disclosures[1][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Protocol
+    );
+    expect(disclosures[2][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Protocol
+    );
+    const disclosureIds = disclosures.map((d) => d.id);
+    expect(disclosureIds).to.include('env=application/iden3comm-plain-json');
+    expect(disclosureIds).to.include(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE);
+    expect(disclosureIds).to.include(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE);
+  });
+
+  it('feature-type: header', async () => {
+    const packageManager: IPackageManager = new PackageManager();
+    packageManager.registerPackers([plainPacker]);
+    const discoveryProtocolHandler = new DiscoveryProtocolHandler({
+      packageManager
+    });
+
+    const protocolQueryMessage = createDiscoveryFeatureQueryMessage([
+      { [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Header }
+    ]);
+
+    const {
+      body: { disclosures }
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(protocolQueryMessage);
+    expect(disclosures.length).to.be.eq(0);
   });
 });
