@@ -29,6 +29,7 @@ export interface DiscoveryProtocolOptions {
   packageManager: IPackageManager;
   protocols?: Array<ProtocolMessage>;
   goalCodes?: Array<string>;
+  headers?: Array<string>;
 }
 
 /**
@@ -142,6 +143,20 @@ export class DiscoveryProtocolHandler
    */
   constructor(private readonly _options: DiscoveryProtocolOptions) {
     super();
+    const headers = [
+      'id',
+      'typ',
+      'type',
+      'thid',
+      'body',
+      'from',
+      'to',
+      'created_time',
+      'expires_time'
+    ];
+    if (!_options.headers) {
+      _options.headers = headers;
+    }
   }
 
   /**
@@ -198,6 +213,9 @@ export class DiscoveryProtocolHandler
       case DiscoveryProtocolFeatureType.GoalCode:
         result = this.handleGoalCodeQuery();
         break;
+      case DiscoveryProtocolFeatureType.Header:
+        result = this.handleHeaderQuery();
+        break;
     }
 
     return this.handleMatch(result, query.match);
@@ -225,6 +243,15 @@ export class DiscoveryProtocolHandler
       this._options.goalCodes?.map((goalCode) => ({
         [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.GoalCode,
         id: goalCode
+      })) ?? []
+    );
+  }
+
+  private handleHeaderQuery(): DiscoverFeatureDisclosure[] {
+    return (
+      this._options.headers?.map((header) => ({
+        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Header,
+        id: header
       })) ?? []
     );
   }

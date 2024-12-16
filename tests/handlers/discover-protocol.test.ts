@@ -230,6 +230,29 @@ describe('discovery-protocol', () => {
     expect(disclosureIds).to.include('unit.testing.some.goal-code');
   });
 
+  it('feature-type: header', async () => {
+    const packageManager: IPackageManager = new PackageManager();
+    const discoveryProtocolHandler = new DiscoveryProtocolHandler({
+      packageManager
+    });
+
+    const protocolQueryMessage = createDiscoveryFeatureQueryMessage([
+      {
+        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Header,
+        match: 'expires_time'
+      }
+    ]);
+
+    const {
+      body: { disclosures }
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(protocolQueryMessage);
+    expect(disclosures.length).to.be.eq(1);
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Header
+    );
+    expect(disclosures[0].id).to.be.eq('expires_time');
+  });
+
   it('feature-type: protocol with protocol version mismatch', async () => {
     const packageManager: IPackageManager = new PackageManager();
     const discoveryProtocolHandler = new DiscoveryProtocolHandler({
