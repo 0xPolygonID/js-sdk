@@ -161,7 +161,7 @@ describe('discovery-protocol', () => {
     const packageManager: IPackageManager = new PackageManager();
     const discoveryProtocolHandler = new DiscoveryProtocolHandler({
       packageManager,
-      supportedProtocols: [
+      protocols: [
         PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
         PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE
       ]
@@ -189,11 +189,52 @@ describe('discovery-protocol', () => {
     expect(disclosureIds).to.include(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE);
   });
 
+  it('feature-type: protocol and goal-code with protocol version match', async () => {
+    const packageManager: IPackageManager = new PackageManager();
+    const discoveryProtocolHandler = new DiscoveryProtocolHandler({
+      packageManager,
+      protocols: [
+        PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+        PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE
+      ],
+      goalCodes: ['unit.testing.some.goal-code']
+    });
+
+    const protocolQueryMessage = createDiscoveryFeatureQueryMessage([
+      {
+        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Protocol,
+        match: 'https://iden3-communication.io/authorization/1.*'
+      },
+      {
+        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.GoalCode,
+        match: 'unit.testing.*'
+      }
+    ]);
+
+    const {
+      body: { disclosures }
+    } = await discoveryProtocolHandler.handleDiscoveryQuery(protocolQueryMessage);
+    expect(disclosures.length).to.be.eq(3);
+    expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Protocol
+    );
+    expect(disclosures[1][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.Protocol
+    );
+    expect(disclosures[2][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
+      DiscoveryProtocolFeatureType.GoalCode
+    );
+    const disclosureIds = disclosures.map((d) => d.id);
+    expect(disclosureIds).to.include(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE);
+    expect(disclosureIds).to.include(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE);
+    expect(disclosureIds).to.include('unit.testing.some.goal-code');
+  });
+
   it('feature-type: protocol with protocol version mismatch', async () => {
     const packageManager: IPackageManager = new PackageManager();
     const discoveryProtocolHandler = new DiscoveryProtocolHandler({
       packageManager,
-      supportedProtocols: [
+      protocols: [
         PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
         PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE
       ]
@@ -217,7 +258,7 @@ describe('discovery-protocol', () => {
     packageManager.registerPackers([plainPacker]);
     const discoveryProtocolHandler = new DiscoveryProtocolHandler({
       packageManager,
-      supportedProtocols: [
+      protocols: [
         PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
         PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE
       ]

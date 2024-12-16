@@ -18,7 +18,6 @@ import {
 } from './message-handler';
 import { getUnixTimestamp } from '@iden3/js-iden3-core';
 import { verifyExpiresTime } from './common';
-import def from 'ajv/dist/vocabularies/discriminator';
 
 /**
  * @beta
@@ -28,7 +27,8 @@ import def from 'ajv/dist/vocabularies/discriminator';
  */
 export interface DiscoveryProtocolOptions {
   packageManager: IPackageManager;
-  supportedProtocols?: Array<ProtocolMessage>;
+  protocols?: Array<ProtocolMessage>;
+  goalCodes?: Array<string>;
 }
 
 /**
@@ -195,6 +195,9 @@ export class DiscoveryProtocolHandler
       case DiscoveryProtocolFeatureType.Protocol:
         result = this.handleProtocolQuery();
         break;
+      case DiscoveryProtocolFeatureType.GoalCode:
+        result = this.handleGoalCodeQuery();
+        break;
     }
 
     return this.handleMatch(result, query.match);
@@ -210,9 +213,18 @@ export class DiscoveryProtocolHandler
 
   private handleProtocolQuery(): DiscoverFeatureDisclosure[] {
     return (
-      this._options.supportedProtocols?.map((protocol) => ({
+      this._options.protocols?.map((protocol) => ({
         [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Protocol,
         id: protocol
+      })) ?? []
+    );
+  }
+
+  private handleGoalCodeQuery(): DiscoverFeatureDisclosure[] {
+    return (
+      this._options.goalCodes?.map((goalCode) => ({
+        [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.GoalCode,
+        id: goalCode
       })) ?? []
     );
   }
