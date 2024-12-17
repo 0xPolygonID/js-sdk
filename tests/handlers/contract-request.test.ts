@@ -893,7 +893,7 @@ describe('contract-request', () => {
     const ciRequestBody: ContractInvokeRequestBody = {
       reason: 'reason',
       transaction_data: transactionData,
-      scope: []
+      scope: proofReqs
     };
 
     const id = uuid.v4();

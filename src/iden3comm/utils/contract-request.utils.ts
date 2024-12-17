@@ -50,11 +50,7 @@ export async function prepareAuthV2ZeroKnowledgeResponse(
     ];
   }
   const hash = Uint8Array.from([...hexToBytes(address), ...new Uint8Array(12)]).reverse();
-  const authInputs = await proofService.generateAuthV2Inputs(hash, senderDid, CircuitId.AuthV2);
-
-  const prover = proofService.getProver();
-
-  const { proof, pub_signals } = await prover.generate(authInputs, CircuitId.AuthV2);
+  const { proof, pub_signals } = await proofService.generateAuthV2Proof(hash, senderDid);
 
   return [
     {

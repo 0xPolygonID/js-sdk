@@ -132,6 +132,15 @@ export interface IProofService {
   generateAuthV2Inputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
 
   /**
+   * generates auth inputs
+   *
+   * @param {Uint8Array} hash - challenge that will be signed
+   * @param {DID} did - identity that will generate a proof
+   * @returns `Promise<Uint8Array>`
+   */
+  generateAuthV2Proof(hash: Uint8Array, did: DID): Promise<ZKProof>;
+
+  /**
    * state verification function
    *
    * @param {string} circuitId - id of authentication circuit
@@ -163,12 +172,6 @@ export interface IProofService {
     query: ProofQuery,
     opts?: { skipClaimRevocationCheck: boolean }
   ): Promise<{ cred: W3CCredential; revStatus: RevocationStatus | undefined }>;
-
-  /**
-   * Returns prover instance
-   * @returns {IZKProver}
-   */
-  getProver(): IZKProver;
 }
 /**
  * Proof service is an implementation of IProofService
@@ -204,11 +207,6 @@ export class ProofService implements IProofService {
       opts?.documentLoader ?? cacheLoader(opts),
       _stateStorage
     );
-  }
-
-  /** {@inheritdoc IProofService.getProver} */
-  getProver(): IZKProver {
-    return this._prover;
   }
 
   /** {@inheritdoc IProofService.verifyProof} */
@@ -497,6 +495,13 @@ export class ProofService implements IProofService {
     authInputs.challenge = challenge;
     authInputs.gistProof = gistProof;
     return authInputs.inputsMarshal();
+  }
+
+  async generateAuthV2Proof(challenge: Uint8Array, did: DID): Promise<ZKProof> {
+    const authInputs = await this.generateAuthV2Inputs(challenge, did, CircuitId.AuthV2);
+
+    const zkProof = await this._prover.generate(authInputs, CircuitId.AuthV2);
+    return zkProof;
   }
 
   async verifyState(
