@@ -147,6 +147,7 @@ export enum SupportedPaymentProofType {
 /**
  * Media types for Payment supported currencies
  * @beta
+ * @deprecated
  * @enum {string}
  */
 export enum SupportedCurrencies {
@@ -154,8 +155,7 @@ export enum SupportedCurrencies {
   ETH_WEI = 'ETHWEI',
   ETH_GWEI = 'ETHGWEI',
   MATIC = 'MATIC',
-  USDT = 'USDT',
-  USDC = 'USDC'
+  POL = 'POL'
 }
 
 /**

@@ -66,24 +66,20 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   /**
    * supported circuits
    */
-  private readonly _supportedCircuits: OnChainZKPVerifierCircuitId[] = [
+  private static readonly _supportedCircuits: OnChainZKPVerifierCircuitId[] = [
     CircuitId.AuthV2,
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
     CircuitId.AtomicQueryV3OnChain
   ];
 
-  private readonly _supportedCircuitsPubSignalsMap = {
+  private static readonly _supportedCircuitsPubSignalsMap = {
     [CircuitId.AtomicQueryMTPV2OnChain]: AtomicQueryMTPV2OnChainPubSignals,
     [CircuitId.AtomicQuerySigV2OnChain]: AtomicQuerySigV2OnChainPubSignals,
     [CircuitId.AtomicQueryV3OnChain]: AtomicQueryV3OnChainPubSignals,
     [CircuitId.AuthV2]: AuthV2PubSignals
   };
 
-  /**
-   * abi coder to encode/decode structures to solidity bytes
-   */
-  private readonly _abiCoder = new ethers.AbiCoder();
   /**
    *
    * Creates an instance of OnChainZKPVerifier.
@@ -96,10 +92,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     private readonly _opts?: OnChainZKPVerifierOptions
   ) {}
 
-  /**
-   * {@inheritDoc IOnChainZKPVerifier.prepareTxArgsSubmitV1}
-   */
-  public async prepareTxArgsSubmitV1(
+  public static async prepareTxArgsSubmitV1(
     txData: ContractInvokeTransactionData,
     zkProofResponse: ZeroKnowledgeProofResponse
   ): Promise<JsonDocumentObjectValue[]> {
@@ -123,6 +116,15 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     ];
 
     return payload;
+  }
+  /**
+   * {@inheritDoc IOnChainZKPVerifier.prepareTxArgsSubmitV1}
+   */
+  public async prepareTxArgsSubmitV1(
+    txData: ContractInvokeTransactionData,
+    zkProofResponse: ZeroKnowledgeProofResponse
+  ): Promise<JsonDocumentObjectValue[]> {
+    return OnChainZKPVerifier.prepareTxArgsSubmitV1(txData, zkProofResponse);
   }
 
   /**
@@ -239,7 +241,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     return new Map<string, ZeroKnowledgeProofResponse[]>().set(txnHash, zkProofResponses);
   }
 
-  private getCrossChainResolvers(
+  private static getCrossChainResolvers(
     source: {
       id: Id;
       root?: Hash;
@@ -277,7 +279,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     }, []);
   }
 
-  public async prepareTxArgsSubmitV2(
+  public static async prepareTxArgsSubmitV2(
+    resolverUrl: string,
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
   ): Promise<JsonDocumentObjectValue[]> {
@@ -286,10 +289,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         `submit cross chain doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitZKPResponseV2}' is supported.`
       );
     }
-    const didResolverUrl = this._opts?.didResolverUrl;
-    if (!didResolverUrl) {
-      throw new Error(`did resolver url required for cross chain verification`);
-    }
+    
     const gistUpdates = [];
     const stateUpdates = [];
     const payload = [];
@@ -329,14 +329,14 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         stateInfo.gists,
         chainId,
         'gist',
-        didResolverUrl
+        resolverUrl
       );
 
       const stateUpdateResolutions = this.getCrossChainResolvers(
         stateInfo.states,
         chainId,
         'state',
-        didResolverUrl
+        resolverUrl
       );
 
       if (gistUpdateResolutions.length > 0) {
@@ -382,19 +382,32 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     return [payload, crossChainProofs];
   }
 
-  private packZkpProof(inputs: string[], a: string[], b: string[][], c: string[]): string {
-    return this._abiCoder.encode(
+  public async prepareTxArgsSubmitV2(
+    txData: ContractInvokeTransactionData,
+    zkProofResponses: ZeroKnowledgeProofResponse[]
+  ): Promise<JsonDocumentObjectValue[]> {
+    if (!this._opts?.didResolverUrl) {
+      throw new Error(`did resolver url required for crosschain verification`);
+    }
+    return OnChainZKPVerifier.prepareTxArgsSubmitV2(
+      this._opts.didResolverUrl,
+      txData,
+      zkProofResponses
+    );
+  }
+
+  private static packZkpProof(inputs: string[], a: string[], b: string[][], c: string[]): string {
+    return new ethers.AbiCoder().encode(
       ['uint256[] inputs', 'uint256[2]', 'uint256[2][2]', 'uint256[2]'],
       [inputs, a, b, c]
     );
   }
 
-  private packCrossChainProofs(
+  private static packCrossChainProofs(
     gistUpdateArr: GlobalStateUpdate[],
     stateUpdateArr: IdentityStateUpdate[]
   ) {
     const proofs = [];
-
     for (const globalStateUpdate of gistUpdateArr) {
       proofs.push({
         proofType: 'globalStateProof',
@@ -407,14 +420,14 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         proof: this.packIdentityStateMsg(stateUpdate)
       });
     }
-    return this._abiCoder.encode(
+    return new ethers.AbiCoder().encode(
       ['tuple(' + 'string proofType,' + 'bytes proof' + ')[]'],
       [proofs]
     );
   }
 
-  private packGlobalStateMsg(msg: GlobalStateUpdate): string {
-    return this._abiCoder.encode(
+  public static packGlobalStateMsg(msg: GlobalStateUpdate): string {
+    return new ethers.AbiCoder().encode(
       [
         'tuple(' +
           'tuple(' +
@@ -430,8 +443,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     );
   }
 
-  private packIdentityStateMsg(msg: IdentityStateUpdate): string {
-    return this._abiCoder.encode(
+  private static packIdentityStateMsg(msg: IdentityStateUpdate): string {
+    return new ethers.AbiCoder().encode(
       [
         'tuple(' +
           'tuple(' +
@@ -447,16 +460,19 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     );
   }
 
-  private packMetadatas(
+  private static packMetadatas(
     metas: {
       key: string;
       value: Uint8Array;
     }[]
   ): string {
-    return this._abiCoder.encode(['tuple(' + 'string key,' + 'bytes value' + ')[]'], [metas]);
+    return new ethers.AbiCoder().encode(
+      ['tuple(' + 'string key,' + 'bytes value' + ')[]'],
+      [metas]
+    );
   }
 
-  private getOnChainGistRootStatePubSignals(
+  private static getOnChainGistRootStatePubSignals(
     onChainCircuitId: OnChainZKPVerifierCircuitId,
     inputs: string[]
   ): StatesInfo {
@@ -470,7 +486,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     return atomicQueryPubSignals.getStatesInfo();
   }
 
-  private async resolveDidDocumentEip712MessageAndSignature(
+  private static async resolveDidDocumentEip712MessageAndSignature(
     did: DID,
     resolverUrl: string,
     opts?: {

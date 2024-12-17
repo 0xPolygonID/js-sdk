@@ -30,7 +30,6 @@ import {
   PaymentFeatures,
   PaymentRequestDataType,
   PaymentType,
-  SupportedCurrencies,
   SupportedPaymentProofType
 } from '../../verifiable';
 import { Signer, ethers } from 'ethers';
@@ -90,7 +89,7 @@ export async function verifyEIP712TypedData(
       ? {
           recipient: data.recipient,
           amount: data.amount,
-          expirationDate: new Date(data.expirationDate).getTime(),
+          expirationDate: getUnixTimestamp(new Date(data.expirationDate)),
           nonce: data.nonce,
           metadata: '0x'
         }
@@ -98,7 +97,7 @@ export async function verifyEIP712TypedData(
           tokenAddress: data.tokenAddress,
           recipient: data.recipient,
           amount: data.amount,
-          expirationDate: new Date(data.expirationDate).getTime(),
+          expirationDate: getUnixTimestamp(new Date(data.expirationDate)),
           nonce: data.nonce,
           metadata: '0x'
         };
@@ -140,23 +139,19 @@ export type PaymentRailsInfo = {
     context: string;
   }[];
   description?: string;
-  chains: PaymentRailsChainInfo[];
+  options: PaymentRailsOptionInfo[];
 };
 
 /**
  * @beta
- * PaymentRailsChainInfo represents chain info for payment rails
+ * PaymentRailsOptionInfo represents option info for payment rails
  */
-export type PaymentRailsChainInfo = {
-  nonce: bigint;
-  amount: bigint;
-  currency: SupportedCurrencies | string;
+export type PaymentRailsOptionInfo = {
+  optionId: string;
   chainId: string;
-  expirationDate?: string;
-  features?: PaymentFeatures[];
-  type:
-    | PaymentRequestDataType.Iden3PaymentRailsRequestV1
-    | PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
+  nonce: bigint;
+  amount: string;
+  expirationDate?: Date;
 };
 
 /**
@@ -498,9 +493,8 @@ export class PaymentHandler
     for (let i = 0; i < payments.length; i++) {
       const { credentials, description } = payments[i];
       const dataArr: (Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1)[] = [];
-      for (let j = 0; j < payments[i].chains.length; j++) {
-        const { features, nonce, amount, currency, chainId, expirationDate, type } =
-          payments[i].chains[j];
+      for (let j = 0; j < payments[i].options.length; j++) {
+        const { nonce, amount, chainId, optionId, expirationDate } = payments[i].options[j];
 
         const multiChainConfig = this._params.multiChainPaymentConfig?.find(
           (c) => c.chainId === chainId
@@ -508,33 +502,39 @@ export class PaymentHandler
         if (!multiChainConfig) {
           throw new Error(`failed request. no config for chain ${chainId}`);
         }
-        const { recipient, paymentContract, erc20TokenAddressArr } = multiChainConfig;
+        const { recipient, paymentRails, options } = multiChainConfig;
 
-        const tokenAddress = erc20TokenAddressArr.find((t) => t.symbol === currency)?.address;
-        if (type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 && !tokenAddress) {
-          throw new Error(`failed request. no token address for currency ${currency}`);
+        const option = options.find((t) => t.id === optionId);
+        if (!option) {
+          throw new Error(`failed request. no option for id ${optionId}`);
         }
-        const expirationTime = expirationDate
-          ? new Date(expirationDate).getTime()
-          : new Date(new Date().setHours(new Date().getHours() + 1)).getTime();
-        const typeUrl = `https://schema.iden3.io/core/json/${type}.json`;
+        if (
+          option.type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1 &&
+          !option.contractAddress
+        ) {
+          throw new Error(`failed request. no token address for option id ${optionId}`);
+        }
+        const expirationDateRequired =
+          expirationDate ?? new Date(new Date().setHours(new Date().getHours() + 1));
+        const typeUrl = `https://schema.iden3.io/core/json/${option.type}.json`;
         const typesFetchResult = await fetch(typeUrl);
         const types = await typesFetchResult.json();
         delete types.EIP712Domain;
+
         const paymentData =
-          type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
+          option.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
             ? {
                 recipient,
-                amount,
-                expirationDate: expirationTime,
+                amount: amount,
+                expirationDate: getUnixTimestamp(expirationDateRequired),
                 nonce,
                 metadata: '0x'
               }
             : {
-                tokenAddress,
+                tokenAddress: option.contractAddress,
                 recipient,
-                amount,
-                expirationDate: expirationTime,
+                amount: amount,
+                expirationDate: getUnixTimestamp(expirationDateRequired),
                 nonce,
                 metadata: '0x'
               };
@@ -543,7 +543,7 @@ export class PaymentHandler
           name: 'MCPayment',
           version: '1.0.0',
           chainId,
-          verifyingContract: paymentContract
+          verifyingContract: paymentRails
         };
         const signature = await signer.signTypedData(domain, types, paymentData);
         const proof: EthereumEip712Signature2021[] = [
@@ -564,21 +564,25 @@ export class PaymentHandler
         const d: Iden3PaymentRailsRequestV1 = {
           type: PaymentRequestDataType.Iden3PaymentRailsRequestV1,
           '@context': [
-            `https://schema.iden3.io/core/jsonld/payment.jsonld#${type}`,
+            `https://schema.iden3.io/core/jsonld/payment.jsonld#${option.type}`,
             'https://w3id.org/security/suites/eip712sig-2021/v1'
           ],
           recipient,
           amount: amount.toString(),
-          currency,
-          expirationDate: new Date(expirationTime).toISOString(),
+          expirationDate: expirationDateRequired.toISOString(),
           nonce: nonce.toString(),
           metadata: '0x',
           proof
         };
         dataArr.push(
-          type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
+          option.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
             ? d
-            : { ...d, type, tokenAddress: tokenAddress || '', features: features || [] }
+            : {
+                ...d,
+                type: option.type,
+                tokenAddress: option.contractAddress || '',
+                features: option.features || []
+              }
         );
       }
       paymentRequestInfo.push({
