@@ -497,6 +497,7 @@ export class ProofService implements IProofService {
     return authInputs.inputsMarshal();
   }
 
+  /** {@inheritdoc IProofService.generateAuthV2Proof} */
   async generateAuthV2Proof(challenge: Uint8Array, did: DID): Promise<ZKProof> {
     const authInputs = await this.generateAuthV2Inputs(challenge, did, CircuitId.AuthV2);
 
