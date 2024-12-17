@@ -289,7 +289,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         `submit cross chain doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitZKPResponseV2}' is supported.`
       );
     }
-    
+
     const gistUpdates = [];
     const stateUpdates = [];
     const payload = [];
