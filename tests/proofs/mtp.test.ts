@@ -79,7 +79,7 @@ describe('mtp proofs', () => {
         replacedAtBlock: 0n
       });
     },
-    getRpcProvider: (): JsonRpcProvider => {
+    getProvider: (): JsonRpcProvider => {
       return new JsonRpcProvider(RPC_URL);
     }
   };

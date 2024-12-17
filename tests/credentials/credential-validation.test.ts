@@ -26,7 +26,7 @@ import {
 chai.use(chaiAsPromised);
 const { expect } = chai;
 import nock from 'nock';
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, Provider } from 'ethers';
 import { RPC_URL } from '../helpers';
 
 const mockStateStorage: IStateStorage = {
@@ -78,7 +78,7 @@ const mockStateStorage: IStateStorage = {
       replacedAtBlock: 0n
     });
   },
-  getRpcProvider: (): JsonRpcProvider => {
+  getProvider: (): Provider => {
     return new JsonRpcProvider(RPC_URL);
   }
 };

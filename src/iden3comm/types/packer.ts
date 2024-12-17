@@ -5,6 +5,7 @@ import { CircuitId } from '../../circuits';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { DIDDocument, VerificationMethod } from 'did-resolver';
 import { StateVerificationOpts } from './models';
+import { Attachment } from './protocol/directives';
 
 /**
  *  Protocol message type
@@ -47,8 +48,9 @@ export type BasicMessage = {
   type: ProtocolMessage;
   thid?: string;
   body?: unknown;
-  from?: string;
+  from: string;
   to?: string;
+  attachments?: Attachment[];
   created_time?: number;
   expires_time?: number;
 };
@@ -56,7 +58,7 @@ export type BasicMessage = {
 /**
  * Basic message with all possible fields required
  */
-export type RequiredBasicMessage = Omit<Required<BasicMessage>, 'created_time' | 'expires_time'> & {
+export type RequiredBasicMessage = Omit<Required<BasicMessage>, 'created_time' | 'expires_time' | 'attachments'> & {
   created_time?: number;
   expires_time?: number;
 };

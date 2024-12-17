@@ -309,7 +309,8 @@ describe('contract-request', () => {
       typ: MediaType.PlainMessage,
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
       thid: id,
-      body: ciRequestBody
+      body: ciRequestBody,
+      from: issuerDID.string()
     };
 
     const ethSigner = new ethers.Wallet(walletKey);
@@ -403,7 +404,8 @@ describe('contract-request', () => {
       typ: MediaType.PlainMessage,
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
       thid: id,
-      body: ciRequestBody
+      body: ciRequestBody,
+      from: issuerDID.string()
     };
 
     const ethSigner = new ethers.Wallet(walletKey);
@@ -550,7 +552,8 @@ describe('contract-request', () => {
       typ: MediaType.PlainMessage,
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
       thid: id,
-      body: ciRequestBody
+      body: ciRequestBody,
+      from: issuerDID.string()
     };
 
     const ethSigner = new ethers.Wallet(walletKey);
