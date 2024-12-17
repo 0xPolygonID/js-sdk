@@ -7,6 +7,7 @@ import { IProofService } from '../../proof';
 import { ZeroKnowledgeProofResponse } from '../types';
 
 /**
+ * @beta
  * Retrieves the request ID from circuit string.
  * CircuitId.AuthV2 - 940499666
  * @returns The request ID.
@@ -20,6 +21,7 @@ export function calculateRequestIdForCircuit(circuitId: CircuitId): number {
 
 /**
  * Prepares the zero-knowledge proof response for the AuthV2 circuit.
+ * @beta
  * @param address - The address associated with the request.
  * @param senderDid - The sender's decentralized identifier (DID).
  * @param proofService - The proof service used to generate the proof.
@@ -31,7 +33,8 @@ export async function prepareAuthV2ZeroKnowledgeResponse(
   proofService: IProofService
 ): Promise<ZeroKnowledgeProofResponse[]> {
   const circuitId = CircuitId.AuthV2;
-  // calculateRequestIdForCircuit(CircuitId.AuthV2);
+
+  //  this is now hardcoded calculated value for 'authV2' that can be changed in the future.
   const id = 940499666;
 
   if (isEthereumIdentity(senderDid)) {

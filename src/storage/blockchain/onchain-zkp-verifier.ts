@@ -8,7 +8,7 @@ import {
 } from '../../iden3comm';
 import abi from './abi/ZkpVerifier.json';
 import { TransactionService } from '../../blockchain';
-import { DID, Id } from '@iden3/js-iden3-core';
+import { chainIDfromDID, DID, Id } from '@iden3/js-iden3-core';
 import {
   AtomicQueryMTPV2OnChainPubSignals,
   AtomicQuerySigV2OnChainPubSignals,
@@ -17,12 +17,7 @@ import {
   CircuitId,
   StatesInfo
 } from '../../circuits';
-import {
-  byteEncoder,
-  DIDDocumentSignature,
-  getChainIdFromId,
-  resolveDidDocument
-} from '../../utils';
+import { byteEncoder, DIDDocumentSignature, resolveDidDocument } from '../../utils';
 import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
 import { poseidon } from '@iden3/js-crypto';
 import { Hash } from '@iden3/js-merkletree';
@@ -263,7 +258,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     ].reduce((acc: Promise<unknown>[], s: string) => {
       const info = JSON.parse(s);
       const id = Id.fromString(info.id);
-      const chainId = getChainIdFromId(id);
+      const chainId = chainIDfromDID(DID.parseFromId(id));
 
       if (txDataChainId === chainId) {
         return acc;

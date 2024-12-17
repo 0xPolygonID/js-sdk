@@ -1,5 +1,5 @@
 import { Hex } from '@iden3/js-crypto';
-import { Id, buildDIDType, genesisFromEthAddress, DID, ChainIds } from '@iden3/js-iden3-core';
+import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import { DIDResolutionResult, VerificationMethod, DIDResolutionMetadata } from 'did-resolver';
 import { keccak256 } from 'js-sha3';
@@ -155,9 +155,3 @@ export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): D
   const identifier = new Id(didType, genesis);
   return DID.parseFromId(identifier);
 };
-
-export function getChainIdFromId(id: Id): number {
-  const { blockchain, networkId } = DID.decodePartsFromId(id);
-  const chainKey = `${blockchain}:${networkId}`;
-  return ChainIds[chainKey];
-}
