@@ -136,7 +136,7 @@ export interface IProofService {
    *
    * @param {Uint8Array} hash - challenge that will be signed
    * @param {DID} did - identity that will generate a proof
-   * @returns `Promise<Uint8Array>`
+   * @returns `Promise<ZKProof>`
    */
   generateAuthV2Proof(hash: Uint8Array, did: DID): Promise<ZKProof>;
 
