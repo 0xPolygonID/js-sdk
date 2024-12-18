@@ -21,6 +21,19 @@ export class PackageManager implements IPackageManager {
     this.packers = new Map<MediaType, IPacker>();
   }
 
+  /** {@inheritDoc IPackageManager.getSupportedProfiles} */
+  getSupportedProfiles(): string[] {
+    const acceptProfiles: string[] = [];
+    const mediaTypes = this.getSupportedMediaTypes();
+    for (const mediaType of mediaTypes) {
+      const p = this.packers.get(mediaType);
+      if (p) {
+        acceptProfiles.push(...p.getSupportedProfiles());
+      }
+    }
+    return [...new Set(acceptProfiles)];
+  }
+
   /** {@inheritDoc IPackageManager.isProfileSupported} */
   isProfileSupported(mediaType: MediaType, profile: string): boolean {
     const p = this.packers.get(mediaType);
