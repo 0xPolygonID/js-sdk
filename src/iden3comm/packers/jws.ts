@@ -1,5 +1,10 @@
 import { BasicMessage, IPacker, JWSPackerParams } from '../types';
-import { AcceptJwsAlgorithms, MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
+import {
+  AcceptJwsAlgorithms,
+  MediaType,
+  ProtocolVersion,
+  SUPPORTED_PUBLIC_KEY_TYPES
+} from '../constants';
 import { extractPublicKeyBytes, resolveVerificationMethods } from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
 
@@ -105,12 +110,18 @@ export class JWSPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getSupportedProfiles} */
   getSupportedProfiles(): string[] {
-    return [`env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(',')}`];
+    return this.getSupportedProtocolVersions().map(
+      (v) => `${v};env=${this.mediaType()};alg=${this.getSupportedAlgorithms().join(',')}`
+    );
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */
   isProfileSupported(profile: string) {
-    const { env, circuits, alg } = parseAcceptProfile(profile);
+    const { protocolVersion, env, circuits, alg } = parseAcceptProfile(profile);
+
+    if (!this.getSupportedProtocolVersions().includes(protocolVersion)) {
+      return false;
+    }
     if (env !== this.mediaType()) {
       return false;
     }
@@ -127,6 +138,10 @@ export class JWSPacker implements IPacker {
 
   private getSupportedAlgorithms(): AcceptJwsAlgorithms[] {
     return [AcceptJwsAlgorithms.ES256K, AcceptJwsAlgorithms.ES256KR];
+  }
+
+  private getSupportedProtocolVersions(): [ProtocolVersion] {
+    return [ProtocolVersion.V1];
   }
 
   private async resolveDidDoc(from: string) {

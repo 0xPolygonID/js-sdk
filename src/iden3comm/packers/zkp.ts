@@ -20,7 +20,7 @@ import {
   ErrStateVerificationFailed,
   ErrUnknownCircuitID
 } from '../errors';
-import { AcceptAuthCircuits, AcceptJwzAlgorithms, MediaType } from '../constants';
+import { AcceptAuthCircuits, AcceptJwzAlgorithms, MediaType, ProtocolVersion } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { DEFAULT_AUTH_VERIFY_DELAY } from '../constants';
 import { parseAcceptProfile } from '../utils';
@@ -178,16 +178,22 @@ export class ZKPPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getSupportedProfiles} */
   getSupportedProfiles(): string[] {
-    return [
-      `env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(
-        ','
-      )}&circuitIds=${this.getSupportedCircuitIds().join(',')}`
-    ];
+    return this.getSupportedProtocolVersions().map(
+      (v) =>
+        `${v};env=${this.mediaType()};alg=${this.getSupportedAlgorithms().join(
+          ','
+        )};circuitIds=${this.getSupportedCircuitIds().join(',')}`
+    );
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */
   isProfileSupported(profile: string) {
-    const { env, circuits, alg } = parseAcceptProfile(profile);
+    const { protocolVersion, env, circuits, alg } = parseAcceptProfile(profile);
+
+    if (!this.getSupportedProtocolVersions().includes(protocolVersion)) {
+      return false;
+    }
+
     if (env !== this.mediaType()) {
       return false;
     }
@@ -208,6 +214,10 @@ export class ZKPPacker implements IPacker {
 
   private getSupportedCircuitIds(): AcceptAuthCircuits[] {
     return [AcceptAuthCircuits.AuthV2];
+  }
+
+  private getSupportedProtocolVersions(): [ProtocolVersion] {
+    return [ProtocolVersion.V1];
   }
 }
 

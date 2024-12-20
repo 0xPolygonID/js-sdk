@@ -492,17 +492,7 @@ export class AuthHandler
     if (profile?.length) {
       const supportedMediaTypes: MediaType[] = [];
       for (const acceptProfile of profile) {
-        // 1. check protocol version
-        const { protocolVersion, env } = parseAcceptProfile(acceptProfile);
-        const responseTypeVersion = Number(responseType.split('/').at(-2));
-        if (
-          protocolVersion !== ProtocolVersion.V1 ||
-          (protocolVersion === ProtocolVersion.V1 &&
-            (responseTypeVersion < 1 || responseTypeVersion >= 2))
-        ) {
-          continue;
-        }
-        // 2. check packer support
+        const { env } = parseAcceptProfile(acceptProfile);
         if (this._packerMgr.isProfileSupported(env, acceptProfile)) {
           supportedMediaTypes.push(env);
         }

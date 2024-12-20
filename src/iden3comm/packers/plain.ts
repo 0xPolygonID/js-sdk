@@ -1,5 +1,5 @@
 import { BasicMessage, IPacker } from '../types';
-import { MediaType } from '../constants';
+import { MediaType, ProtocolVersion } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { parseAcceptProfile } from '../utils';
 
@@ -57,12 +57,16 @@ export class PlainPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getSupportedProfiles} */
   getSupportedProfiles(): string[] {
-    return [`env=${this.mediaType()}`];
+    return this.getSupportedProtocolVersions().map((v) => `${v};env=${this.mediaType()}`);
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */
   isProfileSupported(profile: string) {
-    const { env, circuits, alg } = parseAcceptProfile(profile);
+    const { protocolVersion, env, circuits, alg } = parseAcceptProfile(profile);
+
+    if (!this.getSupportedProtocolVersions().includes(protocolVersion)) {
+      return false;
+    }
     if (env !== this.mediaType()) {
       return false;
     }
@@ -76,5 +80,9 @@ export class PlainPacker implements IPacker {
     }
 
     return true;
+  }
+
+  private getSupportedProtocolVersions(): [ProtocolVersion] {
+    return [ProtocolVersion.V1];
   }
 }
