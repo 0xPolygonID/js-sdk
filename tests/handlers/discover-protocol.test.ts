@@ -49,7 +49,7 @@ describe('discovery-protocol', () => {
     expect(disclosures[0][DiscoverFeatureQueryType.FeatureType]).to.be.eq(
       DiscoveryProtocolFeatureType.Accept
     );
-    expect(disclosures[0].id).to.be.eq('env=application/iden3comm-plain-json');
+    expect(disclosures[0].id).to.be.eq('iden3comm/v1;env=application/iden3comm-plain-json');
   });
 
   it('jws and plain message accept disclosures', async () => {
@@ -72,8 +72,10 @@ describe('discovery-protocol', () => {
       DiscoveryProtocolFeatureType.Accept
     );
     const disclosureIds = disclosures.map((d) => d.id);
-    expect(disclosureIds).to.include('env=application/iden3comm-plain-json');
-    expect(disclosureIds).to.include('env=application/iden3comm-signed-json&alg=ES256K,ES256K-R');
+    expect(disclosureIds).to.include('iden3comm/v1;env=application/iden3comm-plain-json');
+    expect(disclosureIds).to.include(
+      'iden3comm/v1;env=application/iden3comm-signed-json;alg=ES256K,ES256K-R'
+    );
   });
 
   it('zkp and plain message accept disclosures', async () => {
@@ -95,9 +97,9 @@ describe('discovery-protocol', () => {
       DiscoveryProtocolFeatureType.Accept
     );
     const disclosureIds = disclosures.map((d) => d.id);
-    expect(disclosureIds).to.include('env=application/iden3comm-plain-json');
+    expect(disclosureIds).to.include('iden3comm/v1;env=application/iden3comm-plain-json');
     expect(disclosureIds).to.include(
-      'env=application/iden3-zkp-json&alg=groth16&circuitIds=authV2'
+      'iden3comm/v1;env=application/iden3-zkp-json;alg=groth16;circuitIds=authV2'
     );
   });
 
@@ -123,11 +125,13 @@ describe('discovery-protocol', () => {
       DiscoveryProtocolFeatureType.Accept
     );
     const disclosureIds = disclosures.map((d) => d.id);
-    expect(disclosureIds).to.include('env=application/iden3comm-plain-json');
+    expect(disclosureIds).to.include('iden3comm/v1;env=application/iden3comm-plain-json');
     expect(disclosureIds).to.include(
-      'env=application/iden3-zkp-json&alg=groth16&circuitIds=authV2'
+      'iden3comm/v1;env=application/iden3-zkp-json;alg=groth16;circuitIds=authV2'
     );
-    expect(disclosureIds).to.include('env=application/iden3comm-signed-json&alg=ES256K,ES256K-R');
+    expect(disclosureIds).to.include(
+      'iden3comm/v1;env=application/iden3comm-signed-json;alg=ES256K,ES256K-R'
+    );
   });
 
   it('zkp, jws and plain message accept disclosures with exact match', async () => {
@@ -140,7 +144,7 @@ describe('discovery-protocol', () => {
     const acceptQueryMessageWithMatch = createDiscoveryFeatureQueryMessage([
       {
         [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Accept,
-        match: 'env=application/iden3-zkp-json&alg=groth16&circuitIds=authV2'
+        match: 'iden3comm/v1;env=application/iden3-zkp-json;alg=groth16;circuitIds=authV2'
       }
     ]);
 
@@ -153,7 +157,7 @@ describe('discovery-protocol', () => {
       DiscoveryProtocolFeatureType.Accept
     );
     expect(disclosures[0].id).to.include(
-      'env=application/iden3-zkp-json&alg=groth16&circuitIds=authV2'
+      'iden3comm/v1;env=application/iden3-zkp-json;alg=groth16;circuitIds=authV2'
     );
   });
 
@@ -306,7 +310,7 @@ describe('discovery-protocol', () => {
       DiscoveryProtocolFeatureType.Protocol
     );
     const disclosureIds = disclosures.map((d) => d.id);
-    expect(disclosureIds).to.include('env=application/iden3comm-plain-json');
+    expect(disclosureIds).to.include('iden3comm/v1;env=application/iden3comm-plain-json');
     expect(disclosureIds).to.include(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE);
     expect(disclosureIds).to.include(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE);
   });
