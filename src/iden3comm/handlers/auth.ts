@@ -1,4 +1,4 @@
-import { MediaType, ProtocolVersion } from '../constants';
+import { MediaType } from '../constants';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
