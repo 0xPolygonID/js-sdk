@@ -82,7 +82,7 @@ export class PlainPacker implements IPacker {
     return true;
   }
 
-  private getSupportedProtocolVersions(): [ProtocolVersion] {
+  private getSupportedProtocolVersions(): ProtocolVersion[] {
     return [ProtocolVersion.V1];
   }
 }

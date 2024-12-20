@@ -140,7 +140,7 @@ export class JWSPacker implements IPacker {
     return [AcceptJwsAlgorithms.ES256K, AcceptJwsAlgorithms.ES256KR];
   }
 
-  private getSupportedProtocolVersions(): [ProtocolVersion] {
+  private getSupportedProtocolVersions(): ProtocolVersion[] {
     return [ProtocolVersion.V1];
   }
 

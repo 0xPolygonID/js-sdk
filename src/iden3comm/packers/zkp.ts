@@ -216,7 +216,7 @@ export class ZKPPacker implements IPacker {
     return [AcceptAuthCircuits.AuthV2];
   }
 
-  private getSupportedProtocolVersions(): [ProtocolVersion] {
+  private getSupportedProtocolVersions(): ProtocolVersion[] {
     return [ProtocolVersion.V1];
   }
 }
