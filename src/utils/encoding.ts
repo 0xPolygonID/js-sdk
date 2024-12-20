@@ -45,3 +45,12 @@ export function decodeBase64url(s: string, opts = { loose: true }): string {
 export function bytesToHex(b: Uint8Array): string {
   return Hex.encodeString(b);
 }
+
+export function utf8Decoder(b: Uint8Array): string {
+  return byteDecoder.decode(b);
+}
+
+export function utf8Encoder(s: string): Uint8Array {
+  const buf = byteEncoder.encode(s);
+  return new Uint8Array(buf, 0, buf.length);
+}
