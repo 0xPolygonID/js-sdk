@@ -1,6 +1,7 @@
 import {
   DataPrepareHandlerFunc,
   PackageManager,
+  PlainPacker,
   VerificationHandlerFunc,
   ZKPPacker
 } from '../../src/iden3comm/index';
@@ -69,6 +70,17 @@ describe('tests packageManager with ZKP Packer', () => {
     expect(unpackedMediaType).to.deep.equal(MediaType.ZKPMessage);
     expect(senderDID.string()).to.deep.equal(unpackedMessage.from);
     expect(byteDecoder.decode(msgBytes)).to.deep.equal(JSON.stringify(unpackedMessage));
+  });
+
+  it('test getSupportedProfiles', async () => {
+    const pm = new PackageManager();
+    pm.registerPackers([new ZKPPacker(new Map(), new Map()), new PlainPacker()]);
+    const supportedProfiles = await pm.getSupportedProfiles();
+    expect(supportedProfiles.length).to.be.eq(2);
+    expect(supportedProfiles).to.include(
+      `iden3comm/v1;env=${MediaType.ZKPMessage};alg=groth16;circuitIds=authV2`
+    );
+    expect(supportedProfiles).to.include(`iden3comm/v1;env=${MediaType.PlainMessage}`);
   });
 });
 
