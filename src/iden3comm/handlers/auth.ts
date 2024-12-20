@@ -504,7 +504,9 @@ export class AuthHandler
       throw new Error('no packer with profile which meets `accept` header requirements');
     }
 
-    mediaType = supportedMediaTypes[0];
+    mediaType = supportedMediaTypes.includes(MediaType.ZKPMessage)
+      ? MediaType.ZKPMessage
+      : supportedMediaTypes[0];
     if (ctx.mediaType && supportedMediaTypes.includes(ctx.mediaType)) {
       mediaType = ctx.mediaType;
     }
