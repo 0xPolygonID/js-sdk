@@ -219,8 +219,8 @@ describe('jws packer tests', () => {
     expect(data).to.not.be.undefined;
   });
 
-  it('test getSupportedProfiles', async () => {
-    const [accept] = await packer.getSupportedProfiles();
+  it('test getSupportedProfiles', () => {
+    const [accept] = packer.getSupportedProfiles();
     expect(accept).to.be.eq(`iden3comm/v1;env=${MediaType.SignedMessage};alg=ES256K,ES256K-R`);
   });
 });

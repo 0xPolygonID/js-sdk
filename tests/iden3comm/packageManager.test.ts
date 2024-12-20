@@ -72,10 +72,10 @@ describe('tests packageManager with ZKP Packer', () => {
     expect(byteDecoder.decode(msgBytes)).to.deep.equal(JSON.stringify(unpackedMessage));
   });
 
-  it('test getSupportedProfiles', async () => {
+  it('test getSupportedProfiles', () => {
     const pm = new PackageManager();
     pm.registerPackers([new ZKPPacker(new Map(), new Map()), new PlainPacker()]);
-    const supportedProfiles = await pm.getSupportedProfiles();
+    const supportedProfiles = pm.getSupportedProfiles();
     expect(supportedProfiles.length).to.be.eq(2);
     expect(supportedProfiles).to.include(
       `iden3comm/v1;env=${MediaType.ZKPMessage};alg=groth16;circuitIds=authV2`

@@ -44,7 +44,7 @@ describe('zkp packer tests', () => {
 
   it('test getSupportedProfiles', async () => {
     const p = await initZKPPacker();
-    const [accept] = await p.getSupportedProfiles();
+    const [accept] = p.getSupportedProfiles();
     expect(accept).to.be.eq(
       `iden3comm/v1;env=${MediaType.ZKPMessage};alg=groth16;circuitIds=authV2`
     );

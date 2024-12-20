@@ -11,6 +11,8 @@ import { parseAcceptProfile } from '../utils';
  * @implements implements IPacker interface
  */
 export class PlainPacker implements IPacker {
+  private readonly supportedProtocolVersions = [ProtocolVersion.V1];
+
   /**
    * Packs a basic message using the specified parameters.
    *
@@ -57,14 +59,14 @@ export class PlainPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getSupportedProfiles} */
   getSupportedProfiles(): string[] {
-    return this.getSupportedProtocolVersions().map((v) => `${v};env=${this.mediaType()}`);
+    return this.supportedProtocolVersions.map((v) => `${v};env=${this.mediaType()}`);
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */
   isProfileSupported(profile: string) {
     const { protocolVersion, env, circuits, alg } = parseAcceptProfile(profile);
 
-    if (!this.getSupportedProtocolVersions().includes(protocolVersion)) {
+    if (!this.supportedProtocolVersions.includes(protocolVersion)) {
       return false;
     }
     if (env !== this.mediaType()) {
@@ -80,9 +82,5 @@ export class PlainPacker implements IPacker {
     }
 
     return true;
-  }
-
-  private getSupportedProtocolVersions(): ProtocolVersion[] {
-    return [ProtocolVersion.V1];
   }
 }
