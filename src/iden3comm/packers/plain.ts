@@ -1,5 +1,5 @@
 import { BasicMessage, IPacker } from '../types';
-import { MediaType } from '../constants';
+import { MediaType, ProtocolVersion } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { parseAcceptProfile } from '../utils';
 
@@ -11,6 +11,8 @@ import { parseAcceptProfile } from '../utils';
  * @implements implements IPacker interface
  */
 export class PlainPacker implements IPacker {
+  private readonly supportedProtocolVersions = [ProtocolVersion.V1];
+
   /**
    * Packs a basic message using the specified parameters.
    *
@@ -57,12 +59,16 @@ export class PlainPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getSupportedProfiles} */
   getSupportedProfiles(): string[] {
-    return [`env=${this.mediaType()}`];
+    return this.supportedProtocolVersions.map((v) => `${v};env=${this.mediaType()}`);
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */
   isProfileSupported(profile: string) {
-    const { env, circuits, alg } = parseAcceptProfile(profile);
+    const { protocolVersion, env, circuits, alg } = parseAcceptProfile(profile);
+
+    if (!this.supportedProtocolVersions.includes(protocolVersion)) {
+      return false;
+    }
     if (env !== this.mediaType()) {
       return false;
     }

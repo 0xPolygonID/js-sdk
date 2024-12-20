@@ -2,7 +2,7 @@ import { DID } from '@iden3/js-iden3-core';
 import { Token, ProvingMethodAlg } from '@iden3/js-jwz';
 import { ZKPPackerParams } from '../../src/iden3comm/types';
 import { AuthV2PubSignals } from '../../src/circuits';
-import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
+import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { byteDecoder, byteEncoder } from '../../src';
 import { expect } from 'chai';
 import { initZKPPacker } from './mock/proving';
@@ -40,5 +40,13 @@ describe('zkp packer tests', () => {
     const iden3msg = await p.unpack(msgZKP);
 
     expect(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE).to.deep.equal(iden3msg.type);
+  });
+
+  it('test getSupportedProfiles', async () => {
+    const p = await initZKPPacker();
+    const [accept] = p.getSupportedProfiles();
+    expect(accept).to.be.eq(
+      `iden3comm/v1;env=${MediaType.ZKPMessage};alg=groth16;circuitIds=authV2`
+    );
   });
 });

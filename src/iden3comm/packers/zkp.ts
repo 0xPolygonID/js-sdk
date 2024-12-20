@@ -20,7 +20,7 @@ import {
   ErrStateVerificationFailed,
   ErrUnknownCircuitID
 } from '../errors';
-import { AcceptAuthCircuits, AcceptJwzAlgorithms, MediaType } from '../constants';
+import { AcceptAuthCircuits, AcceptJwzAlgorithms, MediaType, ProtocolVersion } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { DEFAULT_AUTH_VERIFY_DELAY } from '../constants';
 import { parseAcceptProfile } from '../utils';
@@ -86,6 +86,10 @@ export class VerificationHandlerFunc {
  * @implements implements IPacker interface
  */
 export class ZKPPacker implements IPacker {
+  private readonly supportedProtocolVersions = [ProtocolVersion.V1];
+  private readonly supportedAlgorithms = [AcceptJwzAlgorithms.Groth16];
+  private readonly supportedCircuitIds = [AcceptAuthCircuits.AuthV2];
+
   /**
    * Creates an instance of ZKPPacker.
    * @param {Map<string, ProvingParams>} provingParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
@@ -178,36 +182,34 @@ export class ZKPPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getSupportedProfiles} */
   getSupportedProfiles(): string[] {
-    return [
-      `env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(
-        ','
-      )}&circuitIds=${this.getSupportedCircuitIds().join(',')}`
-    ];
+    return this.supportedProtocolVersions.map(
+      (v) =>
+        `${v};env=${this.mediaType()};alg=${this.supportedAlgorithms.join(
+          ','
+        )};circuitIds=${this.supportedCircuitIds.join(',')}`
+    );
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */
   isProfileSupported(profile: string) {
-    const { env, circuits, alg } = parseAcceptProfile(profile);
+    const { protocolVersion, env, circuits, alg } = parseAcceptProfile(profile);
+
+    if (!this.supportedProtocolVersions.includes(protocolVersion)) {
+      return false;
+    }
+
     if (env !== this.mediaType()) {
       return false;
     }
 
-    const supportedCircuitIds = this.getSupportedCircuitIds();
+    const supportedCircuitIds = this.supportedCircuitIds;
     const circuitIdSupported =
       !circuits?.length || circuits.some((c) => supportedCircuitIds.includes(c));
 
-    const supportedAlgArr = this.getSupportedAlgorithms();
+    const supportedAlgArr = this.supportedAlgorithms;
     const algSupported =
       !alg?.length || alg.some((a) => supportedAlgArr.includes(a as AcceptJwzAlgorithms));
     return algSupported && circuitIdSupported;
-  }
-
-  private getSupportedAlgorithms(): AcceptJwzAlgorithms[] {
-    return [AcceptJwzAlgorithms.Groth16];
-  }
-
-  private getSupportedCircuitIds(): AcceptAuthCircuits[] {
-    return [AcceptAuthCircuits.AuthV2];
   }
 }
 

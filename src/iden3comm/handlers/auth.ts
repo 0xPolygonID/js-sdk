@@ -1,4 +1,4 @@
-import { MediaType, ProtocolVersion } from '../constants';
+import { MediaType } from '../constants';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
@@ -489,35 +489,26 @@ export class AuthHandler
     profile?: string[] | undefined
   ): MediaType {
     let mediaType: MediaType;
-    if (profile?.length) {
-      const supportedMediaTypes: MediaType[] = [];
-      for (const acceptProfile of profile) {
-        // 1. check protocol version
-        const { protocolVersion, env } = parseAcceptProfile(acceptProfile);
-        const responseTypeVersion = Number(responseType.split('/').at(-2));
-        if (
-          protocolVersion !== ProtocolVersion.V1 ||
-          (protocolVersion === ProtocolVersion.V1 &&
-            (responseTypeVersion < 1 || responseTypeVersion >= 2))
-        ) {
-          continue;
-        }
-        // 2. check packer support
-        if (this._packerMgr.isProfileSupported(env, acceptProfile)) {
-          supportedMediaTypes.push(env);
-        }
+    if (!profile?.length) {
+      return ctx.mediaType || MediaType.ZKPMessage;
+    }
+    const supportedMediaTypes: MediaType[] = [];
+    for (const acceptProfile of profile) {
+      const { env } = parseAcceptProfile(acceptProfile);
+      if (this._packerMgr.isProfileSupported(env, acceptProfile)) {
+        supportedMediaTypes.push(env);
       }
+    }
 
-      if (!supportedMediaTypes.length) {
-        throw new Error('no packer with profile which meets `accept` header requirements');
-      }
+    if (!supportedMediaTypes.length) {
+      throw new Error('no packer with profile which meets `accept` header requirements');
+    }
 
-      mediaType = supportedMediaTypes[0];
-      if (ctx.mediaType && supportedMediaTypes.includes(ctx.mediaType)) {
-        mediaType = ctx.mediaType;
-      }
-    } else {
-      mediaType = ctx.mediaType || MediaType.ZKPMessage;
+    mediaType = supportedMediaTypes.includes(MediaType.ZKPMessage)
+      ? MediaType.ZKPMessage
+      : supportedMediaTypes[0];
+    if (ctx.mediaType && supportedMediaTypes.includes(ctx.mediaType)) {
+      mediaType = ctx.mediaType;
     }
     return mediaType;
   }
