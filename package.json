@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.26.0",
+  "version": "1.27.0",
   "description": "SDK to work with Polygon ID",
   "main": "dist/node/cjs/index.js",
   "module": "dist/node/esm/index.js",
@@ -18,7 +18,8 @@
   "types": "dist/types/index.d.ts",
   "source": "./src/index.ts",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "scripts": {
     "clean": "rimraf ./dist",

@@ -10,7 +10,7 @@ export type ProposalRequestMessage = BasicMessage & {
 /** @beta ProposalRequestMessageBody is struct the represents body for proposal-request */
 export type ProposalRequestMessageBody = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; data?: JsonDocumentObject };
+  metadata?: { type: string; data?: JsonDocumentObject | JsonDocumentObject[] };
   did_doc?: DIDDocument;
 };
 
