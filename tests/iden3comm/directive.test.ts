@@ -34,7 +34,7 @@ import {
 } from '../helpers';
 import { MediaType } from '../../src/iden3comm/constants';
 import { ethers } from 'ethers';
-import { DirectiveManager } from '../../src/iden3comm/directiveProcessor';
+import { DirectiveHelper } from '../../src/iden3comm/directiveHelper';
 
 describe('directives', () => {
   let idWallet: IdentityWallet;
@@ -127,29 +127,27 @@ describe('directives', () => {
         {
           data: {
             type: Iden3AttachmentType.Iden3Directive,
-            context: 'https://directive.iden3.io/v1/context.json',
             directives: [
               {
                 type: Iden3DirectiveType.TransparentPaymentDirective,
+                context: 'https://directive.iden3.io/v1/context.json',
+
                 purpose: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
                 data: [
                   {
-                    credentials: [
-                      {
-                        context:
-                          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
-                        type: 'KYCAgeCredential'
-                      }
-                    ],
-                    paymentData: [
-                      {
-                        recipient: ethers.ZeroAddress,
-                        amount: '0',
-                        expiration: '2023-12-31T23:59:59Z',
-                        nonce: '123',
-                        metadata: '0x'
-                      }
-                    ]
+                    credential: {
+                      context:
+                        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+                      type: 'KYCAgeCredential'
+                    },
+                    paymentData: {
+                      recipient: ethers.ZeroAddress,
+                      amount: '0',
+                      expiration: '2023-12-31T23:59:59Z',
+                      nonce: '123',
+                      metadata: '0x'
+                    },
+                    permitSignature: '0x'
                   }
                 ]
               }
@@ -164,7 +162,7 @@ describe('directives', () => {
       'no credential satisfied query'
     );
 
-    const directives = DirectiveManager.extractDirectiveFromMessage(authReq);
+    const directives = DirectiveHelper.extractDirectiveFromMessage(authReq);
     expect(directives).not.to.be.undefined;
     expect(directives.length).to.be.eq(1);
 

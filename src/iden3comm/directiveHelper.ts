@@ -5,7 +5,7 @@ import { BasicMessage, DirectiveAttachment, Iden3AttachmentType, Iden3Directive 
  * within a basic message. It includes functionality to handle message attachments and
  * manage directives of type `Iden3Directive`.
  */
-export class DirectiveManager {
+export class DirectiveHelper {
   /**
    * Extracts Iden3 directives from a given message.
    * @param message - The message object containing attachments.

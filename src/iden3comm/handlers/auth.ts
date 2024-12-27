@@ -10,7 +10,8 @@ import {
   IPackageManager,
   JWSPackerParams,
   ZeroKnowledgeProofRequest,
-  JSONObject
+  JSONObject,
+  DirectiveAttachment
 } from '../types';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { proving } from '@iden3/js-jwz';
@@ -35,6 +36,7 @@ export type AuthorizationRequestCreateOptions = {
   accept?: string[];
   scope?: ZeroKnowledgeProofRequest[];
   expires_time?: Date;
+  attachments?: DirectiveAttachment[];
 };
 
 /**
@@ -86,6 +88,8 @@ export function createAuthorizationRequestWithMessage(
     created_time: getUnixTimestamp(new Date()),
     expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
   };
+
+  opts?.attachments && (request.attachments = opts.attachments);
   return request;
 }
 
