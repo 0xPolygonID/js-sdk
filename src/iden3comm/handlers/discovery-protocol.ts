@@ -1,4 +1,4 @@
-import { PROTOCOL_MESSAGE_TYPE } from '../constants';
+import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../constants';
 
 import { BasicMessage, IPackageManager, ProtocolMessage } from '../types';
 
@@ -62,6 +62,7 @@ export function createDiscoveryFeatureQueryMessage(
   return {
     id: uuidv4,
     thid: uuidv4,
+    typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.DISCOVERY_PROTOCOL_QUERIES_MESSAGE_TYPE,
     body: {
       queries
@@ -91,6 +92,7 @@ export function createDiscoveryFeatureDiscloseMessage(
   const uuidv4 = uuid.v4();
   return {
     id: uuidv4,
+    typ: MediaType.PlainMessage,
     thid: uuidv4,
     type: PROTOCOL_MESSAGE_TYPE.DISCOVERY_PROTOCOL_DISCLOSE_MESSAGE_TYPE,
     body: {
