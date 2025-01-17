@@ -1,4 +1,4 @@
-import { BasicMessage, DIDDocument, JsonDocumentObject } from '../';
+import { BasicMessage, DIDDocument } from '../';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 
 /** @beta ProposalRequestMessage is struct the represents proposal-request message */
@@ -10,7 +10,6 @@ export type ProposalRequestMessage = BasicMessage & {
 /** @beta ProposalRequestMessageBody is struct the represents body for proposal-request */
 export type ProposalRequestMessageBody = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; data?: JsonDocumentObject };
   did_doc?: DIDDocument;
 };
 
