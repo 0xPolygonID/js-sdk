@@ -29,8 +29,6 @@ import {
   IProtocolMessageHandler
 } from './message-handler';
 import { verifyExpiresTime } from './common';
-import { PROTOCOL_CONSTANTS } from '..';
-
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
@@ -248,8 +246,7 @@ export class CredentialProposalHandler
       .filter(
         (m) =>
           m &&
-          m.body?.goal_code ===
-            PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE &&
+          m.body?.goal_code === PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE &&
           m.to === proposalRequest.to && // issuer
           m.body.did === proposalRequest.from // user
       );
