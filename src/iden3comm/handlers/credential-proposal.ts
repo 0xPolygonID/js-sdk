@@ -5,7 +5,6 @@ import {
   CredentialsOfferMessage,
   DIDDocument,
   IPackageManager,
-  JsonDocumentObject,
   PackerParams
 } from '../types';
 
