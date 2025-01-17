@@ -31,7 +31,7 @@ export type ContractInvokeResponseBody = {
 
 /** OnChainZeroKnowledgeProofResponse represents structure of onchain zero knowledge proof response */
 export type OnChainZeroKnowledgeProofResponse = ZeroKnowledgeProofResponse & {
-  txHash: string;
+  txHash?: string;
 };
 
 /** ContractInvokeTransactionData represents structure of contract invoke transaction data object */
