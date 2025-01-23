@@ -13,7 +13,7 @@ export type CredentialSchemaInfo = {
 
 /**
  * Enum representing the goal codes used in the iden3 communication protocol.
- * 
+ *
  * @enum {string}
  * @property {string} ProposalRequest - Represents a proposal request in the iden3 communication protocol.
  */
