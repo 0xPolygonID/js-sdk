@@ -17,7 +17,8 @@ import { proving } from '@iden3/js-jwz';
 import {
   Proposal,
   ProposalRequestMessage,
-  ProposalMessage
+  ProposalMessage,
+  ProposalRequestCredential
 } from '../types/protocol/proposal-request';
 import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
@@ -28,11 +29,11 @@ import {
   IProtocolMessageHandler
 } from './message-handler';
 import { verifyExpiresTime } from './common';
-import { CredentialSchemaInfo, getProtocolMessageTypeByGoalCode } from '../types/protocol/common';
+import { getProtocolMessageTypeByGoalCode } from '../types/protocol/common';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
-  credentials: CredentialSchemaInfo[];
+  credentials: ProposalRequestCredential[];
   did_doc?: DIDDocument;
   expires_time?: Date;
   attachments?: Attachment[];

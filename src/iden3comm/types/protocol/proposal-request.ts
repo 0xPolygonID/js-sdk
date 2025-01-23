@@ -8,9 +8,12 @@ export type ProposalRequestMessage = BasicMessage & {
   type: typeof PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE;
 };
 
+/** @beta  ProposalRequestCredential is struct the represents proposal request credential */
+export type ProposalRequestCredential = CredentialSchemaInfo;
+
 /** @beta ProposalRequestMessageBody is struct the represents body for proposal-request */
 export type ProposalRequestMessageBody = {
-  credentials: CredentialSchemaInfo[];
+  credentials: ProposalRequestCredential[];
   did_doc?: DIDDocument;
 };
 
@@ -27,7 +30,7 @@ export type ProposalMessageBody = {
 
 /** @beta Proposal is struct the represents proposal inside proposal protocol message */
 export type Proposal = {
-  credentials: CredentialSchemaInfo[];
+  credentials: ProposalRequestCredential[];
   type: string;
   url?: string;
   expiration?: string;
