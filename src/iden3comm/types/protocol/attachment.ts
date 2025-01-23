@@ -1,4 +1,5 @@
 import { MediaType } from '../../constants';
+import { JsonDocumentObject } from '../packer';
 
 export type Attachment = {
   id: string;
@@ -8,6 +9,5 @@ export type Attachment = {
 };
 
 export type AttachData = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  json: any;
+  json: JsonDocumentObject;
 };
