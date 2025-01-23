@@ -1,5 +1,6 @@
 import { BasicMessage, DIDDocument } from '../';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
+import { CredentialSchemaInfo } from './common';
 
 /** @beta ProposalRequestMessage is struct the represents proposal-request message */
 export type ProposalRequestMessage = BasicMessage & {
@@ -9,7 +10,7 @@ export type ProposalRequestMessage = BasicMessage & {
 
 /** @beta ProposalRequestMessageBody is struct the represents body for proposal-request */
 export type ProposalRequestMessageBody = {
-  credentials: ProposalRequestCredential[];
+  credentials: CredentialSchemaInfo[];
   did_doc?: DIDDocument;
 };
 
@@ -24,15 +25,9 @@ export type ProposalMessageBody = {
   proposals: Proposal[];
 };
 
-/** @beta  ProposalRequestCredential is struct the represents proposal request credential */
-export type ProposalRequestCredential = {
-  type: string;
-  context: string;
-};
-
 /** @beta Proposal is struct the represents proposal inside proposal protocol message */
 export type Proposal = {
-  credentials: ProposalRequestCredential[];
+  credentials: CredentialSchemaInfo[];
   type: string;
   url?: string;
   expiration?: string;

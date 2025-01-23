@@ -2,6 +2,7 @@
 
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 import { RequiredBasicMessage } from '../packer';
+import { CredentialSchemaInfo, GoalCode } from './common';
 
 export type TransparentPaymentInstructionMessage = RequiredBasicMessage & {
   body: TransparentPaymentInstructionMessageBody;
@@ -9,15 +10,10 @@ export type TransparentPaymentInstructionMessage = RequiredBasicMessage & {
 };
 
 export type TransparentPaymentInstructionMessageBody = {
-  goal_code: string;
-  did?: string;
-  credentials: TransparentCredential[];
+  goal_code: GoalCode;
+  paymentReference?: string;
+  credentials: CredentialSchemaInfo[];
   paymentData: TransparentPaymentData;
-};
-
-export type TransparentCredential = {
-  context: string;
-  type: string;
 };
 
 export type TransparentPaymentData = {

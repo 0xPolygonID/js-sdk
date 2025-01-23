@@ -5,6 +5,7 @@ import {
   createAuthorizationRequest,
   createProposalRequest,
   CredentialProposalHandler,
+  GoalCode,
   ICredentialWallet,
   IDataStorage,
   IdentityWallet,
@@ -56,8 +57,8 @@ describe('Attachments', () => {
       typ: MediaType.PlainMessage,
       type: PROTOCOL_MESSAGE_TYPE.TRANSPARENT_PAYMENT_INSTRUCTION_MESSAGE_TYPE,
       body: {
-        goal_code: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
-        did: userDid,
+        goal_code: GoalCode.ProposalRequest,
+        paymentReference: userDid,
         credentials: [cred],
         paymentData
       }

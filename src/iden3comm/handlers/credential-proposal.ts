@@ -16,7 +16,6 @@ import * as uuid from 'uuid';
 import { proving } from '@iden3/js-jwz';
 import {
   Proposal,
-  ProposalRequestCredential,
   ProposalRequestMessage,
   ProposalMessage
 } from '../types/protocol/proposal-request';
@@ -29,9 +28,11 @@ import {
   IProtocolMessageHandler
 } from './message-handler';
 import { verifyExpiresTime } from './common';
+import { CredentialSchemaInfo, getProtocolMessageTypeByGoalCode } from '../types/protocol/common';
+
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
-  credentials: ProposalRequestCredential[];
+  credentials: CredentialSchemaInfo[];
   did_doc?: DIDDocument;
   expires_time?: Date;
   attachments?: Attachment[];
@@ -246,9 +247,11 @@ export class CredentialProposalHandler
       .filter(
         (m) =>
           m &&
-          m.body?.goal_code === PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE &&
+          m.body?.goal_code &&
+          getProtocolMessageTypeByGoalCode(m.body.goal_code) ===
+            PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE &&
           m.to === proposalRequest.to && // issuer
-          m.body.did === proposalRequest.from // user
+          (!m.body.paymentReference || m.body.paymentReference === proposalRequest.from) // user
       );
 
     for (let i = 0; i < proposalRequest.body.credentials.length; i++) {

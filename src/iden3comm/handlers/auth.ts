@@ -86,10 +86,9 @@ export function createAuthorizationRequestWithMessage(
       scope: opts?.scope ?? []
     },
     created_time: getUnixTimestamp(new Date()),
-    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined,
+    attachments: opts?.attachments
   };
-
-  opts?.attachments && (request.attachments = opts.attachments);
   return request;
 }
 
