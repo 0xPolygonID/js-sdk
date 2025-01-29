@@ -1,5 +1,10 @@
 import { BasicMessage, IPacker, JWSPackerParams } from '../types';
-import { AcceptJwsAlgorithms, MediaType, SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
+import {
+  AcceptJwsAlgorithms,
+  MediaType,
+  ProtocolVersion,
+  SUPPORTED_PUBLIC_KEY_TYPES
+} from '../constants';
 import { extractPublicKeyBytes, resolveVerificationMethods } from '../utils/did';
 import { keyPath, KMS } from '../../kms/';
 
@@ -23,6 +28,9 @@ import { parseAcceptProfile } from '../utils';
  * @implements implements IPacker interface
  */
 export class JWSPacker implements IPacker {
+  private readonly supportedAlgorithms = [AcceptJwsAlgorithms.ES256K, AcceptJwsAlgorithms.ES256KR];
+  private readonly supportedProtocolVersions = [ProtocolVersion.V1];
+
   /**
    * Creates an instance of JWSPacker.
    *
@@ -105,12 +113,18 @@ export class JWSPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getSupportedProfiles} */
   getSupportedProfiles(): string[] {
-    return [`env=${this.mediaType()}&alg=${this.getSupportedAlgorithms().join(',')}`];
+    return this.supportedProtocolVersions.map(
+      (v) => `${v};env=${this.mediaType()};alg=${this.supportedAlgorithms.join(',')}`
+    );
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */
   isProfileSupported(profile: string) {
-    const { env, circuits, alg } = parseAcceptProfile(profile);
+    const { protocolVersion, env, circuits, alg } = parseAcceptProfile(profile);
+
+    if (!this.supportedProtocolVersions.includes(protocolVersion)) {
+      return false;
+    }
     if (env !== this.mediaType()) {
       return false;
     }
@@ -119,14 +133,9 @@ export class JWSPacker implements IPacker {
       throw new Error(`Circuits are not supported for ${env} media type`);
     }
 
-    const supportedAlgArr = this.getSupportedAlgorithms();
     const algSupported =
-      !alg?.length || alg.some((a) => supportedAlgArr.includes(a as AcceptJwsAlgorithms));
+      !alg?.length || alg.some((a) => this.supportedAlgorithms.includes(a as AcceptJwsAlgorithms));
     return algSupported;
-  }
-
-  private getSupportedAlgorithms(): AcceptJwsAlgorithms[] {
-    return [AcceptJwsAlgorithms.ES256K, AcceptJwsAlgorithms.ES256KR];
   }
 
   private async resolveDidDoc(from: string) {

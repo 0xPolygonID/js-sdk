@@ -134,10 +134,13 @@ export const resolveDidDocument = async (
   if (opts?.gist) {
     url += `${url.includes('?') ? '&' : '?'}gist=${opts.gist.hex()}`;
   }
-  const resp = await fetch(url);
-  const data = await resp.json();
-
-  return data;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    return data;
+  } catch (e) {
+    throw new Error(`Failed to resolve DID document for ${did} ${e}`);
+  }
 };
 
 export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): DID => {

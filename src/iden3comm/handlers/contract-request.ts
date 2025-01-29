@@ -79,6 +79,7 @@ export class ContractRequestHandler
   implements IContractRequestHandler, IProtocolMessageHandler
 {
   private readonly _supportedCircuits = [
+    CircuitId.AuthV2,
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
     CircuitId.AtomicQueryV3OnChain,
@@ -142,12 +143,19 @@ export class ContractRequestHandler
       throw new Error(`Invalid chain id ${chain_id}`);
     }
     const verifierDid = message.from ? DID.parse(message.from) : undefined;
+
+    const { scope = [] } = message.body;
+
     const zkpResponses = await processZeroKnowledgeProofRequests(
       did,
-      message?.body?.scope,
+      scope,
       verifierDid,
       this._proofService,
-      { ethSigner, challenge, supportedCircuits: this._supportedCircuits }
+      {
+        ethSigner,
+        challenge,
+        supportedCircuits: this._supportedCircuits
+      }
     );
 
     const methodId = message.body.transaction_data.method_id.replace('0x', '');

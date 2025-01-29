@@ -1,6 +1,7 @@
 import { AcceptProfile } from './types';
 
 const IDEN3_PROTOCOL = 'https://iden3-communication.io/';
+const DIDCOMM_PROTOCOL = 'https://didcomm.org/';
 /**
  * Constants for Iden3 protocol
  */
@@ -48,7 +49,13 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   // PaymentRequestMessageType is type for payment-request message
   PAYMENT_REQUEST_MESSAGE_TYPE: `${IDEN3_PROTOCOL}credentials/0.1/payment-request` as const,
   // PaymentMessageType is type for payment message
-  PAYMENT_MESSAGE_TYPE: `${IDEN3_PROTOCOL}credentials/0.1/payment` as const
+  PAYMENT_MESSAGE_TYPE: `${IDEN3_PROTOCOL}credentials/0.1/payment` as const,
+  // DiscoveryProtocolQueriesMessageType is type for didcomm discovery protocol queries
+  DISCOVERY_PROTOCOL_QUERIES_MESSAGE_TYPE:
+    `${DIDCOMM_PROTOCOL}discover-features/2.0/queries` as const,
+  // DiscoveryProtocolDiscloseMessageType is type for didcomm discovery protocol disclose
+  DISCOVERY_PROTOCOL_DISCLOSE_MESSAGE_TYPE:
+    `${DIDCOMM_PROTOCOL}discover-features/2.0/disclose` as const
 });
 
 /**

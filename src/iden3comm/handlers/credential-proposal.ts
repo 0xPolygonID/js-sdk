@@ -5,7 +5,6 @@ import {
   CredentialsOfferMessage,
   DIDDocument,
   IPackageManager,
-  JsonDocumentObject,
   PackerParams
 } from '../types';
 
@@ -31,7 +30,6 @@ import { verifyExpiresTime } from './common';
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
-  metadata?: { type: string; data?: JsonDocumentObject };
   did_doc?: DIDDocument;
   expires_time?: Date;
 };
