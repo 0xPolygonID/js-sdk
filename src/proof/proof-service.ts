@@ -406,7 +406,7 @@ export class ProofService implements IProofService {
       case CircuitId.AuthV2:
         {
           const challenge = opts.challenge
-            ? BytesHelper.intToBytes(opts.challenge)
+            ? BytesHelper.intToBytes(opts.challenge).reverse()
             : new Uint8Array(32);
           zkProof = await this.generateAuthV2Proof(challenge, identifier);
         }

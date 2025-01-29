@@ -194,7 +194,7 @@ export class ContractRequestHandler
         const authResponse = await processProofAuth(identifier, this._proofService, {
           supportedCircuits: this._supportedCircuits,
           acceptProfile,
-          challenge: BigInt(10)
+          challenge: challenge
         });
 
         return this._verifierMultiQuery.submitResponse(
