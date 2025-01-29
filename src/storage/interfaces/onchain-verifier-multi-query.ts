@@ -3,7 +3,7 @@ import {
   AuthProofResponse,
   ContractInvokeTransactionData,
   JsonDocumentObjectValue,
-  ZeroKnowledgeProofResponse,
+  ZeroKnowledgeProofResponse
 } from '../../iden3comm';
 
 /**
@@ -26,7 +26,7 @@ export interface IOnChainVerifierMultiQuery {
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     authResponse: AuthProofResponse,
-    responses: ZeroKnowledgeProofResponse[],
+    responses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<string, ZeroKnowledgeProofResponse[]>>;
 
   /**
@@ -38,6 +38,6 @@ export interface IOnChainVerifierMultiQuery {
   prepareTxArgsSubmit(
     txData: ContractInvokeTransactionData,
     authResponse: AuthProofResponse,
-    responses: ZeroKnowledgeProofResponse[],
+    responses: ZeroKnowledgeProofResponse[]
   ): Promise<JsonDocumentObjectValue[]>;
 }

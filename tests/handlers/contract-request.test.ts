@@ -154,7 +154,6 @@ describe.only('contract-request', () => {
     }
   };
 
-
   const mockVerifierMultiQuery: IOnChainVerifierMultiQuery = {
     submitResponse: async (
       ethSigner: Signer,
@@ -169,7 +168,7 @@ describe.only('contract-request', () => {
 
     prepareTxArgsSubmit: async () => {
       return [];
-    },
+    }
   };
 
   const getPackageMgr = async (
@@ -247,7 +246,12 @@ describe.only('contract-request', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier, mockVerifierMultiQuery);
+    contractRequestHandler = new ContractRequestHandler(
+      packageMgr,
+      proofService,
+      mockZKPVerifier,
+      mockVerifierMultiQuery
+    );
   });
 
   it('contract request flow', async () => {
@@ -655,7 +659,12 @@ describe.only('contract-request', () => {
 
     const zkpVerifier = new OnChainZKPVerifier([conf]);
     const verifierMultiQuery = new OnChainVerifierMultiQuery([conf]);
-    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier, verifierMultiQuery);
+    contractRequestHandler = new ContractRequestHandler(
+      packageMgr,
+      proofService,
+      zkpVerifier,
+      verifierMultiQuery
+    );
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: contractAddress,
@@ -829,7 +838,12 @@ describe.only('contract-request', () => {
 
     const zkpVerifier = new OnChainZKPVerifier([conf]);
     const verifierMultiQuery = new OnChainVerifierMultiQuery([conf]);
-    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier, verifierMultiQuery);
+    contractRequestHandler = new ContractRequestHandler(
+      packageMgr,
+      proofService,
+      zkpVerifier,
+      verifierMultiQuery
+    );
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: erc20Verifier,
@@ -1010,7 +1024,12 @@ describe.only('contract-request', () => {
     const verifierMultiQuery = new OnChainVerifierMultiQuery([zkpVerifierNetworkConfig], {
       didResolverUrl: 'https://resolver-dev.privado.id'
     });
-    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier, verifierMultiQuery);
+    contractRequestHandler = new ContractRequestHandler(
+      packageMgr,
+      proofService,
+      zkpVerifier,
+      verifierMultiQuery
+    );
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: zkpVerifierNetworkConfig.contractAddress,
@@ -1196,7 +1215,12 @@ describe.only('contract-request', () => {
     const verifierMultiQuery = new OnChainVerifierMultiQuery([amoyStateEthConfig], {
       didResolverUrl: 'https://resolver-dev.privado.id'
     });
-    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier, verifierMultiQuery);
+    contractRequestHandler = new ContractRequestHandler(
+      packageMgr,
+      proofService,
+      zkpVerifier,
+      verifierMultiQuery
+    );
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: verifierAddress,

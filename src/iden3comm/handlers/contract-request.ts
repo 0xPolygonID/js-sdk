@@ -1,10 +1,6 @@
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
-import {
-  defaultAcceptProfile,
-  PROTOCOL_MESSAGE_TYPE,
-  ProtocolVersion
-} from '../constants';
+import { defaultAcceptProfile, PROTOCOL_MESSAGE_TYPE, ProtocolVersion } from '../constants';
 import { AcceptProfile, BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
 import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
 import { DID, ChainIds, getUnixTimestamp } from '@iden3/js-iden3-core';
@@ -195,11 +191,11 @@ export class ContractRequestHandler
         );
 
         const identifier = DID.parse(message.to);
-        const authResponse = await processProofAuth(
-          identifier,
-          this._proofService,
-          { supportedCircuits: this._supportedCircuits, acceptProfile, challenge: BigInt(10) }
-        );
+        const authResponse = await processProofAuth(identifier, this._proofService, {
+          supportedCircuits: this._supportedCircuits,
+          acceptProfile,
+          challenge: BigInt(10)
+        });
 
         return this._verifierMultiQuery.submitResponse(
           ethSigner,

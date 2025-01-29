@@ -216,11 +216,7 @@ export class OnChainVerifierMultiQuery implements IOnChainVerifierMultiQuery {
     }
 
     const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
-    return [
-      payloadAuthResponse,
-      payloadResponses,
-      crossChainProofs
-    ];
+    return [payloadAuthResponse, payloadResponses, crossChainProofs];
   }
 
   public async prepareTxArgsSubmit(

@@ -403,13 +403,14 @@ export class ProofService implements IProofService {
     let zkProof;
 
     switch (proofAuth.circuitId) {
-      case CircuitId.AuthV2: {
-        const challenge = opts.challenge
-          ? BytesHelper.intToBytes(opts.challenge)
-          : new Uint8Array(32);
-        zkProof = await this.generateAuthV2Proof(challenge, identifier);
-      }
-      break;
+      case CircuitId.AuthV2:
+        {
+          const challenge = opts.challenge
+            ? BytesHelper.intToBytes(opts.challenge)
+            : new Uint8Array(32);
+          zkProof = await this.generateAuthV2Proof(challenge, identifier);
+        }
+        break;
       default:
         throw new Error(`CircuitId ${proofAuth.circuitId} is not supported`);
     }
