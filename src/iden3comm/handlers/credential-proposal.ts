@@ -67,9 +67,9 @@ export function createProposalRequest(
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
     body: opts,
     created_time: getUnixTimestamp(new Date()),
-    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined,
+    attachments: opts.attachments
   };
-  opts.attachments?.length && (request.attachments = opts.attachments);
   return request;
 }
 
