@@ -1,10 +1,5 @@
 [
   {
-    "inputs": [],
-    "name": "AuthResponsesExactlyOneRequired",
-    "type": "error"
-  },
-  {
     "inputs": [
       {
         "internalType": "string",
@@ -30,6 +25,17 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "length",
+        "type": "uint256"
+      }
+    ],
+    "name": "ChecksumLengthRequired",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "groupId",
         "type": "uint256"
       }
@@ -49,29 +55,89 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "InvalidInitialization",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "groupID",
+        "type": "uint256"
+      }
+    ],
+    "name": "GroupMustHaveAtLeastTwoRequests",
     "type": "error"
   },
   {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "requestLinkID",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "requestLinkIDToCompare",
+        "name": "length",
         "type": "uint256"
       }
     ],
+    "name": "IdBytesLengthRequired",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidInitialization",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "LinkIDNotTheSameForGroupedRequests",
     "type": "error"
   },
   {
     "inputs": [],
+    "name": "MetadataNotSupportedYet",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "multiRequestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "MultiRequestIdAlreadyExists",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "multiRequestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "MultiRequestIdNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "NotAnOwnerOrRequestOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "NotInitializing",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "nullifierSessionID",
+        "type": "uint256"
+      }
+    ],
+    "name": "NullifierSessionIDAlreadyExists",
     "type": "error"
   },
   {
@@ -100,33 +166,11 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "queryId",
-        "type": "uint256"
-      }
-    ],
-    "name": "QueryIdAlreadyExists",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "queryId",
-        "type": "uint256"
-      }
-    ],
-    "name": "QueryIdNotFound",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "requestId",
         "type": "uint256"
       }
     ],
-    "name": "RequestAlreadyExists",
+    "name": "RequestIdAlreadyExists",
     "type": "error"
   },
   {
@@ -141,6 +185,21 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "RequestIdNotValid",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RequestIdTypeNotValid",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RequestIdUsesReservedBytes",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -148,34 +207,61 @@
         "type": "uint256"
       }
     ],
-    "name": "RequestIsAlreadyGrouped",
+    "name": "RequestIsDisabled",
     "type": "error"
   },
   {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "userID",
+        "name": "requestId",
         "type": "uint256"
       }
     ],
-    "name": "UserIDNotFound",
+    "name": "RequestShouldNotHaveAGroup",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "responseFieldName",
+        "type": "string"
+      }
+    ],
+    "name": "ResponseFieldAlreadyExists",
     "type": "error"
   },
   {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "userID",
+        "name": "userIDFromAuth",
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "userIDFromResponse",
+        "type": "uint256"
+      }
+    ],
+    "name": "UserIDMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UserNotAuthenticated",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
-        "name": "userAddress",
+        "name": "validator",
         "type": "address"
       }
     ],
-    "name": "UserIDNotLinkedToAddress",
+    "name": "ValidatorIsNotWhitelisted",
     "type": "error"
   },
   {
@@ -192,12 +278,17 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "validator",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "requestVerifierID",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedVerifierID",
+        "type": "uint256"
       }
     ],
-    "name": "ValidatorNotWhitelisted",
+    "name": "VerifierIDIsNotValid",
     "type": "error"
   },
   {
@@ -262,6 +353,25 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "uint256",
+        "name": "multiRequestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "requestIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "MultiRequestSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "address",
         "name": "previousOwner",
         "type": "address"
@@ -293,44 +403,6 @@
       }
     ],
     "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "queryId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256[]",
-        "name": "requestIds",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "QuerySet",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "queryId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256[]",
-        "name": "requestIds",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "QueryUpdate",
     "type": "event"
   },
   {
@@ -494,6 +566,19 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "disableRequest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "string",
         "name": "authType",
         "type": "string"
@@ -507,30 +592,14 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "authType",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "responseFieldName",
-        "type": "string"
-      }
-    ],
-    "name": "getAuthResponseFieldValueFromAddress",
-    "outputs": [
-      {
         "internalType": "uint256",
-        "name": "",
+        "name": "requestId",
         "type": "uint256"
       }
     ],
-    "stateMutability": "view",
+    "name": "enableRequest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -561,7 +630,7 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct UniversalVerifierMultiQuery.AuthTypeData",
+        "internalType": "struct Verifier.AuthTypeData",
         "name": "authMethod",
         "type": "tuple"
       }
@@ -573,17 +642,76 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "queryId",
+        "name": "groupID",
         "type": "uint256"
       }
     ],
-    "name": "getQuery",
+    "name": "getGroupedRequests",
     "outputs": [
       {
         "components": [
           {
             "internalType": "uint256",
-            "name": "queryId",
+            "name": "requestId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "metadata",
+            "type": "string"
+          },
+          {
+            "internalType": "contract IRequestValidator",
+            "name": "validator",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "params",
+            "type": "bytes"
+          },
+          {
+            "internalType": "address",
+            "name": "creator",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct IVerifier.RequestInfo[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getGroupsCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "multiRequestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getMultiRequest",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "multiRequestId",
             "type": "uint256"
           },
           {
@@ -602,8 +730,8 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct UniversalVerifierMultiQuery.Query",
-        "name": "query",
+        "internalType": "struct IVerifier.MultiRequest",
+        "name": "multiRequest",
         "type": "tuple"
       }
     ],
@@ -614,49 +742,17 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "queryId",
+        "name": "multiRequestId",
         "type": "uint256"
       },
       {
         "internalType": "address",
         "name": "userAddress",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "userID",
-        "type": "uint256"
       }
     ],
-    "name": "getQueryStatus",
+    "name": "getMultiRequestStatus",
     "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "authType",
-            "type": "string"
-          },
-          {
-            "internalType": "bool",
-            "name": "isVerified",
-            "type": "bool"
-          },
-          {
-            "internalType": "string",
-            "name": "validatorVersion",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "timestamp",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct UniversalVerifierMultiQuery.AuthProofStatus[]",
-        "name": "",
-        "type": "tuple[]"
-      },
       {
         "components": [
           {
@@ -680,80 +776,7 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct UniversalVerifierMultiQuery.RequestProofStatus[]",
-        "name": "",
-        "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "queryId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
-      }
-    ],
-    "name": "getQueryStatus",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "authType",
-            "type": "string"
-          },
-          {
-            "internalType": "bool",
-            "name": "isVerified",
-            "type": "bool"
-          },
-          {
-            "internalType": "string",
-            "name": "validatorVersion",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "timestamp",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct UniversalVerifierMultiQuery.AuthProofStatus[]",
-        "name": "",
-        "type": "tuple[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "requestId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "isVerified",
-            "type": "bool"
-          },
-          {
-            "internalType": "string",
-            "name": "validatorVersion",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "timestamp",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct UniversalVerifierMultiQuery.RequestProofStatus[]",
+        "internalType": "struct IVerifier.RequestStatus[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -774,6 +797,11 @@
       {
         "components": [
           {
+            "internalType": "uint256",
+            "name": "requestId",
+            "type": "uint256"
+          },
+          {
             "internalType": "string",
             "name": "metadata",
             "type": "string"
@@ -787,9 +815,14 @@
             "internalType": "bytes",
             "name": "params",
             "type": "bytes"
+          },
+          {
+            "internalType": "address",
+            "name": "creator",
+            "type": "address"
           }
         ],
-        "internalType": "struct UniversalVerifierMultiQuery.RequestData",
+        "internalType": "struct IVerifier.RequestInfo",
         "name": "request",
         "type": "tuple"
       }
@@ -803,11 +836,89 @@
         "internalType": "uint256",
         "name": "requestId",
         "type": "uint256"
+      }
+    ],
+    "name": "getRequestOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "userID",
+        "name": "requestId",
         "type": "uint256"
+      }
+    ],
+    "name": "getRequestStatus",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "requestId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "isVerified",
+            "type": "bool"
+          },
+          {
+            "internalType": "string",
+            "name": "validatorVersion",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IVerifier.RequestStatus",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRequestsCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
       },
       {
         "internalType": "string",
@@ -837,14 +948,47 @@
         "internalType": "address",
         "name": "sender",
         "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "responseFieldName",
-        "type": "string"
       }
     ],
-    "name": "getResponseFieldValueFromAddress",
+    "name": "getResponseFields",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IRequestValidator.ResponseField[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getStateAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVerifierID",
     "outputs": [
       {
         "internalType": "uint256",
@@ -896,7 +1040,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "userID",
+        "name": "multiRequestId",
         "type": "uint256"
       },
       {
@@ -905,7 +1049,50 @@
         "type": "address"
       }
     ],
-    "name": "isUserAuth",
+    "name": "isMultiRequestVerified",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "isRequestEnabled",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "isRequestVerified",
     "outputs": [
       {
         "internalType": "bool",
@@ -925,6 +1112,25 @@
       }
     ],
     "name": "isWhitelistedValidator",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "multiRequestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "multiRequestIdExists",
     "outputs": [
       {
         "internalType": "bool",
@@ -956,25 +1162,6 @@
         "internalType": "address",
         "name": "",
         "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "queryId",
-        "type": "uint256"
-      }
-    ],
-    "name": "queryIdExists",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -1039,7 +1226,7 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct UniversalVerifierMultiQuery.AuthType",
+        "internalType": "struct IVerifier.AuthType",
         "name": "authType",
         "type": "tuple"
       }
@@ -1052,15 +1239,10 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "queryId",
-        "type": "uint256"
-      },
-      {
         "components": [
           {
             "internalType": "uint256",
-            "name": "queryId",
+            "name": "multiRequestId",
             "type": "uint256"
           },
           {
@@ -1079,12 +1261,30 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct UniversalVerifierMultiQuery.Query",
-        "name": "query",
+        "internalType": "struct IVerifier.MultiRequest",
+        "name": "multiRequest",
         "type": "tuple"
       }
     ],
-    "name": "setQuery",
+    "name": "setMultiRequest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "requestOwner",
+        "type": "address"
+      }
+    ],
+    "name": "setRequestOwner",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1114,51 +1314,38 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct UniversalVerifierMultiQuery.Request[]",
-        "name": "singleRequests",
-        "type": "tuple[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "groupId",
-            "type": "uint256"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "requestId",
-                "type": "uint256"
-              },
-              {
-                "internalType": "string",
-                "name": "metadata",
-                "type": "string"
-              },
-              {
-                "internalType": "contract IRequestValidator",
-                "name": "validator",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes",
-                "name": "params",
-                "type": "bytes"
-              }
-            ],
-            "internalType": "struct UniversalVerifierMultiQuery.Request[]",
-            "name": "requests",
-            "type": "tuple[]"
-          }
-        ],
-        "internalType": "struct UniversalVerifierMultiQuery.GroupedRequests[]",
-        "name": "groupedRequests",
+        "internalType": "struct IVerifier.Request[]",
+        "name": "requests",
         "type": "tuple[]"
       }
     ],
     "name": "setRequests",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IState",
+        "name": "state",
+        "type": "address"
+      }
+    ],
+    "name": "setState",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "verifierID",
+        "type": "uint256"
+      }
+    ],
+    "name": "setVerifierID",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1178,9 +1365,9 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct UniversalVerifierMultiQuery.AuthResponse[]",
-        "name": "authResponses",
-        "type": "tuple[]"
+        "internalType": "struct IVerifier.AuthResponse",
+        "name": "authResponse",
+        "type": "tuple"
       },
       {
         "components": [
@@ -1200,42 +1387,8 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct UniversalVerifierMultiQuery.Response[]",
-        "name": "singleResponses",
-        "type": "tuple[]"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "groupId",
-            "type": "uint256"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "requestId",
-                "type": "uint256"
-              },
-              {
-                "internalType": "bytes",
-                "name": "proof",
-                "type": "bytes"
-              },
-              {
-                "internalType": "bytes",
-                "name": "metadata",
-                "type": "bytes"
-              }
-            ],
-            "internalType": "struct UniversalVerifierMultiQuery.Response[]",
-            "name": "responses",
-            "type": "tuple[]"
-          }
-        ],
-        "internalType": "struct UniversalVerifierMultiQuery.GroupedResponses[]",
-        "name": "groupedResponses",
+        "internalType": "struct IVerifier.Response[]",
+        "name": "responses",
         "type": "tuple[]"
       },
       {
@@ -1265,95 +1418,49 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "userID",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "requestId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "metadata",
+            "type": "string"
+          },
+          {
+            "internalType": "contract IRequestValidator",
+            "name": "validator",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "params",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct IVerifier.Request",
+        "name": "request",
+        "type": "tuple"
       }
     ],
-    "name": "userAuthTimestamp",
+    "name": "updateRequest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "version",
     "outputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "string",
-        "name": "authType",
+        "name": "",
         "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "userID",
-        "type": "uint256"
-      },
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "value",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct IAuthValidator.ResponseField[]",
-        "name": "responseFields",
-        "type": "tuple[]"
       }
     ],
-    "name": "writeAuthProofResults",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "requestId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "userID",
-        "type": "uint256"
-      },
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "value",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct IRequestValidator.ResponseField[]",
-        "name": "responseFields",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "writeProofResults",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "pure",
     "type": "function"
   }
 ]

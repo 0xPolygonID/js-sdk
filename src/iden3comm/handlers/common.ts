@@ -5,6 +5,8 @@ import {
   BasicMessage,
   JsonDocumentObject,
   JWSPackerParams,
+  ZeroKnowledgeProofAuth,
+  ZeroKnowledgeProofAuthResponse,
   ZeroKnowledgeProofQuery,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
@@ -138,7 +140,6 @@ export const processZeroKnowledgeProofRequests = async (
   return zkpResponses;
 };
 
-
 /**
  * Processes zero knowledge proof requests.
  *
@@ -155,13 +156,14 @@ export const processProofAuth = async (
   opts: {
     supportedCircuits: CircuitId[];
     acceptProfile?: AcceptProfile;
+    challenge?: bigint;
   }
-): Promise<AuthProofResponse[]> => {
+): Promise<AuthProofResponse> => {
   if (!opts.acceptProfile) {
     opts.acceptProfile = defaultAcceptProfile;
   }
 
-  const authResponses = [];
+  let authResponse: any;
   // First version we only generate proof for ZKPMessage
   if (opts.acceptProfile.env === MediaType.ZKPMessage) {
     if (!opts.acceptProfile.circuits) {
@@ -173,31 +175,27 @@ export const processProofAuth = async (
         throw new Error(`Circuit ${circuitId} is not supported`);
       }
 
-      const authProof: ZeroKnowledgeProofRequest = {
-        id: 0,
-        circuitId: circuitId as unknown as CircuitId,
-        optional: false,
-        query: {
-          allowedIssuers: ['*'],
-          context: '',
-          credentialSubject: {},
-          type: 'Auth'
-        }
+      const authProof: ZeroKnowledgeProofAuth = {
+        circuitId: circuitId as unknown as CircuitId
       };
 
-      const zkpRes: ZeroKnowledgeProofResponse = await proofService.generateProof(authProof, to);
-      const authRes: AuthProofResponse = {
-        authType: "zk-" + circuitId as string,
+      const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(
+        authProof,
+        to,
+        { challenge: opts.challenge, skipRevocation: true }
+      );
+
+      authResponse = {
+        authType: ('zk-' + circuitId) as string,
         circuitId: authProof.circuitId,
         proof: zkpRes.proof,
         pub_signals: zkpRes.pub_signals
       };
-      authResponses.push(authRes);
       break;
     }
   }
 
-  return authResponses;
+  return authResponse;
 };
 
 /**

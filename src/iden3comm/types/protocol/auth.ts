@@ -68,7 +68,16 @@ export type ZeroKnowledgeProofResponse = {
   id: number;
   circuitId: string;
   vp?: VerifiablePresentation;
-  groupId?: number;
+} & ZKProof;
+
+/** ZeroKnowledgeProofAuth represents structure of zkp auth object */
+export type ZeroKnowledgeProofAuth = {
+  circuitId: CircuitId;
+};
+
+/** ZeroKnowledgeProofAuthResponse represents structure of zkp auth response */
+export type ZeroKnowledgeProofAuthResponse = {
+  circuitId: string;
 } & ZKProof;
 
 /** VerifiablePresentation represents structure of Verifiable Presentation */

@@ -6,7 +6,7 @@ import {
   JsonDocumentObjectValue,
   ZeroKnowledgeProofResponse
 } from '../../iden3comm';
-import abi from './abi/UniversalVerifierMultiQuery.json';
+import abi from './abi/UniversalVerifier.json';
 import { TransactionService } from '../../blockchain';
 import { DID } from '@iden3/js-iden3-core';
 import {
@@ -28,9 +28,8 @@ const maxGasLimit = 10000000n;
  * Supported function signature for SubmitResponse
  */
 export enum FunctionSignaturesMultiQuery {
-  //function submitResponse(tuple[](string authType,bytes proof),tuple[](uint256 requestId,bytes proof,bytes data),
-  // tuple[](uint256,tuple[](uint256 requestId,bytes proof,bytes data)),bytes crossChainProof)
-  SubmitResponse = '6a1921b0'
+  //function submitResponse(tuple(string authType,bytes proof),tuple[](uint256 requestId,bytes proof,bytes metadata),bytes crossChainProof)
+  SubmitResponse = '06c86a91'
 }
 /**
  * OnChainVerifierMultiQueryOptions represents OnChainVerifierMultiQuery options
@@ -74,7 +73,7 @@ export class OnChainVerifierMultiQuery implements IOnChainVerifierMultiQuery {
   public async submitResponse(
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
-    authResponses: AuthProofResponse[],
+    authResponse: AuthProofResponse,
     responses: ZeroKnowledgeProofResponse[]
   ): Promise<Map<string, ZeroKnowledgeProofResponse[]>> {
     const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
@@ -92,7 +91,7 @@ export class OnChainVerifierMultiQuery implements IOnChainVerifierMultiQuery {
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
     ethSigner = ethSigner.connect(provider);
 
-    const txDataArgs = await this.prepareTxArgsSubmit(txData, authResponses, responses);
+    const txDataArgs = await this.prepareTxArgsSubmit(txData, authResponse, responses);
     const feeData = await provider.getFeeData();
     const maxFeePerGas = chainConfig.maxFeePerGas
       ? BigInt(chainConfig.maxFeePerGas)
@@ -189,7 +188,7 @@ export class OnChainVerifierMultiQuery implements IOnChainVerifierMultiQuery {
   public static async prepareTxArgsSubmit(
     resolverUrl: string,
     txData: ContractInvokeTransactionData,
-    authResponses: AuthProofResponse[],
+    authResponse: AuthProofResponse,
     responses: ZeroKnowledgeProofResponse[]
   ): Promise<JsonDocumentObjectValue[]> {
     if (txData.method_id.replace('0x', '') !== FunctionSignaturesMultiQuery.SubmitResponse) {
@@ -199,69 +198,34 @@ export class OnChainVerifierMultiQuery implements IOnChainVerifierMultiQuery {
     }
     const gistUpdateArr: any[] = [];
     const stateUpdateArr: any[] = [];
-    const payloadAuthResponses = [];
-    const payloadSingleResponses = [];
-    const payloadGroupedResponses: any[] = [];
+    const payloadResponses = [];
 
-    // 1. Process auth responses
-    const { authType, zkProofEncoded } = await this._processAuthProof(authResponses[0]);
-    payloadAuthResponses.push({ authType: authType, proof: zkProofEncoded });
+    // 1. Process auth response
+    const { authType, zkProofEncoded } = await this._processAuthProof(authResponse);
+    const payloadAuthResponse = { authType: authType, proof: zkProofEncoded };
 
-    // 2. Process single and grouped responses
+    // 2. Process all the responses
     for (const zkProof of responses) {
       const { requestID, zkProofEncoded, metadata } = await this._processProof(zkProof);
 
-      if (zkProof.groupId) {
-        const payloadGroupedResponse = payloadGroupedResponses.find(
-          (i) => i.groupId === zkProof.groupId
-        );
-
-        if (payloadGroupedResponse) {
-          // push in the same group
-          payloadGroupedResponse.push({
-            requestId: requestID,
-            proof: zkProofEncoded,
-            metadata: metadata
-          });
-        } else {
-          // create new group
-          payloadGroupedResponses.push({
-            groupId: zkProof.groupId,
-            responses: [
-              {
-                requestId: requestID,
-                proof: zkProofEncoded,
-                metadata: metadata
-              }
-            ]
-          });
-        }
-
-        payloadGroupedResponses.push({
-          groupId: zkProof.groupId,
-          proof: zkProof.proof
-        });
-      } else {
-        payloadSingleResponses.push({
-          requestId: requestID,
-          proof: zkProofEncoded,
-          metadata: metadata
-        });
-      }
+      payloadResponses.push({
+        requestId: requestID,
+        proof: zkProofEncoded,
+        metadata: metadata
+      });
     }
 
     const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
     return [
-      payloadAuthResponses,
-      payloadSingleResponses,
-      payloadGroupedResponses,
+      payloadAuthResponse,
+      payloadResponses,
       crossChainProofs
     ];
   }
 
   public async prepareTxArgsSubmit(
     txData: ContractInvokeTransactionData,
-    authResponses: AuthProofResponse[],
+    authResponse: AuthProofResponse,
     responses: ZeroKnowledgeProofResponse[]
   ): Promise<JsonDocumentObjectValue[]> {
     if (!this._opts?.didResolverUrl) {
@@ -270,7 +234,7 @@ export class OnChainVerifierMultiQuery implements IOnChainVerifierMultiQuery {
     return OnChainVerifierMultiQuery.prepareTxArgsSubmit(
       this._opts.didResolverUrl,
       txData,
-      authResponses,
+      authResponse,
       responses
     );
   }

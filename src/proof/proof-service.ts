@@ -41,7 +41,9 @@ import {
   ZeroKnowledgeProofResponse,
   PROTOCOL_CONSTANTS,
   VerifiablePresentation,
-  JsonDocumentObject
+  JsonDocumentObject,
+  ZeroKnowledgeProofAuth,
+  ZeroKnowledgeProofAuthResponse
 } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
@@ -120,6 +122,21 @@ export interface IProofService {
     identifier: DID,
     opts?: ProofGenerationOptions
   ): Promise<ZeroKnowledgeProofResponse>;
+
+  /**
+   * Generate auth proof from given identity
+   *
+   * @param {ZeroKnowledgeProofAuth} proofAuth - protocol zkp auth
+   * @param {DID} identifier - did that will generate proof
+   * @param {ProofGenerationOptions} opts - options that will be used for proof generation
+   *
+   * @returns `Promise<ZeroKnowledgeProofResponse>`
+   */
+  generateAuthProof(
+    proofAuth: ZeroKnowledgeProofAuth,
+    identifier: DID,
+    opts?: ProofGenerationOptions
+  ): Promise<ZeroKnowledgeProofAuthResponse>;
 
   /**
    * generates auth inputs
@@ -356,7 +373,37 @@ export class ProofService implements IProofService {
       id: proofReq.id,
       circuitId: proofReq.circuitId,
       vp,
-      groupId,
+      proof,
+      pub_signals
+    };
+  }
+
+  /** {@inheritdoc IProofService.generateAuthProof} */
+  async generateAuthProof(
+    proofAuth: ZeroKnowledgeProofAuth,
+    identifier: DID,
+    opts?: ProofGenerationOptions
+  ): Promise<ZeroKnowledgeProofAuthResponse> {
+    if (!opts) {
+      opts = {
+        skipRevocation: false,
+        challenge: 0n
+      };
+    }
+
+    const { genesisDID } =
+      await this._identityWallet.getGenesisDIDMetadata(identifier);
+
+    const challenge = opts.challenge
+      ? BytesHelper.intToBytes(opts.challenge)
+      : new Uint8Array(32);
+
+    const inputs = await this.generateAuthV2Inputs(challenge, genesisDID, proofAuth.circuitId);
+
+    const { proof, pub_signals } = await this._prover.generate(inputs, proofAuth.circuitId);
+
+    return {
+      circuitId: proofAuth.circuitId,
       proof,
       pub_signals
     };

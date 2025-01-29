@@ -172,9 +172,8 @@ export class ContractRequestHandler
       }
       case FunctionSignaturesMultiQuery.SubmitResponse: {
         // We need to
-        // 1. Generate auth proof from message.body.accept -> authResponses
-        // 2. Generate proofs for each query in scope without group -> singleResponses
-        // 3. Generate proofs for each query in scope with group -> groupedResponses
+        // 1. Generate auth proof from message.body.accept -> authResponse
+        // 2. Generate proofs for each query in scope -> zkpResponses
 
         // Build auth response from accept
         if (!message.to) {
@@ -188,16 +187,16 @@ export class ContractRequestHandler
         );
 
         const identifier = DID.parse(message.to);
-        const authResponses = await processProofAuth(
+        const authResponse = await processProofAuth(
           identifier,
           this._proofService,
-          { supportedCircuits: this._supportedCircuits, acceptProfile }
+          { supportedCircuits: this._supportedCircuits, acceptProfile, challenge: BigInt(10) }
         );
 
         return this._verifierMultiQuery.submitResponse(
           ethSigner,
           message.body.transaction_data,
-          authResponses,
+          authResponse,
           zkpResponses
         );
       }

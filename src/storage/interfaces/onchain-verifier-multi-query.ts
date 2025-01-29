@@ -18,26 +18,26 @@ export interface IOnChainVerifierMultiQuery {
    * @beta
    * @param {Signer} ethSigner - tx signer
    * @param {txData} ContractInvokeTransactionData - transaction data
-   * @param {AuthProofResponse[]} authResponses - authResponses
+   * @param {AuthProofResponse} authResponse - authResponse
    * @param {ZeroKnowledgeProofMultiQueryResponse[]} responses - singleResponses and groupedResponses
    * @returns {Promise<Map<string, ZeroKnowledgeProofMultiQueryResponse[]>>} - map of transaction hash - ZeroKnowledgeProofResponse[]
    */
   submitResponse(
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
-    authResponses: AuthProofResponse[],
+    authResponse: AuthProofResponse,
     responses: ZeroKnowledgeProofResponse[],
   ): Promise<Map<string, ZeroKnowledgeProofResponse[]>>;
 
   /**
    * Returns args for the verifier multi-query contract submission (single tx args for an array of responses).
    * @param {txData} ContractInvokeTransactionData - transaction data
-   * @param {AuthProofResponse[]} authResponses - authResponses
+   * @param {AuthProofResponse} authResponse - authResponse
    * @param {ZeroKnowledgeProofMultiQueryResponse[]} responses - singleResponses and groupedResponses
    */
   prepareTxArgsSubmit(
     txData: ContractInvokeTransactionData,
-    authResponses: AuthProofResponse[],
+    authResponse: AuthProofResponse,
     responses: ZeroKnowledgeProofResponse[],
   ): Promise<JsonDocumentObjectValue[]>;
 }
