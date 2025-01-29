@@ -68,7 +68,7 @@ import {
 import { AbstractMessageHandler } from '../../src/iden3comm/handlers/message-handler';
 import { IOnChainVerifierMultiQuery } from '../../src/storage/interfaces/onchain-verifier-multi-query';
 
-describe.only('contract-request', () => {
+describe('contract-request', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
