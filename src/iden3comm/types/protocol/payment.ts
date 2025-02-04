@@ -10,6 +10,8 @@ import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 /** @beta PaymentRequestMessage is struct the represents payment-request message */
 export type PaymentRequestMessage = BasicMessage & {
   body: PaymentRequestMessageBody;
+  from: string;
+  to: string;
   type: typeof PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE;
 };
 
@@ -85,6 +87,8 @@ export type EthereumEip712Signature2021 = {
 /** @beta  PaymentMessage is struct the represents payment message */
 export type PaymentMessage = BasicMessage & {
   body: PaymentMessageBody;
+  from: string;
+  to: string;
   type: typeof PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE;
 };
 
