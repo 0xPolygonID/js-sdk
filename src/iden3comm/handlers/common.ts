@@ -186,7 +186,7 @@ export const processProofAuth = async (
       );
 
       authResponse = {
-        authType: ('zk-' + circuitId) as string,
+        authMethod: ('zk-' + circuitId) as string,
         circuitId: authProof.circuitId,
         proof: zkpRes.proof,
         pub_signals: zkpRes.pub_signals

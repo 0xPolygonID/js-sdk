@@ -46,6 +46,6 @@ export type ContractInvokeTransactionData = {
 
 /** AuthProofResponse represents structure of zkp response */
 export type AuthProofResponse = {
-  authType: string;
+  authMethod: string;
   circuitId: string;
 } & ZKProof;

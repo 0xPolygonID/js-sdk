@@ -28,7 +28,7 @@ const maxGasLimit = 10000000n;
  * Supported function signature for SubmitResponse
  */
 export enum FunctionSignaturesMultiQuery {
-  //function submitResponse(tuple(string authType,bytes proof),tuple[](uint256 requestId,bytes proof,bytes metadata),bytes crossChainProof)
+  //function submitResponse(tuple(string authMethod,bytes proof),tuple[](uint256 requestId,bytes proof,bytes metadata),bytes crossChainProof)
   SubmitResponse = '06c86a91'
 }
 /**
@@ -125,7 +125,7 @@ export class OnChainVerifierMultiQuery implements IOnChainVerifierMultiQuery {
   }
 
   private static async _processAuthProof(authProof: AuthProofResponse) {
-    const authType = authProof.authType;
+    const authMethod = authProof.authMethod;
     const inputs = authProof.pub_signals;
 
     if (!this._supportedCircuits.includes(authProof.circuitId as CircuitId)) {
@@ -142,7 +142,7 @@ export class OnChainVerifierMultiQuery implements IOnChainVerifierMultiQuery {
       authProof.proof.pi_c.slice(0, 2)
     );
 
-    return { authType, zkProofEncoded };
+    return { authMethod, zkProofEncoded };
   }
 
   private static async _processProof(zkProof: ZeroKnowledgeProofResponse) {
@@ -201,8 +201,8 @@ export class OnChainVerifierMultiQuery implements IOnChainVerifierMultiQuery {
     const payloadResponses = [];
 
     // 1. Process auth response
-    const { authType, zkProofEncoded } = await this._processAuthProof(authResponse);
-    const payloadAuthResponse = { authType: authType, proof: zkProofEncoded };
+    const { authMethod, zkProofEncoded } = await this._processAuthProof(authResponse);
+    const payloadAuthResponse = { authMethod: authMethod, proof: zkProofEncoded };
 
     // 2. Process all the responses
     for (const zkProof of responses) {
