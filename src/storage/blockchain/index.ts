@@ -4,3 +4,4 @@ export * from './onchain-revocation';
 export * from './onchain-issuer';
 export * from './did-resolver-readonly-storage';
 export * from './erc20-helper';
+export * from './onchain-verifier-multi-query';
