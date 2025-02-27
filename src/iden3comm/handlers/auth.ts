@@ -103,7 +103,7 @@ export type AuthResponseHandlerOptions = StateVerificationOpts &
   BasicHandlerOptions & {
     // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
     acceptedProofGenerationDelay?: number;
-  };
+  } & Iden3DIDcommCompatibilityOptions;
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
@@ -184,7 +184,7 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /**
  *
