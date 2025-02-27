@@ -48,7 +48,7 @@ export type BasicMessage = {
   thid?: string;
   body?: unknown;
   from?: string;
-  to?: string;
+  to?: string | string[];
   created_time?: number;
   expires_time?: number;
 };

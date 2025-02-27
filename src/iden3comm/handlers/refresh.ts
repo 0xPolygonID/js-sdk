@@ -4,6 +4,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import {
   CredentialIssuanceMessage,
   CredentialRefreshMessage,
+  Iden3DIDcommCompatibilityOptions,
   IPackageManager,
   ZKPPackerParams
 } from '../types';
@@ -71,7 +72,7 @@ export class RefreshHandler implements IRefreshHandler {
 
   async refreshCredential(
     credential: W3CCredential,
-    opts?: RefreshOptions
+    opts?: RefreshOptions & Iden3DIDcommCompatibilityOptions
   ): Promise<W3CCredential> {
     if (!credential.refreshService) {
       throw new Error('refreshService not specified for W3CCredential');
@@ -106,7 +107,7 @@ export class RefreshHandler implements IRefreshHandler {
         reason: opts?.reason ?? 'credential is expired'
       },
       from: otherIdentifier,
-      to: credential.issuer
+      to: opts?.multipleRecipientsFormat ? [credential.issuer] : credential.issuer
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(refreshMsg));
