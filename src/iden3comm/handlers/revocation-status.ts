@@ -2,6 +2,8 @@ import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
 import {
   BasicMessage,
+  getIden3CommSingleRecipient,
+  Iden3DIDcommCompatibilityOptions,
   IPackageManager,
   JWSPackerParams,
   RevocationStatusRequestMessage,
@@ -34,7 +36,7 @@ export type RevocationStatusMessageHandlerOptions = {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
   treeState?: TreeState;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /**
  * Interface that allows the processing of the revocation status
@@ -68,7 +70,7 @@ export type RevocationStatusHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
   treeState?: TreeState;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /**
  *
@@ -122,7 +124,8 @@ export class RevocationStatusHandler
     rsRequest: RevocationStatusRequestMessage,
     context: RevocationStatusMessageHandlerOptions
   ): Promise<BasicMessage | null> {
-    if (!rsRequest.to) {
+    const recipient = getIden3CommSingleRecipient(rsRequest);
+    if (!recipient) {
       throw new Error(`failed request. empty 'to' field`);
     }
 
@@ -134,10 +137,8 @@ export class RevocationStatusHandler
       throw new Error(`failed request. empty 'revocation_nonce' field`);
     }
 
-    const issuerDID = DID.parse(rsRequest.to);
-
     const mtpWithTreeState = await this._identityWallet.generateNonRevocationMtpWithNonce(
-      issuerDID,
+      recipient,
       BigInt(rsRequest.body.revocation_nonce),
       context.treeState
     );
@@ -160,8 +161,8 @@ export class RevocationStatusHandler
       type: PROTOCOL_MESSAGE_TYPE.REVOCATION_STATUS_RESPONSE_MESSAGE_TYPE,
       thid: rsRequest.thid ?? guid,
       body: revStatus,
-      from: context.senderDid.string(),
-      to: rsRequest.from
+      from: recipient.string(),
+      to: context.multipleRecipientsFormat ? [rsRequest.from] : rsRequest.from
     };
 
     return response as BasicMessage;
@@ -205,7 +206,8 @@ export class RevocationStatusHandler
       senderDid: did,
       mediaType: opts.mediaType,
       packerOptions: opts.packerOptions,
-      treeState: opts.treeState
+      treeState: opts.treeState,
+      multipleRecipientsFormat: opts.multipleRecipientsFormat
     });
 
     const packerOpts =
@@ -215,11 +217,10 @@ export class RevocationStatusHandler
             provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
           };
 
-    if (!rsRequest.to) {
-      throw new Error(`failed request. empty 'to' field`);
+    if (!response) {
+      throw new Error(`fail to get revocation status `);
     }
-
-    const senderDID = DID.parse(rsRequest.to);
+    const senderDID = response.from;
     return this._packerMgr.pack(opts.mediaType, byteEncoder.encode(JSON.stringify(response)), {
       senderDID,
       ...packerOpts

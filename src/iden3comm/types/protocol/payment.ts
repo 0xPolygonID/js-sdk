@@ -11,7 +11,7 @@ import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 export type PaymentRequestMessage = BasicMessage & {
   body: PaymentRequestMessageBody;
   from: string;
-  to: string;
+  to: string | string[];
   type: typeof PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE;
 };
 
@@ -88,7 +88,7 @@ export type EthereumEip712Signature2021 = {
 export type PaymentMessage = BasicMessage & {
   body: PaymentMessageBody;
   from: string;
-  to: string;
+  to: string | string[];
   type: typeof PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE;
 };
 

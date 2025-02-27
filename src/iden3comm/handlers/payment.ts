@@ -1,6 +1,12 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
-import { BasicMessage, IPackageManager, PackerParams } from '../types';
+import {
+  BasicMessage,
+  getIden3CommSingleRecipient,
+  Iden3DIDcommCompatibilityOptions,
+  IPackageManager,
+  PackerParams
+} from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
@@ -39,12 +45,12 @@ import { verifyExpiresTime } from './common';
 /** @beta PaymentRequestCreationOptions represents payment-request creation options */
 export type PaymentRequestCreationOptions = {
   expires_time?: Date;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /** @beta PaymentCreationOptions represents payment creation options */
 export type PaymentCreationOptions = {
   expires_time?: Date;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /**
  * @beta
@@ -67,7 +73,7 @@ export function createPaymentRequest(
     id: uuidv4,
     thid: uuidv4,
     from: sender.string(),
-    to: receiver.string(),
+    to: opts?.multipleRecipientsFormat ? [receiver.string()] : receiver.string(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE,
     body: {
@@ -173,7 +179,7 @@ export function createPayment(
     id: uuidv4,
     thid: uuidv4,
     from: sender.string(),
-    to: receiver.string(),
+    to: opts?.multipleRecipientsFormat ? [receiver.string()] : receiver.string(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE,
     body: {
@@ -248,13 +254,13 @@ export type PaymentRequestMessageHandlerOptions = BasicHandlerOptions & {
   */
   nonce: string;
   erc20TokenApproveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /** @beta PaymentHandlerOptions represents payment handler options */
 export type PaymentHandlerOptions = BasicHandlerOptions & {
   paymentRequest: PaymentRequestMessage;
   paymentValidationHandler: (txId: string, data: PaymentRequestTypeUnion) => Promise<void>;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /** @beta PaymentHandlerParams represents payment handler params */
 export type PaymentHandlerParams = {
@@ -326,10 +332,6 @@ export class PaymentHandler
     paymentRequest: PaymentRequestMessage,
     ctx: PaymentRequestMessageHandlerOptions
   ): Promise<BasicMessage | null> {
-    if (!paymentRequest.to) {
-      throw new Error(`failed request. empty 'to' field`);
-    }
-
     if (!paymentRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
     }
@@ -342,7 +344,11 @@ export class PaymentHandler
       throw new Error(`please provide payment handler in context`);
     }
 
-    const senderDID = DID.parse(paymentRequest.to);
+    const senderDID = getIden3CommSingleRecipient(paymentRequest);
+    if (!senderDID) {
+      throw new Error(`failed request. empty 'to' field`);
+    }
+
     const receiverDID = DID.parse(paymentRequest.from);
 
     const payments: PaymentTypeUnion[] = [];
@@ -383,7 +389,7 @@ export class PaymentHandler
       }
     }
 
-    const paymentMessage = createPayment(senderDID, receiverDID, payments);
+    const paymentMessage = createPayment(senderDID, receiverDID, payments, ctx);
     const response = await this.packMessage(paymentMessage, senderDID);
 
     const agentResult = await fetch(paymentRequest.body.agent, {
@@ -421,9 +427,11 @@ export class PaymentHandler
       throw new Error(`failed request. empty 'from' field`);
     }
 
-    if (!paymentRequest.to) {
+    const senderDID = getIden3CommSingleRecipient(paymentRequest);
+    if (!senderDID) {
       throw new Error(`failed request. empty 'to' field`);
     }
+
     if (!opts?.allowExpiredMessages) {
       verifyExpiresTime(paymentRequest);
     }
@@ -432,7 +440,6 @@ export class PaymentHandler
       return null;
     }
 
-    const senderDID = DID.parse(paymentRequest.to);
     return this.packMessage(agentMessage, senderDID);
   }
 
@@ -443,7 +450,13 @@ export class PaymentHandler
     if (!params?.allowExpiredMessages) {
       verifyExpiresTime(payment);
     }
-    if (params.paymentRequest.from !== payment.to) {
+
+    const recipient = getIden3CommSingleRecipient(payment);
+    if (!recipient) {
+      throw new Error(`failed request. empty 'to' field`);
+    }
+
+    if (params.paymentRequest.from !== recipient.string()) {
       throw new Error(
         `sender of the request is not a target of response - expected ${params.paymentRequest.from}, given ${payment.to}`
       );
@@ -487,7 +500,8 @@ export class PaymentHandler
     receiver: DID,
     agent: string,
     signer: Signer,
-    payments: PaymentRailsInfo[]
+    payments: PaymentRailsInfo[],
+    ctx?: Iden3DIDcommCompatibilityOptions
   ): Promise<PaymentRequestMessage> {
     const paymentRequestInfo: PaymentRequestInfo[] = [];
     for (let i = 0; i < payments.length; i++) {
@@ -591,7 +605,7 @@ export class PaymentHandler
         description
       });
     }
-    return createPaymentRequest(sender, receiver, agent, paymentRequestInfo);
+    return createPaymentRequest(sender, receiver, agent, paymentRequestInfo, ctx);
   }
 
   private async packMessage(message: BasicMessage, senderDID: DID): Promise<Uint8Array> {

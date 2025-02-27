@@ -1,7 +1,13 @@
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
-import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
+import {
+  BasicMessage,
+  getIden3CommSingleRecipient,
+  Iden3DIDcommCompatibilityOptions,
+  IPackageManager,
+  ZeroKnowledgeProofResponse
+} from '../types';
 import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
 import { DID, ChainIds, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
@@ -52,7 +58,7 @@ export type ContractMessageHandlerOptions = {
   senderDid: DID;
   ethSigner: Signer;
   challenge?: bigint;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /**
  *
@@ -98,7 +104,7 @@ export class ContractRequestHandler
       case PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE: {
         const ciMessage = message as ContractInvokeRequest;
         const txHashResponsesMap = await this.handleContractInvoke(ciMessage, ctx);
-        return this.createContractInvokeResponse(ciMessage, txHashResponsesMap);
+        return this.createContractInvokeResponse(ciMessage, txHashResponsesMap, ctx);
       }
       default:
         return super.handle(message, ctx);
@@ -193,14 +199,17 @@ export class ContractRequestHandler
    */
   private async createContractInvokeResponse(
     request: ContractInvokeRequest,
-    txHashToZkpResponseMap: Map<string, ZeroKnowledgeProofResponse[]>
+    txHashToZkpResponseMap: Map<string, ZeroKnowledgeProofResponse[]>,
+    ctx: ContractMessageHandlerOptions
   ): Promise<ContractInvokeResponse> {
+    const recipient = getIden3CommSingleRecipient(request);
+    const target = request.from && ctx.multipleRecipientsFormat ? [request.from] : request.from;
     const contractInvokeResponse: ContractInvokeResponse = {
       id: request.id,
       thid: request.thid,
       type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_RESPONSE_MESSAGE_TYPE,
-      from: request.to,
-      to: request.from,
+      from: recipient ? recipient.string() : undefined,
+      to: target,
       body: {
         transaction_data: request.body.transaction_data,
         scope: []
