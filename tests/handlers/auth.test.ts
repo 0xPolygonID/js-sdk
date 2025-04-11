@@ -1634,27 +1634,10 @@ describe('auth', () => {
       }
     };
 
-    const proofReq2: ZeroKnowledgeProofRequest = {
-      id: 2,
-      circuitId: CircuitId.LinkedMultiQuery10,
-      optional: false,
-      query: {
-        groupId: 1,
-        allowedIssuers: ['*'],
-        type: claimReq.type,
-        context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
-        credentialSubject: {
-          birthday: {}
-        },
-        proofType: ProofType.BJJSignature
-      }
-    };
-
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
-      scope: [proofReq2]
+      scope: [proofReq]
     };
 
     const id = uuid.v4();
