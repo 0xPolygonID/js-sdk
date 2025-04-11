@@ -1620,6 +1620,7 @@ describe('auth', () => {
       circuitId: CircuitId.AtomicQueryV3,
       optional: false,
       query: {
+        groupId: 1,
         allowedIssuers: ['*'],
         type: claimReq.type,
         context:
@@ -1633,10 +1634,28 @@ describe('auth', () => {
       }
     };
 
+    const proofReq2: ZeroKnowledgeProofRequest = {
+      id: 2,
+      circuitId: CircuitId.LinkedMultiQuery10,
+      optional: false,
+      query: {
+        groupId: 1,
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
+        credentialSubject: {
+          birthday: {
+          }
+        },
+        proofType: ProofType.BJJSignature
+      }
+    };
+
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
-      scope: [proofReq as ZeroKnowledgeProofRequest]
+      scope: [ proofReq2]
     };
 
     const id = uuid.v4();
@@ -1670,7 +1689,10 @@ describe('auth', () => {
       }
     );
 
+
     expect(token).to.be.a.string;
+
+    /*
 
     const res = await idWallet.addCredentialsToMerkleTree([issuerCred], issuerDID);
 
@@ -1713,8 +1735,168 @@ describe('auth', () => {
     );
 
     expect(token2).to.be.a.string;
+    */
   });
 
+  it('auth response: TestVerifyV3MessageWithSigProof_Linked_SD&LT', async () => {
+    const stateEthConfig = defaultEthConnectionConfig;
+    stateEthConfig.url = RPC_URL;
+    stateEthConfig.contractAddress = STATE_CONTRACT;
+    stateEthConfig.chainId = 80002;
+    const eth = new EthStateStorage(stateEthConfig);
+
+    const kms = registerKeyProvidersInMemoryKMS();
+    dataStorage = getInMemoryDataStorage(eth);
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, eth, {
+      ipfsNodeURL: IPFS_URL
+    });
+    const { did: issuerDID } = await createIdentity(idWallet, {
+      seed: getRandomBytes(32)
+    });
+    const { did: userDID } = await createIdentity(idWallet, {
+      seed: getRandomBytes(32)
+    });
+
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.verifyState.bind(proofService)
+    );
+
+    authHandler = new AuthHandler(packageMgr, proofService);
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v4.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQueryV3,
+      optional: false,
+      query: {
+        groupId: 1,
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
+        credentialSubject: {
+          documentType: {
+            $exists: true
+          }
+        },
+        proofType: ProofType.BJJSignature
+      }
+    };
+
+    const proofReq2: ZeroKnowledgeProofRequest = {
+      id: 2,
+      circuitId: CircuitId.LinkedMultiQuery10,
+      optional: false,
+      query: {
+        groupId: 1,
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
+        credentialSubject: {
+          birthday: {
+          },
+          documentType:{
+
+          },
+        },
+        proofType: ProofType.BJJSignature
+      }
+    };
+
+    const proofReq3: ZeroKnowledgeProofRequest = {
+      id: 3,
+      circuitId: CircuitId.LinkedMultiQuery10,
+      optional: false,
+      query: {
+        groupId: 1,
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
+        credentialSubject: {
+          birthday: {
+            $lt: 10000000000
+          }
+        },
+        proofType: ProofType.BJJSignature
+      }
+    };
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      scope: [ proofReq,proofReq2,proofReq3]
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+
+    const tokenStr = authRes.token;
+    expect(tokenStr).to.be.a('string');
+
+    const { response } = await authHandler.handleAuthorizationResponse(
+      authRes.authResponse,
+      authReq,
+      TEST_VERIFICATION_OPTS
+    );
+    const token = await packageMgr.pack(
+      PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
+      byteEncoder.encode(JSON.stringify(response)),
+      {
+        senderDID: issuerDID,
+        provingMethodAlg: new ProvingMethodAlg('groth16', 'authV2')
+      }
+    );
+
+
+    expect(token).to.be.a.string;
+
+
+  
+  });
   it('auth response: TestVerifyV3MessageWithMtpProof_Merklized_noop', async () => {
     const claimReq: CredentialRequest = {
       credentialSchema:

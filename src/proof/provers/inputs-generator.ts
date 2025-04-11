@@ -606,7 +606,10 @@ export class InputGenerator {
     circuitQueries.forEach((query) => {
       this.checkOperatorSupport(proofReq.circuitId, query.operator);
     });
-
+    circuitQueries.forEach((query) => {
+      query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
+      query.valueProof = query.operator === Operators.NOOP ? new ValueProof() : query.valueProof;
+    });
     return circuitInputs.inputsMarshal();
   };
 
