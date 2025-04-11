@@ -1645,8 +1645,7 @@ describe('auth', () => {
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
         credentialSubject: {
-          birthday: {
-          }
+          birthday: {}
         },
         proofType: ProofType.BJJSignature
       }
@@ -1655,7 +1654,7 @@ describe('auth', () => {
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
-      scope: [ proofReq2]
+      scope: [proofReq2]
     };
 
     const id = uuid.v4();
@@ -1688,7 +1687,6 @@ describe('auth', () => {
         provingMethodAlg: new ProvingMethodAlg('groth16', 'authV2')
       }
     );
-
 
     expect(token).to.be.a.string;
 
@@ -1826,11 +1824,8 @@ describe('auth', () => {
         context:
           'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v4.jsonld',
         credentialSubject: {
-          birthday: {
-          },
-          documentType:{
-
-          },
+          birthday: {},
+          documentType: {}
         },
         proofType: ProofType.BJJSignature
       }
@@ -1858,7 +1853,7 @@ describe('auth', () => {
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
-      scope: [ proofReq,proofReq2,proofReq3]
+      scope: [proofReq, proofReq2, proofReq3]
     };
 
     const id = uuid.v4();
@@ -1891,11 +1886,7 @@ describe('auth', () => {
       }
     );
 
-
     expect(token).to.be.a.string;
-
-
-  
   });
   it('auth response: TestVerifyV3MessageWithMtpProof_Merklized_noop', async () => {
     const claimReq: CredentialRequest = {
