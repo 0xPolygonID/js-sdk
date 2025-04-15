@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { canonicalDouble } from '@iden3/js-jsonld-merklization/dist/types/lib/types/types';
 import { W3CCredential, ProofQuery } from '../../verifiable';
 
 /**
@@ -97,9 +96,9 @@ const greaterThan = (
   b: ComparableType | ComparableType[]
 ) => {
   const predicate = (a: ComparableType, b: ComparableType) => {
-    console.time("detectDataFormat")
+    console.time('detectDataFormat');
     const dataFormat = detectDataFormat(a.toString());
-    console.timeEnd("detectDataFormat")
+    console.timeEnd('detectDataFormat');
 
     switch (dataFormat) {
       case SupportedDataFormat.BigInt:
@@ -354,6 +353,7 @@ const operatorIndependentCheck = (
 const regExBigInt = /^[+-]?\d+$/;
 const regExDouble = /^[+-]?\d+$/;
 const regExDateTimeRFC3339Nano =
+  /* eslint-disable-next-line */
   /^([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))$/;
 const regExBoolean = /^(true)|(false)$/;
 const regExDateTimeYYYYMMDD = /^\d{4}-\d{2}-\d{2}$/;
