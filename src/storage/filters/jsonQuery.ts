@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { canonicalDouble } from '@iden3/js-jsonld-merklization/dist/types/lib/types/types';
 import { W3CCredential, ProofQuery } from '../../verifiable';
 
 /**
@@ -10,7 +11,18 @@ export enum SearchError {
   NotDefinedQueryKey = 'not defined query key',
   NotDefinedComparator = 'not defined comparator'
 }
-
+/**
+ * supported data formats
+ *
+ * @enum {number}
+ */
+export enum SupportedDataFormat {
+  BigInt,
+  Boolean,
+  Double,
+  DateTime,
+  String
+}
 /** allowed operators to search */
 export type FilterOperatorMethod =
   | '$noop'
@@ -85,10 +97,19 @@ const greaterThan = (
   b: ComparableType | ComparableType[]
 ) => {
   const predicate = (a: ComparableType, b: ComparableType) => {
-    if (isNumeric(a.toString()) && isNumeric(b.toString())) {
-      return BigInt(a) > BigInt(b);
+    const dataFormat = detectDataFormat(a.toString());
+
+    switch (dataFormat) {
+      case SupportedDataFormat.BigInt:
+      case SupportedDataFormat.Boolean:
+        return BigInt(a) > BigInt(b);
+      case SupportedDataFormat.DateTime:
+        return Date.parse(a.toString()) > Date.parse(b.toString()); /// nanoseconds won't be compared.
+      case SupportedDataFormat.Double:
+      case SupportedDataFormat.String:
+      default:
+        return a > b;
     }
-    return a > b;
   };
 
   return operatorIndependentCheck(a, b, predicate);
@@ -99,10 +120,19 @@ const greaterThanOrEqual = (
   b: ComparableType | ComparableType[]
 ) => {
   const predicate = (a: ComparableType, b: ComparableType) => {
-    if (isNumeric(a.toString()) && isNumeric(b.toString())) {
-      return BigInt(a) >= BigInt(b);
+    const dataFormat = detectDataFormat(a.toString());
+
+    switch (dataFormat) {
+      case SupportedDataFormat.BigInt:
+      case SupportedDataFormat.Boolean:
+        return BigInt(a) >= BigInt(b);
+      case SupportedDataFormat.DateTime:
+        return Date.parse(a.toString()) >= Date.parse(b.toString()); /// nanoseconds won't be compared.
+      case SupportedDataFormat.Double:
+      case SupportedDataFormat.String:
+      default:
+        return a >= b;
     }
-    return a >= b;
   };
 
   return operatorIndependentCheck(a, b, predicate);
@@ -319,4 +349,20 @@ const operatorIndependentCheck = (
   return predicate(a as ComparableType, b as ComparableType);
 };
 
-const isNumeric = (s: string) => /^[+-]?\d+(\.\d+)?$/.test(s);
+const regExBigInt = /^[+-]?\d+$/;
+const regExDouble = /^[+-]?\d+$/;
+const regExDateTimeRFC3339Nano =
+  /^([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))$/;
+const regExBoolean = /^(true)|(false)$/;
+const regExDateTimeYYYYMMDD = /^\d{4}-\d{2}-\d{2}$/;
+
+const detectDataFormat = (s: string): SupportedDataFormat =>
+  regExBigInt.test(s)
+    ? SupportedDataFormat.BigInt
+    : regExDouble.test(s)
+    ? SupportedDataFormat.Double
+    : regExDateTimeRFC3339Nano.test(s) || regExDateTimeYYYYMMDD.test(s)
+    ? SupportedDataFormat.DateTime
+    : regExBoolean.test(s)
+    ? SupportedDataFormat.Boolean
+    : SupportedDataFormat.String;

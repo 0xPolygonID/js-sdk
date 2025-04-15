@@ -610,5 +610,20 @@ describe('credential-wallet', () => {
     });
     expect(1).to.be.equal(cred.length);
     expect(cred[0].credentialSubject['date-time1']).to.be.equal('2025-04-09T15:48:08.800+02:00');
+
+    // datetime YYYY-MM-DD
+    cred = await credentialStorage.findCredentialsByQuery({
+      allowedIssuers: ['*'],
+      context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
+      credentialSubject: {
+        'date-time1': {
+          $gt: '2022-04-01'
+        }
+      },
+      groupId: 1745320529,
+      type: 'operators'
+    });
+    expect(1).to.be.equal(cred.length);
+    expect(cred[0].credentialSubject['date-time1']).to.be.equal('2025-04-09T15:48:08.800+02:00');
   });
 });
