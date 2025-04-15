@@ -84,48 +84,28 @@ const greaterThan = (
   a: ComparableType | ComparableType[],
   b: ComparableType | ComparableType[]
 ) => {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.every((val, index) => val > (b as ComparableType[])[index]);
-  }
-  if (!Array.isArray(a) && Array.isArray(b)) {
-    return b.every((val) => a > val);
-  }
-  if (Array.isArray(a) && !Array.isArray(b)) {
-    return a.every((val) => val > b);
-  }
-  return a > b;
+  const predicate = (a: ComparableType, b: ComparableType) => {
+    if (isNumeric(a.toString()) && isNumeric(b.toString())) {
+      return BigInt(a) > BigInt(b);
+    }
+    return a > b;
+  };
+
+  return operatorIndependentCheck(a, b, predicate);
 };
 
 const greaterThanOrEqual = (
   a: ComparableType | ComparableType[],
   b: ComparableType | ComparableType[]
 ) => {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.every((val, index) => val >= (b as ComparableType[])[index]);
-  }
-  if (!Array.isArray(a) && Array.isArray(b)) {
-    return b.every((val) => a >= val);
-  }
-  if (Array.isArray(a) && !Array.isArray(b)) {
-    return a.every((val) => val >= b);
-  }
-  return a >= b;
-};
+  const predicate = (a: ComparableType, b: ComparableType) => {
+    if (isNumeric(a.toString()) && isNumeric(b.toString())) {
+      return BigInt(a) >= BigInt(b);
+    }
+    return a >= b;
+  };
 
-const lessThanOrEqual = (
-  a: ComparableType | ComparableType[],
-  b: ComparableType | ComparableType[]
-) => {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.every((val, index) => val <= (b as ComparableType[])[index]);
-  }
-  if (!Array.isArray(a) && Array.isArray(b)) {
-    return b.every((val) => a <= val);
-  }
-  if (Array.isArray(a) && !Array.isArray(b)) {
-    return a.every((val) => val <= b);
-  }
-  return a <= b;
+  return operatorIndependentCheck(a, b, predicate);
 };
 
 // a - field value
@@ -190,7 +170,7 @@ export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFun
   $gte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     greaterThanOrEqual(a, b),
   $lte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
-    lessThanOrEqual(a, b),
+    !greaterThan(a, b),
   $between: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     betweenOperator(a, b),
   $nonbetween: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
@@ -320,3 +300,23 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
     }
   }, []);
 };
+
+const operatorIndependentCheck = (
+  a: ComparableType | ComparableType[],
+  b: ComparableType | ComparableType[],
+  predicate: (a: ComparableType, b: ComparableType) => boolean
+) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.every((val, index) => predicate(val, (b as ComparableType[])[index]));
+  }
+  if (!Array.isArray(a) && Array.isArray(b)) {
+    return b.every((val) => predicate(a, val));
+  }
+  if (Array.isArray(a) && !Array.isArray(b)) {
+    return a.every((val) => predicate(val, b));
+  }
+  // in this case a and b are not arrays
+  return predicate(a as ComparableType, b as ComparableType);
+};
+
+const isNumeric = (s: string) => /^[+-]?\d+(\.\d+)?$/.test(s);
