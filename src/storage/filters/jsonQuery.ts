@@ -97,7 +97,9 @@ const greaterThan = (
   b: ComparableType | ComparableType[]
 ) => {
   const predicate = (a: ComparableType, b: ComparableType) => {
+    console.time("detectDataFormat")
     const dataFormat = detectDataFormat(a.toString());
+    console.timeEnd("detectDataFormat")
 
     switch (dataFormat) {
       case SupportedDataFormat.BigInt:
