@@ -10,7 +10,18 @@ export enum SearchError {
   NotDefinedQueryKey = 'not defined query key',
   NotDefinedComparator = 'not defined comparator'
 }
-
+/**
+ * supported data formats
+ *
+ * @enum {number}
+ */
+export enum SupportedDataFormat {
+  BigInt,
+  Boolean,
+  Double,
+  DateTime,
+  String
+}
 /** allowed operators to search */
 export type FilterOperatorMethod =
   | '$noop'
@@ -84,48 +95,46 @@ const greaterThan = (
   a: ComparableType | ComparableType[],
   b: ComparableType | ComparableType[]
 ) => {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.every((val, index) => val > (b as ComparableType[])[index]);
-  }
-  if (!Array.isArray(a) && Array.isArray(b)) {
-    return b.every((val) => a > val);
-  }
-  if (Array.isArray(a) && !Array.isArray(b)) {
-    return a.every((val) => val > b);
-  }
-  return a > b;
+  const predicate = (a: ComparableType, b: ComparableType) => {
+    const dataFormat = detectDataFormat(a.toString());
+
+    switch (dataFormat) {
+      case SupportedDataFormat.BigInt:
+      case SupportedDataFormat.Boolean:
+        return BigInt(a) > BigInt(b);
+      case SupportedDataFormat.DateTime:
+        return Date.parse(a.toString()) > Date.parse(b.toString()); /// nanoseconds won't be compared.
+      case SupportedDataFormat.Double:
+      case SupportedDataFormat.String:
+      default:
+        return a > b;
+    }
+  };
+
+  return operatorIndependentCheck(a, b, predicate);
 };
 
 const greaterThanOrEqual = (
   a: ComparableType | ComparableType[],
   b: ComparableType | ComparableType[]
 ) => {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.every((val, index) => val >= (b as ComparableType[])[index]);
-  }
-  if (!Array.isArray(a) && Array.isArray(b)) {
-    return b.every((val) => a >= val);
-  }
-  if (Array.isArray(a) && !Array.isArray(b)) {
-    return a.every((val) => val >= b);
-  }
-  return a >= b;
-};
+  const predicate = (a: ComparableType, b: ComparableType) => {
+    const dataFormat = detectDataFormat(a.toString());
 
-const lessThanOrEqual = (
-  a: ComparableType | ComparableType[],
-  b: ComparableType | ComparableType[]
-) => {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    return a.every((val, index) => val <= (b as ComparableType[])[index]);
-  }
-  if (!Array.isArray(a) && Array.isArray(b)) {
-    return b.every((val) => a <= val);
-  }
-  if (Array.isArray(a) && !Array.isArray(b)) {
-    return a.every((val) => val <= b);
-  }
-  return a <= b;
+    switch (dataFormat) {
+      case SupportedDataFormat.BigInt:
+      case SupportedDataFormat.Boolean:
+        return BigInt(a) >= BigInt(b);
+      case SupportedDataFormat.DateTime:
+        return Date.parse(a.toString()) >= Date.parse(b.toString()); /// nanoseconds won't be compared.
+      case SupportedDataFormat.Double:
+      case SupportedDataFormat.String:
+      default:
+        return a >= b;
+    }
+  };
+
+  return operatorIndependentCheck(a, b, predicate);
 };
 
 // a - field value
@@ -190,7 +199,7 @@ export const comparatorOptions: { [v in FilterOperatorMethod]: FilterOperatorFun
   $gte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     greaterThanOrEqual(a, b),
   $lte: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
-    lessThanOrEqual(a, b),
+    !greaterThan(a, b),
   $between: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
     betweenOperator(a, b),
   $nonbetween: (a: ComparableType | ComparableType[], b: ComparableType | ComparableType[]) =>
@@ -320,3 +329,40 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
     }
   }, []);
 };
+
+const operatorIndependentCheck = (
+  a: ComparableType | ComparableType[],
+  b: ComparableType | ComparableType[],
+  predicate: (a: ComparableType, b: ComparableType) => boolean
+) => {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.every((val, index) => predicate(val, (b as ComparableType[])[index]));
+  }
+  if (!Array.isArray(a) && Array.isArray(b)) {
+    return b.every((val) => predicate(a, val));
+  }
+  if (Array.isArray(a) && !Array.isArray(b)) {
+    return a.every((val) => predicate(val, b));
+  }
+  // in this case a and b are not arrays
+  return predicate(a as ComparableType, b as ComparableType);
+};
+
+const regExBigInt = /^[+-]?\d+$/;
+const regExDouble = /^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$/;
+const regExDateTimeRFC3339Nano =
+  /* eslint-disable-next-line */
+  /^([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\.[0-9]+)?(([Zz])|([\+|\-]([01][0-9]|2[0-3]):[0-5][0-9]))$/;
+const regExBoolean = /^(true)|(false)$/;
+const regExDateTimeYYYYMMDD = /^\d{4}-\d{2}-\d{2}$/;
+
+const detectDataFormat = (s: string): SupportedDataFormat =>
+  regExBigInt.test(s)
+    ? SupportedDataFormat.BigInt
+    : regExDouble.test(s)
+    ? SupportedDataFormat.Double
+    : regExDateTimeRFC3339Nano.test(s) || regExDateTimeYYYYMMDD.test(s)
+    ? SupportedDataFormat.DateTime
+    : regExBoolean.test(s)
+    ? SupportedDataFormat.Boolean
+    : SupportedDataFormat.String;
