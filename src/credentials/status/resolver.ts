@@ -34,7 +34,7 @@ export interface CredentialStatusResolveOptions {
  */
 export interface CredentialStatusResolver {
   /**
-   * resolve is a method to resolve a credential status from the the specific source.
+   * resolve is a method to resolve a credential status from the specific source.
    *
    * @public
    * @param {CredentialStatus} credentialStatus -  credential status to resolve
@@ -68,7 +68,7 @@ export class CredentialStatusResolverRegistry {
   }
 
   /**
-   * resolve is a method to resolve a credential status from the the specific source.
+   * resolve is a method to resolve a credential status from the specific source.
    *
    * @public
    * @param {CredentialStatus} credentialStatus -  credential status to resolve
