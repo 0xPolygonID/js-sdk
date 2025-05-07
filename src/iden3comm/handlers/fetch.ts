@@ -7,6 +7,8 @@ import {
   CredentialIssuanceMessage,
   CredentialsOfferMessage,
   CredentialsOnchainOfferMessage,
+  getIden3CommSingleRecipient,
+  Iden3DIDcommCompatibilityOptions,
   IPackageManager,
   JWSPackerParams,
   MessageFetchRequestMessage
@@ -40,7 +42,7 @@ export type FetchHandlerOptions = BasicHandlerOptions & {
   headers?: {
     [key: string]: string;
   };
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /**
  *
@@ -49,7 +51,7 @@ export type FetchHandlerOptions = BasicHandlerOptions & {
  * @public
  * @interface FetchRequestOptions
  */
-export type FetchRequestOptions = BasicHandlerOptions;
+export type FetchRequestOptions = BasicHandlerOptions & Iden3DIDcommCompatibilityOptions;
 
 /**
  *
@@ -58,9 +60,9 @@ export type FetchRequestOptions = BasicHandlerOptions;
  * @public
  * @interface IssuanceResponseOptions
  */
-export type IssuanceResponseOptions = BasicHandlerOptions;
+export type IssuanceResponseOptions = BasicHandlerOptions & Iden3DIDcommCompatibilityOptions;
 
-export type FetchMessageHandlerOptions = FetchHandlerOptions;
+export type FetchMessageHandlerOptions = FetchHandlerOptions & Iden3DIDcommCompatibilityOptions;
 
 /**
  * Interface that allows the processing of the credential offer in the raw format for given identifier
@@ -152,7 +154,7 @@ export class FetchHandler
         return result as BasicMessage;
       }
       case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_FETCH_REQUEST_MESSAGE_TYPE:
-        return this.handleFetchRequest(message as CredentialFetchRequestMessage);
+        return this.handleFetchRequest(message as CredentialFetchRequestMessage, ctx);
       case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE:
         return this.handleIssuanceResponseMsg(message as CredentialIssuanceMessage);
       case PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ONCHAIN_OFFER_MESSAGE_TYPE: {
@@ -179,9 +181,12 @@ export class FetchHandler
       throw new Error('onchain issuer is not provided');
     }
     const credentials: W3CCredential[] = [];
+    const issuerDID = DID.parse(offerMessage.from);
+    const userDID = getIden3CommSingleRecipient(offerMessage);
+    if (!userDID) {
+      throw new Error('credential offer must have a recipient');
+    }
     for (const credentialInfo of offerMessage.body.credentials) {
-      const issuerDID = DID.parse(offerMessage.from);
-      const userDID = DID.parse(offerMessage.to);
       const credential = await this.opts.onchainIssuer.getCredential(
         issuerDID,
         userDID,
@@ -198,7 +203,7 @@ export class FetchHandler
       mediaType?: MediaType;
       headers?: HeadersInit;
       packerOptions?: JWSPackerParams;
-    }
+    } & Iden3DIDcommCompatibilityOptions
   ): Promise<W3CCredential[] | BasicMessage> {
     if (!ctx.mediaType) {
       ctx.mediaType = MediaType.ZKPMessage;
@@ -206,6 +211,10 @@ export class FetchHandler
 
     const credentials: W3CCredential[] = [];
 
+    const to = getIden3CommSingleRecipient(offerMessage);
+    if (!to) {
+      throw new Error('offer must have a recipient');
+    }
     for (const credentialInfo of offerMessage.body.credentials) {
       const guid = uuid.v4();
       const fetchRequest: MessageFetchRequestMessage = {
@@ -216,8 +225,8 @@ export class FetchHandler
         body: {
           id: credentialInfo.id
         },
-        from: offerMessage.to,
-        to: offerMessage.from
+        from: to.string(),
+        to: ctx.multipleRecipientsFormat ? [offerMessage.from] : offerMessage.from
       };
 
       const msgBytes = byteEncoder.encode(JSON.stringify(fetchRequest));
@@ -229,7 +238,7 @@ export class FetchHandler
               provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
             };
 
-      const senderDID = DID.parse(offerMessage.to);
+      const senderDID = to;
       const token = byteDecoder.decode(
         await this._packerMgr.pack(ctx.mediaType, msgBytes, {
           senderDID,
@@ -300,7 +309,8 @@ export class FetchHandler
     const result = await this.handleOfferMessage(offerMessage, {
       mediaType: opts?.mediaType,
       headers: opts?.headers,
-      packerOptions: opts?.packerOptions
+      packerOptions: opts?.packerOptions,
+      multipleRecipientsFormat: opts?.multipleRecipientsFormat
     });
 
     if (Array.isArray(result)) {
@@ -325,7 +335,8 @@ export class FetchHandler
   }
 
   private async handleFetchRequest(
-    msgRequest: CredentialFetchRequestMessage
+    msgRequest: CredentialFetchRequestMessage,
+    ctx?: FetchRequestOptions
   ): Promise<CredentialIssuanceMessage> {
     if (!msgRequest.to) {
       throw new Error("failed request. empty 'to' field");
@@ -335,7 +346,10 @@ export class FetchHandler
       throw new Error("failed request. empty 'from' field");
     }
 
-    const issuerDID = DID.parse(msgRequest.to);
+    const issuerDID = getIden3CommSingleRecipient(msgRequest);
+    if (!issuerDID) {
+      throw new Error('fetch request must have a recipient');
+    }
     const userDID = DID.parse(msgRequest.from);
 
     const credId = msgRequest.body?.id;
@@ -365,8 +379,8 @@ export class FetchHandler
       typ: msgRequest.typ ?? MediaType.PlainMessage,
       thid: msgRequest.thid ?? uuid.v4(),
       body: { credential: cred },
-      from: msgRequest.to,
-      to: msgRequest.from
+      from: issuerDID.string(),
+      to: ctx?.multipleRecipientsFormat ? [userDID.string()] : userDID.string()
     };
   }
   /**

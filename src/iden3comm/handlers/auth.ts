@@ -26,6 +26,10 @@ import {
   IProtocolMessageHandler
 } from './message-handler';
 import { parseAcceptProfile } from '../utils';
+import {
+  getIden3CommSingleRecipient,
+  Iden3DIDcommCompatibilityOptions
+} from '../types/protocol/common';
 
 /**
  * Options to pass to createAuthorizationRequest function
@@ -99,7 +103,7 @@ export type AuthResponseHandlerOptions = StateVerificationOpts &
   BasicHandlerOptions & {
     // acceptedProofGenerationDelay is the period of time in milliseconds that a generated proof remains valid.
     acceptedProofGenerationDelay?: number;
-  };
+  } & Iden3DIDcommCompatibilityOptions;
 
 /**
  * Interface that allows the processing of the authorization request in the raw format for given identifier
@@ -161,13 +165,13 @@ export interface IAuthHandler {
 type AuthReqOptions = {
   senderDid: DID;
   mediaType?: MediaType;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 type AuthRespOptions = {
   request: AuthorizationRequestMessage;
   acceptedStateTransitionDelay?: number;
   acceptedProofGenerationDelay?: number;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
 /**
@@ -180,7 +184,7 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /**
  *
@@ -252,7 +256,7 @@ export class AuthHandler
       throw new Error('Invalid message type for authorization request');
     }
     // override sender did if it's explicitly specified in the auth request
-    const to = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
+    const to = getIden3CommSingleRecipient(authRequest) ?? ctx.senderDid;
     const guid = uuid.v4();
 
     if (!authRequest.from) {
@@ -285,7 +289,7 @@ export class AuthHandler
         scope: responseScope
       },
       from: to.string(),
-      to: authRequest.from
+      to: ctx.multipleRecipientsFormat ? [authRequest.from] : authRequest.from
     };
   }
 
@@ -317,7 +321,8 @@ export class AuthHandler
 
     const authResponse = await this.handleAuthRequest(authRequest, {
       senderDid: did,
-      mediaType: opts.mediaType
+      mediaType: opts.mediaType,
+      multipleRecipientsFormat: opts.multipleRecipientsFormat
     });
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
@@ -351,7 +356,12 @@ export class AuthHandler
       throw new Error('message for signing from request is not presented in response');
     }
 
-    if (request.from !== response.to) {
+    const to = getIden3CommSingleRecipient(response);
+    if (!to) {
+      throw new Error('auth response must have valid recipient');
+    }
+
+    if (request.from !== to.string()) {
       throw new Error(
         `sender of the request is not a target of response - expected ${request.from}, given ${response.to}`
       );
@@ -443,7 +453,8 @@ export class AuthHandler
     const authResp = (await this.handleAuthResponse(response, {
       request,
       acceptedStateTransitionDelay: opts?.acceptedStateTransitionDelay,
-      acceptedProofGenerationDelay: opts?.acceptedProofGenerationDelay
+      acceptedProofGenerationDelay: opts?.acceptedProofGenerationDelay,
+      multipleRecipientsFormat: opts?.multipleRecipientsFormat
     })) as AuthorizationResponseMessage;
 
     return { request, response: authResp };

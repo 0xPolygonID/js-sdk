@@ -4,6 +4,8 @@ import {
   CredentialOffer,
   CredentialsOfferMessage,
   DIDDocument,
+  getIden3CommSingleRecipient,
+  Iden3DIDcommCompatibilityOptions,
   IPackageManager,
   PackerParams
 } from '../types';
@@ -143,7 +145,7 @@ export interface ICredentialProposalHandler {
 }
 
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
-export type ProposalRequestHandlerOptions = BasicHandlerOptions;
+export type ProposalRequestHandlerOptions = BasicHandlerOptions & Iden3DIDcommCompatibilityOptions;
 
 /** @beta ProposalHandlerOptions represents proposal handler options */
 export type ProposalHandlerOptions = BasicHandlerOptions & {
@@ -216,7 +218,8 @@ export class CredentialProposalHandler
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ctx?: ProposalRequestHandlerOptions
   ): Promise<ProposalMessage | CredentialsOfferMessage | undefined> {
-    if (!proposalRequest.to) {
+    const to = getIden3CommSingleRecipient(proposalRequest);
+    if (!to) {
       throw new Error(`failed request. empty 'to' field`);
     }
 
@@ -246,7 +249,7 @@ export class CredentialProposalHandler
           },
           type: cred.type,
           context: cred.context,
-          allowedIssuers: [proposalRequest.to]
+          allowedIssuers: [to?.string()]
         });
       } catch (e) {
         if ((e as Error).message !== 'no credential satisfied query') {
@@ -266,8 +269,8 @@ export class CredentialProposalHandler
               url: this._params.agentUrl,
               credentials: []
             },
-            from: proposalRequest.to,
-            to: proposalRequest.from
+            from: to.string(),
+            to: ctx?.multipleRecipientsFormat ? [proposalRequest.from] : proposalRequest.from
           };
         }
 
@@ -295,8 +298,8 @@ export class CredentialProposalHandler
           body: {
             proposals: []
           },
-          from: proposalRequest.to,
-          to: proposalRequest.from
+          from: to.string(),
+          to: ctx?.multipleRecipientsFormat ? [proposalRequest.from] : proposalRequest.from
         };
       }
       proposalMessage.body?.proposals.push(proposal);
@@ -329,7 +332,7 @@ export class CredentialProposalHandler
     }
 
     const senderDID = DID.parse(proposalRequest.from);
-    const message = await this.handleProposalRequestMessage(proposalRequest);
+    const message = await this.handleProposalRequestMessage(proposalRequest, opts);
     const response = byteEncoder.encode(JSON.stringify(message));
 
     const packerOpts =

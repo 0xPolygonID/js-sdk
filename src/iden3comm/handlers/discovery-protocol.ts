@@ -1,6 +1,12 @@
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../constants';
 
-import { BasicMessage, IPackageManager, ProtocolMessage } from '../types';
+import {
+  BasicMessage,
+  getIden3CommSingleRecipient,
+  Iden3DIDcommCompatibilityOptions,
+  IPackageManager,
+  ProtocolMessage
+} from '../types';
 
 import * as uuid from 'uuid';
 import {
@@ -42,7 +48,7 @@ export interface DiscoveryProtocolOptions {
  */
 export type DiscoveryProtocolHandlerOptions = BasicHandlerOptions & {
   disclosureExpiresDate?: Date;
-};
+} & Iden3DIDcommCompatibilityOptions;
 
 /**
  * @beta
@@ -54,7 +60,7 @@ export function createDiscoveryFeatureQueryMessage(
   queries: DiscoverFeatureQuery[],
   opts?: {
     from?: string;
-    to?: string;
+    to?: string | string[];
     expires_time?: number;
   }
 ): DiscoverFeatureQueriesMessage {
@@ -85,7 +91,7 @@ export function createDiscoveryFeatureDiscloseMessage(
   disclosures: DiscoverFeatureDisclosure[],
   opts?: {
     from?: string;
-    to?: string;
+    to?: string | string[];
     expires_time?: number;
   }
 ): DiscoverFeatureDiscloseMessage {
@@ -192,10 +198,12 @@ export class DiscoveryProtocolHandler
       disclosures.push(...this.handleQuery(query));
     }
 
+    const to = getIden3CommSingleRecipient(message);
+    const from = opts?.multipleRecipientsFormat && message.from ? [message.from] : message.from;
     return Promise.resolve(
       createDiscoveryFeatureDiscloseMessage(disclosures, {
-        to: message.from,
-        from: message.to,
+        to: from,
+        from: to?.string(),
         expires_time: opts?.disclosureExpiresDate
           ? getUnixTimestamp(opts.disclosureExpiresDate)
           : undefined

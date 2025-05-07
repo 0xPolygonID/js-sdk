@@ -13,7 +13,7 @@ import { RootInfo, StateInfo } from '../../../storage';
 export type AuthorizationResponseMessage = BasicMessage & {
   body: AuthorizationMessageResponseBody;
   from: string;
-  to: string;
+  to: string | string[];
   type: typeof PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
 };
 
