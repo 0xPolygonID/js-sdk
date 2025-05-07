@@ -1,11 +1,14 @@
 import { PROTOCOL_MESSAGE_TYPE, MediaType } from '../constants';
 import {
+  Attachment,
   BasicMessage,
   CredentialOffer,
   CredentialsOfferMessage,
   DIDDocument,
   IPackageManager,
-  PackerParams
+  PackerParams,
+  TransparentPaymentData,
+  TransparentPaymentInstructionMessage
 } from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
@@ -13,9 +16,9 @@ import * as uuid from 'uuid';
 import { proving } from '@iden3/js-jwz';
 import {
   Proposal,
-  ProposalRequestCredential,
   ProposalRequestMessage,
-  ProposalMessage
+  ProposalMessage,
+  ProposalRequestCredential
 } from '../types/protocol/proposal-request';
 import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
@@ -26,12 +29,14 @@ import {
   IProtocolMessageHandler
 } from './message-handler';
 import { verifyExpiresTime } from './common';
+import { getProtocolMessageTypeByGoalCode } from '../types/protocol/common';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
   did_doc?: DIDDocument;
   expires_time?: Date;
+  attachments?: Attachment[];
 };
 
 /** @beta ProposalCreationOptions represents proposal creation options */
@@ -62,7 +67,8 @@ export function createProposalRequest(
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
     body: opts,
     created_time: getUnixTimestamp(new Date()),
-    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined,
+    attachments: opts.attachments
   };
   return request;
 }
@@ -153,7 +159,11 @@ export type ProposalHandlerOptions = BasicHandlerOptions & {
 /** @beta CredentialProposalHandlerParams represents credential proposal handler params */
 export type CredentialProposalHandlerParams = {
   agentUrl: string;
-  proposalResolverFn: (context: string, type: string) => Promise<Proposal>;
+  proposalResolverFn: (
+    context: string,
+    type: string,
+    opts?: { paymentInfo?: TransparentPaymentData }
+  ) => Promise<Proposal>;
   packerParams: PackerParams;
 };
 
@@ -231,6 +241,20 @@ export class CredentialProposalHandler
     let credOfferMessage: CredentialsOfferMessage | undefined = undefined;
     let proposalMessage: ProposalMessage | undefined = undefined;
 
+    const paymentInstructionsMessages: TransparentPaymentInstructionMessage[] = (
+      proposalRequest.attachments ?? []
+    )
+      .flatMap((a) => a.data.json as TransparentPaymentInstructionMessage)
+      .filter(
+        (m) =>
+          m &&
+          m.body?.goal_code &&
+          getProtocolMessageTypeByGoalCode(m.body.goal_code) ===
+            PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE &&
+          m.to === proposalRequest.to && // issuer
+          (!m.body.paymentReference || m.body.paymentReference === proposalRequest.from) // user
+      );
+
     for (let i = 0; i < proposalRequest.body.credentials.length; i++) {
       const cred = proposalRequest.body.credentials[i];
 
@@ -280,8 +304,13 @@ export class CredentialProposalHandler
         continue;
       }
 
+      const paymentInfo = paymentInstructionsMessages.find((m) =>
+        m.body.credentials.find((c) => c.type === cred.type && c.context === cred.context)
+      );
       // credential not found in the wallet, prepare proposal protocol message
-      const proposal = await this._params.proposalResolverFn(cred.context, cred.type);
+      const proposal = await this._params.proposalResolverFn(cred.context, cred.type, {
+        paymentInfo: paymentInfo?.body?.paymentData
+      });
       if (!proposal) {
         throw new Error(`can't resolve Proposal for type: ${cred.type}, context: ${cred.context}`);
       }

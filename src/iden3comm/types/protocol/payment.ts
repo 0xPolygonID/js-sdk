@@ -6,6 +6,7 @@ import {
   SupportedPaymentProofType
 } from '../../../verifiable';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
+import { CredentialSchemaInfo } from './common';
 
 /** @beta PaymentRequestMessage is struct the represents payment-request message */
 export type PaymentRequestMessage = BasicMessage & {
@@ -23,10 +24,7 @@ export type PaymentRequestMessageBody = {
 
 /** @beta PaymentRequestInfo is struct the represents payment info for payment-request */
 export type PaymentRequestInfo = {
-  credentials: {
-    type: string;
-    context: string;
-  }[];
+  credentials: CredentialSchemaInfo[];
   data:
     | Iden3PaymentRequestCryptoV1
     | (
