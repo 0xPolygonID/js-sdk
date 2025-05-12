@@ -25,6 +25,7 @@ import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { JsonRpcProvider } from 'ethers';
 import { RPC_URL } from '../helpers';
+import { schemaLoaderForTests } from '../mocks/schema';
 
 describe('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -38,6 +39,7 @@ describe('sig proofs', () => {
   let userDID: DID;
   let issuerDID: DID;
   let circuitStorage: ICircuitStorage;
+  let merklizeOpts;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -104,10 +106,18 @@ describe('sig proofs', () => {
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
-
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      ipfsNodeURL
-    });
+    merklizeOpts = {
+      documentLoader: schemaLoaderForTests({
+        ipfsNodeURL
+      })
+    };
+    proofService = new ProofService(
+      idWallet,
+      credWallet,
+      circuitStorage,
+      mockStateStorage,
+      merklizeOpts
+    );
 
     const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
     const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -149,7 +159,7 @@ describe('sig proofs', () => {
         id: rhsUrl
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
@@ -210,7 +220,7 @@ describe('sig proofs', () => {
         id: rhsUrl
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
@@ -339,9 +349,7 @@ describe('sig proofs', () => {
         id: rhsUrl
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsNodeURL
-    });
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
@@ -413,9 +421,7 @@ describe('sig proofs', () => {
         id: rhsUrl
       }
     };
-    const issuedCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsNodeURL
-    });
+    const issuedCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuedCred);
 
@@ -452,9 +458,7 @@ describe('sig proofs', () => {
       }
     };
 
-    const deliveryCred = await idWallet.issueCredential(issuerDID, deliveryClaimReq, {
-      ipfsNodeURL
-    });
+    const deliveryCred = await idWallet.issueCredential(issuerDID, deliveryClaimReq, merklizeOpts);
 
     await credWallet.save(deliveryCred);
 
@@ -573,9 +577,7 @@ describe('sig proofs', () => {
         id: rhsUrl
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsNodeURL
-    });
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
@@ -646,9 +648,7 @@ describe('sig proofs', () => {
         id: rhsUrl
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, {
-      ipfsNodeURL
-    });
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 

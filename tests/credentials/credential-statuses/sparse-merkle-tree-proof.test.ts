@@ -11,6 +11,7 @@ import {
   registerKeyProvidersInMemoryKMS
 } from '../../helpers';
 import { DID } from '@iden3/js-iden3-core';
+import { schemaLoaderForTests } from '../../mocks/schema';
 
 describe('SparseMerkleTreeProof', () => {
   let idWallet: IdentityWallet;
@@ -22,6 +23,9 @@ describe('SparseMerkleTreeProof', () => {
   let issuerDID: DID;
   const walletUrl = 'https://user-wallet.com';
   const issuerWalletUrl = 'https://issuer.com';
+  const merklizeOpts = {
+    documentLoader: schemaLoaderForTests()
+  };
 
   beforeEach(async () => {
     const kms = registerKeyProvidersInMemoryKMS();
@@ -67,7 +71,7 @@ describe('SparseMerkleTreeProof', () => {
         id: walletUrl
       }
     };
-    const issuedCredential = await idWallet.issueCredential(issuerDID, credRequest);
+    const issuedCredential = await idWallet.issueCredential(issuerDID, credRequest, merklizeOpts);
 
     await credWallet.save(issuedCredential);
 

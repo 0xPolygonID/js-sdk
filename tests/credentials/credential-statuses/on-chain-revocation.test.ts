@@ -41,6 +41,7 @@ import path from 'path';
 import spies from 'chai-spies';
 import { JsonRpcProvider, Wallet } from 'ethers';
 import { getRandomBytes } from '@iden3/js-crypto';
+import { schemaLoaderForTests } from '../../mocks/schema';
 chai.use(spies);
 const expect = chai.expect;
 
@@ -164,6 +165,7 @@ describe('onchain revocation checks', () => {
   let storage: OnChainRevocationStorage;
   let signer: Wallet;
   let onchainResolver: OnChainResolver;
+  let merklizeOpts;
 
   const createCredRequest = (
     credentialSubjectId: string,
@@ -241,10 +243,15 @@ describe('onchain revocation checks', () => {
     idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet, {
       credentialStatusPublisherRegistry
     });
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage);
+
+    merklizeOpts = {
+      documentLoader: schemaLoaderForTests()
+    };
+
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage, merklizeOpts);
   });
 
-  it('issuer has genesis state', async () => {
+  it.only('issuer has genesis state', async () => {
     const revocationOpts = {
       type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
       id: RHS_CONTRACT_ADDRESS
@@ -264,7 +271,7 @@ describe('onchain revocation checks', () => {
 
     const claimReq: CredentialRequest = createCredRequest(userDID.string());
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
@@ -363,7 +370,11 @@ describe('onchain revocation checks', () => {
                   }
                 });
 
-                const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+                const issuerCred = await idWallet.issueCredential(
+                  issuerDID,
+                  claimReq,
+                  merklizeOpts
+                );
 
                 expect(issuerCred.credentialSubject.id).to.equal(userDID.string());
 
