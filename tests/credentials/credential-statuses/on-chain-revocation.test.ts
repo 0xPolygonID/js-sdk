@@ -251,7 +251,7 @@ describe('onchain revocation checks', () => {
     proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage, merklizeOpts);
   });
 
-  it.only('issuer has genesis state', async () => {
+  it('issuer has genesis state', async () => {
     const revocationOpts = {
       type: CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023,
       id: RHS_CONTRACT_ADDRESS
