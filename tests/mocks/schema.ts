@@ -121,7 +121,6 @@ export const schemaLoaderForTests = (opts?: Options): DocumentLoader => {
   });
 
   return async (url: Url): Promise<RemoteDocument> => {
-    console.log(url);
     const remoteDoc = cache.get(url);
     if (remoteDoc) {
       return remoteDoc;
