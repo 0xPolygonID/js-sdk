@@ -25,7 +25,6 @@ export function createProblemReportMessage(
   const uuidv4 = uuid.v4();
   return {
     id: uuidv4,
-    thid: uuidv4,
     pthid: pthid,
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PROBLEM_REPORT_MESSAGE_TYPE,

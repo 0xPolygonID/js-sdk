@@ -37,7 +37,6 @@ describe('Problem Report Handler', () => {
       }
     );
     delete problemReport.id;
-    delete problemReport.thid;
     const expected = JSON.parse(example);
     expect(problemReport).to.be.deep.equal(expected);
   });
