@@ -24,6 +24,7 @@ import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { SEED_USER, createIdentity, TEST_VERIFICATION_OPTS, RPC_URL } from '../helpers';
+import { schemaLoaderForTests } from '../mocks/schema';
 
 describe('mtp proofs', () => {
   let idWallet: IdentityWallet;
@@ -35,6 +36,8 @@ describe('mtp proofs', () => {
 
   const rhsUrl = process.env.RHS_URL as string;
   const walletKey = process.env.WALLET_KEY as string;
+
+  let merklizeOpts;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -122,7 +125,17 @@ describe('mtp proofs', () => {
 
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
+    merklizeOpts = {
+      documentLoader: schemaLoaderForTests()
+    };
+
+    proofService = new ProofService(
+      idWallet,
+      credWallet,
+      circuitStorage,
+      mockStateStorage,
+      merklizeOpts
+    );
   });
 
   it('mtpv2-non-merklized', async () => {
@@ -154,7 +167,7 @@ describe('mtp proofs', () => {
       }
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
@@ -243,7 +256,7 @@ describe('mtp proofs', () => {
       }
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
