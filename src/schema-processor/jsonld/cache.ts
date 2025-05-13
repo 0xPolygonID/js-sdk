@@ -10,12 +10,31 @@ import { VerifiableConstants } from '../../verifiable';
  */
 
 const doc = JSON.parse(VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018);
+const docIden3Proofs = JSON.parse(
+  VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT
+);
+const docIden3DisplayMethod = JSON.parse(
+  VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD_DEFINITION_DOCUMENT
+);
+const docIden3AuthBJJ = JSON.parse(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD);
 
 export const cacheLoader = (opts?: Options): DocumentLoader => {
   const cache = new Map<string, RemoteDocument>();
   cache.set(VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018, {
     document: doc,
     documentUrl: VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018
+  });
+  cache.set(VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL, {
+    document: docIden3Proofs,
+    documentUrl: VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT
+  });
+  cache.set(VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD, {
+    document: docIden3DisplayMethod,
+    documentUrl: VerifiableConstants.JSONLD_SCHEMA.IDEN3_DISPLAY_METHOD_DEFINITION_DOCUMENT
+  });
+  cache.set(VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD_URL, {
+    document: docIden3AuthBJJ,
+    documentUrl: VerifiableConstants.AUTH.AUTH_BJJ_CREDENTIAL_SCHEMA_JSONLD
   });
 
   return async (url: Url): Promise<RemoteDocument> => {
