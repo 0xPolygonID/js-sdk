@@ -8,3 +8,4 @@ export * from './credential-proposal';
 export * from './message-handler';
 export * from './payment';
 export * from './discovery-protocol';
+export * from './problem-report';
