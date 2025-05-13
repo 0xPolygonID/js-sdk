@@ -64,6 +64,7 @@ import {
   SEED_USER
 } from '../helpers';
 import { AbstractMessageHandler } from '../../src/iden3comm/handlers/message-handler';
+import { schemaLoaderForTests } from '../mocks/schema';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -81,6 +82,7 @@ describe('contract-request', () => {
   const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
   const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
+  let merklizeOpts;
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
@@ -206,6 +208,11 @@ describe('contract-request', () => {
       mt: new InMemoryMerkleTreeStorage(40),
       states: mockStateStorage
     };
+    merklizeOpts = {
+      documentLoader: schemaLoaderForTests({
+        ipfsNodeURL: ipfsNodeURL
+      })
+    };
     const circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, '../proofs/testdata')
     });
@@ -218,9 +225,13 @@ describe('contract-request', () => {
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      ipfsNodeURL
-    });
+    proofService = new ProofService(
+      idWallet,
+      credWallet,
+      circuitStorage,
+      mockStateStorage,
+      merklizeOpts
+    );
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
       proofService.generateAuthV2Inputs.bind(proofService),
@@ -270,7 +281,7 @@ describe('contract-request', () => {
         id: rhsUrl
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
@@ -369,7 +380,7 @@ describe('contract-request', () => {
         id: rhsUrl
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
