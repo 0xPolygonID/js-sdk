@@ -15,7 +15,7 @@ npm install @0xpolygonid/js-sdk
 And place actual circuits to `test/proofs/testdata`
 
 ```bash
-curl -LO https://iden3-circuits-bucket.s3.eu-west-1.amazonaws.com/latest.zip
+curl -LO https://circuits.privado.id/latest.zip
 ```
 
 ## Tests
