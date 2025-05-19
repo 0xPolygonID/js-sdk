@@ -1,7 +1,9 @@
 import { Signer } from 'ethers';
 import {
+  AuthProofResponse,
   ContractInvokeTransactionData,
   JsonDocumentObjectValue,
+  ZeroKnowledgeInvokeResponse,
   ZeroKnowledgeProofResponse
 } from '../../iden3comm';
 
@@ -32,13 +34,29 @@ export interface IOnChainZKPVerifier {
    * @param {Signer} ethSigner - tx signer
    * @param {txData} ContractInvokeTransactionData - transaction data
    * @param {ZeroKnowledgeProofResponse[]} zkProofResponses - zkProofResponses
-   * @returns {Promise<Map<string, ZeroKnowledgeProofResponse[]>>} - map of transaction hash - ZeroKnowledgeProofResponse[]
+   * @returns {Promise<Map<string, ZeroKnowledgeInvokeResponse>>} - map of transaction hash - ZeroKnowledgeInvokeResponse
    */
   submitZKPResponseV2(
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<string, ZeroKnowledgeProofResponse[]>>;
+  ): Promise<Map<string, ZeroKnowledgeInvokeResponse>>;
+
+  /**
+   * Submit Response to OnChainZKPVerifier contract.
+   * @beta
+   * @param {Signer} ethSigner - tx signer
+   * @param {txData} ContractInvokeTransactionData - transaction data
+   * @param {AuthProofResponse} authResponse - authResponse
+   * @param {ZeroKnowledgeProofMultiQueryResponse[]} responses - singleResponses and groupedResponses
+   * @returns {Promise<Map<string, ZeroKnowledgeInvokeResponse>>} - map of transaction hash - ZeroKnowledgeInvokeResponse
+   */
+  submitResponse(
+    ethSigner: Signer,
+    txData: ContractInvokeTransactionData,
+    authResponse: AuthProofResponse,
+    responses: ZeroKnowledgeProofResponse[]
+  ): Promise<Map<string, ZeroKnowledgeInvokeResponse>>;
 
   /**
    * Returns tx args for the ZKP verifier contract submission (singe tx args for each response).
@@ -58,5 +76,17 @@ export interface IOnChainZKPVerifier {
   prepareTxArgsSubmitV2(
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
+  ): Promise<JsonDocumentObjectValue[]>;
+
+  /**
+   * Returns args for the verifier multi-query contract submission (single tx args for an array of responses).
+   * @param {txData} ContractInvokeTransactionData - transaction data
+   * @param {AuthProofResponse} authResponse - authResponse
+   * @param {ZeroKnowledgeProofMultiQueryResponse[]} responses - singleResponses and groupedResponses
+   */
+  prepareTxArgsSubmit(
+    txData: ContractInvokeTransactionData,
+    authResponse: AuthProofResponse,
+    responses: ZeroKnowledgeProofResponse[]
   ): Promise<JsonDocumentObjectValue[]>;
 }

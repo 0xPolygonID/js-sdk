@@ -63,6 +63,12 @@ export type ZeroKnowledgeProofQuery = {
   type: string;
 };
 
+export type ZeroKnowledgeInvokeResponse = {
+  responses: ZeroKnowledgeProofResponse[];
+  crossChainProofs?: string[];
+  authProofs?: ZeroKnowledgeProofAuthResponse[];
+};
+
 /** ZeroKnowledgeProofResponse represents structure of zkp response */
 export type ZeroKnowledgeProofResponse = {
   id: number;

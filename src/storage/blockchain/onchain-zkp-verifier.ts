@@ -2,11 +2,15 @@ import { JsonRpcProvider, Signer, Contract, TransactionRequest, ethers } from 'e
 import { EthConnectionConfig } from './state';
 import { IOnChainZKPVerifier } from '../interfaces/onchain-zkp-verifier';
 import {
+  AuthProofResponse,
   ContractInvokeTransactionData,
   JsonDocumentObjectValue,
+  ZeroKnowledgeInvokeResponse,
   ZeroKnowledgeProofResponse
 } from '../../iden3comm';
 import abi from './abi/ZkpVerifier.json';
+//import { UniversalVerifier } from '@iden3/universal-verifier-v2-abi';
+import UniversalVerifierAbi from './abi/UniversalVerifier.json';
 import { TransactionService } from '../../blockchain';
 import { chainIDfromDID, DID, Id } from '@iden3/js-iden3-core';
 import {
@@ -35,7 +39,9 @@ export enum FunctionSignatures {
    */
   SubmitZKPResponseV1 = 'b68967e2',
   //function submitZKPResponseV2(tuple[](uint64 requestId,bytes zkProof,bytes data),bytes crossChainProof)
-  SubmitZKPResponseV2 = 'ade09fcd'
+  SubmitZKPResponseV2 = 'ade09fcd',
+  //function submitResponse(tuple(string authMethod,bytes proof),tuple(uint256 requestId,bytes proof,bytes metadata)[],bytes crossChainProof)
+  SubmitResponse = '06c86a91'
 }
 /**
  * OnChainZKPVerifierOptions represents OnChainZKPVerifier options
@@ -186,7 +192,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<string, ZeroKnowledgeProofResponse[]>> {
+  ): Promise<Map<string, ZeroKnowledgeInvokeResponse>> {
     const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
@@ -233,7 +239,121 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
     const transactionService = new TransactionService(provider);
     const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
-    return new Map<string, ZeroKnowledgeProofResponse[]>().set(txnHash, zkProofResponses);
+
+    return new Map<string, ZeroKnowledgeInvokeResponse>().set(txnHash, {
+      responses: zkProofResponses
+    });
+  }
+
+  /**
+   * {@inheritDoc IOnChainVerifierMultiQuery.submitResponse}
+   */
+  public async submitResponse(
+    ethSigner: Signer,
+    txData: ContractInvokeTransactionData,
+    authResponse: AuthProofResponse,
+    responses: ZeroKnowledgeProofResponse[]
+  ): Promise<Map<string, ZeroKnowledgeInvokeResponse>> {
+    const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
+    if (!chainConfig) {
+      throw new Error(`config for chain id ${txData.chain_id} was not found`);
+    }
+    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SubmitResponse) {
+      throw new Error(
+        `submitResponse function doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitResponse}' is supported.`
+      );
+    }
+    if (!this._opts?.didResolverUrl) {
+      throw new Error(`did resolver url required for crosschain verification`);
+    }
+    const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
+    ethSigner = ethSigner.connect(provider);
+
+    const txDataArgs = await this.prepareTxArgsSubmit(txData, authResponse, responses);
+    const feeData = await provider.getFeeData();
+    const maxFeePerGas = chainConfig.maxFeePerGas
+      ? BigInt(chainConfig.maxFeePerGas)
+      : feeData.maxFeePerGas;
+    const maxPriorityFeePerGas = chainConfig.maxPriorityFeePerGas
+      ? BigInt(chainConfig.maxPriorityFeePerGas)
+      : feeData.maxPriorityFeePerGas;
+
+    const verifierContract = new Contract(txData.contract_address, UniversalVerifierAbi);
+    const txRequestData = await verifierContract.submitResponse.populateTransaction(...txDataArgs);
+
+    const request: TransactionRequest = {
+      to: txData.contract_address,
+      data: txRequestData.data,
+      maxFeePerGas,
+      maxPriorityFeePerGas
+    };
+
+    let gasLimit;
+    try {
+      gasLimit = await ethSigner.estimateGas(request);
+    } catch (e) {
+      gasLimit = maxGasLimit;
+    }
+    request.gasLimit = gasLimit;
+
+    const transactionService = new TransactionService(provider);
+    const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
+    // return multiple responses for all the responses (single and grouped)
+    return new Map<string, ZeroKnowledgeInvokeResponse>().set(txnHash, {
+      responses: responses,
+      authProofs: [authResponse],
+      crossChainProofs: [txDataArgs[2] as string]
+    });
+  }
+
+  public static async prepareTxArgsSubmit(
+    resolverUrl: string,
+    txData: ContractInvokeTransactionData,
+    authResponse: AuthProofResponse,
+    responses: ZeroKnowledgeProofResponse[]
+  ): Promise<JsonDocumentObjectValue[]> {
+    if (txData.method_id.replace('0x', '') !== FunctionSignatures.SubmitResponse) {
+      throw new Error(
+        `submit cross chain doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitResponse}' is supported.`
+      );
+    }
+    const gistUpdateArr: any[] = [];
+    const stateUpdateArr: any[] = [];
+    const payloadResponses = [];
+
+    // 1. Process auth response
+    const { authMethod, zkProofEncoded } = await this._processAuthProof(authResponse);
+    const payloadAuthResponse = { authMethod: authMethod, proof: zkProofEncoded };
+
+    // 2. Process all the responses
+    for (const zkProof of responses) {
+      const { requestID, zkProofEncoded, metadata } = await this._processProof(zkProof);
+
+      payloadResponses.push({
+        requestId: requestID,
+        proof: zkProofEncoded,
+        metadata: metadata
+      });
+    }
+
+    const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
+    return [payloadAuthResponse, payloadResponses, crossChainProofs];
+  }
+
+  public async prepareTxArgsSubmit(
+    txData: ContractInvokeTransactionData,
+    authResponse: AuthProofResponse,
+    responses: ZeroKnowledgeProofResponse[]
+  ): Promise<JsonDocumentObjectValue[]> {
+    if (!this._opts?.didResolverUrl) {
+      throw new Error(`did resolver url required for crosschain verification`);
+    }
+    return OnChainZKPVerifier.prepareTxArgsSubmit(
+      this._opts.didResolverUrl,
+      txData,
+      authResponse,
+      responses
+    );
   }
 
   private static getCrossChainResolvers(
@@ -389,6 +509,67 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       txData,
       zkProofResponses
     );
+  }
+
+  private static async _processAuthProof(authProof: AuthProofResponse) {
+    const authMethod = authProof.authMethod;
+    const inputs = authProof.pub_signals;
+
+    if (!this._supportedCircuits.includes(authProof.circuitId as OnChainZKPVerifierCircuitId)) {
+      throw new Error(`Circuit ${authProof.circuitId} not supported by OnChainZKPVerifier`);
+    }
+
+    const zkProofEncoded = this.packZkpProof(
+      inputs,
+      authProof.proof.pi_a.slice(0, 2),
+      [
+        [authProof.proof.pi_b[0][1], authProof.proof.pi_b[0][0]],
+        [authProof.proof.pi_b[1][1], authProof.proof.pi_b[1][0]]
+      ],
+      authProof.proof.pi_c.slice(0, 2)
+    );
+
+    return { authMethod, zkProofEncoded };
+  }
+
+  private static async _processProof(zkProof: ZeroKnowledgeProofResponse) {
+    const requestID = zkProof.id;
+    const inputs = zkProof.pub_signals;
+
+    if (!this._supportedCircuits.includes(zkProof.circuitId as OnChainZKPVerifierCircuitId)) {
+      throw new Error(`Circuit ${zkProof.circuitId} not supported by OnChainZKPVerifier`);
+    }
+
+    const zkProofEncoded = this.packZkpProof(
+      inputs,
+      zkProof.proof.pi_a.slice(0, 2),
+      [
+        [zkProof.proof.pi_b[0][1], zkProof.proof.pi_b[0][0]],
+        [zkProof.proof.pi_b[1][1], zkProof.proof.pi_b[1][0]]
+      ],
+      zkProof.proof.pi_c.slice(0, 2)
+    );
+
+    const metadataArr: { key: string; value: Uint8Array }[] = [];
+    if (zkProof.vp) {
+      for (const key in zkProof.vp.verifiableCredential.credentialSubject) {
+        if (key === '@type') {
+          continue;
+        }
+        const metadataValue = poseidon.hashBytes(
+          byteEncoder.encode(JSON.stringify(zkProof.vp.verifiableCredential.credentialSubject[key]))
+        );
+        const bytesValue = byteEncoder.encode(metadataValue.toString());
+        metadataArr.push({
+          key,
+          value: bytesValue
+        });
+      }
+    }
+
+    const metadata = metadataArr.length ? this.packMetadatas(metadataArr) : '0x';
+
+    return { requestID, zkProofEncoded, metadata };
   }
 
   private static packZkpProof(inputs: string[], a: string[], b: string[][], c: string[]): string {

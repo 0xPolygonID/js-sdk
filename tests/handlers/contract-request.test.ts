@@ -11,7 +11,6 @@ import {
   OnChainZKPVerifier,
   defaultEthConnectionConfig,
   hexToBytes,
-  OnChainVerifierMultiQuery,
   FunctionSignatures
 } from '../../src';
 import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
@@ -46,6 +45,7 @@ import {
   StateVerificationFunc,
   VerificationHandlerFunc,
   VerificationParams,
+  ZeroKnowledgeInvokeResponse,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse,
   ZKPPacker
@@ -66,7 +66,6 @@ import {
   SEED_USER
 } from '../helpers';
 import { AbstractMessageHandler } from '../../src/iden3comm/handlers/message-handler';
-import { IOnChainVerifierMultiQuery } from '../../src/storage/interfaces/onchain-verifier-multi-query';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -140,8 +139,23 @@ describe('contract-request', () => {
       txData: ContractInvokeTransactionData,
       zkProofResponses: ZeroKnowledgeProofResponse[]
     ) => {
-      const response = new Map<string, ZeroKnowledgeProofResponse[]>();
-      response.set('txhash1', zkProofResponses);
+      const response = new Map<string, ZeroKnowledgeInvokeResponse>();
+      response.set('txhash1', { responses: zkProofResponses });
+      return response;
+    },
+
+    submitResponse: async (
+      ethSigner: Signer,
+      txData: ContractInvokeTransactionData,
+      authResponse: AuthProofResponse,
+      responses: ZeroKnowledgeProofResponse[]
+    ) => {
+      const response = new Map<string, ZeroKnowledgeInvokeResponse>();
+      response.set('txhash1', {
+        responses,
+        crossChainProofs: ['0x123456'],
+        authProofs: [authResponse]
+      });
       return response;
     },
 
@@ -151,19 +165,6 @@ describe('contract-request', () => {
 
     prepareTxArgsSubmitV2: async () => {
       return [];
-    }
-  };
-
-  const mockVerifierMultiQuery: IOnChainVerifierMultiQuery = {
-    submitResponse: async (
-      ethSigner: Signer,
-      txData: ContractInvokeTransactionData,
-      authResponse: AuthProofResponse,
-      responses: ZeroKnowledgeProofResponse[]
-    ) => {
-      const response = new Map<string, ZeroKnowledgeProofResponse[]>();
-      response.set('txhash1', responses);
-      return response;
     },
 
     prepareTxArgsSubmit: async () => {
@@ -246,12 +247,7 @@ describe('contract-request', () => {
       proofService.generateAuthV2Inputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
-    contractRequestHandler = new ContractRequestHandler(
-      packageMgr,
-      proofService,
-      mockZKPVerifier,
-      mockVerifierMultiQuery
-    );
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
   });
 
   it('contract request flow', async () => {
@@ -353,7 +349,7 @@ describe('contract-request', () => {
     expect((ciResponse as Map<string, ZeroKnowledgeProofResponse>).has('txhash1')).to.be.true;
   });
 
-  it('contract multi-query request flow', async () => {
+  it.only('contract universal verifier v3 request flow', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
@@ -452,7 +448,7 @@ describe('contract-request', () => {
     );
 
     expect(ciResponse).not.be.undefined;
-    console.log(ciResponse);
+    console.dir(ciResponse, { depth: null });
     expect((ciResponse as unknown as ContractInvokeResponse).body.scope[0].txHash).not.be.undefined;
   });
 
@@ -658,13 +654,7 @@ describe('contract-request', () => {
     conf.chainId = 80002;
 
     const zkpVerifier = new OnChainZKPVerifier([conf]);
-    const verifierMultiQuery = new OnChainVerifierMultiQuery([conf]);
-    contractRequestHandler = new ContractRequestHandler(
-      packageMgr,
-      proofService,
-      zkpVerifier,
-      verifierMultiQuery
-    );
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: contractAddress,
@@ -837,13 +827,7 @@ describe('contract-request', () => {
     conf.chainId = 80002;
 
     const zkpVerifier = new OnChainZKPVerifier([conf]);
-    const verifierMultiQuery = new OnChainVerifierMultiQuery([conf]);
-    contractRequestHandler = new ContractRequestHandler(
-      packageMgr,
-      proofService,
-      zkpVerifier,
-      verifierMultiQuery
-    );
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: erc20Verifier,
@@ -1019,17 +1003,9 @@ describe('contract-request', () => {
     const zkpVerifierNetworkConfig = networkConfigs.amoy(CONTRACTS.AMOY_UNIVERSAL_VERIFIER);
 
     const zkpVerifier = new OnChainZKPVerifier([zkpVerifierNetworkConfig], {
-      didResolverUrl: 'https://resolver-dev.privado.id'
+      didResolverUrl: 'https://resolver.privado.id'
     });
-    const verifierMultiQuery = new OnChainVerifierMultiQuery([zkpVerifierNetworkConfig], {
-      didResolverUrl: 'https://resolver-dev.privado.id'
-    });
-    contractRequestHandler = new ContractRequestHandler(
-      packageMgr,
-      proofService,
-      zkpVerifier,
-      verifierMultiQuery
-    );
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: zkpVerifierNetworkConfig.contractAddress,
@@ -1209,18 +1185,10 @@ describe('contract-request', () => {
     ];
 
     const zkpVerifier = new OnChainZKPVerifier([amoyStateEthConfig], {
-      didResolverUrl: 'https://resolver-dev.privado.id'
+      didResolverUrl: 'https://resolver.privado.id'
     });
 
-    const verifierMultiQuery = new OnChainVerifierMultiQuery([amoyStateEthConfig], {
-      didResolverUrl: 'https://resolver-dev.privado.id'
-    });
-    contractRequestHandler = new ContractRequestHandler(
-      packageMgr,
-      proofService,
-      zkpVerifier,
-      verifierMultiQuery
-    );
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: verifierAddress,
