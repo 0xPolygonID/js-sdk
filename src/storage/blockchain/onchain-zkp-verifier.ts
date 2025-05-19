@@ -10,7 +10,7 @@ import {
 } from '../../iden3comm';
 import abi from './abi/ZkpVerifier.json';
 //import { UniversalVerifier } from '@iden3/universal-verifier-v2-abi';
-import IVerifierAbi from './abi/IVerifier.json';
+import { IVerifierABI } from '@iden3/universal-verifier-v2-abi';
 import { TransactionService } from '../../blockchain';
 import { chainIDfromDID, DID, Id } from '@iden3/js-iden3-core';
 import {
@@ -278,7 +278,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       ? BigInt(chainConfig.maxPriorityFeePerGas)
       : feeData.maxPriorityFeePerGas;
 
-    const verifierContract = new Contract(txData.contract_address, IVerifierAbi);
+    const verifierContract = new Contract(txData.contract_address, IVerifierABI);
     const txRequestData = await verifierContract.submitResponse.populateTransaction(...txDataArgs);
 
     const request: TransactionRequest = {
