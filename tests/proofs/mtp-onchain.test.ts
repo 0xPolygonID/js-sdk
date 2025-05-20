@@ -28,6 +28,7 @@ import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { RPC_URL } from '../helpers';
+import { schemaLoaderForTests } from '../mocks/schema';
 
 describe('mtp onchain proofs', () => {
   let idWallet: IdentityWallet;
@@ -39,6 +40,7 @@ describe('mtp onchain proofs', () => {
   const rhsUrl = process.env.RHS_URL as string;
 
   const walletKey = process.env.WALLET_KEY as string;
+  let merklizeOpts;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -120,8 +122,16 @@ describe('mtp onchain proofs', () => {
     );
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
-
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
+    merklizeOpts = {
+      documentLoader: schemaLoaderForTests()
+    };
+    proofService = new ProofService(
+      idWallet,
+      credWallet,
+      circuitStorage,
+      mockStateStorage,
+      merklizeOpts
+    );
   });
 
   it('mtpv2onchain-merklized', async () => {
@@ -176,7 +186,7 @@ describe('mtp onchain proofs', () => {
       }
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
