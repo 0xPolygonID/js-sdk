@@ -507,7 +507,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     );
   }
 
-
   private static async _processProof(zkProof: ZeroKnowledgeProofResponse) {
     const requestID = zkProof.id;
     const inputs = zkProof.pub_signals;
