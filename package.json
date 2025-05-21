@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.28.1",
+  "version": "1.28.2",
   "description": "SDK to work with Polygon ID",
   "main": "dist/node/cjs/index.js",
   "module": "dist/node/esm/index.js",
