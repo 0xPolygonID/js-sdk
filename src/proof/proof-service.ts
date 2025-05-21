@@ -410,16 +410,14 @@ export class ProofService implements IProofService {
             : new Uint8Array(32);
           zkProof = await this.generateAuthV2Proof(challenge, identifier);
         }
-        break;
+        return {
+          circuitId: proofAuth.circuitId,
+          proof: zkProof.proof,
+          pub_signals: zkProof.pub_signals
+        };
       default:
         throw new Error(`CircuitId ${proofAuth.circuitId} is not supported`);
     }
-
-    return {
-      circuitId: proofAuth.circuitId,
-      proof: zkProof.proof,
-      pub_signals: zkProof.pub_signals
-    };
   }
 
   /** {@inheritdoc IProofService.transitState} */

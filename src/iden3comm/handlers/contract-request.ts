@@ -191,11 +191,15 @@ export class ContractRequestHandler
         );
 
         const identifier = DID.parse(message.to);
-        const authResponse = await processProofAuth(identifier, this._proofService, {
-          supportedCircuits: this._supportedCircuits,
-          acceptProfile,
-          challenge: challenge
-        });
+        const authResponse = await processProofAuth(
+          identifier,
+          this._proofService,
+          {
+            supportedCircuits: this._supportedCircuits,
+            acceptProfile,
+            challenge: challenge
+          }
+        );
 
         return this._zkpVerifier.submitResponse(
           ethSigner,
@@ -285,16 +289,11 @@ export class ContractRequestHandler
           ...zkpResponse
         });
       }
-      contractInvokeResponse.body.crossChainProofs = [];
-      zkpResponses.crossChainProofs = zkpResponses.crossChainProofs || [];
-      for (const crosschainProof of zkpResponses.crossChainProofs) {
-        contractInvokeResponse.body.crossChainProofs.push(crosschainProof);
-      }
-      contractInvokeResponse.body.authProofs = [];
-      zkpResponses.authProofs = zkpResponses.authProofs || [];
-      for (const authProof of zkpResponses.authProofs) {
-        contractInvokeResponse.body.authProofs.push(authProof);
-      }
+      contractInvokeResponse.body = {
+        ...contractInvokeResponse.body,
+        crossChainProofs: zkpResponses.crossChainProofs ?? [],
+        authProofs: zkpResponses.authProofs ?? []
+      };
     }
     return contractInvokeResponse;
   }

@@ -317,15 +317,11 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         `submit cross chain doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitResponse}' is supported.`
       );
     }
-    const gistUpdateArr: any[] = [];
-    const stateUpdateArr: any[] = [];
+    const gistUpdateArr: GlobalStateUpdate[] = [];
+    const stateUpdateArr: IdentityStateUpdate[] = [];
     const payloadResponses = [];
 
-    // 1. Process auth response
-    const { authMethod, zkProofEncoded } = await this._processAuthProof(authResponse);
-    const payloadAuthResponse = { authMethod: authMethod, proof: zkProofEncoded };
-
-    // 2. Process all the responses
+    // Process all the responses
     for (const zkProof of responses) {
       const { requestID, zkProofEncoded, metadata } = await this._processProof(zkProof);
 
@@ -337,7 +333,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     }
 
     const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
-    return [payloadAuthResponse, payloadResponses, crossChainProofs];
+    return [authResponse, payloadResponses, crossChainProofs];
   }
 
   public async prepareTxArgsSubmit(
@@ -511,26 +507,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     );
   }
 
-  private static async _processAuthProof(authProof: AuthProofResponse) {
-    const authMethod = authProof.authMethod;
-    const inputs = authProof.pub_signals;
-
-    if (!this._supportedCircuits.includes(authProof.circuitId as OnChainZKPVerifierCircuitId)) {
-      throw new Error(`Circuit ${authProof.circuitId} not supported by OnChainZKPVerifier`);
-    }
-
-    const zkProofEncoded = this.packZkpProof(
-      inputs,
-      authProof.proof.pi_a.slice(0, 2),
-      [
-        [authProof.proof.pi_b[0][1], authProof.proof.pi_b[0][0]],
-        [authProof.proof.pi_b[1][1], authProof.proof.pi_b[1][0]]
-      ],
-      authProof.proof.pi_c.slice(0, 2)
-    );
-
-    return { authMethod, zkProofEncoded };
-  }
 
   private static async _processProof(zkProof: ZeroKnowledgeProofResponse) {
     const requestID = zkProof.id;

@@ -1,4 +1,3 @@
-import { ZKProof } from '@iden3/js-jwz';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 import { BasicMessage } from '../packer';
 import {
@@ -35,7 +34,7 @@ export type ContractInvokeResponseBody = {
   transaction_data: ContractInvokeTransactionData;
   did_doc?: DIDDocument;
   crossChainProofs?: string[];
-  authProofs?: ZeroKnowledgeProofAuthResponse[];
+  authProofs?: AuthProofResponse[];
 };
 
 /** OnChainZeroKnowledgeProofResponse represents structure of onchain zero knowledge proof response */
@@ -53,6 +52,11 @@ export type ContractInvokeTransactionData = {
 
 /** AuthProofResponse represents structure of zkp response */
 export type AuthProofResponse = {
-  authMethod: string;
-  circuitId: string;
-} & ZKProof;
+  authMethod: AuthMethod;
+  proof: string;
+};
+
+export enum AuthMethod {
+  AUTHV2 = 'authV2',
+  ETH_IDENTITY = 'ethIdentity',
+};

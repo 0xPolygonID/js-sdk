@@ -1,6 +1,7 @@
 import { getRandomBytes } from '@iden3/js-crypto';
 import {
   AcceptProfile,
+  AuthMethod,
   AuthProofResponse,
   BasicMessage,
   JsonDocumentObject,
@@ -11,13 +12,13 @@ import {
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
-import { mergeObjects } from '../../utils';
+import { bytesToHex, mergeObjects } from '../../utils';
 import { RevocationStatus, W3CCredential } from '../../verifiable';
-import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
+import { BytesHelper, DID, getUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
-import { defaultAcceptProfile, MediaType } from '../constants';
-import { Signer } from 'ethers';
+import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
+import { ethers, Signer } from 'ethers';
 
 /**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.
@@ -164,35 +165,60 @@ export const processProofAuth = async (
   }
 
   let authResponse: any;
-  // First version we only generate proof for ZKPMessage
-  if (opts.acceptProfile.env === MediaType.ZKPMessage) {
-    if (!opts.acceptProfile.circuits) {
-      throw new Error('Circuit not specified');
-    }
 
-    for (const circuitId of opts.acceptProfile.circuits) {
-      if (!opts.supportedCircuits.includes(circuitId as unknown as CircuitId)) {
-        throw new Error(`Circuit ${circuitId} is not supported`);
+  switch (opts.acceptProfile.env) {
+    case MediaType.ZKPMessage:
+      if (!opts.acceptProfile.circuits) {
+        throw new Error('Circuit not specified');
       }
 
-      const authProof: ZeroKnowledgeProofAuth = {
-        circuitId: circuitId as unknown as CircuitId
-      };
+      for (const circuitId of opts.acceptProfile.circuits) {
+        if (!opts.supportedCircuits.includes(circuitId as unknown as CircuitId)) {
+          throw new Error(`Circuit ${circuitId} is not supported`);
+        }
 
-      const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(
-        authProof,
-        to,
-        { challenge: opts.challenge, skipRevocation: true }
-      );
+        const authProof: ZeroKnowledgeProofAuth = {
+          circuitId: circuitId as unknown as CircuitId
+        };
 
-      authResponse = {
-        authMethod: ('zk-' + circuitId) as string,
-        circuitId: authProof.circuitId,
-        proof: zkpRes.proof,
-        pub_signals: zkpRes.pub_signals
-      };
+        const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(
+          authProof,
+          to,
+          { challenge: opts.challenge, skipRevocation: true }
+        );
+
+        const zkProofEncoded = packAuthV2Proof(
+          zkpRes.pub_signals,
+          zkpRes.proof.pi_a.slice(0, 2),
+          [
+            [zkpRes.proof.pi_b[0][1], zkpRes.proof.pi_b[0][0]],
+            [zkpRes.proof.pi_b[1][1], zkpRes.proof.pi_b[1][0]]
+          ],
+          zkpRes.proof.pi_c.slice(0, 2)
+        );
+
+        authResponse = {
+          authMethod: AuthMethod.AUTHV2,
+          proof: zkProofEncoded
+        };
+        break;
+      }
       break;
-    }
+    case MediaType.SignedMessage:
+      if (!opts.acceptProfile.alg || opts.acceptProfile.alg.length === 0) {
+        throw new Error('Algorithm not specified');
+      }
+      if (opts.acceptProfile.alg[0] === AcceptJwsAlgorithms.ES256KR) {
+        const ethIdProof = packEthIdentityProof(to);
+        
+        authResponse = {
+          authMethod: AuthMethod.ETH_IDENTITY,
+          proof: ethIdProof
+        };
+      }
+      break;
+    default:
+      throw new Error('Accept env not supported');
   }
 
   return authResponse;
@@ -207,4 +233,20 @@ export const verifyExpiresTime = (message: BasicMessage) => {
   if (message?.expires_time && message.expires_time < getUnixTimestamp(new Date())) {
     throw new Error('Message expired');
   }
+};
+
+export const packAuthV2Proof = (
+  inputs: string[],
+  a: string[],
+  b: string[][],
+  c: string[]
+): string => {
+  return new ethers.AbiCoder().encode(
+    ['uint256[] inputs', 'uint256[2]', 'uint256[2][2]', 'uint256[2]'],
+    [inputs, a, b, c]
+  );
+};
+
+export const packEthIdentityProof = (did: DID): string => {
+  return `0x${bytesToHex(BytesHelper.intToBytes(DID.idFromDID(did).bigInt()))}`;
 };
