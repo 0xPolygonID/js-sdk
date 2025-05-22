@@ -182,22 +182,26 @@ export const processProofAuth = async (
           { challenge: opts.challenge, skipRevocation: opts.skipRevocation }
         );
 
-        const zkProofEncoded = packAuthV2Proof(
-          zkpRes.pub_signals,
-          zkpRes.proof.pi_a.slice(0, 2),
-          [
-            [zkpRes.proof.pi_b[0][1], zkpRes.proof.pi_b[0][0]],
-            [zkpRes.proof.pi_b[1][1], zkpRes.proof.pi_b[1][0]]
-          ],
-          zkpRes.proof.pi_c.slice(0, 2)
-        );
+        switch (circuitId as unknown as CircuitId) {
+          case CircuitId.AuthV2: {
+            const zkProofEncoded = packAuthV2Proof(
+              zkpRes.pub_signals,
+              zkpRes.proof.pi_a.slice(0, 2),
+              [
+                [zkpRes.proof.pi_b[0][1], zkpRes.proof.pi_b[0][0]],
+                [zkpRes.proof.pi_b[1][1], zkpRes.proof.pi_b[1][0]]
+              ],
+              zkpRes.proof.pi_c.slice(0, 2)
+            );
 
-        return {
-          authMethod: AuthMethod.AUTHV2,
-          proof: zkProofEncoded
-        };
+            return {
+              authMethod: AuthMethod.AUTHV2,
+              proof: zkProofEncoded
+            };
+          }
+        }
       }
-      throw new Error(`No circuit found`);
+      throw new Error(`Auth method is not supported`);
     case MediaType.SignedMessage:
       if (!opts.acceptProfile.alg || opts.acceptProfile.alg.length === 0) {
         throw new Error('Algorithm not specified');
