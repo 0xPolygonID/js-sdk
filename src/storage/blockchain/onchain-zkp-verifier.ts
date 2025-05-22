@@ -25,6 +25,7 @@ import { byteEncoder, DIDDocumentSignature, resolveDidDocument } from '../../uti
 import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
 import { poseidon } from '@iden3/js-crypto';
 import { Hash } from '@iden3/js-merkletree';
+import { packZkpProof } from '../../iden3comm/utils';
 
 const maxGasLimit = 10000000n;
 
@@ -421,7 +422,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         continue;
       }
 
-      const zkProofEncoded = this.packZkpProof(
+      const zkProofEncoded = packZkpProof(
         inputs,
         zkProof.proof.pi_a.slice(0, 2),
         [
@@ -513,7 +514,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       throw new Error(`Circuit ${zkProof.circuitId} not supported by OnChainZKPVerifier`);
     }
 
-    const zkProofEncoded = this.packZkpProof(
+    const zkProofEncoded = packZkpProof(
       inputs,
       zkProof.proof.pi_a.slice(0, 2),
       [
@@ -543,13 +544,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const metadata = metadataArr.length ? this.packMetadatas(metadataArr) : '0x';
 
     return { requestID, zkProofEncoded, metadata };
-  }
-
-  private static packZkpProof(inputs: string[], a: string[], b: string[][], c: string[]): string {
-    return new ethers.AbiCoder().encode(
-      ['uint256[] inputs', 'uint256[2]', 'uint256[2][2]', 'uint256[2]'],
-      [inputs, a, b, c]
-    );
   }
 
   private static packCrossChainProofs(

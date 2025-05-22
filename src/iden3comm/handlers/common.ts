@@ -17,7 +17,8 @@ import { BytesHelper, DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
-import { ethers, Signer } from 'ethers';
+import { Signer } from 'ethers';
+import { packZkpProof } from '../utils';
 
 /**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.
@@ -184,7 +185,7 @@ export const processProofAuth = async (
 
         switch (circuitId as unknown as CircuitId) {
           case CircuitId.AuthV2: {
-            const zkProofEncoded = packAuthV2Proof(
+            const zkProofEncoded = packZkpProof(
               zkpRes.pub_signals,
               zkpRes.proof.pi_a.slice(0, 2),
               [
@@ -229,18 +230,6 @@ export const verifyExpiresTime = (message: BasicMessage) => {
   if (message?.expires_time && message.expires_time < getUnixTimestamp(new Date())) {
     throw new Error('Message expired');
   }
-};
-
-export const packAuthV2Proof = (
-  inputs: string[],
-  a: string[],
-  b: string[][],
-  c: string[]
-): string => {
-  return new ethers.AbiCoder().encode(
-    ['uint256[] inputs', 'uint256[2]', 'uint256[2][2]', 'uint256[2]'],
-    [inputs, a, b, c]
-  );
 };
 
 export const packEthIdentityProof = (did: DID): string => {

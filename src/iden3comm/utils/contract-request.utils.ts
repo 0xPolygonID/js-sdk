@@ -1,4 +1,4 @@
-import { keccak256 } from 'ethers';
+import { ethers, keccak256 } from 'ethers';
 import { byteEncoder, hexToBytes, isEthereumIdentity } from '../../utils';
 import { CircuitId } from '../../circuits';
 import { Hex } from '@iden3/js-crypto';
@@ -64,3 +64,10 @@ export async function prepareAuthV2ZeroKnowledgeResponse(
     }
   ];
 }
+
+export const packZkpProof = (inputs: string[], a: string[], b: string[][], c: string[]): string => {
+  return new ethers.AbiCoder().encode(
+    ['uint256[] inputs', 'uint256[2]', 'uint256[2][2]', 'uint256[2]'],
+    [inputs, a, b, c]
+  );
+};
