@@ -1,11 +1,6 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 import { BasicMessage } from '../packer';
-import {
-  DIDDocument,
-  ZeroKnowledgeProofAuthResponse,
-  ZeroKnowledgeProofRequest,
-  ZeroKnowledgeProofResponse
-} from './auth';
+import { DIDDocument, ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from './auth';
 
 /** ContractInvokeRequest represents structure of contract invoke request object */
 export type ContractInvokeRequest = BasicMessage & {

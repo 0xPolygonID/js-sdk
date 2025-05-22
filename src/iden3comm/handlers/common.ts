@@ -13,7 +13,7 @@ import {
 } from '../types';
 import { bytesToHex, mergeObjects } from '../../utils';
 import { RevocationStatus, W3CCredential } from '../../verifiable';
-import { BytesHelper, DID, getUnixTimestamp, Id } from '@iden3/js-iden3-core';
+import { BytesHelper, DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
