@@ -6,7 +6,6 @@ import {
   BasicMessage,
   JsonDocumentObject,
   JWSPackerParams,
-  ZeroKnowledgeProofAuth,
   ZeroKnowledgeProofAuthResponse,
   ZeroKnowledgeProofQuery,
   ZeroKnowledgeProofRequest,
@@ -162,12 +161,10 @@ export const processProofAuth = async (
     opts.acceptProfile = defaultAcceptProfile;
   }
 
-  let authResponse: any;
-
   switch (opts.acceptProfile.env) {
     case MediaType.ZKPMessage:
       if (!opts.acceptProfile.circuits) {
-        throw new Error('Circuit not specified');
+        throw new Error('Circuit not specified in accept profile');
       }
 
       for (const circuitId of opts.acceptProfile.circuits) {
@@ -175,12 +172,8 @@ export const processProofAuth = async (
           throw new Error(`Circuit ${circuitId} is not supported`);
         }
 
-        const authProof: ZeroKnowledgeProofAuth = {
-          circuitId: circuitId as unknown as CircuitId
-        };
-
         const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(
-          authProof,
+          circuitId as unknown as CircuitId,
           to,
           { challenge: opts.challenge, skipRevocation: true }
         );
@@ -195,13 +188,12 @@ export const processProofAuth = async (
           zkpRes.proof.pi_c.slice(0, 2)
         );
 
-        authResponse = {
+        return {
           authMethod: AuthMethod.AUTHV2,
           proof: zkProofEncoded
         };
-        break;
       }
-      break;
+      throw new Error(`No circuit found`);
     case MediaType.SignedMessage:
       if (!opts.acceptProfile.alg || opts.acceptProfile.alg.length === 0) {
         throw new Error('Algorithm not specified');
@@ -209,17 +201,15 @@ export const processProofAuth = async (
       if (opts.acceptProfile.alg[0] === AcceptJwsAlgorithms.ES256KR) {
         const ethIdProof = packEthIdentityProof(to);
 
-        authResponse = {
+        return {
           authMethod: AuthMethod.ETH_IDENTITY,
           proof: ethIdProof
         };
       }
-      break;
+      throw new Error(`Algorithm ${opts.acceptProfile.alg[0]} not supported`);
     default:
       throw new Error('Accept env not supported');
   }
-
-  return authResponse;
 };
 
 /**

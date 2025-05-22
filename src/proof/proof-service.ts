@@ -42,7 +42,6 @@ import {
   PROTOCOL_CONSTANTS,
   VerifiablePresentation,
   JsonDocumentObject,
-  ZeroKnowledgeProofAuth,
   ZeroKnowledgeProofAuthResponse
 } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
@@ -145,14 +144,14 @@ export interface IProofService {
   /**
    * Generate auth proof from given identity with generic params
    *
-   * @param {ZeroKnowledgeProofAuth} proofAuth - zkp generic auth params for the proof generation
+   * @param {CircuitId} circuitId - circuitId for the proof generation
    * @param {DID} identifier - did that will generate proof
    * @param {ProofGenerationOptions} opts - options that will be used for proof generation
    *
    * @returns `Promise<ZeroKnowledgeProofResponse>`
    */
   generateAuthProof(
-    proofAuth: ZeroKnowledgeProofAuth,
+    circuitId: CircuitId,
     identifier: DID,
     opts?: ProofGenerationOptions
   ): Promise<ZeroKnowledgeProofAuthResponse>;
@@ -389,7 +388,7 @@ export class ProofService implements IProofService {
 
   /** {@inheritdoc IProofService.generateAuthProof} */
   async generateAuthProof(
-    proofAuth: ZeroKnowledgeProofAuth,
+    circuitId: CircuitId,
     identifier: DID,
     opts?: ProofGenerationOptions
   ): Promise<ZeroKnowledgeProofAuthResponse> {
@@ -402,7 +401,7 @@ export class ProofService implements IProofService {
 
     let zkProof;
 
-    switch (proofAuth.circuitId) {
+    switch (circuitId) {
       case CircuitId.AuthV2:
         {
           const challenge = opts.challenge
@@ -411,12 +410,12 @@ export class ProofService implements IProofService {
           zkProof = await this.generateAuthV2Proof(challenge, identifier);
         }
         return {
-          circuitId: proofAuth.circuitId,
+          circuitId: circuitId,
           proof: zkProof.proof,
           pub_signals: zkProof.pub_signals
         };
       default:
-        throw new Error(`CircuitId ${proofAuth.circuitId} is not supported`);
+        throw new Error(`CircuitId ${circuitId} is not supported`);
     }
   }
 
