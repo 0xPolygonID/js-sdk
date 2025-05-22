@@ -191,15 +191,11 @@ export class ContractRequestHandler
         );
 
         const identifier = DID.parse(message.to);
-        const authResponse = await processProofAuth(
-          identifier,
-          this._proofService,
-          {
-            supportedCircuits: this._supportedCircuits,
-            acceptProfile,
-            challenge: challenge
-          }
-        );
+        const authResponse = await processProofAuth(identifier, this._proofService, {
+          supportedCircuits: this._supportedCircuits,
+          acceptProfile,
+          challenge: challenge
+        });
 
         return this._zkpVerifier.submitResponse(
           ethSigner,

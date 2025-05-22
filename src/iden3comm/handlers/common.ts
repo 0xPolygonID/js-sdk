@@ -142,14 +142,12 @@ export const processZeroKnowledgeProofRequests = async (
 };
 
 /**
- * Processes zero knowledge proof requests.
+ * Processes auth proof requests.
  *
  * @param to - The identifier of the recipient.
- * @param requests - An array of zero knowledge proof requests.
- * @param from - The identifier of the sender.
  * @param proofService - The proof service.
  * @param opts - Additional options for processing the requests.
- * @returns A promise that resolves to an array of zero knowledge proof responses.
+ * @returns A promise that resolves to an auth proof response.
  */
 export const processProofAuth = async (
   to: DID,
@@ -210,7 +208,7 @@ export const processProofAuth = async (
       }
       if (opts.acceptProfile.alg[0] === AcceptJwsAlgorithms.ES256KR) {
         const ethIdProof = packEthIdentityProof(to);
-        
+
         authResponse = {
           authMethod: AuthMethod.ETH_IDENTITY,
           proof: ethIdProof

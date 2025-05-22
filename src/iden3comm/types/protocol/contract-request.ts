@@ -58,5 +58,5 @@ export type AuthProofResponse = {
 
 export enum AuthMethod {
   AUTHV2 = 'authV2',
-  ETH_IDENTITY = 'ethIdentity',
-};
+  ETH_IDENTITY = 'ethIdentity'
+}
