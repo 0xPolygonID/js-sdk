@@ -155,10 +155,14 @@ export const processProofAuth = async (
     supportedCircuits: CircuitId[];
     acceptProfile?: AcceptProfile;
     challenge?: bigint;
+    skipRevocation?: boolean;
   }
 ): Promise<AuthProofResponse> => {
   if (!opts.acceptProfile) {
     opts.acceptProfile = defaultAcceptProfile;
+  }
+  if (!opts.skipRevocation) {
+    opts.skipRevocation = true;
   }
 
   switch (opts.acceptProfile.env) {
@@ -175,7 +179,7 @@ export const processProofAuth = async (
         const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(
           circuitId as unknown as CircuitId,
           to,
-          { challenge: opts.challenge, skipRevocation: true }
+          { challenge: opts.challenge, skipRevocation: opts.skipRevocation }
         );
 
         const zkProofEncoded = packAuthV2Proof(

@@ -201,7 +201,8 @@ export class ContractRequestHandler
         const authResponse = await processProofAuth(identifier, this._proofService, {
           supportedCircuits: this._supportedCircuits,
           acceptProfile,
-          challenge: challenge
+          challenge: challenge,
+          skipRevocation: true
         });
 
         return this._zkpVerifier.submitResponse(
