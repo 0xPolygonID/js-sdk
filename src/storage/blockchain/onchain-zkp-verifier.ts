@@ -192,7 +192,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<string, ZeroKnowledgeInvokeResponse>> {
+  ): Promise<Map<string, ZeroKnowledgeProofResponse[]>> {
     const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
@@ -240,9 +240,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const transactionService = new TransactionService(provider);
     const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
 
-    return new Map<string, ZeroKnowledgeInvokeResponse>().set(txnHash, {
-      responses: zkProofResponses
-    });
+    return new Map<string, ZeroKnowledgeProofResponse[]>().set(txnHash, zkProofResponses);
   }
 
   /**

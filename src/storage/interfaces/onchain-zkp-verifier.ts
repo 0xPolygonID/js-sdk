@@ -34,13 +34,13 @@ export interface IOnChainZKPVerifier {
    * @param {Signer} ethSigner - tx signer
    * @param {txData} ContractInvokeTransactionData - transaction data
    * @param {ZeroKnowledgeProofResponse[]} zkProofResponses - zkProofResponses
-   * @returns {Promise<Map<string, ZeroKnowledgeInvokeResponse>>} - map of transaction hash - ZeroKnowledgeInvokeResponse
+   * @returns {Promise<Map<string, ZeroKnowledgeProofResponse[]>>} - map of transaction hash - ZeroKnowledgeProofResponse[]
    */
   submitZKPResponseV2(
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     zkProofResponses: ZeroKnowledgeProofResponse[]
-  ): Promise<Map<string, ZeroKnowledgeInvokeResponse>>;
+  ): Promise<Map<string, ZeroKnowledgeProofResponse[]>>;
 
   /**
    * Submit Response to OnChainZKPVerifier contract.

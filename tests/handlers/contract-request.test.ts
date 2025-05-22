@@ -144,8 +144,8 @@ describe('contract-request', () => {
       txData: ContractInvokeTransactionData,
       zkProofResponses: ZeroKnowledgeProofResponse[]
     ) => {
-      const response = new Map<string, ZeroKnowledgeInvokeResponse>();
-      response.set('txhash1', { responses: zkProofResponses });
+      const response = new Map<string, ZeroKnowledgeProofResponse[]>();
+      response.set('txhash1', zkProofResponses);
       return response;
     },
 

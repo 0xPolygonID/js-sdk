@@ -156,12 +156,19 @@ export class ContractRequestHandler
 
     const methodId = message.body.transaction_data.method_id.replace('0x', '');
     switch (methodId) {
-      case FunctionSignatures.SubmitZKPResponseV2:
-        return this._zkpVerifier.submitZKPResponseV2(
+      case FunctionSignatures.SubmitZKPResponseV2: {
+        const txHashZkpResponsesMap = await this._zkpVerifier.submitZKPResponseV2(
           ethSigner,
           message.body.transaction_data,
           zkpResponses
         );
+
+        const response = new Map<string, ZeroKnowledgeInvokeResponse>();
+        for (const [txHash, zkpResponses] of txHashZkpResponsesMap) {
+          response.set(txHash, { responses: zkpResponses });
+        }
+        return response;
+      }
       case FunctionSignatures.SubmitZKPResponseV1: {
         const txHashZkpResponseMap = await this._zkpVerifier.submitZKPResponse(
           ethSigner,
