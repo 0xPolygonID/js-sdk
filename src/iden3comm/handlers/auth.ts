@@ -365,7 +365,7 @@ export class AuthHandler
       throw new Error(`proof response doesn't contain from field`);
     }
 
-    const groupIdToLinkIdMap = new Map<number, { linkID: number; requestId: number | string}[]>();
+    const groupIdToLinkIdMap = new Map<number, { linkID: number; requestId: number | string }[]>();
     // group requests by query group id
     for (const proofRequest of requestScope) {
       const groupId = proofRequest.query.groupId as number;
