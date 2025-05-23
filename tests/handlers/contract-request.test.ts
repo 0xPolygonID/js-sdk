@@ -11,7 +11,8 @@ import {
   OnChainZKPVerifier,
   defaultEthConnectionConfig,
   hexToBytes,
-  FunctionSignatures
+  FunctionSignatures,
+  KMS
 } from '../../src';
 import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
@@ -29,6 +30,7 @@ import path from 'path';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import {
   AuthDataPrepareFunc,
+  AuthProofResponse,
   ContractInvokeHandlerOptions,
   ContractInvokeRequest,
   ContractInvokeRequestBody,
@@ -39,11 +41,13 @@ import {
   DataPrepareHandlerFunc,
   IContractRequestHandler,
   IPackageManager,
+  JWSPacker,
   PackageManager,
   ProvingParams,
   StateVerificationFunc,
   VerificationHandlerFunc,
   VerificationParams,
+  ZeroKnowledgeInvokeResponse,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse,
   ZKPPacker
@@ -65,6 +69,7 @@ import {
 } from '../helpers';
 import { AbstractMessageHandler } from '../../src/iden3comm/handlers/message-handler';
 import { schemaLoaderForTests } from '../mocks/schema';
+import { DIDResolutionResult } from 'did-resolver';
 
 describe('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -144,11 +149,30 @@ describe('contract-request', () => {
       return response;
     },
 
+    submitResponse: async (
+      ethSigner: Signer,
+      txData: ContractInvokeTransactionData,
+      authResponse: AuthProofResponse,
+      responses: ZeroKnowledgeProofResponse[]
+    ) => {
+      const response = new Map<string, ZeroKnowledgeInvokeResponse>();
+      response.set('txhash1', {
+        responses,
+        crossChainProofs: ['0x123456'],
+        authProofs: [authResponse]
+      });
+      return response;
+    },
+
     prepareTxArgsSubmitV1: async () => {
       return [];
     },
 
     prepareTxArgsSubmitV2: async () => {
+      return [];
+    },
+
+    prepareTxArgsSubmit: async () => {
       return [];
     }
   };
@@ -192,7 +216,10 @@ describe('contract-request', () => {
     const mgr: IPackageManager = new PackageManager();
     const packer = new ZKPPacker(provingParamMap, verificationParamMap);
     const plainPacker = new PlainPacker();
-    mgr.registerPackers([packer, plainPacker]);
+    const jwsPacker = new JWSPacker(new KMS(), {
+      resolve: () => Promise.resolve({ didDocument: {} } as DIDResolutionResult)
+    });
+    mgr.registerPackers([packer, plainPacker, jwsPacker]);
 
     return mgr;
   };
@@ -337,6 +364,210 @@ describe('contract-request', () => {
     );
 
     expect((ciResponse as Map<string, ZeroKnowledgeProofResponse>).has('txhash1')).to.be.true;
+  });
+
+  it('contract universal verifier v3 request flow', async () => {
+    const { did: userDID, credential: cred } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Amoy,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    expect(cred).not.to.be.undefined;
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Amoy,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+    expect(issuerAuthCredential).not.to.be.undefined;
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQueryV3OnChain,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+        credentialSubject: {
+          documentType: {
+            $eq: 99
+          }
+        }
+      }
+    };
+
+    const transactionData: ContractInvokeTransactionData = {
+      contract_address: '0x134b1be34911e39a8397ec6289782989729807a4',
+      method_id: '06c86a91',
+      chain_id: 80001
+    };
+
+    const ciRequestBody: ContractInvokeRequestBody = {
+      reason: 'reason',
+      transaction_data: transactionData,
+      scope: [proofReq as ZeroKnowledgeProofRequest]
+    };
+
+    const id = uuid.v4();
+    const ciRequest: ContractInvokeRequest = {
+      id,
+      typ: MediaType.PlainMessage,
+      type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: ciRequestBody,
+      from: 'did:iden3:polygon:amoy:x6x5sor7zpySUbxeFoAZUYbUh68LQ4ipcvJLRYM6c',
+      to: userDID.string()
+    };
+
+    const ethSigner = new ethers.Wallet(walletKey);
+
+    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const options: ContractMessageHandlerOptions = {
+      ethSigner,
+      challenge,
+      senderDid: userDID
+    };
+    const ciResponse = await (contractRequestHandler as unknown as AbstractMessageHandler).handle(
+      ciRequest,
+      options
+    );
+
+    expect(ciResponse).not.be.undefined;
+  });
+
+  it('contract universal verifier v3 request flow with ethereum identity', async () => {
+    const { did: userDID, credential: cred } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Amoy,
+      seed: seedPhrase,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+
+    expect(cred).not.to.be.undefined;
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
+      method: DidMethod.Iden3,
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Amoy,
+      seed: seedPhraseIssuer,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    });
+    expect(issuerAuthCredential).not.to.be.undefined;
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQueryV3OnChain,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        type: claimReq.type,
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+        credentialSubject: {
+          documentType: {
+            $eq: 99
+          }
+        }
+      }
+    };
+
+    const transactionData: ContractInvokeTransactionData = {
+      contract_address: '0x134b1be34911e39a8397ec6289782989729807a4',
+      method_id: '06c86a91',
+      chain_id: 80001
+    };
+
+    const ciRequestBody: ContractInvokeRequestBody = {
+      reason: 'reason',
+      transaction_data: transactionData,
+      scope: [proofReq as ZeroKnowledgeProofRequest],
+      accept: ['iden3comm/v1;env=application/iden3comm-signed-json;alg=ES256K-R']
+    };
+
+    const id = uuid.v4();
+    const ciRequest: ContractInvokeRequest = {
+      id,
+      typ: MediaType.PlainMessage,
+      type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: ciRequestBody,
+      from: 'did:iden3:polygon:amoy:x6x5sor7zpySUbxeFoAZUYbUh68LQ4ipcvJLRYM6c',
+      to: userDID.string()
+    };
+
+    const ethSigner = new ethers.Wallet(walletKey);
+
+    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const options: ContractMessageHandlerOptions = {
+      ethSigner,
+      challenge,
+      senderDid: userDID
+    };
+    const ciResponse = await (contractRequestHandler as unknown as AbstractMessageHandler).handle(
+      ciRequest,
+      options
+    );
+
+    expect(ciResponse).not.be.undefined;
+    expect((ciResponse as unknown as ContractInvokeResponse).body.scope[0].txHash).not.be.undefined;
   });
 
   it('$noop operator not supported for OnChain V2', async () => {
@@ -890,9 +1121,8 @@ describe('contract-request', () => {
     const zkpVerifierNetworkConfig = networkConfigs.amoy(CONTRACTS.AMOY_UNIVERSAL_VERIFIER);
 
     const zkpVerifier = new OnChainZKPVerifier([zkpVerifierNetworkConfig], {
-      didResolverUrl: 'https://resolver-dev.privado.id'
+      didResolverUrl: 'https://resolver.privado.id'
     });
-
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {
@@ -1073,8 +1303,9 @@ describe('contract-request', () => {
     ];
 
     const zkpVerifier = new OnChainZKPVerifier([amoyStateEthConfig], {
-      didResolverUrl: 'https://resolver-dev.privado.id'
+      didResolverUrl: 'https://resolver.privado.id'
     });
+
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
     const transactionData: ContractInvokeTransactionData = {

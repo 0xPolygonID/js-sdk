@@ -14,6 +14,7 @@ export type ContractInvokeRequestBody = {
   transaction_data: ContractInvokeTransactionData;
   scope: Array<ZeroKnowledgeProofRequest>;
   did_doc?: DIDDocument;
+  accept?: string[];
 };
 
 /** ContractInvokeResponse represents structure of contract invoke response object */
@@ -27,6 +28,8 @@ export type ContractInvokeResponseBody = {
   scope: Array<OnChainZeroKnowledgeProofResponse>;
   transaction_data: ContractInvokeTransactionData;
   did_doc?: DIDDocument;
+  crossChainProofs?: string[];
+  authProofs?: AuthProofResponse[];
 };
 
 /** OnChainZeroKnowledgeProofResponse represents structure of onchain zero knowledge proof response */
@@ -41,3 +44,14 @@ export type ContractInvokeTransactionData = {
   chain_id: number;
   network?: string;
 };
+
+/** AuthProofResponse represents structure of zkp response */
+export type AuthProofResponse = {
+  authMethod: AuthMethod;
+  proof: string;
+};
+
+export enum AuthMethod {
+  AUTHV2 = 'authV2',
+  ETH_IDENTITY = 'ethIdentity'
+}

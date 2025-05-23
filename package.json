@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.28.1",
+  "version": "1.29.0",
   "description": "SDK to work with Polygon ID",
   "main": "dist/node/cjs/index.js",
   "module": "dist/node/esm/index.js",
@@ -99,6 +99,7 @@
   },
   "dependencies": {
     "@iden3/onchain-non-merklized-issuer-base-abi": "^0.0.3",
+    "@iden3/universal-verifier-v2-abi": "^2.0.1",
     "@noble/curves": "^1.4.0",
     "ajv": "8.12.0",
     "ajv-formats": "2.1.1",

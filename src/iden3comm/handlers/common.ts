@@ -1,19 +1,24 @@
 import { getRandomBytes } from '@iden3/js-crypto';
 import {
+  AcceptProfile,
+  AuthMethod,
+  AuthProofResponse,
   BasicMessage,
   JsonDocumentObject,
   JWSPackerParams,
+  ZeroKnowledgeProofAuthResponse,
   ZeroKnowledgeProofQuery,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
-import { mergeObjects } from '../../utils';
+import { bytesToHex, mergeObjects } from '../../utils';
 import { RevocationStatus, W3CCredential } from '../../verifiable';
-import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
+import { BytesHelper, DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
-import { MediaType } from '../constants';
+import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
 import { Signer } from 'ethers';
+import { packZkpProof, prepareZkpProof } from '../utils';
 
 /**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.
@@ -137,6 +142,84 @@ export const processZeroKnowledgeProofRequests = async (
 };
 
 /**
+ * Processes auth proof requests.
+ *
+ * @param to - The identifier of the recipient.
+ * @param proofService - The proof service.
+ * @param opts - Additional options for processing the requests.
+ * @returns A promise that resolves to an auth proof response.
+ */
+export const processProofAuth = async (
+  to: DID,
+  proofService: IProofService,
+  opts: {
+    supportedCircuits: CircuitId[];
+    acceptProfile?: AcceptProfile;
+    challenge?: bigint;
+    skipRevocation?: boolean;
+  }
+): Promise<AuthProofResponse> => {
+  if (!opts.acceptProfile) {
+    opts.acceptProfile = defaultAcceptProfile;
+  }
+  if (!opts.skipRevocation) {
+    opts.skipRevocation = true;
+  }
+
+  switch (opts.acceptProfile.env) {
+    case MediaType.ZKPMessage:
+      if (!opts.acceptProfile.circuits) {
+        throw new Error('Circuit not specified in accept profile');
+      }
+
+      for (const circuitId of opts.acceptProfile.circuits) {
+        if (!opts.supportedCircuits.includes(circuitId as unknown as CircuitId)) {
+          throw new Error(`Circuit ${circuitId} is not supported`);
+        }
+
+        const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(
+          circuitId as unknown as CircuitId,
+          to,
+          { challenge: opts.challenge, skipRevocation: opts.skipRevocation }
+        );
+
+        switch (circuitId as unknown as CircuitId) {
+          case CircuitId.AuthV2: {
+            const preparedZkpProof = prepareZkpProof(zkpRes.proof);
+            const zkProofEncoded = packZkpProof(
+              zkpRes.pub_signals,
+              preparedZkpProof.a,
+              preparedZkpProof.b,
+              preparedZkpProof.c
+            );
+
+            return {
+              authMethod: AuthMethod.AUTHV2,
+              proof: zkProofEncoded
+            };
+          }
+        }
+      }
+      throw new Error(`Auth method is not supported`);
+    case MediaType.SignedMessage:
+      if (!opts.acceptProfile.alg || opts.acceptProfile.alg.length === 0) {
+        throw new Error('Algorithm not specified');
+      }
+      if (opts.acceptProfile.alg[0] === AcceptJwsAlgorithms.ES256KR) {
+        const ethIdProof = packEthIdentityProof(to);
+
+        return {
+          authMethod: AuthMethod.ETH_IDENTITY,
+          proof: ethIdProof
+        };
+      }
+      throw new Error(`Algorithm ${opts.acceptProfile.alg[0]} not supported`);
+    default:
+      throw new Error('Accept env not supported');
+  }
+};
+
+/**
  * Verifies that the expires_time field of a message is not in the past. Throws an error if it is.
  *
  * @param message - Basic message to verify.
@@ -145,4 +228,8 @@ export const verifyExpiresTime = (message: BasicMessage) => {
   if (message?.expires_time && message.expires_time < getUnixTimestamp(new Date())) {
     throw new Error('Message expired');
   }
+};
+
+export const packEthIdentityProof = (did: DID): string => {
+  return `0x${bytesToHex(BytesHelper.intToBytes(DID.idFromDID(did).bigInt()))}`;
 };
