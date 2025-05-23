@@ -25,7 +25,7 @@ import { byteEncoder, DIDDocumentSignature, resolveDidDocument } from '../../uti
 import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
 import { poseidon } from '@iden3/js-crypto';
 import { Hash } from '@iden3/js-merkletree';
-import { packZkpProof } from '../../iden3comm/utils';
+import { packZkpProof, prepareZkpProof } from '../../iden3comm/utils';
 
 const maxGasLimit = 10000000n;
 
@@ -106,16 +106,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const requestID = zkProofResponse.id;
     const inputs = zkProofResponse.pub_signals;
 
-    const payload = [
-      requestID,
-      inputs,
-      zkProofResponse.proof.pi_a.slice(0, 2),
-      [
-        [zkProofResponse.proof.pi_b[0][1], zkProofResponse.proof.pi_b[0][0]],
-        [zkProofResponse.proof.pi_b[1][1], zkProofResponse.proof.pi_b[1][0]]
-      ],
-      zkProofResponse.proof.pi_c.slice(0, 2)
-    ];
+    const preparedZkpProof = prepareZkpProof(zkProofResponse.proof);
+    const payload = [requestID, inputs, preparedZkpProof.a, preparedZkpProof.b, preparedZkpProof.c];
 
     return payload;
   }
@@ -422,14 +414,12 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         continue;
       }
 
+      const preparedZkpProof = prepareZkpProof(zkProof.proof);
       const zkProofEncoded = packZkpProof(
         inputs,
-        zkProof.proof.pi_a.slice(0, 2),
-        [
-          [zkProof.proof.pi_b[0][1], zkProof.proof.pi_b[0][0]],
-          [zkProof.proof.pi_b[1][1], zkProof.proof.pi_b[1][0]]
-        ],
-        zkProof.proof.pi_c.slice(0, 2)
+        preparedZkpProof.a,
+        preparedZkpProof.b,
+        preparedZkpProof.c
       );
 
       const stateInfo = this.getOnChainGistRootStatePubSignals(proofCircuitId, inputs);
@@ -514,14 +504,12 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       throw new Error(`Circuit ${zkProof.circuitId} not supported by OnChainZKPVerifier`);
     }
 
+    const preparedZkpProof = prepareZkpProof(zkProof.proof);
     const zkProofEncoded = packZkpProof(
       inputs,
-      zkProof.proof.pi_a.slice(0, 2),
-      [
-        [zkProof.proof.pi_b[0][1], zkProof.proof.pi_b[0][0]],
-        [zkProof.proof.pi_b[1][1], zkProof.proof.pi_b[1][0]]
-      ],
-      zkProof.proof.pi_c.slice(0, 2)
+      preparedZkpProof.a,
+      preparedZkpProof.b,
+      preparedZkpProof.c
     );
 
     const metadataArr: { key: string; value: Uint8Array }[] = [];

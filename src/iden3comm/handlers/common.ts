@@ -18,7 +18,7 @@ import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
 import { Signer } from 'ethers';
-import { packZkpProof } from '../utils';
+import { packZkpProof, prepareZkpProof } from '../utils';
 
 /**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.
@@ -185,14 +185,12 @@ export const processProofAuth = async (
 
         switch (circuitId as unknown as CircuitId) {
           case CircuitId.AuthV2: {
+            const preparedZkpProof = prepareZkpProof(zkpRes.proof);
             const zkProofEncoded = packZkpProof(
               zkpRes.pub_signals,
-              zkpRes.proof.pi_a.slice(0, 2),
-              [
-                [zkpRes.proof.pi_b[0][1], zkpRes.proof.pi_b[0][0]],
-                [zkpRes.proof.pi_b[1][1], zkpRes.proof.pi_b[1][0]]
-              ],
-              zkpRes.proof.pi_c.slice(0, 2)
+              preparedZkpProof.a,
+              preparedZkpProof.b,
+              preparedZkpProof.c
             );
 
             return {

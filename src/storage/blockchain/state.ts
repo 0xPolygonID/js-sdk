@@ -8,6 +8,7 @@ import { byteEncoder } from '../../utils';
 import abi from './abi/State.json';
 import { DID, getChainId, Id } from '@iden3/js-iden3-core';
 import { ITransactionService, TransactionService } from '../../blockchain';
+import { prepareZkpProof } from '../../iden3comm/utils';
 
 /**
  * Configuration of ethereum based blockchain connection
@@ -115,17 +116,15 @@ export class EthStateStorage implements IStateStorage {
     const { stateContract, provider } = this.getStateContractAndProviderForId(userId.bigInt());
     const contract = stateContract.connect(signer) as Contract;
 
+    const preparedZkpProof = prepareZkpProof(proof.proof);
     const payload = [
       userId.bigInt().toString(),
       oldUserState.bigInt().toString(),
       newUserState.bigInt().toString(),
       isOldStateGenesis,
-      proof.proof.pi_a.slice(0, 2),
-      [
-        [proof.proof.pi_b[0][1], proof.proof.pi_b[0][0]],
-        [proof.proof.pi_b[1][1], proof.proof.pi_b[1][0]]
-      ],
-      proof.proof.pi_c.slice(0, 2)
+      preparedZkpProof.a,
+      preparedZkpProof.b,
+      preparedZkpProof.c
     ];
 
     const feeData = await provider.getFeeData();
