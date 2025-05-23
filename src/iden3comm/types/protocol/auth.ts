@@ -44,7 +44,7 @@ export type AuthorizationRequestMessageBody = {
 
 /** ZeroKnowledgeProofRequest represents structure of zkp request object */
 export type ZeroKnowledgeProofRequest = {
-  id: number;
+  id: number | string;
   circuitId: CircuitId;
   optional?: boolean;
   query: ZeroKnowledgeProofQuery;
@@ -72,7 +72,7 @@ export type ZeroKnowledgeInvokeResponse = {
 
 /** ZeroKnowledgeProofResponse represents structure of zkp response */
 export type ZeroKnowledgeProofResponse = {
-  id: number;
+  id: number | string;
   circuitId: string;
   vp?: VerifiablePresentation;
 } & ZKProof;
