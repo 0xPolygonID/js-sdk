@@ -370,7 +370,7 @@ export class AuthHandler
     for (const proofRequest of requestScope) {
       const groupId = proofRequest.query.groupId as number;
 
-      const proofResp = responseScope.find((resp) => resp.id === proofRequest.id);
+      const proofResp = responseScope.find((resp) => resp.id.toString() === proofRequest.id.toString());
       if (!proofResp) {
         throw new Error(`proof is not given for requestId ${proofRequest.id}`);
       }
