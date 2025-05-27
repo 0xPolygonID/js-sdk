@@ -1,5 +1,5 @@
-import { ProofData } from "@iden3/js-jwz";
-import { ethers } from "ethers";
+import { ProofData } from '@iden3/js-jwz';
+import { ethers } from 'ethers';
 
 export const packZkpProof = (inputs: string[], a: string[], b: string[][], c: string[]): string => {
   return new ethers.AbiCoder().encode(
