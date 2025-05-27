@@ -202,7 +202,7 @@ export const processProofAuth = async (
         return {
           authProof: {
             authMethod: AuthMethod.ETH_IDENTITY,
-            userDID: to
+            userDid: to
           }
         };
       }

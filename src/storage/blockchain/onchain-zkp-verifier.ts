@@ -362,7 +362,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         break;
       }
       case AuthMethod.ETH_IDENTITY: {
-        encodedAuthProof = packEthIdentityProof((authProof as AuthProofEthIdentity).userDID);
+        encodedAuthProof = packEthIdentityProof((authProof as AuthProofEthIdentity).userDid);
         break;
       }
       default:

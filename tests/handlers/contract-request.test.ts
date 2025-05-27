@@ -13,8 +13,7 @@ import {
   hexToBytes,
   FunctionSignatures,
   KMS,
-  buildVerifierId,
-  TxPreparationResultSubmitResponse
+  buildVerifierId
 } from '../../src';
 import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
@@ -32,7 +31,6 @@ import path from 'path';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import {
   AuthDataPrepareFunc,
-  AuthMethod,
   AuthProof,
   ContractInvokeHandlerOptions,
   ContractInvokeRequest,

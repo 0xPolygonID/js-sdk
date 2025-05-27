@@ -53,7 +53,7 @@ export type ContractInvokeTransactionData = {
 };
 
 export type AuthProofEthIdentity = {
-  userDID: DID;
+  userDid: DID;
 };
 export type AuthProofZKP = {
   zkp: ZeroKnowledgeProofAuthResponse;
