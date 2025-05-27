@@ -222,7 +222,7 @@ export const processProofAuth = async (
 /**
  * Processes a ZeroKnowledgeProofResponse object and prepares it for further use.
  * @param zkProof - The ZeroKnowledgeProofResponse object containing the proof data.
- * @returns An object containing the requestId, zkProofEncoded, and metadata. 
+ * @returns An object containing the requestId, zkProofEncoded, and metadata.
  */
 export const processProofResponse = (zkProof: ZeroKnowledgeProofResponse) => {
   const requestId = zkProof.id;
@@ -266,8 +266,8 @@ export const processProofResponse = (zkProof: ZeroKnowledgeProofResponse) => {
 /**
  * Calculates the challenge authentication value.
  * @param sender - The address of the sender.
- * @param zkpResponses - An array of ZeroKnowledgeProofResponse objects. 
- * @returns A bigint representing the challenge authentication value. 
+ * @param zkpResponses - An array of ZeroKnowledgeProofResponse objects.
+ * @returns A bigint representing the challenge authentication value.
  */
 export const calcChallengeAuth = (
   sender: string,
@@ -322,7 +322,7 @@ export const verifyExpiresTime = (message: BasicMessage) => {
 /**
  * Packs an Ethereum identity proof from a Decentralized Identifier (DID).
  * @param did - Decentralized Identifier (DID) to pack.
- * @returns A hexadecimal string representing the packed DID identity proof. 
+ * @returns A hexadecimal string representing the packed DID identity proof.
  */
 export const packEthIdentityProof = (did: DID): string => {
   return `0x${bytesToHex(BytesHelper.intToBytes(DID.idFromDID(did).bigInt()))}`;
