@@ -1,4 +1,4 @@
-import { getRandomBytes } from '@iden3/js-crypto';
+import { getRandomBytes, poseidon } from '@iden3/js-crypto';
 import {
   AcceptProfile,
   AuthMethod,
@@ -11,13 +11,13 @@ import {
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
-import { bytesToHex, mergeObjects } from '../../utils';
+import { byteEncoder, bytesToHex, mergeObjects } from '../../utils';
 import { RevocationStatus, W3CCredential } from '../../verifiable';
 import { BytesHelper, DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
-import { Signer } from 'ethers';
+import { ethers, Signer } from 'ethers';
 import { packZkpProof, prepareZkpProof } from '../utils';
 
 /**
@@ -220,6 +220,95 @@ export const processProofAuth = async (
 };
 
 /**
+ * Processes a ZeroKnowledgeProofResponse object and prepares it for further use.
+ * @param zkProof - The ZeroKnowledgeProofResponse object containing the proof data.
+ * @returns An object containing the requestId, zkProofEncoded, and metadata. 
+ */
+export const processProofResponse = (zkProof: ZeroKnowledgeProofResponse) => {
+  const requestId = zkProof.id;
+  const inputs = zkProof.pub_signals;
+  const emptyBytes = '0x';
+
+  if (inputs.length === 0) {
+    return { requestId, zkProofEncoded: emptyBytes, metadata: emptyBytes };
+  }
+
+  const preparedZkpProof = prepareZkpProof(zkProof.proof);
+  const zkProofEncoded = packZkpProof(
+    inputs,
+    preparedZkpProof.a,
+    preparedZkpProof.b,
+    preparedZkpProof.c
+  );
+
+  const metadataArr: { key: string; value: Uint8Array }[] = [];
+  if (zkProof.vp) {
+    for (const key in zkProof.vp.verifiableCredential.credentialSubject) {
+      if (key === '@type') {
+        continue;
+      }
+      const metadataValue = poseidon.hashBytes(
+        byteEncoder.encode(JSON.stringify(zkProof.vp.verifiableCredential.credentialSubject[key]))
+      );
+      const bytesValue = byteEncoder.encode(metadataValue.toString());
+      metadataArr.push({
+        key,
+        value: bytesValue
+      });
+    }
+  }
+
+  const metadata = metadataArr.length ? packMetadatas(metadataArr) : emptyBytes;
+
+  return { requestId, zkProofEncoded, metadata };
+};
+
+/**
+ * Calculates the challenge authentication value.
+ * @param sender - The address of the sender.
+ * @param zkpResponses - An array of ZeroKnowledgeProofResponse objects. 
+ * @returns A bigint representing the challenge authentication value. 
+ */
+export const calcChallengeAuth = (
+  sender: string,
+  zkpResponses: ZeroKnowledgeProofResponse[]
+): bigint => {
+  const responses = zkpResponses.map((zkpResponse) => {
+    const response = processProofResponse(zkpResponse);
+    return {
+      requestId: response.requestId,
+      proof: response.zkProofEncoded,
+      metadata: response.metadata
+    };
+  });
+
+  return (
+    BigInt(
+      ethers.keccak256(
+        new ethers.AbiCoder().encode(
+          ['address', '(uint256 requestId,bytes proof,bytes metadata)[]'],
+          [sender, responses]
+        )
+      )
+    ) & BigInt('0x0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
+  );
+};
+
+/**
+ * Packs metadata into a string format suitable for encoding in a transaction.
+ * @param metas - An array of objects containing key-value pairs to be packed.
+ * @returns A string representing the packed metadata.
+ */
+export const packMetadatas = (
+  metas: {
+    key: string;
+    value: Uint8Array;
+  }[]
+): string => {
+  return new ethers.AbiCoder().encode(['tuple(' + 'string key,' + 'bytes value' + ')[]'], [metas]);
+};
+
+/**
  * Verifies that the expires_time field of a message is not in the past. Throws an error if it is.
  *
  * @param message - Basic message to verify.
@@ -230,6 +319,11 @@ export const verifyExpiresTime = (message: BasicMessage) => {
   }
 };
 
+/**
+ * Packs an Ethereum identity proof from a Decentralized Identifier (DID).
+ * @param did - Decentralized Identifier (DID) to pack.
+ * @returns A hexadecimal string representing the packed DID identity proof. 
+ */
 export const packEthIdentityProof = (did: DID): string => {
   return `0x${bytesToHex(BytesHelper.intToBytes(DID.idFromDID(did).bigInt()))}`;
 };

@@ -12,7 +12,12 @@ import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol
 import { DID, ChainIds, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
-import { processProofAuth, processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
+import {
+  calcChallengeAuth,
+  processProofAuth,
+  processZeroKnowledgeProofRequests,
+  verifyExpiresTime
+} from './common';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
@@ -198,10 +203,13 @@ export class ContractRequestHandler
         );
 
         const identifier = DID.parse(message.to);
+
+        const challengeAuth = calcChallengeAuth(await ethSigner.getAddress(), zkpResponses);
+
         const authResponse = await processProofAuth(identifier, this._proofService, {
           supportedCircuits: this._supportedCircuits,
           acceptProfile,
-          challenge: challenge,
+          challenge: challengeAuth,
           skipRevocation: true
         });
 

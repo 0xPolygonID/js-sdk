@@ -5,6 +5,7 @@ import {
   AuthProofResponse,
   ContractInvokeTransactionData,
   JsonDocumentObjectValue,
+  processProofResponse,
   ZeroKnowledgeInvokeResponse,
   ZeroKnowledgeProofResponse
 } from '../../iden3comm';
@@ -308,22 +309,44 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         `submit cross chain doesn't implement requested method id. Only '0x${FunctionSignatures.SubmitResponse}' is supported.`
       );
     }
-    const gistUpdateArr: GlobalStateUpdate[] = [];
-    const stateUpdateArr: IdentityStateUpdate[] = [];
+    const gistUpdatesArr: GlobalStateUpdate[] = [];
+    const stateUpdatesArr: IdentityStateUpdate[] = [];
     const payloadResponses = [];
+    const emptyBytes = '0x';
 
     // Process all the responses
     for (const zkProof of responses) {
-      const { requestID, zkProofEncoded, metadata } = await this._processProof(zkProof);
+      this.checkSupportedCircuit(zkProof.circuitId as CircuitId);
+      const { requestId, zkProofEncoded, metadata } = processProofResponse(zkProof);
 
       payloadResponses.push({
-        requestId: requestID,
+        requestId: requestId,
         proof: zkProofEncoded,
         metadata: metadata
       });
+
+      const { gistUpdateResolutions, stateUpdateResolutions } = this.getUpdateResolutions(
+        resolverUrl,
+        txData.chain_id,
+        zkProof.circuitId as OnChainZKPVerifierCircuitId,
+        zkProof.pub_signals
+      );
+
+      if (gistUpdateResolutions.length > 0) {
+        gistUpdatesArr.push(...((await Promise.all(gistUpdateResolutions)) as GlobalStateUpdate[]));
+      }
+      if (stateUpdateResolutions.length > 0) {
+        stateUpdatesArr.push(
+          ...((await Promise.all(stateUpdateResolutions)) as IdentityStateUpdate[])
+        );
+      }
     }
 
-    const crossChainProofs = this.packCrossChainProofs(gistUpdateArr, stateUpdateArr);
+    const crossChainProofs =
+      gistUpdatesArr.length || stateUpdatesArr.length
+        ? this.packCrossChainProofs(gistUpdatesArr, stateUpdatesArr)
+        : emptyBytes;
+
     return [authResponse, payloadResponses, crossChainProofs];
   }
 
@@ -341,6 +364,12 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       authResponse,
       responses
     );
+  }
+
+  private static checkSupportedCircuit(circuitId: CircuitId) {
+    if (!this._supportedCircuits.includes(circuitId as OnChainZKPVerifierCircuitId)) {
+      throw new Error(`Circuit ${circuitId} not supported by OnChainZKPVerifier`);
+    }
   }
 
   private static getCrossChainResolvers(
@@ -392,94 +421,43 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       );
     }
 
-    const gistUpdates = [];
-    const stateUpdates = [];
-    const payload = [];
+    const gistUpdatesArr = [];
+    const stateUpdatesArr = [];
+    const payloadResponses = [];
     const emptyBytes = '0x';
 
     for (const zkProof of zkProofResponses) {
-      const { id: requestId, pub_signals: inputs } = zkProof;
-      const proofCircuitId = zkProof.circuitId as OnChainZKPVerifierCircuitId;
+      this.checkSupportedCircuit(zkProof.circuitId as CircuitId);
+      const { requestId, zkProofEncoded, metadata } = processProofResponse(zkProof);
 
-      if (!this._supportedCircuits.includes(proofCircuitId)) {
-        throw new Error(`Circuit ${zkProof.circuitId} not supported by OnChainZKPVerifier`);
-      }
-
-      if (inputs.length === 0) {
-        payload.push({
-          requestId: requestId,
-          zkProof: emptyBytes,
-          data: emptyBytes
-        });
-        continue;
-      }
-
-      const preparedZkpProof = prepareZkpProof(zkProof.proof);
-      const zkProofEncoded = packZkpProof(
-        inputs,
-        preparedZkpProof.a,
-        preparedZkpProof.b,
-        preparedZkpProof.c
-      );
-
-      const stateInfo = this.getOnChainGistRootStatePubSignals(proofCircuitId, inputs);
-
-      const chainId = txData.chain_id;
-      const gistUpdateResolutions = this.getCrossChainResolvers(
-        stateInfo.gists,
-        chainId,
-        'gist',
-        resolverUrl
-      );
-
-      const stateUpdateResolutions = this.getCrossChainResolvers(
-        stateInfo.states,
-        chainId,
-        'state',
-        resolverUrl
-      );
-
-      if (gistUpdateResolutions.length > 0) {
-        gistUpdates.push(...((await Promise.all(gistUpdateResolutions)) as GlobalStateUpdate[]));
-      }
-      if (stateUpdateResolutions.length > 0) {
-        stateUpdates.push(
-          ...((await Promise.all(stateUpdateResolutions)) as IdentityStateUpdate[])
-        );
-      }
-
-      const metadataArr: { key: string; value: Uint8Array }[] = [];
-      if (zkProof.vp) {
-        for (const key in zkProof.vp.verifiableCredential.credentialSubject) {
-          if (key === '@type') {
-            continue;
-          }
-          const metadataValue = poseidon.hashBytes(
-            byteEncoder.encode(
-              JSON.stringify(zkProof.vp.verifiableCredential.credentialSubject[key])
-            )
-          );
-          const bytesValue = byteEncoder.encode(metadataValue.toString());
-          metadataArr.push({
-            key,
-            value: bytesValue
-          });
-        }
-      }
-
-      const metadata = metadataArr.length ? this.packMetadatas(metadataArr) : emptyBytes;
-      payload.push({
+      payloadResponses.push({
         requestId: requestId,
         zkProof: zkProofEncoded,
         data: metadata
       });
+
+      const { gistUpdateResolutions, stateUpdateResolutions } = this.getUpdateResolutions(
+        resolverUrl,
+        txData.chain_id,
+        zkProof.circuitId as OnChainZKPVerifierCircuitId,
+        zkProof.pub_signals
+      );
+
+      if (gistUpdateResolutions.length > 0) {
+        gistUpdatesArr.push(...((await Promise.all(gistUpdateResolutions)) as GlobalStateUpdate[]));
+      }
+      if (stateUpdateResolutions.length > 0) {
+        stateUpdatesArr.push(
+          ...((await Promise.all(stateUpdateResolutions)) as IdentityStateUpdate[])
+        );
+      }
     }
 
     const crossChainProofs =
-      gistUpdates.length || stateUpdates.length
-        ? this.packCrossChainProofs(gistUpdates, stateUpdates)
+      gistUpdatesArr.length || stateUpdatesArr.length
+        ? this.packCrossChainProofs(gistUpdatesArr, stateUpdatesArr)
         : emptyBytes;
-    return [payload, crossChainProofs];
+    return [payloadResponses, crossChainProofs];
   }
 
   public async prepareTxArgsSubmitV2(
@@ -496,42 +474,29 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     );
   }
 
-  private static async _processProof(zkProof: ZeroKnowledgeProofResponse) {
-    const requestID = zkProof.id;
-    const inputs = zkProof.pub_signals;
+  private static getUpdateResolutions(
+    resolverUrl: string,
+    chainId: number,
+    proofCircuitId: OnChainZKPVerifierCircuitId,
+    inputs: string[]
+  ) {
+    const stateInfo = this.getOnChainGistRootStatePubSignals(proofCircuitId, inputs);
 
-    if (!this._supportedCircuits.includes(zkProof.circuitId as OnChainZKPVerifierCircuitId)) {
-      throw new Error(`Circuit ${zkProof.circuitId} not supported by OnChainZKPVerifier`);
-    }
-
-    const preparedZkpProof = prepareZkpProof(zkProof.proof);
-    const zkProofEncoded = packZkpProof(
-      inputs,
-      preparedZkpProof.a,
-      preparedZkpProof.b,
-      preparedZkpProof.c
+    const gistUpdateResolutions = this.getCrossChainResolvers(
+      stateInfo.gists,
+      chainId,
+      'gist',
+      resolverUrl
     );
 
-    const metadataArr: { key: string; value: Uint8Array }[] = [];
-    if (zkProof.vp) {
-      for (const key in zkProof.vp.verifiableCredential.credentialSubject) {
-        if (key === '@type') {
-          continue;
-        }
-        const metadataValue = poseidon.hashBytes(
-          byteEncoder.encode(JSON.stringify(zkProof.vp.verifiableCredential.credentialSubject[key]))
-        );
-        const bytesValue = byteEncoder.encode(metadataValue.toString());
-        metadataArr.push({
-          key,
-          value: bytesValue
-        });
-      }
-    }
+    const stateUpdateResolutions = this.getCrossChainResolvers(
+      stateInfo.states,
+      chainId,
+      'state',
+      resolverUrl
+    );
 
-    const metadata = metadataArr.length ? this.packMetadatas(metadataArr) : '0x';
-
-    return { requestID, zkProofEncoded, metadata };
+    return { gistUpdateResolutions, stateUpdateResolutions };
   }
 
   private static packCrossChainProofs(
@@ -588,18 +553,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
           ')'
       ],
       [msg]
-    );
-  }
-
-  private static packMetadatas(
-    metas: {
-      key: string;
-      value: Uint8Array;
-    }[]
-  ): string {
-    return new ethers.AbiCoder().encode(
-      ['tuple(' + 'string key,' + 'bytes value' + ')[]'],
-      [metas]
     );
   }
 
