@@ -53,6 +53,10 @@ export type ProofGenerationOptions = {
   linkNonce?: bigint;
 };
 
+export type AuthProofGenerationOptions = {
+  challenge?: bigint;
+};
+
 export type ProofInputsParams = ProofGenerationOptions & DIDProfileMetadata;
 
 type InputContext = {

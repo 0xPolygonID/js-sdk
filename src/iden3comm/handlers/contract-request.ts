@@ -9,7 +9,7 @@ import {
   ZeroKnowledgeProofResponse
 } from '../types';
 import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
-import { DID, ChainIds, getUnixTimestamp } from '@iden3/js-iden3-core';
+import { DID, ChainIds, getUnixTimestamp, BytesHelper } from '@iden3/js-iden3-core';
 import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
 import { processProofAuth, processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
@@ -19,6 +19,7 @@ import {
   IProtocolMessageHandler
 } from './message-handler';
 import { parseAcceptProfile } from '../utils';
+import { hexToBytes } from '../../utils';
 
 /**
  * Interface that allows the processing of the contract request
@@ -149,7 +150,7 @@ export class ContractRequestHandler
       this._proofService,
       {
         ethSigner,
-        challenge,
+        challenge: challenge ?? BytesHelper.bytesToInt(hexToBytes(await ethSigner.getAddress())),
         supportedCircuits: this._supportedCircuits
       }
     );
@@ -202,8 +203,7 @@ export class ContractRequestHandler
         const { authProof } = await processProofAuth(identifier, this._proofService, {
           supportedCircuits: this._supportedCircuits,
           acceptProfile,
-          skipRevocation: true,
-          sender: await ethSigner.getAddress(),
+          senderAddress: await ethSigner.getAddress(),
           zkpResponses: zkpResponses
         });
 

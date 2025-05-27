@@ -155,16 +155,12 @@ export const processProofAuth = async (
   opts: {
     supportedCircuits: CircuitId[];
     acceptProfile?: AcceptProfile;
-    skipRevocation?: boolean;
-    sender: string;
+    senderAddress: string;
     zkpResponses: ZeroKnowledgeProofResponse[];
   }
 ): Promise<{ authProof: AuthProof }> => {
   if (!opts.acceptProfile) {
     opts.acceptProfile = defaultAcceptProfile;
-  }
-  if (!opts.skipRevocation) {
-    opts.skipRevocation = true;
   }
 
   switch (opts.acceptProfile.env) {
@@ -177,18 +173,18 @@ export const processProofAuth = async (
         if (!opts.supportedCircuits.includes(circuitId as unknown as CircuitId)) {
           throw new Error(`Circuit ${circuitId} is not supported`);
         }
-        if (!opts.sender) {
+        if (!opts.senderAddress) {
           throw new Error('Sender address is not provided');
         }
         if (!opts.zkpResponses || opts.zkpResponses.length === 0) {
           throw new Error('ZKP responses are not provided');
         }
-        const challengeAuth = calcChallengeAuthV2(opts.sender, opts.zkpResponses);
+        const challengeAuth = calcChallengeAuthV2(opts.senderAddress, opts.zkpResponses);
 
         const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(
           circuitId as unknown as CircuitId,
           to,
-          { challenge: challengeAuth, skipRevocation: opts.skipRevocation }
+          { challenge: challengeAuth }
         );
         return {
           authProof: {
@@ -262,12 +258,12 @@ export const processProofResponse = (zkProof: ZeroKnowledgeProofResponse) => {
 
 /**
  * Calculates the challenge authentication V2 value.
- * @param sender - The address of the sender.
+ * @param senderAddress - The address of the sender.
  * @param zkpResponses - An array of ZeroKnowledgeProofResponse objects.
  * @returns A bigint representing the challenge authentication value.
  */
 export const calcChallengeAuthV2 = (
-  sender: string,
+  senderAddress: string,
   zkpResponses: ZeroKnowledgeProofResponse[]
 ): bigint => {
   const responses = zkpResponses.map((zkpResponse) => {
@@ -284,7 +280,7 @@ export const calcChallengeAuthV2 = (
       ethers.keccak256(
         new ethers.AbiCoder().encode(
           ['address', '(uint256 requestId,bytes proof,bytes metadata)[]'],
-          [sender, responses]
+          [senderAddress, responses]
         )
       )
     ) & BigInt('0x0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
