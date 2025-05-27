@@ -13,7 +13,8 @@ import {
   hexToBytes,
   FunctionSignatures,
   KMS,
-  buildVerifierId
+  buildVerifierId,
+  TxPreparationResultSubmitResponse
 } from '../../src';
 import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
@@ -31,7 +32,8 @@ import path from 'path';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import {
   AuthDataPrepareFunc,
-  AuthProofResponse,
+  AuthMethod,
+  AuthProof,
   ContractInvokeHandlerOptions,
   ContractInvokeRequest,
   ContractInvokeRequestBody,
@@ -153,14 +155,17 @@ describe('contract-request', () => {
     submitResponse: async (
       ethSigner: Signer,
       txData: ContractInvokeTransactionData,
-      authResponse: AuthProofResponse,
-      responses: ZeroKnowledgeProofResponse[]
+      responses: ZeroKnowledgeProofResponse[],
+      authProof: AuthProof
     ) => {
       const response = new Map<string, ZeroKnowledgeInvokeResponse>();
       response.set('txhash1', {
         responses,
-        crossChainProofs: ['0x123456'],
-        authProofs: [authResponse]
+        crossChainProof: {
+          globalStateProofs: [],
+          identityStateProofs: []
+        },
+        authProof: authProof
       });
       return response;
     },
@@ -174,7 +179,7 @@ describe('contract-request', () => {
     },
 
     prepareTxArgsSubmit: async () => {
-      return [];
+      return {} as any;
     }
   };
 

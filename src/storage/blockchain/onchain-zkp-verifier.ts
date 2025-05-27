@@ -62,7 +62,7 @@ type ProofPreparationResult = {
 };
 export type TxPreparationResultSubmitResponse = {
   authProof: { raw: AuthProof; encoded: string };
-  crossChainProofs: { raw: CrossChainProof; encoded: string };
+  crossChainProof: { raw: CrossChainProof; encoded: string };
   proofs: ProofPreparationResult[];
 };
 
@@ -79,7 +79,7 @@ export const toTxDataArgs = function (res: TxPreparationResultSubmitResponse) {
         metadata: p.metadata
       };
     }),
-    res.crossChainProofs.encoded
+    res.crossChainProof.encoded
   ];
 };
 
@@ -327,7 +327,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     // return multiple responses for all the responses (single and grouped)
     return new Map<string, ZeroKnowledgeInvokeResponse>().set(txnHash, {
       authProof: txPreparationResult.result.authProof.raw,
-      crossChainProof: txPreparationResult.result.crossChainProofs.raw,
+      crossChainProof: txPreparationResult.result.crossChainProof.raw,
       responses: txPreparationResult.result.proofs.map((m) => m.proof)
     });
   }
@@ -413,7 +413,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       }
     }
 
-    const encodedCrossChainProofs =
+    const encodedCrossChainProof =
       gistUpdatesArr.length || stateUpdatesArr.length
         ? this.packCrossChainProofs(gistUpdatesArr, stateUpdatesArr)
         : emptyBytes;
@@ -421,12 +421,12 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const preparationResult = {
       authProof: { raw: authProof, encoded: encodedAuthProof },
       proofs: payloadResponses,
-      crossChainProofs: {
+      crossChainProof: {
         raw: {
           globalStateProofs: gistUpdatesArr || [],
           identityStateProofs: stateUpdatesArr || []
         },
-        encoded: encodedCrossChainProofs
+        encoded: encodedCrossChainProof
       }
     };
     return { result: preparationResult, txDataArgs: toTxDataArgs(preparationResult) };
@@ -535,11 +535,11 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       }
     }
 
-    const crossChainProofs =
+    const crossChainProofEncoded =
       gistUpdatesArr.length || stateUpdatesArr.length
         ? this.packCrossChainProofs(gistUpdatesArr, stateUpdatesArr)
         : emptyBytes;
-    return [payloadResponses, crossChainProofs];
+    return [payloadResponses, crossChainProofEncoded];
   }
 
   public async prepareTxArgsSubmitV2(
