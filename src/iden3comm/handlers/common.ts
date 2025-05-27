@@ -1,6 +1,8 @@
 import { getRandomBytes, poseidon } from '@iden3/js-crypto';
 import {
   AcceptProfile,
+  AuthMethod,
+  AuthProof,
   BasicMessage,
   JsonDocumentObject,
   JWSPackerParams,
@@ -16,7 +18,7 @@ import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
 import { ethers, Signer } from 'ethers';
-import { packZkpProof, prepareZkpProof } from '../../storage';
+import { packZkpProof, prepareZkpProof } from '../../storage/blockchain/common';
 
 /**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.

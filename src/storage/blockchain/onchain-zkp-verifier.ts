@@ -29,7 +29,7 @@ import {
 import { byteEncoder, bytesToHex, DIDDocumentSignature, resolveDidDocument } from '../../utils';
 import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
 import { Hash } from '@iden3/js-merkletree';
-import { ProofData } from '@iden3/js-jwz';
+import { packZkpProof, prepareZkpProof } from './common';
 
 const maxGasLimit = 10000000n;
 
@@ -366,7 +366,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         break;
       }
       default:
-        throw new Error("auth proof must use method AuthV2 or ethIdentity");
+        throw new Error('auth proof must use method AuthV2 or ethIdentity');
     }
 
     // Process all the responses
@@ -693,23 +693,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     };
   }
 }
-export const packZkpProof = (inputs: string[], a: string[], b: string[][], c: string[]): string => {
-  return new ethers.AbiCoder().encode(
-    ['uint256[] inputs', 'uint256[2]', 'uint256[2][2]', 'uint256[2]'],
-    [inputs, a, b, c]
-  );
-};
-
-export const prepareZkpProof = (proof: ProofData): { a: string[]; b: string[][]; c: string[] } => {
-  return {
-    a: proof.pi_a.slice(0, 2),
-    b: [
-      [proof.pi_b[0][1], proof.pi_b[0][0]],
-      [proof.pi_b[1][1], proof.pi_b[1][0]]
-    ],
-    c: proof.pi_c.slice(0, 2)
-  };
-};
 
 /**
  * Packs an Ethereum identity proof from a Decentralized Identifier (DID).
