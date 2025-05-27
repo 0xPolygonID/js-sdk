@@ -1,12 +1,12 @@
 import { Signer } from 'ethers';
 import {
-  AuthProofResponse,
+  AuthProof,
   ContractInvokeTransactionData,
   JsonDocumentObjectValue,
   ZeroKnowledgeInvokeResponse,
-  ZeroKnowledgeProofAuthResponse,
   ZeroKnowledgeProofResponse
 } from '../../iden3comm';
+import { TxPreparationResultSubmitResponse } from '../blockchain/onchain-zkp-verifier';
 
 /**
  * Interface that defines methods for ZKP verifier
@@ -56,9 +56,8 @@ export interface IOnChainZKPVerifier {
   submitResponse(
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
-    authResponse: AuthProofResponse,
     responses: ZeroKnowledgeProofResponse[],
-    authProof?: ZeroKnowledgeProofAuthResponse
+    authProof: AuthProof
   ): Promise<Map<string, ZeroKnowledgeInvokeResponse>>;
 
   /**
@@ -84,12 +83,12 @@ export interface IOnChainZKPVerifier {
   /**
    * Returns args for the verifier multi-query contract submission (single tx args for an array of responses).
    * @param {txData} ContractInvokeTransactionData - transaction data
-   * @param {AuthProofResponse} authResponse - authResponse
+   * @param {authProof} AuthProof - AuthProof
    * @param {ZeroKnowledgeProofMultiQueryResponse[]} responses - singleResponses and groupedResponses
    */
   prepareTxArgsSubmit(
     txData: ContractInvokeTransactionData,
-    authResponse: AuthProofResponse,
-    responses: ZeroKnowledgeProofResponse[]
-  ): Promise<JsonDocumentObjectValue[]>;
+    responses: ZeroKnowledgeProofResponse[],
+    authProof: AuthProof
+  ): Promise<{ result: TxPreparationResultSubmitResponse; txDataArgs: JsonDocumentObjectValue[] }>;
 }

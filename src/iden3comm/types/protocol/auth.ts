@@ -8,7 +8,7 @@ import {
   VerificationMethod as DidResolverVerificationMethod
 } from 'did-resolver';
 import { RootInfo, StateInfo } from '../../../storage';
-import { AuthProofResponse } from './contract-request';
+import { AuthProof, CrossChainProof } from './contract-request';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
 export type AuthorizationResponseMessage = BasicMessage & {
@@ -66,8 +66,8 @@ export type ZeroKnowledgeProofQuery = {
 
 export type ZeroKnowledgeInvokeResponse = {
   responses: ZeroKnowledgeProofResponse[];
-  crossChainProofs?: string[];
-  authProofs?: AuthProofResponse[];
+  crossChainProof?: CrossChainProof;
+  authProof?: AuthProof;
 };
 
 /** ZeroKnowledgeProofResponse represents structure of zkp response */

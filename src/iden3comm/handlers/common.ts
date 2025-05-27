@@ -1,8 +1,6 @@
 import { getRandomBytes, poseidon } from '@iden3/js-crypto';
 import {
   AcceptProfile,
-  AuthMethod,
-  AuthProofResponse,
   BasicMessage,
   JsonDocumentObject,
   JWSPackerParams,
@@ -11,14 +9,14 @@ import {
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
-import { byteEncoder, bytesToHex, mergeObjects } from '../../utils';
+import { byteEncoder, mergeObjects } from '../../utils';
 import { RevocationStatus, W3CCredential } from '../../verifiable';
-import { BytesHelper, DID, getUnixTimestamp } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
 import { ethers, Signer } from 'ethers';
-import { packZkpProof, prepareZkpProof } from '../utils';
+import { packZkpProof, prepareZkpProof } from '../../storage';
 
 /**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.
@@ -159,7 +157,7 @@ export const processProofAuth = async (
     sender: string;
     zkpResponses: ZeroKnowledgeProofResponse[];
   }
-): Promise<{ authResponse: AuthProofResponse; authProof?: ZeroKnowledgeProofAuthResponse }> => {
+): Promise<{ authProof: AuthProof }> => {
   if (!opts.acceptProfile) {
     opts.acceptProfile = defaultAcceptProfile;
   }
@@ -190,26 +188,12 @@ export const processProofAuth = async (
           to,
           { challenge: challengeAuth, skipRevocation: opts.skipRevocation }
         );
-
-        switch (circuitId as unknown as CircuitId) {
-          case CircuitId.AuthV2: {
-            const preparedZkpProof = prepareZkpProof(zkpRes.proof);
-            const zkProofEncoded = packZkpProof(
-              zkpRes.pub_signals,
-              preparedZkpProof.a,
-              preparedZkpProof.b,
-              preparedZkpProof.c
-            );
-
-            return {
-              authResponse: {
-                authMethod: AuthMethod.AUTHV2,
-                proof: zkProofEncoded
-              },
-              authProof: zkpRes
-            };
+        return {
+          authProof: {
+            authMethod: AuthMethod.AUTHV2,
+            zkp: zkpRes
           }
-        }
+        };
       }
       throw new Error(`Auth method is not supported`);
     case MediaType.SignedMessage:
@@ -217,12 +201,10 @@ export const processProofAuth = async (
         throw new Error('Algorithm not specified');
       }
       if (opts.acceptProfile.alg[0] === AcceptJwsAlgorithms.ES256KR) {
-        const ethIdProof = packEthIdentityProof(to);
-
         return {
-          authResponse: {
+          authProof: {
             authMethod: AuthMethod.ETH_IDENTITY,
-            proof: ethIdProof
+            userDID: to
           }
         };
       }
@@ -330,13 +312,4 @@ export const verifyExpiresTime = (message: BasicMessage) => {
   if (message?.expires_time && message.expires_time < getUnixTimestamp(new Date())) {
     throw new Error('Message expired');
   }
-};
-
-/**
- * Packs an Ethereum identity proof from a Decentralized Identifier (DID).
- * @param did - Decentralized Identifier (DID) to pack.
- * @returns A hexadecimal string representing the packed DID identity proof.
- */
-export const packEthIdentityProof = (did: DID): string => {
-  return `0x${bytesToHex(BytesHelper.intToBytes(DID.idFromDID(did).bigInt()))}`;
 };

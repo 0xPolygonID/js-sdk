@@ -199,7 +199,7 @@ export class ContractRequestHandler
 
         const identifier = DID.parse(message.to);
 
-        const { authResponse, authProof } = await processProofAuth(identifier, this._proofService, {
+        const { authProof } = await processProofAuth(identifier, this._proofService, {
           supportedCircuits: this._supportedCircuits,
           acceptProfile,
           skipRevocation: true,
@@ -210,7 +210,6 @@ export class ContractRequestHandler
         return this._zkpVerifier.submitResponse(
           ethSigner,
           message.body.transaction_data,
-          authResponse,
           zkpResponses,
           authProof
         );
@@ -298,8 +297,8 @@ export class ContractRequestHandler
       }
       contractInvokeResponse.body = {
         ...contractInvokeResponse.body,
-        crossChainProofs: zkpResponses.crossChainProofs ?? [],
-        authProofs: zkpResponses.authProofs ?? []
+        crossChainProof: zkpResponses.crossChainProof,
+        authProof: zkpResponses.authProof
       };
     }
     return contractInvokeResponse;
