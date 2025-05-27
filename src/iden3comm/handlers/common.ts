@@ -155,10 +155,11 @@ export const processProofAuth = async (
   opts: {
     supportedCircuits: CircuitId[];
     acceptProfile?: AcceptProfile;
-    challenge?: bigint;
     skipRevocation?: boolean;
+    sender: string;
+    zkpResponses: ZeroKnowledgeProofResponse[];
   }
-): Promise<AuthProofResponse> => {
+): Promise<{ authResponse: AuthProofResponse; authProof?: ZeroKnowledgeProofAuthResponse }> => {
   if (!opts.acceptProfile) {
     opts.acceptProfile = defaultAcceptProfile;
   }
@@ -176,11 +177,18 @@ export const processProofAuth = async (
         if (!opts.supportedCircuits.includes(circuitId as unknown as CircuitId)) {
           throw new Error(`Circuit ${circuitId} is not supported`);
         }
+        if (!opts.sender) {
+          throw new Error('Sender address is not provided');
+        }
+        if (!opts.zkpResponses || opts.zkpResponses.length === 0) {
+          throw new Error('ZKP responses are not provided');
+        }
+        const challengeAuth = calcChallengeAuthV2(opts.sender, opts.zkpResponses);
 
         const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(
           circuitId as unknown as CircuitId,
           to,
-          { challenge: opts.challenge, skipRevocation: opts.skipRevocation }
+          { challenge: challengeAuth, skipRevocation: opts.skipRevocation }
         );
 
         switch (circuitId as unknown as CircuitId) {
@@ -194,8 +202,11 @@ export const processProofAuth = async (
             );
 
             return {
-              authMethod: AuthMethod.AUTHV2,
-              proof: zkProofEncoded
+              authResponse: {
+                authMethod: AuthMethod.AUTHV2,
+                proof: zkProofEncoded
+              },
+              authProof: zkpRes
             };
           }
         }
@@ -209,8 +220,10 @@ export const processProofAuth = async (
         const ethIdProof = packEthIdentityProof(to);
 
         return {
-          authMethod: AuthMethod.ETH_IDENTITY,
-          proof: ethIdProof
+          authResponse: {
+            authMethod: AuthMethod.ETH_IDENTITY,
+            proof: ethIdProof
+          }
         };
       }
       throw new Error(`Algorithm ${opts.acceptProfile.alg[0]} not supported`);
@@ -264,12 +277,12 @@ export const processProofResponse = (zkProof: ZeroKnowledgeProofResponse) => {
 };
 
 /**
- * Calculates the challenge authentication value.
+ * Calculates the challenge authentication V2 value.
  * @param sender - The address of the sender.
  * @param zkpResponses - An array of ZeroKnowledgeProofResponse objects.
  * @returns A bigint representing the challenge authentication value.
  */
-export const calcChallengeAuth = (
+export const calcChallengeAuthV2 = (
   sender: string,
   zkpResponses: ZeroKnowledgeProofResponse[]
 ): bigint => {

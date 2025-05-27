@@ -12,7 +12,8 @@ import {
   defaultEthConnectionConfig,
   hexToBytes,
   FunctionSignatures,
-  KMS
+  KMS,
+  buildVerifierId
 } from '../../src';
 import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
@@ -55,7 +56,7 @@ import {
 import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { Blockchain, BytesHelper, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, BytesHelper, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { expect } from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
@@ -1355,5 +1356,190 @@ describe('contract-request', () => {
           .value as ZeroKnowledgeProofResponse
       ).id
     ).to.be.equal(proofReqs[0].id);
+  });
+
+  // universal verifier v3 integration test
+  it.skip('universal verifier v3 request flow - integration test', async () => {
+    const CONTRACTS = {
+      AMOY_STATE_CONTRACT: '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124',
+      AMOY_UNIVERSAL_VERIFIER: '0xDc74b7a576625cc777DEcdae623567Efaa834e6C',
+      PRIVADO_TEST_STATE_CONTRACT: '0xE5BfD683F1Ca574B5be881b7DbbcFDCE9DDBAb90',
+      PRIVADO_MAIN_STATE_CONTRACT: '0x0DDd8701C91d8d1Ba35c9DbA98A45fe5bA8A877E'
+    };
+
+    const networkConfigs = {
+      amoy: (contractAddress) => ({
+        ...defaultEthConnectionConfig,
+        url: '<>',
+        contractAddress,
+        chainId: 80002
+      }),
+      privadoMain: (contractAddress) => ({
+        ...defaultEthConnectionConfig,
+        url: 'https://rpc-mainnet.privado.id',
+        contractAddress,
+        chainId: 21000
+      }),
+      privadoTest: (contractAddress) => ({
+        ...defaultEthConnectionConfig,
+        url: 'https://rpc-testnet.privado.id',
+        contractAddress,
+        chainId: 21001
+      })
+    };
+
+    const issuerAmoyStateEthConfig = networkConfigs.amoy(CONTRACTS.AMOY_STATE_CONTRACT);
+
+    const issuerPrivadoTestStateEthConfig = networkConfigs.privadoTest(
+      CONTRACTS.PRIVADO_TEST_STATE_CONTRACT
+    );
+
+    const userStateEthConfig = networkConfigs.privadoMain(CONTRACTS.PRIVADO_MAIN_STATE_CONTRACT);
+
+    const kms = registerKeyProvidersInMemoryKMS();
+    dataStorage = getInMemoryDataStorage(
+      new EthStateStorage([
+        issuerAmoyStateEthConfig,
+        userStateEthConfig,
+        issuerPrivadoTestStateEthConfig
+      ])
+    );
+
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, dataStorage.states, {
+      ipfsNodeURL
+    });
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.verifyState.bind(proofService)
+    );
+
+    const { did: userDID } = await createIdentity(idWallet, {
+      seed: SEED_USER,
+      blockchain: Blockchain.Privado,
+      networkId: NetworkId.Main
+    });
+
+    const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet, {
+      blockchain: Blockchain.Privado,
+      networkId: NetworkId.Test
+    });
+    expect(issuerAuthCredential).not.to.be.undefined;
+
+    // Verifier Id in the privado main network
+    const verifierId = buildVerifierId(CONTRACTS.AMOY_UNIVERSAL_VERIFIER, {
+      blockchain: Blockchain.Privado,
+      networkId: NetworkId.Main,
+      method: DidMethod.Iden3
+    });
+    const verifierDID = DID.parseFromId(verifierId);
+
+    const profileDID = await idWallet.createProfile(userDID, 50, verifierDID.string());
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCAgeCredential-v3.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: profileDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: rhsUrl
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+
+    await credWallet.save(issuerCred);
+
+    const requestId = 1766847064778388173357292599684296758876525335676835296354363273782128356n;
+
+    // ADD proofReq to scope
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: requestId.toString(),
+        circuitId: CircuitId.AtomicQueryV3OnChain,
+        params: {
+          nullifierSessionId: 11837215
+        },
+        query: {
+          groupId: 0,
+          allowedIssuers: ['*'],
+          proofType: ProofType.BJJSignature,
+          type: claimReq.type,
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+          credentialSubject: {
+            birthday: {
+              $ne: 20020101
+            }
+          }
+        }
+      }
+    ];
+
+    const zkpVerifierNetworkConfig = networkConfigs.amoy(CONTRACTS.AMOY_UNIVERSAL_VERIFIER);
+
+    const zkpVerifier = new OnChainZKPVerifier([zkpVerifierNetworkConfig], {
+      didResolverUrl: 'https://resolver.privado.id'
+    });
+    contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
+
+    const transactionData: ContractInvokeTransactionData = {
+      contract_address: zkpVerifierNetworkConfig.contractAddress,
+      method_id: FunctionSignatures.SubmitResponse,
+      chain_id: zkpVerifierNetworkConfig.chainId
+    };
+
+    const ciRequestBody: ContractInvokeRequestBody = {
+      reason: 'reason',
+      transaction_data: transactionData,
+      scope: proofReqs
+    };
+
+    const id = uuid.v4();
+    const ciRequest: ContractInvokeRequest = {
+      id,
+      typ: MediaType.PlainMessage,
+      type: PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: ciRequestBody,
+      from: verifierDID.string(),
+      to: profileDID.string()
+    };
+
+    const ethSigner = new ethers.Wallet(walletKey);
+
+    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+
+    const options: ContractMessageHandlerOptions = {
+      ethSigner,
+      challenge,
+      senderDid: profileDID
+    };
+    const ciResponse = await (contractRequestHandler as unknown as AbstractMessageHandler).handle(
+      ciRequest,
+      options
+    );
+
+    expect(ciResponse).not.be.undefined;
+    console.log(ciResponse);
+    expect((ciResponse as unknown as ContractInvokeResponse).body.scope[0].txHash).not.be.undefined;
   });
 });

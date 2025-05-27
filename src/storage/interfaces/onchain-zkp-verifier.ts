@@ -4,6 +4,7 @@ import {
   ContractInvokeTransactionData,
   JsonDocumentObjectValue,
   ZeroKnowledgeInvokeResponse,
+  ZeroKnowledgeProofAuthResponse,
   ZeroKnowledgeProofResponse
 } from '../../iden3comm';
 
@@ -49,13 +50,15 @@ export interface IOnChainZKPVerifier {
    * @param {txData} ContractInvokeTransactionData - transaction data
    * @param {AuthProofResponse} authResponse - authResponse
    * @param {ZeroKnowledgeProofMultiQueryResponse[]} responses - singleResponses and groupedResponses
+   * @param {ZeroKnowledgeProofAuthResponse} [authProof] - authProof in case of authV2
    * @returns {Promise<Map<string, ZeroKnowledgeInvokeResponse>>} - map of transaction hash - ZeroKnowledgeInvokeResponse
    */
   submitResponse(
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     authResponse: AuthProofResponse,
-    responses: ZeroKnowledgeProofResponse[]
+    responses: ZeroKnowledgeProofResponse[],
+    authProof?: ZeroKnowledgeProofAuthResponse
   ): Promise<Map<string, ZeroKnowledgeInvokeResponse>>;
 
   /**

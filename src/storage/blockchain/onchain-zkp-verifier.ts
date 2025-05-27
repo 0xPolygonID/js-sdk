@@ -24,9 +24,8 @@ import {
 } from '../../circuits';
 import { byteEncoder, DIDDocumentSignature, resolveDidDocument } from '../../utils';
 import { GlobalStateUpdate, IdentityStateUpdate } from '../entities/state';
-import { poseidon } from '@iden3/js-crypto';
 import { Hash } from '@iden3/js-merkletree';
-import { packZkpProof, prepareZkpProof } from '../../iden3comm/utils';
+import { prepareZkpProof } from '../../iden3comm/utils';
 
 const maxGasLimit = 10000000n;
 
@@ -244,7 +243,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     authResponse: AuthProofResponse,
-    responses: ZeroKnowledgeProofResponse[]
+    responses: ZeroKnowledgeProofResponse[],
+    authProof?: ZeroKnowledgeProofResponse
   ): Promise<Map<string, ZeroKnowledgeInvokeResponse>> {
     const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
     if (!chainConfig) {
@@ -261,7 +261,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const provider = new JsonRpcProvider(chainConfig.url, chainConfig.chainId);
     ethSigner = ethSigner.connect(provider);
 
-    const txDataArgs = await this.prepareTxArgsSubmit(txData, authResponse, responses);
+    const txDataArgs = await this.prepareTxArgsSubmit(txData, authResponse, responses, authProof);
     const feeData = await provider.getFeeData();
     const maxFeePerGas = chainConfig.maxFeePerGas
       ? BigInt(chainConfig.maxFeePerGas)
@@ -302,7 +302,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     resolverUrl: string,
     txData: ContractInvokeTransactionData,
     authResponse: AuthProofResponse,
-    responses: ZeroKnowledgeProofResponse[]
+    responses: ZeroKnowledgeProofResponse[],
+    authProof?: ZeroKnowledgeProofResponse
   ): Promise<JsonDocumentObjectValue[]> {
     if (txData.method_id.replace('0x', '') !== FunctionSignatures.SubmitResponse) {
       throw new Error(
@@ -324,11 +325,26 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         proof: zkProofEncoded,
         metadata: metadata
       });
+    }
 
+    // Process all zkProofs and prepare cross chain proofs
+    const allZkProofs = responses.map((zkProof) => ({
+      circuitId: zkProof.circuitId as OnChainZKPVerifierCircuitId,
+      pub_signals: zkProof.pub_signals
+    }));
+
+    if (authProof) {
+      allZkProofs.push({
+        circuitId: authProof.circuitId as OnChainZKPVerifierCircuitId,
+        pub_signals: authProof.pub_signals || []
+      });
+    }
+
+    for (const zkProof of allZkProofs) {
       const { gistUpdateResolutions, stateUpdateResolutions } = this.getUpdateResolutions(
         resolverUrl,
         txData.chain_id,
-        zkProof.circuitId as OnChainZKPVerifierCircuitId,
+        zkProof.circuitId,
         zkProof.pub_signals
       );
 
@@ -353,7 +369,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   public async prepareTxArgsSubmit(
     txData: ContractInvokeTransactionData,
     authResponse: AuthProofResponse,
-    responses: ZeroKnowledgeProofResponse[]
+    responses: ZeroKnowledgeProofResponse[],
+    authProof?: ZeroKnowledgeProofResponse
   ): Promise<JsonDocumentObjectValue[]> {
     if (!this._opts?.didResolverUrl) {
       throw new Error(`did resolver url required for crosschain verification`);
@@ -362,7 +379,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       this._opts.didResolverUrl,
       txData,
       authResponse,
-      responses
+      responses,
+      authProof
     );
   }
 
