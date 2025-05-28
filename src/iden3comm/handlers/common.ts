@@ -1,8 +1,8 @@
-import { getRandomBytes } from '@iden3/js-crypto';
+import { getRandomBytes, poseidon } from '@iden3/js-crypto';
 import {
   AcceptProfile,
   AuthMethod,
-  AuthProofResponse,
+  AuthProof,
   BasicMessage,
   JsonDocumentObject,
   JWSPackerParams,
@@ -11,14 +11,14 @@ import {
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
-import { bytesToHex, mergeObjects } from '../../utils';
+import { byteEncoder, mergeObjects } from '../../utils';
 import { RevocationStatus, W3CCredential } from '../../verifiable';
-import { BytesHelper, DID, getUnixTimestamp } from '@iden3/js-iden3-core';
+import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
-import { Signer } from 'ethers';
-import { packZkpProof, prepareZkpProof } from '../utils';
+import { ethers, Signer } from 'ethers';
+import { packZkpProof, prepareZkpProof } from '../../storage/blockchain/common';
 
 /**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.
@@ -155,15 +155,12 @@ export const processProofAuth = async (
   opts: {
     supportedCircuits: CircuitId[];
     acceptProfile?: AcceptProfile;
-    challenge?: bigint;
-    skipRevocation?: boolean;
+    senderAddress: string;
+    zkpResponses: ZeroKnowledgeProofResponse[];
   }
-): Promise<AuthProofResponse> => {
+): Promise<{ authProof: AuthProof }> => {
   if (!opts.acceptProfile) {
     opts.acceptProfile = defaultAcceptProfile;
-  }
-  if (!opts.skipRevocation) {
-    opts.skipRevocation = true;
   }
 
   switch (opts.acceptProfile.env) {
@@ -176,29 +173,25 @@ export const processProofAuth = async (
         if (!opts.supportedCircuits.includes(circuitId as unknown as CircuitId)) {
           throw new Error(`Circuit ${circuitId} is not supported`);
         }
+        if (!opts.senderAddress) {
+          throw new Error('Sender address is not provided');
+        }
+        if (!opts.zkpResponses || opts.zkpResponses.length === 0) {
+          throw new Error('ZKP responses are not provided');
+        }
+        const challengeAuth = calcChallengeAuthV2(opts.senderAddress, opts.zkpResponses);
 
         const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(
           circuitId as unknown as CircuitId,
           to,
-          { challenge: opts.challenge, skipRevocation: opts.skipRevocation }
+          { challenge: challengeAuth }
         );
-
-        switch (circuitId as unknown as CircuitId) {
-          case CircuitId.AuthV2: {
-            const preparedZkpProof = prepareZkpProof(zkpRes.proof);
-            const zkProofEncoded = packZkpProof(
-              zkpRes.pub_signals,
-              preparedZkpProof.a,
-              preparedZkpProof.b,
-              preparedZkpProof.c
-            );
-
-            return {
-              authMethod: AuthMethod.AUTHV2,
-              proof: zkProofEncoded
-            };
+        return {
+          authProof: {
+            authMethod: AuthMethod.AUTHV2,
+            zkp: zkpRes
           }
-        }
+        };
       }
       throw new Error(`Auth method is not supported`);
     case MediaType.SignedMessage:
@@ -206,17 +199,106 @@ export const processProofAuth = async (
         throw new Error('Algorithm not specified');
       }
       if (opts.acceptProfile.alg[0] === AcceptJwsAlgorithms.ES256KR) {
-        const ethIdProof = packEthIdentityProof(to);
-
         return {
-          authMethod: AuthMethod.ETH_IDENTITY,
-          proof: ethIdProof
+          authProof: {
+            authMethod: AuthMethod.ETH_IDENTITY,
+            userDid: to
+          }
         };
       }
       throw new Error(`Algorithm ${opts.acceptProfile.alg[0]} not supported`);
     default:
       throw new Error('Accept env not supported');
   }
+};
+
+/**
+ * Processes a ZeroKnowledgeProofResponse object and prepares it for further use.
+ * @param zkProof - The ZeroKnowledgeProofResponse object containing the proof data.
+ * @returns An object containing the requestId, zkProofEncoded, and metadata.
+ */
+export const processProofResponse = (zkProof: ZeroKnowledgeProofResponse) => {
+  const requestId = zkProof.id;
+  const inputs = zkProof.pub_signals;
+  const emptyBytes = '0x';
+
+  if (inputs.length === 0) {
+    return { requestId, zkProofEncoded: emptyBytes, metadata: emptyBytes };
+  }
+
+  const preparedZkpProof = prepareZkpProof(zkProof.proof);
+  const zkProofEncoded = packZkpProof(
+    inputs,
+    preparedZkpProof.a,
+    preparedZkpProof.b,
+    preparedZkpProof.c
+  );
+
+  const metadataArr: { key: string; value: Uint8Array }[] = [];
+  if (zkProof.vp) {
+    for (const key in zkProof.vp.verifiableCredential.credentialSubject) {
+      if (key === '@type') {
+        continue;
+      }
+      const metadataValue = poseidon.hashBytes(
+        byteEncoder.encode(JSON.stringify(zkProof.vp.verifiableCredential.credentialSubject[key]))
+      );
+      const bytesValue = byteEncoder.encode(metadataValue.toString());
+      metadataArr.push({
+        key,
+        value: bytesValue
+      });
+    }
+  }
+
+  const metadata = metadataArr.length ? packMetadatas(metadataArr) : emptyBytes;
+
+  return { requestId, zkProofEncoded, metadata };
+};
+
+/**
+ * Calculates the challenge authentication V2 value.
+ * @param senderAddress - The address of the sender.
+ * @param zkpResponses - An array of ZeroKnowledgeProofResponse objects.
+ * @returns A bigint representing the challenge authentication value.
+ */
+export const calcChallengeAuthV2 = (
+  senderAddress: string,
+  zkpResponses: ZeroKnowledgeProofResponse[]
+): bigint => {
+  const responses = zkpResponses.map((zkpResponse) => {
+    const response = processProofResponse(zkpResponse);
+    return {
+      requestId: response.requestId,
+      proof: response.zkProofEncoded,
+      metadata: response.metadata
+    };
+  });
+
+  return (
+    BigInt(
+      ethers.keccak256(
+        new ethers.AbiCoder().encode(
+          ['address', '(uint256 requestId,bytes proof,bytes metadata)[]'],
+          [senderAddress, responses]
+        )
+      )
+    ) & BigInt('0x0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
+  );
+};
+
+/**
+ * Packs metadata into a string format suitable for encoding in a transaction.
+ * @param metas - An array of objects containing key-value pairs to be packed.
+ * @returns A string representing the packed metadata.
+ */
+export const packMetadatas = (
+  metas: {
+    key: string;
+    value: Uint8Array;
+  }[]
+): string => {
+  return new ethers.AbiCoder().encode(['tuple(' + 'string key,' + 'bytes value' + ')[]'], [metas]);
 };
 
 /**
@@ -228,8 +310,4 @@ export const verifyExpiresTime = (message: BasicMessage) => {
   if (message?.expires_time && message.expires_time < getUnixTimestamp(new Date())) {
     throw new Error('Message expired');
   }
-};
-
-export const packEthIdentityProof = (did: DID): string => {
-  return `0x${bytesToHex(BytesHelper.intToBytes(DID.idFromDID(did).bigInt()))}`;
 };

@@ -8,7 +8,7 @@ import { byteEncoder } from '../../utils';
 import abi from './abi/State.json';
 import { DID, getChainId, Id } from '@iden3/js-iden3-core';
 import { ITransactionService, TransactionService } from '../../blockchain';
-import { prepareZkpProof } from '../../iden3comm/utils';
+import { prepareZkpProof } from './common';
 
 /**
  * Configuration of ethereum based blockchain connection

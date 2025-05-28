@@ -1,11 +1,12 @@
 import { Signer } from 'ethers';
 import {
-  AuthProofResponse,
+  AuthProof,
   ContractInvokeTransactionData,
   JsonDocumentObjectValue,
   ZeroKnowledgeInvokeResponse,
   ZeroKnowledgeProofResponse
 } from '../../iden3comm';
+import { TxPreparationResultSubmitResponse } from '../blockchain/onchain-zkp-verifier';
 
 /**
  * Interface that defines methods for ZKP verifier
@@ -49,13 +50,14 @@ export interface IOnChainZKPVerifier {
    * @param {txData} ContractInvokeTransactionData - transaction data
    * @param {AuthProofResponse} authResponse - authResponse
    * @param {ZeroKnowledgeProofMultiQueryResponse[]} responses - singleResponses and groupedResponses
+   * @param {ZeroKnowledgeProofAuthResponse} [authProof] - authProof in case of authV2
    * @returns {Promise<Map<string, ZeroKnowledgeInvokeResponse>>} - map of transaction hash - ZeroKnowledgeInvokeResponse
    */
   submitResponse(
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
-    authResponse: AuthProofResponse,
-    responses: ZeroKnowledgeProofResponse[]
+    responses: ZeroKnowledgeProofResponse[],
+    authProof: AuthProof
   ): Promise<Map<string, ZeroKnowledgeInvokeResponse>>;
 
   /**
@@ -81,12 +83,12 @@ export interface IOnChainZKPVerifier {
   /**
    * Returns args for the verifier multi-query contract submission (single tx args for an array of responses).
    * @param {txData} ContractInvokeTransactionData - transaction data
-   * @param {AuthProofResponse} authResponse - authResponse
+   * @param {authProof} AuthProof - AuthProof
    * @param {ZeroKnowledgeProofMultiQueryResponse[]} responses - singleResponses and groupedResponses
    */
   prepareTxArgsSubmit(
     txData: ContractInvokeTransactionData,
-    authResponse: AuthProofResponse,
-    responses: ZeroKnowledgeProofResponse[]
-  ): Promise<JsonDocumentObjectValue[]>;
+    responses: ZeroKnowledgeProofResponse[],
+    authProof: AuthProof
+  ): Promise<{ result: TxPreparationResultSubmitResponse; txDataArgs: JsonDocumentObjectValue[] }>;
 }
