@@ -370,7 +370,7 @@ describe('contract-request', () => {
     expect((ciResponse as Map<string, ZeroKnowledgeProofResponse>).has('txhash1')).to.be.true;
   });
 
-  it('contract universal verifier v3 request flow', async () => {
+  it('contract universal verifier v2 request flow', async () => {
     const { did: userDID, credential: cred } = await idWallet.createIdentity({
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
