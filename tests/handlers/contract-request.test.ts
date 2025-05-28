@@ -485,37 +485,6 @@ describe('contract-request', () => {
 
     expect(cred).not.to.be.undefined;
 
-    const { did: issuerDID, credential: issuerAuthCredential } = await idWallet.createIdentity({
-      method: DidMethod.Iden3,
-      blockchain: Blockchain.Polygon,
-      networkId: NetworkId.Amoy,
-      seed: seedPhraseIssuer,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    });
-    expect(issuerAuthCredential).not.to.be.undefined;
-
-    const claimReq: CredentialRequest = {
-      credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
-      type: 'KYCAgeCredential',
-      credentialSubject: {
-        id: userDID.string(),
-        birthday: 19960424,
-        documentType: 99
-      },
-      expiration: 2793526400,
-      revocationOpts: {
-        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: rhsUrl
-      }
-    };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
-
-    await credWallet.save(issuerCred);
-
     const transactionData: ContractInvokeTransactionData = {
       contract_address: '0x134b1be34911e39a8397ec6289782989729807a4',
       method_id: '06c86a91',
