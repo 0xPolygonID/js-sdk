@@ -276,7 +276,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     txData: ContractInvokeTransactionData,
     responses: ZeroKnowledgeProofResponse[],
     authProof: AuthProof
-  ): Promise<Map<string, ZeroKnowledgeInvokeResponse>> {
+  ): Promise<{ txHash: string; responsesMap: Map<string, ZeroKnowledgeInvokeResponse> }> {
     const chainConfig = this._configs.find((i) => i.chainId == txData.chain_id);
     if (!chainConfig) {
       throw new Error(`config for chain id ${txData.chain_id} was not found`);
@@ -324,12 +324,16 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
     const transactionService = new TransactionService(provider);
     const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
+
     // return multiple responses for all the responses (single and grouped)
-    return new Map<string, ZeroKnowledgeInvokeResponse>().set(txnHash, {
-      authProof: txPreparationResult.result.authProof.raw,
-      crossChainProof: txPreparationResult.result.crossChainProof.raw,
-      responses: txPreparationResult.result.proofs.map((m) => m.proof)
-    });
+    return {
+      txHash: txnHash,
+      responsesMap: new Map<string, ZeroKnowledgeInvokeResponse>().set(txnHash, {
+        authProof: txPreparationResult.result.authProof.raw,
+        crossChainProof: txPreparationResult.result.crossChainProof.raw,
+        responses: txPreparationResult.result.proofs.map((m) => m.proof)
+      })
+    };
   }
 
   public static async prepareTxArgsSubmit(

@@ -50,6 +50,7 @@ export type ContractInvokeTransactionData = {
   method_id: string;
   chain_id: number;
   network?: string;
+  txHash?: string;
 };
 
 export type AuthProofEthIdentity = {

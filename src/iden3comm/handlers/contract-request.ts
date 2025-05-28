@@ -168,18 +168,22 @@ export class ContractRequestHandler
         for (const [txHash, zkpResponses] of txHashZkpResponsesMap) {
           response.set(txHash, { responses: zkpResponses });
         }
+        // set txHash of the first response
+        message.body.transaction_data.txHash = txHashZkpResponsesMap.keys().next().value;
         return response;
       }
       case FunctionSignatures.SubmitZKPResponseV1: {
-        const txHashZkpResponseMap = await this._zkpVerifier.submitZKPResponse(
+        const txHashZkpResponsesMap = await this._zkpVerifier.submitZKPResponse(
           ethSigner,
           message.body.transaction_data,
           zkpResponses
         );
         const response = new Map<string, ZeroKnowledgeInvokeResponse>();
-        for (const [txHash, zkpResponse] of txHashZkpResponseMap) {
+        for (const [txHash, zkpResponse] of txHashZkpResponsesMap) {
           response.set(txHash, { responses: [zkpResponse] });
         }
+        // set txHash of the first response
+        message.body.transaction_data.txHash = txHashZkpResponsesMap.keys().next().value;
         return response;
       }
       case FunctionSignatures.SubmitResponse: {
@@ -207,12 +211,16 @@ export class ContractRequestHandler
           zkpResponses: zkpResponses
         });
 
-        return this._zkpVerifier.submitResponse(
+        // we return txHash because responsesMap could be empty if there are no queries in scope
+        const { txHash, responsesMap } = await this._zkpVerifier.submitResponse(
           ethSigner,
           message.body.transaction_data,
           zkpResponses,
           authProof
         );
+        message.body.transaction_data.txHash = txHash;
+
+        return responsesMap;
       }
       default:
         throw new Error(

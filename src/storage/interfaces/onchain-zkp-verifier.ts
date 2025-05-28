@@ -51,14 +51,14 @@ export interface IOnChainZKPVerifier {
    * @param {AuthProofResponse} authResponse - authResponse
    * @param {ZeroKnowledgeProofMultiQueryResponse[]} responses - singleResponses and groupedResponses
    * @param {ZeroKnowledgeProofAuthResponse} [authProof] - authProof in case of authV2
-   * @returns {Promise<Map<string, ZeroKnowledgeInvokeResponse>>} - map of transaction hash - ZeroKnowledgeInvokeResponse
+   * @returns {Promise<{ txHash: string; responsesMap: Map<string, ZeroKnowledgeInvokeResponse> }>} - transaction hash and map of transaction hash - ZeroKnowledgeInvokeResponse
    */
   submitResponse(
     ethSigner: Signer,
     txData: ContractInvokeTransactionData,
     responses: ZeroKnowledgeProofResponse[],
     authProof: AuthProof
-  ): Promise<Map<string, ZeroKnowledgeInvokeResponse>>;
+  ): Promise<{ txHash: string; responsesMap: Map<string, ZeroKnowledgeInvokeResponse> }>;
 
   /**
    * Returns tx args for the ZKP verifier contract submission (singe tx args for each response).
