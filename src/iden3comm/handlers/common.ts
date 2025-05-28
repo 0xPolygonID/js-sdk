@@ -176,9 +176,6 @@ export const processProofAuth = async (
         if (!opts.senderAddress) {
           throw new Error('Sender address is not provided');
         }
-        if (!opts.zkpResponses || opts.zkpResponses.length === 0) {
-          throw new Error('ZKP responses are not provided');
-        }
         const challengeAuth = calcChallengeAuthV2(opts.senderAddress, opts.zkpResponses);
 
         const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(

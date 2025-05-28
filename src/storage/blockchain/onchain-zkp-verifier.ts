@@ -324,6 +324,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
 
     const transactionService = new TransactionService(provider);
     const { txnHash } = await transactionService.sendTransactionRequest(ethSigner, request);
+
     // return multiple responses for all the responses (single and grouped)
     return new Map<string, ZeroKnowledgeInvokeResponse>().set(txnHash, {
       authProof: txPreparationResult.result.authProof.raw,
