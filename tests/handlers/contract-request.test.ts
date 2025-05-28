@@ -156,8 +156,8 @@ describe('contract-request', () => {
       responses: ZeroKnowledgeProofResponse[],
       authProof: AuthProof
     ) => {
-      const response = { txHash: '', responsesMap: new Map<string, ZeroKnowledgeInvokeResponse>() };
-      response.responsesMap.set('txhash1', {
+      const response = new Map<string, ZeroKnowledgeInvokeResponse>();
+      response.set('txhash1', {
         responses,
         crossChainProof: {
           globalStateProofs: [],

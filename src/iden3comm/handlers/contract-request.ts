@@ -212,15 +212,15 @@ export class ContractRequestHandler
         });
 
         // we return txHash because responsesMap could be empty if there are no queries in scope
-        const { txHash, responsesMap } = await this._zkpVerifier.submitResponse(
+        const txHashZkpResponsesMap = await this._zkpVerifier.submitResponse(
           ethSigner,
           message.body.transaction_data,
           zkpResponses,
           authProof
         );
-        message.body.transaction_data.txHash = txHash;
+        message.body.transaction_data.txHash = txHashZkpResponsesMap.keys().next().value;
 
-        return responsesMap;
+        return txHashZkpResponsesMap;
       }
       default:
         throw new Error(
