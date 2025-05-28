@@ -173,17 +173,17 @@ export class ContractRequestHandler
         return response;
       }
       case FunctionSignatures.SubmitZKPResponseV1: {
-        const txHashZkpResponsesMap = await this._zkpVerifier.submitZKPResponse(
+        const txHashZkpResponseMap = await this._zkpVerifier.submitZKPResponse(
           ethSigner,
           message.body.transaction_data,
           zkpResponses
         );
         const response = new Map<string, ZeroKnowledgeInvokeResponse>();
-        for (const [txHash, zkpResponse] of txHashZkpResponsesMap) {
+        for (const [txHash, zkpResponse] of txHashZkpResponseMap) {
           response.set(txHash, { responses: [zkpResponse] });
         }
         // set txHash of the first response
-        message.body.transaction_data.txHash = txHashZkpResponsesMap.keys().next().value;
+        message.body.transaction_data.txHash = txHashZkpResponseMap.keys().next().value;
         return response;
       }
       case FunctionSignatures.SubmitResponse: {
