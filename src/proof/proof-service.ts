@@ -48,6 +48,7 @@ import { cacheLoader } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import {
+  AuthProofGenerationOptions,
   InputGenerator,
   ProofGenerationOptions,
   ProofInputsParams
@@ -153,7 +154,7 @@ export interface IProofService {
   generateAuthProof(
     circuitId: CircuitId,
     identifier: DID,
-    opts?: ProofGenerationOptions
+    opts?: AuthProofGenerationOptions
   ): Promise<ZeroKnowledgeProofAuthResponse>;
 
   /**
@@ -390,11 +391,10 @@ export class ProofService implements IProofService {
   async generateAuthProof(
     circuitId: CircuitId,
     identifier: DID,
-    opts?: ProofGenerationOptions
+    opts?: AuthProofGenerationOptions
   ): Promise<ZeroKnowledgeProofAuthResponse> {
     if (!opts) {
       opts = {
-        skipRevocation: false,
         challenge: 0n
       };
     }

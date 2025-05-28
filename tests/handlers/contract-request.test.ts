@@ -31,7 +31,7 @@ import path from 'path';
 import { CircuitData } from '../../src/storage/entities/circuitData';
 import {
   AuthDataPrepareFunc,
-  AuthProofResponse,
+  AuthProof,
   ContractInvokeHandlerOptions,
   ContractInvokeRequest,
   ContractInvokeRequestBody,
@@ -153,14 +153,17 @@ describe('contract-request', () => {
     submitResponse: async (
       ethSigner: Signer,
       txData: ContractInvokeTransactionData,
-      authResponse: AuthProofResponse,
-      responses: ZeroKnowledgeProofResponse[]
+      responses: ZeroKnowledgeProofResponse[],
+      authProof: AuthProof
     ) => {
       const response = new Map<string, ZeroKnowledgeInvokeResponse>();
       response.set('txhash1', {
         responses,
-        crossChainProofs: ['0x123456'],
-        authProofs: [authResponse]
+        crossChainProof: {
+          globalStateProofs: [],
+          identityStateProofs: []
+        },
+        authProof: authProof
       });
       return response;
     },
@@ -174,7 +177,7 @@ describe('contract-request', () => {
     },
 
     prepareTxArgsSubmit: async () => {
-      return [];
+      return {} as any;
     }
   };
 
