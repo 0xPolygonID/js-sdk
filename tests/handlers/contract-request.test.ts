@@ -177,7 +177,7 @@ describe('contract-request', () => {
     },
 
     prepareTxArgsSubmit: async () => {
-      return {} as any;
+      return {} as any; //eslint-disable-line @typescript-eslint/no-explicit-any
     }
   };
 
