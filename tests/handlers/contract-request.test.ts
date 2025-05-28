@@ -655,7 +655,8 @@ describe('contract-request', () => {
     );
 
     expect(ciResponse).not.be.undefined;
-    expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be.undefined;
+    expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be
+      .undefined;
   });
 
   it('$noop operator not supported for OnChain V2', async () => {
@@ -1251,7 +1252,8 @@ describe('contract-request', () => {
 
     expect(ciResponse).not.be.undefined;
     console.log(ciResponse);
-    expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be.undefined;
+    expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be
+      .undefined;
   });
 
   it.skip('contract request flow V3 sig `email-verified` Transak req - integration test', async () => {
@@ -1627,7 +1629,8 @@ describe('contract-request', () => {
 
     expect(ciResponse).not.be.undefined;
     console.log(ciResponse);
-    expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be.undefined;
+    expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be
+      .undefined;
   });
 
   it.skip('universal verifier v2 request flow with empty scope - integration test', async () => {
@@ -1759,6 +1762,7 @@ describe('contract-request', () => {
 
     expect(ciResponse).not.be.undefined;
     console.log(ciResponse);
-    expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be.undefined;
+    expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be
+      .undefined;
   });
 });
