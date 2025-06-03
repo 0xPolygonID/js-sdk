@@ -230,7 +230,7 @@ export const processProofResponse = (zkProof: ZeroKnowledgeProofResponse) => {
     preparedZkpProof.b,
     preparedZkpProof.c
   );
- 
+
   const metadata = emptyBytes;
 
   return { requestId, zkProofEncoded, metadata };
