@@ -230,25 +230,8 @@ export const processProofResponse = (zkProof: ZeroKnowledgeProofResponse) => {
     preparedZkpProof.b,
     preparedZkpProof.c
   );
-
-  const metadataArr: { key: string; value: Uint8Array }[] = [];
-  if (zkProof.vp) {
-    for (const key in zkProof.vp.verifiableCredential.credentialSubject) {
-      if (key === '@type') {
-        continue;
-      }
-      const metadataValue = poseidon.hashBytes(
-        byteEncoder.encode(JSON.stringify(zkProof.vp.verifiableCredential.credentialSubject[key]))
-      );
-      const bytesValue = byteEncoder.encode(metadataValue.toString());
-      metadataArr.push({
-        key,
-        value: bytesValue
-      });
-    }
-  }
-
-  const metadata = metadataArr.length ? packMetadatas(metadataArr) : emptyBytes;
+ 
+  const metadata = emptyBytes;
 
   return { requestId, zkProofEncoded, metadata };
 };
