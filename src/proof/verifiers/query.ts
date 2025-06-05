@@ -9,6 +9,7 @@ import { QueryMetadata } from '../common';
 import { circuitValidator } from '../provers';
 import { JsonLd } from 'jsonld/jsonld-spec';
 import { VerifiablePresentation } from '../../iden3comm';
+import { ethers } from 'ethers';
 
 /**
  * Options to verify state
@@ -297,3 +298,33 @@ export const fieldValueFromVerifiablePresentation = async (
 
   return await value.mtEntry();
 };
+
+export function calculateGroupId(requestIds: bigint[]): bigint {
+  const types = Array(requestIds.length).fill("uint256");
+
+  const groupID =
+    BigInt(ethers.keccak256(ethers.solidityPacked(types, requestIds))) &
+    BigInt("0x0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+
+  return groupID;
+}
+
+export function calculateRequestId(requestParams: string, creatorAddress: string): bigint {
+  const requestId =
+    (BigInt(ethers.keccak256(ethers.solidityPacked(["bytes", "address"], [requestParams, creatorAddress]))) &
+      BigInt("0x0000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")) +
+    BigInt("0x0001000000000000000000000000000000000000000000000000000000000000");
+  return requestId;
+}
+
+export function calculateMultiRequestId(
+  requestIds: bigint[],
+  groupIds: bigint[],
+  creatorAddress: string,
+): bigint {
+  return BigInt(
+    ethers.keccak256(
+      ethers.solidityPacked(["uint256[]", "uint256[]", "address"], [requestIds, groupIds, creatorAddress]),
+    ),
+  );
+}

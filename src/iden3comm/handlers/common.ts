@@ -1,4 +1,4 @@
-import { getRandomBytes, poseidon } from '@iden3/js-crypto';
+import { getRandomBytes } from '@iden3/js-crypto';
 import {
   AcceptProfile,
   AuthMethod,
@@ -11,7 +11,7 @@ import {
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
-import { byteEncoder, mergeObjects } from '../../utils';
+import { mergeObjects } from '../../utils';
 import { RevocationStatus, W3CCredential } from '../../verifiable';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
