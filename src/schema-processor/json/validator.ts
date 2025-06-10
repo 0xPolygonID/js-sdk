@@ -62,6 +62,6 @@ function addCustomFormats(validator: Ajv | Ajv2019 | Ajv2020) {
   });
   validator.addFormat('non-negative-integer', {
     type: 'string',
-    validate: (positiveIntegerStr: string) => /^(0|[1-9]\d*)$/.test(positiveIntegerStr)
+    validate: (nonNegativeIntegerStr: string) => /^(0|[1-9]\d*)$/.test(nonNegativeIntegerStr)
   });
 }
