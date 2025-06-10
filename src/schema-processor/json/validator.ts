@@ -58,10 +58,10 @@ export class JsonSchemaValidator {
 function addCustomFormats(validator: Ajv | Ajv2019 | Ajv2020) {
   validator.addFormat('positive-integer', {
     type: 'string',
-    validate: (positiveIntegerStr) => /^[1-9]\d*$/.test(positiveIntegerStr)
+    validate: (positiveIntegerStr: string) => /^[1-9]\d*$/.test(positiveIntegerStr)
   });
   validator.addFormat('non-negative-integer', {
     type: 'string',
-    validate: (positiveIntegerStr) => /^(0|[1-9]\d*)$/.test(positiveIntegerStr)
+    validate: (positiveIntegerStr: string) => /^(0|[1-9]\d*)$/.test(positiveIntegerStr)
   });
 }
