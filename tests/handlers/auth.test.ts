@@ -175,6 +175,38 @@ describe('auth', () => {
       }
     };
 
+    const proofForNonExistingCondition: ZeroKnowledgeProofRequest = {
+      id: 1730736198,
+      circuitId: CircuitId.AtomicQueryV3,
+      optional: true,
+      query: {
+        allowedIssuers: ['*'],
+        context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
+        credentialSubject: {
+          string1: {
+            $eq: 'non-existing-string-value'
+          }
+        },
+        type: 'operators'
+      }
+    };
+    const proofForNonExistingConditionWithGroupId: ZeroKnowledgeProofRequest = {
+      id: 1730736199,
+      circuitId: CircuitId.AtomicQueryV3,
+      optional: true,
+      query: {
+        allowedIssuers: ['*'],
+        groupId: 1,
+        context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
+        credentialSubject: {
+          string1: {
+            $eq: 'non-existing-string-value-2'
+          }
+        },
+        type: 'operators'
+      }
+    };
+
     const profile: AcceptProfile = {
       protocolVersion: ProtocolVersion.V1,
       env: MediaType.ZKPMessage,
@@ -186,7 +218,7 @@ describe('auth', () => {
       issuerDID.string(),
       'http://localhost:8080/callback?id=1234442-123123-123123',
       {
-        scope: [proofReq],
+        scope: [proofReq, proofForNonExistingCondition, proofForNonExistingConditionWithGroupId],
         accept: buildAccept([profile])
       }
     );

@@ -348,6 +348,6 @@ export class CredentialWallet implements ICredentialWallet {
       }
       return { cred, revStatus };
     }
-    throw new Error('all claims are revoked');
+    throw new Error(VerifiableConstants.ERRORS.CREDENTIAL_WALLET_ALL_CREDENTIALS_ARE_REVOKED);
   }
 }
