@@ -33,7 +33,7 @@ export class JsonSchemaValidator {
     const schema = JSON.parse(byteDecoder.decode(schemaBytes));
     const data = JSON.parse(byteDecoder.decode(dataBytes));
     const draft = schema['$schema']?.replaceAll('#', '');
-    let validator: Ajv | Ajv2020;
+    let validator: Ajv | Ajv2019 | Ajv2020;
     if (!draft) {
       validator = defaultJSONSchemaValidator;
     }
@@ -42,6 +42,7 @@ export class JsonSchemaValidator {
     validator = ajv ?? defaultJSONSchemaValidator;
     if (validator.formats && !Object.keys(validator.formats).length) {
       addFormats(validator);
+      addCustomFormats(validator);
     }
     const validate =
       (schema.$id ? validator.getSchema(schema.$id) : undefined) || validator.compile(schema);
@@ -52,4 +53,16 @@ export class JsonSchemaValidator {
     }
     return true;
   }
+}
+
+
+function addCustomFormats(validator: Ajv | Ajv2019 | Ajv2020) {
+  validator.addFormat('positive-integer', {
+    type: 'string',
+    validate: (positiveIntegerStr) => /^[1-9]\d*$/.test(positiveIntegerStr),
+  });
+  validator.addFormat('non-negative-integer', {
+    type: 'string',
+    validate: (positiveIntegerStr) => /^(0|[1-9]\d*)$/.test(positiveIntegerStr),
+  });
 }
