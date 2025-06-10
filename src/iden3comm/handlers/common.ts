@@ -123,7 +123,10 @@ export const processZeroKnowledgeProofRequests = async (
             continue;
           }
           if (!credWithRevStatus.cred) {
-            throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY + `${JSON.stringify(combinedQuery)}`);
+            throw new Error(
+              VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY +
+                `${JSON.stringify(combinedQuery)}`
+            );
           }
 
           groupedCredentialsCache.set(groupId, credWithRevStatus);
@@ -141,13 +144,19 @@ export const processZeroKnowledgeProofRequests = async (
       });
     } catch (error: unknown) {
       // handle only errors in case credential is not found and it is optional proof request - otherwise throw
-      if (error instanceof Error
-        && (error.message === VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE
-          || error.message === VerifiableConstants.ERRORS.ID_WALLET_NO_CREDENTIAL_SATISFIED_QUERY
-          || error.message === VerifiableConstants.ERRORS.CREDENTIAL_WALLET_ALL_CREDENTIALS_ARE_REVOKED
-          || error.message.includes(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY)
-        ) && proofReq.optional) {
-        continue
+      if (
+        error instanceof Error &&
+        (error.message ===
+          VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE ||
+          error.message === VerifiableConstants.ERRORS.ID_WALLET_NO_CREDENTIAL_SATISFIED_QUERY ||
+          error.message ===
+            VerifiableConstants.ERRORS.CREDENTIAL_WALLET_ALL_CREDENTIALS_ARE_REVOKED ||
+          error.message.includes(
+            VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY
+          )) &&
+        proofReq.optional
+      ) {
+        continue;
       }
       throw error;
     }

@@ -183,8 +183,8 @@ describe('auth', () => {
         allowedIssuers: ['*'],
         context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
         credentialSubject: {
-          'string1': {
-            $eq: 'non-existing-string-value',
+          string1: {
+            $eq: 'non-existing-string-value'
           }
         },
         type: 'operators'
@@ -199,14 +199,13 @@ describe('auth', () => {
         groupId: 1,
         context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
         credentialSubject: {
-          'string1': {
-            $eq: 'non-existing-string-value-2',
+          string1: {
+            $eq: 'non-existing-string-value-2'
           }
         },
         type: 'operators'
       }
     };
-
 
     const profile: AcceptProfile = {
       protocolVersion: ProtocolVersion.V1,

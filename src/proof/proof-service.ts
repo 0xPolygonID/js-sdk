@@ -277,7 +277,7 @@ export class ProofService implements IProofService {
     } = { cred: opts.credential, revStatus: opts.credentialRevocationStatus };
 
     if (!opts.credential) {
-        credentialWithRevStatus = await this.findCredentialByProofQuery(identifier, proofReq.query);
+      credentialWithRevStatus = await this.findCredentialByProofQuery(identifier, proofReq.query);
     }
 
     if (opts.credential && !opts.credentialRevocationStatus && !opts.skipRevocation) {
@@ -288,7 +288,10 @@ export class ProofService implements IProofService {
     }
 
     if (!credentialWithRevStatus.cred) {
-      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY + ` ${JSON.stringify(proofReq.query)}`);
+      throw new Error(
+        VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY +
+          ` ${JSON.stringify(proofReq.query)}`
+      );
     }
 
     const credentialCoreClaim = await this._identityWallet.getCoreClaimFromCredential(
@@ -604,7 +607,9 @@ export class ProofService implements IProofService {
     const credentials = await this._identityWallet.findOwnedCredentialsByDID(did, query);
 
     if (!credentials.length) {
-      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE);
+      throw new Error(
+        VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE
+      );
     }
 
     //  For EQ / IN / NIN / LT / GT operations selective if credential satisfies query - we can get any.

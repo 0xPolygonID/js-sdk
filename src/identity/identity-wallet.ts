@@ -1039,12 +1039,16 @@ export class IdentityWallet implements IIdentityWallet {
     const signature = await this.signChallenge(coreClaimHash, issuerAuthBJJCredential);
 
     if (!issuerAuthBJJCredential.proof) {
-      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_ISSUER_AUTH_BJJ_CRED_MUST_HAVE_ANY_PROOF);
+      throw new Error(
+        VerifiableConstants.ERRORS.ID_WALLET_ISSUER_AUTH_BJJ_CRED_MUST_HAVE_ANY_PROOF
+      );
     }
 
     const mtpAuthBJJProof = issuerAuthBJJCredential.getIden3SparseMerkleTreeProof();
     if (!mtpAuthBJJProof) {
-      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_ISSUER_AUTH_BJJ_CRED_MUST_HAVE_MTP_PROOF);
+      throw new Error(
+        VerifiableConstants.ERRORS.ID_WALLET_ISSUER_AUTH_BJJ_CRED_MUST_HAVE_MTP_PROOF
+      );
     }
 
     const sigProof = new BJJSignatureProof2021({
