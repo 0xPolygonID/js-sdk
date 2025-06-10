@@ -12,7 +12,7 @@ import {
   ZeroKnowledgeProofResponse
 } from '../types';
 import { byteEncoder, mergeObjects } from '../../utils';
-import { RevocationStatus, W3CCredential } from '../../verifiable';
+import { RevocationStatus, VerifiableConstants, W3CCredential } from '../../verifiable';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
@@ -98,42 +98,59 @@ export const processZeroKnowledgeProofRequests = async (
   const zkpResponses = [];
 
   for (const proofReq of requestScope) {
-    if (!opts.supportedCircuits.includes(proofReq.circuitId as CircuitId)) {
-      throw new Error(`Circuit ${proofReq.circuitId} is not allowed`);
-    }
-
-    const query = proofReq.query;
-    const groupId = query.groupId as number | undefined;
-    const combinedQueryData = combinedQueries.get(groupId as number);
-    if (groupId) {
-      if (!combinedQueryData) {
-        throw new Error(`Invalid group id ${query.groupId}`);
+    let zkpRes: ZeroKnowledgeProofResponse;
+    try {
+      if (!opts.supportedCircuits.includes(proofReq.circuitId as CircuitId) && !proofReq.optional) {
+        throw new Error(`Circuit ${proofReq.circuitId} is not allowed`);
       }
-      const combinedQuery = combinedQueryData.query;
 
-      if (!groupedCredentialsCache.has(groupId)) {
-        const credWithRevStatus = await proofService.findCredentialByProofQuery(
-          to,
-          combinedQueryData.query
-        );
-        if (!credWithRevStatus.cred) {
-          throw new Error(`Credential not found for query ${JSON.stringify(combinedQuery)}`);
+      const query = proofReq.query;
+      const groupId = query.groupId as number | undefined;
+      const combinedQueryData = combinedQueries.get(groupId as number);
+
+      if (groupId) {
+        if (!combinedQueryData) {
+          throw new Error(`Invalid group id ${query.groupId}`);
         }
+        const combinedQuery = combinedQueryData.query;
 
-        groupedCredentialsCache.set(groupId, credWithRevStatus);
+        if (!groupedCredentialsCache.has(groupId)) {
+          const credWithRevStatus = await proofService.findCredentialByProofQuery(
+            to,
+            combinedQueryData.query
+          );
+          if (!credWithRevStatus.cred && proofReq.optional) {
+            continue;
+          }
+          if (!credWithRevStatus.cred) {
+            throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY + `${JSON.stringify(combinedQuery)}`);
+          }
+
+          groupedCredentialsCache.set(groupId, credWithRevStatus);
+        }
       }
+
+      const credWithRevStatus = groupedCredentialsCache.get(groupId as number);
+      zkpRes = await proofService.generateProof(proofReq, to, {
+        verifierDid: from,
+        challenge: opts.challenge,
+        skipRevocation: Boolean(query.skipClaimRevocationCheck),
+        credential: credWithRevStatus?.cred,
+        credentialRevocationStatus: credWithRevStatus?.revStatus,
+        linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
+      });
+    } catch (error: unknown) {
+      // handle only errors in case credential is not found and it is optional proof request - otherwise throw
+      if (error instanceof Error
+        && (error.message === VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE
+          || error.message === VerifiableConstants.ERRORS.ID_WALLET_NO_CREDENTIAL_SATISFIED_QUERY
+          || error.message === VerifiableConstants.ERRORS.CREDENTIAL_WALLET_ALL_CREDENTIALS_ARE_REVOKED
+          || error.message.includes(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY)
+        ) && proofReq.optional) {
+        continue
+      }
+      throw error;
     }
-
-    const credWithRevStatus = groupedCredentialsCache.get(groupId as number);
-
-    const zkpRes: ZeroKnowledgeProofResponse = await proofService.generateProof(proofReq, to, {
-      verifierDid: from,
-      challenge: opts.challenge,
-      skipRevocation: Boolean(query.skipClaimRevocationCheck),
-      credential: credWithRevStatus?.cred,
-      credentialRevocationStatus: credWithRevStatus?.revStatus,
-      linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
-    });
 
     zkpResponses.push(zkpRes);
   }

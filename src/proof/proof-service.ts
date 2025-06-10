@@ -19,6 +19,7 @@ import {
   createVerifiablePresentation,
   ProofQuery,
   RevocationStatus,
+  VerifiableConstants,
   W3CCredential
 } from '../verifiable';
 import {
@@ -276,7 +277,7 @@ export class ProofService implements IProofService {
     } = { cred: opts.credential, revStatus: opts.credentialRevocationStatus };
 
     if (!opts.credential) {
-      credentialWithRevStatus = await this.findCredentialByProofQuery(identifier, proofReq.query);
+        credentialWithRevStatus = await this.findCredentialByProofQuery(identifier, proofReq.query);
     }
 
     if (opts.credential && !opts.credentialRevocationStatus && !opts.skipRevocation) {
@@ -287,7 +288,7 @@ export class ProofService implements IProofService {
     }
 
     if (!credentialWithRevStatus.cred) {
-      throw new Error(`credential not found for query ${JSON.stringify(proofReq.query)}`);
+      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY + ` ${JSON.stringify(proofReq.query)}`);
     }
 
     const credentialCoreClaim = await this._identityWallet.getCoreClaimFromCredential(
@@ -309,14 +310,14 @@ export class ProofService implements IProofService {
       await this._identityWallet.getGenesisDIDMetadata(subjectDID);
 
     if (subjectGenesisDID.string() !== genesisDID.string()) {
-      throw new Error('subject and auth profiles are not derived from the same did');
+      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
     const propertiesMetadata = parseCredentialSubject(
       proofReq.query.credentialSubject as JsonDocumentObject
     );
     if (!propertiesMetadata.length) {
-      throw new Error('no queries in zkp request');
+      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
     }
 
     const mtPosition = preparedCredential.credentialCoreClaim.getMerklizedPosition();
@@ -603,7 +604,7 @@ export class ProofService implements IProofService {
     const credentials = await this._identityWallet.findOwnedCredentialsByDID(did, query);
 
     if (!credentials.length) {
-      throw new Error(`no credentials belong to did or its profiles`);
+      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE);
     }
 
     //  For EQ / IN / NIN / LT / GT operations selective if credential satisfies query - we can get any.
