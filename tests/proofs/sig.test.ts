@@ -489,15 +489,15 @@ describe('sig proofs', () => {
 
     expect(vp).to.deep.equal({
       '@context': ['https://www.w3.org/2018/credentials/v1'],
-      '@type': 'VerifiablePresentation',
+      type: 'VerifiablePresentation',
       verifiableCredential: {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
           'ipfs://QmQXQ5gBNfJuc9QXy5pGbaVfLxzFjCDAvPs4Fa43BaU1U4'
         ],
-        '@type': ['VerifiableCredential', 'DeliveryAddress'],
+        type: ['VerifiableCredential', 'DeliveryAddress'],
         credentialSubject: {
-          '@type': 'DeliveryAddress',
+          type: 'DeliveryAddress',
           postalProviderInformation: { name: 'postal provider' }
         }
       }
@@ -518,15 +518,15 @@ describe('sig proofs', () => {
 
     expect(deliveryVP).to.deep.equal({
       '@context': ['https://www.w3.org/2018/credentials/v1'],
-      '@type': 'VerifiablePresentation',
+      type: 'VerifiablePresentation',
       verifiableCredential: {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
           'ipfs://QmZreEq1z5tMAuNBNTXjfpYMQbQ8KL7YkkVBt5nG1bUqJT'
         ],
-        '@type': ['VerifiableCredential', 'DeliverAddressMultiTest'],
+        type: ['VerifiableCredential', 'DeliverAddressMultiTest'],
         credentialSubject: {
-          '@type': 'DeliverAddressMultiTest',
+          type: 'DeliverAddressMultiTest',
           postalProviderInformation: { insured: false }
         }
       }
