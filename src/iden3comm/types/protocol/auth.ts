@@ -83,10 +83,10 @@ export type ZeroKnowledgeProofAuthResponse = Omit<ZeroKnowledgeProofResponse, 'i
 /** VerifiablePresentation represents structure of Verifiable Presentation */
 export type VerifiablePresentation = {
   '@context': string | (string | object)[];
-  'type': string;
+  type: string;
   verifiableCredential: {
     '@context': string | string[];
-    'type': string | string[];
+    type: string | string[];
     credentialSubject: JsonDocumentObject;
   };
 };
