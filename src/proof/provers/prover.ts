@@ -56,10 +56,7 @@ export class NativeProver implements IZKProver {
         throw new Error(`verification file doesn't exist for circuit ${circuitId}`);
       }
 
-      return verifyGroth16Proof(
-        zkp,
-        JSON.parse(byteDecoder.decode(circuitData.verificationKey))
-      );
+      return verifyGroth16Proof(zkp, JSON.parse(byteDecoder.decode(circuitData.verificationKey)));
     } catch (e) {
       // eslint-disable-next-line no-console
       console.log(e);
