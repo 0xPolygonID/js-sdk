@@ -62,12 +62,12 @@ export const createVerifiablePresentation = (
 
   const skeleton = {
     '@context': baseContext,
-    '@type': VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_PRESENTATION,
+    'type': VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_PRESENTATION,
     verifiableCredential: {
       '@context': ldContext,
-      '@type': vcTypes,
+      'type': vcTypes,
       credentialSubject: {
-        '@type': tp
+        'type': tp
       }
     }
   };
