@@ -100,7 +100,11 @@ export const processZeroKnowledgeProofRequests = async (
   for (const proofReq of requestScope) {
     let zkpRes: ZeroKnowledgeProofResponse;
     try {
-      if (!opts.supportedCircuits.includes(proofReq.circuitId as CircuitId) && !proofReq.optional) {
+      const isCircuitSupported = opts.supportedCircuits.includes(proofReq.circuitId as CircuitId);
+      if (!isCircuitSupported) {
+        if (proofReq.optional) {
+          continue;
+        }
         throw new Error(`Circuit ${proofReq.circuitId} is not allowed`);
       }
 
@@ -119,10 +123,10 @@ export const processZeroKnowledgeProofRequests = async (
             to,
             combinedQueryData.query
           );
-          if (!credWithRevStatus.cred && proofReq.optional) {
-            continue;
-          }
           if (!credWithRevStatus.cred) {
+            if (proofReq.optional) {
+              continue;
+            }
             throw new Error(
               VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY +
                 `${JSON.stringify(combinedQuery)}`
@@ -143,14 +147,15 @@ export const processZeroKnowledgeProofRequests = async (
         linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
       });
     } catch (error: unknown) {
+      const expectedErrors = [
+        VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE,
+        VerifiableConstants.ERRORS.ID_WALLET_NO_CREDENTIAL_SATISFIED_QUERY,
+        VerifiableConstants.ERRORS.CREDENTIAL_WALLET_ALL_CREDENTIALS_ARE_REVOKED
+      ];
       // handle only errors in case credential is not found and it is optional proof request - otherwise throw
       if (
         error instanceof Error &&
-        (error.message ===
-          VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE ||
-          error.message === VerifiableConstants.ERRORS.ID_WALLET_NO_CREDENTIAL_SATISFIED_QUERY ||
-          error.message ===
-            VerifiableConstants.ERRORS.CREDENTIAL_WALLET_ALL_CREDENTIALS_ARE_REVOKED ||
+        (expectedErrors.includes(error.message) ||
           error.message.includes(
             VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY
           )) &&
