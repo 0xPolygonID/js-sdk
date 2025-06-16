@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-import { ZKProof } from '@iden3/js-jwz';
+import { verifyGroth16Proof, ZKProof } from '@iden3/js-jwz';
 import { witnessBuilder } from './witness_calculator';
 import { groth16 } from 'snarkjs';
 import { getCurveFromName } from 'ffjavascript';
@@ -57,16 +56,7 @@ export class NativeProver implements IZKProver {
         throw new Error(`verification file doesn't exist for circuit ${circuitId}`);
       }
 
-      const result = await groth16.verify(
-        JSON.parse(byteDecoder.decode(circuitData.verificationKey)),
-        zkp.pub_signals,
-        zkp.proof
-      );
-
-      // we need to terminate curve manually
-      await this.terminateCurve();
-
-      return result;
+      return verifyGroth16Proof(zkp, JSON.parse(byteDecoder.decode(circuitData.verificationKey)));
     } catch (e) {
       // eslint-disable-next-line no-console
       console.log(e);

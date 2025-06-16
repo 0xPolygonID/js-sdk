@@ -11,8 +11,8 @@ import {
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse
 } from '../types';
-import { mergeObjects } from '../../utils';
-import { RevocationStatus, VerifiableConstants, W3CCredential } from '../../verifiable';
+import { byteEncoder, mergeObjects } from '../../utils';
+import { RevocationStatus,VerifiableConstants, W3CCredential } from '../../verifiable';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
