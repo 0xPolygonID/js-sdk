@@ -14,7 +14,6 @@ import {
   ZeroKnowledgeProofResponse
 } from '../../iden3comm';
 import abi from './abi/ZkpVerifier.json';
-//import { UniversalVerifier } from '@iden3/universal-verifier-v2-abi';
 import { IVerifierABI } from '@iden3/universal-verifier-v2-abi';
 import { TransactionService } from '../../blockchain';
 import { BytesHelper, chainIDfromDID, DID, Id } from '@iden3/js-iden3-core';
