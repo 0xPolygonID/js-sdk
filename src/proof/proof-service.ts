@@ -54,7 +54,11 @@ import {
   ProofGenerationOptions,
   ProofInputsParams
 } from './provers/inputs-generator';
-import { PubSignalsVerifier, VerifyContext } from './verifiers/pub-signals-verifier';
+import {
+  PubSignalsVerifier,
+  PubSignalsVerifierOptions,
+  VerifyContext
+} from './verifiers/pub-signals-verifier';
 import { VerifyOpts } from './verifiers';
 
 export interface QueryWithFieldName {
@@ -77,6 +81,7 @@ export type VerificationResultMetadata = {
  */
 export type ProofServiceOptions = Options & {
   prover?: IZKProver;
+  pubSignalsVerifierOptions?: PubSignalsVerifierOptions;
 };
 
 export interface ProofVerifyOpts {
@@ -223,7 +228,8 @@ export class ProofService implements IProofService {
     this._inputsGenerator = new InputGenerator(_identityWallet, _credentialWallet, _stateStorage);
     this._pubSignalsVerifier = new PubSignalsVerifier(
       opts?.documentLoader ?? cacheLoader(opts),
-      _stateStorage
+      _stateStorage,
+      opts?.pubSignalsVerifierOptions
     );
   }
 
