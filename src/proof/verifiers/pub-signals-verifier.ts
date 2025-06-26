@@ -1,14 +1,9 @@
 import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { DocumentLoader, getDocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
-import { createInMemoryCache, ICache, IStateStorage, RootInfo, StateInfo } from '../../storage';
+import { IStateStorage, RootInfo, StateInfo } from '../../storage';
 import { byteEncoder, isGenesisState } from '../../utils';
-import {
-  calculateCoreSchemaHash,
-  DEFAULT_CACHE_MAX_SIZE,
-  ProofQuery,
-  ProofType
-} from '../../verifiable';
+import { calculateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
 import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
@@ -61,42 +56,6 @@ export type VerifyContext = {
 export const userStateError = new Error(`user state is not valid`);
 const zeroInt = 0n;
 
-// * ResolvedState represents the resolved state information
-export type ResolvedState = {
-  latest: boolean;
-  genesis: boolean;
-  state: unknown;
-  transitionTimestamp: number | string;
-};
-
-/**
- * Configuration options for caching behavior
- */
-export type ResolverCacheOptions = {
-  /** TTL in milliseconds for latest states/roots (shorter since they can change) */
-  notReplacedTtl?: number;
-  /** TTL in milliseconds for historical states/roots (longer since they're they can change with less probability) */
-  replacedTtl?: number;
-  /** Maximum number of entries to store in cache */
-  maxSize?: number;
-};
-
-/**
- * PubSignalsVerifierOptions options for the PubSignalsVerifier
- */
-export type PubSignalsVerifierOptions = {
-  /** Configuration for state resolution caching */
-  stateCacheOptions?: {
-    /** Custom cache implementation (if not provided, uses in-memory cache) */
-    cache?: ICache<ResolvedState>;
-  } & ResolverCacheOptions;
-  /** Configuration for GIST root resolution caching */
-  rootCacheOptions?: {
-    /** Custom cache implementation (if not provided, uses in-memory cache) */
-    cache?: ICache<ResolvedState>;
-  } & ResolverCacheOptions;
-};
-
 /**
  * PubSignalsVerifier provides verify method
  * @public
@@ -106,11 +65,6 @@ export class PubSignalsVerifier {
   userId!: Id;
   challenge!: bigint;
 
-  private _stateResolveCache: ICache<ResolvedState>;
-  private _rootResolveCache: ICache<ResolvedState>;
-  private _stateCacheOptions: Required<ResolverCacheOptions>;
-  private _rootCacheOptions: Required<ResolverCacheOptions>;
-
   /**
    * Creates an instance of PubSignalsVerifier.
    * @param {DocumentLoader} _documentLoader document loader
@@ -119,42 +73,8 @@ export class PubSignalsVerifier {
 
   constructor(
     private readonly _documentLoader: DocumentLoader,
-    private readonly _stateStorage: IStateStorage,
-    options?: PubSignalsVerifierOptions
-  ) {
-    // Store cache options for later use
-    this._stateCacheOptions = {
-      notReplacedTtl:
-        options?.stateCacheOptions?.notReplacedTtl ??
-        PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_DELAY / 2,
-      replacedTtl:
-        options?.stateCacheOptions?.replacedTtl ?? PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_DELAY,
-      maxSize: options?.stateCacheOptions?.maxSize ?? DEFAULT_CACHE_MAX_SIZE
-    };
-    this._rootCacheOptions = {
-      replacedTtl:
-        options?.rootCacheOptions?.replacedTtl ?? PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY,
-      notReplacedTtl:
-        options?.rootCacheOptions?.notReplacedTtl ??
-        PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY / 2,
-      maxSize: options?.rootCacheOptions?.maxSize ?? DEFAULT_CACHE_MAX_SIZE
-    };
-
-    // Initialize cache instances
-    this._stateResolveCache =
-      options?.stateCacheOptions?.cache ??
-      createInMemoryCache({
-        maxSize: this._stateCacheOptions.maxSize,
-        ttl: this._stateCacheOptions.replacedTtl
-      });
-
-    this._rootResolveCache =
-      options?.rootCacheOptions?.cache ??
-      createInMemoryCache({
-        maxSize: this._rootCacheOptions.maxSize,
-        ttl: this._rootCacheOptions.replacedTtl
-      });
-  }
+    private readonly _stateStorage: IStateStorage
+  ) {}
 
   /**
    * verify public signals
@@ -670,29 +590,13 @@ export class PubSignalsVerifier {
     verifyFieldValueInclusionV2(outs, queryMetadata);
   }
 
-  private async resolve(id: Id, state: bigint): Promise<ResolvedState> {
-    const idBigInt = id.bigInt();
-    const cacheKey = this.getCacheKey(idBigInt, state);
-
-    // Check cache first
-    const cachedResult = await this._stateResolveCache?.get(cacheKey);
-    if (cachedResult) {
-      return cachedResult;
-    }
-
-    // Perform the actual resolution
-    const result = await this.performResolve(id, state);
-    // Cache the result with appropriate TTL based on whether it's latest or historical
-    const ttl =
-      result.transitionTimestamp === 0
-        ? this._stateCacheOptions.notReplacedTtl
-        : this._stateCacheOptions.replacedTtl;
-
-    await this._stateResolveCache?.set(cacheKey, result, ttl);
-    return result;
-  }
-
-  private async performResolve(id: Id, state: bigint): Promise<ResolvedState> {
+  private async resolve(
+    id: Id,
+    state: bigint
+  ): Promise<{
+    latest: boolean;
+    transitionTimestamp: number | string;
+  }> {
     const idBigInt = id.bigInt();
     const did = DID.parseFromId(id);
     // check if id is genesis
@@ -707,8 +611,6 @@ export class PubSignalsVerifier {
         if (isGenesis) {
           return {
             latest: true,
-            genesis: isGenesis,
-            state,
             transitionTimestamp: 0
           };
         }
@@ -730,8 +632,6 @@ export class PubSignalsVerifier {
       }
       return {
         latest: false,
-        genesis: false,
-        state,
         transitionTimestamp: contractState.replacedAtTimestamp.toString()
       };
     }
@@ -740,35 +640,17 @@ export class PubSignalsVerifier {
       latest:
         !contractState.replacedAtTimestamp ||
         contractState.replacedAtTimestamp.toString() === zeroInt.toString(),
-      genesis: isGenesis,
-      state,
       transitionTimestamp: contractState.replacedAtTimestamp?.toString() ?? 0
     };
   }
 
-  private async rootResolve(state: bigint, id: bigint): Promise<ResolvedState> {
-    const cacheKey = this.getRootCacheKey(state);
-
-    // Check cache first
-    const cachedResult = await this._rootResolveCache?.get(cacheKey);
-
-    if (cachedResult) {
-      return cachedResult;
-    }
-
-    // Perform the actual root resolution
-    const result = await this.performRootResolve(state, id);
-    // Cache the result with appropriate TTL based on whether it's latest or historical
-    const ttl = result.latest
-      ? this._rootCacheOptions.notReplacedTtl
-      : this._rootCacheOptions.replacedTtl;
-
-    await this._rootResolveCache?.set(cacheKey, result, ttl);
-
-    return result;
-  }
-
-  private async performRootResolve(state: bigint, id: bigint): Promise<ResolvedState> {
+  private async rootResolve(
+    state: bigint,
+    id: bigint
+  ): Promise<{
+    latest: boolean;
+    transitionTimestamp: number | string;
+  }> {
     let globalStateInfo: RootInfo;
     try {
       globalStateInfo = await this._stateStorage.getGISTRootInfo(state, id);
@@ -789,17 +671,13 @@ export class PubSignalsVerifier {
       }
       return {
         latest: false,
-        state,
-        transitionTimestamp: globalStateInfo.replacedAtTimestamp.toString(),
-        genesis: false
+        transitionTimestamp: globalStateInfo.replacedAtTimestamp.toString()
       };
     }
 
     return {
       latest: true,
-      state,
-      transitionTimestamp: 0,
-      genesis: false
+      transitionTimestamp: 0
     };
   }
 
@@ -850,12 +728,4 @@ export class PubSignalsVerifier {
       }
     }
   };
-
-  private getCacheKey(id: bigint, state: bigint): string {
-    return `${id.toString()}-${state.toString()}`;
-  }
-
-  private getRootCacheKey(root: bigint): string {
-    return root.toString();
-  }
 }
