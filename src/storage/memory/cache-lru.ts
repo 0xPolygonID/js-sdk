@@ -1,7 +1,5 @@
 import QuickLRU from 'quick-lru';
 
-export const DEFAULT_CACHE_MAX_SIZE = 10_000;
-
 export interface ICache<T> {
   get(key: string): Promise<T | undefined>;
   set(key: string, value: T, ttl?: number): Promise<void>;

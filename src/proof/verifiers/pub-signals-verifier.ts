@@ -3,14 +3,13 @@ import { DocumentLoader, getDocumentLoader, Path } from '@iden3/js-jsonld-merkli
 import { Hash } from '@iden3/js-merkletree';
 import {
   createInMemoryCache,
-  DEFAULT_CACHE_MAX_SIZE,
   ICache,
   IStateStorage,
   RootInfo,
   StateInfo
 } from '../../storage';
 import { byteEncoder, isGenesisState } from '../../utils';
-import { calculateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
+import { calculateCoreSchemaHash, DEFAULT_CACHE_MAX_SIZE, ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
 import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
