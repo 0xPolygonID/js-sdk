@@ -44,7 +44,10 @@ import {
   VerifiableConstants,
   buildAccept,
   AcceptProfile,
-  createAuthorizationRequest
+  createAuthorizationRequest,
+  createInMemoryCache,
+  DEFAULT_CACHE_MAX_SIZE,
+  ProofServiceOptions
 } from '../../src';
 import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -108,12 +111,33 @@ describe('auth', () => {
         ipfsNodeURL: IPFS_URL
       })
     };
+
+    const stateCache = createInMemoryCache({
+      ttl: PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_DELAY,
+      maxSize: DEFAULT_CACHE_MAX_SIZE * 2
+    });
+    const rootCache = createInMemoryCache({
+      ttl: PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY,
+      maxSize: DEFAULT_CACHE_MAX_SIZE * 2
+    });
+
+    const proofServiceOpts: ProofServiceOptions = {
+      ...merklizeOpts,
+      pubSignalsVerifierOptions: {
+        stateCacheOptions: {
+          cache: stateCache
+        },
+        rootCacheOptions: {
+          cache: rootCache
+        }
+      }
+    };
     proofService = new ProofService(
       idWallet,
       credWallet,
       circuitStorage,
       MOCK_STATE_STORAGE,
-      merklizeOpts
+      proofServiceOpts
     );
 
     packageMgr = await getPackageMgr(
