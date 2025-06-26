@@ -1,7 +1,14 @@
 import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { DocumentLoader, getDocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
-import { createInMemoryCache, DEFAULT_CACHE_MAX_SIZE, ICache, IStateStorage, RootInfo, StateInfo } from '../../storage';
+import {
+  createInMemoryCache,
+  DEFAULT_CACHE_MAX_SIZE,
+  ICache,
+  IStateStorage,
+  RootInfo,
+  StateInfo
+} from '../../storage';
 import { byteEncoder, isGenesisState } from '../../utils';
 import { calculateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
@@ -120,7 +127,8 @@ export class PubSignalsVerifier {
     // Store cache options for later use
     this._stateCacheOptions = {
       notReplacedTtl:
-        options?.stateCacheOptions?.notReplacedTtl ?? PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_DELAY / 2,
+        options?.stateCacheOptions?.notReplacedTtl ??
+        PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_DELAY / 2,
       replacedTtl:
         options?.stateCacheOptions?.replacedTtl ?? PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_DELAY,
       maxSize: options?.stateCacheOptions?.maxSize ?? DEFAULT_CACHE_MAX_SIZE
@@ -129,7 +137,8 @@ export class PubSignalsVerifier {
       replacedTtl:
         options?.rootCacheOptions?.replacedTtl ?? PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY,
       notReplacedTtl:
-        options?.rootCacheOptions?.notReplacedTtl ?? PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY / 2,
+        options?.rootCacheOptions?.notReplacedTtl ??
+        PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY / 2,
       maxSize: options?.rootCacheOptions?.maxSize ?? DEFAULT_CACHE_MAX_SIZE
     };
 
@@ -663,10 +672,7 @@ export class PubSignalsVerifier {
     verifyFieldValueInclusionV2(outs, queryMetadata);
   }
 
-  private async resolve(
-    id: Id,
-    state: bigint
-  ): Promise<ResolvedState> {
+  private async resolve(id: Id, state: bigint): Promise<ResolvedState> {
     const idBigInt = id.bigInt();
     const cacheKey = this.getCacheKey(idBigInt, state);
 
@@ -680,18 +686,15 @@ export class PubSignalsVerifier {
     const result = await this.performResolve(id, state);
     // Cache the result with appropriate TTL based on whether it's latest or historical
     const ttl =
-    result.transitionTimestamp === 0
-      ? this._stateCacheOptions.notReplacedTtl
-      : this._stateCacheOptions.replacedTtl;
+      result.transitionTimestamp === 0
+        ? this._stateCacheOptions.notReplacedTtl
+        : this._stateCacheOptions.replacedTtl;
 
     await this._stateResolveCache?.set(cacheKey, result, ttl);
     return result;
   }
 
-  private async performResolve(
-    id: Id,
-    state: bigint
-  ): Promise<ResolvedState> {
+  private async performResolve(id: Id, state: bigint): Promise<ResolvedState> {
     const idBigInt = id.bigInt();
     const did = DID.parseFromId(id);
     // check if id is genesis
@@ -708,7 +711,7 @@ export class PubSignalsVerifier {
             latest: true,
             genesis: isGenesis,
             state,
-            transitionTimestamp: 0,
+            transitionTimestamp: 0
           };
         }
         throw new Error('State is not genesis and not registered in the smart contract');
@@ -767,10 +770,7 @@ export class PubSignalsVerifier {
     return result;
   }
 
-  private async performRootResolve(
-    state: bigint,
-    id: bigint
-  ): Promise<ResolvedState> {
+  private async performRootResolve(state: bigint, id: bigint): Promise<ResolvedState> {
     let globalStateInfo: RootInfo;
     try {
       globalStateInfo = await this._stateStorage.getGISTRootInfo(state, id);
@@ -855,9 +855,9 @@ export class PubSignalsVerifier {
 
   private getCacheKey(id: bigint, state: bigint): string {
     return `${id.toString()}-${state.toString()}`;
-  };
+  }
 
   private getRootCacheKey(root: bigint): string {
     return root.toString();
-  };
+  }
 }
