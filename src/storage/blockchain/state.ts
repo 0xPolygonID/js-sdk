@@ -19,7 +19,7 @@ import { DEFAULT_CACHE_MAX_SIZE } from '../../verifiable';
 export type ResolverCacheOptions = {
   /** TTL in milliseconds for latest states/roots (shorter since they can change) */
   notReplacedTtl?: number;
-  /** TTL in milliseconds for historical states/roots (longer since they're they can change with less probability) */
+  /** TTL in milliseconds for historical states/roots (longer since they can change with less probability) */
   replacedTtl?: number;
   /** Maximum number of entries to store in cache */
   maxSize?: number;
