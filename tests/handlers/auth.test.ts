@@ -44,7 +44,10 @@ import {
   VerifiableConstants,
   buildAccept,
   AcceptProfile,
-  createAuthorizationRequest
+  createAuthorizationRequest,
+  createInMemoryCache,
+  DEFAULT_CACHE_MAX_SIZE,
+  RootInfo
 } from '../../src';
 import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -108,6 +111,7 @@ describe('auth', () => {
         ipfsNodeURL: IPFS_URL
       })
     };
+
     proofService = new ProofService(
       idWallet,
       credWallet,
@@ -1618,7 +1622,24 @@ describe('auth', () => {
     stateEthConfig.url = RPC_URL;
     stateEthConfig.contractAddress = STATE_CONTRACT;
     stateEthConfig.chainId = 80002;
-    const eth = new EthStateStorage(stateEthConfig);
+
+    const stateCache = createInMemoryCache<StateInfo>({
+      ttl: PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_DELAY,
+      maxSize: DEFAULT_CACHE_MAX_SIZE * 2
+    });
+    const rootCache = createInMemoryCache<RootInfo>({
+      ttl: PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY,
+      maxSize: DEFAULT_CACHE_MAX_SIZE * 2
+    });
+
+    const eth = new EthStateStorage(stateEthConfig, {
+      stateCacheOptions: {
+        cache: stateCache
+      },
+      rootCacheOptions: {
+        cache: rootCache
+      }
+    });
 
     const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(eth);

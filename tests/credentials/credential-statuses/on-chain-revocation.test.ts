@@ -143,7 +143,14 @@ describe('parse credential status with type Iden3OnchainSparseMerkleTreeProof202
 
   for (const testCase of testCases) {
     it(testCase.name, () => {
-      const status = new OnChainResolver([]);
+      const status = new OnChainResolver([
+        {
+          ...defaultEthConnectionConfig,
+          contractAddress: STATE_CONTRACT,
+          chainId: 80002,
+          url: RPC_URL
+        }
+      ]);
 
       if (testCase.error) {
         expect(() => status.extractCredentialStatusInfo(testCase.input)).to.throw(testCase.error);

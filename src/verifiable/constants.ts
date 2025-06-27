@@ -211,3 +211,8 @@ export enum PaymentFeatures {
 export enum DisplayMethodType {
   Iden3BasicDisplayMethodV1 = 'Iden3BasicDisplayMethodV1'
 }
+
+/**
+ * Default cache max size for in-memory cache
+ */
+export const DEFAULT_CACHE_MAX_SIZE = 10_000;
