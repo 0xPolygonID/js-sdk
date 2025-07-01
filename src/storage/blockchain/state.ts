@@ -39,6 +39,8 @@ export type SimpleCacheOptions = {
  * EthStateStorageOptions options for the Ethereum state storage.
  */
 export type EthStateStorageOptions = {
+  /** Disable caching */
+  disableCache?: boolean;
   /** Configuration for latest state resolution caching */
   latestStateCacheOptions?: {
     /** Custom cache implementation (if not provided, uses in-memory cache) */
@@ -120,6 +122,8 @@ export class EthStateStorage implements IStateStorage {
   private _rootCacheOptions: Required<ResolverCacheOptions>;
   private _gistProofCacheOptions: Required<SimpleCacheOptions>;
 
+  private _disableCache = false;
+
   /**
    * Creates an instance of EthStateStorage.
    * @param {EthConnectionConfig} [ethConfig=defaultEthConnectionConfig]
@@ -187,15 +191,19 @@ export class EthStateStorage implements IStateStorage {
         maxSize: this._gistProofCacheOptions.maxSize,
         ttl: this._gistProofCacheOptions.ttl
       });
+
+    this._disableCache = options?.disableCache ?? false;
   }
 
   /** {@inheritdoc IStateStorage.getLatestStateById} */
   async getLatestStateById(id: bigint): Promise<StateInfo> {
     const cacheKey = this.getLatestStateCacheKey(id);
-    // Check cache first
-    const cachedResult = await this._latestStateResolveCache?.get(cacheKey);
-    if (cachedResult) {
-      return cachedResult;
+    if (!this._disableCache) {
+      // Check cache first
+      const cachedResult = await this._latestStateResolveCache?.get(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
     }
 
     const { stateContract } = this.getStateContractAndProviderForId(id);
@@ -210,21 +218,24 @@ export class EthStateStorage implements IStateStorage {
       replacedAtBlock: BigInt(rawData[6])
     };
 
-    await this._latestStateResolveCache?.set(
-      cacheKey,
-      stateInfo,
-      this._latestStateCacheOptions.ttl
-    );
+    !this._disableCache &&
+      (await this._latestStateResolveCache?.set(
+        cacheKey,
+        stateInfo,
+        this._latestStateCacheOptions.ttl
+      ));
     return stateInfo;
   }
 
   /** {@inheritdoc IStateStorage.getStateInfoByIdAndState} */
   async getStateInfoByIdAndState(id: bigint, state: bigint): Promise<StateInfo> {
     const cacheKey = this.getStateCacheKey(id, state);
-    // Check cache first
-    const cachedResult = await this._stateResolveCache?.get(cacheKey);
-    if (cachedResult) {
-      return cachedResult;
+    if (!this._disableCache) {
+      // Check cache first
+      const cachedResult = await this._stateResolveCache?.get(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
     }
 
     const { stateContract } = this.getStateContractAndProviderForId(id);
@@ -243,7 +254,7 @@ export class EthStateStorage implements IStateStorage {
       stateInfo.replacedAtTimestamp === 0n
         ? this._stateCacheOptions.notReplacedTtl
         : this._stateCacheOptions.replacedTtl;
-    await this._stateResolveCache?.set(cacheKey, stateInfo, ttl);
+    !this._disableCache && (await this._stateResolveCache?.set(cacheKey, stateInfo, ttl));
     return stateInfo;
   }
 
@@ -339,10 +350,12 @@ export class EthStateStorage implements IStateStorage {
   /** {@inheritdoc IStateStorage.getGISTProof} */
   async getGISTProof(id: bigint): Promise<StateProof> {
     const cacheKey = this.getGistProofCacheKey(id);
-    // Check cache first
-    const cachedResult = await this._gistProofResolveCache?.get(cacheKey);
-    if (cachedResult) {
-      return cachedResult;
+    if (!this._disableCache) {
+      // Check cache first
+      const cachedResult = await this._gistProofResolveCache?.get(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
     }
 
     const { stateContract } = this.getStateContractAndProviderForId(id);
@@ -362,17 +375,24 @@ export class EthStateStorage implements IStateStorage {
       auxValue: BigInt(data.auxValue.toString())
     };
 
-    await this._gistProofResolveCache?.set(cacheKey, stateProof, this._gistProofCacheOptions.ttl);
+    !this._disableCache &&
+      (await this._gistProofResolveCache?.set(
+        cacheKey,
+        stateProof,
+        this._gistProofCacheOptions.ttl
+      ));
     return stateProof;
   }
 
   /** {@inheritdoc IStateStorage.getGISTRootInfo} */
   async getGISTRootInfo(root: bigint, id: bigint): Promise<RootInfo> {
     const cacheKey = this.getRootCacheKey(root);
-    // Check cache first
-    const cachedResult = await this._rootResolveCache?.get(cacheKey);
-    if (cachedResult) {
-      return cachedResult;
+    if (!this._disableCache) {
+      // Check cache first
+      const cachedResult = await this._rootResolveCache?.get(cacheKey);
+      if (cachedResult) {
+        return cachedResult;
+      }
     }
 
     const { stateContract } = this.getStateContractAndProviderForId(id);
@@ -391,13 +411,23 @@ export class EthStateStorage implements IStateStorage {
       rootInfo.replacedAtTimestamp == 0n
         ? this._rootCacheOptions.notReplacedTtl
         : this._rootCacheOptions.replacedTtl;
-    await this._rootResolveCache?.set(cacheKey, rootInfo, ttl);
+    !this._disableCache && (await this._rootResolveCache?.set(cacheKey, rootInfo, ttl));
     return rootInfo;
   }
 
   /** {@inheritdoc IStateStorage.getRpcProvider} */
   getRpcProvider(): JsonRpcProvider {
     return this.provider;
+  }
+
+  /** enable caching */
+  enableCache(): void {
+    this._disableCache = false;
+  }
+
+  /** disable caching */
+  disableCache(): void {
+    this._disableCache = true;
   }
 
   private getStateContractAndProviderForId(id: bigint): {
