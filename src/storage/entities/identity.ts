@@ -14,4 +14,5 @@ export type Profile = {
   nonce: number | string;
   genesisIdentifier: string;
   verifier: string;
+  tag?: string; // format of the tag can be defined by client of sdk
 };

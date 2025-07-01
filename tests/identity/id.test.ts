@@ -95,19 +95,45 @@ describe('identity', () => {
     const { did } = await createIdentity(idWallet);
 
     expect(did.string()).to.equal(expectedDID);
+    const verifier = 'http://issuer.com/';
+    const tag = 'senderAddress=0x123';
 
-    const profileDID = await idWallet.createProfile(did, 10, 'http://polygonissuer.com/');
-    expect(profileDID.string()).to.equal(
+    const profileDid = await idWallet.createProfile(did, 10, verifier);
+    expect(profileDid.string()).to.equal(
       'did:iden3:polygon:amoy:xHMd1mimHu3Gc1nhe3DXrimqUCNtgYP8gcuGAHgxm'
     );
 
-    const dbProfile = await dataStorage.identity.getProfileByVerifier('http://polygonissuer.com/');
+    const dbProfile = await dataStorage.identity.getProfileByVerifier(verifier);
     expect(dbProfile).not.to.be.undefined;
     if (dbProfile) {
-      expect(dbProfile.id).to.equal(profileDID.string());
+      expect(dbProfile.id).to.equal(profileDid.string());
       expect(dbProfile.genesisIdentifier).to.equal(did.string());
       expect(dbProfile.nonce).to.equal(10);
     }
+    const dbProfiles = await dataStorage.identity.getProfilesByVerifier(verifier);
+    expect(dbProfiles).not.to.be.undefined;
+    expect(dbProfiles.length).to.be.eq(1);
+
+    const profileDid2 = await idWallet.createProfile(did, 11, verifier, tag);
+    expect(profileDid2.string()).to.equal(
+      'did:iden3:polygon:amoy:x85NhWKFLHRyunDDmT2jBUpAs27JhJWSAjsnCEEuR'
+    );
+
+    const profilesByTag = await idWallet.getProfilesByVerifier(verifier, tag);
+    expect(profilesByTag.length).not.to.be.undefined;
+    expect(profilesByTag.length).to.be.eq(1);
+    expect(profilesByTag[0].id).to.be.eq(profileDid2.string());
+
+    const profilesByVerifierOnly = await idWallet.getProfilesByVerifier(verifier);
+    expect(profilesByVerifierOnly.length).not.to.be.undefined;
+    expect(profilesByVerifierOnly.length).to.be.eq(2);
+    expect(profilesByVerifierOnly.map((p) => p.id).includes(profileDid.string())).to.be.true;
+    expect(profilesByVerifierOnly.map((p) => p.id).includes(profileDid2.string())).to.be.true;
+
+    const profilesByNonExistingVerifier = await idWallet.getProfilesByVerifier(
+      'non-existing-verifier'
+    );
+    expect(profilesByNonExistingVerifier.length).to.be.eq(0);
   });
 
   it('sign', async () => {

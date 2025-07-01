@@ -23,6 +23,8 @@ export const VerifiableConstants = Object.freeze({
     ID_WALLET_CORE_CLAIM_IS_NOT_SET: 'core claim is not set in credential proofs',
     ID_WALLET_PROFILE_OR_IDENTITY_NOT_FOUND: 'profile or identity not found',
     ID_WALLET_PROFILE_ALREADY_EXISTS: 'profile with given nonce or verifier already exists',
+    ID_WALLET_PROFILE_ALREADY_EXISTS_VERIFIER_TAG:
+      'profile with given verifier and tag already exists',
     ID_WALLET_ISSUER_AUTH_BJJ_CRED_MUST_HAVE_ANY_PROOF: 'issuer auth credential must have proof',
     ID_WALLET_ISSUER_AUTH_BJJ_CRED_MUST_HAVE_MTP_PROOF:
       'mtp is required for auth bjj key to issue new credentials',

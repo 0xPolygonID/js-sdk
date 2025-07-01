@@ -301,9 +301,9 @@ describe('auth', () => {
     const authR = await authHandler.parseAuthorizationRequest(msgBytes);
 
     // let's check that we didn't create profile for verifier
-    const authProfile = await idWallet.getProfileByVerifier(authR.from);
-    const authProfileDID = authProfile
-      ? DID.parse(authProfile.id)
+    const authProfiles = await idWallet.getProfilesByVerifier(authR.from);
+    const authProfileDID = authProfiles.length
+      ? DID.parse(authProfiles[0].id)
       : await idWallet.createProfile(userDID, 100, authR.from);
 
     const resp = await authHandler.handleAuthorizationRequest(authProfileDID, msgBytes);
