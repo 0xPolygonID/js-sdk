@@ -91,12 +91,13 @@ describe('identity', () => {
     expect((await claimsTree.root()).bigInt()).not.to.equal(0);
   });
 
-  it('createProfile', async () => {
+  it.only('createProfile', async () => {
     const { did } = await createIdentity(idWallet);
 
     expect(did.string()).to.equal(expectedDID);
     const verifier = 'http://issuer.com/';
-    const tag = 'senderAddress=0x123';
+    const tags1 = ['senderAddress=0x123'];
+    const tags2 = ['senderAddress=0x123', 'app=mobile'];
 
     const profileDid = await idWallet.createProfile(did, 10, verifier);
     expect(profileDid.string()).to.equal(
@@ -114,21 +115,27 @@ describe('identity', () => {
     expect(dbProfiles).not.to.be.undefined;
     expect(dbProfiles.length).to.be.eq(1);
 
-    const profileDid2 = await idWallet.createProfile(did, 11, verifier, tag);
+    const profileDid2 = await idWallet.createProfile(did, 11, verifier, tags1);
     expect(profileDid2.string()).to.equal(
       'did:iden3:polygon:amoy:x85NhWKFLHRyunDDmT2jBUpAs27JhJWSAjsnCEEuR'
     );
 
-    const profilesByTag = await idWallet.getProfilesByVerifier(verifier, tag);
+    const profileDid3 = await idWallet.createProfile(did, 12, verifier, tags2);
+    expect(profileDid3.string()).to.equal(
+      'did:iden3:polygon:amoy:xGCZ8wFysKpozg4r5bQxNunZi8gL4jmsT1srRNubb'
+    );
+
+    const profilesByTag = await idWallet.getProfilesByVerifier(verifier, tags1);
     expect(profilesByTag.length).not.to.be.undefined;
-    expect(profilesByTag.length).to.be.eq(1);
-    expect(profilesByTag[0].id).to.be.eq(profileDid2.string());
+    expect(profilesByTag.length).to.be.eq(2);
+    expect(profilesByTag.map((p) => p.id).includes(profileDid2.string())).to.be.true;
 
     const profilesByVerifierOnly = await idWallet.getProfilesByVerifier(verifier);
     expect(profilesByVerifierOnly.length).not.to.be.undefined;
-    expect(profilesByVerifierOnly.length).to.be.eq(2);
+    expect(profilesByVerifierOnly.length).to.be.eq(3);
     expect(profilesByVerifierOnly.map((p) => p.id).includes(profileDid.string())).to.be.true;
     expect(profilesByVerifierOnly.map((p) => p.id).includes(profileDid2.string())).to.be.true;
+    expect(profilesByVerifierOnly.map((p) => p.id).includes(profileDid3.string())).to.be.true;
 
     const profilesByNonExistingVerifier = await idWallet.getProfilesByVerifier(
       'non-existing-verifier'

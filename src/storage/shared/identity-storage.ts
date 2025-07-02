@@ -52,9 +52,9 @@ export class IdentityStorage implements IIdentityStorage {
     return this._profileDataSource.get(verifier, 'verifier');
   }
 
-  async getProfilesByVerifier(verifier: string, tag?: string): Promise<Profile[]> {
+  async getProfilesByVerifier(verifier: string, tags?: string[]): Promise<Profile[]> {
     return (await this._profileDataSource.load()).filter(
-      (p) => p.verifier === verifier && (!tag || p.tag?.includes(tag))
+      (p) => p.verifier === verifier && (!tags || tags.every((tag) => p.tags?.includes(tag)))
     );
   }
 

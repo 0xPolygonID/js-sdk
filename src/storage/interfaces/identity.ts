@@ -50,10 +50,10 @@ export interface IIdentityStorage {
   /**
    * gets profile by verifiers
    * @param {string} verifier - verifier to which profile has been shared
-   * @param {string} tag - optional tag to filter profile entry
+   * @param {string[]} tags - optional tag to filter profile entry
    * @returns `{Promise<Profile[]>}`
    */
-  getProfilesByVerifier(verifier: string, tag?: string): Promise<Profile[]>;
+  getProfilesByVerifier(verifier: string, tags?: string[]): Promise<Profile[]>;
 
   /**
    * gets profile by identifier

@@ -171,10 +171,10 @@ export interface IIdentityWallet {
    * @param {DID} did - identity to derive profile from
    * @param {number |string} nonce - unique integer number to generate a profile
    * @param {string} verifier - verifier identity/alias in a string from
-   * @param {string} tag      - optional tag that can be assigned to profile by client
+   * @param {string[]} tags      - optional tag that can be assigned to profile by client
    * @returns `Promise<DID>` - profile did
    */
-  createProfile(did: DID, nonce: number | string, verifier: string, tag?: string): Promise<DID>;
+  createProfile(did: DID, nonce: number | string, verifier: string, tags?: string[]): Promise<DID>;
 
   /**
    * Generates a new key
@@ -411,10 +411,10 @@ export interface IIdentityWallet {
    * gets profile by verifiers
    *
    * @param {string} verifier - verifier to which profile has been shared
-   * @param {string} tag - optional tag to filter profile entry
+   * @param {string} tags - optional, tags to filter profile entry
    * @returns `{Promise<Profile[]>}`
    */
-  getProfilesByVerifier(verifier: string, tag?: string): Promise<Profile[]>;
+  getProfilesByVerifier(verifier: string, tags?: string[]): Promise<Profile[]>;
 
   /**
    *
@@ -814,7 +814,7 @@ export class IdentityWallet implements IIdentityWallet {
     did: DID,
     nonce: number | string,
     verifier: string,
-    tag?: string
+    tags?: string[]
   ): Promise<DID> {
     const profileDID = generateProfileDID(did, nonce);
 
@@ -824,11 +824,10 @@ export class IdentityWallet implements IIdentityWallet {
 
     const profilesForTagAndVerifier = await this._storage.identity.getProfilesByVerifier(
       verifier,
-      tag
+      tags
     );
-
     if (profilesForTagAndVerifier.length) {
-      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_ALREADY_EXISTS_VERIFIER_TAG);
+      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_ALREADY_EXISTS_VERIFIER_TAGS);
     }
 
     const existingProfileWithNonce = identityProfiles.find((p) => p.nonce == nonce);
@@ -841,7 +840,7 @@ export class IdentityWallet implements IIdentityWallet {
       nonce,
       genesisIdentifier: did.string(),
       verifier,
-      tag
+      tags: tags
     });
 
     return profileDID;
@@ -871,8 +870,8 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   /** {@inheritDoc IIdentityWallet.getProfilesByVerifier} */
-  async getProfilesByVerifier(verifier: string, tag?: string): Promise<Profile[]> {
-    return this._storage.identity.getProfilesByVerifier(verifier, tag);
+  async getProfilesByVerifier(verifier: string, tags?: string[]): Promise<Profile[]> {
+    return this._storage.identity.getProfilesByVerifier(verifier, tags);
   }
 
   /** {@inheritDoc IIdentityWallet.getDIDTreeModel} */
