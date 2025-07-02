@@ -91,7 +91,7 @@ describe('identity', () => {
     expect((await claimsTree.root()).bigInt()).not.to.equal(0);
   });
 
-  it.only('createProfile', async () => {
+  it('createProfile', async () => {
     const { did } = await createIdentity(idWallet);
 
     expect(did.string()).to.equal(expectedDID);
