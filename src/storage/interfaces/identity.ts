@@ -41,11 +41,20 @@ export interface IIdentityStorage {
   saveProfile(profile: Profile): Promise<void>;
   /**
    * gets profile by verifier
-   *
+   * @deprecated The method should not be used. It returns only one profile per verifier, which can potentially restrict business use cases
    * @param {string} verifier - verifier to which profile has been shared
    * @returns `{Promise<Profile>}`
    */
   getProfileByVerifier(verifier: string): Promise<Profile | undefined>;
+
+  /**
+   * gets profile by verifiers
+   * @param {string} verifier - verifier to which profile has been shared
+   * @param {string[]} tags - optional tag to filter profile entry
+   * @returns `{Promise<Profile[]>}`
+   */
+  getProfilesByVerifier(verifier: string, tags?: string[]): Promise<Profile[]>;
+
   /**
    * gets profile by identifier
    *
