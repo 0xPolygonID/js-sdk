@@ -840,7 +840,7 @@ export class IdentityWallet implements IIdentityWallet {
       nonce,
       genesisIdentifier: did.string(),
       verifier,
-      tags: tags
+      tags
     });
 
     return profileDID;
