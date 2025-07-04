@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.31.2",
+  "version": "1.31.3",
   "description": "SDK to work with Polygon ID",
   "source": "./src/index.ts",
   "exports": {
@@ -83,7 +83,8 @@
     "idb-keyval": "6.2.2",
     "jsonld": "8.3.3",
     "pubsub-js": "1.9.5",
-    "uuid": "11.1.0"
+    "uuid": "11.1.0",
+    "quick-lru": "^7.0.1"
   },
   "browserslist": {
     "production": [

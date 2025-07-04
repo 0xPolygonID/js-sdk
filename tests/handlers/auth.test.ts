@@ -44,7 +44,10 @@ import {
   VerifiableConstants,
   buildAccept,
   AcceptProfile,
-  createAuthorizationRequest
+  createAuthorizationRequest,
+  createInMemoryCache,
+  DEFAULT_CACHE_MAX_SIZE,
+  RootInfo
 } from '../../src';
 import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -108,6 +111,7 @@ describe.sequential('auth', () => {
         ipfsNodeURL: IPFS_URL
       })
     };
+
     proofService = new ProofService(
       idWallet,
       credWallet,
@@ -301,9 +305,9 @@ describe.sequential('auth', () => {
     const authR = await authHandler.parseAuthorizationRequest(msgBytes);
 
     // let's check that we didn't create profile for verifier
-    const authProfile = await idWallet.getProfileByVerifier(authR.from);
-    const authProfileDID = authProfile
-      ? DID.parse(authProfile.id)
+    const authProfiles = await idWallet.getProfilesByVerifier(authR.from);
+    const authProfileDID = authProfiles.length
+      ? DID.parse(authProfiles[0].id)
       : await idWallet.createProfile(userDID, 100, authR.from);
 
     const resp = await authHandler.handleAuthorizationRequest(authProfileDID, msgBytes);
@@ -1618,7 +1622,24 @@ describe.sequential('auth', () => {
     stateEthConfig.url = RPC_URL;
     stateEthConfig.contractAddress = STATE_CONTRACT;
     stateEthConfig.chainId = 80002;
-    const eth = new EthStateStorage(stateEthConfig);
+
+    const stateCache = createInMemoryCache<StateInfo>({
+      ttl: PROTOCOL_CONSTANTS.DEFAULT_PROOF_VERIFY_DELAY,
+      maxSize: DEFAULT_CACHE_MAX_SIZE * 2
+    });
+    const rootCache = createInMemoryCache<RootInfo>({
+      ttl: PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY,
+      maxSize: DEFAULT_CACHE_MAX_SIZE * 2
+    });
+
+    const eth = new EthStateStorage(stateEthConfig, {
+      stateCacheOptions: {
+        cache: stateCache
+      },
+      rootCacheOptions: {
+        cache: rootCache
+      }
+    });
 
     const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(eth);

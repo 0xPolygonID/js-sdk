@@ -171,9 +171,10 @@ export interface IIdentityWallet {
    * @param {DID} did - identity to derive profile from
    * @param {number |string} nonce - unique integer number to generate a profile
    * @param {string} verifier - verifier identity/alias in a string from
+   * @param {string[]} tags      - optional tag that can be assigned to profile by client
    * @returns `Promise<DID>` - profile did
    */
-  createProfile(did: DID, nonce: number | string, verifier: string): Promise<DID>;
+  createProfile(did: DID, nonce: number | string, verifier: string, tags?: string[]): Promise<DID>;
 
   /**
    * Generates a new key
@@ -400,11 +401,20 @@ export interface IIdentityWallet {
   /**
    *
    * gets profile identity by verifier
-   *
+   * @deprecated The method should not be used. It returns only one profile per verifier, which can potentially restrict business use cases
    * @param {string} verifier -  identifier of the verifier
    * @returns `{Promise<Profile>}`
    */
   getProfileByVerifier(verifier: string): Promise<Profile | undefined>;
+
+  /**
+   * gets profile by verifiers
+   *
+   * @param {string} verifier - verifier to which profile has been shared
+   * @param {string} tags - optional, tags to filter profile entry
+   * @returns `{Promise<Profile[]>}`
+   */
+  getProfilesByVerifier(verifier: string, tags?: string[]): Promise<Profile[]>;
 
   /**
    *
@@ -800,17 +810,28 @@ export class IdentityWallet implements IIdentityWallet {
   }
 
   /** {@inheritDoc IIdentityWallet.createProfile} */
-  async createProfile(did: DID, nonce: number | string, verifier: string): Promise<DID> {
+  async createProfile(
+    did: DID,
+    nonce: number | string,
+    verifier: string,
+    tags?: string[]
+  ): Promise<DID> {
     const profileDID = generateProfileDID(did, nonce);
 
     const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
       did.string()
     );
 
-    const existingProfile = identityProfiles.find(
-      (p) => p.nonce == nonce || p.verifier == verifier
+    const profilesForTagAndVerifier = await this._storage.identity.getProfilesByVerifier(
+      verifier,
+      tags
     );
-    if (existingProfile) {
+    if (profilesForTagAndVerifier.length) {
+      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_ALREADY_EXISTS_VERIFIER_TAGS);
+    }
+
+    const existingProfileWithNonce = identityProfiles.find((p) => p.nonce == nonce);
+    if (existingProfileWithNonce) {
       throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_ALREADY_EXISTS);
     }
 
@@ -818,8 +839,10 @@ export class IdentityWallet implements IIdentityWallet {
       id: profileDID.string(),
       nonce,
       genesisIdentifier: did.string(),
-      verifier
+      verifier,
+      tags
     });
+
     return profileDID;
   }
 
@@ -838,10 +861,19 @@ export class IdentityWallet implements IIdentityWallet {
     const key = await this._kms.createKeyFromSeed(keyType, getRandomBytes(32));
     return key;
   }
-
+  /**
+   * @deprecated The method should not be used. It returns only one profile per verifier, which can potentially restrict business use cases
+   * {@inheritDoc IIdentityWallet.getProfileByVerifier}
+   */
   async getProfileByVerifier(verifier: string): Promise<Profile | undefined> {
     return this._storage.identity.getProfileByVerifier(verifier);
   }
+
+  /** {@inheritDoc IIdentityWallet.getProfilesByVerifier} */
+  async getProfilesByVerifier(verifier: string, tags?: string[]): Promise<Profile[]> {
+    return this._storage.identity.getProfilesByVerifier(verifier, tags);
+  }
+
   /** {@inheritDoc IIdentityWallet.getDIDTreeModel} */
   async getDIDTreeModel(did: DID): Promise<TreesModel> {
     const didStr = did.string();

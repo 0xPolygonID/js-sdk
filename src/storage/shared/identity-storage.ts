@@ -44,9 +44,18 @@ export class IdentityStorage implements IIdentityStorage {
       await this._profileDataSource.save(element.id, element);
     }
   }
-
+  /**
+   *  @deprecated The method should not be used. It returns only one profile per verifier, which can potentially restrict business use cases
+   *   Use getProfilesByVerifier instead.
+   */
   async getProfileByVerifier(verifier: string): Promise<Profile | undefined> {
     return this._profileDataSource.get(verifier, 'verifier');
+  }
+
+  async getProfilesByVerifier(verifier: string, tags?: string[]): Promise<Profile[]> {
+    return (await this._profileDataSource.load()).filter(
+      (p) => p.verifier === verifier && (!tags || tags.every((tag) => p.tags?.includes(tag)))
+    );
   }
 
   async getProfileById(profileId: string): Promise<Profile | undefined> {
