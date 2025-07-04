@@ -45,17 +45,12 @@
     "@cspell/eslint-plugin": "^8.19.4",
     "@iden3/eslint-config": "https://github.com/iden3/eslint-config",
     "@typechain/ethers-v6": "^0.5.1",
-    "@types/chai": "^5.2.2",
-    "@types/chai-as-promised": "^8.0.2",
-    "@types/chai-spies": "^1.0.6",
-    "@types/jest": "30.0.0",
     "@types/jsonld": "^1.5.15",
     "@types/node": "^24.0.4",
     "@types/pubsub-js": "^1.8.6",
     "@types/uuid": "^10.0.0",
     "nock": "^14.0.5",
     "rimraf": "^6.0.1",
-    "rollup": "^4.44.0",
     "ts-node": "^10.9.2",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3",
@@ -83,8 +78,8 @@
     "idb-keyval": "6.2.2",
     "jsonld": "8.3.3",
     "pubsub-js": "1.9.5",
-    "uuid": "11.1.0",
-    "quick-lru": "^7.0.1"
+    "quick-lru": "^7.0.1",
+    "uuid": "11.1.0"
   },
   "browserslist": {
     "production": [
