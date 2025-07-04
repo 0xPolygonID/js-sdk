@@ -1,7 +1,6 @@
 import { CircuitId } from '../../circuits';
 import { CircuitData } from '../entities/circuitData';
 import { ICircuitStorage } from '../interfaces/circuits';
-import fs from 'fs';
 
 /**
  * Options for FSCircuitStorage,
@@ -37,6 +36,17 @@ export class FSCircuitStorage implements ICircuitStorage {
   private readonly _provingKeyPath: string = 'circuit_final.zkey';
   private readonly _wasmFilePath: string = 'circuit.wasm';
 
+  private async getFs(): Promise<typeof import('fs')> {
+    if (!process.env.BUILD_BROWSER) {
+      return await import('fs');
+    }
+    return {
+      existsSync: () => false,
+      readFileSync: () => new Uint8Array(),
+      writeFileSync: () => {},
+      mkdirSync: () => {}
+    } as unknown as typeof import('fs');
+  }
   /**
    * Creates an instance of FSCircuitStorage.
    * @param {string} opts - options to read / save files
@@ -54,6 +64,7 @@ export class FSCircuitStorage implements ICircuitStorage {
    * @returns `Promise<CircuitData>`
    */
   async loadCircuitData(circuitId: CircuitId): Promise<CircuitData> {
+    const fs = await this.getFs();
     const verificationKey = await this.loadCircuitFile(circuitId, this._verificationKeyPath);
     const provingKey = await this.loadCircuitFile(circuitId, this._provingKeyPath);
     const wasm = await this.loadCircuitFile(circuitId, this._wasmFilePath);
@@ -71,6 +82,7 @@ export class FSCircuitStorage implements ICircuitStorage {
     filename: string
   ): Promise<Uint8Array | null> {
     const keyPath = `${this.opts.dirname}/${circuitId}/${filename}`;
+    const fs = await this.getFs();
     if (fs.existsSync(keyPath)) {
       const keyData = fs.readFileSync(keyPath);
       return new Uint8Array(keyData);
@@ -85,6 +97,7 @@ export class FSCircuitStorage implements ICircuitStorage {
   ): Promise<void> {
     const dirPath = `${this.opts.dirname}/${circuitId}`;
     const keyPath = `${dirPath}/${filename}`;
+    const fs = await this.getFs();
     fs.mkdirSync(dirPath, { recursive: true });
     fs.writeFileSync(keyPath, file, encoding);
   }

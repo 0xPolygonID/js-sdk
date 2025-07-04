@@ -17,7 +17,7 @@ import {
 } from './utils';
 
 import expectedJson from './data/sig-v2-inputs.json';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { byteDecoder, byteEncoder } from '../../src';
 
 describe('atomic-query-sig-v2', () => {

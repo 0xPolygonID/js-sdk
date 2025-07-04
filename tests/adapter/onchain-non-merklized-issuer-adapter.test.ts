@@ -6,11 +6,11 @@ import {
   NonMerklizedIssuerBaseABI as abi,
   INonMerklizedIssuer
 } from '@iden3/onchain-non-merklized-issuer-base-abi';
-import { expect } from 'chai';
 import { W3CCredential } from '../../src/verifiable';
 import { IPFS_URL } from '../helpers';
 import { defaultEthConnectionConfig } from '../../src';
 import { schemaLoaderForTests } from '../mocks/schema';
+import { describe, expect, it, beforeEach } from 'vitest';
 
 // prettier-ignore
 const w3cHttpSchemaExpect =

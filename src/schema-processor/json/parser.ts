@@ -11,10 +11,8 @@ import {
   parseCoreClaimSlots
 } from '../../verifiable';
 import { Claim as CoreClaim } from '@iden3/js-iden3-core';
-import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
-
-import * as jsonld from 'jsonld/lib';
-import * as ldcontext from 'jsonld/lib/context';
+import { getInitialContext, Merklizer, Options } from '@iden3/js-jsonld-merklization';
+import * as jsonld from 'jsonld';
 
 /**
  *
@@ -115,12 +113,15 @@ export class Parser {
     tp: string
   ): Promise<string> {
     const ldCtx = await jsonld.processContext(
-      ldcontext.getInitialContext({}),
-      credential['@context'],
+      getInitialContext({}),
+      credential['@context'] as jsonld.JsonLdDocument,
       opts
     );
 
-    return Parser.getSerializationAttrFromParsedContext(ldCtx, tp);
+    return getSerializationAttrFromParsedContext(
+      ldCtx as unknown as { mappings: Map<string, Record<string, unknown>> },
+      tp
+    );
   }
 
   /**
@@ -174,12 +175,16 @@ export class Parser {
     credentialType: string
   ): Promise<{ slots: ParsedSlots; nonMerklized: boolean }> {
     const ldCtx = await jsonld.processContext(
-      ldcontext.getInitialContext({}),
-      credential['@context'],
+      getInitialContext({}),
+      credential['@context'] as jsonld.JsonLdDocument,
       mz.options
     );
 
-    return parseCoreClaimSlots(ldCtx, mz, credentialType);
+    return parseCoreClaimSlots(
+      ldCtx as unknown as { mappings: Map<string, Record<string, unknown>> },
+      mz,
+      credentialType
+    );
   }
 
   /**

@@ -36,14 +36,11 @@ import {
   RHS_CONTRACT_ADDRESS
 } from '../../helpers';
 
-import chai from 'chai';
 import path from 'path';
-import spies from 'chai-spies';
 import { JsonRpcProvider, Wallet } from 'ethers';
 import { getRandomBytes } from '@iden3/js-crypto';
 import { schemaLoaderForTests } from '../../mocks/schema';
-chai.use(spies);
-const expect = chai.expect;
+import { describe, expect, it, beforeEach } from 'vitest';
 
 describe('parse credential status with type Iden3OnchainSparseMerkleTreeProof2023:', () => {
   const testCases = [

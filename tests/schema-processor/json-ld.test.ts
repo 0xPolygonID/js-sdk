@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import chaiAsPromised from 'chai-as-promised';
-import chai from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
+
 import listOfLDContexts from './data/list-of-ld-contexts.json';
 import listWithSingleLDContext from './data/list-with-single-ld-context.json';
 import singleLDContextV2 from './data/single-ld-context-2.json';
 import singleLDContext from './data/single-ld-context.json';
 import { LDParser } from '../../src';
-chai.use(chaiAsPromised);
-const { expect } = chai;
+
 describe('get types from jsonld schema', () => {
   it('with list of ld contexts', async () => {
     const context: string = JSON.stringify(listOfLDContexts);

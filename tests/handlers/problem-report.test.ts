@@ -1,6 +1,5 @@
-import { describe } from 'mocha';
 import { createProblemReportMessage } from '../../src';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 
 describe('Problem Report Handler', () => {
   it('should create problem report', () => {
@@ -36,7 +35,10 @@ describe('Problem Report Handler', () => {
         comment: 'Remote server {1} is down when connecting from {2}'
       }
     );
-    delete problemReport.id;
+    // Remove the id field if it exists to match the expected format
+    if ('id' in problemReport) {
+      delete (problemReport as any)['id'];
+    }
     const expected = JSON.parse(example);
     expect(problemReport).to.be.deep.equal(expected);
   });

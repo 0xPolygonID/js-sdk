@@ -1,11 +1,8 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { DIDDocumentJSONSchema, JsonSchemaValidator, byteEncoder } from '../../src';
-import chai from 'chai';
-import chaiAsPromised from 'chai-as-promised';
-import { cred07, cred20, schema07, schema2020 } from './data/json-validator-data';
+import { describe, expect, it, beforeEach } from 'vitest';
 
-chai.use(chaiAsPromised);
-const { expect } = chai;
+import { cred07, cred20, schema07, schema2020 } from './data/json-validator-data';
 
 describe('json validator', () => {
   it('test validator validate', async () => {
@@ -17,26 +14,26 @@ describe('json validator', () => {
     expect(result).to.be.true;
   });
 
-  it('test validator validateNoTypeInService', () => {
+  it('test validator validateNoTypeInService', async () => {
     // no type in did document service
     const jsonDIDDocument = `{"service":[{"id":"did:example:123#linked-domain","serviceEndpoint":"https://bar.example.com"},{"id":"did:example:123#linked-domain","type":"push-notification","metadata":{"devices":[{"ciphertext":"base64encoded","alg":"rsa"}]},"serviceEndpoint":"https://bar.example.com"}],"id":"did:example:123#linked-domain"}`;
 
     const v = new JsonSchemaValidator();
     const jsonDIDDocumentBytes = byteEncoder.encode(jsonDIDDocument);
     const dataBytes = byteEncoder.encode(DIDDocumentJSONSchema);
-    expect(v.validate(jsonDIDDocumentBytes, dataBytes)).to.be.rejectedWith(
-      "should have required property 'type'"
+    await expect(v.validate(jsonDIDDocumentBytes, dataBytes)).rejects.toThrow(
+      "must have required property 'type'"
     );
   });
 
-  it('test validator validateNoIDinDocument', () => {
+  it('test validator validateNoIDinDocument', async () => {
     // no type in did document service
     const jsonDIDDocument = `{"service":[{"id":"did:example:123#linked-domain","type":"LinkedDomains","serviceEndpoint":"https://bar.example.com"},{"id":"did:example:123#linked-domain","type":"push-notification","metadata":{"devices":[{"ciphertext":"base64encoded","alg":"rsa"}]},"serviceEndpoint":"https://bar.example.com"}]}`;
     const v = new JsonSchemaValidator();
     const jsonDIDDocumentBytes = byteEncoder.encode(jsonDIDDocument);
     const dataBytes = byteEncoder.encode(DIDDocumentJSONSchema);
-    expect(v.validate(jsonDIDDocumentBytes, dataBytes)).to.be.rejectedWith(
-      "should have required property 'id'"
+    await expect(v.validate(jsonDIDDocumentBytes, dataBytes)).rejects.toThrow(
+      "must have required property 'id'"
     );
   });
   it('TestValidator_ValidateDraft07', async () => {
@@ -58,7 +55,7 @@ describe('json validator', () => {
 
     const data = byteEncoder.encode(`{"documentType": 1}`);
     const validator = new JsonSchemaValidator();
-    await expect(validator.validate(data, schema)).to.be.rejectedWith(
+    await expect(validator.validate(data, schema)).rejects.toThrow(
       `must have required property 'birthday'`
     );
   });

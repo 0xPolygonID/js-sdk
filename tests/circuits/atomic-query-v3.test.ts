@@ -11,7 +11,7 @@ import { IdentityTest, userPK, issuerPK, defaultUserClaim, timestamp } from './u
 
 import expectedMtpJson from './data/atomic-query-v3-mtp.json';
 import expectedSigJson from './data/atomic-query-v3-sig.json';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { byteDecoder, byteEncoder, ProofType } from '../../src';
 
 describe('atomic-query-v3', () => {

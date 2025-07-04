@@ -15,7 +15,7 @@ import {
   getChainId
 } from '@iden3/js-iden3-core';
 import { Proof, Hash, rootFromProof, verifyProof } from '@iden3/js-merkletree';
-import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
+import { getInitialContext, Merklizer, Options } from '@iden3/js-jsonld-merklization';
 import { PublicKey, poseidon } from '@iden3/js-crypto';
 import { CredentialRequest, CredentialStatusResolverRegistry } from '../credentials';
 import { getUserDIDFromCredential } from '../credentials/utils';
@@ -34,9 +34,8 @@ import {
   parseCoreClaimSlots
 } from './core-utils';
 
-import * as jsonld from 'jsonld/lib';
-import * as ldcontext from 'jsonld/lib/context';
 import { JsonDocumentObject } from '../iden3comm';
+import * as jsonld from 'jsonld';
 
 /**
  * W3C Verifiable credential
@@ -267,12 +266,16 @@ export class W3CCredential {
     const subjectId = this.credentialSubject['id'];
 
     const ldCtx = await jsonld.processContext(
-      ldcontext.getInitialContext({}),
-      this['@context'],
+      getInitialContext({}),
+      this['@context'] as jsonld.JsonLdDocument,
       mz.options
     );
 
-    const { slots, nonMerklized } = await parseCoreClaimSlots(ldCtx, mz, credentialType);
+    const { slots, nonMerklized } = await parseCoreClaimSlots(
+      ldCtx as unknown as { mappings: Map<string, Record<string, unknown>> },
+      mz,
+      credentialType
+    );
 
     // if schema is for non merklized credential, root position must be set to none ('')
     // otherwise default position for merklized position is index.

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="./dist/browser/umd/index.js"></script>
+    <script src="./dist/browser/umd/index.global.js"></script>
     <script type="importmap">
       {
         "imports": {
@@ -14,7 +14,8 @@
           "@iden3/js-jwz": "./node_modules/@iden3/js-jwz/dist/browser/esm/index.js",
           "@iden3/js-jsonld-merklization": "./node_modules/@iden3/js-jsonld-merklization/dist/browser/esm/index.js",
           "snarkjs": "./node_modules/snarkjs/build/browser.esm.js",
-          "ffjavascript": "./node_modules/ffjavascript/build/browser.esm.js"
+          "ffjavascript": "./node_modules/ffjavascript/build/browser.esm.js",
+          "rfc4648": "./node_modules/rfc4648/lib/rfc4648.js"
         }
       }
     </script>
@@ -68,6 +69,9 @@
           ),
           mt: new MerkleTreeLocalStorage(40),
           states: {
+            getRpcProvider: () => {
+              return {};
+            },
             getLatestStateById: async () => {
               throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
             },

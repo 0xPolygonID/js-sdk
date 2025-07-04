@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { parseQueryMetadata } from '../../src';
 import { schemaLoaderForTests } from '../mocks/schema';
 
@@ -51,7 +51,7 @@ describe('parseQueryMetadata', () => {
         'KYCAgeCredential',
         merklizeOpts
       )
-    ).to.be.rejectedWith('operator value should be undefined for 0 operator');
+    ).rejects.toThrow('operator value should be undefined for 0 operator');
 
     await expect(
       parseQueryMetadata(
@@ -64,6 +64,6 @@ describe('parseQueryMetadata', () => {
         'KYCAgeCredential',
         merklizeOpts
       )
-    ).to.be.rejectedWith('operator value should be undefined for 16 operator');
+    ).rejects.toThrow('operator value should be undefined for 16 operator');
   });
 });

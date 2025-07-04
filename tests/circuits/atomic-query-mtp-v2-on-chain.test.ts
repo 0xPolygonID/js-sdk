@@ -19,9 +19,9 @@ import {
 } from './utils';
 
 import expectedJson from './data/mtp-v2-on-chain-inputs.json';
-import { expect } from 'chai';
 import { byteDecoder, byteEncoder } from '../../src';
 import { poseidon } from '@iden3/js-crypto';
+import { describe, expect, it, beforeEach } from 'vitest';
 
 describe('atomic-query-mtp-v2-on-chain', () => {
   it('TestAttrQueryMTPV2OnChain_PrepareInputs', async () => {

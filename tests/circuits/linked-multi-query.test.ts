@@ -6,7 +6,7 @@ import {
 } from '../../src/circuits';
 import { IdentityTest, defaultUserClaim, userPK } from './utils';
 import expectedJson from './data/linked-multi-query-inputs.json';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { byteDecoder, byteEncoder } from '../../src';
 
 describe('linked-multi-query', () => {

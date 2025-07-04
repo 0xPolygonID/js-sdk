@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { parseAcceptProfile, buildAccept } from '../../src/iden3comm/utils/accept-profile';
 import {
   ProtocolVersion,

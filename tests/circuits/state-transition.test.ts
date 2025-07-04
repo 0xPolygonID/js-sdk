@@ -8,7 +8,7 @@ import {
   StateTransitionPubSignals
 } from '../../src/circuits/state-transition';
 import { generate } from './utils';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { byteDecoder } from '../../src';
 
 describe('state-transition', () => {

@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import {
   CoreClaimOptions,
   MerklizedRootPosition,

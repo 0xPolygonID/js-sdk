@@ -1,9 +1,0 @@
-{
-    "extension": [
-        "ts"
-    ],
-    "spec": "tests/**/*.test.ts",
-    "require": "ts-node/register",
-    "timeout": "400000",
-    "maxDiffSize": "10000"
-}

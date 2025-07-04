@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { buildDIDFromEthPubKey, JsonDocumentObject, mergeObjects } from '../../src';
 import { Blockchain, buildDIDType, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 

@@ -1,11 +1,8 @@
 import { BytesHelper, SchemaHash } from '@iden3/js-iden3-core';
-import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
-import { byteDecoder } from '../utils';
-
-import * as jsonld from 'jsonld/lib';
-import * as ldcontext from 'jsonld/lib/context';
-import { Hex } from '@iden3/js-crypto';
-import { keccak256 } from 'js-sha3';
+import { getInitialContext, Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
+import { byteDecoder, hexToBytes } from '../utils';
+import * as jsonld from 'jsonld';
+import { keccak256 } from 'ethers';
 
 const credentialSubjectKey = 'credentialSubject';
 const contextFullKey = '@context';
@@ -14,6 +11,8 @@ const fieldPrefix = 'iden3:v1:';
 const credentialSubjectFullKey = 'https://www.w3.org/2018/credentials#credentialSubject';
 const verifiableCredentialFullKey = 'https://www.w3.org/2018/credentials#VerifiableCredential';
 const typeFullKey = '@type';
+
+type ParsedCtx = { mappings: Map<string, Record<string, unknown>> };
 
 /**
  * CoreClaimCreationOptions is params for core claim creation
@@ -74,9 +73,12 @@ export const getFieldSlotIndex = async (
     throw new Error('document has no @context');
   }
 
-  const ldCtx = await jsonld.processContext(ldcontext.getInitialContext({}), ctxDoc, {});
+  const ldCtx = await jsonld.processContext(getInitialContext({}), ctxDoc, {});
 
-  const serAttr = await getSerializationAttrFromParsedContext(ldCtx, typeName);
+  const serAttr = await getSerializationAttrFromParsedContext(
+    ldCtx as unknown as ParsedCtx,
+    typeName
+  );
 
   if (!serAttr) {
     throw new Error('serialization attribute is not set');
@@ -141,13 +143,13 @@ export const getSerializationAttrFromContext = async (
   opts: Options,
   tp: string
 ): Promise<string> => {
-  const ldCtx = await jsonld.processContext(ldcontext.getInitialContext({}), context, opts);
+  const ldCtx = await jsonld.processContext(getInitialContext({}), context, opts);
 
-  return getSerializationAttrFromParsedContext(ldCtx, tp);
+  return getSerializationAttrFromParsedContext(ldCtx as unknown as ParsedCtx, tp);
 };
 
 export const getSerializationAttrFromParsedContext = async (
-  ldCtx: { mappings: Map<string, Record<string, unknown>> },
+  ldCtx: ParsedCtx,
   tp: string
 ): Promise<string> => {
   const termDef = ldCtx.mappings;
@@ -292,6 +294,6 @@ export const parseCoreClaimSlots = async (
  * @returns {*}  {SchemaHash}
  */
 export const calculateCoreSchemaHash = (schemaId: Uint8Array): SchemaHash => {
-  const sHash = Hex.decodeString(keccak256(schemaId));
+  const sHash = hexToBytes(keccak256(schemaId));
   return new SchemaHash(sHash.slice(sHash.length - 16, sHash.length));
 };
