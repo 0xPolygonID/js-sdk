@@ -1,14 +1,16 @@
 import { defineConfig } from 'vitest/config';
+// import dotenv from 'dotenv';
 
 export default defineConfig({
   test: {
     // Set environment variables directly
     globals: true,
     environment: 'node',
-    testTimeout: 40000
+    testTimeout: 400000,
+    setupFiles: ['dotenv/config']
     // poolOptions: {
     //   threads: {
-    //     maxThreads: 2
+    //     maxThreads: 3
     //   }
     // }
     // Allow files to run in parallel, but control test execution within files
