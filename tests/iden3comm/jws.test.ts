@@ -12,7 +12,7 @@ import {
   isEthereumIdentity,
   keyPath
 } from '../../src';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { DIDResolutionResult } from 'did-resolver';
 import { ES256KSigner } from 'did-jwt';
 import { DID, getChainId, Id } from '@iden3/js-iden3-core';

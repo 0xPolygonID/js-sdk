@@ -30,7 +30,7 @@ import {
   SEED_ISSUER,
   RHS_CONTRACT_ADDRESS
 } from '../helpers';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { Wallet } from 'ethers';
 import { getRandomBytes } from '@iden3/js-crypto';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
