@@ -2,7 +2,7 @@ import { PackageManager, RefreshHandler } from '../../src';
 import { credWithRefreshService } from '../credentials/mock';
 import { initZKPPacker } from '../iden3comm/mock/proving';
 import nock from 'nock';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('refresh-service', () => {
   it('refresh service returns cred', async () => {

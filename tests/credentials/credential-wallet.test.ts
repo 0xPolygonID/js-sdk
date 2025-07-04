@@ -11,7 +11,7 @@ import {
   Iden3SparseMerkleTreeProof
 } from '../../src/verifiable';
 import { BrowserDataSource } from '../../src/storage/local-storage/data-source';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';

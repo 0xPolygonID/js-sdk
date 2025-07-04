@@ -43,8 +43,12 @@ export class FSCircuitStorage implements ICircuitStorage {
     return {
       existsSync: () => false,
       readFileSync: () => new Uint8Array(),
-      writeFileSync: () => {},
-      mkdirSync: () => {}
+      writeFileSync: () => {
+        // No-op in browser environment
+      },
+      mkdirSync: () => {
+        // No-op in browser environment
+      }
     } as unknown as typeof import('fs');
   }
   /**
@@ -64,7 +68,6 @@ export class FSCircuitStorage implements ICircuitStorage {
    * @returns `Promise<CircuitData>`
    */
   async loadCircuitData(circuitId: CircuitId): Promise<CircuitData> {
-    const fs = await this.getFs();
     const verificationKey = await this.loadCircuitFile(circuitId, this._verificationKeyPath);
     const provingKey = await this.loadCircuitFile(circuitId, this._provingKeyPath);
     const wasm = await this.loadCircuitFile(circuitId, this._wasmFilePath);

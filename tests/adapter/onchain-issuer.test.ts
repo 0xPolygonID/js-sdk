@@ -4,7 +4,7 @@ import { DID } from '@iden3/js-iden3-core';
 import { W3CCredential } from '../../src/verifiable';
 import { defaultEthConnectionConfig } from '../../src';
 import { schemaLoaderForTests } from '../mocks/schema';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 // prettier-ignore
 const balanceCredentialHttpSchema =

@@ -11,8 +11,8 @@ import {
   parseCoreClaimSlots
 } from '../../verifiable';
 import { Claim as CoreClaim } from '@iden3/js-iden3-core';
-import { getInitialContext, Merklizer, Options } from '@iden3/js-jsonld-merklization';
-import * as jsonld from 'jsonld';
+import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
+import jsonld from 'jsonld';
 
 /**
  *
@@ -113,7 +113,7 @@ export class Parser {
     tp: string
   ): Promise<string> {
     const ldCtx = await jsonld.processContext(
-      getInitialContext({}),
+      await jsonld.processContext(null, null, {}),
       credential['@context'] as jsonld.JsonLdDocument,
       opts
     );
@@ -175,7 +175,7 @@ export class Parser {
     credentialType: string
   ): Promise<{ slots: ParsedSlots; nonMerklized: boolean }> {
     const ldCtx = await jsonld.processContext(
-      getInitialContext({}),
+      await jsonld.processContext(null, null, {}),
       credential['@context'] as jsonld.JsonLdDocument,
       mz.options
     );

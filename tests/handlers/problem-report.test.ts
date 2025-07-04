@@ -1,5 +1,5 @@
 import { createProblemReportMessage } from '../../src';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('Problem Report Handler', () => {
   it('should create problem report', () => {
@@ -37,7 +37,7 @@ describe('Problem Report Handler', () => {
     );
     // Remove the id field if it exists to match the expected format
     if ('id' in problemReport) {
-      delete (problemReport as any)['id'];
+      delete (problemReport as Record<string, unknown>)['id'];
     }
     const expected = JSON.parse(example);
     expect(problemReport).to.be.deep.equal(expected);

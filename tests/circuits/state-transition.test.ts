@@ -8,7 +8,7 @@ import {
   StateTransitionPubSignals
 } from '../../src/circuits/state-transition';
 import { generate } from './utils';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { byteDecoder } from '../../src';
 
 describe('state-transition', () => {

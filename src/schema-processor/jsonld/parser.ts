@@ -1,5 +1,4 @@
-import { getInitialContext } from '@iden3/js-jsonld-merklization';
-import * as jsonld from 'jsonld';
+import jsonld from 'jsonld';
 
 /**
  * LDParser can parse JSONLD schema according to specification
@@ -19,7 +18,7 @@ export class LDParser {
     let res;
     try {
       data = typeof context === 'string' ? JSON.parse(context) : context;
-      res = await jsonld.processContext(getInitialContext({}), data, {});
+      res = await jsonld.processContext(await jsonld.processContext(null, null, {}), data, {});
     } catch (e) {
       throw new Error(`Failed process LD context. Error ${e}`);
     }

@@ -15,7 +15,7 @@ import {
   getChainId
 } from '@iden3/js-iden3-core';
 import { Proof, Hash, rootFromProof, verifyProof } from '@iden3/js-merkletree';
-import { getInitialContext, Merklizer, Options } from '@iden3/js-jsonld-merklization';
+import { Merklizer, Options } from '@iden3/js-jsonld-merklization';
 import { PublicKey, poseidon } from '@iden3/js-crypto';
 import { CredentialRequest, CredentialStatusResolverRegistry } from '../credentials';
 import { getUserDIDFromCredential } from '../credentials/utils';
@@ -35,7 +35,7 @@ import {
 } from './core-utils';
 
 import { JsonDocumentObject } from '../iden3comm';
-import * as jsonld from 'jsonld';
+import jsonld from 'jsonld';
 
 /**
  * W3C Verifiable credential
@@ -266,7 +266,7 @@ export class W3CCredential {
     const subjectId = this.credentialSubject['id'];
 
     const ldCtx = await jsonld.processContext(
-      getInitialContext({}),
+      await jsonld.processContext(null, null, {}),
       this['@context'] as jsonld.JsonLdDocument,
       mz.options
     );

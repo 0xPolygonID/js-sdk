@@ -21,7 +21,7 @@ import {
 import expectedJson from './data/sig-v2-on-chain-inputs.json';
 import { byteDecoder, byteEncoder } from '../../src';
 import { poseidon } from '@iden3/js-crypto';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('atomic-query-sig-v2-on-chain', () => {
   it('TestAttrQuerySigV2OnChain_PrepareInputs', async () => {

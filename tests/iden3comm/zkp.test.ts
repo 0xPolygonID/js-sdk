@@ -4,7 +4,7 @@ import { ZKPPackerParams } from '../../src/iden3comm/types';
 import { AuthV2PubSignals } from '../../src/circuits';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { byteDecoder, byteEncoder } from '../../src';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { initZKPPacker } from './mock/proving';
 describe('zkp packer tests', () => {
   it('test zkp packer pack', async () => {

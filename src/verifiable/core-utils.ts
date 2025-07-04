@@ -1,7 +1,7 @@
 import { BytesHelper, SchemaHash } from '@iden3/js-iden3-core';
-import { getInitialContext, Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
+import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { byteDecoder, hexToBytes } from '../utils';
-import * as jsonld from 'jsonld';
+import jsonld from 'jsonld';
 import { keccak256 } from 'ethers';
 
 const credentialSubjectKey = 'credentialSubject';
@@ -73,7 +73,11 @@ export const getFieldSlotIndex = async (
     throw new Error('document has no @context');
   }
 
-  const ldCtx = await jsonld.processContext(getInitialContext({}), ctxDoc, {});
+  const ldCtx = await jsonld.processContext(
+    await jsonld.processContext(null, null, {}),
+    ctxDoc,
+    {}
+  );
 
   const serAttr = await getSerializationAttrFromParsedContext(
     ldCtx as unknown as ParsedCtx,
@@ -143,7 +147,11 @@ export const getSerializationAttrFromContext = async (
   opts: Options,
   tp: string
 ): Promise<string> => {
-  const ldCtx = await jsonld.processContext(getInitialContext({}), context, opts);
+  const ldCtx = await jsonld.processContext(
+    await jsonld.processContext(null, null, {}),
+    context,
+    opts
+  );
 
   return getSerializationAttrFromParsedContext(ldCtx as unknown as ParsedCtx, tp);
 };

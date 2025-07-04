@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { parseAcceptProfile, buildAccept } from '../../src/iden3comm/utils/accept-profile';
 import {
   ProtocolVersion,

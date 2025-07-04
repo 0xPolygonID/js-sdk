@@ -20,8 +20,7 @@ export default defineConfig({
     },
     globals: true,
     environment: 'node',
-    // teardownTimeout: 40000,
-    testTimeout: 50000,
+    testTimeout: 40000
     // poolOptions: {
     //   threads: {
     //     maxThreads: 2

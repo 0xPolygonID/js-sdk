@@ -21,7 +21,7 @@ import {
   StateInfo,
   StateProof
 } from '../../src';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import nock from 'nock';
 import { JsonRpcProvider } from 'ethers';

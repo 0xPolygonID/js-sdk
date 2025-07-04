@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import listOfLDContexts from './data/list-of-ld-contexts.json';
 import listWithSingleLDContext from './data/list-with-single-ld-context.json';

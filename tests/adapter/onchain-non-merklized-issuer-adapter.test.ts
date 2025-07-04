@@ -10,7 +10,7 @@ import { W3CCredential } from '../../src/verifiable';
 import { IPFS_URL } from '../helpers';
 import { defaultEthConnectionConfig } from '../../src';
 import { schemaLoaderForTests } from '../mocks/schema';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 // prettier-ignore
 const w3cHttpSchemaExpect =

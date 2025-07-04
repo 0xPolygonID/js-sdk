@@ -42,7 +42,9 @@ export default [
               'ETHWEI',
               'ETHGWEI',
               'didcomm',
-              'pthid'
+              'pthid',
+              'snarkjs',
+              'ffjavascript'
             ]
           }
         }

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { DIDDocumentJSONSchema, JsonSchemaValidator, byteEncoder } from '../../src';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { cred07, cred20, schema07, schema2020 } from './data/json-validator-data';
 
