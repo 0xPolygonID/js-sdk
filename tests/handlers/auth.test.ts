@@ -218,7 +218,7 @@ describe.sequential('auth', () => {
       issuerDID.string(),
       'http://localhost:8080/callback?id=1234442-123123-123123',
       {
-        scope: [], //[proofReq, proofForNonExistingCondition, proofForNonExistingConditionWithGroupId],
+        scope: [proofReq, proofForNonExistingCondition, proofForNonExistingConditionWithGroupId],
         accept: buildAccept([profile])
       }
     );
