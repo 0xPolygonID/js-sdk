@@ -34,7 +34,7 @@ import {
   RHS_URL
 } from '../helpers';
 
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import path from 'path';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { DID } from '@iden3/js-iden3-core';

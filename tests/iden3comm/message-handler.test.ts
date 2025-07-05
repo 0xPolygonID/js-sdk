@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 import {
   AuthHandler,
   AuthorizationRequestMessage,
@@ -58,18 +58,27 @@ describe('MessageHandler', () => {
   it('should throw invalid handle messages', async () => {
     const messageHandler = new MessageHandler({
       messageHandlers: [],
-      packageManager: {} as IPackageManager
+      packageManager: {
+        unpack: async () => {
+          return {
+            unpackedMediaType: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+            unpackedMessage: {
+              type: 'other-type'
+            }
+          };
+        }
+      } as unknown as IPackageManager
     });
 
-    expect(
+    await expect(
       messageHandler.handleMessage(new Uint8Array(), { senderDid: new DID() })
-    ).to.be.rejectedWith('Message handler not provided');
+    ).rejects.toThrow('Message handler not provided');
 
-    expect(
+    await expect(
       messageHandler.handleMessage(byteEncoder.encode('{"type":"other-type"}'), {
         senderDid: new DID()
       })
-    ).to.be.rejectedWith('Message handler not provided');
+    ).rejects.toThrow('Message handler not provided');
   });
 
   it('should handle auth req/resp messages', async () => {
