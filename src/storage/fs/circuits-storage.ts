@@ -38,6 +38,10 @@ export class FSCircuitStorage implements ICircuitStorage {
 
   private _fs: typeof import('fs') | null = null;
 
+  private readonly _browserNotSupportedError: Error = new Error(
+    'File system operations are not supported in browser environment'
+  );
+
   private async getFs(): Promise<typeof import('fs')> {
     if (this._fs) {
       return this._fs;
@@ -47,13 +51,17 @@ export class FSCircuitStorage implements ICircuitStorage {
       this._fs = await import('fs');
     } else {
       this._fs = {
-        existsSync: () => false,
-        readFileSync: () => new Uint8Array(),
+        existsSync: () => {
+          throw this._browserNotSupportedError;
+        },
+        readFileSync: () => {
+          throw this._browserNotSupportedError;
+        },
         writeFileSync: () => {
-          // No-op in browser environment
+          throw this._browserNotSupportedError;
         },
         mkdirSync: () => {
-          // No-op in browser environment
+          throw this._browserNotSupportedError;
         }
       } as unknown as typeof import('fs');
     }
