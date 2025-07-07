@@ -7,7 +7,6 @@ const getDir = (filePath) => path.dirname(filePath);
 // Base external dependencies (for Node.js builds)
 const baseExternal = [
   ...Object.keys(packageJson.dependencies),
-  ...Object.keys(packageJson.devDependencies),
   ...Object.keys(packageJson.peerDependencies)
 ];
 
