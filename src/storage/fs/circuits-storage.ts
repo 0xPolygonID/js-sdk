@@ -36,20 +36,29 @@ export class FSCircuitStorage implements ICircuitStorage {
   private readonly _provingKeyPath: string = 'circuit_final.zkey';
   private readonly _wasmFilePath: string = 'circuit.wasm';
 
+  private _fs: typeof import('fs') | null = null;
+
   private async getFs(): Promise<typeof import('fs')> {
-    if (!process.env.BUILD_BROWSER) {
-      return await import('fs');
+    if (this._fs) {
+      return this._fs;
     }
-    return {
-      existsSync: () => false,
-      readFileSync: () => new Uint8Array(),
-      writeFileSync: () => {
-        // No-op in browser environment
-      },
-      mkdirSync: () => {
-        // No-op in browser environment
-      }
-    } as unknown as typeof import('fs');
+
+    if (!process.env.BUILD_BROWSER) {
+      this._fs = await import('fs');
+    } else {
+      this._fs = {
+        existsSync: () => false,
+        readFileSync: () => new Uint8Array(),
+        writeFileSync: () => {
+          // No-op in browser environment
+        },
+        mkdirSync: () => {
+          // No-op in browser environment
+        }
+      } as unknown as typeof import('fs');
+    }
+
+    return this._fs;
   }
   /**
    * Creates an instance of FSCircuitStorage.
