@@ -1,7 +1,8 @@
 import { defineConfig } from 'tsup';
 import packageJson from './package.json' with { type: 'json' };
+import * as path from 'path';
 
-const getDir = (path) => path.split('/').slice(0, -1).join('/');
+const getDir = (filePath) => path.dirname(filePath);
 
 // Base external dependencies (for Node.js builds)
 const baseExternal = [
