@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { DidResolverStateReadonlyStorage, IStateStorage } from '../../src';
 import { DID } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';

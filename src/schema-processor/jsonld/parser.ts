@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-import * as jsonld from 'jsonld/lib';
-import * as ldcontext from 'jsonld/lib/context';
+import jsonld from 'jsonld';
 
 /**
  * LDParser can parse JSONLD schema according to specification
@@ -20,7 +18,7 @@ export class LDParser {
     let res;
     try {
       data = typeof context === 'string' ? JSON.parse(context) : context;
-      res = await jsonld.processContext(ldcontext.getInitialContext({}), data, {});
+      res = await jsonld.processContext(await jsonld.processContext(null, null, {}), data, {});
     } catch (e) {
       throw new Error(`Failed process LD context. Error ${e}`);
     }

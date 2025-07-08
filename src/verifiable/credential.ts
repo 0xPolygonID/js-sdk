@@ -34,9 +34,8 @@ import {
   parseCoreClaimSlots
 } from './core-utils';
 
-import * as jsonld from 'jsonld/lib';
-import * as ldcontext from 'jsonld/lib/context';
 import { JsonDocumentObject } from '../iden3comm';
+import jsonld from 'jsonld';
 
 /**
  * W3C Verifiable credential
@@ -267,12 +266,16 @@ export class W3CCredential {
     const subjectId = this.credentialSubject['id'];
 
     const ldCtx = await jsonld.processContext(
-      ldcontext.getInitialContext({}),
-      this['@context'],
+      await jsonld.processContext(null, null, {}),
+      this['@context'] as jsonld.JsonLdDocument,
       mz.options
     );
 
-    const { slots, nonMerklized } = await parseCoreClaimSlots(ldCtx, mz, credentialType);
+    const { slots, nonMerklized } = await parseCoreClaimSlots(
+      ldCtx as unknown as { mappings: Map<string, Record<string, unknown>> },
+      mz,
+      credentialType
+    );
 
     // if schema is for non merklized credential, root position must be set to none ('')
     // otherwise default position for merklized position is index.

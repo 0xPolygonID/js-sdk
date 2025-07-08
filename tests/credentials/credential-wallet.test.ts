@@ -11,15 +11,13 @@ import {
   Iden3SparseMerkleTreeProof
 } from '../../src/verifiable';
 import { BrowserDataSource } from '../../src/storage/local-storage/data-source';
-import chaiAsPromised from 'chai-as-promised';
-import chai from 'chai';
+import { describe, expect, it } from 'vitest';
+
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { IDataSource } from '../../src';
 import { Claim, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
-chai.use(chaiAsPromised);
-const { expect } = chai;
 
 class LocalStorageMock {
   store: object;
@@ -410,7 +408,7 @@ const credentialFlow = async (storage: IDataStorage) => {
       }
     }
   };
-  await expect(credentialWallet.findByQuery(query)).to.be.rejectedWith(
+  await expect(credentialWallet.findByQuery(query)).rejects.toThrow(
     SearchError.NotDefinedComparator
   );
 
@@ -419,12 +417,12 @@ const credentialFlow = async (storage: IDataStorage) => {
     allowedIssuers: ['*'],
     someProp: ''
   };
-  await expect(credentialWallet.findByQuery(query2)).to.be.rejectedWith(
+  await expect(credentialWallet.findByQuery(query2)).rejects.toThrow(
     SearchError.NotDefinedQueryKey
   );
 
   // remove credential error
-  await expect(credentialWallet.remove('unknownId')).to.be.rejectedWith(
+  await expect(credentialWallet.remove('unknownId')).rejects.toThrow(
     'item not found to delete: unknownId'
   );
 

@@ -1,7 +1,6 @@
 import { CircuitId } from '../../circuits';
 import { CircuitData } from '../entities/circuitData';
 import { ICircuitStorage } from '../interfaces/circuits';
-import fs from 'fs';
 
 /**
  * Options for FSCircuitStorage,
@@ -37,6 +36,38 @@ export class FSCircuitStorage implements ICircuitStorage {
   private readonly _provingKeyPath: string = 'circuit_final.zkey';
   private readonly _wasmFilePath: string = 'circuit.wasm';
 
+  private _fs: typeof import('fs') | null = null;
+
+  private readonly _browserNotSupportedError: Error = new Error(
+    'File system operations are not supported in browser environment'
+  );
+
+  private async getFs(): Promise<typeof import('fs')> {
+    if (this._fs) {
+      return this._fs;
+    }
+
+    if (!process.env.BUILD_BROWSER) {
+      this._fs = await import('fs');
+    } else {
+      this._fs = {
+        existsSync: () => {
+          throw this._browserNotSupportedError;
+        },
+        readFileSync: () => {
+          throw this._browserNotSupportedError;
+        },
+        writeFileSync: () => {
+          throw this._browserNotSupportedError;
+        },
+        mkdirSync: () => {
+          throw this._browserNotSupportedError;
+        }
+      } as unknown as typeof import('fs');
+    }
+
+    return this._fs;
+  }
   /**
    * Creates an instance of FSCircuitStorage.
    * @param {string} opts - options to read / save files
@@ -71,6 +102,7 @@ export class FSCircuitStorage implements ICircuitStorage {
     filename: string
   ): Promise<Uint8Array | null> {
     const keyPath = `${this.opts.dirname}/${circuitId}/${filename}`;
+    const fs = await this.getFs();
     if (fs.existsSync(keyPath)) {
       const keyData = fs.readFileSync(keyPath);
       return new Uint8Array(keyData);
@@ -85,6 +117,7 @@ export class FSCircuitStorage implements ICircuitStorage {
   ): Promise<void> {
     const dirPath = `${this.opts.dirname}/${circuitId}`;
     const keyPath = `${dirPath}/${filename}`;
+    const fs = await this.getFs();
     fs.mkdirSync(dirPath, { recursive: true });
     fs.writeFileSync(keyPath, file, encoding);
   }

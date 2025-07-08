@@ -26,11 +26,11 @@ import path from 'path';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { RPC_URL } from '../helpers';
 import { schemaLoaderForTests } from '../mocks/schema';
 
-describe('mtp onchain proofs', () => {
+describe.sequential('mtp onchain proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 

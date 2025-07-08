@@ -37,7 +37,7 @@ import { OnchainIssuer } from '../../src/storage/blockchain/onchain-issuer';
 import { defaultEthConnectionConfig } from '../../src';
 
 import * as uuid from 'uuid';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import path from 'path';
 import nock from 'nock';
 
@@ -328,6 +328,6 @@ describe('fetch', () => {
       {}
     );
     const response = await fetchHandler.handleOnchainOffer(bytes);
-    console.log(response);
+    expect(response).to.not.be.undefined;
   });
 });

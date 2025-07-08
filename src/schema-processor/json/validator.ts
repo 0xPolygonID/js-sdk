@@ -1,8 +1,8 @@
 // or ESM/TypeScript import
 import Ajv from 'ajv';
 import { byteDecoder } from '../../utils';
-import Ajv2020 from 'ajv/dist/2020';
-import Ajv2019 from 'ajv/dist/2019';
+import Ajv2020 from 'ajv/dist/2020.js';
+import Ajv2019 from 'ajv/dist/2019.js';
 import addFormats from 'ajv-formats';
 
 const defaultOpts = { verbose: true, strict: false };

@@ -17,7 +17,7 @@ import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants'
 import { byteDecoder, byteEncoder } from '../../src';
 
 const { registerProvingMethod } = proving;
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 describe('tests packageManager with ZKP Packer', () => {
   it('tests package manager with zkp  packer', async () => {
     const pm = new PackageManager();
