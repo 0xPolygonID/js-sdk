@@ -2,7 +2,7 @@ import { IdentityWallet } from '../../../src';
 import { IDataStorage } from '../../../src/storage/interfaces';
 import { CredentialRequest, CredentialWallet } from '../../../src/credentials';
 import { CredentialStatusType } from '../../../src/verifiable';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import {
   MOCK_STATE_STORAGE,
   SEED_USER,

@@ -17,10 +17,10 @@ import {
 import { Proof } from '@iden3/js-merkletree';
 import { RootInfo, StateProof } from '../../../src/storage/entities/state';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { RHSResolver } from '../../../src/credentials';
 import { CredentialStatusResolverRegistry } from '../../../src/credentials';
-import { RHS_URL, SEED_USER, createIdentity, RPC_URL } from '../../helpers';
+import { RHS_URL, SEED_USER, createIdentity, RPC_URL, STATE_CONTRACT } from '../../helpers';
 import { JsonRpcProvider } from 'ethers';
 
 describe('rhs', () => {
@@ -168,7 +168,10 @@ describe('rhs', () => {
     const bjjProvider = new BjjProvider(KmsKeyType.BabyJubJub, memoryKeyStore);
     const kms = new KMS();
     kms.registerKeyProvider(KmsKeyType.BabyJubJub, bjjProvider);
-    const ethStorage = new EthStateStorage(defaultEthConnectionConfig);
+    const ethStorage = new EthStateStorage({
+      ...defaultEthConnectionConfig,
+      contractAddress: STATE_CONTRACT
+    });
     ethStorage.publishState = mockStateStorageForGenesisState.publishState;
 
     dataStorage = {
@@ -230,16 +233,9 @@ describe('rhs', () => {
 
     const rhsResolver = new RHSResolver(mockStateStorageForGenesisState);
 
-    return rhsResolver
-      .resolve(credRHSStatus, { issuerDID })
-      .then(function () {
-        throw new Error('was not supposed to succeed');
-      })
-      .catch((m) => {
-        expect((m as Error).message).to.contains(
-          `can't fetch revocation status from backup endpoint`
-        );
-      });
+    await expect(rhsResolver.resolve(credRHSStatus, { issuerDID })).rejects.toThrow(
+      `can't fetch revocation status from backup endpoint`
+    );
   });
 
   it('mocked issuer state', async () => {
