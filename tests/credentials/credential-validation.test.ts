@@ -8,8 +8,6 @@ import {
   VerifiableConstants,
   W3CProofVerificationOptions
 } from '../../src/verifiable';
-import chaiAsPromised from 'chai-as-promised';
-import chai from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import {
@@ -23,8 +21,8 @@ import {
   StateInfo,
   StateProof
 } from '../../src';
-chai.use(chaiAsPromised);
-const { expect } = chai;
+import { describe, expect, it } from 'vitest';
+
 import nock from 'nock';
 import { JsonRpcProvider } from 'ethers';
 import { IPFS_URL, RPC_URL } from '../helpers';

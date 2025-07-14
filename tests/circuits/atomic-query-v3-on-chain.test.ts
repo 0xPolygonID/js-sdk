@@ -19,7 +19,7 @@ import {
 
 import expectedMtpJson from './data/atomic-query-v3-mtp-on-chain.json';
 import expectedSigJson from './data/atomic-query-v3-sig-on-chain.json';
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 import { byteDecoder, byteEncoder, calculateQueryHashV3, ProofType } from '../../src';
 
 describe('atomic-query-v3', () => {

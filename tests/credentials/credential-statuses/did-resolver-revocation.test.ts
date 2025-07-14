@@ -5,12 +5,9 @@ import {
   DidDocumentCredentialStatusResolver
 } from '../../../src';
 
-import chai from 'chai';
-import spies from 'chai-spies';
-import nock from 'nock';
+import { describe, expect, it, beforeEach } from 'vitest';
 
-chai.use(spies);
-const expect = chai.expect;
+import nock from 'nock';
 
 describe('did document revocation checks', () => {
   let credentialStatusResolver: CredentialStatusResolver;
