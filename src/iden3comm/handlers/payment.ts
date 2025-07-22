@@ -390,7 +390,10 @@ export class PaymentHandler
       method: 'POST',
       body: response,
       headers: {
-        'Content-Type': 'application/octet-stream'
+        'Content-Type':
+          this._params.packerParams.mediaType === MediaType.PlainMessage
+            ? 'application/json'
+            : 'application/octet-stream'
       }
     });
 
