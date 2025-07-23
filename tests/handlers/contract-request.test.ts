@@ -1747,7 +1747,7 @@ describe('contract-request', () => {
     const CONTRACTS = {
       AMOY_STATE_CONTRACT: '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124',
       AMOY_UNIVERSAL_VERIFIER: '0xfcc86A79fCb057A8e55C6B853dff9479C3cf607c',
-      PRIVADO_TEST_STATE_CONTRACT: '0xE5BfD683F1Ca574B5be881b7DbbcFDCE9DDBAb90',
+      PRIVADO_TEST_STATE_CONTRACT: '0xEF75Eb00E6Ac36b5C215aEBe6CD7Bca9b2Eb33be',
       PRIVADO_MAIN_STATE_CONTRACT: '0x0DDd8701C91d8d1Ba35c9DbA98A45fe5bA8A877E',
       VALIDATOR_ADDRESS_V3: '0xd179f29d00Cd0E8978eb6eB847CaCF9E2A956336'
     };
@@ -1768,7 +1768,7 @@ describe('contract-request', () => {
       privadoTest: (contractAddress) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-testnet.privado.id',
-        contractAddress: `0xEF75Eb00E6Ac36b5C215aEBe6CD7Bca9b2Eb33be`,
+        contractAddress,
         chainId: 21001
       })
     };

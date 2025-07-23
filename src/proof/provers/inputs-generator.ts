@@ -21,7 +21,6 @@ import {
   Query,
   QueryOperators,
   TreeState,
-  ValueProof,
   getOperatorNameByValue
 } from '../../circuits';
 import {
@@ -480,8 +479,8 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
+    // it is ok not to reset claimPathKey for noop, as it is a part of output, but auth won't be broken. (it skips check for noop)
     query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
-    query.valueProof = query.valueProof; // claimPathKey is a part of output, but auth won't be broken. (it skips check for noop)
 
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -544,8 +543,8 @@ export class InputGenerator {
     circuitInputs.skipClaimRevocationCheck = params.skipRevocation;
 
     const query = circuitQueries[0];
+    // no need to set valueProof empty for noop, because it is ignored in circuit, but implies correct calculation of query hash
     query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
-    query.valueProof = query.valueProof; // no need to set it empty for noop, because it is ignored in circuit, but implies correct calculation of query hash
 
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -610,7 +609,6 @@ export class InputGenerator {
     });
     circuitQueries.forEach((query) => {
       query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
-      query.valueProof = query.valueProof;
     });
     return circuitInputs.inputsMarshal();
   };
