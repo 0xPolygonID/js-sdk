@@ -79,7 +79,7 @@ import { DIDResolutionResult } from 'did-resolver';
 import { getDocumentLoader } from '@iden3/js-jsonld-merklization';
 import zkpVerifierABI from '../../src/storage/blockchain/abi/ZkpVerifier.json';
 
-describe.only('contract-request', () => {
+describe('contract-request', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
