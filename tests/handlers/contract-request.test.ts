@@ -1762,14 +1762,14 @@ describe.only('contract-request', () => {
       privadoTest: (contractAddress) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-testnet.privado.id',
-        contractAddress,
+        contractAddress: `0xEF75Eb00E6Ac36b5C215aEBe6CD7Bca9b2Eb33be`,
         chainId: 21001
       })
     };
 
     const issuerAmoyStateEthConfig = networkConfigs.amoy(CONTRACTS.AMOY_STATE_CONTRACT);
 
-    const issuerPrivadoTestStateEthConfig = networkConfigs.privadoTest(
+    const issuerAmoyTestStateEthConfig = networkConfigs.amoy(
       CONTRACTS.PRIVADO_TEST_STATE_CONTRACT
     );
 
@@ -1780,7 +1780,7 @@ describe.only('contract-request', () => {
       new EthStateStorage([
         issuerAmoyStateEthConfig,
         userStateEthConfig,
-        issuerPrivadoTestStateEthConfig
+        issuerAmoyTestStateEthConfig
       ])
     );
 
@@ -1812,8 +1812,8 @@ describe.only('contract-request', () => {
     });
 
     const { did: issuerDID, credential: issuerAuthCredential } = await createIdentity(idWallet, {
-      blockchain: Blockchain.Privado,
-      networkId: NetworkId.Test
+      blockchain: Blockchain.Polygon,
+      networkId: NetworkId.Amoy
     });
     expect(issuerAuthCredential).not.to.be.undefined;
 
@@ -1846,7 +1846,7 @@ describe.only('contract-request', () => {
 
     await credWallet.save(issuerCred);
 
-    const requestId = 1766847064778388173357292599684296758876525335676835296354363273782128356n;
+    const requestId = Date.now();
 
     // ADD proofReq to scope
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1867,7 +1867,7 @@ describe.only('contract-request', () => {
     const zkpVerifierNetworkConfig = networkConfigs.amoy(CONTRACTS.AMOY_UNIVERSAL_VERIFIER);
 
     const zkpVerifier = new OnChainZKPVerifier([zkpVerifierNetworkConfig], {
-      didResolverUrl: 'https://resolver.privado.id'
+      didResolverUrl: 'https://resolver-dev.privado.id'
     });
 
     const context = 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld';
@@ -1877,7 +1877,7 @@ describe.only('contract-request', () => {
     } catch (e) {
       throw new Error(`can't load ld context from url ${context}`);
     }
-    const contextJSON = byteEncoder.encode(JSON.stringify(ldSchema));
+    const contextJSON = JSON.stringify(ldSchema);
 
     const metadataAsInQueryBuilder = await parseQueryMetadata(
       {
@@ -1885,7 +1885,7 @@ describe.only('contract-request', () => {
         operator: Operators.NOOP,
         operatorValue: undefined
       },
-      JSON.stringify(contextJSON),
+     contextJSON,
       claimReq.type,
       {}
     )
@@ -1914,7 +1914,7 @@ describe.only('contract-request', () => {
       slotIndex: metadataAsInQueryBuilder.slotIndex,
       queryHash: queryHashV3,
       circuitIds: [proofReqs[0].circuitId],
-      allowedIssuers: proofReqs[0].query.allowedIssuers,
+      allowedIssuers: proofReqs[0].query.allowedIssuers.includes("*") ? []: proofReqs[0].query.allowedIssuers,
       skipClaimRevocationCheck: false,
       verifierID: verifierId.bigInt(),
       nullifierSessionID: 0,
@@ -2681,7 +2681,7 @@ describe.only('contract-request', () => {
 
     const transactionData: ContractInvokeTransactionData = {
       contract_address: zkpVerifierNetworkConfig.contractAddress,
-      method_id: FunctionSignatures.SubmitResponse,
+      method_id: FunctionSignatures.SubmitZKPResponseV2,
       chain_id: zkpVerifierNetworkConfig.chainId
     };
 
@@ -2740,7 +2740,9 @@ describe.only('contract-request', () => {
     const encoded = new ethers.AbiCoder().encode([type], [query]);
 
 
-    const verifierContract = new Contract(CONTRACTS.AMOY_UNIVERSAL_VERIFIER, abi);
+    const verifierContract = new Contract(CONTRACTS.AMOY_UNIVERSAL_VERIFIER, abi,ethSigner);
+
+
     const tx = await verifierContract.setZKPRequest(queryToSet.requestId, {
       metadata: JSON.stringify(ciRequest),
       validator: CONTRACTS.VALIDATOR_ADDRESS_V3,

@@ -481,7 +481,7 @@ export class InputGenerator {
 
     const query = circuitQueries[0];
     query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
-    query.valueProof = query.operator === Operators.NOOP ? new ValueProof() : query.valueProof;
+    query.valueProof = query.valueProof; // claimPathKey is a part of output, but auth won't be broken. (it skips check for noop)
 
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -545,7 +545,7 @@ export class InputGenerator {
 
     const query = circuitQueries[0];
     query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
-    query.valueProof = query.operator === Operators.NOOP ? new ValueProof() : query.valueProof;
+    query.valueProof = query.valueProof; // no need to set it empty for noop, because it is ignored in circuit, but implies correct calculation of query hash
 
     circuitInputs.query = query;
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
@@ -610,7 +610,7 @@ export class InputGenerator {
     });
     circuitQueries.forEach((query) => {
       query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
-      query.valueProof = query.operator === Operators.NOOP ? new ValueProof() : query.valueProof;
+      query.valueProof =  query.valueProof;
     });
     return circuitInputs.inputsMarshal();
   };

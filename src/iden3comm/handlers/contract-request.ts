@@ -156,7 +156,7 @@ export class ContractRequestHandler
     );
 
     const methodId = message.body.transaction_data.method_id.replace('0x', '');
-    switch (methodId) {
+  switch (methodId) {
       case FunctionSignatures.SubmitZKPResponseV2: {
         const txHashZkpResponsesMap = await this._zkpVerifier.submitZKPResponseV2(
           ethSigner,
