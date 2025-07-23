@@ -18,7 +18,12 @@ import {
 import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
 import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
 import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import { calculateQueryHashV3, IProofService, parseQueryMetadata, ProofService } from '../../src/proof';
+import {
+  calculateQueryHashV3,
+  IProofService,
+  parseQueryMetadata,
+  ProofService
+} from '../../src/proof';
 import { CircuitId, Operators } from '../../src/circuits';
 import {
   CredentialStatusType,
@@ -72,6 +77,7 @@ import { AbstractMessageHandler } from '../../src/iden3comm/handlers/message-han
 import { schemaLoaderForTests } from '../mocks/schema';
 import { DIDResolutionResult } from 'did-resolver';
 import { getDocumentLoader } from '@iden3/js-jsonld-merklization';
+import zkpVerifierABI from '../../src/storage/blockchain/abi/ZkpVerifier.json';
 
 describe.only('contract-request', () => {
   let idWallet: IdentityWallet;
@@ -1737,13 +1743,13 @@ describe.only('contract-request', () => {
   });
 
   // universal verifier v2 integration test
-  it.only('universal verifier v1 set request flow - integration test (noop)', async () => {
+  it.skip('universal verifier v1 set request flow - integration test (noop)', async () => {
     const CONTRACTS = {
       AMOY_STATE_CONTRACT: '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124',
       AMOY_UNIVERSAL_VERIFIER: '0xfcc86A79fCb057A8e55C6B853dff9479C3cf607c',
       PRIVADO_TEST_STATE_CONTRACT: '0xE5BfD683F1Ca574B5be881b7DbbcFDCE9DDBAb90',
       PRIVADO_MAIN_STATE_CONTRACT: '0x0DDd8701C91d8d1Ba35c9DbA98A45fe5bA8A877E',
-      VALIDATOR_ADDRESS_V3: '0xd179f29d00Cd0E8978eb6eB847CaCF9E2A956336',
+      VALIDATOR_ADDRESS_V3: '0xd179f29d00Cd0E8978eb6eB847CaCF9E2A956336'
     };
 
     const networkConfigs = {
@@ -1769,9 +1775,7 @@ describe.only('contract-request', () => {
 
     const issuerAmoyStateEthConfig = networkConfigs.amoy(CONTRACTS.AMOY_STATE_CONTRACT);
 
-    const issuerAmoyTestStateEthConfig = networkConfigs.amoy(
-      CONTRACTS.PRIVADO_TEST_STATE_CONTRACT
-    );
+    const issuerAmoyTestStateEthConfig = networkConfigs.amoy(CONTRACTS.PRIVADO_TEST_STATE_CONTRACT);
 
     const userStateEthConfig = networkConfigs.privadoMain(CONTRACTS.PRIVADO_MAIN_STATE_CONTRACT);
 
@@ -1859,7 +1863,7 @@ describe.only('contract-request', () => {
           allowedIssuers: ['*'],
           type: claimReq.type,
           context:
-            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld',
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld'
         }
       }
     ];
@@ -1870,7 +1874,8 @@ describe.only('contract-request', () => {
       didResolverUrl: 'https://resolver-dev.privado.id'
     });
 
-    const context = 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld';
+    const context =
+      'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v3.json-ld';
     let ldSchema: object;
     try {
       ldSchema = (await getDocumentLoader()(context)).document;
@@ -1881,15 +1886,15 @@ describe.only('contract-request', () => {
 
     const metadataAsInQueryBuilder = await parseQueryMetadata(
       {
-        fieldName: "",
+        fieldName: '',
         operator: Operators.NOOP,
         operatorValue: undefined
       },
-     contextJSON,
+      contextJSON,
       claimReq.type,
       {}
-    )
-    const schemaHash = (await issuerCred.toCoreClaim()).getSchemaHash()
+    );
+    const schemaHash = (await issuerCred.toCoreClaim()).getSchemaHash();
 
     const queryHashV3 = calculateQueryHashV3(
       metadataAsInQueryBuilder.values,
@@ -1901,11 +1906,10 @@ describe.only('contract-request', () => {
       metadataAsInQueryBuilder.merklizedSchema ? 1 : 0,
       1,
       verifierId.bigInt().toString(),
-      "0"
+      '0'
     );
 
-    const queryToSet =
-    {
+    const queryToSet = {
       requestId: proofReqs[0].id,
       schema: schemaHash,
       claimPathKey: metadataAsInQueryBuilder.claimPathKey,
@@ -1914,768 +1918,24 @@ describe.only('contract-request', () => {
       slotIndex: metadataAsInQueryBuilder.slotIndex,
       queryHash: queryHashV3,
       circuitIds: [proofReqs[0].circuitId],
-      allowedIssuers: proofReqs[0].query.allowedIssuers.includes("*") ? []: proofReqs[0].query.allowedIssuers,
+      allowedIssuers: proofReqs[0].query.allowedIssuers.includes('*')
+        ? []
+        : proofReqs[0].query.allowedIssuers,
       skipClaimRevocationCheck: false,
       verifierID: verifierId.bigInt(),
       nullifierSessionID: 0,
       groupID: 0,
       proofType: 0
-    }
+    };
 
-    const abi = [
-      {
-        "inputs": [],
-        "name": "InvalidInitialization",
-        "type": "error"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "string",
-            "name": "message",
-            "type": "string"
-          },
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint256",
-            "name": "linkID",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint64",
-            "name": "requestIdToCompare",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint256",
-            "name": "linkIdToCompare",
-            "type": "uint256"
-          }
-        ],
-        "name": "LinkedProofError",
-        "type": "error"
-      },
-      {
-        "inputs": [],
-        "name": "NotInitializing",
-        "type": "error"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "owner",
-            "type": "address"
-          }
-        ],
-        "name": "OwnableInvalidOwner",
-        "type": "error"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "account",
-            "type": "address"
-          }
-        ],
-        "name": "OwnableUnauthorizedAccount",
-        "type": "error"
-      },
-      {
-        "anonymous": false,
-        "inputs": [
-          {
-            "indexed": false,
-            "internalType": "uint64",
-            "name": "version",
-            "type": "uint64"
-          }
-        ],
-        "name": "Initialized",
-        "type": "event"
-      },
-      {
-        "anonymous": false,
-        "inputs": [
-          {
-            "indexed": true,
-            "internalType": "address",
-            "name": "previousOwner",
-            "type": "address"
-          },
-          {
-            "indexed": true,
-            "internalType": "address",
-            "name": "newOwner",
-            "type": "address"
-          }
-        ],
-        "name": "OwnershipTransferStarted",
-        "type": "event"
-      },
-      {
-        "anonymous": false,
-        "inputs": [
-          {
-            "indexed": true,
-            "internalType": "address",
-            "name": "previousOwner",
-            "type": "address"
-          },
-          {
-            "indexed": true,
-            "internalType": "address",
-            "name": "newOwner",
-            "type": "address"
-          }
-        ],
-        "name": "OwnershipTransferred",
-        "type": "event"
-      },
-      {
-        "anonymous": false,
-        "inputs": [
-          {
-            "indexed": true,
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          },
-          {
-            "indexed": true,
-            "internalType": "address",
-            "name": "requestOwner",
-            "type": "address"
-          },
-          {
-            "indexed": false,
-            "internalType": "string",
-            "name": "metadata",
-            "type": "string"
-          },
-          {
-            "indexed": false,
-            "internalType": "address",
-            "name": "validator",
-            "type": "address"
-          },
-          {
-            "indexed": false,
-            "internalType": "bytes",
-            "name": "data",
-            "type": "bytes"
-          }
-        ],
-        "name": "ZKPRequestSet",
-        "type": "event"
-      },
-      {
-        "anonymous": false,
-        "inputs": [
-          {
-            "indexed": true,
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          },
-          {
-            "indexed": true,
-            "internalType": "address",
-            "name": "caller",
-            "type": "address"
-          }
-        ],
-        "name": "ZKPResponseSubmitted",
-        "type": "event"
-      },
-      {
-        "inputs": [],
-        "name": "REQUESTS_RETURN_LIMIT",
-        "outputs": [
-          {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [],
-        "name": "VERSION",
-        "outputs": [
-          {
-            "internalType": "string",
-            "name": "",
-            "type": "string"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [],
-        "name": "acceptOwnership",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "contract ICircuitValidator",
-            "name": "validator",
-            "type": "address"
-          }
-        ],
-        "name": "addValidatorToWhitelist",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          }
-        ],
-        "name": "disableZKPRequest",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          }
-        ],
-        "name": "enableZKPRequest",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "sender",
-            "type": "address"
-          },
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          }
-        ],
-        "name": "getProofStatus",
-        "outputs": [
-          {
-            "components": [
-              {
-                "internalType": "bool",
-                "name": "isVerified",
-                "type": "bool"
-              },
-              {
-                "internalType": "string",
-                "name": "validatorVersion",
-                "type": "string"
-              },
-              {
-                "internalType": "uint256",
-                "name": "blockNumber",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "blockTimestamp",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct IZKPVerifier.ProofStatus",
-            "name": "",
-            "type": "tuple"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "user",
-            "type": "address"
-          },
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          },
-          {
-            "internalType": "string",
-            "name": "key",
-            "type": "string"
-          }
-        ],
-        "name": "getProofStorageField",
-        "outputs": [
-          {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          }
-        ],
-        "name": "getRequestOwner",
-        "outputs": [
-          {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          }
-        ],
-        "name": "getZKPRequest",
-        "outputs": [
-          {
-            "components": [
-              {
-                "internalType": "string",
-                "name": "metadata",
-                "type": "string"
-              },
-              {
-                "internalType": "contract ICircuitValidator",
-                "name": "validator",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes",
-                "name": "data",
-                "type": "bytes"
-              }
-            ],
-            "internalType": "struct IZKPVerifier.ZKPRequest",
-            "name": "zkpRequest",
-            "type": "tuple"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "startIndex",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "length",
-            "type": "uint256"
-          }
-        ],
-        "name": "getZKPRequests",
-        "outputs": [
-          {
-            "components": [
-              {
-                "internalType": "string",
-                "name": "metadata",
-                "type": "string"
-              },
-              {
-                "internalType": "contract ICircuitValidator",
-                "name": "validator",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes",
-                "name": "data",
-                "type": "bytes"
-              }
-            ],
-            "internalType": "struct IZKPVerifier.ZKPRequest[]",
-            "name": "",
-            "type": "tuple[]"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [],
-        "name": "getZKPRequestsCount",
-        "outputs": [
-          {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [],
-        "name": "initialize",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "sender",
-            "type": "address"
-          },
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          }
-        ],
-        "name": "isProofVerified",
-        "outputs": [
-          {
-            "internalType": "bool",
-            "name": "",
-            "type": "bool"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "contract ICircuitValidator",
-            "name": "validator",
-            "type": "address"
-          }
-        ],
-        "name": "isWhitelistedValidator",
-        "outputs": [
-          {
-            "internalType": "bool",
-            "name": "",
-            "type": "bool"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          }
-        ],
-        "name": "isZKPRequestEnabled",
-        "outputs": [
-          {
-            "internalType": "bool",
-            "name": "",
-            "type": "bool"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [],
-        "name": "owner",
-        "outputs": [
-          {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [],
-        "name": "pendingOwner",
-        "outputs": [
-          {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "contract ICircuitValidator",
-            "name": "validator",
-            "type": "address"
-          }
-        ],
-        "name": "removeValidatorFromWhitelist",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [],
-        "name": "renounceOwnership",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          }
-        ],
-        "name": "requestIdExists",
-        "outputs": [
-          {
-            "internalType": "bool",
-            "name": "",
-            "type": "bool"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          },
-          {
-            "internalType": "address",
-            "name": "requestOwner",
-            "type": "address"
-          }
-        ],
-        "name": "setRequestOwner",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          },
-          {
-            "components": [
-              {
-                "internalType": "string",
-                "name": "metadata",
-                "type": "string"
-              },
-              {
-                "internalType": "contract ICircuitValidator",
-                "name": "validator",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes",
-                "name": "data",
-                "type": "bytes"
-              }
-            ],
-            "internalType": "struct IZKPVerifier.ZKPRequest",
-            "name": "request",
-            "type": "tuple"
-          }
-        ],
-        "name": "setZKPRequest",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint256[]",
-            "name": "inputs",
-            "type": "uint256[]"
-          },
-          {
-            "internalType": "uint256[2]",
-            "name": "a",
-            "type": "uint256[2]"
-          },
-          {
-            "internalType": "uint256[2][2]",
-            "name": "b",
-            "type": "uint256[2][2]"
-          },
-          {
-            "internalType": "uint256[2]",
-            "name": "c",
-            "type": "uint256[2]"
-          }
-        ],
-        "name": "submitZKPResponse",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "newOwner",
-            "type": "address"
-          }
-        ],
-        "name": "transferOwnership",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "sender",
-            "type": "address"
-          },
-          {
-            "internalType": "uint64[]",
-            "name": "requestIds",
-            "type": "uint64[]"
-          }
-        ],
-        "name": "verifyLinkedProofs",
-        "outputs": [],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint64",
-            "name": "requestId",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint256[]",
-            "name": "inputs",
-            "type": "uint256[]"
-          },
-          {
-            "internalType": "uint256[2]",
-            "name": "a",
-            "type": "uint256[2]"
-          },
-          {
-            "internalType": "uint256[2][2]",
-            "name": "b",
-            "type": "uint256[2][2]"
-          },
-          {
-            "internalType": "uint256[2]",
-            "name": "c",
-            "type": "uint256[2]"
-          },
-          {
-            "internalType": "address",
-            "name": "sender",
-            "type": "address"
-          }
-        ],
-        "name": "verifyZKPResponse",
-        "outputs": [
-          {
-            "components": [
-              {
-                "internalType": "string",
-                "name": "key",
-                "type": "string"
-              },
-              {
-                "internalType": "uint256",
-                "name": "inputIndex",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct ICircuitValidator.KeyToInputIndex[]",
-            "name": "",
-            "type": "tuple[]"
-          }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [],
-        "name": "version",
-        "outputs": [
-          {
-            "internalType": "string",
-            "name": "",
-            "type": "string"
-          }
-        ],
-        "stateMutability": "pure",
-        "type": "function"
-      }
-    ]
     // set request
     let ethSigner = new ethers.Wallet(walletKey);
 
-    const provider = new JsonRpcProvider(issuerAmoyStateEthConfig.url, issuerAmoyStateEthConfig.chainId);
+    const provider = new JsonRpcProvider(
+      issuerAmoyStateEthConfig.url,
+      issuerAmoyStateEthConfig.chainId
+    );
     ethSigner = ethSigner.connect(provider);
-
 
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, zkpVerifier);
 
@@ -2703,21 +1963,22 @@ describe.only('contract-request', () => {
     };
 
     // Define the flat struct as a tuple type
-    const type = "tuple(" +
-      "uint256 schema," +
-      "uint256 claimPathKey," +
-      "uint256 operator," +
-      "uint256 slotIndex," +
-      "uint256[] value," +
-      "uint256 queryHash," +
-      "uint256[] allowedIssuers," +
-      "string[] circuitIds," +
-      "bool skipClaimRevocationCheck," +
-      "uint256 groupID," +
-      "uint256 nullifierSessionID," +
-      "uint256 proofType," +
-      "uint256 verifierID" +
-      ")";
+    const type =
+      'tuple(' +
+      'uint256 schema,' +
+      'uint256 claimPathKey,' +
+      'uint256 operator,' +
+      'uint256 slotIndex,' +
+      'uint256[] value,' +
+      'uint256 queryHash,' +
+      'uint256[] allowedIssuers,' +
+      'string[] circuitIds,' +
+      'bool skipClaimRevocationCheck,' +
+      'uint256 groupID,' +
+      'uint256 nullifierSessionID,' +
+      'uint256 proofType,' +
+      'uint256 verifierID' +
+      ')';
 
     // Fill in mock data (replace with your actual `query` values)
     const query = {
@@ -2727,7 +1988,9 @@ describe.only('contract-request', () => {
       slotIndex: queryToSet.slotIndex,
       value: queryToSet.value,
       queryHash: queryToSet.queryHash,
-      allowedIssuers: queryToSet.allowedIssuers.map(i => DID.idFromDID(DID.parse(i)).bigInt().toString()), // Assuming didToIdString() returns uint256 string
+      allowedIssuers: queryToSet.allowedIssuers.map((i) =>
+        DID.idFromDID(DID.parse(i)).bigInt().toString()
+      ), // Assuming didToIdString() returns uint256 string
       circuitIds: queryToSet.circuitIds,
       skipClaimRevocationCheck: queryToSet.skipClaimRevocationCheck,
       groupID: queryToSet.groupID,
@@ -2739,18 +2002,20 @@ describe.only('contract-request', () => {
     // Encode using ethers.js
     const encoded = new ethers.AbiCoder().encode([type], [query]);
 
-
-    const verifierContract = new Contract(CONTRACTS.AMOY_UNIVERSAL_VERIFIER, abi,ethSigner);
-
+    const verifierContract = new Contract(
+      CONTRACTS.AMOY_UNIVERSAL_VERIFIER,
+      zkpVerifierABI,
+      ethSigner
+    );
 
     const tx = await verifierContract.setZKPRequest(queryToSet.requestId, {
       metadata: JSON.stringify(ciRequest),
       validator: CONTRACTS.VALIDATOR_ADDRESS_V3,
-      data: encoded,
+      data: encoded
     });
 
-     console.log(tx.hash);
-      await tx.wait();
+    console.log(tx.hash);
+    await tx.wait();
 
     const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
 
@@ -2769,7 +2034,4 @@ describe.only('contract-request', () => {
     expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be
       .undefined;
   });
-
-
-
 });

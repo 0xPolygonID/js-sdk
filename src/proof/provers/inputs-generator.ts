@@ -610,7 +610,7 @@ export class InputGenerator {
     });
     circuitQueries.forEach((query) => {
       query.values = [Operators.SD, Operators.NOOP].includes(query.operator) ? [] : query.values;
-      query.valueProof =  query.valueProof;
+      query.valueProof = query.valueProof;
     });
     return circuitInputs.inputsMarshal();
   };
