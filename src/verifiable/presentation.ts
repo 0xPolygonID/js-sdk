@@ -32,7 +32,9 @@ export const buildFieldPath = async (
   if (field) {
     path = await Path.getContextPathKey(ldSchema, contextType, field, opts);
   }
-  path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
+  if (field.startsWith('credentialSubject.')) {
+    path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
+  }
   return path;
 };
 

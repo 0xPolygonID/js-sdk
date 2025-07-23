@@ -58,6 +58,7 @@ export type ZeroKnowledgeProofQuery = {
   allowedIssuers: string[];
   context: string;
   credentialSubject?: JsonDocumentObject;
+  expirationDate?: JsonDocumentObject;
   proofType?: ProofType;
   skipClaimRevocationCheck?: boolean;
   groupId?: number;

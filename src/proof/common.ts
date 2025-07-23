@@ -145,6 +145,24 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
   return queries;
 };
 
+export const parseW3CField = (field: JsonDocumentObject, fieldName: string): PropertyQuery[] => {
+  const queries: PropertyQuery[] = [];
+  const entries = Object.entries(field);
+  if (entries.length === 0) {
+    queries.push({ operator: QueryOperators.$sd, fieldName: fieldName });
+    return queries;
+  }
+
+  for (const [operatorName, operatorValue] of entries) {
+    if (!QueryOperators[operatorName as keyof typeof QueryOperators]) {
+      throw new Error(`operator is not supported by lib`);
+    }
+    const operator = QueryOperators[operatorName as keyof typeof QueryOperators];
+    queries.push({ operator, fieldName, operatorValue });
+  }
+  return queries;
+};
+
 export const parseQueryMetadata = async (
   propertyQuery: PropertyQuery,
   ldContextJSON: string,

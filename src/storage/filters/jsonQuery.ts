@@ -319,6 +319,20 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
 
         return acc.concat(reqFilters);
       }
+      case 'expirationDate': {
+        if (Object.keys(queryValue).length === 0) {
+          return acc.concat([new FilterQuery(`expirationDate`, comparatorOptions.$noop, null)]);
+        }
+        const res = Object.keys(queryValue).map((comparator) => {
+          const value = queryValue[comparator];
+          return new FilterQuery(
+            'expirationDate',
+            comparatorOptions[comparator as keyof typeof comparatorOptions],
+            value
+          );
+        });
+        return acc.concat(res);
+      }
       case 'proofType':
       case 'groupId':
       case 'skipClaimRevocationCheck': {

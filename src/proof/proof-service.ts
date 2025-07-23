@@ -27,6 +27,7 @@ import {
   QueryMetadata,
   parseCredentialSubject,
   parseQueryMetadata,
+  parseW3CField,
   toGISTProof,
   transformQueryValueToBigInts
 } from './common';
@@ -316,11 +317,18 @@ export class ProofService implements IProofService {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
-    const propertiesMetadata = parseCredentialSubject(
+    let propertiesMetadata = parseCredentialSubject(
       proofReq.query.credentialSubject as JsonDocumentObject
     );
     if (!propertiesMetadata.length) {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
+    }
+
+    if (proofReq.query.expirationDate) {
+      propertiesMetadata = parseW3CField(
+        proofReq.query.expirationDate as JsonDocumentObject,
+        'expirationDate'
+      );
     }
 
     const mtPosition = preparedCredential.credentialCoreClaim.getMerklizedPosition();
@@ -489,7 +497,12 @@ export class ProofService implements IProofService {
 
     if (queryMetadata.operator === Operators.SD) {
       const [first, ...rest] = queryMetadata.fieldName.split('.');
-      let v = credential.credentialSubject[first];
+      let v;
+      if (queryMetadata.path.parts.length > 1) {
+        v = credential.credentialSubject[first];
+      } else {
+        v = credential[first as keyof W3CCredential];
+      }
       for (const part of rest) {
         v = (v as JsonDocumentObject)[part];
       }
