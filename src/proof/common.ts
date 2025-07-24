@@ -101,6 +101,7 @@ export type PropertyQuery = {
   fieldName: string;
   operator: Operators;
   operatorValue?: unknown;
+  isW3CFiled?: boolean;
 };
 
 export type QueryMetadata = PropertyQuery & {

@@ -449,24 +449,22 @@ export class PubSignalsVerifier {
     );
     const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
 
-    let queriesMetadata;
+    const queriesMetadata: QueryMetadata[] = [];
+    if (!query.expirationDate || credentialSubject) {
+      queriesMetadata.push(
+        ...(await parseQueriesMetadata(query.type || '', ldContextJSON, credentialSubject, ldOpts))
+      );
+    }
     if (query.expirationDate) {
       const propertyQuery = parseW3CField(query.expirationDate, 'expirationDate');
       const w3cContext = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
-      queriesMetadata = [
+      queriesMetadata.push(
         await parseQueryMetadata(
           propertyQuery,
           w3cContext,
           VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
           ldOpts
         )
-      ];
-    } else {
-      queriesMetadata = await parseQueriesMetadata(
-        query.type || '',
-        ldContextJSON,
-        credentialSubject,
-        ldOpts
       );
     }
 

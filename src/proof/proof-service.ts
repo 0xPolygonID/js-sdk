@@ -317,17 +317,24 @@ export class ProofService implements IProofService {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
-    let propertiesMetadata = parseCredentialSubject(
+    const propertiesMetadata = parseCredentialSubject(
       proofReq.query.credentialSubject as JsonDocumentObject
     );
-    if (!propertiesMetadata.length) {
-      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
+    if (proofReq.query.expirationDate) {
+      // if credentialSubject is empty we skip cred exists check
+      if (propertiesMetadata.length === 1 && propertiesMetadata[0].fieldName === '') {
+        propertiesMetadata.pop();
+      }
+      const expirationDate = parseW3CField(
+        proofReq.query.expirationDate as JsonDocumentObject,
+        'expirationDate'
+      );
+      expirationDate.isW3CFiled = true;
+      propertiesMetadata.push(expirationDate);
     }
 
-    if (proofReq.query.expirationDate) {
-      propertiesMetadata = [
-        parseW3CField(proofReq.query.expirationDate as JsonDocumentObject, 'expirationDate')
-      ];
+    if (!propertiesMetadata.length) {
+      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
     }
 
     const mtPosition = preparedCredential.credentialCoreClaim.getMerklizedPosition();
@@ -337,28 +344,31 @@ export class ProofService implements IProofService {
       mk = await preparedCredential.credential.merklize(this._ldOptions);
     }
 
-    let context, credentialType, ldContext;
-    if (proofReq.query.expirationDate) {
-      context = VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018;
-      credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
-      ldContext = byteEncoder.encode(VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018);
-    } else {
-      context = proofReq.query['context'] as string;
-      credentialType = proofReq.query['type'] as string;
-      ldContext = await this.loadLdContext(context);
-    }
+    const context = proofReq.query['context'] as string;
+    const credentialType = proofReq.query['type'] as string;
+    const ldContext = await this.loadLdContext(context);
+
     const groupId = proofReq.query['groupId'] as number;
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];
 
     for (const propertyMetadata of propertiesMetadata) {
-      const queryMetadata = await parseQueryMetadata(
-        propertyMetadata,
-        byteDecoder.decode(ldContext),
-        credentialType,
-        this._ldOptions
-      );
-
+      let queryMetadata;
+      if (propertyMetadata.isW3CFiled) {
+        queryMetadata = await parseQueryMetadata(
+          propertyMetadata,
+          VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018,
+          VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
+          this._ldOptions
+        );
+      } else {
+        queryMetadata = await parseQueryMetadata(
+          propertyMetadata,
+          byteDecoder.decode(ldContext),
+          credentialType,
+          this._ldOptions
+        );
+      }
       queriesMetadata.push(queryMetadata);
       const circuitQuery = await this.toCircuitsQuery(
         preparedCredential.credential,
@@ -502,10 +512,10 @@ export class ProofService implements IProofService {
     if (queryMetadata.operator === Operators.SD) {
       const [first, ...rest] = queryMetadata.fieldName.split('.');
       let v;
-      if (queryMetadata.path.parts.length > 1) {
-        v = credential.credentialSubject[first];
-      } else {
+      if (queryMetadata.isW3CFiled) {
         v = credential[first as keyof W3CCredential];
+      } else {
+        v = credential.credentialSubject[first];
       }
       for (const part of rest) {
         v = (v as JsonDocumentObject)[part];
