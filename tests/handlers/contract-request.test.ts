@@ -2030,7 +2030,6 @@ describe('contract-request', () => {
     );
 
     expect(ciResponse).not.be.undefined;
-    console.log(ciResponse);
     expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be
       .undefined;
   });
