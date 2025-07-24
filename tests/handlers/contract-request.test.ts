@@ -1755,7 +1755,7 @@ describe('contract-request', () => {
     const networkConfigs = {
       amoy: (contractAddress) => ({
         ...defaultEthConnectionConfig,
-        url: 'https://polygon-amoy.g.alchemy.com/v2/kO8U960IMeF0bm62nEgxxrvWCg0VUJ4E',
+        url: rpcUrl,
         contractAddress,
         chainId: 80002
       }),
@@ -2014,7 +2014,6 @@ describe('contract-request', () => {
       data: encoded
     });
 
-    console.log(tx.hash);
     await tx.wait();
 
     const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
@@ -2030,7 +2029,6 @@ describe('contract-request', () => {
     );
 
     expect(ciResponse).not.be.undefined;
-    console.log(ciResponse);
     expect((ciResponse as unknown as ContractInvokeResponse).body.transaction_data.txHash).not.be
       .undefined;
   });
