@@ -345,10 +345,12 @@ export class ProofService implements IProofService {
     }
 
     const context = proofReq.query['context'] as string;
-    const credentialType = proofReq.query['type'] as string;
+    const groupId = proofReq.query['groupId'] as number;
+
     const ldContext = await this.loadLdContext(context);
 
-    const groupId = proofReq.query['groupId'] as number;
+    const credentialType = proofReq.query['type'] as string;
+
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];
 
