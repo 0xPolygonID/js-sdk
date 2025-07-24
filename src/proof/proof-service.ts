@@ -325,10 +325,9 @@ export class ProofService implements IProofService {
     }
 
     if (proofReq.query.expirationDate) {
-      propertiesMetadata = parseW3CField(
-        proofReq.query.expirationDate as JsonDocumentObject,
-        'expirationDate'
-      );
+      propertiesMetadata = [
+        parseW3CField(proofReq.query.expirationDate as JsonDocumentObject, 'expirationDate')
+      ];
     }
 
     const mtPosition = preparedCredential.credentialCoreClaim.getMerklizedPosition();
@@ -338,12 +337,16 @@ export class ProofService implements IProofService {
       mk = await preparedCredential.credential.merklize(this._ldOptions);
     }
 
-    const context = proofReq.query['context'] as string;
-    const groupId = proofReq.query['groupId'] as number;
-
+    let context, credentialType;
+    if (proofReq.query.expirationDate) {
+      context = VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018;
+      credentialType = 'VerifiableCredential';
+    } else {
+      context = proofReq.query['context'] as string;
+      credentialType = proofReq.query['type'] as string;
+    }
     const ldContext = await this.loadLdContext(context);
-
-    const credentialType = proofReq.query['type'] as string;
+    const groupId = proofReq.query['groupId'] as number;
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];
 

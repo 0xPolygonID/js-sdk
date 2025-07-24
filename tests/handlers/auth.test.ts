@@ -2712,9 +2712,10 @@ describe.sequential('auth', () => {
           groupId: 1,
           proofType: ProofType.BJJSignature,
           allowedIssuers: ['*'],
-          type: 'VerifiableCredential',
-          context: 'https://www.w3.org/2018/credentials/v1',
-          // 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          type: 'KYCEmployee',
+          // 'https://www.w3.org/2018/credentials/v1',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
           expirationDate: {
             $eq: getDateFromUnixTimestamp(2793526400).toISOString()
           }
@@ -2751,5 +2752,6 @@ describe.sequential('auth', () => {
       authReq,
       TEST_VERIFICATION_OPTS
     );
+    console.log('Token:', token.toString());
   });
 });

@@ -3,7 +3,7 @@ import { DocumentLoader, getDocumentLoader, Path } from '@iden3/js-jsonld-merkli
 import { Hash } from '@iden3/js-merkletree';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
 import { byteEncoder, isGenesisState } from '../../utils';
-import { calculateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
+import { calculateCoreSchemaHash, ProofQuery, ProofType, VerifiableConstants } from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
 import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
@@ -28,7 +28,7 @@ import {
   verifyFieldValueInclusionNativeExistsSupport,
   checkCircuitOperator
 } from './query';
-import { parseQueriesMetadata, QueryMetadata } from '../common';
+import { parseQueriesMetadata, parseQueryMetadata, parseW3CField, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
 import { calculateQueryHashV3 } from './query-hash';
 import { JsonLd } from 'jsonld/jsonld-spec';
@@ -444,12 +444,23 @@ export class PubSignalsVerifier {
     );
     const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
 
-    const queriesMetadata = await parseQueriesMetadata(
-      query.type || '',
-      ldContextJSON,
-      credentialSubject,
-      ldOpts
-    );
+    let queriesMetadata;
+    if (query.expirationDate) {
+      const propertyQuery = parseW3CField(query.expirationDate, 'expirationDate');
+      const w3cContext = JSON.stringify(
+        await ldOpts.documentLoader(VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018)
+      );
+      queriesMetadata = [
+        await parseQueryMetadata(propertyQuery, w3cContext, 'VerifiableCredential', ldOpts)
+      ];
+    } else {
+      queriesMetadata = await parseQueriesMetadata(
+        query.type || '',
+        ldContextJSON,
+        credentialSubject,
+        ldOpts
+      );
+    }
 
     const request: { queryHash: bigint; queryMeta: QueryMetadata }[] = [];
     const merklized = queriesMetadata[0]?.merklizedSchema ? 1 : 0;
@@ -458,6 +469,7 @@ export class PubSignalsVerifier {
       const values = queryMeta?.values ?? [];
       const valArrSize = values.length;
 
+      const schemaHashSt = schemaHash.bigInt().toString();
       const queryHash = calculateQueryHashV3(
         values,
         schemaHash,

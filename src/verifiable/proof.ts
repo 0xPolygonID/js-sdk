@@ -230,6 +230,7 @@ export interface ProofQuery {
   proofType?: string;
   groupId?: number;
   params?: JSONObject;
+  expirationDate?: JsonDocumentObject;
 }
 
 /**

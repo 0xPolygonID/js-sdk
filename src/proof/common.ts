@@ -145,22 +145,22 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
   return queries;
 };
 
-export const parseW3CField = (field: JsonDocumentObject, fieldName: string): PropertyQuery[] => {
-  const queries: PropertyQuery[] = [];
+export const parseW3CField = (field: JsonDocumentObject, fieldName: string): PropertyQuery => {
   const entries = Object.entries(field);
   if (entries.length === 0) {
-    queries.push({ operator: QueryOperators.$sd, fieldName: fieldName });
-    return queries;
+    return { operator: QueryOperators.$sd, fieldName };
+  }
+  if (entries.length !== 1) {
+    throw new Error(`Query must have exactly one operator for field "${fieldName}"`);
+  }
+  const [operatorName, operatorValue] = entries[0];
+  const operator = QueryOperators[operatorName as keyof typeof QueryOperators];
+
+  if (!operator) {
+    throw new Error(`Operator "${operatorName}" is not supported`);
   }
 
-  for (const [operatorName, operatorValue] of entries) {
-    if (!QueryOperators[operatorName as keyof typeof QueryOperators]) {
-      throw new Error(`operator is not supported by lib`);
-    }
-    const operator = QueryOperators[operatorName as keyof typeof QueryOperators];
-    queries.push({ operator, fieldName, operatorValue });
-  }
-  return queries;
+  return { operator, fieldName, operatorValue };
 };
 
 export const parseQueryMetadata = async (
