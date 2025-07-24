@@ -196,6 +196,7 @@ export async function validateDisclosureV2Circuit(
 ) {
   const bi = await fieldValueFromVerifiablePresentation(
     cq.fieldName,
+    cq.isW3CField,
     verifiablePresentation,
     ldLoader
   );
@@ -222,6 +223,7 @@ export async function validateDisclosureNativeSDSupport(
 ) {
   const bi = await fieldValueFromVerifiablePresentation(
     cq.fieldName,
+    cq.isW3CField,
     verifiablePresentation,
     ldLoader
   );
@@ -252,6 +254,7 @@ export async function validateEmptyCredentialSubjectNoopNativeSupport(outputs: C
 
 export const fieldValueFromVerifiablePresentation = async (
   fieldName: string,
+  isW3CField = false,
   verifiablePresentation?: VerifiablePresentation,
   ldLoader?: DocumentLoader
 ): Promise<bigint> => {
@@ -272,7 +275,7 @@ export const fieldValueFromVerifiablePresentation = async (
   let merklizedPath: Path;
   try {
     let p;
-    if (fieldName === 'expirationDate') {
+    if (isW3CField) {
       p = `verifiableCredential.${fieldName}`;
     } else {
       p = `verifiableCredential.credentialSubject.${fieldName}`;
