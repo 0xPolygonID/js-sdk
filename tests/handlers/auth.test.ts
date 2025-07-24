@@ -2744,7 +2744,6 @@ describe.sequential('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
-    console.log(JSON.stringify(authRes.authResponse, null, 2));
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
     const token = await Token.parse(tokenStr);
@@ -2755,6 +2754,5 @@ describe.sequential('auth', () => {
       authReq,
       TEST_VERIFICATION_OPTS
     );
-    console.log('Verified token with W3C field request successfully');
   });
 });

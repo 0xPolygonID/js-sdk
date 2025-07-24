@@ -76,13 +76,12 @@ export const createVerifiablePresentation = (
   };
 
   let result: JsonDocumentObject = {};
-  let w3cResult: JsonDocumentObject = {};
+  const w3cResult: JsonDocumentObject = {};
   for (const query of queries) {
     if (query.isW3CField) {
       const fieldName = query.fieldName;
       const value = credential?.[fieldName as keyof W3CCredential];
-      const current = { [fieldName]: value };
-      w3cResult = { ...w3cResult, ...current };
+      w3cResult[fieldName] = value as JsonDocumentObject;
     } else {
       const parts = query.fieldName.split('.');
       const current: JsonDocumentObject = parts.reduceRight(
