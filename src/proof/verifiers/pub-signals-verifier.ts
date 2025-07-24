@@ -457,11 +457,10 @@ export class PubSignalsVerifier {
     }
     if (query.expirationDate) {
       const propertyQuery = parseW3CField(query.expirationDate, 'expirationDate');
-      const w3cContext = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
       queriesMetadata.push(
         await parseQueryMetadata(
           propertyQuery,
-          w3cContext,
+          VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018,
           VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
           ldOpts
         )
