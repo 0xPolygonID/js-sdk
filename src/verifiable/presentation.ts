@@ -25,6 +25,7 @@ export const buildFieldPath = async (
   ldSchema: string,
   contextType: string,
   field: string,
+  isW3CField = false,
   opts?: Options
 ): Promise<Path> => {
   let path = new Path();
@@ -32,7 +33,7 @@ export const buildFieldPath = async (
   if (field) {
     path = await Path.getContextPathKey(ldSchema, contextType, field, opts);
   }
-  if (field.startsWith('credentialSubject.')) {
+  if (!isW3CField) {
     path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   }
   return path;

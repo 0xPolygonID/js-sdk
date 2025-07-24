@@ -216,6 +216,7 @@ export const parseQueryMetadata = async (
         ldContextJSON,
         credentialType,
         propertyQuery.fieldName,
+        propertyQuery.isW3CFiled,
         options
       );
       query.claimPathKey = await path.mtEntry();
