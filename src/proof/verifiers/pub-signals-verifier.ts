@@ -447,11 +447,14 @@ export class PubSignalsVerifier {
     let queriesMetadata;
     if (query.expirationDate) {
       const propertyQuery = parseW3CField(query.expirationDate, 'expirationDate');
-      const w3cContext = JSON.stringify(
-        await ldOpts.documentLoader(VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018)
-      );
+      const w3cContext = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
       queriesMetadata = [
-        await parseQueryMetadata(propertyQuery, w3cContext, 'VerifiableCredential', ldOpts)
+        await parseQueryMetadata(
+          propertyQuery,
+          w3cContext,
+          VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
+          ldOpts
+        )
       ];
     } else {
       queriesMetadata = await parseQueriesMetadata(
@@ -469,7 +472,6 @@ export class PubSignalsVerifier {
       const values = queryMeta?.values ?? [];
       const valArrSize = values.length;
 
-      const schemaHashSt = schemaHash.bigInt().toString();
       const queryHash = calculateQueryHashV3(
         values,
         schemaHash,

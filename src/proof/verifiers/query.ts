@@ -271,7 +271,12 @@ export const fieldValueFromVerifiablePresentation = async (
 
   let merklizedPath: Path;
   try {
-    const p = `verifiableCredential.credentialSubject.${fieldName}`;
+    let p;
+    if (fieldName === 'expirationDate') {
+      p = `verifiableCredential.${fieldName}`;
+    } else {
+      p = `verifiableCredential.credentialSubject.${fieldName}`;
+    }
     merklizedPath = await Path.fromDocument(null, strVerifiablePresentation, p, {
       documentLoader: ldLoader
     });

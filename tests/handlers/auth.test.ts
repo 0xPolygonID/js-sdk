@@ -2713,7 +2713,6 @@ describe.sequential('auth', () => {
           proofType: ProofType.BJJSignature,
           allowedIssuers: ['*'],
           type: 'KYCEmployee',
-          // 'https://www.w3.org/2018/credentials/v1',
           context:
             'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
           expirationDate: {
@@ -2742,6 +2741,7 @@ describe.sequential('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    console.log(JSON.stringify(authRes.authResponse, null, 2));
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
     const token = await Token.parse(tokenStr);
@@ -2752,6 +2752,6 @@ describe.sequential('auth', () => {
       authReq,
       TEST_VERIFICATION_OPTS
     );
-    console.log('Token:', token.toString());
+    console.log('Verified token with W3C field request successfully');
   });
 });

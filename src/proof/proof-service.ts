@@ -337,15 +337,16 @@ export class ProofService implements IProofService {
       mk = await preparedCredential.credential.merklize(this._ldOptions);
     }
 
-    let context, credentialType;
+    let context, credentialType, ldContext;
     if (proofReq.query.expirationDate) {
       context = VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018;
-      credentialType = 'VerifiableCredential';
+      credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
+      ldContext = byteEncoder.encode(VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018);
     } else {
       context = proofReq.query['context'] as string;
       credentialType = proofReq.query['type'] as string;
+      ldContext = await this.loadLdContext(context);
     }
-    const ldContext = await this.loadLdContext(context);
     const groupId = proofReq.query['groupId'] as number;
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];

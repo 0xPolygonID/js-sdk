@@ -75,24 +75,37 @@ export const createVerifiablePresentation = (
   };
 
   let result: JsonDocumentObject = {};
+  let w3cResult: JsonDocumentObject = {};
   for (const query of queries) {
     const parts = query.fieldName.split('.');
-    const current: JsonDocumentObject = parts.reduceRight(
-      (acc: JsonDocumentObject, part: string) => {
-        if (result[part]) {
-          return { [part]: { ...(result[part] as JsonDocumentObject), ...acc } };
-        }
-        return { [part]: acc };
-      },
-      findValue(query.fieldName, credential) as JsonDocumentObject
-    );
+    if (parts.length === 1) {
+      const fieldName = parts[0];
+      const value = credential?.[fieldName as keyof W3CCredential];
+      const current = { [fieldName]: value };
+      w3cResult = { ...w3cResult, ...current };
+    } else {
+      const current: JsonDocumentObject = parts.reduceRight(
+        (acc: JsonDocumentObject, part: string) => {
+          if (result[part]) {
+            return { [part]: { ...(result[part] as JsonDocumentObject), ...acc } };
+          }
+          return { [part]: acc };
+        },
+        findValue(query.fieldName, credential) as JsonDocumentObject
+      );
 
-    result = { ...result, ...current };
+      result = { ...result, ...current };
+    }
   }
 
   skeleton.verifiableCredential.credentialSubject = {
     ...skeleton.verifiableCredential.credentialSubject,
     ...result
+  };
+
+  skeleton.verifiableCredential = {
+    ...skeleton.verifiableCredential,
+    ...w3cResult
   };
 
   return skeleton;
