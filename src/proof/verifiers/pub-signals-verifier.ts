@@ -449,12 +449,13 @@ export class PubSignalsVerifier {
     );
     const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
 
-    const queriesMetadata: QueryMetadata[] = [];
-    if (!query.expirationDate || credentialSubject) {
-      queriesMetadata.push(
-        ...(await parseQueriesMetadata(query.type || '', ldContextJSON, credentialSubject, ldOpts))
-      );
-    }
+    const queriesMetadata = await parseQueriesMetadata(
+      query.type || '',
+      ldContextJSON,
+      credentialSubject,
+      ldOpts
+    );
+
     if (query.expirationDate) {
       const propertyQuery = parseW3CField(query.expirationDate, 'expirationDate');
       const expirationDateQueryMetadata = await parseQueryMetadata(

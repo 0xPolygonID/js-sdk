@@ -321,10 +321,6 @@ export class ProofService implements IProofService {
       proofReq.query.credentialSubject as JsonDocumentObject
     );
     if (proofReq.query.expirationDate) {
-      // if credentialSubject is empty we skip cred exists check
-      if (propertiesMetadata.length === 1 && propertiesMetadata[0].fieldName === '') {
-        propertiesMetadata.pop();
-      }
       const expirationDate = parseW3CField(
         proofReq.query.expirationDate as JsonDocumentObject,
         'expirationDate'
@@ -349,7 +345,6 @@ export class ProofService implements IProofService {
     const ldContext = await this.loadLdContext(context);
 
     const credentialType = proofReq.query['type'] as string;
-
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];
 
