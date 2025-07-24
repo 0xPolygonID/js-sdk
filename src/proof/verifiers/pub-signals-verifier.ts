@@ -457,14 +457,13 @@ export class PubSignalsVerifier {
     }
     if (query.expirationDate) {
       const propertyQuery = parseW3CField(query.expirationDate, 'expirationDate');
-      queriesMetadata.push(
-        await parseQueryMetadata(
-          propertyQuery,
-          VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018,
-          VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
-          ldOpts
-        )
+      const expirationDateQueryMetadata = await parseQueryMetadata(
+        propertyQuery,
+        VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018,
+        VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
+        ldOpts
       );
+      queriesMetadata.push(expirationDateQueryMetadata);
     }
 
     const request: { queryHash: bigint; queryMeta: QueryMetadata }[] = [];

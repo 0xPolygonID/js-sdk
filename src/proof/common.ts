@@ -101,7 +101,7 @@ export type PropertyQuery = {
   fieldName: string;
   operator: Operators;
   operatorValue?: unknown;
-  isW3CFiled?: boolean;
+  isW3CField?: boolean;
 };
 
 export type QueryMetadata = PropertyQuery & {
@@ -149,7 +149,7 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
 export const parseW3CField = (field: JsonDocumentObject, fieldName: string): PropertyQuery => {
   const entries = Object.entries(field);
   if (entries.length === 0) {
-    return { operator: QueryOperators.$sd, fieldName };
+    return { operator: QueryOperators.$sd, fieldName, isW3CField: true };
   }
   if (entries.length !== 1) {
     throw new Error(`Query must have exactly one operator for field "${fieldName}"`);
@@ -161,7 +161,7 @@ export const parseW3CField = (field: JsonDocumentObject, fieldName: string): Pro
     throw new Error(`Operator "${operatorName}" is not supported`);
   }
 
-  return { operator, fieldName, operatorValue };
+  return { operator, fieldName, operatorValue, isW3CField: true };
 };
 
 export const parseQueryMetadata = async (
@@ -216,7 +216,7 @@ export const parseQueryMetadata = async (
         ldContextJSON,
         credentialType,
         propertyQuery.fieldName,
-        propertyQuery.isW3CFiled,
+        propertyQuery.isW3CField,
         options
       );
       query.claimPathKey = await path.mtEntry();

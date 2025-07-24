@@ -329,7 +329,6 @@ export class ProofService implements IProofService {
         proofReq.query.expirationDate as JsonDocumentObject,
         'expirationDate'
       );
-      expirationDate.isW3CFiled = true;
       propertiesMetadata.push(expirationDate);
     }
 
@@ -356,7 +355,7 @@ export class ProofService implements IProofService {
 
     for (const propertyMetadata of propertiesMetadata) {
       let queryMetadata;
-      if (propertyMetadata.isW3CFiled) {
+      if (propertyMetadata.isW3CField) {
         queryMetadata = await parseQueryMetadata(
           propertyMetadata,
           VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018,
@@ -514,7 +513,7 @@ export class ProofService implements IProofService {
     if (queryMetadata.operator === Operators.SD) {
       const [first, ...rest] = queryMetadata.fieldName.split('.');
       let v;
-      if (queryMetadata.isW3CFiled) {
+      if (queryMetadata.isW3CField) {
         v = credential[first as keyof W3CCredential];
       } else {
         v = credential.credentialSubject[first];
