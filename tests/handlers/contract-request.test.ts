@@ -1755,7 +1755,7 @@ describe('contract-request', () => {
     const networkConfigs = {
       amoy: (contractAddress) => ({
         ...defaultEthConnectionConfig,
-        url: 'https://polygon-amoy.g.alchemy.com/v2/kO8U960IMeF0bm62nEgxxrvWCg0VUJ4E',
+        url: rpcUrl,
         contractAddress,
         chainId: 80002
       }),
