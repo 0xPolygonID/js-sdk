@@ -2014,7 +2014,6 @@ describe('contract-request', () => {
       data: encoded
     });
 
-    console.log(tx.hash);
     await tx.wait();
 
     const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
