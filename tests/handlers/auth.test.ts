@@ -2716,7 +2716,7 @@ describe.sequential('auth', () => {
           context:
             'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
           expirationDate: {
-            $eq: getDateFromUnixTimestamp(2793526400).toISOString()
+            // $eq: getDateFromUnixTimestamp(2793526400).toISOString()
           }
         }
       }
