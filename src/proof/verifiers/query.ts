@@ -5,7 +5,7 @@ import { byteEncoder } from '../../utils';
 import { getOperatorNameByValue, Operators, QueryOperators } from '../../circuits/comparer';
 import { CircuitId } from '../../circuits/models';
 import { calculateCoreSchemaHash, ProofQuery, VerifiableConstants } from '../../verifiable';
-import { QueryMetadata } from '../common';
+import { PropertyQueryKind, QueryMetadata } from '../common';
 import { circuitValidator } from '../provers';
 import { JsonLd } from 'jsonld/jsonld-spec';
 import { VerifiablePresentation } from '../../iden3comm';
@@ -196,7 +196,7 @@ export async function validateDisclosureV2Circuit(
 ) {
   const bi = await fieldValueFromVerifiablePresentation(
     cq.fieldName,
-    cq.isW3CField,
+    cq.kind,
     verifiablePresentation,
     ldLoader
   );
@@ -223,7 +223,7 @@ export async function validateDisclosureNativeSDSupport(
 ) {
   const bi = await fieldValueFromVerifiablePresentation(
     cq.fieldName,
-    cq.isW3CField,
+    cq.kind,
     verifiablePresentation,
     ldLoader
   );
@@ -254,7 +254,7 @@ export async function validateEmptyCredentialSubjectNoopNativeSupport(outputs: C
 
 export const fieldValueFromVerifiablePresentation = async (
   fieldName: string,
-  isW3CField = false,
+  kind: PropertyQueryKind = PropertyQueryKind.CREDENTIAL_SUBJECT,
   verifiablePresentation?: VerifiablePresentation,
   ldLoader?: DocumentLoader
 ): Promise<bigint> => {
@@ -275,7 +275,7 @@ export const fieldValueFromVerifiablePresentation = async (
   let merklizedPath: Path;
   try {
     let p;
-    if (isW3CField) {
+    if (kind === PropertyQueryKind.W3C_V1) {
       p = `verifiableCredential.${fieldName}`;
     } else {
       p = `verifiableCredential.credentialSubject.${fieldName}`;

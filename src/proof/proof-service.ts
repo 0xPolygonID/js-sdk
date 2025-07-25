@@ -24,10 +24,10 @@ import {
 } from '../verifiable';
 import {
   PreparedCredential,
+  PropertyQueryKind,
   QueryMetadata,
-  parseCredentialSubject,
   parseQueryMetadata,
-  parseW3CField,
+  parseZKPQuery,
   toGISTProof,
   transformQueryValueToBigInts
 } from './common';
@@ -317,17 +317,7 @@ export class ProofService implements IProofService {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
-    const propertiesMetadata = parseCredentialSubject(
-      proofReq.query.credentialSubject as JsonDocumentObject
-    );
-    if (proofReq.query.expirationDate) {
-      const expirationDate = parseW3CField(
-        proofReq.query.expirationDate as JsonDocumentObject,
-        'expirationDate'
-      );
-      propertiesMetadata.push(expirationDate);
-    }
-
+    const propertiesMetadata = parseZKPQuery(proofReq.query);
     if (!propertiesMetadata.length) {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
     }
@@ -349,22 +339,12 @@ export class ProofService implements IProofService {
     const circuitQueries: Query[] = [];
 
     for (const propertyMetadata of propertiesMetadata) {
-      let queryMetadata;
-      if (propertyMetadata.isW3CField) {
-        queryMetadata = await parseQueryMetadata(
-          propertyMetadata,
-          VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018,
-          VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
-          this._ldOptions
-        );
-      } else {
-        queryMetadata = await parseQueryMetadata(
-          propertyMetadata,
-          byteDecoder.decode(ldContext),
-          credentialType,
-          this._ldOptions
-        );
-      }
+      const queryMetadata = await parseQueryMetadata(
+        propertyMetadata,
+        byteDecoder.decode(ldContext),
+        credentialType,
+        this._ldOptions
+      );
       queriesMetadata.push(queryMetadata);
       const circuitQuery = await this.toCircuitsQuery(
         preparedCredential.credential,
@@ -508,7 +488,7 @@ export class ProofService implements IProofService {
     if (queryMetadata.operator === Operators.SD) {
       const [first, ...rest] = queryMetadata.fieldName.split('.');
       let v;
-      if (queryMetadata.isW3CField) {
+      if (queryMetadata.kind === PropertyQueryKind.W3C_V1) {
         v = credential[first as keyof W3CCredential];
       } else {
         v = credential.credentialSubject[first];

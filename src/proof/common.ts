@@ -14,11 +14,13 @@ import {
   W3CCredential,
   buildFieldPath,
   getSerializationAttrFromContext,
-  getFieldSlotIndex
+  getFieldSlotIndex,
+  VerifiableConstants,
+  ProofQuery
 } from '../verifiable';
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { byteEncoder } from '../utils';
-import { JsonDocumentObject } from '../iden3comm';
+import { JsonDocumentObject, ZeroKnowledgeProofQuery } from '../iden3comm';
 import { Claim } from '@iden3/js-iden3-core';
 import { poseidon } from '@iden3/js-crypto';
 
@@ -101,8 +103,13 @@ export type PropertyQuery = {
   fieldName: string;
   operator: Operators;
   operatorValue?: unknown;
-  isW3CField?: boolean;
+  kind?: PropertyQueryKind;
 };
+
+export enum PropertyQueryKind {
+  CREDENTIAL_SUBJECT = 'credentialSubject',
+  W3C_V1 = 'w3cV1'
+}
 
 export type QueryMetadata = PropertyQuery & {
   slotIndex: number;
@@ -113,10 +120,23 @@ export type QueryMetadata = PropertyQuery & {
   merklizedSchema: boolean;
 };
 
+export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] => {
+  const propertiesMetadata = parseCredentialSubject(query.credentialSubject as JsonDocumentObject);
+  if (query.expirationDate) {
+    const expirationDate = parseW3CField(
+      query.expirationDate as JsonDocumentObject,
+      'expirationDate'
+    );
+    propertiesMetadata.push(expirationDate);
+  }
+  return propertiesMetadata;
+};
+
 export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): PropertyQuery[] => {
+  const kind = PropertyQueryKind.CREDENTIAL_SUBJECT;
   // credentialSubject is empty
   if (!credentialSubject) {
-    return [{ operator: QueryOperators.$noop, fieldName: '' }];
+    return [{ operator: QueryOperators.$noop, fieldName: '', kind }];
   }
 
   const queries: PropertyQuery[] = [];
@@ -131,7 +151,7 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
     const isSelectiveDisclosure = fieldReqEntries.length === 0;
 
     if (isSelectiveDisclosure) {
-      queries.push({ operator: QueryOperators.$sd, fieldName: fieldName });
+      queries.push({ operator: QueryOperators.$sd, fieldName, kind });
       continue;
     }
 
@@ -140,7 +160,7 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
         throw new Error(`operator is not supported by lib`);
       }
       const operator = QueryOperators[operatorName as keyof typeof QueryOperators];
-      queries.push({ operator, fieldName, operatorValue });
+      queries.push({ operator, fieldName, operatorValue, kind });
     }
   }
   return queries;
@@ -148,8 +168,9 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
 
 export const parseW3CField = (field: JsonDocumentObject, fieldName: string): PropertyQuery => {
   const entries = Object.entries(field);
+  const kind = PropertyQueryKind.W3C_V1;
   if (entries.length === 0) {
-    return { operator: QueryOperators.$sd, fieldName, isW3CField: true };
+    return { operator: QueryOperators.$sd, fieldName, kind };
   }
   if (entries.length !== 1) {
     throw new Error(`Query must have exactly one operator for field "${fieldName}"`);
@@ -161,7 +182,7 @@ export const parseW3CField = (field: JsonDocumentObject, fieldName: string): Pro
     throw new Error(`Operator "${operatorName}" is not supported`);
   }
 
-  return { operator, fieldName, operatorValue, isW3CField: true };
+  return { operator, fieldName, operatorValue, kind };
 };
 
 export const parseQueryMetadata = async (
@@ -170,6 +191,10 @@ export const parseQueryMetadata = async (
   credentialType: string,
   options: Options
 ): Promise<QueryMetadata> => {
+  if (propertyQuery.kind === PropertyQueryKind.W3C_V1) {
+    ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
+    credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
+  }
   const query: QueryMetadata = {
     ...propertyQuery,
     slotIndex: 0,
@@ -216,7 +241,7 @@ export const parseQueryMetadata = async (
         ldContextJSON,
         credentialType,
         propertyQuery.fieldName,
-        propertyQuery.isW3CField,
+        propertyQuery.kind,
         options
       );
       query.claimPathKey = await path.mtEntry();
@@ -255,6 +280,21 @@ export const parseQueryMetadata = async (
     query.values = values;
   }
   return query;
+};
+
+export const parseProofQueryMetadata = async (
+  credentialType: string,
+  ldContextJSON: string,
+  query: ProofQuery,
+  options: Options
+): Promise<QueryMetadata[]> => {
+  const propertyQuery = parseCredentialSubject(query.credentialSubject);
+  if (query.expirationDate) {
+    propertyQuery.push(parseW3CField(query.expirationDate, 'expirationDate'));
+  }
+  return Promise.all(
+    propertyQuery.map((p) => parseQueryMetadata(p, ldContextJSON, credentialType, options))
+  );
 };
 
 export const parseQueriesMetadata = async (

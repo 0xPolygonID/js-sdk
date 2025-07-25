@@ -1,7 +1,7 @@
 import { VerifiableConstants } from './constants';
 import { Options, Path } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from './credential';
-import { QueryMetadata } from '../proof';
+import { PropertyQueryKind, QueryMetadata } from '../proof';
 import { VerifiablePresentation, JsonDocumentObject } from '../iden3comm';
 
 export const stringByPath = (obj: { [key: string]: unknown }, path: string): string => {
@@ -25,7 +25,7 @@ export const buildFieldPath = async (
   ldSchema: string,
   contextType: string,
   field: string,
-  isW3CField = false,
+  kind: PropertyQueryKind = PropertyQueryKind.CREDENTIAL_SUBJECT,
   opts?: Options
 ): Promise<Path> => {
   let path = new Path();
@@ -33,7 +33,7 @@ export const buildFieldPath = async (
   if (field) {
     path = await Path.getContextPathKey(ldSchema, contextType, field, opts);
   }
-  if (!isW3CField) {
+  if (kind === PropertyQueryKind.CREDENTIAL_SUBJECT) {
     path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   }
   return path;
@@ -78,7 +78,7 @@ export const createVerifiablePresentation = (
   let result: JsonDocumentObject = {};
   const w3cResult: JsonDocumentObject = {};
   for (const query of queries) {
-    if (query.isW3CField) {
+    if (query.kind === PropertyQueryKind.W3C_V1) {
       const fieldName = query.fieldName;
       const value = credential?.[fieldName as keyof W3CCredential];
       w3cResult[fieldName] = value as JsonDocumentObject;

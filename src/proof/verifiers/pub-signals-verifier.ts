@@ -33,7 +33,7 @@ import {
   verifyFieldValueInclusionNativeExistsSupport,
   checkCircuitOperator
 } from './query';
-import { parseQueriesMetadata, parseQueryMetadata, parseW3CField, QueryMetadata } from '../common';
+import { parseProofQueryMetadata, parseQueriesMetadata, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
 import { calculateQueryHashV3 } from './query-hash';
 import { JsonLd } from 'jsonld/jsonld-spec';
@@ -441,7 +441,6 @@ export class PubSignalsVerifier {
       throw new Error(`can't load schema for request query`);
     }
     const ldContextJSON = JSON.stringify(schema);
-    const credentialSubject = query.credentialSubject as JsonDocumentObject;
     const schemaId: string = await Path.getTypeIDFromContext(
       ldContextJSON,
       query.type || '',
@@ -449,23 +448,12 @@ export class PubSignalsVerifier {
     );
     const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
 
-    const queriesMetadata = await parseQueriesMetadata(
+    const queriesMetadata = await parseProofQueryMetadata(
       query.type || '',
       ldContextJSON,
-      credentialSubject,
+      query,
       ldOpts
     );
-
-    if (query.expirationDate) {
-      const propertyQuery = parseW3CField(query.expirationDate, 'expirationDate');
-      const expirationDateQueryMetadata = await parseQueryMetadata(
-        propertyQuery,
-        VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018,
-        VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL,
-        ldOpts
-      );
-      queriesMetadata.push(expirationDateQueryMetadata);
-    }
 
     const request: { queryHash: bigint; queryMeta: QueryMetadata }[] = [];
     const merklized = queriesMetadata[0]?.merklizedSchema ? 1 : 0;
@@ -511,7 +499,7 @@ export class PubSignalsVerifier {
       if (request[i].queryMeta?.operator === Operators.SD) {
         const disclosedValue = await fieldValueFromVerifiablePresentation(
           request[i].queryMeta.fieldName,
-          request[i].queryMeta.isW3CField,
+          request[i].queryMeta.kind,
           verifiablePresentation,
           this._documentLoader
         );
