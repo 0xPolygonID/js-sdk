@@ -488,7 +488,7 @@ export class ProofService implements IProofService {
     if (queryMetadata.operator === Operators.SD) {
       const [first, ...rest] = queryMetadata.fieldName.split('.');
       let v;
-      if (queryMetadata.kind === PropertyQueryKind.W3C_V1) {
+      if (queryMetadata?.kind === PropertyQueryKind.W3C_V1) {
         v = credential[first as keyof W3CCredential];
       } else {
         v = credential.credentialSubject[first];

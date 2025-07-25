@@ -7,7 +7,6 @@ import {
   Operators,
   QueryOperators
 } from '../circuits';
-import { StateProof } from '../storage/entities/state';
 import {
   MerkleTreeProofWithTreeState,
   RevocationStatus,
@@ -23,6 +22,7 @@ import { byteEncoder } from '../utils';
 import { JsonDocumentObject, ZeroKnowledgeProofQuery } from '../iden3comm';
 import { Claim } from '@iden3/js-iden3-core';
 import { poseidon } from '@iden3/js-crypto';
+import { StateProof } from '../storage';
 
 export type PreparedCredential = {
   credential: W3CCredential;
@@ -191,7 +191,7 @@ export const parseQueryMetadata = async (
   credentialType: string,
   options: Options
 ): Promise<QueryMetadata> => {
-  if (propertyQuery.kind === PropertyQueryKind.W3C_V1) {
+  if (propertyQuery?.kind === PropertyQueryKind.W3C_V1) {
     ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
     credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
   }

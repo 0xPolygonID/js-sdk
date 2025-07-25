@@ -78,7 +78,7 @@ export const createVerifiablePresentation = (
   let result: JsonDocumentObject = {};
   const w3cResult: JsonDocumentObject = {};
   for (const query of queries) {
-    if (query.kind === PropertyQueryKind.W3C_V1) {
+    if (query?.kind === PropertyQueryKind.W3C_V1) {
       const fieldName = query.fieldName;
       const value = credential?.[fieldName as keyof W3CCredential];
       w3cResult[fieldName] = value as JsonDocumentObject;
