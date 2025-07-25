@@ -39,9 +39,19 @@ export const buildFieldPath = async (
   return path;
 };
 
-export const findValue = (fieldName: string, credential: W3CCredential): JsonDocumentObject => {
+export const findValue = (
+  fieldName: string,
+  credential: W3CCredential,
+  kind: PropertyQueryKind = 'credentialSubject'
+): JsonDocumentObject => {
   const [first, ...rest] = fieldName.split('.');
-  let v = credential.credentialSubject[first];
+  let v;
+  if (kind === 'credentialSubject') {
+    v = credential.credentialSubject[first];
+  } else {
+    v = credential[first as keyof W3CCredential];
+  }
+
   for (const part of rest) {
     v = (v as JsonDocumentObject)[part];
   }
@@ -76,25 +86,23 @@ export const createVerifiablePresentation = (
   };
 
   let result: JsonDocumentObject = {};
-  const w3cResult: JsonDocumentObject = {};
+  let w3cResult: JsonDocumentObject = {};
   for (const query of queries) {
-    if (query?.kind === 'w3cV1') {
-      const fieldName = query.fieldName;
-      const value = credential?.[fieldName as keyof W3CCredential];
-      w3cResult[fieldName] = value as JsonDocumentObject;
-    } else {
-      const parts = query.fieldName.split('.');
-      const current: JsonDocumentObject = parts.reduceRight(
-        (acc: JsonDocumentObject, part: string) => {
-          if (result[part]) {
-            return { [part]: { ...(result[part] as JsonDocumentObject), ...acc } };
-          }
-          return { [part]: acc };
-        },
-        findValue(query.fieldName, credential) as JsonDocumentObject
-      );
+    const parts = query.fieldName.split('.');
+    const current: JsonDocumentObject = parts.reduceRight(
+      (acc: JsonDocumentObject, part: string) => {
+        if (result[part]) {
+          return { [part]: { ...(result[part] as JsonDocumentObject), ...acc } };
+        }
+        return { [part]: acc };
+      },
+      findValue(query.fieldName, credential, query.kind) as JsonDocumentObject
+    );
 
+    if (query.kind === 'credentialSubject') {
       result = { ...result, ...current };
+    } else {
+      w3cResult = { ...w3cResult, ...current };
     }
   }
 

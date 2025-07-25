@@ -126,18 +126,28 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
     );
     propertiesMetadata.push(expirationDate);
   }
+  if (query.issuanceDate) {
+    const issuanceDate = parseW3CField(query.issuanceDate as JsonDocumentObject, 'issuanceDate');
+    propertiesMetadata.push(issuanceDate);
+  }
+  if (query.credentialStatus) {
+    const credentialStatus = parseJsonDocumentObject({ 'credentialStatus.id': {} }, 'w3cV1');
+    propertiesMetadata.push(...credentialStatus);
+  }
   return propertiesMetadata;
 };
 
-export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): PropertyQuery[] => {
-  const kind = 'credentialSubject';
-  // credentialSubject is empty
-  if (!credentialSubject) {
+export const parseJsonDocumentObject = (
+  document?: JsonDocumentObject,
+  kind?: PropertyQueryKind
+): PropertyQuery[] => {
+  // document is empty
+  if (!document) {
     return [{ operator: QueryOperators.$noop, fieldName: '', kind }];
   }
 
   const queries: PropertyQuery[] = [];
-  const entries = Object.entries(credentialSubject);
+  const entries = Object.entries(document);
   if (!entries.length) {
     throw new Error(`query must have at least 1 predicate`);
   }
@@ -180,6 +190,10 @@ export const parseW3CField = (field: JsonDocumentObject, fieldName: string): Pro
   }
 
   return { operator, fieldName, operatorValue, kind };
+};
+
+export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): PropertyQuery[] => {
+  return parseJsonDocumentObject(credentialSubject, 'credentialSubject');
 };
 
 export const parseQueryMetadata = async (
@@ -288,6 +302,13 @@ export const parseProofQueryMetadata = async (
   const propertyQuery = parseCredentialSubject(query.credentialSubject);
   if (query.expirationDate) {
     propertyQuery.push(parseW3CField(query.expirationDate, 'expirationDate'));
+  }
+  if (query.issuanceDate) {
+    propertyQuery.push(parseW3CField(query.issuanceDate, 'issuanceDate'));
+  }
+
+  if (query.credentialStatus) {
+    propertyQuery.push(parseW3CField(query.credentialStatus, 'credentialStatus'));
   }
   return Promise.all(
     propertyQuery.map((p) => parseQueryMetadata(p, ldContextJSON, credentialType, options))

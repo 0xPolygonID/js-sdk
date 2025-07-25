@@ -231,6 +231,8 @@ export interface ProofQuery {
   groupId?: number;
   params?: JSONObject;
   expirationDate?: JsonDocumentObject;
+  issuanceDate?: JsonDocumentObject;
+  credentialStatus?: JsonDocumentObject;
 }
 
 /**
