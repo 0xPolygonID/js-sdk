@@ -28,7 +28,7 @@ import {
   verifyFieldValueInclusionNativeExistsSupport,
   checkCircuitOperator
 } from './query';
-import { parseQueriesMetadata, QueryMetadata } from '../common';
+import { parseProofQueryMetadata, parseQueriesMetadata, QueryMetadata } from '../common';
 import { Operators } from '../../circuits';
 import { calculateQueryHashV3 } from './query-hash';
 import { JsonLd } from 'jsonld/jsonld-spec';
@@ -436,7 +436,6 @@ export class PubSignalsVerifier {
       throw new Error(`can't load schema for request query`);
     }
     const ldContextJSON = JSON.stringify(schema);
-    const credentialSubject = query.credentialSubject as JsonDocumentObject;
     const schemaId: string = await Path.getTypeIDFromContext(
       ldContextJSON,
       query.type || '',
@@ -444,10 +443,10 @@ export class PubSignalsVerifier {
     );
     const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
 
-    const queriesMetadata = await parseQueriesMetadata(
+    const queriesMetadata = await parseProofQueryMetadata(
       query.type || '',
       ldContextJSON,
-      credentialSubject,
+      query,
       ldOpts
     );
 
@@ -495,6 +494,7 @@ export class PubSignalsVerifier {
       if (request[i].queryMeta?.operator === Operators.SD) {
         const disclosedValue = await fieldValueFromVerifiablePresentation(
           request[i].queryMeta.fieldName,
+          request[i].queryMeta.kind,
           verifiablePresentation,
           this._documentLoader
         );

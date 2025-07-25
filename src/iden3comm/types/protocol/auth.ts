@@ -54,7 +54,7 @@ export type ZeroKnowledgeProofRequest = {
 };
 
 /** ZeroKnowledgeProofQuery represents structure of zkp request query object */
-export type ZeroKnowledgeProofQuery = {
+export type ZeroKnowledgeProofQuery = W3CV1ProofQueryFields & {
   allowedIssuers: string[];
   context: string;
   credentialSubject?: JsonDocumentObject;
@@ -62,6 +62,17 @@ export type ZeroKnowledgeProofQuery = {
   skipClaimRevocationCheck?: boolean;
   groupId?: number;
   type: string;
+};
+
+/** W3CV1ProofQueryFields represents fields for W3C v1 ZKP proof query */
+export type W3CV1ProofQueryFields = {
+  expirationDate?: JsonDocumentObject;
+  issuanceDate?: JsonDocumentObject;
+  credentialStatus?: {
+    id?: JsonDocumentObject;
+    revocationNonce?: JsonDocumentObject;
+    type?: JsonDocumentObject;
+  };
 };
 
 export type ZeroKnowledgeInvokeResponse = {

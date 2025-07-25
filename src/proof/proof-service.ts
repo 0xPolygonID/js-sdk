@@ -25,8 +25,8 @@ import {
 import {
   PreparedCredential,
   QueryMetadata,
-  parseCredentialSubject,
   parseQueryMetadata,
+  parseZKPQuery,
   toGISTProof,
   transformQueryValueToBigInts
 } from './common';
@@ -316,9 +316,7 @@ export class ProofService implements IProofService {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
-    const propertiesMetadata = parseCredentialSubject(
-      proofReq.query.credentialSubject as JsonDocumentObject
-    );
+    const propertiesMetadata = parseZKPQuery(proofReq.query);
     if (!propertiesMetadata.length) {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
     }
@@ -346,7 +344,6 @@ export class ProofService implements IProofService {
         credentialType,
         this._ldOptions
       );
-
       queriesMetadata.push(queryMetadata);
       const circuitQuery = await this.toCircuitsQuery(
         preparedCredential.credential,
@@ -489,7 +486,12 @@ export class ProofService implements IProofService {
 
     if (queryMetadata.operator === Operators.SD) {
       const [first, ...rest] = queryMetadata.fieldName.split('.');
-      let v = credential.credentialSubject[first];
+      let v;
+      if (queryMetadata?.kind === 'w3cV1') {
+        v = credential[first as keyof W3CCredential];
+      } else {
+        v = credential.credentialSubject[first];
+      }
       for (const part of rest) {
         v = (v as JsonDocumentObject)[part];
       }
