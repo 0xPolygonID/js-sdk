@@ -61,9 +61,13 @@ export type AuthProofZKP = {
 };
 
 /** AuthProofResponse represents structure of zkp response */
-export type AuthProof = {
-  authMethod: AuthMethod;
-} & (AuthProofEthIdentity | AuthProofZKP);
+export type AuthProof =
+  | {
+      authMethod: AuthMethod;
+    }
+  | ({
+      authMethod: AuthMethod;
+    } & (AuthProofEthIdentity | AuthProofZKP));
 
 export type CrossChainProof = {
   globalStateProofs: GlobalStateUpdate[];
@@ -72,5 +76,6 @@ export type CrossChainProof = {
 
 export enum AuthMethod {
   AUTHV2 = 'authV2',
-  ETH_IDENTITY = 'ethIdentity'
+  ETH_IDENTITY = 'ethIdentity',
+  NO_AUTH = 'noAuth'
 }

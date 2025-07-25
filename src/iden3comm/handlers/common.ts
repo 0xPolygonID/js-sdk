@@ -188,6 +188,7 @@ export const processProofAuth = async (
     acceptProfile?: AcceptProfile;
     senderAddress: string;
     zkpResponses: ZeroKnowledgeProofResponse[];
+    authMethod?: AuthMethod;
   }
 ): Promise<{ authProof: AuthProof }> => {
   if (!opts.acceptProfile) {
@@ -196,6 +197,13 @@ export const processProofAuth = async (
 
   switch (opts.acceptProfile.env) {
     case MediaType.ZKPMessage:
+      if (opts.authMethod && opts.authMethod === AuthMethod.NO_AUTH) {
+        return {
+          authProof: {
+            authMethod: AuthMethod.NO_AUTH
+          }
+        };
+      }
       if (!opts.acceptProfile.circuits) {
         throw new Error('Circuit not specified in accept profile');
       }

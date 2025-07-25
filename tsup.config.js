@@ -41,6 +41,7 @@ export default defineConfig([
     outExtension: () => ({
       '.js': '.cjs',
     }),
+    noExternal: ['quick-lru']
   },
   {
     ...config,
