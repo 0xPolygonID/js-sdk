@@ -365,6 +365,10 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         encodedAuthProof = packEthIdentityProof((authProof as AuthProofEthIdentity).userDid);
         break;
       }
+      case AuthMethod.NO_AUTH: {
+        encodedAuthProof = '0x'; // NoAuth doesn't require any proof
+        break;
+      }
       default:
         throw new Error('auth proof must use method AuthV2 or ethIdentity');
     }

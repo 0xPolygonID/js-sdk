@@ -8,7 +8,11 @@ import {
   ZeroKnowledgeInvokeResponse,
   ZeroKnowledgeProofResponse
 } from '../types';
-import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
+import {
+  AuthMethod,
+  ContractInvokeRequest,
+  ContractInvokeResponse
+} from '../types/protocol/contract-request';
 import { DID, ChainIds, getUnixTimestamp, BytesHelper } from '@iden3/js-iden3-core';
 import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
@@ -61,6 +65,7 @@ export type ContractMessageHandlerOptions = {
   senderDid: DID;
   ethSigner: Signer;
   challenge?: bigint;
+  authMethod?: AuthMethod;
 };
 
 /**
@@ -128,7 +133,7 @@ export class ContractRequestHandler
       throw new Error('Invalid message type for contract invoke request');
     }
 
-    const { senderDid: did, ethSigner, challenge } = ctx;
+    const { senderDid: did, ethSigner, challenge, authMethod } = ctx;
     if (!ctx.ethSigner) {
       throw new Error("Can't sign transaction. Provide Signer in options.");
     }
@@ -208,7 +213,8 @@ export class ContractRequestHandler
           supportedCircuits: this._supportedCircuits,
           acceptProfile,
           senderAddress: await ethSigner.getAddress(),
-          zkpResponses: zkpResponses
+          zkpResponses: zkpResponses,
+          authMethod
         });
 
         // we return txHash because responsesMap could be empty if there are no queries in scope
