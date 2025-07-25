@@ -131,10 +131,25 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
     propertiesMetadata.push(issuanceDate);
   }
   if (query.credentialStatus) {
-    const credentialStatus = parseJsonDocumentObject({ 'credentialStatus.id': {} }, 'w3cV1');
+    const nestedObj = flattenNestedObject(query.credentialStatus, 'credentialStatus');
+    const credentialStatus = parseJsonDocumentObject(nestedObj, 'w3cV1');
     propertiesMetadata.push(...credentialStatus);
   }
   return propertiesMetadata;
+};
+
+const flattenNestedObject = (
+  input: Record<string, JsonDocumentObject | undefined>,
+  parentKey: string
+): Record<string, JsonDocumentObject> => {
+  const result: Record<string, JsonDocumentObject> = {};
+
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined) {
+      result[`${parentKey}.${key}`] = value;
+    }
+  }
+  return result;
 };
 
 export const parseJsonDocumentObject = (

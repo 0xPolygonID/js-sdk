@@ -2713,9 +2713,10 @@ describe.sequential('auth', () => {
             // $eq: getDateFromUnixTimestamp(2793526400).toISOString()
           },
           issuanceDate: {},
-          // credentialStatus: {
-          //   id: {}
-          // },
+          credentialStatus: {
+            id: {},
+            type: {}
+          },
           credentialSubject: {
             hireDate: {}
           }

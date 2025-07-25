@@ -68,7 +68,11 @@ export type ZeroKnowledgeProofQuery = W3CV1ProofQueryFields & {
 export type W3CV1ProofQueryFields = {
   expirationDate?: JsonDocumentObject;
   issuanceDate?: JsonDocumentObject;
-  credentialStatus?: JsonDocumentObject;
+  credentialStatus?: {
+    id?: JsonDocumentObject;
+    revocationNonce?: JsonDocumentObject;
+    type?: JsonDocumentObject;
+  };
 };
 
 export type ZeroKnowledgeInvokeResponse = {
