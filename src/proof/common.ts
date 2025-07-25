@@ -120,14 +120,14 @@ export type QueryMetadata = PropertyQuery & {
 export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] => {
   const propertiesMetadata = parseCredentialSubject(query.credentialSubject as JsonDocumentObject);
   if (query.expirationDate) {
-    const expirationDate = parseW3CField(
+    const expirationDate = parseRootField(
       query.expirationDate as JsonDocumentObject,
       'expirationDate'
     );
     propertiesMetadata.push(expirationDate);
   }
   if (query.issuanceDate) {
-    const issuanceDate = parseW3CField(query.issuanceDate as JsonDocumentObject, 'issuanceDate');
+    const issuanceDate = parseRootField(query.issuanceDate as JsonDocumentObject, 'issuanceDate');
     propertiesMetadata.push(issuanceDate);
   }
   if (query.credentialStatus) {
@@ -188,7 +188,7 @@ export const parseJsonDocumentObject = (
   return queries;
 };
 
-export const parseW3CField = (field: JsonDocumentObject, fieldName: string): PropertyQuery => {
+export const parseRootField = (field: JsonDocumentObject, fieldName: string): PropertyQuery => {
   const entries = Object.entries(field);
   const kind = 'w3cV1';
   if (entries.length === 0) {
@@ -316,10 +316,10 @@ export const parseProofQueryMetadata = async (
 ): Promise<QueryMetadata[]> => {
   const propertyQuery = parseCredentialSubject(query.credentialSubject);
   if (query.expirationDate) {
-    propertyQuery.push(parseW3CField(query.expirationDate, 'expirationDate'));
+    propertyQuery.push(parseRootField(query.expirationDate, 'expirationDate'));
   }
   if (query.issuanceDate) {
-    propertyQuery.push(parseW3CField(query.issuanceDate, 'issuanceDate'));
+    propertyQuery.push(parseRootField(query.issuanceDate, 'issuanceDate'));
   }
 
   if (query.credentialStatus) {
@@ -329,7 +329,7 @@ export const parseProofQueryMetadata = async (
   }
 
   if (query.credentialStatus) {
-    propertyQuery.push(parseW3CField(query.credentialStatus, 'credentialStatus'));
+    propertyQuery.push(parseRootField(query.credentialStatus, 'credentialStatus'));
   }
   return Promise.all(
     propertyQuery.map((p) => parseQueryMetadata(p, ldContextJSON, credentialType, options))
