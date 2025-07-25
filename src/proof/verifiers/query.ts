@@ -254,7 +254,7 @@ export async function validateEmptyCredentialSubjectNoopNativeSupport(outputs: C
 
 export const fieldValueFromVerifiablePresentation = async (
   fieldName: string,
-  kind: PropertyQueryKind = PropertyQueryKind.CREDENTIAL_SUBJECT,
+  kind: PropertyQueryKind = 'credentialSubject',
   verifiablePresentation?: VerifiablePresentation,
   ldLoader?: DocumentLoader
 ): Promise<bigint> => {
@@ -275,7 +275,7 @@ export const fieldValueFromVerifiablePresentation = async (
   let merklizedPath: Path;
   try {
     let p;
-    if (kind === PropertyQueryKind.W3C_V1) {
+    if (kind === 'w3cV1') {
       p = `verifiableCredential.${fieldName}`;
     } else {
       p = `verifiableCredential.credentialSubject.${fieldName}`;

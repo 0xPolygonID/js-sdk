@@ -106,10 +106,7 @@ export type PropertyQuery = {
   kind?: PropertyQueryKind;
 };
 
-export enum PropertyQueryKind {
-  CREDENTIAL_SUBJECT = 'credentialSubject',
-  W3C_V1 = 'w3cV1'
-}
+export type PropertyQueryKind = 'credentialSubject' | 'w3cV1';
 
 export type QueryMetadata = PropertyQuery & {
   slotIndex: number;
@@ -133,7 +130,7 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
 };
 
 export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): PropertyQuery[] => {
-  const kind = PropertyQueryKind.CREDENTIAL_SUBJECT;
+  const kind = 'credentialSubject';
   // credentialSubject is empty
   if (!credentialSubject) {
     return [{ operator: QueryOperators.$noop, fieldName: '', kind }];
@@ -168,7 +165,7 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
 
 export const parseW3CField = (field: JsonDocumentObject, fieldName: string): PropertyQuery => {
   const entries = Object.entries(field);
-  const kind = PropertyQueryKind.W3C_V1;
+  const kind = 'w3cV1';
   if (entries.length === 0) {
     return { operator: QueryOperators.$sd, fieldName, kind };
   }
@@ -191,7 +188,7 @@ export const parseQueryMetadata = async (
   credentialType: string,
   options: Options
 ): Promise<QueryMetadata> => {
-  if (propertyQuery?.kind === PropertyQueryKind.W3C_V1) {
+  if (propertyQuery?.kind === 'w3cV1') {
     ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
     credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
   }
