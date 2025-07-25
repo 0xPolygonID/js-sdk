@@ -323,6 +323,12 @@ export const parseProofQueryMetadata = async (
   }
 
   if (query.credentialStatus) {
+    const nestedObj = flattenNestedObject(query.credentialStatus, 'credentialStatus');
+    const credentialStatus = parseJsonDocumentObject(nestedObj, 'w3cV1');
+    propertyQuery.push(...credentialStatus);
+  }
+
+  if (query.credentialStatus) {
     propertyQuery.push(parseW3CField(query.credentialStatus, 'credentialStatus'));
   }
   return Promise.all(

@@ -24,7 +24,6 @@ import {
 } from '../verifiable';
 import {
   PreparedCredential,
-  PropertyQueryKind,
   QueryMetadata,
   parseQueryMetadata,
   parseZKPQuery,
