@@ -108,7 +108,7 @@ describe.sequential('auth', () => {
 
     merklizeOpts = {
       documentLoader: schemaLoaderForTests({
-        ipfsGatewayURL: IPFS_URL
+        ipfsNodeURL: IPFS_URL
       })
     };
 
