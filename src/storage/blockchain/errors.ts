@@ -19,26 +19,19 @@ function extractErrorMessage(error: unknown): string {
   return errMsg;
 }
 
-export function checkIdentityDoesNotExistError(error: unknown): boolean {
+function checkError(error: string): boolean {
   const errMsg = extractErrorMessage(error);
-  if (errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST)) {
-    return true;
-  }
-  return false;
+  return errMsg.includes(error);
+}
+
+export function checkIdentityDoesNotExistError(error: unknown): boolean {
+  return checkError(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
 }
 
 export function checkStateDoesNotExistError(error: unknown): boolean {
-  const errMsg = extractErrorMessage(error);
-  if (errMsg.includes(VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST)) {
-    return true;
-  }
-  return false;
+  return checkError(VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST);
 }
 
 export function checkRootDoesNotExistError(error: unknown): boolean {
-  const errMsg = extractErrorMessage(error);
-  if (errMsg.includes(VerifiableConstants.ERRORS.ROOT_DOES_NOT_EXIST)) {
-    return true;
-  }
-  return false;
+  return checkError(VerifiableConstants.ERRORS.ROOT_DOES_NOT_EXIST);
 }
