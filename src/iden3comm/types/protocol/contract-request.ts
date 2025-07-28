@@ -77,5 +77,5 @@ export type CrossChainProof = {
 export enum AuthMethod {
   AUTHV2 = 'authV2',
   ETH_IDENTITY = 'ethIdentity',
-  NO_AUTH = 'noAuth'
+  EMBEDDED_AUTH = 'embeddedAuth'
 }

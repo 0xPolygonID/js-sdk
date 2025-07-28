@@ -197,10 +197,10 @@ export const processProofAuth = async (
 
   switch (opts.acceptProfile.env) {
     case MediaType.ZKPMessage:
-      if (opts.authMethod && opts.authMethod === AuthMethod.NO_AUTH) {
+      if (opts.authMethod && opts.authMethod === AuthMethod.EMBEDDED_AUTH) {
         return {
           authProof: {
-            authMethod: AuthMethod.NO_AUTH
+            authMethod: AuthMethod.EMBEDDED_AUTH
           }
         };
       }
