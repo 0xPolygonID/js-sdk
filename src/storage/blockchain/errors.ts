@@ -34,3 +34,11 @@ export function checkStateDoesNotExistError(error: unknown): boolean {
   }
   return false;
 }
+
+export function checkRootDoesNotExistError(error: unknown): boolean {
+  const errMsg = extractErrorMessage(error);
+  if (errMsg.includes(VerifiableConstants.ERRORS.ROOT_DOES_NOT_EXIST)) {
+    return true;
+  }
+  return false;
+}

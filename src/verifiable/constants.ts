@@ -7,6 +7,7 @@ export const VerifiableConstants = Object.freeze({
     IDENTITY_DOES_NOT_EXIST: 'Identity does not exist',
     NO_AUTH_CRED_FOUND: 'no auth credentials found',
     STATE_DOES_NOT_EXIST: 'State does not exist',
+    ROOT_DOES_NOT_EXIST: 'Root does not exist',
 
     // identity wallet
 
