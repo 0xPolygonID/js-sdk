@@ -6,6 +6,7 @@ export const VerifiableConstants = Object.freeze({
     // ErrStateNotFound issuer state is genesis state.
     IDENTITY_DOES_NOT_EXIST: 'Identity does not exist',
     NO_AUTH_CRED_FOUND: 'no auth credentials found',
+    STATE_DOES_NOT_EXIST: 'State does not exist',
 
     // identity wallet
 

@@ -3,11 +3,11 @@ import { EthConnectionConfig } from '../../storage/blockchain';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revocation';
 import { DID } from '@iden3/js-iden3-core';
-import { VerifiableConstants } from '../../verifiable/constants';
 import { isGenesisState } from '../../utils';
 import { EthStateStorage, EthStateStorageOptions } from '../../storage/blockchain/state';
 import { IStateStorage, IOnchainRevocationStore } from '../../storage';
 import { Hash } from '@iden3/js-merkletree';
+import { checkIdentityDoesNotExistError } from '../../storage/blockchain/errors';
 
 /*
  * Options for OnChainResolver
@@ -83,8 +83,7 @@ export class OnChainResolver implements CredentialStatusResolver {
       }
       latestIssuerState = latestStateInfo.state;
     } catch (e) {
-      const errMsg = (e as { reason: string })?.reason ?? (e as Error).message ?? (e as string);
-      if (!errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST)) {
+      if (!checkIdentityDoesNotExistError(e)) {
         throw e;
       }
 

@@ -38,6 +38,7 @@ import {
   VerifiablePresentation,
   JsonDocumentObject
 } from '../../iden3comm';
+import { checkStateDoesNotExistError } from '../../storage/blockchain/errors';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -605,9 +606,7 @@ export class PubSignalsVerifier {
     try {
       contractState = await this._stateStorage.getStateInfoByIdAndState(idBigInt, state);
     } catch (e) {
-      const stateNotExistErr = ((e as unknown as { errorArgs: string[] })?.errorArgs ?? [])[0];
-      const errMsg = stateNotExistErr || (e as unknown as Error).message;
-      if (errMsg.includes('State does not exist')) {
+      if (checkStateDoesNotExistError(e)) {
         if (isGenesis) {
           return {
             latest: true,
