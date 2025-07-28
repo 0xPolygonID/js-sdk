@@ -333,11 +333,11 @@ export class ProofService implements IProofService {
 
     const ldContext = await this.loadLdContext(context);
 
-    let credentialType = proofReq.query['type'] as string;
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];
 
     for (const propertyMetadata of propertiesMetadata) {
+      let credentialType = proofReq.query['type'] as string;
       // todo: check if we can move this to the parseQueryMetadata function
       if (
         propertyMetadata?.kind === 'w3cV1' &&
@@ -373,6 +373,7 @@ export class ProofService implements IProofService {
       circuitQueries
     );
 
+    const credentialType = proofReq.query['type'];
     const sdQueries = queriesMetadata.filter((q) => q.operator === Operators.SD);
     let vp: VerifiablePresentation | undefined;
     if (sdQueries.length) {
