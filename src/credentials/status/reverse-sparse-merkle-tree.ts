@@ -7,7 +7,7 @@ import { CredentialStatus, RevocationStatus, State } from '../../verifiable';
 import { CredentialStatusType } from '../../verifiable/constants';
 import { isEthereumIdentity, isGenesisState } from '../../utils';
 import { IssuerResolver } from './sparse-merkle-tree';
-import { checkIdentityDoesNotExistError } from '../../storage/blockchain/errors';
+import { isIdentityDoesNotExistError } from '../../storage/blockchain/errors';
 
 /**
  * ProofNode is a partial Reverse Hash Service result
@@ -165,7 +165,7 @@ export class RHSResolver implements CredentialStatusResolver {
       }
       latestState = latestStateInfo.state;
     } catch (e) {
-      if (!checkIdentityDoesNotExistError(e)) {
+      if (!isIdentityDoesNotExistError(e)) {
         throw e;
       }
       const stateHex = this.extractState(credentialStatus.id);

@@ -7,7 +7,7 @@ import { isGenesisState } from '../../utils';
 import { EthStateStorage, EthStateStorageOptions } from '../../storage/blockchain/state';
 import { IStateStorage, IOnchainRevocationStore } from '../../storage';
 import { Hash } from '@iden3/js-merkletree';
-import { checkIdentityDoesNotExistError } from '../../storage/blockchain/errors';
+import { isIdentityDoesNotExistError } from '../../storage/blockchain/errors';
 
 /*
  * Options for OnChainResolver
@@ -83,7 +83,7 @@ export class OnChainResolver implements CredentialStatusResolver {
       }
       latestIssuerState = latestStateInfo.state;
     } catch (e) {
-      if (!checkIdentityDoesNotExistError(e)) {
+      if (!isIdentityDoesNotExistError(e)) {
         throw e;
       }
 

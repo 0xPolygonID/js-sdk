@@ -38,10 +38,7 @@ import {
   VerifiablePresentation,
   JsonDocumentObject
 } from '../../iden3comm';
-import {
-  checkRootDoesNotExistError,
-  checkStateDoesNotExistError
-} from '../../storage/blockchain/errors';
+import { isRootDoesNotExistError, isStateDoesNotExistError } from '../../storage/blockchain/errors';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -609,7 +606,7 @@ export class PubSignalsVerifier {
     try {
       contractState = await this._stateStorage.getStateInfoByIdAndState(idBigInt, state);
     } catch (e) {
-      if (checkStateDoesNotExistError(e)) {
+      if (isStateDoesNotExistError(e)) {
         if (isGenesis) {
           return {
             latest: true,
@@ -657,7 +654,7 @@ export class PubSignalsVerifier {
     try {
       globalStateInfo = await this._stateStorage.getGISTRootInfo(state, id);
     } catch (e: unknown) {
-      if (checkRootDoesNotExistError(e)) {
+      if (isRootDoesNotExistError(e)) {
         throw new Error('GIST root does not exist in the smart contract');
       }
       throw e;
