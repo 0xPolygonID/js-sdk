@@ -108,7 +108,7 @@ describe.sequential('auth', () => {
 
     merklizeOpts = {
       documentLoader: schemaLoaderForTests({
-        ipfsNodeURL: IPFS_URL
+        ipfsGatewayURL: IPFS_URL
       })
     };
 
@@ -2672,16 +2672,19 @@ describe.sequential('auth', () => {
     const profileDID = await idWallet.createProfile(userDID, 777, issuerDID.string());
 
     const employeeCredRequest: CredentialRequest = {
-      credentialSchema:
-        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCEmployee-v101.json',
-      type: 'KYCEmployee',
+      credentialSchema: 'ipfs://QmTojMfyzxehCJVw7aUrdWuxdF68R7oLYooGHCUr9wwsef',
+      type: 'BasicPerson',
       credentialSubject: {
         id: profileDID.string(),
-        ZKPexperiance: true,
-        hireDate: '2023-12-11',
-        position: 'boss',
-        salary: 200,
-        documentType: 1
+        fullName: 'Volodymyr Basiuk',
+        firstName: 'Volodymyr',
+        familyName: 'Basiuk',
+        dateOfBirth: 838531598,
+        governmentIdentifier: 'RRRRR',
+        governmentIdentifierType: 'passport',
+        placeOfBirth: {
+          countryCode: 'UA-ua'
+        }
       },
       expiration: 2793526400,
       revocationOpts: {
@@ -2706,19 +2709,20 @@ describe.sequential('auth', () => {
           groupId: 1,
           proofType: ProofType.BJJSignature,
           allowedIssuers: ['*'],
-          type: 'KYCEmployee',
-          context:
-            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
-          expirationDate: {
-            // $eq: getDateFromUnixTimestamp(2793526400).toISOString()
-          },
-          issuanceDate: {},
-          // credentialStatus: {
-          //   id: {}
-          // }
-          credentialSubject: {
-            hireDate: {}
+          type: 'BasicPerson',
+          context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL',
+          credentialStatus: {
+            revocationNonce: {}
+            // type: {}
           }
+          // expirationDate: {
+          //   // $eq: getDateFromUnixTimestamp(2793526400).toISOString()
+          // },
+          // issuanceDate: {},
+
+          // credentialSubject: {
+          //   'placeOfBirth.countryCode': {}
+          // }
         }
       }
     ];

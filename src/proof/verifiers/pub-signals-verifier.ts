@@ -3,7 +3,12 @@ import { DocumentLoader, getDocumentLoader, Path } from '@iden3/js-jsonld-merkli
 import { Hash } from '@iden3/js-merkletree';
 import { IStateStorage, RootInfo, StateInfo } from '../../storage';
 import { byteEncoder, isGenesisState } from '../../utils';
-import { calculateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
+import {
+  calculateCoreSchemaHash,
+  CredentialStatusType,
+  ProofQuery,
+  ProofType
+} from '../../verifiable';
 import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
 import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
 import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
@@ -443,6 +448,10 @@ export class PubSignalsVerifier {
     );
     const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
 
+    query.credentialStatusType =
+      verifiablePresentation?.verifiableCredential.credentialStatus?.type;
+    // todo: remove  when type in credential subject proof generation fixed
+    query.credentialStatusType = CredentialStatusType.Iden3ReverseSparseMerkleTreeProof;
     const queriesMetadata = await parseProofQueryMetadata(
       query.type || '',
       ldContextJSON,

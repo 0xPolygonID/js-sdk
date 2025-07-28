@@ -15,7 +15,8 @@ import {
   getSerializationAttrFromContext,
   getFieldSlotIndex,
   VerifiableConstants,
-  ProofQuery
+  ProofQuery,
+  CredentialStatusType
 } from '../verifiable';
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { byteEncoder } from '../utils';
@@ -198,9 +199,15 @@ export const parseQueryMetadata = async (
   credentialType: string,
   options: Options
 ): Promise<QueryMetadata> => {
+  const replacedFieldName = propertyQuery.fieldName;
   if (propertyQuery?.kind === 'w3cV1') {
-    ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
-    credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
+    if (Object.values(CredentialStatusType).includes(credentialType as CredentialStatusType)) {
+      propertyQuery.fieldName = propertyQuery.fieldName.replace('credentialStatus.', '');
+      ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT;
+    } else {
+      ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
+      credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
+    }
   }
   const query: QueryMetadata = {
     ...propertyQuery,
@@ -286,6 +293,7 @@ export const parseQueryMetadata = async (
     }
     query.values = values;
   }
+  query.fieldName = replacedFieldName;
   return query;
 };
 
@@ -312,7 +320,16 @@ export const parseProofQueryMetadata = async (
   }
 
   return Promise.all(
-    propertyQuery.map((p) => parseQueryMetadata(p, ldContextJSON, credentialType, options))
+    propertyQuery.map((p) => {
+      let credType = credentialType;
+      if (p?.kind === 'w3cV1' && p.fieldName.startsWith('credentialStatus.')) {
+        if (!query.credentialStatusType) {
+          throw new Error('credentialStatusType is required for w3cV1 queries');
+        }
+        credType = query.credentialStatusType;
+      }
+      return parseQueryMetadata(p, ldContextJSON, credType, options);
+    })
   );
 };
 

@@ -333,11 +333,18 @@ export class ProofService implements IProofService {
 
     const ldContext = await this.loadLdContext(context);
 
-    const credentialType = proofReq.query['type'] as string;
+    let credentialType = proofReq.query['type'] as string;
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];
 
     for (const propertyMetadata of propertiesMetadata) {
+      // todo: check if we can move this to the parseQueryMetadata function
+      if (
+        propertyMetadata?.kind === 'w3cV1' &&
+        propertyMetadata.fieldName.startsWith('credentialStatus.')
+      ) {
+        credentialType = preparedCredential.credential.credentialStatus.type;
+      }
       const queryMetadata = await parseQueryMetadata(
         propertyMetadata,
         byteDecoder.decode(ldContext),

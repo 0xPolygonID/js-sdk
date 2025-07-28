@@ -1,4 +1,4 @@
-import { VerifiableConstants } from './constants';
+import { CredentialStatusType, VerifiableConstants } from './constants';
 import { Options, Path } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from './credential';
 import { PropertyQueryKind, QueryMetadata } from '../proof';
@@ -36,6 +36,10 @@ export const buildFieldPath = async (
   if (kind === 'credentialSubject') {
     path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   }
+
+  if (Object.values(CredentialStatusType).includes(contextType as CredentialStatusType)) {
+    path.prepend([VerifiableConstants.CREDENTIAL_STATUS_PATH]);
+  }
   return path;
 };
 
@@ -65,7 +69,11 @@ export const createVerifiablePresentation = (
   queries: QueryMetadata[]
 ): VerifiablePresentation => {
   const baseContext = [VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018];
-  const ldContext = baseContext[0] === context ? baseContext : [...baseContext, context];
+  const vcContext = queries.some((q) => q.fieldName.startsWith('credentialStatus.'))
+    ? [VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL, context]
+    : [context];
+
+  const ldContext = baseContext[0] === context ? baseContext : [...baseContext, ...vcContext];
 
   const vc = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
   const vcTypes = [vc];

@@ -99,6 +99,11 @@ export type VerifiablePresentation = {
     '@context': string | string[];
     type: string | string[];
     credentialSubject: JsonDocumentObject;
+    credentialStatus?: {
+      id?: string;
+      type?: string;
+      revocationNonce?: number;
+    };
   };
 };
 

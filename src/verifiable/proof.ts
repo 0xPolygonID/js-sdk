@@ -237,6 +237,7 @@ export interface ProofQuery {
     revocationNonce?: JsonDocumentObject;
     type?: JsonDocumentObject;
   };
+  credentialStatusType?: string;
 }
 
 /**
