@@ -5,9 +5,12 @@ export const VerifiableConstants = Object.freeze({
     CONTEXT_TYPE_IS_EMPTY: 'ctxType is empty',
     // ErrStateNotFound issuer state is genesis state.
     IDENTITY_DOES_NOT_EXIST: 'Identity does not exist',
+    IDENTITY_DOES_NOT_EXIST_CUSTOM_ERROR: 'IdentityDoesNotExist',
     NO_AUTH_CRED_FOUND: 'no auth credentials found',
     STATE_DOES_NOT_EXIST: 'State does not exist',
+    STATE_DOES_NOT_EXIST_CUSTOM_ERROR: 'StateDoesNotExist',
     ROOT_DOES_NOT_EXIST: 'Root does not exist',
+    ROOT_DOES_NOT_EXIST_CUSTOM_ERROR: 'RootDoesNotExist',
 
     // identity wallet
 

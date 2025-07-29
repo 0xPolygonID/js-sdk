@@ -25,13 +25,22 @@ function isError(error: string): boolean {
 }
 
 export function isIdentityDoesNotExistError(error: unknown): boolean {
-  return isError(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
+  return (
+    isError(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) ||
+    isError(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST_CUSTOM_ERROR)
+  );
 }
 
 export function isStateDoesNotExistError(error: unknown): boolean {
-  return isError(VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST);
+  return (
+    isError(VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST) ||
+    isError(VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST_CUSTOM_ERROR)
+  );
 }
 
 export function isRootDoesNotExistError(error: unknown): boolean {
-  return isError(VerifiableConstants.ERRORS.ROOT_DOES_NOT_EXIST);
+  return (
+    isError(VerifiableConstants.ERRORS.ROOT_DOES_NOT_EXIST) ||
+    isError(VerifiableConstants.ERRORS.ROOT_DOES_NOT_EXIST_CUSTOM_ERROR)
+  );
 }
