@@ -319,7 +319,7 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
 
         return acc.concat(reqFilters);
       }
-      case 'credentialStatus': {
+      case 'credentialStatus.revocationNonce': {
         const reqFilters = Object.keys(queryValue).reduce((acc: FilterQuery[], fieldKey) => {
           const fieldParams = queryValue[fieldKey];
           if (typeof fieldParams === 'object' && Object.keys(fieldParams).length === 0) {
@@ -358,7 +358,8 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
       }
       case 'proofType':
       case 'groupId':
-      case 'skipClaimRevocationCheck': {
+      case 'skipClaimRevocationCheck':
+      case 'credentialStatus': {
         return acc;
       }
       default:

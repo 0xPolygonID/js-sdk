@@ -131,9 +131,11 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
     const issuanceDate = parseJsonDocumentObject({ issuanceDate: query.issuanceDate }, 'w3cV1');
     propertiesMetadata.push(...issuanceDate);
   }
-  if (query.credentialStatus) {
-    const nestedObj = flattenNestedObject(query.credentialStatus, 'credentialStatus');
-    const credentialStatus = parseJsonDocumentObject(nestedObj, 'w3cV1');
+  if (query['credentialStatus.revocationNonce']) {
+    const credentialStatus = parseJsonDocumentObject(
+      { 'credentialStatus.revocationNonce': query['credentialStatus.revocationNonce'] },
+      'w3cV1'
+    );
     propertiesMetadata.push(...credentialStatus);
   }
   return propertiesMetadata;
@@ -313,9 +315,11 @@ export const parseProofQueryMetadata = async (
     propertyQuery.push(...parseJsonDocumentObject({ issuanceDate: query.issuanceDate }, 'w3cV1'));
   }
 
-  if (query.credentialStatus) {
-    const nestedObj = flattenNestedObject(query.credentialStatus, 'credentialStatus');
-    const credentialStatus = parseJsonDocumentObject(nestedObj, 'w3cV1');
+  if (query['credentialStatus.revocationNonce']) {
+    const credentialStatus = parseJsonDocumentObject(
+      { 'credentialStatus.revocationNonce': query['credentialStatus.revocationNonce'] },
+      'w3cV1'
+    );
     propertyQuery.push(...credentialStatus);
   }
 
