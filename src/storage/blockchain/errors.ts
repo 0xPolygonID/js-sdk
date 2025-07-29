@@ -19,28 +19,28 @@ function extractErrorMessage(error: unknown): string {
   return errMsg;
 }
 
-function isError(error: string): boolean {
+function isError(error: unknown, errorMsg: string): boolean {
   const errMsg = extractErrorMessage(error);
-  return errMsg.includes(error);
+  return errMsg.includes(errorMsg);
 }
 
 export function isIdentityDoesNotExistError(error: unknown): boolean {
   return (
-    isError(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) ||
-    isError(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST_CUSTOM_ERROR)
+    isError(error, VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST) ||
+    isError(error, VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST_CUSTOM_ERROR)
   );
 }
 
 export function isStateDoesNotExistError(error: unknown): boolean {
   return (
-    isError(VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST) ||
-    isError(VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST_CUSTOM_ERROR)
+    isError(error, VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST) ||
+    isError(error, VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST_CUSTOM_ERROR)
   );
 }
 
 export function isRootDoesNotExistError(error: unknown): boolean {
   return (
-    isError(VerifiableConstants.ERRORS.ROOT_DOES_NOT_EXIST) ||
-    isError(VerifiableConstants.ERRORS.ROOT_DOES_NOT_EXIST_CUSTOM_ERROR)
+    isError(error, VerifiableConstants.ERRORS.ROOT_DOES_NOT_EXIST) ||
+    isError(error, VerifiableConstants.ERRORS.ROOT_DOES_NOT_EXIST_CUSTOM_ERROR)
   );
 }
