@@ -4,9 +4,10 @@ import { Hash, Proof, NodeAux, ZERO_HASH, testBit } from '@iden3/js-merkletree';
 import { IStateStorage } from '../../storage';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { CredentialStatus, RevocationStatus, State } from '../../verifiable';
-import { VerifiableConstants, CredentialStatusType } from '../../verifiable/constants';
+import { CredentialStatusType } from '../../verifiable/constants';
 import { isEthereumIdentity, isGenesisState } from '../../utils';
 import { IssuerResolver } from './sparse-merkle-tree';
+import { isIdentityDoesNotExistError } from '../../storage/blockchain/errors';
 
 /**
  * ProofNode is a partial Reverse Hash Service result
@@ -164,8 +165,7 @@ export class RHSResolver implements CredentialStatusResolver {
       }
       latestState = latestStateInfo.state;
     } catch (e) {
-      const errMsg = (e as { reason: string })?.reason ?? (e as Error).message ?? (e as string);
-      if (!errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST)) {
+      if (!isIdentityDoesNotExistError(e)) {
         throw e;
       }
       const stateHex = this.extractState(credentialStatus.id);
