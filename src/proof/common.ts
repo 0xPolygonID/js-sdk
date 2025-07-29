@@ -131,13 +131,6 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
     const issuanceDate = parseJsonDocumentObject({ issuanceDate: query.issuanceDate }, 'w3cV1');
     propertiesMetadata.push(...issuanceDate);
   }
-  if (query['credentialStatus.revocationNonce']) {
-    const credentialStatus = parseJsonDocumentObject(
-      { 'credentialStatus.revocationNonce': query['credentialStatus.revocationNonce'] },
-      'w3cV1'
-    );
-    propertiesMetadata.push(...credentialStatus);
-  }
   if (query.credentialStatus) {
     const credentialSubject = parseCredentialStatus(query.credentialStatus);
     propertiesMetadata.push(...credentialSubject);
@@ -145,21 +138,39 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
   return propertiesMetadata;
 };
 
-const parseCredentialStatus = (credentialStatus: JsonDocumentObject): PropertyQuery[] => {
-  if (Object.entries(credentialStatus).length !== 0) {
-    throw new Error('credentialStatus must be empty for ZKP queries');
+const flattenNestedObject = (
+  input: Record<string, JsonDocumentObject | undefined>,
+  parentKey: string
+): Record<string, JsonDocumentObject> => {
+  const result: Record<string, JsonDocumentObject> = {};
+
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined) {
+      result[`${parentKey}.${key}`] = value;
+    }
   }
-  const kind: PropertyQueryKind = 'w3cV1';
-  const queries: PropertyQuery[] = [];
-  // add selective disclosure for credentialSubject (will give id as a value)
-  queries.push({ operator: QueryOperators.$sd, fieldName: 'credentialStatus', kind });
-  // todo: remove hardcoded
-  const credentialStatusRevNonce = parseJsonDocumentObject(
-    { 'credentialStatus.revocationNonce': {} },
-    kind
+  return result;
+};
+
+const parseCredentialStatus = (credentialStatus: JsonDocumentObject): PropertyQuery[] => {
+  if (Object.entries(credentialStatus).length === 0) {
+    const kind: PropertyQueryKind = 'w3cV1';
+    const queries: PropertyQuery[] = [];
+    // add selective disclosure for credentialSubject (will give id as a value)
+    queries.push({ operator: QueryOperators.$sd, fieldName: 'credentialStatus', kind });
+    // todo: remove hardcoded
+    const credentialStatusRevNonce = parseJsonDocumentObject(
+      { 'credentialStatus.revocationNonce': {} },
+      kind
+    );
+    queries.push(...credentialStatusRevNonce);
+    return queries;
+  }
+  const flatteredObject = flattenNestedObject(
+    credentialStatus as Record<string, JsonDocumentObject | undefined>,
+    'credentialStatus'
   );
-  queries.push(...credentialStatusRevNonce);
-  return queries;
+  return parseJsonDocumentObject(flatteredObject, 'w3cV1');
 };
 
 export const parseJsonDocumentObject = (
@@ -320,14 +331,6 @@ export const parseProofQueryMetadata = async (
   }
   if (query.issuanceDate) {
     propertyQuery.push(...parseJsonDocumentObject({ issuanceDate: query.issuanceDate }, 'w3cV1'));
-  }
-
-  if (query['credentialStatus.revocationNonce']) {
-    const credentialStatus = parseJsonDocumentObject(
-      { 'credentialStatus.revocationNonce': query['credentialStatus.revocationNonce'] },
-      'w3cV1'
-    );
-    propertyQuery.push(...credentialStatus);
   }
 
   if (query.credentialStatus) {

@@ -233,7 +233,6 @@ export interface ProofQuery {
   expirationDate?: JsonDocumentObject;
   issuanceDate?: JsonDocumentObject;
   credentialStatus?: JsonDocumentObject;
-  'credentialStatus.revocationNonce'?: JsonDocumentObject;
   credentialStatusType?: string;
 }
 
