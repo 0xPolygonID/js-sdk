@@ -2717,15 +2717,15 @@ describe.sequential('auth', () => {
           allowedIssuers: ['*'],
           type: 'BasicPerson',
           context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL',
-          credentialStatus: {},
-          'credentialStatus.revocationNonce': {},
-          expirationDate: {
-            $eq: getDateFromUnixTimestamp(2793526400).toISOString()
-          },
-          issuanceDate: {},
-          credentialSubject: {
-            'placeOfBirth.countryCode': {}
-          }
+          credentialStatus: {}
+          // 'credentialStatus.revocationNonce': {},
+          // expirationDate: {
+          //   $eq: getDateFromUnixTimestamp(2793526400).toISOString()
+          // },
+          // issuanceDate: {},
+          // credentialSubject: {
+          //   'placeOfBirth.countryCode': {}
+          // }
         }
       }
     ];

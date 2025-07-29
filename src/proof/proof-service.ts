@@ -497,6 +497,9 @@ export class ProofService implements IProofService {
       let v;
       if (queryMetadata?.kind === 'w3cV1') {
         v = credential[first as keyof W3CCredential];
+        if (queryMetadata.fieldName === 'credentialStatus') {
+          v = (v as JsonDocumentObject).id;
+        }
       } else {
         v = credential.credentialSubject[first];
       }

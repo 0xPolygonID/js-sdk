@@ -121,6 +121,7 @@ export const createVerifiablePresentation = (
 
   if (w3cResult.credentialStatus) {
     (w3cResult.credentialStatus as JsonDocumentObject).type = credential.credentialStatus.type;
+    (w3cResult.credentialStatus as JsonDocumentObject).id = credential.credentialStatus.id;
   }
 
   skeleton.verifiableCredential = {
