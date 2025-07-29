@@ -450,8 +450,6 @@ export class PubSignalsVerifier {
 
     query.credentialStatusType =
       verifiablePresentation?.verifiableCredential.credentialStatus?.type;
-    // todo: remove  when type in credential subject proof generation fixed
-    query.credentialStatusType = CredentialStatusType.Iden3ReverseSparseMerkleTreeProof;
     const queriesMetadata = await parseProofQueryMetadata(
       query.type || '',
       ldContextJSON,
