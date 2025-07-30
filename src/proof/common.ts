@@ -124,7 +124,7 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
     propertiesMetadata.push({
       operator: QueryOperators.$sd,
       fieldName: 'credentialSubject',
-      kind: 'credentialSubject'
+      kind: 'w3cV1'
     });
   }
   if (query.expirationDate) {
@@ -170,18 +170,55 @@ const flattenNestedObject = (
 };
 
 const parseCredentialStatus = (
-  document: JsonDocumentObject,
-  vp: VerifiablePresentation
+  document?: JsonDocumentObject,
+  vp?: VerifiablePresentation
 ): PropertyQuery[] => {
-  const kind = 'w3cV1';
   const fieldName = 'credentialStatus';
+  const kind = 'w3cV1';
+  if (!document) {
+    return [{ operator: QueryOperators.$noop, fieldName: '', kind }];
+  }
   // if document is empty, full disclosure is needed
   if (Object.entries(document).length === 0) {
+    if (!vp) {
+      throw new Error(`VerifiablePresentation is required for full disclosure of credentialStatus`);
+    }
     const queries: PropertyQuery[] = [];
     queries.push({ operator: QueryOperators.$sd, fieldName, kind });
     const flattered = flattenToQueryShape(
-      vp.verifiableCredential.credentialStatus as Record<string, any>,
+      (vp.verifiableCredential as Record<string, any>)[fieldName],
       fieldName
+    );
+    queries.push(...parseJsonDocumentObject(flattered, kind));
+    return queries;
+  }
+  const flatteredObject = flattenNestedObject(
+    document as Record<string, JsonDocumentObject | undefined>,
+    fieldName
+  );
+  return parseJsonDocumentObject(flatteredObject, kind);
+};
+
+const parseCredentialSubjectWithVP = (
+  document?: JsonDocumentObject,
+  vp?: VerifiablePresentation
+): PropertyQuery[] => {
+  const fieldName = 'credentialSubject';
+  const kind = 'credentialSubject';
+  if (!document) {
+    return [{ operator: QueryOperators.$noop, fieldName: '', kind }];
+  }
+  // if document is empty, full disclosure is needed
+  if (Object.entries(document).length === 0) {
+    if (!vp) {
+      throw new Error(
+        `VerifiablePresentation is required for full disclosure of credentialSubject`
+      );
+    }
+    const queries: PropertyQuery[] = [];
+    queries.push({ operator: QueryOperators.$sd, fieldName, kind: 'w3cV1' });
+    const flattered = flattenToQueryShape(
+      (vp.verifiableCredential as Record<string, any>)[fieldName]
     );
     queries.push(...parseJsonDocumentObject(flattered, kind));
     return queries;
@@ -361,9 +398,9 @@ export const parseProofQueryMetadata = async (
   ldContextJSON: string,
   query: ProofQuery,
   options: Options,
-  vp: VerifiablePresentation
+  vp?: VerifiablePresentation
 ): Promise<QueryMetadata[]> => {
-  const propertyQuery = parseCredentialSubject(query.credentialSubject);
+  const propertyQuery = parseCredentialSubjectWithVP(query.credentialSubject, vp);
   if (query.expirationDate) {
     propertyQuery.push(
       ...parseJsonDocumentObject({ expirationDate: query.expirationDate }, 'w3cV1')
