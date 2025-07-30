@@ -68,13 +68,6 @@ export const createVerifiablePresentation = (
   credential: W3CCredential,
   queries: QueryMetadata[]
 ): VerifiablePresentation => {
-  const baseContext = [VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018];
-  const vcContext = queries.some((q) => q.fieldName.startsWith('credentialStatus.'))
-    ? [VerifiableConstants.JSONLD_SCHEMA.IDEN3_CREDENTIAL, context]
-    : [context];
-
-  const ldContext = baseContext[0] === context ? baseContext : [...baseContext, ...vcContext];
-
   const vc = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
   const vcTypes = [vc];
   if (tp !== vc) {
@@ -82,10 +75,10 @@ export const createVerifiablePresentation = (
   }
 
   const skeleton = {
-    '@context': baseContext,
+    '@context': [VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018],
     type: VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_PRESENTATION,
     verifiableCredential: {
-      '@context': ldContext,
+      '@context': credential['@context'],
       type: vcTypes,
       credentialSubject: {
         type: tp

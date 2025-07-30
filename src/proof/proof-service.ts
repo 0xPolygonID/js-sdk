@@ -378,15 +378,12 @@ export class ProofService implements IProofService {
 
     const credentialType = proofReq.query['type'];
     const sdQueries = queriesMetadata.filter((q) => q.operator === Operators.SD);
-    let vp: VerifiablePresentation | undefined;
-    if (sdQueries.length) {
-      vp = createVerifiablePresentation(
-        context,
-        credentialType,
-        preparedCredential.credential,
-        sdQueries
-      );
-    }
+    const vp = createVerifiablePresentation(
+      context,
+      credentialType,
+      preparedCredential.credential,
+      sdQueries
+    );
 
     const { proof, pub_signals } = await this._prover.generate(inputs, proofReq.circuitId);
 
