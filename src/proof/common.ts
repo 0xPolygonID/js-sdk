@@ -139,11 +139,11 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
     propertiesMetadata.push(...issuanceDate);
   }
   if (query.credentialStatus) {
-    const flatteredObject = flattenNestedObject(
+    const flattenedObject = flattenNestedObject(
       query.credentialStatus as Record<string, JsonDocumentObject | undefined>,
       'credentialStatus'
     );
-    propertiesMetadata.push(...parseJsonDocumentObject(flatteredObject, 'w3cV1'));
+    propertiesMetadata.push(...parseJsonDocumentObject(flattenedObject, 'w3cV1'));
     if (query.credentialStatusFullDisclosure) {
       propertiesMetadata.push({
         operator: QueryOperators.$sd,
@@ -185,18 +185,18 @@ const parseCredentialStatus = (
     }
     const queries: PropertyQuery[] = [];
     queries.push({ operator: QueryOperators.$sd, fieldName, kind });
-    const flattered = flattenToQueryShape(
+    const flattened = flattenToQueryShape(
       (vp.verifiableCredential as Record<string, any>)[fieldName],
       fieldName
     );
-    queries.push(...parseJsonDocumentObject(flattered, kind));
+    queries.push(...parseJsonDocumentObject(flattened, kind));
     return queries;
   }
-  const flatteredObject = flattenNestedObject(
+  const flattenedObject = flattenNestedObject(
     document as Record<string, JsonDocumentObject | undefined>,
     fieldName
   );
-  return parseJsonDocumentObject(flatteredObject, kind);
+  return parseJsonDocumentObject(flattenedObject, kind);
 };
 
 const parseCredentialSubjectWithVP = (
@@ -217,10 +217,10 @@ const parseCredentialSubjectWithVP = (
     }
     const queries: PropertyQuery[] = [];
     queries.push({ operator: QueryOperators.$sd, fieldName, kind: 'w3cV1' });
-    const flattered = flattenToQueryShape(
+    const flattened = flattenToQueryShape(
       (vp.verifiableCredential as Record<string, any>)[fieldName]
     );
-    queries.push(...parseJsonDocumentObject(flattered, kind));
+    queries.push(...parseJsonDocumentObject(flattened, kind));
     return queries;
   }
   return parseJsonDocumentObject(document, kind);
