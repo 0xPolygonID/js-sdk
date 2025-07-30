@@ -25,6 +25,7 @@ import {
 import {
   PreparedCredential,
   QueryMetadata,
+  flattenToQueryShape,
   parseQueryMetadata,
   parseZKPQuery,
   toGISTProof,
@@ -316,6 +317,8 @@ export class ProofService implements IProofService {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
+    proofReq = this.preprocessZeroKnowledgeProofRequest(proofReq, preparedCredential.credential);
+
     const propertiesMetadata = parseZKPQuery(proofReq.query);
     if (!propertiesMetadata.length) {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
@@ -524,6 +527,23 @@ export class ProofService implements IProofService {
       throw new Error(`can't load ld context from url ${context}`);
     }
     return byteEncoder.encode(JSON.stringify(ldSchema));
+  }
+
+  // for full object SD
+  private preprocessZeroKnowledgeProofRequest(
+    request: ZeroKnowledgeProofRequest,
+    cred: W3CCredential
+  ): ZeroKnowledgeProofRequest {
+    const { credentialStatus, credentialSubject } = request.query;
+    if (credentialSubject && Object.keys(credentialSubject).length === 0) {
+      request.query.credentialSubjectFullDisclosure = true;
+      request.query.credentialSubject = flattenToQueryShape(cred.credentialSubject);
+    }
+    if (credentialStatus && Object.keys(credentialStatus).length === 0) {
+      request.query.credentialStatusFullDisclosure = true;
+      request.query.credentialStatus = flattenToQueryShape(cred.credentialStatus);
+    }
+    return request;
   }
 
   /** {@inheritdoc IProofService.generateAuthV2Inputs} */

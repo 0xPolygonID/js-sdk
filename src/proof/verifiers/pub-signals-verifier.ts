@@ -448,13 +448,12 @@ export class PubSignalsVerifier {
     );
     const schemaHash = calculateCoreSchemaHash(byteEncoder.encode(schemaId));
 
-    query.credentialStatusType =
-      verifiablePresentation?.verifiableCredential.credentialStatus?.type;
     const queriesMetadata = await parseProofQueryMetadata(
       query.type || '',
       ldContextJSON,
       query,
-      ldOpts
+      ldOpts,
+      verifiablePresentation
     );
 
     const request: { queryHash: bigint; queryMeta: QueryMetadata }[] = [];

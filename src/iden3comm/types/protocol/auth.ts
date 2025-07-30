@@ -58,6 +58,7 @@ export type ZeroKnowledgeProofQuery = W3CV1ProofQueryFields & {
   allowedIssuers: string[];
   context: string;
   credentialSubject?: JsonDocumentObject;
+  credentialSubjectFullDisclosure?: boolean;
   proofType?: ProofType;
   skipClaimRevocationCheck?: boolean;
   groupId?: number;
@@ -69,6 +70,7 @@ export type W3CV1ProofQueryFields = {
   expirationDate?: JsonDocumentObject;
   issuanceDate?: JsonDocumentObject;
   credentialStatus?: JsonDocumentObject;
+  credentialStatusFullDisclosure?: boolean;
 };
 
 export type ZeroKnowledgeInvokeResponse = {
