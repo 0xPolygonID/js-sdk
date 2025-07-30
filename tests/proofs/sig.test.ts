@@ -493,6 +493,7 @@ describe.sequential('sig proofs', () => {
       verifiableCredential: {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
+          'https://schema.iden3.io/core/jsonld/iden3proofs.jsonld',
           'ipfs://QmQXQ5gBNfJuc9QXy5pGbaVfLxzFjCDAvPs4Fa43BaU1U4'
         ],
         type: ['VerifiableCredential', 'DeliveryAddress'],
@@ -522,6 +523,7 @@ describe.sequential('sig proofs', () => {
       verifiableCredential: {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
+          'https://schema.iden3.io/core/jsonld/iden3proofs.jsonld',
           'ipfs://QmZreEq1z5tMAuNBNTXjfpYMQbQ8KL7YkkVBt5nG1bUqJT'
         ],
         type: ['VerifiableCredential', 'DeliverAddressMultiTest'],
