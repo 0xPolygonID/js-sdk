@@ -223,11 +223,7 @@ const parseCredentialSubjectWithVP = (
     queries.push(...parseJsonDocumentObject(flattered, kind));
     return queries;
   }
-  const flatteredObject = flattenNestedObject(
-    document as Record<string, JsonDocumentObject | undefined>,
-    fieldName
-  );
-  return parseJsonDocumentObject(flatteredObject, kind);
+  return parseJsonDocumentObject(document, kind);
 };
 
 export const flattenToQueryShape = (
