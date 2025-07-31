@@ -7,20 +7,23 @@ import {
   Operators,
   QueryOperators
 } from '../circuits';
-import { StateProof } from '../storage/entities/state';
 import {
   MerkleTreeProofWithTreeState,
   RevocationStatus,
   W3CCredential,
   buildFieldPath,
   getSerializationAttrFromContext,
-  getFieldSlotIndex
+  getFieldSlotIndex,
+  VerifiableConstants,
+  ProofQuery,
+  CredentialStatusType
 } from '../verifiable';
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { byteEncoder } from '../utils';
-import { JsonDocumentObject } from '../iden3comm';
+import { JsonDocumentObject, VerifiablePresentation, ZeroKnowledgeProofQuery } from '../iden3comm';
 import { Claim } from '@iden3/js-iden3-core';
 import { poseidon } from '@iden3/js-crypto';
+import { StateProof } from '../storage';
 
 export type PreparedCredential = {
   credential: W3CCredential;
@@ -101,7 +104,10 @@ export type PropertyQuery = {
   fieldName: string;
   operator: Operators;
   operatorValue?: unknown;
+  kind?: PropertyQueryKind;
 };
+
+export type PropertyQueryKind = 'credentialSubject' | 'w3cV1';
 
 export type QueryMetadata = PropertyQuery & {
   slotIndex: number;
@@ -112,14 +118,144 @@ export type QueryMetadata = PropertyQuery & {
   merklizedSchema: boolean;
 };
 
-export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): PropertyQuery[] => {
-  // credentialSubject is empty
-  if (!credentialSubject) {
-    return [{ operator: QueryOperators.$noop, fieldName: '' }];
+export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] => {
+  const propertiesMetadata = parseCredentialSubject(query.credentialSubject as JsonDocumentObject);
+  if (query.credentialSubjectFullDisclosure) {
+    propertiesMetadata.push({
+      operator: QueryOperators.$sd,
+      fieldName: 'credentialSubject',
+      kind: 'w3cV1'
+    });
+  }
+  if (query.expirationDate) {
+    const expirationDate = parseJsonDocumentObject(
+      { expirationDate: query.expirationDate },
+      'w3cV1'
+    );
+    propertiesMetadata.push(...expirationDate);
+  }
+  if (query.issuanceDate) {
+    const issuanceDate = parseJsonDocumentObject({ issuanceDate: query.issuanceDate }, 'w3cV1');
+    propertiesMetadata.push(...issuanceDate);
+  }
+  if (query.credentialStatus) {
+    const flattenedObject = flattenNestedObject(
+      query.credentialStatus as Record<string, JsonDocumentObject | undefined>,
+      'credentialStatus'
+    );
+    propertiesMetadata.push(...parseJsonDocumentObject(flattenedObject, 'w3cV1'));
+    if (query.credentialStatusFullDisclosure) {
+      propertiesMetadata.push({
+        operator: QueryOperators.$sd,
+        fieldName: 'credentialStatus',
+        kind: 'w3cV1'
+      });
+    }
+  }
+  return propertiesMetadata;
+};
+
+const flattenNestedObject = (
+  input: Record<string, JsonDocumentObject | undefined>,
+  parentKey: string
+): Record<string, JsonDocumentObject> => {
+  const result: Record<string, JsonDocumentObject> = {};
+
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined) {
+      result[`${parentKey}.${key}`] = value;
+    }
+  }
+  return result;
+};
+
+const parseCredentialStatus = (
+  document?: JsonDocumentObject,
+  vp?: VerifiablePresentation
+): PropertyQuery[] => {
+  const fieldName = 'credentialStatus';
+  const kind = 'w3cV1';
+  if (!document) {
+    return [{ operator: QueryOperators.$noop, fieldName: '', kind }];
+  }
+  // if document is empty, full disclosure is needed
+  if (Object.entries(document).length === 0) {
+    if (!vp) {
+      throw new Error(`VerifiablePresentation is required for full disclosure of credentialStatus`);
+    }
+    const queries: PropertyQuery[] = [];
+    queries.push({ operator: QueryOperators.$sd, fieldName, kind });
+    const flattened = flattenToQueryShape(
+      (vp.verifiableCredential as Record<string, any>)[fieldName],
+      fieldName
+    );
+    queries.push(...parseJsonDocumentObject(flattened, kind));
+    return queries;
+  }
+  const flattenedObject = flattenNestedObject(
+    document as Record<string, JsonDocumentObject | undefined>,
+    fieldName
+  );
+  return parseJsonDocumentObject(flattenedObject, kind);
+};
+
+const parseCredentialSubjectWithVP = (
+  document?: JsonDocumentObject,
+  vp?: VerifiablePresentation
+): PropertyQuery[] => {
+  const fieldName = 'credentialSubject';
+  const kind = 'credentialSubject';
+  if (!document) {
+    return [{ operator: QueryOperators.$noop, fieldName: '', kind }];
+  }
+  // if document is empty, full disclosure is needed
+  if (Object.entries(document).length === 0) {
+    if (!vp) {
+      throw new Error(
+        `VerifiablePresentation is required for full disclosure of credentialSubject`
+      );
+    }
+    const queries: PropertyQuery[] = [];
+    queries.push({ operator: QueryOperators.$sd, fieldName, kind: 'w3cV1' });
+    const flattened = flattenToQueryShape(
+      (vp.verifiableCredential as Record<string, any>)[fieldName]
+    );
+    queries.push(...parseJsonDocumentObject(flattened, kind));
+    return queries;
+  }
+  return parseJsonDocumentObject(document, kind);
+};
+
+export const flattenToQueryShape = (
+  obj: Record<string, any>,
+  parentKey = ''
+): JsonDocumentObject => {
+  const result: JsonDocumentObject = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === 'id' || key === 'type') {
+      continue;
+    }
+    const fullKey = parentKey ? `${parentKey}.${key}` : key;
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      Object.assign(result, flattenToQueryShape(value, fullKey));
+    } else {
+      result[fullKey] = {};
+    }
+  }
+  return result;
+};
+
+export const parseJsonDocumentObject = (
+  document?: JsonDocumentObject,
+  kind?: PropertyQueryKind
+): PropertyQuery[] => {
+  // document is empty
+  if (!document) {
+    return [{ operator: QueryOperators.$noop, fieldName: '', kind }];
   }
 
   const queries: PropertyQuery[] = [];
-  const entries = Object.entries(credentialSubject);
+  const entries = Object.entries(document);
   if (!entries.length) {
     throw new Error(`query must have at least 1 predicate`);
   }
@@ -130,7 +266,7 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
     const isSelectiveDisclosure = fieldReqEntries.length === 0;
 
     if (isSelectiveDisclosure) {
-      queries.push({ operator: QueryOperators.$sd, fieldName: fieldName });
+      queries.push({ operator: QueryOperators.$sd, fieldName, kind });
       continue;
     }
 
@@ -139,10 +275,14 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
         throw new Error(`operator is not supported by lib`);
       }
       const operator = QueryOperators[operatorName as keyof typeof QueryOperators];
-      queries.push({ operator, fieldName, operatorValue });
+      queries.push({ operator, fieldName, operatorValue, kind });
     }
   }
   return queries;
+};
+
+export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): PropertyQuery[] => {
+  return parseJsonDocumentObject(credentialSubject, 'credentialSubject');
 };
 
 export const parseQueryMetadata = async (
@@ -151,6 +291,16 @@ export const parseQueryMetadata = async (
   credentialType: string,
   options: Options
 ): Promise<QueryMetadata> => {
+  const replacedFieldName = propertyQuery.fieldName;
+  if (propertyQuery?.kind === 'w3cV1') {
+    if (Object.values(CredentialStatusType).includes(credentialType as CredentialStatusType)) {
+      propertyQuery.fieldName = propertyQuery.fieldName.replace('credentialStatus.', '');
+      ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT;
+    } else {
+      ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
+      credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
+    }
+  }
   const query: QueryMetadata = {
     ...propertyQuery,
     slotIndex: 0,
@@ -197,6 +347,7 @@ export const parseQueryMetadata = async (
         ldContextJSON,
         credentialType,
         propertyQuery.fieldName,
+        propertyQuery.kind,
         options
       );
       query.claimPathKey = await path.mtEntry();
@@ -234,7 +385,44 @@ export const parseQueryMetadata = async (
     }
     query.values = values;
   }
+  query.fieldName = replacedFieldName;
   return query;
+};
+
+export const parseProofQueryMetadata = async (
+  credentialType: string,
+  ldContextJSON: string,
+  query: ProofQuery,
+  options: Options,
+  vp?: VerifiablePresentation
+): Promise<QueryMetadata[]> => {
+  const propertyQuery = parseCredentialSubjectWithVP(query.credentialSubject, vp);
+  if (query.expirationDate) {
+    propertyQuery.push(
+      ...parseJsonDocumentObject({ expirationDate: query.expirationDate }, 'w3cV1')
+    );
+  }
+  if (query.issuanceDate) {
+    propertyQuery.push(...parseJsonDocumentObject({ issuanceDate: query.issuanceDate }, 'w3cV1'));
+  }
+
+  if (query.credentialStatus) {
+    const credSubject = parseCredentialStatus(query.credentialStatus, vp);
+    propertyQuery.push(...credSubject);
+  }
+
+  return Promise.all(
+    propertyQuery.map((p) => {
+      let credType = credentialType;
+      if (p?.kind === 'w3cV1' && p.fieldName.startsWith('credentialStatus.')) {
+        if (!vp?.verifiableCredential?.credentialStatus?.type) {
+          throw new Error('credentialStatus.type is required for w3cV1 queries');
+        }
+        credType = vp?.verifiableCredential?.credentialStatus?.type;
+      }
+      return parseQueryMetadata(p, ldContextJSON, credType, options);
+    })
+  );
 };
 
 export const parseQueriesMetadata = async (
