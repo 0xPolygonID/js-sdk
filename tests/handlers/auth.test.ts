@@ -2695,7 +2695,8 @@ describe.sequential('auth', () => {
       expiration: 2793526400,
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
-        id: RHS_URL
+        id: RHS_URL,
+        nonce: 2837597946
       }
     };
     const employeeCred = await idWallet.issueCredential(
@@ -2717,8 +2718,12 @@ describe.sequential('auth', () => {
           allowedIssuers: ['*'],
           type: 'BasicPerson',
           context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL',
-          credentialStatus: {},
-          credentialSubject: {}
+          credentialStatus: {
+            revocationNonce: {
+              $eq: 2837597946
+            }
+          }
+          // credentialSubject: {}
           // 'credentialStatus.revocationNonce': {},
           // expirationDate: {
           //   $eq: getDateFromUnixTimestamp(2793526400).toISOString()
