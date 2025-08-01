@@ -33,6 +33,7 @@ export type PaymentRequestInfo = {
         | Iden3PaymentRequestCryptoV1
         | Iden3PaymentRailsRequestV1
         | Iden3PaymentRailsERC20RequestV1
+        | Iden3PaymentRailsSolanaRequestV1
       )[];
   description?: string;
 };
@@ -64,6 +65,13 @@ export type Iden3PaymentRailsERC20RequestV1 = Omit<Required<Iden3PaymentRailsReq
   tokenAddress: string;
   features?: PaymentFeatures[];
   type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
+};
+
+export type Iden3PaymentRailsSolanaRequestV1 = Omit<
+  Required<Iden3PaymentRailsRequestV1>,
+  'type'
+> & {
+  type: PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1;
 };
 
 export type EthereumEip712Signature2021 = {
@@ -130,6 +138,17 @@ export type Iden3PaymentRailsERC20V1 = {
   };
 };
 
+/** @beta Iden3PaymentRailsSolanaV1 is struct the represents payment info for Iden3PaymentRailsSolanaV1 */
+export type Iden3PaymentRailsSolanaV1 = {
+  nonce: string;
+  type: 'Iden3PaymentRailsSolanaV1';
+  '@context': string | (string | object)[];
+  paymentData: {
+    txId: string;
+    chainId: string;
+  };
+};
+
 /** @beta MultiChainPaymentConfig is struct that represents payments contracts information for different chains */
 export type MultiChainPaymentConfig = {
   chainId: string;
@@ -139,7 +158,8 @@ export type MultiChainPaymentConfig = {
     id: string;
     type:
       | PaymentRequestDataType.Iden3PaymentRailsRequestV1
-      | PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
+      | PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+      | PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1;
     contractAddress?: string;
     features?: PaymentFeatures[];
   }[];
@@ -152,7 +172,8 @@ export type MultiChainPaymentConfig = {
 export type PaymentRequestTypeUnion =
   | Iden3PaymentRequestCryptoV1
   | Iden3PaymentRailsRequestV1
-  | Iden3PaymentRailsERC20RequestV1;
+  | Iden3PaymentRailsERC20RequestV1
+  | Iden3PaymentRailsSolanaRequestV1;
 
 /**
  * @beta
@@ -161,4 +182,5 @@ export type PaymentRequestTypeUnion =
 export type PaymentTypeUnion =
   | Iden3PaymentCryptoV1
   | Iden3PaymentRailsV1
-  | Iden3PaymentRailsERC20V1;
+  | Iden3PaymentRailsERC20V1
+  | Iden3PaymentRailsSolanaV1;

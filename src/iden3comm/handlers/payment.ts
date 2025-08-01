@@ -17,6 +17,8 @@ import {
   Iden3PaymentRailsERC20RequestV1,
   Iden3PaymentRailsERC20V1,
   Iden3PaymentRailsRequestV1,
+  Iden3PaymentRailsSolanaRequestV1,
+  Iden3PaymentRailsSolanaV1,
   Iden3PaymentRailsV1,
   Iden3PaymentRequestCryptoV1,
   MultiChainPaymentConfig,
@@ -81,11 +83,15 @@ export function createPaymentRequest(
 }
 
 export async function verifyEIP712TypedData(
-  data: Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1,
+  data:
+    | Iden3PaymentRailsRequestV1
+    | Iden3PaymentRailsERC20RequestV1
+    | Iden3PaymentRailsSolanaRequestV1,
   resolver: Resolvable
 ): Promise<string> {
   const paymentData =
-    data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
+    data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1 ||
+    data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
       ? {
           recipient: data.recipient,
           amount: data.amount,
@@ -380,6 +386,11 @@ export class PaymentHandler
             )
           );
           break;
+        case PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1:
+          payments.push(
+            await this.handleIden3PaymentRailsSolanaRequestV1(selectedPayment, ctx.paymentHandler)
+          );
+          break;
       }
     }
 
@@ -495,7 +506,11 @@ export class PaymentHandler
     const paymentRequestInfo: PaymentRequestInfo[] = [];
     for (let i = 0; i < payments.length; i++) {
       const { credentials, description } = payments[i];
-      const dataArr: (Iden3PaymentRailsRequestV1 | Iden3PaymentRailsERC20RequestV1)[] = [];
+      const dataArr: (
+        | Iden3PaymentRailsRequestV1
+        | Iden3PaymentRailsERC20RequestV1
+        | Iden3PaymentRailsSolanaRequestV1
+      )[] = [];
       for (let j = 0; j < payments[i].options.length; j++) {
         const { nonce, amount, chainId, optionId, expirationDate } = payments[i].options[j];
 
@@ -519,13 +534,20 @@ export class PaymentHandler
         }
         const expirationDateRequired =
           expirationDate ?? new Date(new Date().setHours(new Date().getHours() + 1));
+        const tempReplacedType = option.type; // todo: remove after uploading schema
+        if (option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
+          option.type = PaymentRequestDataType.Iden3PaymentRailsRequestV1;
+        }
         const typeUrl = `https://schema.iden3.io/core/json/${option.type}.json`;
         const typesFetchResult = await fetch(typeUrl);
         const types = await typesFetchResult.json();
         delete types.EIP712Domain;
 
+        option.type = tempReplacedType;
+
         const paymentData =
-          option.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1
+          option.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1 ||
+          option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
             ? {
                 recipient,
                 amount: amount,
@@ -548,7 +570,10 @@ export class PaymentHandler
           chainId,
           verifyingContract: paymentRails
         };
-        const signature = await signer.signTypedData(domain, types, paymentData);
+        let signature = '';
+        if (option.type !== PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
+          signature = await signer.signTypedData(domain, types, paymentData);
+        }
         const proof: EthereumEip712Signature2021[] = [
           {
             type: SupportedPaymentProofType.EthereumEip712Signature2021,
@@ -647,6 +672,31 @@ export class PaymentHandler
       nonce: data.nonce,
       type: PaymentType.Iden3PaymentRailsV1,
       '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsV1',
+      paymentData: {
+        txId,
+        chainId: proof.eip712.domain.chainId
+      }
+    };
+  }
+
+  private async handleIden3PaymentRailsSolanaRequestV1(
+    data: Iden3PaymentRailsSolanaRequestV1,
+    paymentHandler: (data: Iden3PaymentRailsSolanaRequestV1) => Promise<string>
+  ): Promise<Iden3PaymentRailsSolanaV1> {
+    if (data.expirationDate && new Date(data.expirationDate) < new Date()) {
+      throw new Error(`failed request. expired request`);
+    }
+    // todo: uncomment after implementing Solana EIP-712 generation
+    // const signer = await verifyEIP712TypedData(data, this._params.documentResolver);
+    // if (this._params.allowedSigners && !this._params.allowedSigners.includes(signer)) {
+    //   throw new Error(`failed request. signer is not in the allowed signers list`);
+    // }
+    const txId = await paymentHandler(data);
+    const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
+    return {
+      nonce: data.nonce,
+      type: PaymentType.Iden3PaymentRailsSolanaV1,
+      '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsSolanaV1',
       paymentData: {
         txId,
         chainId: proof.eip712.domain.chainId
