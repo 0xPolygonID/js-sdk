@@ -29,10 +29,11 @@ import {
   createIdentity,
   SEED_USER,
   WALLET_KEY,
-  RPC_URL
+  RPC_URL,
+  SOLANA_BASE_58_PK
 } from '../helpers';
 
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
@@ -45,6 +46,7 @@ import {
 import {
   Iden3PaymentRailsERC20RequestV1,
   Iden3PaymentRailsRequestV1,
+  Iden3PaymentRailsSolanaRequestV1,
   Iden3PaymentRequestCryptoV1,
   PaymentRequestInfo,
   PaymentRequestTypeUnion
@@ -53,6 +55,21 @@ import { Contract, ethers, JsonRpcProvider } from 'ethers';
 import { fail } from 'assert';
 import { DIDResolutionResult } from 'did-resolver';
 import nock from 'nock';
+import {
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
+  SystemProgram,
+  Transaction,
+  TransactionInstruction,
+  sendAndConfirmTransaction
+} from '@solana/web3.js';
+import bs58 from 'bs58';
+import { Schema, serialize } from 'borsh';
+import { sha256 } from '@iden3/js-crypto';
+import BN from 'bn.js';
 
 describe('payment-request handler', () => {
   afterEach(() => {
@@ -310,6 +327,37 @@ describe('payment-request handler', () => {
     }
   ];
 
+  class PaymentInstruction {
+    recipient: Uint8Array;
+    amount: bigint;
+    expiration_date: bigint;
+    nonce: bigint;
+    metadata: Uint8Array;
+    signature: Uint8Array;
+    recovery_id: number;
+
+    constructor(fields: {
+      recipient: Uint8Array;
+      amount: bigint;
+      expiration_date: bigint;
+      nonce: bigint;
+      metadata: Uint8Array;
+      signature: Uint8Array;
+      recovery_id: number;
+    }) {
+      Object.assign(this, fields);
+    }
+  }
+
+  class InitializeInstruction {
+    constructor(fields: { owner_percentage: number; fee_collector: Uint8Array }) {
+      this.owner_percentage = fields.owner_percentage;
+      this.fee_collector = fields.fee_collector;
+    }
+    owner_percentage: number;
+    fee_collector: Uint8Array;
+  }
+
   const paymentIntegrationHandlerFunc =
     (sessionId: string, did: string) =>
     async (
@@ -317,6 +365,7 @@ describe('payment-request handler', () => {
         | Iden3PaymentRequestCryptoV1
         | Iden3PaymentRailsRequestV1
         | Iden3PaymentRailsERC20RequestV1
+        | Iden3PaymentRailsSolanaRequestV1
     ): Promise<string> => {
       const rpcProvider = new JsonRpcProvider(RPC_URL);
       const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
@@ -379,6 +428,105 @@ describe('payment-request handler', () => {
 
         const txData = await payContract.payERC20(paymentData, data.proof[0].proofValue);
         return txData.hash;
+      } else if (data.type == PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
+        const connection = new Connection('https://api.devnet.solana.com');
+        const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
+        const payerPublicKey = payer.publicKey;
+        console.log('Payer Public Key:', payerPublicKey.toBase58());
+        const recipient = new PublicKey(data.recipient);
+        const programId = new PublicKey(data.proof[0].eip712.domain.verifyingContract);
+
+        const amount = BigInt(data.amount); // in lamports
+        const expiration_date = getUnixTimestamp(new Date(data.expirationDate));
+        const nonce = BigInt(data.nonce);
+        const metadata = data.metadata;
+        const signature = new Uint8Array(64); //todo: Replace with actual signature
+        const recovery_id = 1;
+
+        const schema: Schema = new Map([
+          [
+            PaymentInstruction,
+            {
+              kind: 'struct',
+              fields: [
+                ['recipient', [32]], // 32-element array of u8
+                ['amount', 'u64'],
+                ['expiration_date', 'u64'],
+                ['nonce', 'u64'],
+                ['metadata', ['u8']], // variable-length array
+                ['signature', [64]], // 64-element array of u8
+                ['recovery_id', 'u8']
+              ]
+            }
+          ]
+        ]);
+
+        const instruction = new PaymentInstruction({
+          recipient: recipient.toBytes(),
+          amount,
+          expiration_date: BigInt(expiration_date),
+          nonce,
+          metadata: byteEncoder.encode(metadata),
+          signature,
+          recovery_id
+        });
+        const serializedArgs = Buffer.from(serialize(schema, instruction));
+        const discriminator = sha256(Buffer.from('global:pay')).slice(0, 8);
+        const instructionData = Buffer.concat([discriminator, serializedArgs]);
+        const [configPda] = await PublicKey.findProgramAddressSync(
+          [Buffer.from('config')],
+          programId
+        );
+        const [paymentRecordPda] = await PublicKey.findProgramAddressSync(
+          [
+            Buffer.from('payment'),
+            payer.publicKey.toBuffer(),
+            new BN(nonce).toArrayLike(Buffer, 'le', 8)
+          ],
+          programId
+        );
+
+        const [recipientBalancePda] = await PublicKey.findProgramAddressSync(
+          [Buffer.from('balance'), recipient.toBuffer()],
+          programId
+        );
+
+        const [treasuryPda] = await PublicKey.findProgramAddressSync(
+          [Buffer.from('treasury')],
+          programId
+        );
+        const balance = await connection.getBalance(treasuryPda);
+        const solBalance = balance / LAMPORTS_PER_SOL;
+        console.log(`Treasury balance: ${solBalance} SOL on address ${treasuryPda.toBase58()}`);
+        const [noncePda] = await PublicKey.findProgramAddressSync(
+          [Buffer.from('nonce'), payer.publicKey.toBuffer()],
+          programId
+        );
+
+        const ix = new TransactionInstruction({
+          programId,
+          keys: [
+            { pubkey: configPda, isSigner: false, isWritable: false },
+            { pubkey: payer.publicKey, isSigner: false, isWritable: true },
+            { pubkey: payer.publicKey, isSigner: true, isWritable: true },
+            { pubkey: paymentRecordPda, isSigner: false, isWritable: true },
+            { pubkey: recipientBalancePda, isSigner: false, isWritable: true },
+            { pubkey: treasuryPda, isSigner: false, isWritable: true },
+            { pubkey: noncePda, isSigner: false, isWritable: true },
+            { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
+          ],
+          data: instructionData
+        });
+        const { blockhash } = await connection.getLatestBlockhash('finalized');
+        const tx = new Transaction().add(ix);
+        tx.recentBlockhash = blockhash;
+        tx.feePayer = payer.publicKey;
+        tx.sign(payer);
+        const rawTx = tx.serialize();
+        const sig = await connection.sendRawTransaction(rawTx);
+        console.log('Transaction sent:', sig);
+        return sig;
       } else {
         throw new Error('invalid payment request data type');
       }
@@ -456,7 +604,7 @@ describe('payment-request handler', () => {
           'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsRequestV1',
           'https://w3id.org/security/suites/eip712sig-2021/v1'
         ],
-        recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+        recipient: '0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
         amount: '2',
         expirationDate: '2124-12-10T17:25:18.907Z',
         nonce: '411393',
@@ -467,7 +615,7 @@ describe('payment-request handler', () => {
             proofPurpose: 'assertionMethod',
             proofValue:
               '0x31b57b1be0c22c21359252723a10b21c7c3e438705e1d46d2384feacdd8b429e3f1a3a230ac49fccdeef0aa1f7604020d4d4098c4078c4f24280c91c0dab45611b',
-            verificationMethod: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+            verificationMethod: 'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
             created: new Date().toISOString(),
             eip712: {
               types: 'https://schema.iden3.io/core/json/Iden3PaymentRailsRequestV1.json',
@@ -501,7 +649,7 @@ describe('payment-request handler', () => {
           'https://w3id.org/security/suites/eip712sig-2021/v1'
         ],
         tokenAddress: '0x71dcc8Dc5Eb138003d3571255458Bc5692a60eD4',
-        recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+        recipient: '0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
         amount: '2',
         expirationDate: '2124-12-10T17:25:18.907Z',
         nonce: '411393',
@@ -512,7 +660,7 @@ describe('payment-request handler', () => {
             proofPurpose: 'assertionMethod',
             proofValue:
               '0x2b355fbeb6f303ebf3c5a88b335129799c67fa5db3debee8ee265b4d46fbeb7349a1b22e4c012d8a3c48581f8d77d8888337f5f0c9b7a38a0a7869749173937f1b',
-            verificationMethod: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+            verificationMethod: 'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
             created: new Date().toISOString(),
             eip712: {
               types: 'https://schema.iden3.io/core/json/Iden3PaymentRailsERC20RequestV1.json',
@@ -559,20 +707,20 @@ describe('payment-request handler', () => {
           blockchainAccountId: 'https://w3id.org/security#blockchainAccountId'
         }
       ],
-      id: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+      id: 'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
       verificationMethod: [
         {
-          id: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId',
+          id: 'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb#blockchainAccountId',
           type: 'EcdsaSecp256k1RecoveryMethod2020',
-          controller: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
-          blockchainAccountId: 'eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a'
+          controller: 'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
+          blockchainAccountId: 'eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb'
         }
       ],
       authentication: [
-        'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId'
+        'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb#blockchainAccountId'
       ],
       assertionMethod: [
-        'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId'
+        'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb#blockchainAccountId'
       ]
     };
     const resolveDIDDocument = {
@@ -592,7 +740,7 @@ describe('payment-request handler', () => {
         {
           chainId: '80002',
           paymentRails: '0xF8E49b922D5Fb00d3EdD12bd14064f275726D339',
-          recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+          recipient: '0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
           options: [
             {
               id: 'amoy-native',
@@ -614,7 +762,7 @@ describe('payment-request handler', () => {
         {
           chainId: '1101',
           paymentRails: '0x380dd90852d3Fe75B4f08D0c47416D6c4E0dC774',
-          recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+          recipient: '0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
           options: [
             {
               id: 'zkevm-native',
@@ -625,6 +773,17 @@ describe('payment-request handler', () => {
               type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1,
               contractAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A',
               features: [PaymentFeatures.EIP_2612]
+            }
+          ]
+        },
+        {
+          chainId: '103',
+          paymentRails: 'CYyk8xCX2Rab4ftDXkysbVxf9TPksNoF3QkkFBr12akU',
+          recipient: 'HcCoHQFPjU2brBFW1hAZvEtZx7nSrYCBJVq4vKsjo6jf',
+          options: [
+            {
+              id: 'solana-devnet',
+              type: PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
             }
           ]
         }
@@ -880,6 +1039,54 @@ describe('payment-request handler', () => {
     );
   });
 
+  it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
+    const rpcProvider = new JsonRpcProvider(RPC_URL);
+    const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
+    const paymentRequest = await paymentHandler.createPaymentRailsV1(
+      issuerDID,
+      userDID,
+      agent,
+      ethSigner,
+      [
+        {
+          credentials: [
+            {
+              type: 'AML',
+              context: 'http://test.com'
+            }
+          ],
+          description: 'Iden3PaymentRailsRequestSolanaV1 payment-request integration test',
+          options: [
+            {
+              nonce: 7n,
+              amount: '44000000',
+              chainId: '103',
+              optionId: 'solana-devnet'
+            }
+          ]
+        }
+      ]
+    );
+
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(paymentRequest)),
+      {}
+    );
+    const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
+      paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
+      nonce: '7'
+    });
+    if (!agentMessageBytes) {
+      fail('handlePaymentRequest is not expected null response');
+    }
+    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+
+    expect((agentMessage as BasicMessage).type).to.be.eq(
+      PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
+    );
+  });
+
   it.skip('payment-request handler (Iden3PaymentRailsERC20RequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
@@ -1065,5 +1272,62 @@ describe('payment-request handler', () => {
       paymentRequest,
       paymentValidationHandler: paymentValidationIntegrationHandlerFunc
     });
+  });
+
+  it.skip('initialize Solana', async () => {
+    const connection = new Connection('https://api.devnet.solana.com');
+    const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
+    const payerPublicKey = payer.publicKey;
+    console.log('Payer Public Key:', payerPublicKey.toBase58());
+    const programId = new PublicKey('CYyk8xCX2Rab4ftDXkysbVxf9TPksNoF3QkkFBr12akU');
+
+    const schema = new Map([
+      [
+        InitializeInstruction,
+        {
+          kind: 'struct',
+          fields: [
+            ['owner_percentage', 'u8'],
+            ['fee_collector', [32]]
+          ]
+        }
+      ]
+    ]);
+
+    const ixData = Buffer.from(
+      serialize(
+        schema,
+        new InitializeInstruction({
+          owner_percentage: 15,
+          fee_collector: payer.publicKey.toBytes()
+        })
+      )
+    );
+
+    const discriminator = sha256(Buffer.from('global:initialize')).slice(0, 8);
+    const txData = Buffer.concat([Buffer.from(discriminator), ixData]);
+
+    const [configPda] = await PublicKey.findProgramAddressSync([Buffer.from('config')], programId);
+
+    const [treasuryPda] = await PublicKey.findProgramAddressSync(
+      [Buffer.from('treasury')],
+      programId
+    );
+    const balance = await connection.getBalance(treasuryPda);
+    console.log(`Treasury balance: ${balance} lamports`);
+    const ix = new TransactionInstruction({
+      programId,
+      keys: [
+        { pubkey: payer.publicKey, isSigner: true, isWritable: true },
+        { pubkey: configPda, isSigner: false, isWritable: true },
+        { pubkey: treasuryPda, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
+      ],
+      data: txData
+    });
+    const tx = new Transaction().add(ix);
+    const sig = await sendAndConfirmTransaction(connection, tx, [payer]);
+    console.log('Initialize transaction signature:', sig);
+    return sig;
   });
 });
