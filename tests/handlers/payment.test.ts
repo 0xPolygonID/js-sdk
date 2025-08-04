@@ -67,7 +67,7 @@ import {
   sendAndConfirmTransaction
 } from '@solana/web3.js';
 import bs58 from 'bs58';
-import { Schema, serialize } from 'borsh';
+import { Schema, deserialize, serialize } from 'borsh';
 import { sha256 } from '@iden3/js-crypto';
 import BN from 'bn.js';
 
@@ -358,6 +358,24 @@ describe('payment-request handler', () => {
     fee_collector: Uint8Array;
   }
 
+  class PaymentRecord {
+    is_paid: boolean;
+
+    constructor(fields: { is_paid: boolean }) {
+      this.is_paid = fields.is_paid;
+    }
+  }
+
+  const PaymentRecordSchema = new Map([
+    [
+      PaymentRecord,
+      {
+        kind: 'struct',
+        fields: [['is_paid', 'u8']]
+      }
+    ]
+  ]);
+
   const paymentIntegrationHandlerFunc =
     (sessionId: string, did: string) =>
     async (
@@ -431,6 +449,7 @@ describe('payment-request handler', () => {
       } else if (data.type == PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
         const connection = new Connection('https://api.devnet.solana.com');
         const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
+        const signer = payer;
         const payerPublicKey = payer.publicKey;
         console.log('Payer Public Key:', payerPublicKey.toBase58());
         const recipient = new PublicKey(data.recipient);
@@ -480,7 +499,7 @@ describe('payment-request handler', () => {
         const [paymentRecordPda] = await PublicKey.findProgramAddressSync(
           [
             Buffer.from('payment'),
-            payer.publicKey.toBuffer(),
+            signer.publicKey.toBuffer(),
             new BN(nonce).toArrayLike(Buffer, 'le', 8)
           ],
           programId
@@ -507,7 +526,7 @@ describe('payment-request handler', () => {
           programId,
           keys: [
             { pubkey: configPda, isSigner: false, isWritable: false },
-            { pubkey: payer.publicKey, isSigner: false, isWritable: true },
+            { pubkey: signer.publicKey, isSigner: false, isWritable: true },
             { pubkey: payer.publicKey, isSigner: true, isWritable: true },
             { pubkey: paymentRecordPda, isSigner: false, isWritable: true },
             { pubkey: recipientBalancePda, isSigner: false, isWritable: true },
@@ -536,13 +555,15 @@ describe('payment-request handler', () => {
     txId: string,
     data: PaymentRequestTypeUnion
   ): Promise<void> => {
-    const rpcProvider = new JsonRpcProvider(RPC_URL);
-    const tx = await rpcProvider.getTransaction(txId);
     if (data.type === PaymentRequestDataType.Iden3PaymentRequestCryptoV1) {
+      const rpcProvider = new JsonRpcProvider(RPC_URL);
+      const tx = await rpcProvider.getTransaction(txId);
       if (tx?.value !== ethers.parseUnits(data.amount, 'ether')) {
         throw new Error('invalid value');
       }
     } else if (data.type === PaymentRequestDataType.Iden3PaymentRailsRequestV1) {
+      const rpcProvider = new JsonRpcProvider(RPC_URL);
+      const tx = await rpcProvider.getTransaction(txId);
       if (tx?.value !== BigInt(data.amount)) {
         throw new Error('invalid value');
       }
@@ -556,6 +577,7 @@ describe('payment-request handler', () => {
         throw new Error('payment failed');
       }
     } else if (data.type === PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1) {
+      const rpcProvider = new JsonRpcProvider(RPC_URL);
       const payContract = new Contract(
         data.proof[0].eip712.domain.verifyingContract,
         mcPayContractAbi,
@@ -564,6 +586,32 @@ describe('payment-request handler', () => {
       const isSuccess = await payContract.isPaymentDone(data.recipient, data.nonce);
       if (!isSuccess) {
         throw new Error('payment failed');
+      }
+    } else if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
+      const connection = new Connection('https://api.devnet.solana.com');
+      const signer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
+      const [paymentRecordPda] = await PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('payment'),
+          signer.publicKey.toBuffer(),
+          new BN(data.nonce).toArrayLike(Buffer, 'le', 8)
+        ],
+        new PublicKey(data.proof[0].eip712.domain.verifyingContract)
+      );
+      const accountInfo = await connection.getAccountInfo(paymentRecordPda);
+      if (!accountInfo) {
+        throw new Error('payment record not found');
+      }
+      // Skip the first 8 bytes (Anchor discriminator)
+      const accountDataWithoutDiscriminator = accountInfo.data.slice(8);
+
+      const paymentRecord = deserialize(
+        PaymentRecordSchema,
+        PaymentRecord,
+        accountDataWithoutDiscriminator
+      );
+      if (!paymentRecord.is_paid) {
+        throw new Error('payment not completed');
       }
     } else {
       throw new Error('invalid payment request data type');
@@ -1042,6 +1090,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
+    const nonce = 10n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1058,7 +1107,7 @@ describe('payment-request handler', () => {
           description: 'Iden3PaymentRailsRequestSolanaV1 payment-request integration test',
           options: [
             {
-              nonce: 7n,
+              nonce,
               amount: '44000000',
               chainId: '103',
               optionId: 'solana-devnet'
@@ -1075,7 +1124,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '7'
+      nonce: nonce.toString()
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -1265,6 +1314,52 @@ describe('payment-request handler', () => {
           txId: '0xfd270399a07a7dfc9e184699e8ff8c8b2c59327f27841401b28dc910307d4cb0',
           chainId: '80002',
           tokenAddress: '0x2FE40749812FAC39a0F380649eF59E01bccf3a1A'
+        }
+      }
+    ]);
+    await paymentHandler.handlePayment(payment, {
+      paymentRequest,
+      paymentValidationHandler: paymentValidationIntegrationHandlerFunc
+    });
+  });
+
+  it.skip('payment handler (Iden3PaymentRailsSolanaV1, integration test)', async () => {
+    const rpcProvider = new JsonRpcProvider(RPC_URL);
+    const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
+    const nonce = 10n;
+    const paymentRequest = await paymentHandler.createPaymentRailsV1(
+      issuerDID,
+      userDID,
+      agent,
+      ethSigner,
+      [
+        {
+          credentials: [
+            {
+              type: 'AML',
+              context: 'http://test.com'
+            }
+          ],
+          description: 'Iden3PaymentRailsRequestSolanaV1 payment-request integration test',
+          options: [
+            {
+              nonce,
+              amount: '44000000',
+              chainId: '103',
+              optionId: 'solana-devnet'
+            }
+          ]
+        }
+      ]
+    );
+    const payment = createPayment(userDID, issuerDID, [
+      {
+        nonce: nonce.toString(),
+        type: PaymentType.Iden3PaymentRailsSolanaV1,
+        '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
+        paymentData: {
+          txId: 'zr1DhEWHaTsD1thHrn5oh4MNHESmNbaq7CEYQ9cR3mfRDmVNDrwMSDzVrnruAzopGpd2gsh6sQC2gCzhS78NZ8s',
+          chainId: '103'
         }
       }
     ]);

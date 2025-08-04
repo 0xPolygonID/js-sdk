@@ -48,7 +48,8 @@ export default [
               'solana',
               'lamports',
               'blockhash',
-              'devnet'
+              'devnet',
+              'Keypair'
             ]
           }
         }
