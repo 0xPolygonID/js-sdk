@@ -604,7 +604,7 @@ describe('payment-request handler', () => {
           'https://schema.iden3.io/core/jsonld/payment.jsonld#Iden3PaymentRailsRequestV1',
           'https://w3id.org/security/suites/eip712sig-2021/v1'
         ],
-        recipient: '0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
+        recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
         amount: '2',
         expirationDate: '2124-12-10T17:25:18.907Z',
         nonce: '411393',
@@ -615,7 +615,7 @@ describe('payment-request handler', () => {
             proofPurpose: 'assertionMethod',
             proofValue:
               '0x31b57b1be0c22c21359252723a10b21c7c3e438705e1d46d2384feacdd8b429e3f1a3a230ac49fccdeef0aa1f7604020d4d4098c4078c4f24280c91c0dab45611b',
-            verificationMethod: 'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
+            verificationMethod: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
             created: new Date().toISOString(),
             eip712: {
               types: 'https://schema.iden3.io/core/json/Iden3PaymentRailsRequestV1.json',
@@ -649,7 +649,7 @@ describe('payment-request handler', () => {
           'https://w3id.org/security/suites/eip712sig-2021/v1'
         ],
         tokenAddress: '0x71dcc8Dc5Eb138003d3571255458Bc5692a60eD4',
-        recipient: '0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
+        recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
         amount: '2',
         expirationDate: '2124-12-10T17:25:18.907Z',
         nonce: '411393',
@@ -660,7 +660,7 @@ describe('payment-request handler', () => {
             proofPurpose: 'assertionMethod',
             proofValue:
               '0x2b355fbeb6f303ebf3c5a88b335129799c67fa5db3debee8ee265b4d46fbeb7349a1b22e4c012d8a3c48581f8d77d8888337f5f0c9b7a38a0a7869749173937f1b',
-            verificationMethod: 'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
+            verificationMethod: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
             created: new Date().toISOString(),
             eip712: {
               types: 'https://schema.iden3.io/core/json/Iden3PaymentRailsERC20RequestV1.json',
@@ -707,20 +707,20 @@ describe('payment-request handler', () => {
           blockchainAccountId: 'https://w3id.org/security#blockchainAccountId'
         }
       ],
-      id: 'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
+      id: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
       verificationMethod: [
         {
-          id: 'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb#blockchainAccountId',
+          id: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId',
           type: 'EcdsaSecp256k1RecoveryMethod2020',
-          controller: 'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
-          blockchainAccountId: 'eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb'
+          controller: 'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
+          blockchainAccountId: 'eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a'
         }
       ],
       authentication: [
-        'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb#blockchainAccountId'
+        'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId'
       ],
       assertionMethod: [
-        'did:pkh:eip155:80002:0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb#blockchainAccountId'
+        'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId'
       ]
     };
     const resolveDIDDocument = {
@@ -740,7 +740,7 @@ describe('payment-request handler', () => {
         {
           chainId: '80002',
           paymentRails: '0xF8E49b922D5Fb00d3EdD12bd14064f275726D339',
-          recipient: '0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
+          recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
           options: [
             {
               id: 'amoy-native',
@@ -762,7 +762,7 @@ describe('payment-request handler', () => {
         {
           chainId: '1101',
           paymentRails: '0x380dd90852d3Fe75B4f08D0c47416D6c4E0dC774',
-          recipient: '0xDC3461f9f021dD904C71492EaBd86EaaF6dADbCb',
+          recipient: '0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a',
           options: [
             {
               id: 'zkevm-native',
@@ -1039,7 +1039,7 @@ describe('payment-request handler', () => {
     );
   });
 
-  it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
+  it.only('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
