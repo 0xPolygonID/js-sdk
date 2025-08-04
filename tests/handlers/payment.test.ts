@@ -1039,7 +1039,7 @@ describe('payment-request handler', () => {
     );
   });
 
-  it.only('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
+  it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
