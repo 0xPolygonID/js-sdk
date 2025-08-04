@@ -47,6 +47,7 @@ import {
   Iden3PaymentRailsERC20RequestV1,
   Iden3PaymentRailsRequestV1,
   Iden3PaymentRailsSolanaRequestV1,
+  Iden3PaymentRailsSolanaSPLRequestV1,
   Iden3PaymentRequestCryptoV1,
   PaymentRequestInfo,
   PaymentRequestTypeUnion
@@ -64,12 +65,20 @@ import {
   SystemProgram,
   Transaction,
   TransactionInstruction,
+  clusterApiUrl,
   sendAndConfirmTransaction
 } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { Schema, deserialize, serialize } from 'borsh';
 import { sha256 } from '@iden3/js-crypto';
 import BN from 'bn.js';
+import {
+  TOKEN_PROGRAM_ID,
+  getMint,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+  transfer
+} from '@solana/spl-token';
 
 describe('payment-request handler', () => {
   afterEach(() => {
@@ -349,6 +358,24 @@ describe('payment-request handler', () => {
     }
   }
 
+  const paymentInstructionSchema: Schema = new Map([
+    [
+      PaymentInstruction,
+      {
+        kind: 'struct',
+        fields: [
+          ['recipient', [32]], // 32-element array of u8
+          ['amount', 'u64'],
+          ['expiration_date', 'u64'],
+          ['nonce', 'u64'],
+          ['metadata', ['u8']], // variable-length array
+          ['signature', [64]], // 64-element array of u8
+          ['recovery_id', 'u8']
+        ]
+      }
+    ]
+  ]);
+
   class InitializeInstruction {
     constructor(fields: { owner_percentage: number; fee_collector: Uint8Array }) {
       this.owner_percentage = fields.owner_percentage;
@@ -384,6 +411,7 @@ describe('payment-request handler', () => {
         | Iden3PaymentRailsRequestV1
         | Iden3PaymentRailsERC20RequestV1
         | Iden3PaymentRailsSolanaRequestV1
+        | Iden3PaymentRailsSolanaSPLRequestV1
     ): Promise<string> => {
       const rpcProvider = new JsonRpcProvider(RPC_URL);
       const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
@@ -446,8 +474,11 @@ describe('payment-request handler', () => {
 
         const txData = await payContract.payERC20(paymentData, data.proof[0].proofValue);
         return txData.hash;
-      } else if (data.type == PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
-        const connection = new Connection('https://api.devnet.solana.com');
+      } else if (
+        data.type == PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1 ||
+        data.type == PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1
+      ) {
+        const connection = new Connection(clusterApiUrl('devnet'));
         const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
         const signer = payer;
         const payerPublicKey = payer.publicKey;
@@ -462,24 +493,6 @@ describe('payment-request handler', () => {
         const signature = new Uint8Array(64); //todo: Replace with actual signature
         const recovery_id = 1;
 
-        const schema: Schema = new Map([
-          [
-            PaymentInstruction,
-            {
-              kind: 'struct',
-              fields: [
-                ['recipient', [32]], // 32-element array of u8
-                ['amount', 'u64'],
-                ['expiration_date', 'u64'],
-                ['nonce', 'u64'],
-                ['metadata', ['u8']], // variable-length array
-                ['signature', [64]], // 64-element array of u8
-                ['recovery_id', 'u8']
-              ]
-            }
-          ]
-        ]);
-
         const instruction = new PaymentInstruction({
           recipient: recipient.toBytes(),
           amount,
@@ -489,8 +502,11 @@ describe('payment-request handler', () => {
           signature,
           recovery_id
         });
-        const serializedArgs = Buffer.from(serialize(schema, instruction));
-        const discriminator = sha256(Buffer.from('global:pay')).slice(0, 8);
+        const serializedArgs = Buffer.from(serialize(paymentInstructionSchema, instruction));
+        let discriminator = sha256(Buffer.from('global:pay')).slice(0, 8);
+        if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1) {
+          discriminator = sha256(Buffer.from('global:pay_spl')).slice(0, 8);
+        }
         const instructionData = Buffer.concat([discriminator, serializedArgs]);
         const [configPda] = await PublicKey.findProgramAddressSync(
           [Buffer.from('config')],
@@ -522,19 +538,70 @@ describe('payment-request handler', () => {
           programId
         );
 
-        const ix = new TransactionInstruction({
-          programId,
-          keys: [
-            { pubkey: configPda, isSigner: false, isWritable: false },
-            { pubkey: signer.publicKey, isSigner: false, isWritable: true },
-            { pubkey: payer.publicKey, isSigner: true, isWritable: true },
-            { pubkey: paymentRecordPda, isSigner: false, isWritable: true },
+        const keys = [
+          { pubkey: configPda, isSigner: false, isWritable: false },
+          { pubkey: signer.publicKey, isSigner: false, isWritable: true },
+          { pubkey: payer.publicKey, isSigner: true, isWritable: true },
+          { pubkey: paymentRecordPda, isSigner: false, isWritable: true }
+        ];
+        if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
+          const payKeys = [
             { pubkey: recipientBalancePda, isSigner: false, isWritable: true },
             { pubkey: treasuryPda, isSigner: false, isWritable: true },
             { pubkey: noncePda, isSigner: false, isWritable: true },
             { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
             { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
-          ],
+          ];
+          keys.push(...payKeys);
+        }
+        if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1) {
+          const tokenMint = new PublicKey(data.tokenAddress);
+
+          const mintInfo = await getMint(connection, tokenMint);
+          console.log('Mint decimals:', mintInfo.decimals);
+
+          const senderTokenAccount = await getOrCreateAssociatedTokenAccount(
+            connection,
+            payer,
+            tokenMint,
+            payer.publicKey
+          );
+          console.log(`Sender Token Account: ${senderTokenAccount.address.toBase58()}`);
+          // create if not exists
+          const recipientTokenAccount = await getOrCreateAssociatedTokenAccount(
+            connection,
+            payer,
+            tokenMint,
+            recipient
+          );
+          console.log(`Recipient Token Account: ${recipientTokenAccount.address.toBase58()}`);
+          // create treasury token account if not exists
+          const treasuryTokenAccount = await getOrCreateAssociatedTokenAccount(
+            connection,
+            payer,
+            tokenMint,
+            treasuryPda,
+            true
+          );
+          console.log(`Treasury Token Account: ${treasuryTokenAccount.address.toBase58()}`);
+
+          const splKeys = [
+            { pubkey: senderTokenAccount.address, isSigner: false, isWritable: true },
+            { pubkey: recipientTokenAccount.address, isSigner: false, isWritable: true },
+            { pubkey: treasuryTokenAccount.address, isSigner: false, isWritable: true },
+            { pubkey: tokenMint, isSigner: false, isWritable: false },
+            { pubkey: treasuryPda, isSigner: false, isWritable: true },
+            { pubkey: noncePda, isSigner: false, isWritable: true },
+            { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
+          ];
+          keys.push(...splKeys);
+        }
+
+        const ix = new TransactionInstruction({
+          programId,
+          keys,
           data: instructionData
         });
         const { blockhash } = await connection.getLatestBlockhash('finalized');
@@ -832,6 +899,11 @@ describe('payment-request handler', () => {
             {
               id: 'solana-devnet',
               type: PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
+            },
+            {
+              id: 'solana-devnet-spl',
+              type: PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1,
+              contractAddress: '4MjRhSkDaXmgdAL9d9UM7kmgJrWYGJH66oocUN2f3VUp'
             }
           ]
         }
@@ -1090,7 +1162,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10n;
+    const nonce = 11n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1111,6 +1183,55 @@ describe('payment-request handler', () => {
               amount: '44000000',
               chainId: '103',
               optionId: 'solana-devnet'
+            }
+          ]
+        }
+      ]
+    );
+
+    const msgBytesRequest = await packageManager.pack(
+      MediaType.PlainMessage,
+      byteEncoder.encode(JSON.stringify(paymentRequest)),
+      {}
+    );
+    const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
+      paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
+      nonce: nonce.toString()
+    });
+    if (!agentMessageBytes) {
+      fail('handlePaymentRequest is not expected null response');
+    }
+    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+
+    expect((agentMessage as BasicMessage).type).to.be.eq(
+      PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
+    );
+  });
+
+  it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPL_V1, integration test)', async () => {
+    const rpcProvider = new JsonRpcProvider(RPC_URL);
+    const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
+    const nonce = 10001n;
+    const paymentRequest = await paymentHandler.createPaymentRailsV1(
+      issuerDID,
+      userDID,
+      agent,
+      ethSigner,
+      [
+        {
+          credentials: [
+            {
+              type: 'AML',
+              context: 'http://test.com'
+            }
+          ],
+          description: 'Iden3PaymentRailsRequestSolanaSPL_V1 payment-request integration test',
+          options: [
+            {
+              nonce,
+              amount: '500000000',
+              chainId: '103',
+              optionId: 'solana-devnet-spl'
             }
           ]
         }
@@ -1424,5 +1545,58 @@ describe('payment-request handler', () => {
     const sig = await sendAndConfirmTransaction(connection, tx, [payer]);
     console.log('Initialize transaction signature:', sig);
     return sig;
+  });
+
+  it.skip('create and mint SPL: ', async () => {
+    const connection = new Connection(clusterApiUrl('devnet'));
+    const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
+
+    // 1. Create mint
+    // const mint = await createMint(connection, payer, payer.publicKey, null, 9, undefined, {
+    //   commitment: 'confirmed',
+    //   preflightCommitment: 'confirmed'
+    // }); // 9 decimals
+
+    const mint = new PublicKey('4MjRhSkDaXmgdAL9d9UM7kmgJrWYGJH66oocUN2f3VUp');
+    console.log(`Mint created: ${mint.toBase58()}`);
+    // 2. Create token accounts
+    // const senderTokenAccount = await getOrCreateAssociatedTokenAccount(
+    //   connection,
+    //   payer,
+    //   mint,
+    //   payer.publicKey
+    // );
+    const senderTokenAccount = new PublicKey('BRRSY94cU3odT56GwmRjAFf293Ed5iGgkYrg2siUApH2');
+    // 3. Mint tokens to sender
+    await mintTo(
+      connection,
+      payer,
+      mint,
+      senderTokenAccount,
+      payer,
+      1_000_000_000_000_000, // 1 million tokens
+      [],
+      { commitment: 'confirmed', preflightCommitment: 'confirmed' }
+    );
+
+    // 4. Send some to the address
+    const recipient = new PublicKey('GenCHmoE59ad9dx8CUhcfJKh2KRfhFwDhcQL6DAE8udK');
+    const recipientTokenAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      mint,
+      recipient
+    );
+
+    await transfer(
+      connection,
+      payer,
+      senderTokenAccount.address,
+      recipientTokenAccount.address,
+      payer,
+      10_000_000_000, // 10 tokens
+      [],
+      { commitment: 'confirmed', preflightCommitment: 'confirmed' }
+    );
   });
 });

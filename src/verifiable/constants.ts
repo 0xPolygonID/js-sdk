@@ -165,7 +165,8 @@ export enum PaymentRequestDataType {
   Iden3PaymentRequestCryptoV1 = 'Iden3PaymentRequestCryptoV1',
   Iden3PaymentRailsRequestV1 = 'Iden3PaymentRailsRequestV1',
   Iden3PaymentRailsERC20RequestV1 = 'Iden3PaymentRailsERC20RequestV1',
-  Iden3PaymentRailsSolanaRequestV1 = 'Iden3PaymentRailsSolanaRequestV1'
+  Iden3PaymentRailsSolanaRequestV1 = 'Iden3PaymentRailsSolanaRequestV1',
+  Iden3PaymentRailsSolanaSPLRequestV1 = 'Iden3PaymentRailsSolanaSPLRequestV1'
 }
 
 /**
@@ -177,7 +178,8 @@ export enum PaymentType {
   Iden3PaymentCryptoV1 = 'Iden3PaymentCryptoV1',
   Iden3PaymentRailsV1 = 'Iden3PaymentRailsV1',
   Iden3PaymentRailsERC20V1 = 'Iden3PaymentRailsERC20V1',
-  Iden3PaymentRailsSolanaV1 = 'Iden3PaymentRailsSolanaV1'
+  Iden3PaymentRailsSolanaV1 = 'Iden3PaymentRailsSolanaV1',
+  Iden3PaymentRailsSolanaSPL_V1 = 'Iden3PaymentRailsSolanaSPL_V1'
 }
 
 /**
