@@ -188,7 +188,8 @@ export enum PaymentType {
  * @enum {string}
  */
 export enum SupportedPaymentProofType {
-  EthereumEip712Signature2021 = 'EthereumEip712Signature2021'
+  EthereumEip712Signature2021 = 'EthereumEip712Signature2021',
+  Iden3SolanaEd25519SignatureV1 = 'Iden3SolanaEd25519SignatureV1'
 }
 
 /**

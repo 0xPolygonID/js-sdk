@@ -18,7 +18,9 @@ import {
   SupportedCurrencies,
   SupportedPaymentProofType,
   PaymentFeatures,
-  getPermitSignature
+  getPermitSignature,
+  SolanaPaymentInstruction,
+  SolanaPaymentInstructionSchema
 } from '../../src';
 
 import {
@@ -69,7 +71,7 @@ import {
   sendAndConfirmTransaction
 } from '@solana/web3.js';
 import bs58 from 'bs58';
-import { Schema, deserialize, serialize } from 'borsh';
+import { deserialize, serialize } from 'borsh';
 import { sha256 } from '@iden3/js-crypto';
 import BN from 'bn.js';
 import {
@@ -336,46 +338,6 @@ describe('payment-request handler', () => {
     }
   ];
 
-  class SolanaPaymentInstruction {
-    recipient: Uint8Array;
-    amount: bigint;
-    expiration_date: bigint;
-    nonce: bigint;
-    metadata: Uint8Array;
-    signature: Uint8Array;
-    recovery_id: number;
-
-    constructor(fields: {
-      recipient: Uint8Array;
-      amount: bigint;
-      expiration_date: bigint;
-      nonce: bigint;
-      metadata: Uint8Array;
-      signature: Uint8Array;
-      recovery_id: number;
-    }) {
-      Object.assign(this, fields);
-    }
-  }
-
-  const solanaPaymentInstructionSchema: Schema = new Map([
-    [
-      SolanaPaymentInstruction,
-      {
-        kind: 'struct',
-        fields: [
-          ['recipient', [32]],
-          ['amount', 'u64'],
-          ['expiration_date', 'u64'],
-          ['nonce', 'u64'],
-          ['metadata', ['u8']],
-          ['signature', [64]],
-          ['recovery_id', 'u8']
-        ]
-      }
-    ]
-  ]);
-
   class InitializeInstruction {
     constructor(fields: { owner_percentage: number; fee_collector: Uint8Array }) {
       this.owner_percentage = fields.owner_percentage;
@@ -480,11 +442,11 @@ describe('payment-request handler', () => {
       ) {
         const connection = new Connection(clusterApiUrl('devnet'));
         const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
-        const signer = payer;
+        const signer = new PublicKey(data.proof[0].pubKey);
         const payerPublicKey = payer.publicKey;
         console.log('Payer Public Key:', payerPublicKey.toBase58());
         const recipient = new PublicKey(data.recipient);
-        const programId = new PublicKey(data.proof[0].eip712.domain.verifyingContract);
+        const programId = new PublicKey(data.proof[0].domain.verifyingContract);
 
         const amount = BigInt(data.amount); // in lamports
         const expiration_date = getUnixTimestamp(new Date(data.expirationDate));
@@ -502,7 +464,7 @@ describe('payment-request handler', () => {
           signature,
           recovery_id
         });
-        const serializedArgs = Buffer.from(serialize(solanaPaymentInstructionSchema, instruction));
+        const serializedArgs = Buffer.from(serialize(SolanaPaymentInstructionSchema, instruction));
         let discriminator = sha256(Buffer.from('global:pay')).slice(0, 8);
         if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1) {
           discriminator = sha256(Buffer.from('global:pay_spl')).slice(0, 8);
@@ -513,11 +475,7 @@ describe('payment-request handler', () => {
           programId
         );
         const [paymentRecordPda] = await PublicKey.findProgramAddressSync(
-          [
-            Buffer.from('payment'),
-            signer.publicKey.toBuffer(),
-            new BN(nonce).toArrayLike(Buffer, 'le', 8)
-          ],
+          [Buffer.from('payment'), signer.toBuffer(), new BN(nonce).toArrayLike(Buffer, 'le', 8)],
           programId
         );
 
@@ -540,7 +498,7 @@ describe('payment-request handler', () => {
 
         const keys = [
           { pubkey: configPda, isSigner: false, isWritable: false },
-          { pubkey: signer.publicKey, isSigner: false, isWritable: true },
+          { pubkey: signer, isSigner: false, isWritable: true },
           { pubkey: payer.publicKey, isSigner: true, isWritable: true },
           { pubkey: paymentRecordPda, isSigner: false, isWritable: true }
         ];
@@ -666,7 +624,7 @@ describe('payment-request handler', () => {
           signer.publicKey.toBuffer(),
           new BN(data.nonce).toArrayLike(Buffer, 'le', 8)
         ],
-        new PublicKey(data.proof[0].eip712.domain.verifyingContract)
+        new PublicKey(data.proof[0].domain.verifyingContract)
       );
       const accountInfo = await connection.getAccountInfo(paymentRecordPda);
       if (!accountInfo) {
@@ -1165,7 +1123,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 11n;
+    const nonce = 14n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1189,7 +1147,10 @@ describe('payment-request handler', () => {
             }
           ]
         }
-      ]
+      ],
+      {
+        solSigner: Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK))
+      }
     );
 
     const msgBytesRequest = await packageManager.pack(
@@ -1214,7 +1175,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPL_V1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10002n;
+    const nonce = 10005n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1238,7 +1199,10 @@ describe('payment-request handler', () => {
             }
           ]
         }
-      ]
+      ],
+      {
+        solSigner: Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK))
+      }
     );
 
     const msgBytesRequest = await packageManager.pack(
@@ -1450,7 +1414,7 @@ describe('payment-request handler', () => {
   it.skip('payment handler (Iden3PaymentRailsSolanaV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10n;
+    const nonce = 14n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1474,7 +1438,10 @@ describe('payment-request handler', () => {
             }
           ]
         }
-      ]
+      ],
+      {
+        solSigner: Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK))
+      }
     );
     const payment = createPayment(userDID, issuerDID, [
       {
@@ -1493,10 +1460,10 @@ describe('payment-request handler', () => {
     });
   });
 
-  it.skip('payment handler (Iden3PaymentRailsSolanaSPL_V1, integration test)', async () => {
+  it.only('payment handler (Iden3PaymentRailsSolanaSPL_V1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10002n;
+    const nonce = 10005n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1520,7 +1487,10 @@ describe('payment-request handler', () => {
             }
           ]
         }
-      ]
+      ],
+      {
+        solSigner: Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK))
+      }
     );
     const payment = createPayment(userDID, issuerDID, [
       {
@@ -1640,7 +1610,7 @@ describe('payment-request handler', () => {
     await transfer(
       connection,
       payer,
-      senderTokenAccount.address,
+      senderTokenAccount,
       recipientTokenAccount.address,
       payer,
       10_000_000_000, // 10 tokens

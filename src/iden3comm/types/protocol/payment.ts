@@ -51,6 +51,7 @@ export type Iden3PaymentRequestCryptoV1 = {
   expiration?: string;
 };
 
+/** @beta Iden3PaymentRailsRequestV1 is struct the represents EVM native payment rails request */
 export type Iden3PaymentRailsRequestV1 = {
   type: PaymentRequestDataType.Iden3PaymentRailsRequestV1;
   '@context': string | (string | object)[];
@@ -62,26 +63,32 @@ export type Iden3PaymentRailsRequestV1 = {
   proof: EthereumEip712Signature2021 | EthereumEip712Signature2021[];
 };
 
+/** @beta Iden3PaymentRailsERC20RequestV1 is struct the represents EVM ERC 20 payment rails request */
 export type Iden3PaymentRailsERC20RequestV1 = Omit<Required<Iden3PaymentRailsRequestV1>, 'type'> & {
   tokenAddress: string;
   features?: PaymentFeatures[];
   type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
 };
 
+/** @beta Iden3PaymentRailsSolanaRequestV1 is struct the represents Solana native payment rails request */
 export type Iden3PaymentRailsSolanaRequestV1 = Omit<
   Required<Iden3PaymentRailsRequestV1>,
-  'type'
+  'type' | 'proof'
 > & {
   type: PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1;
+  proof: Iden3SolanaEd25519SignatureV1 | Iden3SolanaEd25519SignatureV1[];
 };
 
+/** @beta Iden3PaymentRailsSolanaSPLRequestV1 is struct the represents Solana SPL payment rails request */
 export type Iden3PaymentRailsSolanaSPLRequestV1 = Omit<
   Required<Iden3PaymentRailsERC20RequestV1>,
-  'type'
+  'type' | 'proof'
 > & {
   type: PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1;
+  proof: Iden3SolanaEd25519SignatureV1 | Iden3SolanaEd25519SignatureV1[];
 };
 
+/** @beta EthereumEip712Signature2021 is struct the represents EIP-712 signature for Ethereum */
 export type EthereumEip712Signature2021 = {
   type: SupportedPaymentProofType.EthereumEip712Signature2021;
   proofPurpose: string;
@@ -97,6 +104,20 @@ export type EthereumEip712Signature2021 = {
       chainId: string;
       verifyingContract: string;
     };
+  };
+};
+
+/** @beta Iden3SolanaEd25519SignatureV1 is struct the represents Ed25519 signature for Solana Payment Instruction */
+export type Iden3SolanaEd25519SignatureV1 = {
+  type: SupportedPaymentProofType.Iden3SolanaEd25519SignatureV1;
+  proofPurpose: string;
+  proofValue: string;
+  created: string;
+  pubKey: string;
+  domain: {
+    version: string;
+    chainId: string;
+    verifyingContract: string;
   };
 };
 

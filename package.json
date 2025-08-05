@@ -1,6 +1,6 @@
 {
   "name": "@0xpolygonid/js-sdk",
-  "version": "1.32.5",
+  "version": "1.33.0",
   "description": "SDK to work with Polygon ID",
   "source": "./src/index.ts",
   "exports": {
@@ -44,15 +44,12 @@
   "devDependencies": {
     "@cspell/eslint-plugin": "^8.19.4",
     "@iden3/eslint-config": "https://github.com/iden3/eslint-config",
-    "@solana/web3.js": "^1.98.4",
     "@typechain/ethers-v6": "^0.5.1",
     "@types/jsonld": "^1.5.15",
     "@types/node": "^24.0.4",
     "@types/pubsub-js": "^1.8.6",
     "@types/uuid": "^10.0.0",
     "bn.js": "^5.2.2",
-    "borsh": "^0.7.0",
-    "bs58": "^6.0.0",
     "dotenv": "^17.0.1",
     "nock": "^14.0.5",
     "rimraf": "^6.0.1",
@@ -76,8 +73,10 @@
     "@iden3/universal-verifier-v2-abi": "^2.0.2",
     "@noble/curves": "^1.9.2",
     "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.4",
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
+    "borsh": "^0.7.0",
     "did-jwt": "8.0.4",
     "did-resolver": "4.1.0",
     "ethers": "^6.13.1",
@@ -85,7 +84,8 @@
     "jsonld": "8.3.3",
     "pubsub-js": "1.9.5",
     "quick-lru": "^7.0.1",
-    "uuid": "11.1.0"
+    "uuid": "11.1.0",
+    "bs58": "^6.0.0"
   },
   "browserslist": {
     "production": [
