@@ -654,7 +654,10 @@ describe('payment-request handler', () => {
       if (!isSuccess) {
         throw new Error('payment failed');
       }
-    } else if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
+    } else if (
+      data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1 ||
+      data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1
+    ) {
       const connection = new Connection('https://api.devnet.solana.com');
       const signer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
       const [paymentRecordPda] = await PublicKey.findProgramAddressSync(
@@ -1211,7 +1214,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPL_V1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10001n;
+    const nonce = 10002n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1480,6 +1483,52 @@ describe('payment-request handler', () => {
         '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
         paymentData: {
           txId: 'zr1DhEWHaTsD1thHrn5oh4MNHESmNbaq7CEYQ9cR3mfRDmVNDrwMSDzVrnruAzopGpd2gsh6sQC2gCzhS78NZ8s',
+          chainId: '103'
+        }
+      }
+    ]);
+    await paymentHandler.handlePayment(payment, {
+      paymentRequest,
+      paymentValidationHandler: paymentValidationIntegrationHandlerFunc
+    });
+  });
+
+  it.skip('payment handler (Iden3PaymentRailsSolanaSPL_V1, integration test)', async () => {
+    const rpcProvider = new JsonRpcProvider(RPC_URL);
+    const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
+    const nonce = 10002n;
+    const paymentRequest = await paymentHandler.createPaymentRailsV1(
+      issuerDID,
+      userDID,
+      agent,
+      ethSigner,
+      [
+        {
+          credentials: [
+            {
+              type: 'AML',
+              context: 'http://test.com'
+            }
+          ],
+          description: 'Iden3PaymentRailsRequestSolanaV1 payment-request integration test',
+          options: [
+            {
+              nonce,
+              amount: '500000000',
+              chainId: '103',
+              optionId: 'solana-devnet-spl'
+            }
+          ]
+        }
+      ]
+    );
+    const payment = createPayment(userDID, issuerDID, [
+      {
+        nonce: nonce.toString(),
+        type: PaymentType.Iden3PaymentRailsSolanaV1,
+        '@context': 'https://schema.iden3.io/core/jsonld/payment.jsonld',
+        paymentData: {
+          txId: '5tw4Wvk3S3LpyhVAezTiY7LPBhWY43AXpGAavuXsKQoTvao46qRiSCaoygsqtTzhtyncmbV5UBraQRyBM9KXeDZx',
           chainId: '103'
         }
       }
