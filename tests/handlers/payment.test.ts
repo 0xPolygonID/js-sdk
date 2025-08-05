@@ -336,7 +336,7 @@ describe('payment-request handler', () => {
     }
   ];
 
-  class PaymentInstruction {
+  class SolanaPaymentInstruction {
     recipient: Uint8Array;
     amount: bigint;
     expiration_date: bigint;
@@ -358,18 +358,18 @@ describe('payment-request handler', () => {
     }
   }
 
-  const paymentInstructionSchema: Schema = new Map([
+  const solanaPaymentInstructionSchema: Schema = new Map([
     [
-      PaymentInstruction,
+      SolanaPaymentInstruction,
       {
         kind: 'struct',
         fields: [
-          ['recipient', [32]], // 32-element array of u8
+          ['recipient', [32]],
           ['amount', 'u64'],
           ['expiration_date', 'u64'],
           ['nonce', 'u64'],
-          ['metadata', ['u8']], // variable-length array
-          ['signature', [64]], // 64-element array of u8
+          ['metadata', ['u8']],
+          ['signature', [64]],
           ['recovery_id', 'u8']
         ]
       }
@@ -493,7 +493,7 @@ describe('payment-request handler', () => {
         const signature = new Uint8Array(64); //todo: Replace with actual signature
         const recovery_id = 1;
 
-        const instruction = new PaymentInstruction({
+        const instruction = new SolanaPaymentInstruction({
           recipient: recipient.toBytes(),
           amount,
           expiration_date: BigInt(expiration_date),
@@ -502,7 +502,7 @@ describe('payment-request handler', () => {
           signature,
           recovery_id
         });
-        const serializedArgs = Buffer.from(serialize(paymentInstructionSchema, instruction));
+        const serializedArgs = Buffer.from(serialize(solanaPaymentInstructionSchema, instruction));
         let discriminator = sha256(Buffer.from('global:pay')).slice(0, 8);
         if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1) {
           discriminator = sha256(Buffer.from('global:pay_spl')).slice(0, 8);
