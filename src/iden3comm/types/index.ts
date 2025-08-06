@@ -11,7 +11,6 @@ export * from './protocol/discovery-protocol';
 export * from './protocol/problem-report';
 
 export * from './protocol/attachment';
-export * from './protocol/transparent-payment';
 export * from './protocol/common';
 export * from './packer';
 export * from './models';

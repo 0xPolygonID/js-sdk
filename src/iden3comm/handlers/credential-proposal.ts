@@ -6,9 +6,7 @@ import {
   CredentialsOfferMessage,
   DIDDocument,
   IPackageManager,
-  PackerParams,
-  TransparentPaymentData,
-  TransparentPaymentInstructionMessage
+  PackerParams
 } from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
@@ -29,7 +27,6 @@ import {
   IProtocolMessageHandler
 } from './message-handler';
 import { verifyExpiresTime } from './common';
-import { getProtocolMessageTypeByGoalCode } from '../types/protocol/common';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
@@ -162,7 +159,7 @@ export type CredentialProposalHandlerParams = {
   proposalResolverFn: (
     context: string,
     type: string,
-    opts?: { paymentInfo?: TransparentPaymentData }
+    opts?: { msg?: BasicMessage }
   ) => Promise<Proposal>;
   packerParams: PackerParams;
 };
@@ -241,20 +238,6 @@ export class CredentialProposalHandler
     let credOfferMessage: CredentialsOfferMessage | undefined = undefined;
     let proposalMessage: ProposalMessage | undefined = undefined;
 
-    const paymentInstructionsMessages: TransparentPaymentInstructionMessage[] = (
-      proposalRequest.attachments ?? []
-    )
-      .flatMap((a) => a.data.json as TransparentPaymentInstructionMessage)
-      .filter(
-        (m) =>
-          m &&
-          m.body?.goal_code &&
-          getProtocolMessageTypeByGoalCode(m.body.goal_code) ===
-            PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE &&
-          m.to === proposalRequest.to && // issuer
-          (!m.body.paymentReference || m.body.paymentReference === proposalRequest.from) // user
-      );
-
     for (let i = 0; i < proposalRequest.body.credentials.length; i++) {
       const cred = proposalRequest.body.credentials[i];
 
@@ -304,12 +287,9 @@ export class CredentialProposalHandler
         continue;
       }
 
-      const paymentInfo = paymentInstructionsMessages.find((m) =>
-        m.body.credentials.find((c) => c.type === cred.type && c.context === cred.context)
-      );
       // credential not found in the wallet, prepare proposal protocol message
       const proposal = await this._params.proposalResolverFn(cred.context, cred.type, {
-        paymentInfo: paymentInfo?.body?.paymentData
+        msg: proposalRequest
       });
       if (!proposal) {
         throw new Error(`can't resolve Proposal for type: ${cred.type}, context: ${cred.context}`);

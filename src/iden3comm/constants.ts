@@ -56,9 +56,7 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   // DiscoveryProtocolDiscloseMessageType is type for didcomm discovery protocol disclose
   DISCOVERY_PROTOCOL_DISCLOSE_MESSAGE_TYPE:
     `${DIDCOMM_PROTOCOL}discover-features/2.0/disclose` as const,
-    PROBLEM_REPORT_MESSAGE_TYPE: `${DIDCOMM_PROTOCOL}report-problem/2.0/problem-report` as const,
-    TRANSPARENT_PAYMENT_INSTRUCTION_MESSAGE_TYPE:
-    `${IDEN3_PROTOCOL}credentials/0.1/transparent-payment-instruction` as const
+  PROBLEM_REPORT_MESSAGE_TYPE: `${DIDCOMM_PROTOCOL}report-problem/2.0/problem-report` as const
 });
 
 /**
