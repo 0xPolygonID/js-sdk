@@ -50,6 +50,7 @@
     "@types/pubsub-js": "^1.8.6",
     "@types/uuid": "^10.0.0",
     "bn.js": "^5.2.2",
+    "bs58": "^6.0.0",
     "dotenv": "^17.0.1",
     "nock": "^14.0.5",
     "rimraf": "^6.0.1",
@@ -84,8 +85,7 @@
     "jsonld": "8.3.3",
     "pubsub-js": "1.9.5",
     "quick-lru": "^7.0.1",
-    "uuid": "11.1.0",
-    "bs58": "^6.0.0"
+    "uuid": "11.1.0"
   },
   "browserslist": {
     "production": [

@@ -7,11 +7,10 @@ import { ed25519 } from '@noble/curves/ed25519';
 import { PaymentRequestDataType } from '../verifiable';
 import { byteEncoder } from './encoding';
 import { getUnixTimestamp } from '@iden3/js-iden3-core';
-import bs58 from 'bs58';
-import { sha256 } from 'ethers';
+import { PublicKey } from '@solana/web3.js';
 
 export class SolanaNativePaymentRequest {
-  version: string;
+  version: Uint8Array;
   chainId: bigint;
   verifyingContract: Uint8Array;
   recipient: Uint8Array;
@@ -21,7 +20,7 @@ export class SolanaNativePaymentRequest {
   metadata: Uint8Array;
 
   constructor(fields: {
-    version: string;
+    version: Uint8Array;
     chainId: bigint;
     verifyingContract: Uint8Array;
     recipient: Uint8Array;
@@ -42,7 +41,7 @@ export class SolanaNativePaymentRequest {
 }
 
 export class SolanaSplPaymentRequest {
-  version: string;
+  version: Uint8Array;
   chainId: bigint;
   verifyingContract: Uint8Array;
   tokenAddress: Uint8Array;
@@ -53,7 +52,7 @@ export class SolanaSplPaymentRequest {
   metadata: Uint8Array;
 
   constructor(fields: {
-    version: string;
+    version: Uint8Array;
     chainId: bigint;
     verifyingContract: Uint8Array;
     tokenAddress: Uint8Array;
@@ -81,10 +80,10 @@ export const SolanaNativePaymentSchema = new Map([
     {
       kind: 'struct',
       fields: [
-        ['version', ['string']],
+        ['version', ['u8']],
         ['chainId', 'u64'],
-        ['verifyingContract', [32]],
-        ['recipient', [32]],
+        ['verifyingContract', ['u8', 32]],
+        ['recipient', ['u8', 32]],
         ['amount', 'u64'],
         ['expirationDate', 'u64'],
         ['nonce', 'u64'],
@@ -100,11 +99,11 @@ export const SolanaSplPaymentSchema = new Map([
     {
       kind: 'struct',
       fields: [
-        ['version', ['string']],
+        ['version', ['u8']],
         ['chainId', 'u64'],
-        ['verifyingContract', [32]],
-        ['tokenAddress', [32]],
-        ['recipient', [32]],
+        ['verifyingContract', ['u8', 32]],
+        ['tokenAddress', ['u8', 32]],
+        ['recipient', ['u8', 32]],
         ['amount', 'u64'],
         ['expirationDate', 'u64'],
         ['nonce', 'u64'],
@@ -121,7 +120,6 @@ export class SolanaPaymentInstruction {
   nonce: bigint;
   metadata: Uint8Array;
   signature: Uint8Array;
-  recovery_id: number;
 
   constructor(fields: {
     recipient: Uint8Array;
@@ -130,7 +128,6 @@ export class SolanaPaymentInstruction {
     nonce: bigint;
     metadata: Uint8Array;
     signature: Uint8Array;
-    recovery_id: number;
   }) {
     this.recipient = fields.recipient;
     this.amount = fields.amount;
@@ -138,7 +135,6 @@ export class SolanaPaymentInstruction {
     this.nonce = fields.nonce;
     this.metadata = fields.metadata;
     this.signature = fields.signature;
-    this.recovery_id = fields.recovery_id;
   }
 }
 
@@ -148,13 +144,12 @@ export const SolanaPaymentInstructionSchema: Schema = new Map([
     {
       kind: 'struct',
       fields: [
-        ['recipient', [32]],
+        ['recipient', ['u8', 32]],
         ['amount', 'u64'],
         ['expiration_date', 'u64'],
         ['nonce', 'u64'],
         ['metadata', ['u8']],
-        ['signature', [64]],
-        ['recovery_id', 'u8']
+        ['signature', [64]]
       ]
     }
   ]
@@ -165,12 +160,14 @@ export const VerifyIden3SolanaPaymentRequest = (
 ): boolean => {
   const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
   let serialized: Uint8Array;
+  // todo: fix when it's using payment rails address
+  const verifyingContract = new PublicKey('11111111111111111111111111111111');
   if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
     const request = new SolanaNativePaymentRequest({
-      version: proof.domain.version,
+      version: byteEncoder.encode(proof.type),
       chainId: BigInt(proof.domain.chainId),
-      verifyingContract: bs58.decode(proof.domain.verifyingContract),
-      recipient: bs58.decode(data.recipient),
+      verifyingContract: verifyingContract.toBytes(),
+      recipient: new PublicKey(data.recipient).toBytes(),
       amount: BigInt(data.amount),
       expirationDate: BigInt(getUnixTimestamp(new Date(data.expirationDate))),
       nonce: BigInt(data.nonce),
@@ -179,11 +176,11 @@ export const VerifyIden3SolanaPaymentRequest = (
     serialized = serialize(SolanaNativePaymentSchema, request);
   } else {
     const request = new SolanaSplPaymentRequest({
-      version: proof.domain.version,
+      version: byteEncoder.encode(proof.type),
       chainId: BigInt(proof.domain.chainId),
-      verifyingContract: bs58.decode(proof.domain.verifyingContract),
-      tokenAddress: bs58.decode(data.tokenAddress),
-      recipient: bs58.decode(data.recipient),
+      verifyingContract: verifyingContract.toBytes(),
+      tokenAddress: new PublicKey(data.tokenAddress).toBytes(),
+      recipient: new PublicKey(data.recipient).toBytes(),
       amount: BigInt(data.amount),
       expirationDate: BigInt(getUnixTimestamp(new Date(data.expirationDate))),
       nonce: BigInt(data.nonce),
@@ -191,6 +188,6 @@ export const VerifyIden3SolanaPaymentRequest = (
     });
     serialized = serialize(SolanaSplPaymentSchema, request);
   }
-  const hash = sha256(serialized);
-  return ed25519.verify(proof.proofValue, byteEncoder.encode(hash), bs58.decode(proof.pubKey));
+  // const hash = sha256(serialized);
+  return ed25519.verify(proof.proofValue, serialized, new PublicKey(proof.pubKey).toBytes());
 };

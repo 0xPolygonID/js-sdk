@@ -68,7 +68,8 @@ import {
   Transaction,
   TransactionInstruction,
   clusterApiUrl,
-  sendAndConfirmTransaction
+  sendAndConfirmTransaction,
+  Ed25519Program
 } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { deserialize, serialize } from 'borsh';
@@ -452,8 +453,7 @@ describe('payment-request handler', () => {
         const expiration_date = getUnixTimestamp(new Date(data.expirationDate));
         const nonce = BigInt(data.nonce);
         const metadata = data.metadata;
-        const signature = new Uint8Array(64); //todo: Replace with actual signature
-        const recovery_id = 1;
+        const signature = Uint8Array.from(Buffer.from(data.proof[0].proofValue, 'hex'));
 
         const instruction = new SolanaPaymentInstruction({
           recipient: recipient.toBytes(),
@@ -461,8 +461,7 @@ describe('payment-request handler', () => {
           expiration_date: BigInt(expiration_date),
           nonce,
           metadata: byteEncoder.encode(metadata),
-          signature,
-          recovery_id
+          signature
         });
         const serializedArgs = Buffer.from(serialize(SolanaPaymentInstructionSchema, instruction));
         let discriminator = sha256(Buffer.from('global:pay')).slice(0, 8);
@@ -557,13 +556,21 @@ describe('payment-request handler', () => {
           keys.push(...splKeys);
         }
 
+        const pubkey = new PublicKey(data.proof[0].pubKey);
+        const signedMessage = Uint8Array.from(Buffer.from(data.proof[0].signedMessage, 'hex'));
+        const edIx = Ed25519Program.createInstructionWithPublicKey({
+          message: signedMessage,
+          signature,
+          publicKey: pubkey.toBytes()
+        });
+
         const ix = new TransactionInstruction({
           programId,
           keys,
           data: instructionData
         });
         const { blockhash } = await connection.getLatestBlockhash('finalized');
-        const tx = new Transaction().add(ix);
+        const tx = new Transaction().add(edIx, ix);
         tx.recentBlockhash = blockhash;
         tx.feePayer = payer.publicKey;
         tx.sign(payer);
@@ -854,7 +861,7 @@ describe('payment-request handler', () => {
         },
         {
           chainId: '103',
-          paymentRails: 'CYyk8xCX2Rab4ftDXkysbVxf9TPksNoF3QkkFBr12akU',
+          paymentRails: 'AKNPPwWHYx5ejCs9RsrJ8PLdsdLAhHeMrk8qi6bHizH7',
           recipient: 'HcCoHQFPjU2brBFW1hAZvEtZx7nSrYCBJVq4vKsjo6jf',
           options: [
             {
@@ -1123,7 +1130,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 14n;
+    const nonce = 4n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1172,10 +1179,10 @@ describe('payment-request handler', () => {
     );
   });
 
-  it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPL_V1, integration test)', async () => {
+  it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPLV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10005n;
+    const nonce = 10004n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1189,7 +1196,7 @@ describe('payment-request handler', () => {
               context: 'http://test.com'
             }
           ],
-          description: 'Iden3PaymentRailsRequestSolanaSPL_V1 payment-request integration test',
+          description: 'Iden3PaymentRailsRequestSolanaSPLV1 payment-request integration test',
           options: [
             {
               nonce,
@@ -1414,7 +1421,7 @@ describe('payment-request handler', () => {
   it.skip('payment handler (Iden3PaymentRailsSolanaV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 14n;
+    const nonce = 1n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1460,10 +1467,10 @@ describe('payment-request handler', () => {
     });
   });
 
-  it.only('payment handler (Iden3PaymentRailsSolanaSPL_V1, integration test)', async () => {
+  it.skip('payment handler (Iden3PaymentRailsSolanaSPLV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10005n;
+    const nonce = 10001n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1512,9 +1519,7 @@ describe('payment-request handler', () => {
   it.skip('initialize Solana', async () => {
     const connection = new Connection('https://api.devnet.solana.com');
     const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
-    const payerPublicKey = payer.publicKey;
-    console.log('Payer Public Key:', payerPublicKey.toBase58());
-    const programId = new PublicKey('CYyk8xCX2Rab4ftDXkysbVxf9TPksNoF3QkkFBr12akU');
+    const programId = new PublicKey('AKNPPwWHYx5ejCs9RsrJ8PLdsdLAhHeMrk8qi6bHizH7');
 
     const schema = new Map([
       [

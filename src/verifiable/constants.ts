@@ -179,7 +179,7 @@ export enum PaymentType {
   Iden3PaymentRailsV1 = 'Iden3PaymentRailsV1',
   Iden3PaymentRailsERC20V1 = 'Iden3PaymentRailsERC20V1',
   Iden3PaymentRailsSolanaV1 = 'Iden3PaymentRailsSolanaV1',
-  Iden3PaymentRailsSolanaSPL_V1 = 'Iden3PaymentRailsSolanaSPL_V1'
+  Iden3PaymentRailsSolanaSPLV1 = 'Iden3PaymentRailsSolanaSPLV1'
 }
 
 /**
@@ -189,7 +189,8 @@ export enum PaymentType {
  */
 export enum SupportedPaymentProofType {
   EthereumEip712Signature2021 = 'EthereumEip712Signature2021',
-  Iden3SolanaEd25519SignatureV1 = 'Iden3SolanaEd25519SignatureV1'
+  SolanaEd25519NativeV1 = 'SolanaEd25519NativeV1',
+  SolanaEd25519SPLV1 = 'SolanaEd25519SPLV1'
 }
 
 /**

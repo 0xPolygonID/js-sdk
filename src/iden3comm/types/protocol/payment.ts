@@ -109,9 +109,12 @@ export type EthereumEip712Signature2021 = {
 
 /** @beta Iden3SolanaEd25519SignatureV1 is struct the represents Ed25519 signature for Solana Payment Instruction */
 export type Iden3SolanaEd25519SignatureV1 = {
-  type: SupportedPaymentProofType.Iden3SolanaEd25519SignatureV1;
+  type:
+    | SupportedPaymentProofType.SolanaEd25519NativeV1
+    | SupportedPaymentProofType.SolanaEd25519SPLV1;
   proofPurpose: string;
   proofValue: string;
+  signedMessage: string;
   created: string;
   pubKey: string;
   domain: {
@@ -178,10 +181,10 @@ export type Iden3PaymentRailsSolanaV1 = {
   };
 };
 
-/** @beta Iden3PaymentRailsSolanaSPL_V1 is struct the represents payment info for Iden3PaymentRailsSolanaSPL_V1 */
-export type Iden3PaymentRailsSolanaSPL_V1 = {
+/** @beta Iden3PaymentRailsSolanaSPLV1 is struct the represents payment info for Iden3PaymentRailsSolanaSPLV1 */
+export type Iden3PaymentRailsSolanaSPLV1 = {
   nonce: string;
-  type: 'Iden3PaymentRailsSolanaSPL_V1';
+  type: 'Iden3PaymentRailsSolanaSPLV1';
   '@context': string | (string | object)[];
   paymentData: {
     txId: string;
@@ -227,4 +230,4 @@ export type PaymentTypeUnion =
   | Iden3PaymentRailsV1
   | Iden3PaymentRailsERC20V1
   | Iden3PaymentRailsSolanaV1
-  | Iden3PaymentRailsSolanaSPL_V1;
+  | Iden3PaymentRailsSolanaSPLV1;

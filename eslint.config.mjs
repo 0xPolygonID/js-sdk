@@ -49,7 +49,8 @@ export default [
               'lamports',
               'blockhash',
               'devnet',
-              'Keypair'
+              'Keypair',
+              'SPLV'
             ]
           }
         }
