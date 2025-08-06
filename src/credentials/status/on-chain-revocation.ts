@@ -2,12 +2,24 @@ import { RevocationStatus, CredentialStatus } from '../../verifiable';
 import { EthConnectionConfig } from '../../storage/blockchain';
 import { CredentialStatusResolver, CredentialStatusResolveOptions } from './resolver';
 import { OnChainRevocationStorage } from '../../storage/blockchain/onchain-revocation';
-import { DID, Id, getChainId } from '@iden3/js-iden3-core';
-import { VerifiableConstants } from '../../verifiable/constants';
+import { DID } from '@iden3/js-iden3-core';
 import { isGenesisState } from '../../utils';
-import { EthStateStorage } from '../../storage/blockchain/state';
+import { EthStateStorage, EthStateStorageOptions } from '../../storage/blockchain/state';
 import { IStateStorage, IOnchainRevocationStore } from '../../storage';
 import { Hash } from '@iden3/js-merkletree';
+import { isIdentityDoesNotExistError } from '../../storage/blockchain/errors';
+
+/*
+ * Options for OnChainResolver
+ *
+ * @public
+ * @typedef {Object} OnChainResolverOptions
+ * @property {EthStateStorageOptions} [stateStorageOptions] - options for state storage
+ */
+export type OnChainResolverOptions = {
+  stateStorageOptions?: EthStateStorageOptions;
+};
+
 /**
  * OnChainIssuer is a class that allows to interact with the onchain contract
  * and build the revocation status.
@@ -16,13 +28,16 @@ import { Hash } from '@iden3/js-merkletree';
  * @class OnChainIssuer
  */
 export class OnChainResolver implements CredentialStatusResolver {
+  private readonly _stateStorage: IStateStorage;
   /**
    *
    * Creates an instance of OnChainIssuer.
    * @public
    * @param {Array<EthConnectionConfig>} _configs - list of ethereum network connections
    */
-  constructor(private readonly _configs: EthConnectionConfig[]) {}
+  constructor(private readonly _configs: EthConnectionConfig[], _opts?: OnChainResolverOptions) {
+    this._stateStorage = new EthStateStorage(_configs, _opts?.stateStorageOptions);
+  }
 
   /**
    * resolve is a method to resolve a credential status from the blockchain.
@@ -62,15 +77,13 @@ export class OnChainResolver implements CredentialStatusResolver {
     const issuerId = DID.idFromDID(issuer);
     let latestIssuerState: bigint;
     try {
-      const ethStorage = this._getStateStorageForIssuer(issuerId);
-      const latestStateInfo = await ethStorage.getLatestStateById(issuerId.bigInt());
+      const latestStateInfo = await this._stateStorage.getLatestStateById(issuerId.bigInt());
       if (!latestStateInfo.state) {
         throw new Error('state contract returned empty state');
       }
       latestIssuerState = latestStateInfo.state;
     } catch (e) {
-      const errMsg = (e as { reason: string })?.reason ?? (e as Error).message ?? (e as string);
-      if (!errMsg.includes(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST)) {
+      if (!isIdentityDoesNotExistError(e)) {
         throw e;
       }
 
@@ -148,14 +161,6 @@ export class OnChainResolver implements CredentialStatusResolver {
       throw new Error(`chainId "${chainId}" not supported`);
     }
     return network;
-  }
-
-  // TODO: is dirty hack for mock in tests.
-  // need to pass to constructor list of state stores not list of network configs
-  private _getStateStorageForIssuer(issuerId: Id): IStateStorage {
-    const issuerChainId = getChainId(DID.blockchainFromId(issuerId), DID.networkIdFromId(issuerId));
-    const ethStorage = new EthStateStorage(this.networkByChainId(issuerChainId));
-    return ethStorage;
   }
 
   private _getOnChainRevocationStorageForIssuer(

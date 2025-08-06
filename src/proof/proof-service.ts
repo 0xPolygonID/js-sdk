@@ -19,6 +19,7 @@ import {
   createVerifiablePresentation,
   ProofQuery,
   RevocationStatus,
+  VerifiableConstants,
   W3CCredential
 } from '../verifiable';
 import {
@@ -41,12 +42,14 @@ import {
   ZeroKnowledgeProofResponse,
   PROTOCOL_CONSTANTS,
   VerifiablePresentation,
-  JsonDocumentObject
+  JsonDocumentObject,
+  ZeroKnowledgeProofAuthResponse
 } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
 import { ICircuitStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import {
+  AuthProofGenerationOptions,
   InputGenerator,
   ProofGenerationOptions,
   ProofInputsParams
@@ -132,13 +135,28 @@ export interface IProofService {
   generateAuthV2Inputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
 
   /**
-   * generates auth inputs
+   * generates auth v2 proof from given identity
    *
    * @param {Uint8Array} hash - challenge that will be signed
    * @param {DID} did - identity that will generate a proof
    * @returns `Promise<ZKProof>`
    */
   generateAuthV2Proof(hash: Uint8Array, did: DID): Promise<ZKProof>;
+
+  /**
+   * Generate auth proof from given identity with generic params
+   *
+   * @param {CircuitId} circuitId - circuitId for the proof generation
+   * @param {DID} identifier - did that will generate proof
+   * @param {ProofGenerationOptions} opts - options that will be used for proof generation
+   *
+   * @returns `Promise<ZeroKnowledgeProofResponse>`
+   */
+  generateAuthProof(
+    circuitId: CircuitId,
+    identifier: DID,
+    opts?: AuthProofGenerationOptions
+  ): Promise<ZeroKnowledgeProofAuthResponse>;
 
   /**
    * state verification function
@@ -270,7 +288,10 @@ export class ProofService implements IProofService {
     }
 
     if (!credentialWithRevStatus.cred) {
-      throw new Error(`credential not found for query ${JSON.stringify(proofReq.query)}`);
+      throw new Error(
+        VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY +
+          ` ${JSON.stringify(proofReq.query)}`
+      );
     }
 
     const credentialCoreClaim = await this._identityWallet.getCoreClaimFromCredential(
@@ -292,14 +313,14 @@ export class ProofService implements IProofService {
       await this._identityWallet.getGenesisDIDMetadata(subjectDID);
 
     if (subjectGenesisDID.string() !== genesisDID.string()) {
-      throw new Error('subject and auth profiles are not derived from the same did');
+      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
     const propertiesMetadata = parseCredentialSubject(
       proofReq.query.credentialSubject as JsonDocumentObject
     );
     if (!propertiesMetadata.length) {
-      throw new Error('no queries in zkp request');
+      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
     }
 
     const mtPosition = preparedCredential.credentialCoreClaim.getMerklizedPosition();
@@ -368,6 +389,38 @@ export class ProofService implements IProofService {
       proof,
       pub_signals
     };
+  }
+
+  /** {@inheritdoc IProofService.generateAuthProof} */
+  async generateAuthProof(
+    circuitId: CircuitId,
+    identifier: DID,
+    opts?: AuthProofGenerationOptions
+  ): Promise<ZeroKnowledgeProofAuthResponse> {
+    if (!opts) {
+      opts = {
+        challenge: 0n
+      };
+    }
+
+    let zkProof;
+
+    switch (circuitId) {
+      case CircuitId.AuthV2:
+        {
+          const challenge = opts.challenge
+            ? BytesHelper.intToBytes(opts.challenge).reverse()
+            : new Uint8Array(32);
+          zkProof = await this.generateAuthV2Proof(challenge, identifier);
+        }
+        return {
+          circuitId: circuitId,
+          proof: zkProof.proof,
+          pub_signals: zkProof.pub_signals
+        };
+      default:
+        throw new Error(`CircuitId ${circuitId} is not supported`);
+    }
   }
 
   /** {@inheritdoc IProofService.transitState} */
@@ -554,7 +607,9 @@ export class ProofService implements IProofService {
     const credentials = await this._identityWallet.findOwnedCredentialsByDID(did, query);
 
     if (!credentials.length) {
-      throw new Error(`no credentials belong to did or its profiles`);
+      throw new Error(
+        VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE
+      );
     }
 
     //  For EQ / IN / NIN / LT / GT operations selective if credential satisfies query - we can get any.

@@ -171,9 +171,10 @@ export interface IIdentityWallet {
    * @param {DID} did - identity to derive profile from
    * @param {number |string} nonce - unique integer number to generate a profile
    * @param {string} verifier - verifier identity/alias in a string from
+   * @param {string[]} tags      - optional tag that can be assigned to profile by client
    * @returns `Promise<DID>` - profile did
    */
-  createProfile(did: DID, nonce: number | string, verifier: string): Promise<DID>;
+  createProfile(did: DID, nonce: number | string, verifier: string, tags?: string[]): Promise<DID>;
 
   /**
    * Generates a new key
@@ -400,11 +401,20 @@ export interface IIdentityWallet {
   /**
    *
    * gets profile identity by verifier
-   *
+   * @deprecated The method should not be used. It returns only one profile per verifier, which can potentially restrict business use cases
    * @param {string} verifier -  identifier of the verifier
    * @returns `{Promise<Profile>}`
    */
   getProfileByVerifier(verifier: string): Promise<Profile | undefined>;
+
+  /**
+   * gets profile by verifiers
+   *
+   * @param {string} verifier - verifier to which profile has been shared
+   * @param {string} tags - optional, tags to filter profile entry
+   * @returns `{Promise<Profile[]>}`
+   */
+  getProfilesByVerifier(verifier: string, tags?: string[]): Promise<Profile[]>;
 
   /**
    *
@@ -741,9 +751,7 @@ export class IdentityWallet implements IIdentityWallet {
     const ethSigner = opts.ethSigner;
 
     if (opts.createBjjCredential && !ethSigner) {
-      throw new Error(
-        'Ethereum signer is required to create Ethereum identities in order to transit state'
-      );
+      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_SIGNER_IS_REQUIRED);
     }
 
     const currentState = ZERO_HASH; // In Ethereum identities we don't have an initial state with the auth credential
@@ -796,32 +804,45 @@ export class IdentityWallet implements IIdentityWallet {
     const profile = await this._storage.identity.getProfileById(did.string());
 
     if (!profile) {
-      throw new Error('profile or identity not found');
+      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_OR_IDENTITY_NOT_FOUND);
     }
     return { nonce: profile.nonce, genesisDID: DID.parse(profile.genesisIdentifier) };
   }
 
   /** {@inheritDoc IIdentityWallet.createProfile} */
-  async createProfile(did: DID, nonce: number | string, verifier: string): Promise<DID> {
+  async createProfile(
+    did: DID,
+    nonce: number | string,
+    verifier: string,
+    tags?: string[]
+  ): Promise<DID> {
     const profileDID = generateProfileDID(did, nonce);
 
     const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
       did.string()
     );
 
-    const existingProfile = identityProfiles.find(
-      (p) => p.nonce == nonce || p.verifier == verifier
+    const profilesForTagAndVerifier = await this._storage.identity.getProfilesByVerifier(
+      verifier,
+      tags
     );
-    if (existingProfile) {
-      throw new Error('profile with given nonce or verifier already exists');
+    if (profilesForTagAndVerifier.length) {
+      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_ALREADY_EXISTS_VERIFIER_TAGS);
+    }
+
+    const existingProfileWithNonce = identityProfiles.find((p) => p.nonce == nonce);
+    if (existingProfileWithNonce) {
+      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_ALREADY_EXISTS);
     }
 
     await this._storage.identity.saveProfile({
       id: profileDID.string(),
       nonce,
       genesisIdentifier: did.string(),
-      verifier
+      verifier,
+      tags
     });
+
     return profileDID;
   }
 
@@ -840,10 +861,19 @@ export class IdentityWallet implements IIdentityWallet {
     const key = await this._kms.createKeyFromSeed(keyType, getRandomBytes(32));
     return key;
   }
-
+  /**
+   * @deprecated The method should not be used. It returns only one profile per verifier, which can potentially restrict business use cases
+   * {@inheritDoc IIdentityWallet.getProfileByVerifier}
+   */
   async getProfileByVerifier(verifier: string): Promise<Profile | undefined> {
     return this._storage.identity.getProfileByVerifier(verifier);
   }
+
+  /** {@inheritDoc IIdentityWallet.getProfilesByVerifier} */
+  async getProfilesByVerifier(verifier: string, tags?: string[]): Promise<Profile[]> {
+    return this._storage.identity.getProfilesByVerifier(verifier, tags);
+  }
+
   /** {@inheritDoc IIdentityWallet.getDIDTreeModel} */
   async getDIDTreeModel(did: DID): Promise<TreesModel> {
     const didStr = did.string();
@@ -1041,12 +1071,16 @@ export class IdentityWallet implements IIdentityWallet {
     const signature = await this.signChallenge(coreClaimHash, issuerAuthBJJCredential);
 
     if (!issuerAuthBJJCredential.proof) {
-      throw new Error('issuer auth credential must have proof');
+      throw new Error(
+        VerifiableConstants.ERRORS.ID_WALLET_ISSUER_AUTH_BJJ_CRED_MUST_HAVE_ANY_PROOF
+      );
     }
 
     const mtpAuthBJJProof = issuerAuthBJJCredential.getIden3SparseMerkleTreeProof();
     if (!mtpAuthBJJProof) {
-      throw new Error('mtp is required for auth bjj key to issue new credentials');
+      throw new Error(
+        VerifiableConstants.ERRORS.ID_WALLET_ISSUER_AUTH_BJJ_CRED_MUST_HAVE_MTP_PROOF
+      );
     }
 
     const sigProof = new BJJSignatureProof2021({
@@ -1107,7 +1141,7 @@ export class IdentityWallet implements IIdentityWallet {
     const coreClaim = await this.getCoreClaimFromCredential(credential);
 
     if (!coreClaim) {
-      throw new Error('credential must have coreClaim representation in proofs');
+      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_CORE_CLAIM_REQUIRED_IN_ANY_PROOF);
     }
     const nonce = coreClaim.getRevocationNonce();
 
@@ -1139,7 +1173,7 @@ export class IdentityWallet implements IIdentityWallet {
       const coreClaim = credential.getCoreClaimFromProof(ProofType.BJJSignature);
 
       if (!coreClaim) {
-        throw new Error('credential must have coreClaim representation in the signature proof');
+        throw new Error(VerifiableConstants.ERRORS.ID_WALLET_CORE_CLAIM_REQUIRED_IN_SIG_PROOF);
       }
 
       await this._storage.mt.addToMerkleTree(
@@ -1197,7 +1231,7 @@ export class IdentityWallet implements IIdentityWallet {
         (await credential.toCoreClaim(opts));
 
       if (!coreClaim) {
-        throw new Error('credential must have coreClaim representation in the signature proof');
+        throw new Error(VerifiableConstants.ERRORS.ID_WALLET_CORE_CLAIM_REQUIRED_IN_SIG_PROOF);
       }
       const mtpWithProof = await this.generateCoreClaimMtp(issuerDID, coreClaim, treeState);
 
@@ -1304,10 +1338,10 @@ export class IdentityWallet implements IIdentityWallet {
       coreClaimFromSigProof &&
       coreClaimFromMtpProof.hex() !== coreClaimFromSigProof.hex()
     ) {
-      throw new Error('core claim representations is set in both proofs but they are not equal');
+      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_CORE_CLAIM_MISMATCH);
     }
     if (!coreClaimFromMtpProof && !coreClaimFromSigProof) {
-      throw new Error('core claim is not set in credential proofs');
+      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_CORE_CLAIM_IS_NOT_SET);
     }
 
     //eslint-disable-next-line  @typescript-eslint/no-non-null-assertion
@@ -1319,7 +1353,7 @@ export class IdentityWallet implements IIdentityWallet {
   async findOwnedCredentialsByDID(did: DID, query: ProofQuery): Promise<W3CCredential[]> {
     const credentials = await this._credentialWallet.findByQuery(query);
     if (!credentials.length) {
-      throw new Error(`no credential satisfied query`);
+      throw new Error(VerifiableConstants.ERRORS.ID_WALLET_NO_CREDENTIAL_SATISFIED_QUERY);
     }
 
     const { genesisDID } = await this.getGenesisDIDMetadata(did);
@@ -1381,7 +1415,7 @@ export class IdentityWallet implements IIdentityWallet {
     let txId;
     if (!isEthIdentity) {
       if (!prover) {
-        throw new Error('prover is required to generate proofs for non ethereum identities');
+        throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROVER_IS_REQUIRED);
       }
       // generate the proof
       const authInfo = await this._inputsGenerator.prepareAuthBJJCredential(did, oldTreeState);

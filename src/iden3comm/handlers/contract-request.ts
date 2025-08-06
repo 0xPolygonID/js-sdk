@@ -1,17 +1,26 @@
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
-import { PROTOCOL_MESSAGE_TYPE } from '../constants';
-import { BasicMessage, IPackageManager, ZeroKnowledgeProofResponse } from '../types';
+import { defaultAcceptProfile, PROTOCOL_MESSAGE_TYPE, ProtocolVersion } from '../constants';
+import {
+  AcceptProfile,
+  BasicMessage,
+  IPackageManager,
+  ZeroKnowledgeInvokeResponse,
+  ZeroKnowledgeProofResponse
+} from '../types';
 import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol/contract-request';
-import { DID, ChainIds, getUnixTimestamp } from '@iden3/js-iden3-core';
+import { DID, ChainIds, getUnixTimestamp, BytesHelper } from '@iden3/js-iden3-core';
 import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
-import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
+import { processProofAuth, processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
   IProtocolMessageHandler
 } from './message-handler';
+import { parseAcceptProfile } from '../utils';
+import { hexToBytes } from '../../utils';
+
 /**
  * Interface that allows the processing of the contract request
  *
@@ -71,7 +80,12 @@ export class ContractRequestHandler
     CircuitId.AuthV2,
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
-    CircuitId.AtomicQueryV3OnChain
+    CircuitId.AtomicQueryV3OnChain,
+    // Now we support off-chain circuits on-chain
+    // TODO: We need to create validators for them
+    CircuitId.AuthV2,
+    CircuitId.AtomicQueryV3,
+    CircuitId.LinkedMultiQuery10
   ];
 
   /**
@@ -79,6 +93,7 @@ export class ContractRequestHandler
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
    * @param {IProofService} _proofService -  proof service to verify zk proofs
    * @param {IOnChainZKPVerifier} _zkpVerifier - zkp verifier to submit response
+   * @param {IOnChainVerifierMultiQuery} _verifierMultiQuery - verifier multi-query to submit response
    *
    */
 
@@ -108,7 +123,7 @@ export class ContractRequestHandler
   private async handleContractInvoke(
     message: ContractInvokeRequest,
     ctx: ContractMessageHandlerOptions
-  ): Promise<Map<string, ZeroKnowledgeProofResponse[]>> {
+  ): Promise<Map<string, ZeroKnowledgeInvokeResponse>> {
     if (message.type !== PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE) {
       throw new Error('Invalid message type for contract invoke request');
     }
@@ -135,36 +150,110 @@ export class ContractRequestHandler
       this._proofService,
       {
         ethSigner,
-        challenge,
+        challenge: challenge ?? BytesHelper.bytesToInt(hexToBytes(await ethSigner.getAddress())),
         supportedCircuits: this._supportedCircuits
       }
     );
 
     const methodId = message.body.transaction_data.method_id.replace('0x', '');
     switch (methodId) {
-      case FunctionSignatures.SubmitZKPResponseV2:
-        return this._zkpVerifier.submitZKPResponseV2(
+      case FunctionSignatures.SubmitZKPResponseV2: {
+        const txHashZkpResponsesMap = await this._zkpVerifier.submitZKPResponseV2(
           ethSigner,
           message.body.transaction_data,
           zkpResponses
         );
+
+        const response = new Map<string, ZeroKnowledgeInvokeResponse>();
+        for (const [txHash, zkpResponses] of txHashZkpResponsesMap) {
+          response.set(txHash, { responses: zkpResponses });
+        }
+        // set txHash of the first response
+        message.body.transaction_data.txHash = txHashZkpResponsesMap.keys().next().value;
+        return response;
+      }
       case FunctionSignatures.SubmitZKPResponseV1: {
         const txHashZkpResponseMap = await this._zkpVerifier.submitZKPResponse(
           ethSigner,
           message.body.transaction_data,
           zkpResponses
         );
-        const response = new Map<string, ZeroKnowledgeProofResponse[]>();
+        const response = new Map<string, ZeroKnowledgeInvokeResponse>();
         for (const [txHash, zkpResponse] of txHashZkpResponseMap) {
-          response.set(txHash, [zkpResponse]);
+          response.set(txHash, { responses: [zkpResponse] });
         }
+        // set txHash of the first response
+        message.body.transaction_data.txHash = txHashZkpResponseMap.keys().next().value;
         return response;
+      }
+      case FunctionSignatures.SubmitResponse: {
+        // We need to
+        // 1. Generate auth proof from message.body.accept -> authResponse
+        // 2. Generate proofs for each query in scope -> zkpResponses
+
+        // Build auth response from accept
+        if (!message.to) {
+          throw new Error(`failed message. empty 'to' field`);
+        }
+
+        // Get first supported accept profile and pass it to processProofAuth
+        const acceptProfile = this.getFirstSupportedProfile(
+          PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
+          message.body.accept
+        );
+
+        const identifier = DID.parse(message.to);
+
+        const { authProof } = await processProofAuth(identifier, this._proofService, {
+          supportedCircuits: this._supportedCircuits,
+          acceptProfile,
+          senderAddress: await ethSigner.getAddress(),
+          zkpResponses: zkpResponses
+        });
+
+        // we return txHash because responsesMap could be empty if there are no queries in scope
+        const txHashZkpResponsesMap = await this._zkpVerifier.submitResponse(
+          ethSigner,
+          message.body.transaction_data,
+          zkpResponses,
+          authProof
+        );
+        message.body.transaction_data.txHash = txHashZkpResponsesMap.keys().next().value;
+
+        return txHashZkpResponsesMap;
       }
       default:
         throw new Error(
-          `Not supported method id. Only '${FunctionSignatures.SubmitZKPResponseV1} and ${FunctionSignatures.SubmitZKPResponseV2} are supported.'`
+          `Not supported method id. Only '${FunctionSignatures.SubmitZKPResponseV1}, ${FunctionSignatures.SubmitZKPResponseV2} and ${FunctionSignatures.SubmitResponse} are supported.'`
         );
     }
+  }
+
+  private getFirstSupportedProfile(
+    responseType: string,
+    profile?: string[] | undefined
+  ): AcceptProfile {
+    if (profile?.length) {
+      for (const acceptProfileString of profile) {
+        // 1. check protocol version
+        const acceptProfile = parseAcceptProfile(acceptProfileString);
+        const responseTypeVersion = Number(responseType.split('/').at(-2));
+        if (
+          acceptProfile.protocolVersion !== ProtocolVersion.V1 ||
+          (acceptProfile.protocolVersion === ProtocolVersion.V1 &&
+            (responseTypeVersion < 1 || responseTypeVersion >= 2))
+        ) {
+          continue;
+        }
+        // 2. check packer support
+        if (this._packerMgr.isProfileSupported(acceptProfile.env, acceptProfileString)) {
+          return acceptProfile;
+        }
+      }
+    }
+
+    // if we don't have supported profiles, we use default
+    return defaultAcceptProfile;
   }
 
   /**
@@ -188,12 +277,12 @@ export class ContractRequestHandler
    * @private
    * @beta
    * @param {ContractInvokeRequest} request - ContractInvokeRequest
-   * @param { Map<string, ZeroKnowledgeProofResponse[]>} responses - map tx hash to array of ZeroKnowledgeProofResponses
+   * @param { Map<string, ZeroKnowledgeInvokeResponse>} responses - map tx hash to array of ZeroKnowledgeInvokeResponse
    * @returns `Promise<ContractInvokeResponse>`
    */
   private async createContractInvokeResponse(
     request: ContractInvokeRequest,
-    txHashToZkpResponseMap: Map<string, ZeroKnowledgeProofResponse[]>
+    txHashToZkpResponseMap: Map<string, ZeroKnowledgeInvokeResponse>
   ): Promise<ContractInvokeResponse> {
     const contractInvokeResponse: ContractInvokeResponse = {
       id: request.id,
@@ -208,12 +297,17 @@ export class ContractRequestHandler
       created_time: getUnixTimestamp(new Date())
     };
     for (const [txHash, zkpResponses] of txHashToZkpResponseMap) {
-      for (const zkpResponse of zkpResponses) {
+      for (const zkpResponse of zkpResponses.responses) {
         contractInvokeResponse.body.scope.push({
           txHash,
           ...zkpResponse
         });
       }
+      contractInvokeResponse.body = {
+        ...contractInvokeResponse.body,
+        crossChainProof: zkpResponses.crossChainProof,
+        authProof: zkpResponses.authProof
+      };
     }
     return contractInvokeResponse;
   }

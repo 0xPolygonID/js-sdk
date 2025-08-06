@@ -25,18 +25,19 @@ import path from 'path';
 import { byteEncoder } from '../../src';
 import { ZeroKnowledgeProofRequest } from '../../src/iden3comm';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { JsonRpcProvider } from 'ethers';
 import { RPC_URL } from '../helpers';
+import { schemaLoaderForTests } from '../mocks/schema';
 
-describe('sig onchain proofs', () => {
+describe.sequential('sig onchain proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
   let dataStorage: IDataStorage;
   let proofService: ProofService;
   const rhsUrl = process.env.RHS_URL as string;
-
+  let merklizeOpts;
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
@@ -105,9 +106,12 @@ describe('sig onchain proofs', () => {
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
     const prover = new NativeProver(circuitStorage);
-
+    merklizeOpts = {
+      documentLoader: schemaLoaderForTests()
+    };
     proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage, {
-      prover
+      prover,
+      ...merklizeOpts
     });
   });
 
@@ -159,7 +163,7 @@ describe('sig onchain proofs', () => {
         id: rhsUrl
       }
     };
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 

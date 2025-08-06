@@ -8,6 +8,8 @@ export * from './protocol/proposal-request';
 export * from './protocol/payment';
 export * from './protocol/accept-profile';
 export * from './protocol/discovery-protocol';
+export * from './protocol/problem-report';
+
 export * from './protocol/attachment';
 export * from './protocol/transparent-payment';
 export * from './protocol/common';

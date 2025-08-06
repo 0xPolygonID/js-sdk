@@ -8,8 +8,6 @@ import {
   VerifiableConstants,
   W3CProofVerificationOptions
 } from '../../src/verifiable';
-import chaiAsPromised from 'chai-as-promised';
-import chai from 'chai';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import {
@@ -23,11 +21,12 @@ import {
   StateInfo,
   StateProof
 } from '../../src';
-chai.use(chaiAsPromised);
-const { expect } = chai;
+import { describe, expect, it } from 'vitest';
+
 import nock from 'nock';
 import { JsonRpcProvider } from 'ethers';
-import { RPC_URL } from '../helpers';
+import { IPFS_URL, RPC_URL } from '../helpers';
+import { schemaLoaderForTests } from '../mocks/schema';
 
 const mockStateStorage: IStateStorage = {
   getLatestStateById: async (id: bigint) => {
@@ -81,6 +80,11 @@ const mockStateStorage: IStateStorage = {
   getRpcProvider: (): JsonRpcProvider => {
     return new JsonRpcProvider(RPC_URL);
   }
+};
+const merklizeOpts = {
+  documentLoader: schemaLoaderForTests({
+    ipfsNodeURL: IPFS_URL
+  })
 };
 
 const dataStorage = {
@@ -191,7 +195,8 @@ describe('Verify credential proof', () => {
       );
 
     const opts: W3CProofVerificationOptions = {
-      credStatusResolverRegistry
+      credStatusResolverRegistry,
+      merklizeOptions: merklizeOpts
     };
     const isValid = await credential.verifyProof(ProofType.BJJSignature, resolverURL, opts);
     expect(isValid).to.be.eq(true);
@@ -290,7 +295,8 @@ describe('Verify credential proof', () => {
       );
 
     const opts: W3CProofVerificationOptions = {
-      credStatusResolverRegistry
+      credStatusResolverRegistry,
+      merklizeOptions: merklizeOpts
     };
 
     const isValid = await credential.verifyProof(ProofType.BJJSignature, resolverURL, opts);
@@ -401,7 +407,8 @@ describe('Verify credential proof', () => {
     );
 
     const opts: W3CProofVerificationOptions = {
-      credStatusResolverRegistry
+      credStatusResolverRegistry,
+      merklizeOptions: merklizeOpts
     };
 
     const isValid = await credential.verifyProof(ProofType.BJJSignature, resolverURL, opts);
@@ -508,7 +515,13 @@ describe('Verify credential proof', () => {
         `{"@context":"https://w3id.org/did-resolution/v1","didDocument":{"@context":["https://www.w3.org/ns/did/v1","https://schema.iden3.io/core/jsonld/auth.jsonld"],"id":"did:polygonid:polygon:mumbai:2qLGnFZiHrhdNh5KwdkGvbCN1sR2pUaBpBahAXC3zf","verificationMethod":[{"id":"did:polygonid:polygon:mumbai:2qLGnFZiHrhdNh5KwdkGvbCN1sR2pUaBpBahAXC3zf#stateInfo","type":"Iden3StateInfo2023","controller":"did:polygonid:polygon:mumbai:2qLGnFZiHrhdNh5KwdkGvbCN1sR2pUaBpBahAXC3zf","stateContractAddress":"80001:0x134B1BE34911E39A8397ec6289782989729807a4","published":true,"info":{"id":"did:polygonid:polygon:mumbai:2qLGnFZiHrhdNh5KwdkGvbCN1sR2pUaBpBahAXC3zf","state":"34824a8e1defc326f935044e32e9f513377dbfc031d79475a0190830554d4409","replacedByState":"0000000000000000000000000000000000000000000000000000000000000000","createdAtTimestamp":"1703174663","replacedAtTimestamp":"0","createdAtBlock":"43840767","replacedAtBlock":"0"},"global":{"root":"92c4610a24247a4013ce6de4903452d164134a232a94fd1fe37178bce4937006","replacedByRoot":"0000000000000000000000000000000000000000000000000000000000000000","createdAtTimestamp":"1704439557","replacedAtTimestamp":"0","createdAtBlock":"44415346","replacedAtBlock":"0"}}]},"didResolutionMetadata":{"contentType":"application/did+ld+json","retrieved":"2024-01-05T07:53:42.67771172Z","pattern":"^(did:polygonid:.+)$","driverUrl":"http://driver-did-polygonid:8080/1.0/identifiers/","duration":442,"did":{"didString":"did:polygonid:polygon:mumbai:2qLGnFZiHrhdNh5KwdkGvbCN1sR2pUaBpBahAXC3zf","methodSpecificId":"polygon:mumbai:2qLGnFZiHrhdNh5KwdkGvbCN1sR2pUaBpBahAXC3zf","method":"polygonid"}},"didDocumentMetadata":{}}`
       );
     const resolverURL = 'http://my-universal-resolver/1.0/identifiers';
-    const isValid = await credential.verifyProof(ProofType.Iden3SparseMerkleTreeProof, resolverURL);
+    const isValid = await credential.verifyProof(
+      ProofType.Iden3SparseMerkleTreeProof,
+      resolverURL,
+      {
+        merklizeOptions: merklizeOpts
+      }
+    );
     expect(isValid).to.be.eq(true);
   });
 

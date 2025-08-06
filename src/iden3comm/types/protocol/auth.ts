@@ -8,6 +8,7 @@ import {
   VerificationMethod as DidResolverVerificationMethod
 } from 'did-resolver';
 import { RootInfo, StateInfo } from '../../../storage';
+import { AuthProof, CrossChainProof } from './contract-request';
 
 /** AuthorizationResponseMessage is struct the represents iden3message authorization response */
 export type AuthorizationResponseMessage = BasicMessage & {
@@ -43,7 +44,7 @@ export type AuthorizationRequestMessageBody = {
 
 /** ZeroKnowledgeProofRequest represents structure of zkp request object */
 export type ZeroKnowledgeProofRequest = {
-  id: number;
+  id: number | string;
   circuitId: CircuitId;
   optional?: boolean;
   query: ZeroKnowledgeProofQuery;
@@ -63,20 +64,29 @@ export type ZeroKnowledgeProofQuery = {
   type: string;
 };
 
+export type ZeroKnowledgeInvokeResponse = {
+  responses: ZeroKnowledgeProofResponse[];
+  crossChainProof?: CrossChainProof;
+  authProof?: AuthProof;
+};
+
 /** ZeroKnowledgeProofResponse represents structure of zkp response */
 export type ZeroKnowledgeProofResponse = {
-  id: number;
+  id: number | string;
   circuitId: string;
   vp?: VerifiablePresentation;
 } & ZKProof;
 
+/** ZeroKnowledgeProofAuthResponse represents structure of zkp auth response */
+export type ZeroKnowledgeProofAuthResponse = Omit<ZeroKnowledgeProofResponse, 'id' | 'vp'>;
+
 /** VerifiablePresentation represents structure of Verifiable Presentation */
 export type VerifiablePresentation = {
   '@context': string | (string | object)[];
-  '@type': string;
+  type: string;
   verifiableCredential: {
     '@context': string | string[];
-    '@type': string | string[];
+    type: string | string[];
     credentialSubject: JsonDocumentObject;
   };
 };

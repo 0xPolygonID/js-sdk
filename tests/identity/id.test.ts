@@ -30,7 +30,7 @@ import {
   SEED_ISSUER,
   RHS_CONTRACT_ADDRESS
 } from '../helpers';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { Wallet } from 'ethers';
 import { getRandomBytes } from '@iden3/js-crypto';
 import { Blockchain, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -95,19 +95,52 @@ describe('identity', () => {
     const { did } = await createIdentity(idWallet);
 
     expect(did.string()).to.equal(expectedDID);
+    const verifier = 'http://issuer.com/';
+    const tags1 = ['senderAddress=0x123'];
+    const tags2 = ['senderAddress=0x123', 'app=mobile'];
 
-    const profileDID = await idWallet.createProfile(did, 10, 'http://polygonissuer.com/');
-    expect(profileDID.string()).to.equal(
+    const profileDid = await idWallet.createProfile(did, 10, verifier);
+    expect(profileDid.string()).to.equal(
       'did:iden3:polygon:amoy:xHMd1mimHu3Gc1nhe3DXrimqUCNtgYP8gcuGAHgxm'
     );
 
-    const dbProfile = await dataStorage.identity.getProfileByVerifier('http://polygonissuer.com/');
+    const dbProfile = await dataStorage.identity.getProfileByVerifier(verifier);
     expect(dbProfile).not.to.be.undefined;
     if (dbProfile) {
-      expect(dbProfile.id).to.equal(profileDID.string());
+      expect(dbProfile.id).to.equal(profileDid.string());
       expect(dbProfile.genesisIdentifier).to.equal(did.string());
       expect(dbProfile.nonce).to.equal(10);
     }
+    const dbProfiles = await dataStorage.identity.getProfilesByVerifier(verifier);
+    expect(dbProfiles).not.to.be.undefined;
+    expect(dbProfiles.length).to.be.eq(1);
+
+    const profileDid2 = await idWallet.createProfile(did, 11, verifier, tags1);
+    expect(profileDid2.string()).to.equal(
+      'did:iden3:polygon:amoy:x85NhWKFLHRyunDDmT2jBUpAs27JhJWSAjsnCEEuR'
+    );
+
+    const profileDid3 = await idWallet.createProfile(did, 12, verifier, tags2);
+    expect(profileDid3.string()).to.equal(
+      'did:iden3:polygon:amoy:xGCZ8wFysKpozg4r5bQxNunZi8gL4jmsT1srRNubb'
+    );
+
+    const profilesByTag = await idWallet.getProfilesByVerifier(verifier, tags1);
+    expect(profilesByTag.length).not.to.be.undefined;
+    expect(profilesByTag.length).to.be.eq(2);
+    expect(profilesByTag.map((p) => p.id).includes(profileDid2.string())).to.be.true;
+
+    const profilesByVerifierOnly = await idWallet.getProfilesByVerifier(verifier);
+    expect(profilesByVerifierOnly.length).not.to.be.undefined;
+    expect(profilesByVerifierOnly.length).to.be.eq(3);
+    expect(profilesByVerifierOnly.map((p) => p.id).includes(profileDid.string())).to.be.true;
+    expect(profilesByVerifierOnly.map((p) => p.id).includes(profileDid2.string())).to.be.true;
+    expect(profilesByVerifierOnly.map((p) => p.id).includes(profileDid3.string())).to.be.true;
+
+    const profilesByNonExistingVerifier = await idWallet.getProfilesByVerifier(
+      'non-existing-verifier'
+    );
+    expect(profilesByNonExistingVerifier.length).to.be.eq(0);
   });
 
   it('sign', async () => {

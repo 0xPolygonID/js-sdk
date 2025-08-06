@@ -11,15 +11,13 @@ import {
   Iden3SparseMerkleTreeProof
 } from '../../src/verifiable';
 import { BrowserDataSource } from '../../src/storage/local-storage/data-source';
-import chaiAsPromised from 'chai-as-promised';
-import chai from 'chai';
+import { describe, expect, it } from 'vitest';
+
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { IDataSource } from '../../src';
 import { Claim, DID, SchemaHash } from '@iden3/js-iden3-core';
 import { Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
-chai.use(chaiAsPromised);
-const { expect } = chai;
 
 class LocalStorageMock {
   store: object;
@@ -410,7 +408,7 @@ const credentialFlow = async (storage: IDataStorage) => {
       }
     }
   };
-  await expect(credentialWallet.findByQuery(query)).to.be.rejectedWith(
+  await expect(credentialWallet.findByQuery(query)).rejects.toThrow(
     SearchError.NotDefinedComparator
   );
 
@@ -419,12 +417,12 @@ const credentialFlow = async (storage: IDataStorage) => {
     allowedIssuers: ['*'],
     someProp: ''
   };
-  await expect(credentialWallet.findByQuery(query2)).to.be.rejectedWith(
+  await expect(credentialWallet.findByQuery(query2)).rejects.toThrow(
     SearchError.NotDefinedQueryKey
   );
 
   // remove credential error
-  await expect(credentialWallet.remove('unknownId')).to.be.rejectedWith(
+  await expect(credentialWallet.remove('unknownId')).rejects.toThrow(
     'item not found to delete: unknownId'
   );
 
@@ -463,5 +461,167 @@ describe('credential-wallet', () => {
     expect(proof.issuerData.state.claimsTreeRoot.bigInt().toString()).to.equal(
       mockedProof.issuerData.state.claimsTreeRoot.bigInt().toString()
     );
+  });
+
+  it('Credential search by query', async () => {
+    const credentialStorage = new CredentialStorage(new InMemoryDataSource<W3CCredential>());
+
+    const credToTest = W3CCredential.fromJSON(
+      JSON.parse(`{
+    "id": "urn:uuid:9c421fdc-16cc-11f0-9a77-0a58a9feac02",
+    "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://schema.iden3.io/core/jsonld/iden3proofs.jsonld",
+        "ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15"
+    ],
+    "type": [
+        "VerifiableCredential",
+        "operators"
+    ],
+    "credentialSubject": {
+        "boolean1": true,
+        "date-time1": "2025-04-09T15:48:08.800+02:00",
+        "id": "did:iden3:privado:main:2SeEkMwamyzKWr3aGUT9AvDjiQK4rMEAZbUZgEzP72",
+        "integer1": 5342,
+        "non-negative-integer1": "32423",
+        "number1": 1234,
+        "positive-integer1": "12345555",
+        "string1": "testData",
+        "type": "operators"
+    },
+    "issuer": "did:iden3:polygon:amoy:xJNwv94NrHy1xXU3poKTRL24WJEXmkEggwbBWy6gu",
+    "credentialSchema": {
+        "id": "https://ipfs.io/ipfs/QmWDmZQrtvidcNK7d6rJwq7ZSi8SUygJaKepN7NhKtGryc",
+        "type": "JsonSchema2023"
+    },
+    "credentialStatus": {
+        "id": "https://issuer-node-core-api-testing.privado.id/v2/agent",
+        "revocationNonce": 978385127,
+        "type": "Iden3commRevocationStatusV1.0"
+    },
+    "issuanceDate": "2025-04-11T12:00:49.921271223Z",
+    "proof": [
+        {
+            "issuerData": {
+                "id": "did:iden3:polygon:amoy:xJNwv94NrHy1xXU3poKTRL24WJEXmkEggwbBWy6gu",
+                "state": {
+                    "claimsTreeRoot": "1483789a545832ba69d54ed1691ce758f9b8297542b2749f6fa4786e74fbe80e",
+                    "value": "310ccc3f33fbbfd50da56755e442896065b388e9c4adadd644588eaa6e171b1a",
+                    "rootOfRoots": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "revocationTreeRoot": "0000000000000000000000000000000000000000000000000000000000000000"
+                },
+                "mtp": {
+                    "existence": true,
+                    "siblings": []
+                },
+                "authCoreClaim": "cca3371a6cb1b715004407e325bd993c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000079adcc5f988e5e6fb7d04adcb5e07afdd53babf34acdb75aa51ac8e1ddc0ee20211c823ff2b1ee62e988fba84247930add22fbbc2fcc4f1b4fd3a50e07f9e6170000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "credentialStatus": {
+                    "id": "https://issuer-node-core-api-testing.privado.id/v2/agent",
+                    "revocationNonce": 0,
+                    "type": "Iden3commRevocationStatusV1.0"
+                }
+            },
+            "type": "BJJSignature2021",
+            "coreClaim": "637056ad190ec7df5fef1345fda35e1f2200000000000000000000000000000001a16e78ba913717bc15cbe326e236c7eef4f9201582b50e145cb669139c0d0068fbed6c1ddf63a9a4eaa0d4a577b770a5acaf37a542cf86cb6e9e93e9b608020000000000000000000000000000000000000000000000000000000000000000e7f8503a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "signature": "b17ca01ab223b6281e0b22b4f8945729ffb39eaf4b2a0db59548db7ab0df092e423dfc2472cce2e269a80a4d37bb520eda59ab3a0adfae043caa38a464869505"
+        }
+    ]
+}`)
+    );
+    await credentialStorage.saveCredential(credToTest);
+
+    // positive-integer
+
+    let cred = await credentialStorage.findCredentialsByQuery({
+      allowedIssuers: ['*'],
+      context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
+      credentialSubject: {
+        'positive-integer1': {
+          $gt: '2'
+        }
+      },
+      groupId: 1745320529,
+      type: 'operators'
+    });
+    expect(1).to.be.equal(cred.length);
+    expect(cred[0].credentialSubject['positive-integer1']).to.be.equal('12345555');
+
+    //number
+
+    cred = await credentialStorage.findCredentialsByQuery({
+      allowedIssuers: ['*'],
+      context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
+      credentialSubject: {
+        number1: {
+          $gt: 1
+        }
+      },
+      groupId: 1745320529,
+      type: 'operators'
+    });
+    expect(1).to.be.equal(cred.length);
+    expect(cred[0].credentialSubject['number1']).to.be.equal(1234);
+
+    //boolean
+
+    cred = await credentialStorage.findCredentialsByQuery({
+      allowedIssuers: ['*'],
+      context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
+      credentialSubject: {
+        boolean1: {
+          $eq: true
+        }
+      },
+      groupId: 1745320529,
+      type: 'operators'
+    });
+    expect(1).to.be.equal(cred.length);
+    expect(cred[0].credentialSubject['boolean1']).to.be.equal(true);
+
+    //datetime lt
+
+    cred = await credentialStorage.findCredentialsByQuery({
+      allowedIssuers: ['*'],
+      context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
+      credentialSubject: {
+        'date-time1': {
+          $lt: '2027-04-09T15:48:08.800+02:00'
+        }
+      },
+      groupId: 1745320529,
+      type: 'operators'
+    });
+    expect(1).to.be.equal(cred.length);
+    expect(cred[0].credentialSubject['date-time1']).to.be.equal('2025-04-09T15:48:08.800+02:00');
+
+    // datetime gt
+    cred = await credentialStorage.findCredentialsByQuery({
+      allowedIssuers: ['*'],
+      context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
+      credentialSubject: {
+        'date-time1': {
+          $gt: '2022-04-09T15:48:08.800+02:00'
+        }
+      },
+      groupId: 1745320529,
+      type: 'operators'
+    });
+    expect(1).to.be.equal(cred.length);
+    expect(cred[0].credentialSubject['date-time1']).to.be.equal('2025-04-09T15:48:08.800+02:00');
+
+    // datetime YYYY-MM-DD
+    cred = await credentialStorage.findCredentialsByQuery({
+      allowedIssuers: ['*'],
+      context: 'ipfs://Qmb48rJ5SiQMLXjVkaLQB6fWbT7C8LK75MHsCoHv8GAc15',
+      credentialSubject: {
+        'date-time1': {
+          $gt: '2022-04-01'
+        }
+      },
+      groupId: 1745320529,
+      type: 'operators'
+    });
+    expect(1).to.be.equal(cred.length);
+    expect(cred[0].credentialSubject['date-time1']).to.be.equal('2025-04-09T15:48:08.800+02:00');
   });
 });

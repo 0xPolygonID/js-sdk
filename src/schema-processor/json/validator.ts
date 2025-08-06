@@ -1,8 +1,8 @@
 // or ESM/TypeScript import
 import Ajv from 'ajv';
 import { byteDecoder } from '../../utils';
-import Ajv2020 from 'ajv/dist/2020';
-import Ajv2019 from 'ajv/dist/2019';
+import Ajv2020 from 'ajv/dist/2020.js';
+import Ajv2019 from 'ajv/dist/2019.js';
 import addFormats from 'ajv-formats';
 
 const defaultOpts = { verbose: true, strict: false };
@@ -33,7 +33,7 @@ export class JsonSchemaValidator {
     const schema = JSON.parse(byteDecoder.decode(schemaBytes));
     const data = JSON.parse(byteDecoder.decode(dataBytes));
     const draft = schema['$schema']?.replaceAll('#', '');
-    let validator: Ajv | Ajv2020;
+    let validator: Ajv | Ajv2019 | Ajv2020;
     if (!draft) {
       validator = defaultJSONSchemaValidator;
     }
@@ -42,6 +42,7 @@ export class JsonSchemaValidator {
     validator = ajv ?? defaultJSONSchemaValidator;
     if (validator.formats && !Object.keys(validator.formats).length) {
       addFormats(validator);
+      addCustomFormats(validator);
     }
     const validate =
       (schema.$id ? validator.getSchema(schema.$id) : undefined) || validator.compile(schema);
@@ -52,4 +53,15 @@ export class JsonSchemaValidator {
     }
     return true;
   }
+}
+
+function addCustomFormats(validator: Ajv | Ajv2019 | Ajv2020) {
+  validator.addFormat('positive-integer', {
+    type: 'string',
+    validate: (positiveIntegerStr: string) => /^[1-9]\d*$/.test(positiveIntegerStr)
+  });
+  validator.addFormat('non-negative-integer', {
+    type: 'string',
+    validate: (nonNegativeIntegerStr: string) => /^(0|[1-9]\d*)$/.test(nonNegativeIntegerStr)
+  });
 }

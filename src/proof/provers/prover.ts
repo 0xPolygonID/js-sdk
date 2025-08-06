@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-import { ZKProof } from '@iden3/js-jwz';
+import { verifyGroth16Proof, ZKProof } from '@iden3/js-jwz';
 import { witnessBuilder } from './witness_calculator';
-import { groth16 } from 'snarkjs';
-import { getCurveFromName } from 'ffjavascript';
+import * as snarkjs from 'snarkjs';
+import * as ffjavascript from 'ffjavascript';
 import { ICircuitStorage } from '../../storage';
 import { CircuitId } from '../../circuits';
 import { byteDecoder } from '../../utils';
@@ -57,16 +56,7 @@ export class NativeProver implements IZKProver {
         throw new Error(`verification file doesn't exist for circuit ${circuitId}`);
       }
 
-      const result = await groth16.verify(
-        JSON.parse(byteDecoder.decode(circuitData.verificationKey)),
-        zkp.pub_signals,
-        zkp.proof
-      );
-
-      // we need to terminate curve manually
-      await this.terminateCurve();
-
-      return result;
+      return verifyGroth16Proof(zkp, JSON.parse(byteDecoder.decode(circuitData.verificationKey)));
     } catch (e) {
       // eslint-disable-next-line no-console
       console.log(e);
@@ -96,7 +86,7 @@ export class NativeProver implements IZKProver {
     if (!circuitData.provingKey) {
       throw new Error(`proving file doesn't exist for circuit ${circuitId}`);
     }
-    const { proof, publicSignals } = await groth16.prove(circuitData.provingKey, wtnsBytes);
+    const { proof, publicSignals } = await snarkjs.groth16.prove(circuitData.provingKey, wtnsBytes);
 
     // we need to terminate curve manually
     await this.terminateCurve();
@@ -108,7 +98,7 @@ export class NativeProver implements IZKProver {
   }
 
   private async terminateCurve(): Promise<void> {
-    const curve = await getCurveFromName(NativeProver.curveName);
+    const curve = await ffjavascript.getCurveFromName(NativeProver.curveName);
     curve.terminate();
   }
 }

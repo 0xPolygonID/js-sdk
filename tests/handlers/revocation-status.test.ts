@@ -26,7 +26,7 @@ import {
 } from '../helpers';
 
 import * as uuid from 'uuid';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import path from 'path';
 
 describe('revocation status', () => {

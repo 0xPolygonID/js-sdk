@@ -368,12 +368,14 @@ export class AuthHandler
       throw new Error(`proof response doesn't contain from field`);
     }
 
-    const groupIdToLinkIdMap = new Map<number, { linkID: number; requestId: number }[]>();
+    const groupIdToLinkIdMap = new Map<number, { linkID: number; requestId: number | string }[]>();
     // group requests by query group id
     for (const proofRequest of requestScope) {
       const groupId = proofRequest.query.groupId as number;
 
-      const proofResp = responseScope.find((resp) => resp.id === proofRequest.id);
+      const proofResp = responseScope.find(
+        (resp) => resp.id.toString() === proofRequest.id.toString()
+      );
       if (!proofResp) {
         throw new Error(`proof is not given for requestId ${proofRequest.id}`);
       }

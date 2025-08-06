@@ -20,12 +20,13 @@ import { RootInfo, StateProof } from '../../src/storage/entities/state';
 import path from 'path';
 import { CredentialStatusType, VerifiableConstants, W3CCredential } from '../../src/verifiable';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../../src/iden3comm';
-import { expect } from 'chai';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { CredentialStatusResolverRegistry } from '../../src/credentials';
 import { RHSResolver } from '../../src/credentials';
 import { SEED_USER, createIdentity, TEST_VERIFICATION_OPTS, RPC_URL } from '../helpers';
+import { schemaLoaderForTests } from '../mocks/schema';
 
-describe('mtp proofs', () => {
+describe.sequential('mtp proofs', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -35,6 +36,8 @@ describe('mtp proofs', () => {
 
   const rhsUrl = process.env.RHS_URL as string;
   const walletKey = process.env.WALLET_KEY as string;
+
+  let merklizeOpts;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
@@ -122,7 +125,17 @@ describe('mtp proofs', () => {
 
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, mockStateStorage);
+    merklizeOpts = {
+      documentLoader: schemaLoaderForTests()
+    };
+
+    proofService = new ProofService(
+      idWallet,
+      credWallet,
+      circuitStorage,
+      mockStateStorage,
+      merklizeOpts
+    );
   });
 
   it('mtpv2-non-merklized', async () => {
@@ -154,7 +167,7 @@ describe('mtp proofs', () => {
       }
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
@@ -243,7 +256,7 @@ describe('mtp proofs', () => {
       }
     };
 
-    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq);
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
 
     await credWallet.save(issuerCred);
 
@@ -344,6 +357,6 @@ describe('mtp proofs', () => {
     const sender = 'did:iden3:polygon:amoy:x7Z95VkUuyo6mqraJw2VGwCfqTzdqhM1RVjRHzcpK';
     await expect(
       proofService.verifyZKPResponse(response, { query, sender, opts: TEST_VERIFICATION_OPTS })
-    ).to.be.rejectedWith('issuer state is outdated');
+    ).rejects.toThrow('issuer state is outdated');
   });
 });
