@@ -189,7 +189,7 @@ describe.sequential('sig proofs', () => {
     const { proof, vp } = await proofService.generateProof(proofReq, userDID);
 
     expect(proof).not.to.be.undefined;
-    expect(vp).to.be.undefined;
+    expect(vp).not.to.be.undefined;
   };
 
   it('sigv3-non-merklized', async () => {
@@ -252,7 +252,7 @@ describe.sequential('sig proofs', () => {
       skipRevocation: false
     });
 
-    expect(vp).to.be.undefined;
+    expect(vp).not.to.be.undefined;
     expect(proof).not.to.be.undefined;
   };
 
@@ -304,7 +304,7 @@ describe.sequential('sig proofs', () => {
       skipRevocation: true
     });
     expect(proof).not.to.be.undefined;
-    expect(vp).to.be.undefined;
+    expect(vp).not.to.be.undefined;
   });
 
   it('sigv2-ipfs-string-eq', async () => {
@@ -361,7 +361,7 @@ describe.sequential('sig proofs', () => {
       userDID
     );
     expect(proof).not.to.be.undefined;
-    expect(vp).to.be.undefined;
+    expect(vp).not.to.be.undefined;
 
     const isValid = await proofService.verifyProof(
       {
@@ -493,12 +493,17 @@ describe.sequential('sig proofs', () => {
       verifiableCredential: {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
+          'https://schema.iden3.io/core/jsonld/iden3proofs.jsonld',
           'ipfs://QmQXQ5gBNfJuc9QXy5pGbaVfLxzFjCDAvPs4Fa43BaU1U4'
         ],
         type: ['VerifiableCredential', 'DeliveryAddress'],
         credentialSubject: {
           type: 'DeliveryAddress',
           postalProviderInformation: { name: 'postal provider' }
+        },
+        credentialStatus: {
+          id: 'https://rhs-staging.polygonid.me/node?state=ed17a07e8b78ab979507829fa4d37e663ca5906714d506dec8a174d949c5eb09',
+          type: 'Iden3ReverseSparseMerkleTreeProof'
         }
       }
     });
@@ -522,12 +527,17 @@ describe.sequential('sig proofs', () => {
       verifiableCredential: {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
+          'https://schema.iden3.io/core/jsonld/iden3proofs.jsonld',
           'ipfs://QmZreEq1z5tMAuNBNTXjfpYMQbQ8KL7YkkVBt5nG1bUqJT'
         ],
         type: ['VerifiableCredential', 'DeliverAddressMultiTest'],
         credentialSubject: {
           type: 'DeliverAddressMultiTest',
           postalProviderInformation: { insured: false }
+        },
+        credentialStatus: {
+          id: 'https://rhs-staging.polygonid.me/node?state=ed17a07e8b78ab979507829fa4d37e663ca5906714d506dec8a174d949c5eb09',
+          type: 'Iden3ReverseSparseMerkleTreeProof'
         }
       }
     });
@@ -590,7 +600,7 @@ describe.sequential('sig proofs', () => {
       userDID
     );
     expect(proof).not.to.be.undefined;
-    expect(vp).to.be.undefined;
+    expect(vp).not.to.be.undefined;
 
     const isValid = await proofService.verifyProof(
       {
@@ -661,7 +671,7 @@ describe.sequential('sig proofs', () => {
       userDID
     );
     expect(proof).not.to.be.undefined;
-    expect(vp).to.be.undefined;
+    expect(vp).not.to.be.undefined;
 
     const isValid = await proofService.verifyProof(
       {

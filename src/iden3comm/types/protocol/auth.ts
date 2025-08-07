@@ -54,14 +54,23 @@ export type ZeroKnowledgeProofRequest = {
 };
 
 /** ZeroKnowledgeProofQuery represents structure of zkp request query object */
-export type ZeroKnowledgeProofQuery = {
+export type ZeroKnowledgeProofQuery = W3CV1ProofQueryFields & {
   allowedIssuers: string[];
   context: string;
   credentialSubject?: JsonDocumentObject;
+  credentialSubjectFullDisclosure?: boolean;
   proofType?: ProofType;
   skipClaimRevocationCheck?: boolean;
   groupId?: number;
   type: string;
+};
+
+/** W3CV1ProofQueryFields represents fields for W3C v1 ZKP proof query */
+export type W3CV1ProofQueryFields = {
+  expirationDate?: JsonDocumentObject;
+  issuanceDate?: JsonDocumentObject;
+  credentialStatus?: JsonDocumentObject;
+  credentialStatusFullDisclosure?: boolean;
 };
 
 export type ZeroKnowledgeInvokeResponse = {
@@ -88,6 +97,11 @@ export type VerifiablePresentation = {
     '@context': string | string[];
     type: string | string[];
     credentialSubject: JsonDocumentObject;
+    credentialStatus?: {
+      id?: string;
+      type?: string;
+      revocationNonce?: number;
+    };
   };
 };
 

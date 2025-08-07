@@ -217,7 +217,7 @@ describe.sequential('mtp proofs', () => {
     expect(creds.length).to.not.equal(0);
 
     const { proof, pub_signals, vp } = await proofService.generateProof(proofReq, userDID);
-    expect(vp).to.be.undefined;
+    expect(vp).not.to.be.undefined;
 
     const isValid = await proofService.verifyProof({ proof, pub_signals }, circuitId);
     expect(isValid).to.be.true;
@@ -311,7 +311,7 @@ describe.sequential('mtp proofs', () => {
       credential: credsForMyUserDID[0],
       skipRevocation: false
     });
-    expect(vp).to.be.undefined;
+    expect(vp).not.to.be.undefined;
 
     const isValid = await proofService.verifyProof({ proof, pub_signals }, circuitId);
     expect(isValid).to.be.true;
