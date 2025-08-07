@@ -87,7 +87,9 @@ export const createVerifiablePresentation = (
   };
 
   let result: JsonDocumentObject = {};
-  let w3cResult: JsonDocumentObject = {};
+  let w3cResult: JsonDocumentObject = {
+    credentialStatus: {}
+  };
   for (const query of queries) {
     const parts = query.fieldName.split('.');
     const current: JsonDocumentObject = parts.reduceRight(
@@ -100,22 +102,23 @@ export const createVerifiablePresentation = (
       findValue(query.fieldName, credential, query.kind) as JsonDocumentObject
     );
 
-    if (query.kind === 'credentialSubject') {
+    if (!query.kind || query.kind === 'credentialSubject') {
       result = { ...result, ...current };
     } else {
       w3cResult = { ...w3cResult, ...current };
     }
   }
 
+  w3cResult.credentialStatus = {
+    ...(w3cResult.credentialStatus as object),
+    id: credential.credentialStatus.id,
+    type: credential.credentialStatus.type
+  };
+
   skeleton.verifiableCredential.credentialSubject = {
     ...skeleton.verifiableCredential.credentialSubject,
     ...result
   };
-
-  if (w3cResult.credentialStatus) {
-    (w3cResult.credentialStatus as JsonDocumentObject).type = credential.credentialStatus.type;
-    (w3cResult.credentialStatus as JsonDocumentObject).id = credential.credentialStatus.id;
-  }
 
   skeleton.verifiableCredential = {
     ...skeleton.verifiableCredential,
