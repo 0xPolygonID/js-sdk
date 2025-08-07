@@ -500,6 +500,10 @@ describe.sequential('sig proofs', () => {
         credentialSubject: {
           type: 'DeliveryAddress',
           postalProviderInformation: { name: 'postal provider' }
+        },
+        credentialStatus: {
+          id: 'https://rhs-staging.polygonid.me/node?state=ed17a07e8b78ab979507829fa4d37e663ca5906714d506dec8a174d949c5eb09',
+          type: 'Iden3ReverseSparseMerkleTreeProof'
         }
       }
     });
@@ -530,6 +534,10 @@ describe.sequential('sig proofs', () => {
         credentialSubject: {
           type: 'DeliverAddressMultiTest',
           postalProviderInformation: { insured: false }
+        },
+        credentialStatus: {
+          id: 'https://rhs-staging.polygonid.me/node?state=ed17a07e8b78ab979507829fa4d37e663ca5906714d506dec8a174d949c5eb09',
+          type: 'Iden3ReverseSparseMerkleTreeProof'
         }
       }
     });
