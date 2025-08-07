@@ -17,7 +17,6 @@ import {
 import * as uuid from 'uuid';
 import { getRandomBytes } from '@iden3/js-crypto';
 import { Blockchain, buildDIDType, DID, DidMethod, Id, NetworkId } from '@iden3/js-iden3-core';
-import { MediaType } from '../../src/iden3comm/constants';
 import { describe, it, vi, expect } from 'vitest';
 
 describe('Attachments', () => {
@@ -39,17 +38,23 @@ describe('Attachments', () => {
     getRandomBytes(27),
     getRandomBytes(27)
   ].map((seed) => DID.parseFromId(new Id(didType, seed)).string());
+  const tokenPayload = {
+    sub: userDid,
+    aud: issuerDid,
+    iat: new Date().getTime(),
+    iss: userDid,
+    exp: new Date().getTime() + 1000 * 60 * 60 * 24 * 30
+  };
 
   const verifierFlow = () => {
     const id = uuid.v4();
 
     const attachment: Attachment = {
       id: id,
-      media_type: MediaType.PlainMessage,
       data: {
         json: {
           type: 'SponsoredPaymentInstructionV0.1',
-          token: 'fake.jwt.string'
+          token: `headers.${Buffer.from(JSON.stringify(tokenPayload)).toString('base64')}.signature`
         }
       }
     };
@@ -96,10 +101,15 @@ describe('Attachments', () => {
     const spy = vi.fn();
     const proposalResolverFn = (context: string, type: string, opts?: { msg?: BasicMessage }) => {
       const token = (opts?.msg?.attachments?.[0]?.data?.json as { token: string }).token;
-      expect(token).toBe('fake.jwt.string');
+      const [, body] = token.split('.');
+      // verify signature of token and token.iss field
+      const decodedBody = JSON.parse(Buffer.from(body, 'base64').toString('utf-8'));
+      expect(decodedBody).toEqual(tokenPayload);
+
       // handle token here
-      const sender = opts?.msg?.from;
-      expect(sender).toBe(userDid);
+      const { from, to } = opts?.msg as BasicMessage;
+      expect(from).toBe(decodedBody.sub);
+      expect(to).toBe(decodedBody.aud);
       spy();
       return Promise.resolve({} as Proposal);
     };
