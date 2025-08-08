@@ -114,7 +114,7 @@ export type Iden3SolanaEd25519SignatureV1 = {
     | SupportedPaymentProofType.SolanaEd25519SPLV1;
   proofPurpose: string;
   proofValue: string;
-  signedMessage: string;
+  message: string;
   created: string;
   pubKey: string;
   domain: {

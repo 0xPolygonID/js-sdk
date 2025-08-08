@@ -557,9 +557,9 @@ describe('payment-request handler', () => {
         }
 
         const pubkey = new PublicKey(data.proof[0].pubKey);
-        const signedMessage = Uint8Array.from(Buffer.from(data.proof[0].signedMessage, 'hex'));
+        const message = Uint8Array.from(Buffer.from(data.proof[0].message, 'hex'));
         const edIx = Ed25519Program.createInstructionWithPublicKey({
-          message: signedMessage,
+          message,
           signature,
           publicKey: pubkey.toBytes()
         });
@@ -1130,7 +1130,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 4n;
+    const nonce = 7n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1182,7 +1182,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPLV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10004n;
+    const nonce = 10011n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,

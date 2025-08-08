@@ -621,7 +621,7 @@ export class PaymentHandler
               type: proofType,
               proofPurpose: 'assertionMethod',
               proofValue: Buffer.from(signature).toString('hex'),
-              signedMessage: Buffer.from(serialized).toString('hex'),
+              message: Buffer.from(serialized).toString('hex'),
               created: new Date().toISOString(),
               pubKey: createOptions.solSigner.publicKey.toBase58(),
               domain: {
