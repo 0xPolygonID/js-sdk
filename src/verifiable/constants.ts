@@ -164,7 +164,9 @@ export enum RefreshServiceType {
 export enum PaymentRequestDataType {
   Iden3PaymentRequestCryptoV1 = 'Iden3PaymentRequestCryptoV1',
   Iden3PaymentRailsRequestV1 = 'Iden3PaymentRailsRequestV1',
-  Iden3PaymentRailsERC20RequestV1 = 'Iden3PaymentRailsERC20RequestV1'
+  Iden3PaymentRailsERC20RequestV1 = 'Iden3PaymentRailsERC20RequestV1',
+  Iden3PaymentRailsSolanaRequestV1 = 'Iden3PaymentRailsSolanaRequestV1',
+  Iden3PaymentRailsSolanaSPLRequestV1 = 'Iden3PaymentRailsSolanaSPLRequestV1'
 }
 
 /**
@@ -175,7 +177,9 @@ export enum PaymentRequestDataType {
 export enum PaymentType {
   Iden3PaymentCryptoV1 = 'Iden3PaymentCryptoV1',
   Iden3PaymentRailsV1 = 'Iden3PaymentRailsV1',
-  Iden3PaymentRailsERC20V1 = 'Iden3PaymentRailsERC20V1'
+  Iden3PaymentRailsERC20V1 = 'Iden3PaymentRailsERC20V1',
+  Iden3PaymentRailsSolanaV1 = 'Iden3PaymentRailsSolanaV1',
+  Iden3PaymentRailsSolanaSPLV1 = 'Iden3PaymentRailsSolanaSPLV1'
 }
 
 /**
@@ -184,7 +188,9 @@ export enum PaymentType {
  * @enum {string}
  */
 export enum SupportedPaymentProofType {
-  EthereumEip712Signature2021 = 'EthereumEip712Signature2021'
+  EthereumEip712Signature2021 = 'EthereumEip712Signature2021',
+  SolanaEd25519NativeV1 = 'SolanaEd25519NativeV1',
+  SolanaEd25519SPLV1 = 'SolanaEd25519SPLV1'
 }
 
 /**
