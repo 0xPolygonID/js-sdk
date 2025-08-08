@@ -188,6 +188,5 @@ export const VerifyIden3SolanaPaymentRequest = (
     });
     serialized = serialize(SolanaSplPaymentSchema, request);
   }
-  // const hash = sha256(serialized);
-  return ed25519.verify(proof.proofValue, serialized, new PublicKey(proof.pubKey).toBytes());
+  return ed25519.verify(proof.proofValue, serialized, new PublicKey(proof.publicKey).toBytes());
 };

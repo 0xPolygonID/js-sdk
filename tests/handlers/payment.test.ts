@@ -443,7 +443,7 @@ describe('payment-request handler', () => {
       ) {
         const connection = new Connection(clusterApiUrl('devnet'));
         const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
-        const signer = new PublicKey(data.proof[0].pubKey);
+        const signer = new PublicKey(data.proof[0].publicKey);
         const payerPublicKey = payer.publicKey;
         console.log('Payer Public Key:', payerPublicKey.toBase58());
         const recipient = new PublicKey(data.recipient);
@@ -556,7 +556,7 @@ describe('payment-request handler', () => {
           keys.push(...splKeys);
         }
 
-        const pubkey = new PublicKey(data.proof[0].pubKey);
+        const pubkey = new PublicKey(data.proof[0].publicKey);
         const message = Uint8Array.from(Buffer.from(data.proof[0].message, 'hex'));
         const edIx = Ed25519Program.createInstructionWithPublicKey({
           message,
@@ -1130,7 +1130,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 7n;
+    const nonce = 8n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1182,7 +1182,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPLV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10011n;
+    const nonce = 10012n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,

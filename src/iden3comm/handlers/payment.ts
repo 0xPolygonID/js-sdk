@@ -623,7 +623,7 @@ export class PaymentHandler
               proofValue: Buffer.from(signature).toString('hex'),
               message: Buffer.from(serialized).toString('hex'),
               created: new Date().toISOString(),
-              pubKey: createOptions.solSigner.publicKey.toBase58(),
+              publicKey: createOptions.solSigner.publicKey.toBase58(),
               domain: {
                 version: proofType,
                 chainId,
@@ -804,7 +804,7 @@ export class PaymentHandler
       throw new Error(`failed request. invalid Solana payment request signature`);
     }
     const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
-    if (this._params.allowedSigners && !this._params.allowedSigners.includes(proof.pubKey)) {
+    if (this._params.allowedSigners && !this._params.allowedSigners.includes(proof.publicKey)) {
       throw new Error(`failed request. signer is not in the allowed signers list`);
     }
     const txId = await paymentHandler(data);
@@ -831,7 +831,7 @@ export class PaymentHandler
       throw new Error(`failed request. invalid Solana payment request signature`);
     }
     const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
-    if (this._params.allowedSigners && !this._params.allowedSigners.includes(proof.pubKey)) {
+    if (this._params.allowedSigners && !this._params.allowedSigners.includes(proof.publicKey)) {
       throw new Error(`failed request. signer is not in the allowed signers list`);
     }
     const txId = await paymentHandler(data);

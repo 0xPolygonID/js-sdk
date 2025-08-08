@@ -116,7 +116,7 @@ export type Iden3SolanaEd25519SignatureV1 = {
   proofValue: string;
   message: string;
   created: string;
-  pubKey: string;
+  publicKey: string;
   domain: {
     version: string;
     chainId: string;
