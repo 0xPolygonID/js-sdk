@@ -581,13 +581,11 @@ export class PaymentHandler
             option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
               ? SupportedPaymentProofType.SolanaEd25519NativeV1
               : SupportedPaymentProofType.SolanaEd25519SPLV1;
-          // todo: fix when it's using payment rails address
-          const verifyingContract = new PublicKey('11111111111111111111111111111111');
           if (option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
             const request = new SolanaNativePaymentRequest({
               version: byteEncoder.encode(proofType),
               chainId: BigInt(chainId),
-              verifyingContract: verifyingContract.toBytes(),
+              verifyingContract: new PublicKey(paymentRails).toBytes(),
               recipient: new PublicKey(recipient).toBytes(),
               amount: BigInt(amount),
               expirationDate: BigInt(getUnixTimestamp(expirationDateRequired)),
@@ -604,7 +602,7 @@ export class PaymentHandler
             const request = new SolanaSplPaymentRequest({
               version: byteEncoder.encode(proofType),
               chainId: BigInt(chainId),
-              verifyingContract: verifyingContract.toBytes(),
+              verifyingContract: new PublicKey(paymentRails).toBytes(),
               tokenAddress: new PublicKey(option.contractAddress).toBytes(),
               recipient: new PublicKey(recipient).toBytes(),
               amount: BigInt(amount),
@@ -634,8 +632,8 @@ export class PaymentHandler
           const d: Iden3PaymentRailsSolanaRequestV1 = {
             type: PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1,
             '@context': [
-              `https://schema.iden3.io/core/jsonld/payment.jsonld#${option.type}`
-              // todo: add context for Iden3SolanaEd25519SignatureV1
+              `https://schema.iden3.io/core/jsonld/payment.jsonld#${option.type}`,
+              'https://schema.iden3.io/core/jsonld/solanaEd25519.jsonld'
             ],
             recipient,
             amount: amount.toString(),

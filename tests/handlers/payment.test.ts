@@ -861,7 +861,7 @@ describe('payment-request handler', () => {
         },
         {
           chainId: '103',
-          paymentRails: 'AKNPPwWHYx5ejCs9RsrJ8PLdsdLAhHeMrk8qi6bHizH7',
+          paymentRails: 'Hys6CpX8McHbPBaPKbRYGVdXVxor1M5pSZUDMMwakGmM',
           recipient: 'HcCoHQFPjU2brBFW1hAZvEtZx7nSrYCBJVq4vKsjo6jf',
           options: [
             {
@@ -1130,7 +1130,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 8n;
+    const nonce = 2n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1182,7 +1182,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPLV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10012n;
+    const nonce = 1002n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1470,7 +1470,7 @@ describe('payment-request handler', () => {
   it.skip('payment handler (Iden3PaymentRailsSolanaSPLV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 10001n;
+    const nonce = 1001n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1519,7 +1519,7 @@ describe('payment-request handler', () => {
   it.skip('initialize Solana', async () => {
     const connection = new Connection('https://api.devnet.solana.com');
     const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
-    const programId = new PublicKey('AKNPPwWHYx5ejCs9RsrJ8PLdsdLAhHeMrk8qi6bHizH7');
+    const programId = new PublicKey('Hys6CpX8McHbPBaPKbRYGVdXVxor1M5pSZUDMMwakGmM');
 
     const schema = new Map([
       [

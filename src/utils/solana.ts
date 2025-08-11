@@ -160,13 +160,11 @@ export const VerifyIden3SolanaPaymentRequest = (
 ): boolean => {
   const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
   let serialized: Uint8Array;
-  // todo: fix when it's using payment rails address
-  const verifyingContract = new PublicKey('11111111111111111111111111111111');
   if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
     const request = new SolanaNativePaymentRequest({
       version: byteEncoder.encode(proof.type),
       chainId: BigInt(proof.domain.chainId),
-      verifyingContract: verifyingContract.toBytes(),
+      verifyingContract: new PublicKey(proof.domain.verifyingContract).toBytes(),
       recipient: new PublicKey(data.recipient).toBytes(),
       amount: BigInt(data.amount),
       expirationDate: BigInt(getUnixTimestamp(new Date(data.expirationDate))),
@@ -178,7 +176,7 @@ export const VerifyIden3SolanaPaymentRequest = (
     const request = new SolanaSplPaymentRequest({
       version: byteEncoder.encode(proof.type),
       chainId: BigInt(proof.domain.chainId),
-      verifyingContract: verifyingContract.toBytes(),
+      verifyingContract: new PublicKey(proof.domain.verifyingContract).toBytes(),
       tokenAddress: new PublicKey(data.tokenAddress).toBytes(),
       recipient: new PublicKey(data.recipient).toBytes(),
       amount: BigInt(data.amount),
