@@ -122,7 +122,6 @@ describe('fetch', () => {
     "type": "https://iden3-communication.io/credentials/1.0/issuance-response"
 }`;
 
-
   beforeEach(async () => {
     const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
