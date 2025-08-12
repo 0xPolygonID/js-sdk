@@ -781,7 +781,7 @@ describe('payment-request handler', () => {
     const idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
-    const didExampleRecovery = {
+    const ethDidResolution = {
       '@context': [
         'https://www.w3.org/ns/did/v1',
         {
@@ -806,8 +806,71 @@ describe('payment-request handler', () => {
         'did:pkh:eip155:80002:0xE9D7fCDf32dF4772A7EF7C24c76aB40E4A42274a#blockchainAccountId'
       ]
     };
+
+    const solDidResolution = {
+      '@context': 'https://w3id.org/did-resolution/v1',
+      didDocument: {
+        '@context': [
+          'https://www.w3.org/ns/did/v1',
+          {
+            Ed25519VerificationKey2020: 'https://w3id.org/security#Ed25519VerificationKey2020',
+            SolanaMethod2021: 'https://w3id.org/security#SolanaMethod2021',
+            blockchainAccountId: 'https://w3id.org/security#blockchainAccountId'
+          }
+        ],
+        id: 'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa',
+        verificationMethod: [
+          {
+            id: 'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa#blockchainAccountId',
+            type: 'Ed25519VerificationKey2020',
+            controller:
+              'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa',
+            blockchainAccountId:
+              'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa'
+          },
+          {
+            id: 'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa#SolanaMethod2021',
+            type: 'SolanaMethod2021',
+            controller:
+              'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa',
+            blockchainAccountId:
+              'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa'
+          }
+        ],
+        assertionMethod: [
+          'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa#blockchainAccountId',
+          'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa#SolanaMethod2021'
+        ],
+        authentication: [
+          {
+            id: 'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa#blockchainAccountId',
+            type: 'Ed25519VerificationKey2020',
+            controller:
+              'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa'
+          },
+          {
+            id: 'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa#SolanaMethod2021',
+            type: 'SolanaMethod2021',
+            controller:
+              'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa'
+          }
+        ]
+      },
+      didResolutionMetadata: {
+        '@context': ['https://schema.iden3.io/core/jsonld/resolution.jsonld'],
+        contentType: 'application/did+ld+json',
+        retrieved: '2025-08-12T15:28:55.805847335Z',
+        type: 'Iden3ResolutionMetadata'
+      },
+      didDocumentMetadata: {}
+    };
     const resolveDIDDocument = {
-      resolve: () => Promise.resolve({ didDocument: didExampleRecovery } as DIDResolutionResult)
+      resolve: (did: string) => {
+        if (did.startsWith('did:pkh:solana:')) {
+          return Promise.resolve(solDidResolution as DIDResolutionResult);
+        }
+        return Promise.resolve({ didDocument: ethDidResolution } as DIDResolutionResult);
+      }
     };
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
@@ -1130,7 +1193,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 4n;
+    const nonce = 7n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1182,7 +1245,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPLV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 1003n;
+    const nonce = 1005;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,

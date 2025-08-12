@@ -8,6 +8,7 @@ import { PaymentRequestDataType } from '../verifiable';
 import { byteEncoder } from './encoding';
 import { getUnixTimestamp } from '@iden3/js-iden3-core';
 import { PublicKey } from '@solana/web3.js';
+import { Resolvable } from 'did-resolver';
 
 export class SolanaNativePaymentRequest {
   version: Uint8Array;
@@ -192,9 +193,10 @@ export const serializeSolanaPaymentInstruction = (
   }
   return serialized;
 };
-export const VerifyIden3SolanaPaymentRequest = (
-  data: Iden3PaymentRailsSolanaRequestV1 | Iden3PaymentRailsSolanaSPLRequestV1
-): boolean => {
+export const verifyIden3SolanaPaymentRequest = async (
+  data: Iden3PaymentRailsSolanaRequestV1 | Iden3PaymentRailsSolanaSPLRequestV1,
+  resolver: Resolvable
+): Promise<boolean> => {
   const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
   let serialized: Uint8Array;
   if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
@@ -224,5 +226,23 @@ export const VerifyIden3SolanaPaymentRequest = (
     serialized = serialize(SolanaSplPaymentSchema, request);
   }
   const signer = proof.verificationMethod.split(':').slice(-1)[0];
-  return ed25519.verify(proof.proofValue, serialized, new PublicKey(signer).toBytes());
+
+  const proofValid = ed25519.verify(proof.proofValue, serialized, new PublicKey(signer).toBytes());
+  if (!proofValid) {
+    return false;
+  }
+  const { didDocument } = await resolver.resolve(proof.verificationMethod);
+  if (didDocument?.verificationMethod) {
+    for (const verificationMethod of didDocument.verificationMethod) {
+      if (
+        verificationMethod.blockchainAccountId?.split(':').slice(-1)[0].toLowerCase() ===
+        signer.toLowerCase()
+      ) {
+        return true;
+      }
+    }
+  } else {
+    throw new Error('failed request. issuer DIDDocument does not contain any verificationMethods');
+  }
+  return false;
 };

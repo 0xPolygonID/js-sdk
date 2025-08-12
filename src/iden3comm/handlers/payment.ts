@@ -10,8 +10,8 @@ import {
   SolanaNativePaymentSchema,
   SolanaSplPaymentRequest,
   SolanaSplPaymentSchema,
-  VerifyIden3SolanaPaymentRequest,
-  byteEncoder
+  byteEncoder,
+  verifyIden3SolanaPaymentRequest
 } from '../../utils';
 import {
   AbstractMessageHandler,
@@ -42,6 +42,9 @@ import {
   PaymentFeatures,
   PaymentRequestDataType,
   PaymentType,
+  SOLANA_DEVNET_CHAIN_REF,
+  SOLANA_MAINNET_CHAIN_REF,
+  SOLANA_TESTNET_CHAIN_REF,
   SupportedPaymentProofType
 } from '../../verifiable';
 import { Signer, ethers } from 'ethers';
@@ -581,6 +584,18 @@ export class PaymentHandler
             option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
               ? 'SolanaEd25519NativeV1'
               : 'SolanaEd25519SPLV1';
+          let chainRef = chainId;
+          switch (chainId) {
+            case '101':
+              chainRef = SOLANA_MAINNET_CHAIN_REF;
+              break;
+            case '102':
+              chainRef = SOLANA_TESTNET_CHAIN_REF;
+              break;
+            case '103':
+              chainRef = SOLANA_DEVNET_CHAIN_REF;
+              break;
+          }
           if (option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
             const request = new SolanaNativePaymentRequest({
               version: byteEncoder.encode(proofVersion),
@@ -620,7 +635,7 @@ export class PaymentHandler
               proofPurpose: 'assertionMethod',
               proofValue: Buffer.from(signature).toString('hex'),
               created: new Date().toISOString(),
-              verificationMethod: `did:pkh:solana:${chainId}:${createOptions.solSigner.publicKey.toBase58()}`,
+              verificationMethod: `did:pkh:solana:${chainRef}:${createOptions.solSigner.publicKey.toBase58()}`,
               domain: {
                 version: proofVersion,
                 chainId,
@@ -796,7 +811,7 @@ export class PaymentHandler
     if (data.expirationDate && new Date(data.expirationDate) < new Date()) {
       throw new Error(`failed request. expired request`);
     }
-    const isValid = VerifyIden3SolanaPaymentRequest(data);
+    const isValid = await verifyIden3SolanaPaymentRequest(data, this._params.documentResolver);
     if (!isValid) {
       throw new Error(`failed request. invalid Solana payment request signature`);
     }
@@ -824,7 +839,7 @@ export class PaymentHandler
     if (data.expirationDate && new Date(data.expirationDate) < new Date()) {
       throw new Error(`failed request. expired request`);
     }
-    const isValid = VerifyIden3SolanaPaymentRequest(data);
+    const isValid = await verifyIden3SolanaPaymentRequest(data, this._params.documentResolver);
     if (!isValid) {
       throw new Error(`failed request. invalid Solana payment request signature`);
     }
