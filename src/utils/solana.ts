@@ -155,14 +155,18 @@ export const SolanaPaymentInstructionSchema: Schema = new Map([
   ]
 ]);
 
-export const VerifyIden3SolanaPaymentRequest = (
+export const serializeSolanaPaymentInstruction = (
   data: Iden3PaymentRailsSolanaRequestV1 | Iden3PaymentRailsSolanaSPLRequestV1
-): boolean => {
-  const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
+): Uint8Array => {
   let serialized: Uint8Array;
+  const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
+  const proofVersion =
+    data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
+      ? 'SolanaEd25519NativeV1'
+      : 'SolanaEd25519SPLV1';
   if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
     const request = new SolanaNativePaymentRequest({
-      version: byteEncoder.encode(proof.type),
+      version: byteEncoder.encode(proofVersion),
       chainId: BigInt(proof.domain.chainId),
       verifyingContract: new PublicKey(proof.domain.verifyingContract).toBytes(),
       recipient: new PublicKey(data.recipient).toBytes(),
@@ -174,7 +178,7 @@ export const VerifyIden3SolanaPaymentRequest = (
     serialized = serialize(SolanaNativePaymentSchema, request);
   } else {
     const request = new SolanaSplPaymentRequest({
-      version: byteEncoder.encode(proof.type),
+      version: byteEncoder.encode(proofVersion),
       chainId: BigInt(proof.domain.chainId),
       verifyingContract: new PublicKey(proof.domain.verifyingContract).toBytes(),
       tokenAddress: new PublicKey(data.tokenAddress).toBytes(),
@@ -186,5 +190,39 @@ export const VerifyIden3SolanaPaymentRequest = (
     });
     serialized = serialize(SolanaSplPaymentSchema, request);
   }
-  return ed25519.verify(proof.proofValue, serialized, new PublicKey(proof.publicKey).toBytes());
+  return serialized;
+};
+export const VerifyIden3SolanaPaymentRequest = (
+  data: Iden3PaymentRailsSolanaRequestV1 | Iden3PaymentRailsSolanaSPLRequestV1
+): boolean => {
+  const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
+  let serialized: Uint8Array;
+  if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
+    const request = new SolanaNativePaymentRequest({
+      version: byteEncoder.encode(proof.domain.version),
+      chainId: BigInt(proof.domain.chainId),
+      verifyingContract: new PublicKey(proof.domain.verifyingContract).toBytes(),
+      recipient: new PublicKey(data.recipient).toBytes(),
+      amount: BigInt(data.amount),
+      expirationDate: BigInt(getUnixTimestamp(new Date(data.expirationDate))),
+      nonce: BigInt(data.nonce),
+      metadata: byteEncoder.encode('0x')
+    });
+    serialized = serialize(SolanaNativePaymentSchema, request);
+  } else {
+    const request = new SolanaSplPaymentRequest({
+      version: byteEncoder.encode(proof.domain.version),
+      chainId: BigInt(proof.domain.chainId),
+      verifyingContract: new PublicKey(proof.domain.verifyingContract).toBytes(),
+      tokenAddress: new PublicKey(data.tokenAddress).toBytes(),
+      recipient: new PublicKey(data.recipient).toBytes(),
+      amount: BigInt(data.amount),
+      expirationDate: BigInt(getUnixTimestamp(new Date(data.expirationDate))),
+      nonce: BigInt(data.nonce),
+      metadata: byteEncoder.encode('0x')
+    });
+    serialized = serialize(SolanaSplPaymentSchema, request);
+  }
+  const signer = proof.verificationMethod.split(':').slice(-1)[0];
+  return ed25519.verify(proof.proofValue, serialized, new PublicKey(signer).toBytes());
 };

@@ -109,16 +109,13 @@ export type EthereumEip712Signature2021 = {
 
 /** @beta Iden3SolanaEd25519SignatureV1 is struct the represents Ed25519 signature for Solana Payment Instruction */
 export type Iden3SolanaEd25519SignatureV1 = {
-  type:
-    | SupportedPaymentProofType.SolanaEd25519NativeV1
-    | SupportedPaymentProofType.SolanaEd25519SPLV1;
+  type: SupportedPaymentProofType.SolanaEd25519Signature2025;
   proofPurpose: string;
   proofValue: string;
-  message: string;
   created: string;
-  publicKey: string;
+  verificationMethod: string;
   domain: {
-    version: string;
+    version: 'SolanaEd25519NativeV1' | 'SolanaEd25519SPLV1';
     chainId: string;
     verifyingContract: string;
   };

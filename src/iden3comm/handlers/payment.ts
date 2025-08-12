@@ -577,13 +577,13 @@ export class PaymentHandler
           }
 
           let serialized: Uint8Array;
-          const proofType =
+          const proofVersion =
             option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
-              ? SupportedPaymentProofType.SolanaEd25519NativeV1
-              : SupportedPaymentProofType.SolanaEd25519SPLV1;
+              ? 'SolanaEd25519NativeV1'
+              : 'SolanaEd25519SPLV1';
           if (option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
             const request = new SolanaNativePaymentRequest({
-              version: byteEncoder.encode(proofType),
+              version: byteEncoder.encode(proofVersion),
               chainId: BigInt(chainId),
               verifyingContract: new PublicKey(paymentRails).toBytes(),
               recipient: new PublicKey(recipient).toBytes(),
@@ -600,7 +600,7 @@ export class PaymentHandler
               );
             }
             const request = new SolanaSplPaymentRequest({
-              version: byteEncoder.encode(proofType),
+              version: byteEncoder.encode(proofVersion),
               chainId: BigInt(chainId),
               verifyingContract: new PublicKey(paymentRails).toBytes(),
               tokenAddress: new PublicKey(option.contractAddress).toBytes(),
@@ -616,14 +616,13 @@ export class PaymentHandler
           const signature = await ed25519.sign(serialized, privateKey);
           const proof: Iden3SolanaEd25519SignatureV1[] = [
             {
-              type: proofType,
+              type: SupportedPaymentProofType.SolanaEd25519Signature2025,
               proofPurpose: 'assertionMethod',
               proofValue: Buffer.from(signature).toString('hex'),
-              message: Buffer.from(serialized).toString('hex'),
               created: new Date().toISOString(),
-              publicKey: createOptions.solSigner.publicKey.toBase58(),
+              verificationMethod: `did:pkh:solana:${chainId}:${createOptions.solSigner.publicKey.toBase58()}`,
               domain: {
-                version: proofType,
+                version: proofVersion,
                 chainId,
                 verifyingContract: paymentRails
               }
@@ -802,7 +801,8 @@ export class PaymentHandler
       throw new Error(`failed request. invalid Solana payment request signature`);
     }
     const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
-    if (this._params.allowedSigners && !this._params.allowedSigners.includes(proof.publicKey)) {
+    const signer = proof.verificationMethod.split(':').slice(-1)[0];
+    if (this._params.allowedSigners && !this._params.allowedSigners.includes(signer)) {
       throw new Error(`failed request. signer is not in the allowed signers list`);
     }
     const txId = await paymentHandler(data);
@@ -829,7 +829,8 @@ export class PaymentHandler
       throw new Error(`failed request. invalid Solana payment request signature`);
     }
     const proof = Array.isArray(data.proof) ? data.proof[0] : data.proof;
-    if (this._params.allowedSigners && !this._params.allowedSigners.includes(proof.publicKey)) {
+    const signer = proof.verificationMethod.split(':').slice(-1)[0];
+    if (this._params.allowedSigners && !this._params.allowedSigners.includes(signer)) {
       throw new Error(`failed request. signer is not in the allowed signers list`);
     }
     const txId = await paymentHandler(data);

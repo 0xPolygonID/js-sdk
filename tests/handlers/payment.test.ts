@@ -20,7 +20,8 @@ import {
   PaymentFeatures,
   getPermitSignature,
   SolanaPaymentInstruction,
-  SolanaPaymentInstructionSchema
+  SolanaPaymentInstructionSchema,
+  serializeSolanaPaymentInstruction
 } from '../../src';
 
 import {
@@ -443,7 +444,7 @@ describe('payment-request handler', () => {
       ) {
         const connection = new Connection(clusterApiUrl('devnet'));
         const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
-        const signer = new PublicKey(data.proof[0].publicKey);
+        const signer = new PublicKey(data.proof[0].verificationMethod.split(':').slice(-1)[0]);
         const payerPublicKey = payer.publicKey;
         console.log('Payer Public Key:', payerPublicKey.toBase58());
         const recipient = new PublicKey(data.recipient);
@@ -556,12 +557,11 @@ describe('payment-request handler', () => {
           keys.push(...splKeys);
         }
 
-        const pubkey = new PublicKey(data.proof[0].publicKey);
-        const message = Uint8Array.from(Buffer.from(data.proof[0].message, 'hex'));
+        const message = serializeSolanaPaymentInstruction(data);
         const edIx = Ed25519Program.createInstructionWithPublicKey({
           message,
           signature,
-          publicKey: pubkey.toBytes()
+          publicKey: signer.toBytes()
         });
 
         const ix = new TransactionInstruction({
@@ -1130,7 +1130,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 2n;
+    const nonce = 4n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1182,7 +1182,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPLV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 1002n;
+    const nonce = 1003n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
