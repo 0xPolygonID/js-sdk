@@ -225,24 +225,20 @@ export const verifyIden3SolanaPaymentRequest = async (
     });
     serialized = serialize(SolanaSplPaymentSchema, request);
   }
-  const signer = proof.verificationMethod.split(':').slice(-1)[0];
 
-  const proofValid = ed25519.verify(proof.proofValue, serialized, new PublicKey(signer).toBytes());
-  if (!proofValid) {
-    return false;
-  }
   const { didDocument } = await resolver.resolve(proof.verificationMethod);
+  let publicKeyMultibase;
   if (didDocument?.verificationMethod) {
     for (const verificationMethod of didDocument.verificationMethod) {
-      if (
-        verificationMethod.blockchainAccountId?.split(':').slice(-1)[0].toLowerCase() ===
-        signer.toLowerCase()
-      ) {
-        return true;
+      if (verificationMethod.type === 'Ed25519VerificationKey2020') {
+        publicKeyMultibase = verificationMethod.publicKeyMultibase;
       }
     }
-  } else {
-    throw new Error('failed request. issuer DIDDocument does not contain any verificationMethods');
   }
-  return false;
+
+  if (!publicKeyMultibase) {
+    throw new Error('No Ed25519VerificationKey2020 found in DID document');
+  }
+
+  return ed25519.verify(proof.proofValue, serialized, new PublicKey(publicKeyMultibase).toBytes());
 };

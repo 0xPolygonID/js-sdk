@@ -825,8 +825,7 @@ describe('payment-request handler', () => {
             type: 'Ed25519VerificationKey2020',
             controller:
               'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa',
-            blockchainAccountId:
-              'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa'
+            publicKeyMultibase: 'CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa'
           },
           {
             id: 'did:pkh:solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1:CTZbbbcSpZy4pxpFwhQGdf8u3hxPWKRh5ywRHuNzn2Aa#SolanaMethod2021',
@@ -1193,7 +1192,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 7n;
+    const nonce = 8n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
