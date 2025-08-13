@@ -1244,7 +1244,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPLV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 1005;
+    const nonce = 1005n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
