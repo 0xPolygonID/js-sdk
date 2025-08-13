@@ -1,13 +1,15 @@
 import { Schema, serialize } from 'borsh';
 import {
   Iden3PaymentRailsSolanaRequestV1,
-  Iden3PaymentRailsSolanaSPLRequestV1
+  Iden3PaymentRailsSolanaSPLRequestV1,
+  Iden3SolanaEd25519SignatureV1,
+  MultiChainPaymentConfigOption
 } from '../iden3comm';
 import { ed25519 } from '@noble/curves/ed25519';
-import { PaymentRequestDataType } from '../verifiable';
+import { PaymentRequestDataType, SOLANA_CHAIN_REF, SupportedPaymentProofType } from '../verifiable';
 import { byteEncoder } from './encoding';
 import { getUnixTimestamp } from '@iden3/js-iden3-core';
-import { PublicKey } from '@solana/web3.js';
+import { Keypair, PublicKey } from '@solana/web3.js';
 import { Resolvable } from 'did-resolver';
 
 export class SolanaNativePaymentRequest {
@@ -155,6 +157,116 @@ export const SolanaPaymentInstructionSchema: Schema = new Map([
     }
   ]
 ]);
+
+/**
+ * @beta
+ * buildSolanaPayment creates an Solana-based payment request and signs it using ed25519.
+ * @param {Keypair} solSigner - Keypair for signing the payment request
+ * @param {MultiChainPaymentConfigOption} option - payment option configuration
+ * @param {string} chainId - EVM chain ID
+ * @param {string} paymentRails - payment rails contract address
+ * @param {string} recipient - recipient address
+ * @param {bigint} amount - payment amount in smallest units
+ * @param {Date} expirationDateRequired - expiration date
+ * @param {bigint} nonce - unique nonce for the payment
+ * @returns {Promise<Iden3PaymentRailsSolanaRequestV1 | Iden3PaymentRailsSolanaSPLRequestV1>} payment request object
+ */
+export const buildSolanaPayment = async (
+  solSigner: Keypair,
+  option: MultiChainPaymentConfigOption,
+  chainId: string,
+  paymentRails: string,
+  recipient: string,
+  amount: bigint,
+  expirationDate: Date,
+  nonce: bigint
+): Promise<Iden3PaymentRailsSolanaRequestV1 | Iden3PaymentRailsSolanaSPLRequestV1> => {
+  let serialized: Uint8Array;
+  const proofVersion =
+    option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
+      ? 'SolanaEd25519NativeV1'
+      : 'SolanaEd25519SPLV1';
+  let chainRef = chainId;
+  switch (chainId) {
+    case '101':
+      chainRef = SOLANA_CHAIN_REF.DEVNET;
+      break;
+    case '102':
+      chainRef = SOLANA_CHAIN_REF.TESTNET;
+      break;
+    case '103':
+      chainRef = SOLANA_CHAIN_REF.MAINNETL;
+      break;
+  }
+  if (option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
+    const request = new SolanaNativePaymentRequest({
+      version: byteEncoder.encode(proofVersion),
+      chainId: BigInt(chainId),
+      verifyingContract: new PublicKey(paymentRails).toBytes(),
+      recipient: new PublicKey(recipient).toBytes(),
+      amount: BigInt(amount),
+      expirationDate: BigInt(getUnixTimestamp(expirationDate)),
+      nonce: nonce,
+      metadata: byteEncoder.encode('0x')
+    });
+    serialized = serialize(SolanaNativePaymentSchema, request);
+  } else {
+    if (!option.contractAddress) {
+      throw new Error(`failed request. no contract address for ${option.type} payment type`);
+    }
+    const request = new SolanaSplPaymentRequest({
+      version: byteEncoder.encode(proofVersion),
+      chainId: BigInt(chainId),
+      verifyingContract: new PublicKey(paymentRails).toBytes(),
+      tokenAddress: new PublicKey(option.contractAddress).toBytes(),
+      recipient: new PublicKey(recipient).toBytes(),
+      amount: BigInt(amount),
+      expirationDate: BigInt(getUnixTimestamp(expirationDate)),
+      nonce: nonce,
+      metadata: byteEncoder.encode('0x')
+    });
+    serialized = serialize(SolanaSplPaymentSchema, request);
+  }
+  const privateKey = solSigner.secretKey.slice(0, 32);
+  const signature = await ed25519.sign(serialized, privateKey);
+  const proof: Iden3SolanaEd25519SignatureV1[] = [
+    {
+      type: SupportedPaymentProofType.SolanaEd25519Signature2025,
+      proofPurpose: 'assertionMethod',
+      proofValue: Buffer.from(signature).toString('hex'),
+      created: new Date().toISOString(),
+      verificationMethod: `did:pkh:solana:${chainRef}:${solSigner.publicKey.toBase58()}`,
+      domain: {
+        version: proofVersion,
+        chainId,
+        verifyingContract: paymentRails
+      }
+    }
+  ];
+  const d: Iden3PaymentRailsSolanaRequestV1 = {
+    type: PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1,
+    '@context': [
+      `https://schema.iden3.io/core/jsonld/payment.jsonld#${option.type}`,
+      'https://schema.iden3.io/core/jsonld/solanaEd25519.jsonld'
+    ],
+    recipient,
+    amount: amount.toString(),
+    expirationDate: expirationDate.toISOString(),
+    nonce: nonce.toString(),
+    metadata: '0x',
+    proof
+  };
+  if (option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {
+    return d;
+  }
+
+  return {
+    ...d,
+    type: option.type,
+    tokenAddress: option.contractAddress || '',
+    features: option.features || []
+  } as Iden3PaymentRailsSolanaSPLRequestV1;
+};
 
 export const serializeSolanaPaymentInstruction = (
   data: Iden3PaymentRailsSolanaRequestV1 | Iden3PaymentRailsSolanaSPLRequestV1

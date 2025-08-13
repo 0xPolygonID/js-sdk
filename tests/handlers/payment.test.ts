@@ -39,7 +39,7 @@ import {
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
+import { BytesHelper, DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import {
   createPayment,
   createPaymentRequest,
@@ -75,7 +75,6 @@ import {
 import bs58 from 'bs58';
 import { deserialize, serialize } from 'borsh';
 import { sha256 } from '@iden3/js-crypto';
-import BN from 'bn.js';
 import {
   TOKEN_PROGRAM_ID,
   getMint,
@@ -475,7 +474,7 @@ describe('payment-request handler', () => {
           programId
         );
         const [paymentRecordPda] = await PublicKey.findProgramAddressSync(
-          [Buffer.from('payment'), signer.toBuffer(), new BN(nonce).toArrayLike(Buffer, 'le', 8)],
+          [Buffer.from('payment'), signer.toBuffer(), BytesHelper.intToNBytes(nonce, 8)],
           programId
         );
 
@@ -629,7 +628,7 @@ describe('payment-request handler', () => {
         [
           Buffer.from('payment'),
           signer.publicKey.toBuffer(),
-          new BN(data.nonce).toArrayLike(Buffer, 'le', 8)
+          BytesHelper.intToNBytes(BigInt(data.nonce), 8)
         ],
         new PublicKey(data.proof[0].domain.verifyingContract)
       );
@@ -1154,7 +1153,7 @@ describe('payment-request handler', () => {
           description: 'Iden3PaymentRailsRequestV1 payment-request integration test',
           options: [
             {
-              nonce: 1000416n,
+              nonce: 10033417n,
               amount: '1000000000000',
               chainId: '80002',
               optionId: 'amoy-native'
@@ -1177,7 +1176,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '1000416'
+      nonce: '10033417'
     });
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
@@ -1192,7 +1191,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsSolanaRequestV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 8n;
+    const nonce = 11n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1244,7 +1243,7 @@ describe('payment-request handler', () => {
   it.skip('payment-request handler (Iden3PaymentRailsRequestSolanaSPLV1, integration test)', async () => {
     const rpcProvider = new JsonRpcProvider(RPC_URL);
     const ethSigner = new ethers.Wallet(WALLET_KEY, rpcProvider);
-    const nonce = 1005n;
+    const nonce = 1007n;
     const paymentRequest = await paymentHandler.createPaymentRailsV1(
       issuerDID,
       userDID,
@@ -1312,7 +1311,7 @@ describe('payment-request handler', () => {
           description: 'Iden3PaymentRailsERC20RequestV1 payment-request integration test',
           options: [
             {
-              nonce: 220015n,
+              nonce: 22310015n,
               amount: '1',
               chainId: '80002',
               optionId: 'amoy-usdt'
@@ -1335,7 +1334,7 @@ describe('payment-request handler', () => {
     );
     const agentMessageBytes = await paymentHandler.handlePaymentRequest(msgBytesRequest, {
       paymentHandler: paymentIntegrationHandlerFunc('<session-id-hash>', '<issuer-did-hash>'),
-      nonce: '220015',
+      nonce: '22310015',
       erc20TokenApproveHandler: async (data: Iden3PaymentRailsERC20RequestV1) => {
         const token = new Contract(data.tokenAddress, erc20Abi, ethSigner);
         const txData = await token.approve(

@@ -230,19 +230,13 @@ export enum DisplayMethodType {
 export const DEFAULT_CACHE_MAX_SIZE = 10_000;
 
 /**
- * Solana Devnet chain reference
+ * Solana chain reference
  */
-// eslint-disable-next-line @cspell/spellchecker
-export const SOLANA_DEVNET_CHAIN_REF = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1';
-
-/**
- * Solana Mainnet chain reference
- */
-// eslint-disable-next-line @cspell/spellchecker
-export const SOLANA_MAINNET_CHAIN_REF = '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp';
-
-/**
- * Solana Testnet chain reference
- */
-// eslint-disable-next-line @cspell/spellchecker
-export const SOLANA_TESTNET_CHAIN_REF = '4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z';
+export const SOLANA_CHAIN_REF = Object.freeze({
+  // eslint-disable-next-line @cspell/spellchecker
+  DEVNET: 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
+  // eslint-disable-next-line @cspell/spellchecker
+  TESTNET: '4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z',
+  // eslint-disable-next-line @cspell/spellchecker
+  MAINNETL: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
+});

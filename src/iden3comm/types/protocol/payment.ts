@@ -193,16 +193,19 @@ export type MultiChainPaymentConfig = {
   chainId: string;
   paymentRails: string;
   recipient: string;
-  options: {
-    id: string;
-    type:
-      | PaymentRequestDataType.Iden3PaymentRailsRequestV1
-      | PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
-      | PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
-      | PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1;
-    contractAddress?: string;
-    features?: PaymentFeatures[];
-  }[];
+  options: MultiChainPaymentConfigOption[];
+};
+
+/** @beta MultiChainPaymentConfigOption is struct that represents payment options for different chains */
+export type MultiChainPaymentConfigOption = {
+  id: string;
+  type:
+    | PaymentRequestDataType.Iden3PaymentRailsRequestV1
+    | PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+    | PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
+    | PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1;
+  contractAddress?: string;
+  features?: PaymentFeatures[];
 };
 
 /**
