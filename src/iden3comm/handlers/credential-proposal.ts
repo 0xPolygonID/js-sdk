@@ -1,5 +1,6 @@
 import { PROTOCOL_MESSAGE_TYPE, MediaType } from '../constants';
 import {
+  Attachment,
   BasicMessage,
   CredentialOffer,
   CredentialsOfferMessage,
@@ -13,9 +14,9 @@ import * as uuid from 'uuid';
 import { proving } from '@iden3/js-jwz';
 import {
   Proposal,
-  ProposalRequestCredential,
   ProposalRequestMessage,
-  ProposalMessage
+  ProposalMessage,
+  ProposalRequestCredential
 } from '../types/protocol/proposal-request';
 import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
@@ -32,6 +33,7 @@ export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
   did_doc?: DIDDocument;
   expires_time?: Date;
+  attachments?: Attachment[];
 };
 
 /** @beta ProposalCreationOptions represents proposal creation options */
@@ -62,7 +64,8 @@ export function createProposalRequest(
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
     body: opts,
     created_time: getUnixTimestamp(new Date()),
-    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined,
+    attachments: opts.attachments
   };
   return request;
 }
@@ -153,7 +156,11 @@ export type ProposalHandlerOptions = BasicHandlerOptions & {
 /** @beta CredentialProposalHandlerParams represents credential proposal handler params */
 export type CredentialProposalHandlerParams = {
   agentUrl: string;
-  proposalResolverFn: (context: string, type: string) => Promise<Proposal>;
+  proposalResolverFn: (
+    context: string,
+    type: string,
+    opts?: { msg?: BasicMessage }
+  ) => Promise<Proposal>;
   packerParams: PackerParams;
 };
 
@@ -281,7 +288,9 @@ export class CredentialProposalHandler
       }
 
       // credential not found in the wallet, prepare proposal protocol message
-      const proposal = await this._params.proposalResolverFn(cred.context, cred.type);
+      const proposal = await this._params.proposalResolverFn(cred.context, cred.type, {
+        msg: proposalRequest
+      });
       if (!proposal) {
         throw new Error(`can't resolve Proposal for type: ${cred.type}, context: ${cred.context}`);
       }
