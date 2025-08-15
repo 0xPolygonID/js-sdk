@@ -45,6 +45,7 @@ export const STATE_CONTRACT = process.env.STATE_CONTRACT_ADDRESS as string;
 export const RPC_URL = process.env.RPC_URL as string;
 export const WALLET_KEY = process.env.WALLET_KEY as string;
 export const IPFS_URL = process.env.IPFS_URL as string;
+export const SOLANA_BASE_58_PK = process.env.SOLANA_BASE_58_PK as string;
 
 export const createIdentity = async (
   wallet: IIdentityWallet,

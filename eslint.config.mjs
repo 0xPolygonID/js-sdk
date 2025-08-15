@@ -44,7 +44,16 @@ export default [
               'didcomm',
               'pthid',
               'snarkjs',
-              'ffjavascript'
+              'ffjavascript',
+              'solana',
+              'lamports',
+              'blockhash',
+              'devnet',
+              'Keypair',
+              'SPLV',
+              'EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
+              '4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z',
+              '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
             ]
           }
         }
