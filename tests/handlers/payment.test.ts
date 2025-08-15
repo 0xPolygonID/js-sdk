@@ -62,26 +62,18 @@ import nock from 'nock';
 import {
   Connection,
   Keypair,
-  LAMPORTS_PER_SOL,
   PublicKey,
   SYSVAR_INSTRUCTIONS_PUBKEY,
   SystemProgram,
   Transaction,
   TransactionInstruction,
   clusterApiUrl,
-  sendAndConfirmTransaction,
   Ed25519Program
 } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { deserialize, serialize } from 'borsh';
 import { sha256 } from '@iden3/js-crypto';
-import {
-  TOKEN_PROGRAM_ID,
-  getMint,
-  getOrCreateAssociatedTokenAccount,
-  mintTo,
-  transfer
-} from '@solana/spl-token';
+import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
 
 describe('payment-request handler', () => {
   afterEach(() => {
@@ -339,15 +331,6 @@ describe('payment-request handler', () => {
     }
   ];
 
-  class InitializeInstruction {
-    constructor(fields: { owner_percentage: number; fee_collector: Uint8Array }) {
-      this.owner_percentage = fields.owner_percentage;
-      this.fee_collector = fields.fee_collector;
-    }
-    owner_percentage: number;
-    fee_collector: Uint8Array;
-  }
-
   class PaymentRecord {
     is_paid: boolean;
 
@@ -444,8 +427,6 @@ describe('payment-request handler', () => {
         const connection = new Connection(clusterApiUrl('devnet'));
         const payer = Keypair.fromSecretKey(bs58.decode(SOLANA_BASE_58_PK));
         const signer = new PublicKey(data.proof[0].verificationMethod.split(':').slice(-1)[0]);
-        const payerPublicKey = payer.publicKey;
-        console.log('Payer Public Key:', payerPublicKey.toBase58());
         const recipient = new PublicKey(data.recipient);
         const programId = new PublicKey(data.proof[0].domain.verifyingContract);
 
@@ -487,9 +468,6 @@ describe('payment-request handler', () => {
           [Buffer.from('treasury')],
           programId
         );
-        const balance = await connection.getBalance(treasuryPda);
-        const solBalance = balance / LAMPORTS_PER_SOL;
-        console.log(`Treasury balance: ${solBalance} SOL on address ${treasuryPda.toBase58()}`);
         const [noncePda] = await PublicKey.findProgramAddressSync(
           [Buffer.from('nonce'), payer.publicKey.toBuffer()],
           programId
@@ -514,16 +492,12 @@ describe('payment-request handler', () => {
         if (data.type === PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1) {
           const tokenMint = new PublicKey(data.tokenAddress);
 
-          const mintInfo = await getMint(connection, tokenMint);
-          console.log('Mint decimals:', mintInfo.decimals);
-
           const senderTokenAccount = await getOrCreateAssociatedTokenAccount(
             connection,
             payer,
             tokenMint,
             payer.publicKey
           );
-          console.log(`Sender Token Account: ${senderTokenAccount.address.toBase58()}`);
           // create if not exists
           const recipientTokenAccount = await getOrCreateAssociatedTokenAccount(
             connection,
@@ -531,7 +505,6 @@ describe('payment-request handler', () => {
             tokenMint,
             recipient
           );
-          console.log(`Recipient Token Account: ${recipientTokenAccount.address.toBase58()}`);
           // create treasury token account if not exists
           const treasuryTokenAccount = await getOrCreateAssociatedTokenAccount(
             connection,
@@ -540,8 +513,6 @@ describe('payment-request handler', () => {
             treasuryPda,
             true
           );
-          console.log(`Treasury Token Account: ${treasuryTokenAccount.address.toBase58()}`);
-
           const splKeys = [
             { pubkey: senderTokenAccount.address, isSigner: false, isWritable: true },
             { pubkey: recipientTokenAccount.address, isSigner: false, isWritable: true },
@@ -575,7 +546,6 @@ describe('payment-request handler', () => {
         tx.sign(payer);
         const rawTx = tx.serialize();
         const sig = await connection.sendRawTransaction(rawTx);
-        console.log('Transaction sent:', sig);
         return sig;
       } else {
         throw new Error('invalid payment request data type');

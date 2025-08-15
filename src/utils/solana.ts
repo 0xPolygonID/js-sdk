@@ -195,7 +195,7 @@ export const buildSolanaPayment = async (
       chainRef = SOLANA_CHAIN_REF.TESTNET;
       break;
     case '103':
-      chainRef = SOLANA_CHAIN_REF.MAINNETL;
+      chainRef = SOLANA_CHAIN_REF.MAINNET;
       break;
   }
   if (option.type === PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1) {

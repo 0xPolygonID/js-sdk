@@ -233,10 +233,7 @@ export const DEFAULT_CACHE_MAX_SIZE = 10_000;
  * Solana chain reference
  */
 export const SOLANA_CHAIN_REF = Object.freeze({
-  // eslint-disable-next-line @cspell/spellchecker
   DEVNET: 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
-  // eslint-disable-next-line @cspell/spellchecker
   TESTNET: '4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z',
-  // eslint-disable-next-line @cspell/spellchecker
-  MAINNETL: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
+  MAINNET: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
 });
