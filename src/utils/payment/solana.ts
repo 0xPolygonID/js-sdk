@@ -4,10 +4,14 @@ import {
   Iden3PaymentRailsSolanaSPLRequestV1,
   Iden3SolanaEd25519SignatureV1,
   MultiChainPaymentConfigOption
-} from '../iden3comm';
+} from '../../iden3comm';
 import { ed25519 } from '@noble/curves/ed25519';
-import { PaymentRequestDataType, SOLANA_CHAIN_REF, SupportedPaymentProofType } from '../verifiable';
-import { byteEncoder } from './encoding';
+import {
+  PaymentRequestDataType,
+  SOLANA_CHAIN_REF,
+  SupportedPaymentProofType
+} from '../../verifiable';
+import { byteEncoder } from '../encoding';
 import { getUnixTimestamp } from '@iden3/js-iden3-core';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { Resolvable } from 'did-resolver';

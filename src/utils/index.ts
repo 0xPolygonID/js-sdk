@@ -3,4 +3,5 @@ export * from './object';
 export * from './did-helper';
 export * from './message-bus';
 export * from './compare-func';
-export * from './solana';
+export * from './payment/solana';
+export * from './payment/evm';
