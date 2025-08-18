@@ -34,7 +34,7 @@ import { Signer } from 'ethers';
 import { Resolvable } from 'did-resolver';
 import { verifyExpiresTime } from './common';
 import { Keypair } from '@solana/web3.js';
-import { buildEvmPayment, verifyEIP712TypedData } from '../../utils/payment/evm';
+import { buildEvmPayment, verifyEIP712TypedData } from '../../utils/payments/evm';
 
 /** @beta PaymentRequestCreationOptions represents payment-request creation options */
 export type PaymentRequestCreationOptions = {
