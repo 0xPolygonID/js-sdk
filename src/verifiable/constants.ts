@@ -164,7 +164,9 @@ export enum RefreshServiceType {
 export enum PaymentRequestDataType {
   Iden3PaymentRequestCryptoV1 = 'Iden3PaymentRequestCryptoV1',
   Iden3PaymentRailsRequestV1 = 'Iden3PaymentRailsRequestV1',
-  Iden3PaymentRailsERC20RequestV1 = 'Iden3PaymentRailsERC20RequestV1'
+  Iden3PaymentRailsERC20RequestV1 = 'Iden3PaymentRailsERC20RequestV1',
+  Iden3PaymentRailsSolanaRequestV1 = 'Iden3PaymentRailsSolanaRequestV1',
+  Iden3PaymentRailsSolanaSPLRequestV1 = 'Iden3PaymentRailsSolanaSPLRequestV1'
 }
 
 /**
@@ -175,7 +177,9 @@ export enum PaymentRequestDataType {
 export enum PaymentType {
   Iden3PaymentCryptoV1 = 'Iden3PaymentCryptoV1',
   Iden3PaymentRailsV1 = 'Iden3PaymentRailsV1',
-  Iden3PaymentRailsERC20V1 = 'Iden3PaymentRailsERC20V1'
+  Iden3PaymentRailsERC20V1 = 'Iden3PaymentRailsERC20V1',
+  Iden3PaymentRailsSolanaV1 = 'Iden3PaymentRailsSolanaV1',
+  Iden3PaymentRailsSolanaSPLV1 = 'Iden3PaymentRailsSolanaSPLV1'
 }
 
 /**
@@ -184,7 +188,8 @@ export enum PaymentType {
  * @enum {string}
  */
 export enum SupportedPaymentProofType {
-  EthereumEip712Signature2021 = 'EthereumEip712Signature2021'
+  EthereumEip712Signature2021 = 'EthereumEip712Signature2021',
+  SolanaEd25519Signature2025 = 'SolanaEd25519Signature2025'
 }
 
 /**
@@ -223,3 +228,12 @@ export enum DisplayMethodType {
  * Default cache max size for in-memory cache
  */
 export const DEFAULT_CACHE_MAX_SIZE = 10_000;
+
+/**
+ * Solana chain reference
+ */
+export const SOLANA_CHAIN_REF = Object.freeze({
+  DEVNET: 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1',
+  TESTNET: '4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z',
+  MAINNET: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
+});
