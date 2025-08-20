@@ -62,7 +62,10 @@ export function createProposalRequest(
     to: receiver.string(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
-    body: opts,
+    body: {
+      credentials: opts.credentials,
+      did_doc: opts.did_doc
+    },
     created_time: getUnixTimestamp(new Date()),
     expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined,
     attachments: opts.attachments
