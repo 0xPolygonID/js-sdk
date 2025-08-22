@@ -14,11 +14,11 @@ import {
   Attachment
 } from '../types';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
-import { proving } from '@iden3/js-jwz';
+import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
-import { byteDecoder, byteEncoder } from '../../utils';
+import { byteDecoder, byteEncoder, decodeBase64url } from '../../utils';
 import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
 import { CircuitId } from '../../circuits';
 import {
@@ -263,11 +263,7 @@ export class AuthHandler
     }
 
     const responseType = PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
-    const mediaType = this.getSupportedMediaTypeByProfile(
-      ctx,
-      responseType,
-      authRequest.body.accept
-    );
+    const mediaType = this.getSupportedMediaTypeByProfile(ctx, authRequest.body.accept);
     const from = DID.parse(authRequest.from);
 
     const responseScope = await processZeroKnowledgeProofRequests(
@@ -329,7 +325,7 @@ export class AuthHandler
       opts.mediaType === MediaType.SignedMessage
         ? opts.packerOptions
         : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+            provingMethodAlg: this.geJWZDefaultProvingMethodAlg(request)
           };
 
     const token = byteDecoder.decode(
@@ -490,7 +486,6 @@ export class AuthHandler
 
   private getSupportedMediaTypeByProfile(
     ctx: AuthReqOptions,
-    responseType: string,
     profile?: string[] | undefined
   ): MediaType {
     let mediaType: MediaType;
@@ -516,5 +511,36 @@ export class AuthHandler
       mediaType = ctx.mediaType;
     }
     return mediaType;
+  }
+
+  private geJWZDefaultProvingMethodAlg(request: Uint8Array): ProvingMethodAlg {
+    try {
+      const token = byteDecoder.decode(request);
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid token format');
+      }
+      if (!parts.every((p: string) => /^[A-Za-z0-9_-]+$/.test(p))) {
+        throw new Error('Invalid token format: parts should be base64url encoded');
+      }
+
+      const header = JSON.parse(decodeBase64url(parts[0]));
+      if (!header.circuitId) {
+        throw new Error('Circuit ID is not present in the token header');
+      }
+
+      switch (header.circuitId) {
+        case CircuitId.AuthV2:
+          return proving.provingMethodGroth16AuthV2Instance.methodAlg;
+        case CircuitId.AuthV3:
+          return proving.provingMethodGroth16AuthV3Instance.methodAlg;
+        case CircuitId.AuthV3_8_32:
+          return proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg;
+        default:
+          throw new Error(`Unsupported circuit ID: ${header.circuitId}`);
+      }
+    } catch (e) {
+      return proving.provingMethodGroth16AuthV2Instance.methodAlg;
+    }
   }
 }

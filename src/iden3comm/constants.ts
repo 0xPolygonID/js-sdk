@@ -96,7 +96,8 @@ export enum ProtocolVersion {
 
 export enum AcceptAuthCircuits {
   AuthV2 = 'authV2',
-  AuthV3 = 'authV3'
+  AuthV3 = 'authV3',
+  AuthV3_8_32 = 'authV3-8-32'
 }
 
 export enum AcceptJwzAlgorithms {

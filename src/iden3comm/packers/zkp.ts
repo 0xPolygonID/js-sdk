@@ -88,7 +88,11 @@ export class VerificationHandlerFunc {
 export class ZKPPacker implements IPacker {
   private readonly supportedProtocolVersions = [ProtocolVersion.V1];
   private readonly supportedAlgorithms = [AcceptJwzAlgorithms.Groth16];
-  private readonly supportedCircuitIds = [AcceptAuthCircuits.AuthV2];
+  private readonly supportedCircuitIds = [
+    AcceptAuthCircuits.AuthV2,
+    AcceptAuthCircuits.AuthV3,
+    AcceptAuthCircuits.AuthV3_8_32
+  ];
 
   /**
    * Creates an instance of ZKPPacker.
