@@ -102,6 +102,8 @@ export const circuitValidator: {
   [CircuitId.AtomicQueryV3]: { maxQueriesCount: 1, supportedOperations: allOperations },
   [CircuitId.AtomicQueryV3OnChain]: { maxQueriesCount: 1, supportedOperations: allOperations },
   [CircuitId.AuthV2]: { maxQueriesCount: 0, supportedOperations: [] },
+  [CircuitId.AuthV3]: { maxQueriesCount: 0, supportedOperations: [] },
+  [CircuitId.AuthV3_8_32]: { maxQueriesCount: 0, supportedOperations: [] },
   [CircuitId.StateTransition]: { maxQueriesCount: 0, supportedOperations: [] },
   [CircuitId.LinkedMultiQuery10]: { maxQueriesCount: 10, supportedOperations: allOperations }
 };
