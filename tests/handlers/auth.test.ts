@@ -1619,7 +1619,7 @@ describe('auth', () => {
     expect(token).to.be.a('object');
   });
 
-  it('auth response: TestVerifyV3MessageWithMtpProof_Merklized_exists (AuthV3)', async () => {
+  it('auth response: TestVerifyV3MessageWithMtpProof_Merklized_exists (AuthV3 from preferred handler option)', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = RPC_URL;
     stateEthConfig.contractAddress = STATE_CONTRACT;
@@ -1749,7 +1749,10 @@ describe('auth', () => {
       senderDID: issuerDID,
       provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3')
     });
-    const authRes = await authHandler.handleAuthorizationRequest(userDID, jwzRequest);
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, jwzRequest, {
+      mediaType: MediaType.ZKPMessage,
+      preferredAuthProvingMethod: new ProvingMethodAlg('groth16', 'authV3')
+    });
 
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
@@ -1820,7 +1823,7 @@ describe('auth', () => {
     */
   });
 
-  it('auth response: TestVerifyV3MessageWithSigProof_Linked_SD&LT (AuthV3-8-32)', async () => {
+  it('auth response: TestVerifyV3MessageWithSigProof_Linked_SD&LT (AuthV3-8-32 from accept)', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = RPC_URL;
     stateEthConfig.contractAddress = STATE_CONTRACT;
@@ -1952,7 +1955,14 @@ describe('auth', () => {
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
-      scope: [proofReq, proofReq2, proofReq3]
+      scope: [proofReq, proofReq2, proofReq3],
+      accept: buildAccept([
+        {
+          protocolVersion: ProtocolVersion.V1,
+          env: MediaType.ZKPMessage,
+          circuits: [AcceptAuthCircuits.AuthV3_8_32]
+        }
+      ])
     };
 
     const id = uuid.v4();

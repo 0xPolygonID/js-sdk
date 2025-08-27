@@ -18,7 +18,7 @@ import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
-import { byteDecoder, byteEncoder, decodeBase64url } from '../../utils';
+import { byteDecoder, byteEncoder } from '../../utils';
 import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
 import { CircuitId } from '../../circuits';
 import {
@@ -26,7 +26,11 @@ import {
   BasicHandlerOptions,
   IProtocolMessageHandler
 } from './message-handler';
-import { parseAcceptProfile } from '../utils';
+import {
+  acceptHasProvingMethodAlg,
+  buildAcceptFromProvingMethodAlg,
+  parseAcceptProfile
+} from '../utils';
 
 /**
  * Options to pass to createAuthorizationRequest function
@@ -183,6 +187,7 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
+  preferredAuthProvingMethod?: ProvingMethodAlg;
 };
 
 /**
@@ -325,7 +330,10 @@ export class AuthHandler
       opts.mediaType === MediaType.SignedMessage
         ? opts.packerOptions
         : {
-            provingMethodAlg: this.geJWZDefaultProvingMethodAlg(request)
+            provingMethodAlg: this.getDefaultProvingMethodAlg(
+              opts.preferredAuthProvingMethod,
+              authRequest.body.accept
+            )
           };
 
     const token = byteDecoder.decode(
@@ -513,34 +521,41 @@ export class AuthHandler
     return mediaType;
   }
 
-  private geJWZDefaultProvingMethodAlg(request: Uint8Array): ProvingMethodAlg {
-    try {
-      const token = byteDecoder.decode(request);
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        throw new Error('Invalid token format');
-      }
-      if (!parts.every((p: string) => /^[A-Za-z0-9_-]+$/.test(p))) {
-        throw new Error('Invalid token format: parts should be base64url encoded');
-      }
-
-      const header = JSON.parse(decodeBase64url(parts[0]));
-      if (!header.circuitId) {
-        throw new Error('Circuit ID is not present in the token header');
-      }
-
-      switch (header.circuitId) {
-        case CircuitId.AuthV2:
-          return proving.provingMethodGroth16AuthV2Instance.methodAlg;
-        case CircuitId.AuthV3:
-          return proving.provingMethodGroth16AuthV3Instance.methodAlg;
-        case CircuitId.AuthV3_8_32:
-          return proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg;
-        default:
-          throw new Error(`Unsupported circuit ID: ${header.circuitId}`);
-      }
-    } catch (e) {
-      return proving.provingMethodGroth16AuthV2Instance.methodAlg;
+  private getDefaultProvingMethodAlg(
+    preferredAuthProvingMethod?: ProvingMethodAlg,
+    accept?: string[]
+  ): ProvingMethodAlg {
+    if (
+      preferredAuthProvingMethod &&
+      this._packerMgr.isProfileSupported(
+        MediaType.ZKPMessage,
+        buildAcceptFromProvingMethodAlg(preferredAuthProvingMethod)
+      )
+    ) {
+      return preferredAuthProvingMethod;
     }
+    if (accept?.length) {
+      const authV3_8_32 = proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg;
+      if (
+        acceptHasProvingMethodAlg(accept, authV3_8_32) &&
+        this._packerMgr.isProfileSupported(
+          MediaType.ZKPMessage,
+          buildAcceptFromProvingMethodAlg(authV3_8_32)
+        )
+      ) {
+        return authV3_8_32;
+      }
+      const authV3 = proving.provingMethodGroth16AuthV3Instance.methodAlg;
+      if (
+        acceptHasProvingMethodAlg(accept, authV3) &&
+        this._packerMgr.isProfileSupported(
+          MediaType.ZKPMessage,
+          buildAcceptFromProvingMethodAlg(authV3)
+        )
+      ) {
+        return authV3;
+      }
+    }
+    return proving.provingMethodGroth16AuthV2Instance.methodAlg;
   }
 }

@@ -88,12 +88,7 @@ export class VerificationHandlerFunc {
 export class ZKPPacker implements IPacker {
   private readonly supportedProtocolVersions = [ProtocolVersion.V1];
   private readonly supportedAlgorithms = [AcceptJwzAlgorithms.Groth16];
-  private readonly supportedCircuitIds = [
-    AcceptAuthCircuits.AuthV2,
-    AcceptAuthCircuits.AuthV3,
-    AcceptAuthCircuits.AuthV3_8_32
-  ];
-
+  private readonly supportedCircuitIds: string[];
   /**
    * Creates an instance of ZKPPacker.
    * @param {Map<string, ProvingParams>} provingParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
@@ -105,7 +100,11 @@ export class ZKPPacker implements IPacker {
     private readonly _opts: StateVerificationOpts = {
       acceptedStateTransitionDelay: DEFAULT_AUTH_VERIFY_DELAY
     }
-  ) {}
+  ) {
+    this.supportedCircuitIds = Array.from(this.provingParamsMap.keys()).map(
+      (alg) => alg.split(':')[1]
+    );
+  }
 
   /**
    * Packs a basic message using the specified parameters.
