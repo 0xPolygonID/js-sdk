@@ -16,6 +16,7 @@ import {
 } from '../../src/iden3comm/handlers/discovery-protocol';
 import { DIDResolutionResult } from 'did-resolver';
 import { PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
+import { initZKPPacker } from '../iden3comm/mock/proving';
 
 describe('discovery-protocol', () => {
   let acceptQueryMessage: DiscoverFeatureQueriesMessage;
@@ -28,7 +29,7 @@ describe('discovery-protocol', () => {
       resolve: () => Promise.resolve({ didDocument: {} } as DIDResolutionResult)
     });
 
-    zkpPacker = new ZKPPacker(new Map(), new Map());
+    zkpPacker = await initZKPPacker({ alg: 'groth16' });
     plainPacker = new PlainPacker();
     acceptQueryMessage = createDiscoveryFeatureQueryMessage([
       { [DiscoverFeatureQueryType.FeatureType]: DiscoveryProtocolFeatureType.Accept }
