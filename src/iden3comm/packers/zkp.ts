@@ -9,7 +9,7 @@ import {
   ZKPPackerParams
 } from '../types';
 import { Token, Header, ProvingMethodAlg, proving } from '@iden3/js-jwz';
-import { AuthV2PubSignals, CircuitId } from '../../circuits/index';
+import { AuthV2PubSignals, AuthV3PubSignals, CircuitId } from '../../circuits/index';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
 import { bytesToProtocolMessage } from '../utils/envelope';
 import {
@@ -219,13 +219,15 @@ export class ZKPPacker implements IPacker {
 const verifySender = async (token: Token, msg: BasicMessage): Promise<void> => {
   switch (token.circuitId) {
     case CircuitId.AuthV2:
+    case CircuitId.AuthV3_8_32:
+    case CircuitId.AuthV3:
       {
         if (!msg.from) {
           throw new Error(ErrSenderNotUsedTokenCreation);
         }
-        const authSignals = new AuthV2PubSignals().pubSignalsUnmarshal(
-          byteEncoder.encode(JSON.stringify(token.zkProof.pub_signals))
-        );
+        const authSignals = (
+          token.circuitId === CircuitId.AuthV2 ? new AuthV2PubSignals() : new AuthV3PubSignals()
+        ).pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(token.zkProof.pub_signals)));
         const did = DID.parseFromId(authSignals.userID);
 
         const msgHash = await token.getMessageHash();
