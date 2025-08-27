@@ -20,7 +20,7 @@ import {
   ErrStateVerificationFailed,
   ErrUnknownCircuitID
 } from '../errors';
-import { AcceptAuthCircuits, AcceptJwzAlgorithms, MediaType, ProtocolVersion } from '../constants';
+import { AcceptJwzAlgorithms, MediaType, ProtocolVersion } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { DEFAULT_AUTH_VERIFY_DELAY } from '../constants';
 import { parseAcceptProfile } from '../utils';

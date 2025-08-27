@@ -78,7 +78,6 @@ import {
   ProtocolVersion
 } from '../../src/iden3comm/constants';
 import { schemaLoaderForTests } from '../mocks/schema';
-import { send } from 'process';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
