@@ -363,7 +363,7 @@ export class PaymentHandler
 
     const agentResult = await fetch(paymentRequest.body.agent, {
       method: 'POST',
-      body: response,
+      body: Buffer.from(response),
       headers: {
         'Content-Type':
           this._params.packerParams.mediaType === MediaType.PlainMessage

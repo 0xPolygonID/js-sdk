@@ -77,7 +77,7 @@ export class NativeProver implements IZKProver {
       throw new Error(`wasm file doesn't exist for circuit ${circuitId}`);
     }
 
-    const witnessCalculator = await witnessBuilder(circuitData.wasm);
+    const witnessCalculator = await witnessBuilder(Buffer.from(circuitData.wasm));
 
     const parsedData = JSON.parse(byteDecoder.decode(inputs));
 
