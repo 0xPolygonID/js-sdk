@@ -120,7 +120,7 @@ export class RefreshHandler implements IRefreshHandler {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: jwzToken
+      body: Buffer.from(jwzToken)
     });
 
     if (resp.status !== 200) {
