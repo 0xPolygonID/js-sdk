@@ -11,7 +11,7 @@ import {
   SOLANA_CHAIN_REF,
   SupportedPaymentProofType
 } from '../../verifiable';
-import { byteEncoder } from '../encoding';
+import { byteEncoder, bytesToHex } from '../encoding';
 import { getUnixTimestamp } from '@iden3/js-iden3-core';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { Resolvable } from 'did-resolver';
@@ -237,7 +237,7 @@ export const buildSolanaPayment = async (
     {
       type: SupportedPaymentProofType.SolanaEd25519Signature2025,
       proofPurpose: 'assertionMethod',
-      proofValue: Buffer.from(signature).toString('hex'),
+      proofValue: bytesToHex(signature),
       created: new Date().toISOString(),
       verificationMethod: `did:pkh:solana:${chainRef}:${solSigner.publicKey.toBase58()}`,
       domain: {

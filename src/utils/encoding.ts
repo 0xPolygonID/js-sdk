@@ -45,3 +45,9 @@ export function decodeBase64url(s: string, opts = { loose: true }): string {
 export function bytesToHex(b: Uint8Array): string {
   return Hex.encodeString(b);
 }
+
+export function toArrayBuffer(u8: Uint8Array): ArrayBuffer {
+  const ab = new ArrayBuffer(u8.byteLength);
+  new Uint8Array(ab).set(u8);
+  return ab;
+}

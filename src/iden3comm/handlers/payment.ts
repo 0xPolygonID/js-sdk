@@ -5,7 +5,12 @@ import { BasicMessage, IPackageManager, PackerParams } from '../types';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
 import { proving } from '@iden3/js-jwz';
-import { buildSolanaPayment, byteEncoder, verifyIden3SolanaPaymentRequest } from '../../utils';
+import {
+  buildSolanaPayment,
+  byteEncoder,
+  toArrayBuffer,
+  verifyIden3SolanaPaymentRequest
+} from '../../utils';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
@@ -363,7 +368,7 @@ export class PaymentHandler
 
     const agentResult = await fetch(paymentRequest.body.agent, {
       method: 'POST',
-      body: Buffer.from(response),
+      body: toArrayBuffer(response),
       headers: {
         'Content-Type':
           this._params.packerParams.mediaType === MediaType.PlainMessage

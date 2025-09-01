@@ -530,7 +530,8 @@ export class AuthHandler
       this._packerMgr.isProfileSupported(
         MediaType.ZKPMessage,
         buildAcceptFromProvingMethodAlg(preferredAuthProvingMethod)
-      )
+      ) &&
+      (!accept?.length || acceptHasProvingMethodAlg(accept, preferredAuthProvingMethod))
     ) {
       return preferredAuthProvingMethod;
     }
