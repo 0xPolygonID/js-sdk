@@ -101,9 +101,14 @@ export class ZKPPacker implements IPacker {
       acceptedStateTransitionDelay: DEFAULT_AUTH_VERIFY_DELAY
     }
   ) {
-    this.supportedCircuitIds = Array.from(this.provingParamsMap.keys()).map(
+    const supportedProvers = Array.from(this.provingParamsMap.keys()).map(
       (alg) => alg.split(':')[1]
     );
+
+    const supportedVerifiers = Array.from(this.verificationParamsMap.keys()).map(
+      (alg) => alg.split(':')[1]
+    );
+    this.supportedCircuitIds = [...new Set([...supportedProvers, ...supportedVerifiers])];
   }
 
   /**
