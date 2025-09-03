@@ -4,12 +4,14 @@ import { BasicMessage, IPackageManager, PackerParams } from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
-import { proving } from '@iden3/js-jwz';
+import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { buildSolanaPayment, byteEncoder, verifyIden3SolanaPaymentRequest } from '../../utils';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
-  IProtocolMessageHandler
+  IProtocolMessageHandler,
+  defaultProvingMethodAlg,
+  getProvingMethodAlgFromJWZ
 } from './message-handler';
 import {
   Iden3PaymentCryptoV1,
@@ -259,6 +261,7 @@ export class PaymentHandler
       case PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE:
         return await this.handlePaymentRequestMessage(
           message as PaymentRequestMessage,
+          context?.requestProvingMethodAlg || defaultProvingMethodAlg,
           context as PaymentRequestMessageHandlerOptions
         );
       case PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE:
@@ -283,6 +286,7 @@ export class PaymentHandler
 
   private async handlePaymentRequestMessage(
     paymentRequest: PaymentRequestMessage,
+    provingMethodAlg: ProvingMethodAlg,
     ctx: PaymentRequestMessageHandlerOptions
   ): Promise<BasicMessage | null> {
     if (!paymentRequest.to) {
@@ -359,7 +363,7 @@ export class PaymentHandler
     }
 
     const paymentMessage = createPayment(senderDID, receiverDID, payments);
-    const response = await this.packMessage(paymentMessage, senderDID);
+    const response = await this.packMessage(paymentMessage, senderDID, provingMethodAlg);
 
     const agentResult = await fetch(paymentRequest.body.agent, {
       method: 'POST',
@@ -394,6 +398,8 @@ export class PaymentHandler
       throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
     }
 
+    const provingMethodAlg = getProvingMethodAlgFromJWZ(request);
+
     const paymentRequest = await this.parsePaymentRequest(request);
     if (!paymentRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
@@ -405,13 +411,17 @@ export class PaymentHandler
     if (!opts?.allowExpiredMessages) {
       verifyExpiresTime(paymentRequest);
     }
-    const agentMessage = await this.handlePaymentRequestMessage(paymentRequest, opts);
+    const agentMessage = await this.handlePaymentRequestMessage(
+      paymentRequest,
+      provingMethodAlg,
+      opts
+    );
     if (!agentMessage) {
       return null;
     }
 
     const senderDID = DID.parse(paymentRequest.to);
-    return this.packMessage(agentMessage, senderDID);
+    return this.packMessage(agentMessage, senderDID, provingMethodAlg);
   }
 
   /**
@@ -547,13 +557,17 @@ export class PaymentHandler
     return createPaymentRequest(sender, receiver, agent, paymentRequestInfo);
   }
 
-  private async packMessage(message: BasicMessage, senderDID: DID): Promise<Uint8Array> {
+  private async packMessage(
+    message: BasicMessage,
+    senderDID: DID,
+    provingMethodAlg = defaultProvingMethodAlg
+  ): Promise<Uint8Array> {
     const responseEncoded = byteEncoder.encode(JSON.stringify(message));
     const packerOpts =
       this._params.packerParams.mediaType === MediaType.SignedMessage
         ? this._params.packerParams.packerOptions
         : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+            provingMethodAlg
           };
     return await this._packerMgr.pack(this._params.packerParams.mediaType, responseEncoded, {
       senderDID,

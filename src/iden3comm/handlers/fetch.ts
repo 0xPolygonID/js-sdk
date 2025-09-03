@@ -16,13 +16,14 @@ import { W3CCredential } from '../../verifiable';
 import { ICredentialWallet, getUserDIDFromCredential } from '../../credentials';
 
 import { byteDecoder, byteEncoder } from '../../utils';
-import { proving } from '@iden3/js-jwz';
+import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
-  IProtocolMessageHandler
+  IProtocolMessageHandler,
+  defaultProvingMethodAlg
 } from './message-handler';
 import { verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
@@ -198,6 +199,7 @@ export class FetchHandler
       mediaType?: MediaType;
       headers?: HeadersInit;
       packerOptions?: JWSPackerParams;
+      provingMethodAlg?: ProvingMethodAlg;
     }
   ): Promise<W3CCredential[] | BasicMessage> {
     if (!ctx.mediaType) {
@@ -226,7 +228,7 @@ export class FetchHandler
         ctx.mediaType === MediaType.SignedMessage
           ? ctx.packerOptions
           : {
-              provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+              provingMethodAlg: ctx?.provingMethodAlg || defaultProvingMethodAlg
             };
 
       const senderDID = DID.parse(offerMessage.to);
@@ -300,7 +302,8 @@ export class FetchHandler
     const result = await this.handleOfferMessage(offerMessage, {
       mediaType: opts?.mediaType,
       headers: opts?.headers,
-      packerOptions: opts?.packerOptions
+      packerOptions: opts?.packerOptions,
+      provingMethodAlg: opts?.requestProvingMethodAlg
     });
 
     if (Array.isArray(result)) {

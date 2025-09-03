@@ -24,7 +24,8 @@ import { CircuitId } from '../../circuits';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
-  IProtocolMessageHandler
+  IProtocolMessageHandler,
+  defaultProvingMethodAlg
 } from './message-handler';
 import {
   acceptHasProvingMethodAlg,
@@ -176,7 +177,7 @@ type AuthRespOptions = {
   acceptedProofGenerationDelay?: number;
 };
 
-export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
+export type AuthMessageHandlerOptions = BasicHandlerOptions & (AuthReqOptions | AuthRespOptions);
 /**
  *
  * Options to pass to auth handler
@@ -557,6 +558,6 @@ export class AuthHandler
         return authV3;
       }
     }
-    return proving.provingMethodGroth16AuthV2Instance.methodAlg;
+    return defaultProvingMethodAlg;
   }
 }

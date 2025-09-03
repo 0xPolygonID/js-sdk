@@ -11,7 +11,6 @@ import {
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
-import { proving } from '@iden3/js-jwz';
 import {
   Proposal,
   ProposalRequestMessage,
@@ -24,7 +23,8 @@ import { W3CCredential } from '../../verifiable';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
-  IProtocolMessageHandler
+  IProtocolMessageHandler,
+  getProvingMethodAlgFromJWZ
 } from './message-handler';
 import { verifyExpiresTime } from './common';
 
@@ -348,7 +348,7 @@ export class CredentialProposalHandler
       this._params.packerParams.mediaType === MediaType.SignedMessage
         ? this._params.packerParams.packerOptions
         : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+            provingMethodAlg: getProvingMethodAlgFromJWZ(request)
           };
 
     return this._packerMgr.pack(this._params.packerParams.mediaType, response, {

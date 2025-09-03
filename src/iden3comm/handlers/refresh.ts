@@ -10,11 +10,11 @@ import {
 
 import { RefreshServiceType, W3CCredential } from '../../verifiable';
 import { byteEncoder } from '../../utils';
-import { proving, ProvingMethodAlg } from '@iden3/js-jwz';
+import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { ICredentialWallet } from '../../credentials';
-import { CircuitId } from '../../circuits';
 import * as uuid from 'uuid';
+import { defaultProvingMethodAlg } from './message-handler';
 
 /**
  * RefreshHandlerOptions contains options for RefreshHandler
@@ -35,6 +35,7 @@ export interface RefreshHandlerOptions {
  */
 export interface RefreshOptions {
   reason?: string;
+  provingMethodAlg?: ProvingMethodAlg;
 }
 
 /**
@@ -90,10 +91,7 @@ export class RefreshHandler implements IRefreshHandler {
 
     const zkpParams: ZKPPackerParams = {
       senderDID,
-      provingMethodAlg: new ProvingMethodAlg(
-        proving.provingMethodGroth16AuthV2Instance.methodAlg.alg,
-        CircuitId.AuthV2
-      )
+      provingMethodAlg: opts?.provingMethodAlg ?? defaultProvingMethodAlg
     };
 
     const refreshMsg: CredentialRefreshMessage = {

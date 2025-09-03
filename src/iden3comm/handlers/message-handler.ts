@@ -4,15 +4,23 @@ import { RevocationStatusMessageHandlerOptions } from './revocation-status';
 import { ContractMessageHandlerOptions } from './contract-request';
 import { PaymentHandlerOptions, PaymentRequestMessageHandlerOptions } from './payment';
 import { MediaType } from '../constants';
-import { proving } from '@iden3/js-jwz';
+import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { verifyExpiresTime } from './common';
+import { byteDecoder, decodeBase64url } from '../../utils';
+import { CircuitId } from '../../circuits';
+
+/**
+ * Default proving method algorithm for ZKP messages
+ */
+export const defaultProvingMethodAlg = proving.provingMethodGroth16AuthV2Instance.methodAlg;
 
 /**
  * iden3 Basic protocol message handler options
  */
 export type BasicHandlerOptions = {
   allowExpiredMessages?: boolean;
+  requestProvingMethodAlg?: ProvingMethodAlg;
 };
 
 /**
@@ -144,6 +152,10 @@ export class MessageHandler {
       return Promise.reject(new Error('Message handler not provided'));
     }
 
+    if (unpackedMediaType === MediaType.ZKPMessage) {
+      context.requestProvingMethodAlg = getProvingMethodAlgFromJWZ(bytes);
+    }
+
     const response = await this.messageHandler.handle(message, context);
 
     if (!response) {
@@ -155,11 +167,47 @@ export class MessageHandler {
     if (unpackedMediaType === MediaType.ZKPMessage && senderDid) {
       packerParams = {
         senderDID: senderDid,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+        provingMethodAlg: getProvingMethodAlgFromJWZ(bytes)
       };
       return this._params.packageManager.packMessage(unpackedMediaType, response, packerParams);
     }
 
     return this._params.packageManager.packMessage(MediaType.PlainMessage, response, packerParams);
+  }
+}
+
+/**
+ * Get proving method algorithm from JWZ bytes
+ * @param bytes - JWZ bytes
+ * @returns Proving method algorithm
+ **/
+export function getProvingMethodAlgFromJWZ(bytes: Uint8Array): ProvingMethodAlg {
+  try {
+    const token = byteDecoder.decode(bytes);
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new Error('Invalid token format');
+    }
+    if (!parts.every((p: string) => /^[A-Za-z0-9_-]+$/.test(p))) {
+      throw new Error('Invalid token format: parts should be base64url encoded');
+    }
+
+    const header = JSON.parse(decodeBase64url(parts[0]));
+    if (!header.circuitId) {
+      throw new Error('Circuit ID is not present in the token header');
+    }
+
+    switch (header.circuitId) {
+      case CircuitId.AuthV2:
+        return proving.provingMethodGroth16AuthV2Instance.methodAlg;
+      case CircuitId.AuthV3:
+        return proving.provingMethodGroth16AuthV3Instance.methodAlg;
+      case CircuitId.AuthV3_8_32:
+        return proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg;
+      default:
+        throw new Error(`Unsupported circuit ID: ${header.circuitId}`);
+    }
+  } catch (e) {
+    return defaultProvingMethodAlg;
   }
 }
