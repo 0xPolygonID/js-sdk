@@ -7,8 +7,7 @@ import { MediaType } from '../constants';
 import { ProvingMethodAlg, Token, proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { verifyExpiresTime } from './common';
-import { byteDecoder, decodeBase64url } from '../../utils';
-import { CircuitId } from '../../circuits';
+import { byteDecoder } from '../../utils';
 
 /**
  * Default proving method algorithm for ZKP messages
