@@ -212,7 +212,7 @@ export class RevocationStatusHandler
       opts.mediaType === MediaType.SignedMessage
         ? opts.packerOptions
         : {
-            provingMethodAlg: getProvingMethodAlgFromJWZ(request)
+            provingMethodAlg: await getProvingMethodAlgFromJWZ(request)
           };
 
     if (!rsRequest.to) {

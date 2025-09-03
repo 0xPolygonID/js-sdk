@@ -398,7 +398,7 @@ export class PaymentHandler
       throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
     }
 
-    const provingMethodAlg = getProvingMethodAlgFromJWZ(request);
+    const provingMethodAlg = await getProvingMethodAlgFromJWZ(request);
 
     const paymentRequest = await this.parsePaymentRequest(request);
     if (!paymentRequest.from) {

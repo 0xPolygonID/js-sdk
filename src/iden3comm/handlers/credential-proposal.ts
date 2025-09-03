@@ -348,7 +348,7 @@ export class CredentialProposalHandler
       this._params.packerParams.mediaType === MediaType.SignedMessage
         ? this._params.packerParams.packerOptions
         : {
-            provingMethodAlg: getProvingMethodAlgFromJWZ(request)
+            provingMethodAlg: await getProvingMethodAlgFromJWZ(request)
           };
 
     return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
