@@ -9,7 +9,7 @@ import {
 } from '../types';
 
 import { RefreshServiceType, W3CCredential } from '../../verifiable';
-import { byteEncoder, toArrayBuffer } from '../../utils';
+import { byteEncoder } from '../../utils';
 import { proving, ProvingMethodAlg } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { ICredentialWallet } from '../../credentials';
@@ -120,7 +120,7 @@ export class RefreshHandler implements IRefreshHandler {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: toArrayBuffer(jwzToken)
+      body: jwzToken.buffer as ArrayBuffer
     });
 
     if (resp.status !== 200) {

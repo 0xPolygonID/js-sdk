@@ -4,7 +4,7 @@ import * as snarkjs from 'snarkjs';
 import * as ffjavascript from 'ffjavascript';
 import { ICircuitStorage } from '../../storage';
 import { CircuitId } from '../../circuits';
-import { byteDecoder, toArrayBuffer } from '../../utils';
+import { byteDecoder } from '../../utils';
 
 /**
  * ZKProver is responsible for proof generation and verification
@@ -77,7 +77,7 @@ export class NativeProver implements IZKProver {
       throw new Error(`wasm file doesn't exist for circuit ${circuitId}`);
     }
 
-    const witnessCalculator = await witnessBuilder(toArrayBuffer(circuitData.wasm));
+    const witnessCalculator = await witnessBuilder(circuitData.wasm.buffer as ArrayBuffer);
 
     const parsedData = JSON.parse(byteDecoder.decode(inputs));
 

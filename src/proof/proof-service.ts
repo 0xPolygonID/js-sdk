@@ -8,6 +8,7 @@ import {
   AuthV2Inputs,
   AuthV2PubSignals,
   AuthV3Inputs,
+  AuthV3PubSignals,
   CircuitId,
   Operators,
   Query,
@@ -666,7 +667,7 @@ export class ProofService implements IProofService {
       gistRoot = authV2PubSignals.GISTRoot.bigInt();
       userId = authV2PubSignals.userID.bigInt();
     } else {
-      const authV3PubSignals = new AuthV2PubSignals().pubSignalsUnmarshal(
+      const authV3PubSignals = new AuthV3PubSignals().pubSignalsUnmarshal(
         byteEncoder.encode(JSON.stringify(pubSignals))
       );
       gistRoot = authV3PubSignals.GISTRoot.bigInt();
