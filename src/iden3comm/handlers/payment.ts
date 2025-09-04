@@ -422,6 +422,9 @@ export class PaymentHandler
     if (!opts?.mediaType) {
       opts.mediaType = this._params.packerParams.mediaType || MediaType.ZKPMessage;
     }
+    if (!opts.packerOptions) {
+      opts.packerOptions = this._params.packerParams.packerOptions;
+    }
     if (!opts?.packerOptions && opts.mediaType === MediaType.SignedMessage) {
       throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
     }
