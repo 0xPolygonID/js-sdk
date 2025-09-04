@@ -261,7 +261,7 @@ export class PaymentHandler
       case PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE:
         return await this.handlePaymentRequestMessage(
           message as PaymentRequestMessage,
-          context?.requestProvingMethodAlg || defaultProvingMethodAlg,
+          context?.messageProvingMethodAlg || defaultProvingMethodAlg,
           context as PaymentRequestMessageHandlerOptions
         );
       case PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE:

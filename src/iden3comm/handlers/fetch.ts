@@ -303,7 +303,7 @@ export class FetchHandler
       mediaType: opts?.mediaType,
       headers: opts?.headers,
       packerOptions: opts?.packerOptions,
-      provingMethodAlg: opts?.requestProvingMethodAlg
+      provingMethodAlg: opts?.messageProvingMethodAlg
     });
 
     if (Array.isArray(result)) {

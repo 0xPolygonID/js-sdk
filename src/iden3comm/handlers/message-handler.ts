@@ -19,7 +19,7 @@ export const defaultProvingMethodAlg = proving.provingMethodGroth16AuthV2Instanc
  */
 export type BasicHandlerOptions = {
   allowExpiredMessages?: boolean;
-  requestProvingMethodAlg?: ProvingMethodAlg;
+  messageProvingMethodAlg?: ProvingMethodAlg;
 };
 
 /**
@@ -152,7 +152,7 @@ export class MessageHandler {
     }
 
     if (unpackedMediaType === MediaType.ZKPMessage) {
-      context.requestProvingMethodAlg = await getProvingMethodAlgFromJWZ(bytes);
+      context.messageProvingMethodAlg = await getProvingMethodAlgFromJWZ(bytes);
     }
 
     const response = await this.messageHandler.handle(message, context);
