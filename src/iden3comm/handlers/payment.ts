@@ -368,7 +368,7 @@ export class PaymentHandler
     }
 
     const paymentMessage = createPayment(senderDID, receiverDID, payments);
-    const mediaType = ctx?.mediaType || MediaType.ZKPMessage;
+    const mediaType = ctx?.mediaType || this._params.packerParams.mediaType || MediaType.ZKPMessage;
     const packerParams = ctx?.packerOptions || this._params.packerParams;
     if (mediaType === MediaType.ZKPMessage && !packerParams?.provingMethodAlg) {
       packerParams.provingMethodAlg = ctx.messageProvingMethodAlg;
@@ -420,7 +420,7 @@ export class PaymentHandler
       verifyExpiresTime(paymentRequest);
     }
     if (!opts?.mediaType) {
-      opts.mediaType = MediaType.ZKPMessage;
+      opts.mediaType = this._params.packerParams.mediaType || MediaType.ZKPMessage;
     }
     if (!opts?.packerOptions && opts.mediaType === MediaType.SignedMessage) {
       throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
@@ -437,7 +437,12 @@ export class PaymentHandler
     if (!agentMessage) {
       return null;
     }
-    return this.packMessage(agentMessage, senderDID, opts.mediaType, opts.packerOptions);
+    return this.packMessage(
+      agentMessage,
+      senderDID,
+      opts.mediaType || MediaType.ZKPMessage,
+      opts.packerOptions
+    );
   }
 
   /**
