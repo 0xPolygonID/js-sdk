@@ -6,7 +6,8 @@ import {
   CredentialsOfferMessage,
   DIDDocument,
   IPackageManager,
-  PackerParams
+  JWSPackerParams,
+  ZKPPackerParams
 } from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
@@ -164,7 +165,7 @@ export type CredentialProposalHandlerParams = {
     type: string,
     opts?: { msg?: BasicMessage }
   ) => Promise<Proposal>;
-  packerParams: PackerParams;
+  packerParams: JWSPackerParams | ZKPPackerParams;
 };
 
 /**
@@ -348,7 +349,9 @@ export class CredentialProposalHandler
       this._params.packerParams.mediaType === MediaType.SignedMessage
         ? this._params.packerParams.packerOptions
         : {
-            provingMethodAlg: await getProvingMethodAlgFromJWZ(request)
+            provingMethodAlg:
+              this._params.packerParams.provingMethodAlg ||
+              (await getProvingMethodAlgFromJWZ(request))
           };
 
     return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
