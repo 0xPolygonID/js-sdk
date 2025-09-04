@@ -5,7 +5,8 @@ import {
   IPackageManager,
   JWSPackerParams,
   RevocationStatusRequestMessage,
-  RevocationStatusResponseMessage
+  RevocationStatusResponseMessage,
+  ZKPPackerParams
 } from '../types';
 
 import { DID } from '@iden3/js-iden3-core';
@@ -32,7 +33,7 @@ import { verifyExpiresTime } from './common';
 export type RevocationStatusMessageHandlerOptions = BasicHandlerOptions & {
   senderDid: DID;
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams;
   treeState?: TreeState;
 };
 
@@ -66,7 +67,7 @@ export interface IRevocationStatusHandler {
 /** RevocationStatusHandlerOptions represents revocation status handler options */
 export type RevocationStatusHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams;
   treeState?: TreeState;
 };
 
@@ -212,7 +213,8 @@ export class RevocationStatusHandler
       opts.mediaType === MediaType.SignedMessage
         ? opts.packerOptions
         : {
-            provingMethodAlg: await getProvingMethodAlgFromJWZ(request)
+            provingMethodAlg:
+              opts.packerOptions?.provingMethodAlg || (await getProvingMethodAlgFromJWZ(request))
           };
 
     if (!rsRequest.to) {

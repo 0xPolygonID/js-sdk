@@ -1,10 +1,15 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
-import { BasicMessage, IPackageManager, PackerParams } from '../types';
+import {
+  BasicMessage,
+  IPackageManager,
+  JWSPackerParams,
+  PackerParams,
+  ZKPPackerParams
+} from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
-import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { buildSolanaPayment, byteEncoder, verifyIden3SolanaPaymentRequest } from '../../utils';
 import {
   AbstractMessageHandler,
@@ -209,6 +214,8 @@ export type PaymentRequestMessageHandlerOptions = BasicHandlerOptions & {
   */
   nonce: string;
   erc20TokenApproveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>;
+  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  mediaType?: MediaType;
 };
 
 /** @beta PaymentHandlerOptions represents payment handler options */
@@ -261,7 +268,6 @@ export class PaymentHandler
       case PROTOCOL_MESSAGE_TYPE.PAYMENT_REQUEST_MESSAGE_TYPE:
         return await this.handlePaymentRequestMessage(
           message as PaymentRequestMessage,
-          context?.messageProvingMethodAlg || defaultProvingMethodAlg,
           context as PaymentRequestMessageHandlerOptions
         );
       case PROTOCOL_MESSAGE_TYPE.PAYMENT_MESSAGE_TYPE:
@@ -286,7 +292,6 @@ export class PaymentHandler
 
   private async handlePaymentRequestMessage(
     paymentRequest: PaymentRequestMessage,
-    provingMethodAlg: ProvingMethodAlg,
     ctx: PaymentRequestMessageHandlerOptions
   ): Promise<BasicMessage | null> {
     if (!paymentRequest.to) {
@@ -363,7 +368,12 @@ export class PaymentHandler
     }
 
     const paymentMessage = createPayment(senderDID, receiverDID, payments);
-    const response = await this.packMessage(paymentMessage, senderDID, provingMethodAlg);
+    const mediaType = ctx?.mediaType || MediaType.ZKPMessage;
+    const packerParams = ctx?.packerOptions || this._params.packerParams;
+    if (mediaType === MediaType.ZKPMessage && !packerParams?.provingMethodAlg) {
+      packerParams.provingMethodAlg = ctx.messageProvingMethodAlg;
+    }
+    const response = await this.packMessage(paymentMessage, senderDID, mediaType, packerParams);
 
     const agentResult = await fetch(paymentRequest.body.agent, {
       method: 'POST',
@@ -398,8 +408,6 @@ export class PaymentHandler
       throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
     }
 
-    const provingMethodAlg = await getProvingMethodAlgFromJWZ(request);
-
     const paymentRequest = await this.parsePaymentRequest(request);
     if (!paymentRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
@@ -411,17 +419,25 @@ export class PaymentHandler
     if (!opts?.allowExpiredMessages) {
       verifyExpiresTime(paymentRequest);
     }
-    const agentMessage = await this.handlePaymentRequestMessage(
-      paymentRequest,
-      provingMethodAlg,
-      opts
-    );
-    if (!agentMessage) {
-      return null;
+    if (!opts?.mediaType) {
+      opts.mediaType = MediaType.ZKPMessage;
+    }
+    if (!opts?.packerOptions && opts.mediaType === MediaType.SignedMessage) {
+      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
     }
 
     const senderDID = DID.parse(paymentRequest.to);
-    return this.packMessage(agentMessage, senderDID, provingMethodAlg);
+    if (opts.mediaType === MediaType.ZKPMessage && !opts.packerOptions?.provingMethodAlg) {
+      opts.packerOptions = {
+        provingMethodAlg: await getProvingMethodAlgFromJWZ(request),
+        senderDID
+      };
+    }
+    const agentMessage = await this.handlePaymentRequestMessage(paymentRequest, opts);
+    if (!agentMessage) {
+      return null;
+    }
+    return this.packMessage(agentMessage, senderDID, opts.mediaType, opts.packerOptions);
   }
 
   /**
@@ -560,16 +576,17 @@ export class PaymentHandler
   private async packMessage(
     message: BasicMessage,
     senderDID: DID,
-    provingMethodAlg = defaultProvingMethodAlg
+    mediaType: MediaType,
+    packerParams?: PackerParams
   ): Promise<Uint8Array> {
     const responseEncoded = byteEncoder.encode(JSON.stringify(message));
     const packerOpts =
-      this._params.packerParams.mediaType === MediaType.SignedMessage
-        ? this._params.packerParams.packerOptions
+      mediaType === MediaType.SignedMessage
+        ? packerParams
         : {
-            provingMethodAlg
+            provingMethodAlg: packerParams?.provingMethodAlg || defaultProvingMethodAlg
           };
-    return await this._packerMgr.pack(this._params.packerParams.mediaType, responseEncoded, {
+    return await this._packerMgr.pack(mediaType, responseEncoded, {
       senderDID,
       ...packerOpts
     });
