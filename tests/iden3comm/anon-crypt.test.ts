@@ -97,7 +97,7 @@ describe('AnonCrypt packer tests', () => {
         } as DIDResolutionResult)
     });
 
-    // 1. mobile encrypts the message with user his public key. Public key is
+    // 1. mobile encrypts the message with user's public key. Public key is
 
     const messageToEncrypt = {
       id: crypto.randomUUID(),
