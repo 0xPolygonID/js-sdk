@@ -36,6 +36,15 @@ export class Ed25519Provider implements IKeyProvider {
   }
 
   /**
+   * get private key store
+   *
+   * @returns private key store
+   */
+  async getPkStore(): Promise<AbstractPrivateKeyStore> {
+    return this._keyStore;
+  }
+
+  /**
    * generates a ed25519 key from a seed phrase
    * @param {Uint8Array} seed - byte array seed
    * @returns {Promise<KmsKeyId>} kms key identifier

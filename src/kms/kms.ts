@@ -1,4 +1,4 @@
-import { KmsKeyId, KmsKeyType } from './store';
+import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from './store';
 
 /**
  * KeyProvider is responsible for signing and creation of the keys
@@ -59,6 +59,13 @@ export interface IKeyProvider {
    * @returns A promise that resolves to a boolean indicating whether the signature is valid.
    */
   verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean>;
+
+  /**
+   * get private key store
+   *
+   * @returns private key store
+   */
+  getPkStore(): Promise<AbstractPrivateKeyStore>;
 }
 /**
  * Key management system class contains different key providers.
@@ -169,5 +176,15 @@ export class KMS {
     }
 
     return keyProvider.list();
+  }
+
+  /**
+   * get key provider by key type
+   *
+   * @param keyType - Key type
+   * @returns key provider
+   */
+  getKeyProvider(keyType: KmsKeyType): IKeyProvider | undefined {
+    return this._registry.get(keyType);
   }
 }

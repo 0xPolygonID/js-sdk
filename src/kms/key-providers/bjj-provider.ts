@@ -31,6 +31,15 @@ export class BjjProvider implements IKeyProvider {
     this.keyType = keyType;
     this.keyStore = keyStore;
   }
+
+  /**
+   * get private key store
+   *
+   * @returns private key store
+   */
+  async getPkStore(): Promise<AbstractPrivateKeyStore> {
+    return this.keyStore;
+  }
   /**
    * get all keys
    * @returns list of keys

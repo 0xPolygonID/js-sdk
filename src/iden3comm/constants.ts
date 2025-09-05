@@ -57,7 +57,16 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   DISCOVERY_PROTOCOL_DISCLOSE_MESSAGE_TYPE:
     `${DIDCOMM_PROTOCOL}discover-features/2.0/disclose` as const,
   // ProblemReportMessageType is type for didcomm problem report
-  PROBLEM_REPORT_MESSAGE_TYPE: `${DIDCOMM_PROTOCOL}report-problem/2.0/problem-report` as const
+  PROBLEM_REPORT_MESSAGE_TYPE: `${DIDCOMM_PROTOCOL}report-problem/2.0/problem-report` as const,
+  // VerificationRequestMessageType is type for verification request message
+  VERIFICATION_REQUEST_MESSAGE_TYPE: `${IDEN3_PROTOCOL}passport/0.1/verification-request` as const,
+  // VerificationResponseMessageType is type for verification response message
+  VERIFICATION_RESPONSE_MESSAGE_TYPE:
+    `${IDEN3_PROTOCOL}passport/0.1/verification-response` as const,
+  // AttestationRequestMessageType is type for attestation request message
+  ATTESTATION_REQUEST_MESSAGE_TYPE: `${IDEN3_PROTOCOL}passport/0.1/attestation/request` as const,
+  // AttestationResponseMessageType is type for attestation response message
+  ATTESTATION_RESPONSE_MESSAGE_TYPE: `${IDEN3_PROTOCOL}passport/0.1/attestation/response` as const
 });
 
 /**
@@ -68,7 +77,8 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
 export enum MediaType {
   ZKPMessage = 'application/iden3-zkp-json',
   PlainMessage = 'application/iden3comm-plain-json',
-  SignedMessage = 'application/iden3comm-signed-json'
+  SignedMessage = 'application/iden3comm-signed-json',
+  EncryptedMessage = 'application/iden3comm-encrypted-json'
 }
 
 export const SUPPORTED_PUBLIC_KEY_TYPES = {
@@ -106,6 +116,16 @@ export enum AcceptJwzAlgorithms {
 export enum AcceptJwsAlgorithms {
   ES256K = 'ES256K',
   ES256KR = 'ES256K-R'
+}
+
+export enum AcceptJweAlgorithms {
+  ECDH_ES_A256KW = 'ECDH-ES+A256KW',
+  RSA_OAEP_256 = 'RSA-OAEP-256'
+}
+
+export enum JweEncryption {
+  A256GCM = 'A256GCM',
+  A256CBC_HS512 = 'A256CBC-HS512'
 }
 
 export const defaultAcceptProfile: AcceptProfile = {
