@@ -640,7 +640,7 @@ export class ProofService implements IProofService {
   ): Promise<ZKProof> {
     const authInputs = await this.generateAuthV3Inputs(challenge, did, circuitId);
 
-    const zkProof = await this._prover.generate(authInputs, CircuitId.AuthV2);
+    const zkProof = await this._prover.generate(authInputs, circuitId);
     return zkProof;
   }
 
