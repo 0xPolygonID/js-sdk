@@ -12,9 +12,11 @@ export class InMemoryPrivateKeyStore implements AbstractPrivateKeyStore {
   constructor() {
     this._data = new Map<string, string>();
   }
+
   list(): Promise<{ alias: string; key: string }[]> {
     return Promise.resolve(Array.from(this._data).map(([alias, key]) => ({ alias, key })));
   }
+
   async get(args: { alias: string }): Promise<string> {
     const privateKey = this._data.get(args.alias);
     if (!privateKey) {

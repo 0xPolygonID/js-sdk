@@ -108,6 +108,15 @@ export class Sec256k1Provider implements IKeyProvider {
   }
 
   /**
+   * get private key store
+   *
+   * @returns private key store
+   */
+  async getPkStore(): Promise<AbstractPrivateKeyStore> {
+    return this._keyStore;
+  }
+
+  /**
    * Verifies a signature for the given message and key identifier.
    * @param message - The message to verify the signature against.
    * @param signatureHex - The signature to verify, as a hexadecimal string.

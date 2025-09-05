@@ -3,7 +3,8 @@ import {
   ProtocolVersion,
   AcceptAuthCircuits,
   AcceptJwzAlgorithms,
-  AcceptJwsAlgorithms
+  AcceptJwsAlgorithms,
+  AcceptJweAlgorithms
 } from '../constants';
 import { AcceptProfile } from '../types';
 
@@ -25,6 +26,10 @@ function isAcceptJwsAlgorithms(value: string): boolean {
 
 function isAcceptJwzAlgorithms(value: string): boolean {
   return Object.values(AcceptJwzAlgorithms).includes(value as AcceptJwzAlgorithms);
+}
+
+function isAcceptJweAlgorithms(value: string): boolean {
+  return Object.values(AcceptJweAlgorithms).includes(value as AcceptJweAlgorithms);
 }
 
 export const buildAccept = (profiles: AcceptProfile[]): string[] => {
@@ -83,33 +88,50 @@ export const parseAcceptProfile = (profile: string): AcceptProfile => {
   }
 
   const algIndex = params.findIndex((i: string) => i.includes('alg='));
-  let alg: AcceptJwsAlgorithms[] | AcceptJwzAlgorithms[] | undefined = undefined;
-  if (algIndex > 0) {
-    if (env === MediaType.ZKPMessage) {
-      alg = params[algIndex]
-        .split('=')[1]
-        .split(',')
-        .map((i) => {
-          i = i.trim();
-          if (!isAcceptJwzAlgorithms(i)) {
-            throw new Error(`Algorithm '${i}' not supported for '${env}'`);
-          }
-          return i as AcceptJwzAlgorithms;
-        });
-    } else if (env === MediaType.SignedMessage) {
-      alg = params[algIndex]
-        .split('=')[1]
-        .split(',')
-        .map((i) => {
-          i = i.trim();
-          if (!isAcceptJwsAlgorithms(i)) {
-            throw new Error(`Algorithm '${i}' not supported for '${env}'`);
-          }
-          return i as AcceptJwsAlgorithms;
-        });
-    } else {
-      throw new Error(`Algorithm not supported for '${env}'`);
-    }
+
+  if (algIndex === -1) {
+    return {
+      protocolVersion,
+      env,
+      circuits,
+      alg: undefined
+    };
+  }
+
+  const algValues = params[algIndex]
+    .split('=')[1]
+    .split(',')
+    .map((i) => i.trim());
+
+  let alg: AcceptJwsAlgorithms[] | AcceptJwzAlgorithms[] | AcceptJweAlgorithms[] = [];
+
+  switch (env) {
+    case MediaType.ZKPMessage:
+      alg = algValues.map((i) => {
+        if (!isAcceptJwzAlgorithms(i)) {
+          throw new Error(`Algorithm '${i}' not supported for '${env}'`);
+        }
+        return i as AcceptJwzAlgorithms;
+      });
+      break;
+    case MediaType.SignedMessage:
+      alg = algValues.map((i) => {
+        if (!isAcceptJwsAlgorithms(i)) {
+          throw new Error(`Algorithm '${i}' not supported for '${env}'`);
+        }
+        return i as AcceptJwsAlgorithms;
+      });
+      break;
+    case MediaType.EncryptedMessage:
+      alg = algValues.map((i) => {
+        if (!isAcceptJweAlgorithms(i)) {
+          throw new Error(`Algorithm '${i}' not supported for '${env}'`);
+        }
+        return i as AcceptJweAlgorithms;
+      });
+      break;
+    default:
+      throw new Error(`Algorithms not supported for '${env}'`);
   }
 
   return {
