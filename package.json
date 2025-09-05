@@ -44,7 +44,7 @@
   "devDependencies": {
     "@cspell/eslint-plugin": "^8.19.4",
     "@iden3/eslint-config": "https://github.com/iden3/eslint-config",
-    "@solana/spl-token": "^0.1.8",
+    "@solana/spl-token": "^0.4.13",
     "@typechain/ethers-v6": "^0.5.1",
     "@types/jsonld": "^1.5.15",
     "@types/node": "^24.0.4",
