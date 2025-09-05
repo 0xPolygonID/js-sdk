@@ -4,15 +4,22 @@ import { RevocationStatusMessageHandlerOptions } from './revocation-status';
 import { ContractMessageHandlerOptions } from './contract-request';
 import { PaymentHandlerOptions, PaymentRequestMessageHandlerOptions } from './payment';
 import { MediaType } from '../constants';
-import { proving } from '@iden3/js-jwz';
+import { ProvingMethodAlg, Token, proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { verifyExpiresTime } from './common';
+import { byteDecoder } from '../../utils';
+
+/**
+ * Default proving method algorithm for ZKP messages
+ */
+export const defaultProvingMethodAlg = proving.provingMethodGroth16AuthV2Instance.methodAlg;
 
 /**
  * iden3 Basic protocol message handler options
  */
 export type BasicHandlerOptions = {
   allowExpiredMessages?: boolean;
+  messageProvingMethodAlg?: ProvingMethodAlg;
 };
 
 /**
@@ -144,6 +151,10 @@ export class MessageHandler {
       return Promise.reject(new Error('Message handler not provided'));
     }
 
+    if (unpackedMediaType === MediaType.ZKPMessage) {
+      context.messageProvingMethodAlg = await getProvingMethodAlgFromJWZ(bytes);
+    }
+
     const response = await this.messageHandler.handle(message, context);
 
     if (!response) {
@@ -155,11 +166,26 @@ export class MessageHandler {
     if (unpackedMediaType === MediaType.ZKPMessage && senderDid) {
       packerParams = {
         senderDID: senderDid,
-        provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+        provingMethodAlg: await getProvingMethodAlgFromJWZ(bytes)
       };
       return this._params.packageManager.packMessage(unpackedMediaType, response, packerParams);
     }
 
     return this._params.packageManager.packMessage(MediaType.PlainMessage, response, packerParams);
+  }
+}
+
+/**
+ * Get proving method algorithm from JWZ bytes
+ * @param bytes - JWZ bytes
+ * @returns Proving method algorithm
+ **/
+export async function getProvingMethodAlgFromJWZ(bytes: Uint8Array): Promise<ProvingMethodAlg> {
+  try {
+    const tokenString = byteDecoder.decode(bytes);
+    const token = await Token.parse(tokenString);
+    return token.method.methodAlg;
+  } catch (e) {
+    return defaultProvingMethodAlg;
   }
 }

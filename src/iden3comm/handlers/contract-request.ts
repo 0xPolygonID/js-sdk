@@ -57,7 +57,7 @@ export type ContractInvokeHandlerOptions = BasicHandlerOptions & {
   challenge?: bigint;
 };
 
-export type ContractMessageHandlerOptions = {
+export type ContractMessageHandlerOptions = BasicHandlerOptions & {
   senderDid: DID;
   ethSigner: Signer;
   challenge?: bigint;

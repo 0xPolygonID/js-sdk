@@ -5,7 +5,8 @@ import {
   IPackageManager,
   JWSPackerParams,
   RevocationStatusRequestMessage,
-  RevocationStatusResponseMessage
+  RevocationStatusResponseMessage,
+  ZKPPackerParams
 } from '../types';
 
 import { DID } from '@iden3/js-iden3-core';
@@ -13,12 +14,12 @@ import * as uuid from 'uuid';
 import { RevocationStatus } from '../../verifiable';
 import { TreeState } from '../../circuits';
 import { byteEncoder } from '../../utils';
-import { proving } from '@iden3/js-jwz';
 import { IIdentityWallet } from '../../identity';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
-  IProtocolMessageHandler
+  IProtocolMessageHandler,
+  getProvingMethodAlgFromJWZ
 } from './message-handler';
 import { verifyExpiresTime } from './common';
 
@@ -29,10 +30,10 @@ import { verifyExpiresTime } from './common';
  * @property packerOptions - Optional parameters for the JWS packer.
  * @property treeState - Optional tree state to be used.
  */
-export type RevocationStatusMessageHandlerOptions = {
+export type RevocationStatusMessageHandlerOptions = BasicHandlerOptions & {
   senderDid: DID;
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams;
   treeState?: TreeState;
 };
 
@@ -66,7 +67,7 @@ export interface IRevocationStatusHandler {
 /** RevocationStatusHandlerOptions represents revocation status handler options */
 export type RevocationStatusHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams;
   treeState?: TreeState;
 };
 
@@ -212,7 +213,8 @@ export class RevocationStatusHandler
       opts.mediaType === MediaType.SignedMessage
         ? opts.packerOptions
         : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+            provingMethodAlg:
+              opts.packerOptions?.provingMethodAlg || (await getProvingMethodAlgFromJWZ(request))
           };
 
     if (!rsRequest.to) {
