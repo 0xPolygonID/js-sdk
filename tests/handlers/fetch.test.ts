@@ -139,7 +139,7 @@ describe('fetch', () => {
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
     fetchHandler = new FetchHandler(packageMgr, {

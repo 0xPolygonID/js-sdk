@@ -272,7 +272,7 @@ describe('contract-request', () => {
     );
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
@@ -765,7 +765,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -916,7 +916,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1129,7 +1129,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1288,7 +1288,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1487,7 +1487,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1672,7 +1672,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1805,7 +1805,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
