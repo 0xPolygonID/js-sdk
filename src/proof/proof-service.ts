@@ -127,6 +127,7 @@ export interface IProofService {
   ): Promise<ZeroKnowledgeProofResponse>;
 
   /**
+   * @deprecated, use generateAuthInputs with CircuitId.AuthV2 instead
    * generates auth inputs
    *
    * @param {Uint8Array} hash - challenge that will be signed
@@ -137,16 +138,17 @@ export interface IProofService {
   generateAuthV2Inputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
 
   /**
-   * generates auth v3 inputs
+   * generates Auth inputs
    *
    * @param {Uint8Array} hash - challenge that will be signed
    * @param {DID} did - identity that will generate a proof
    * @param {CircuitId} circuitId - circuit id for authentication
    * @returns `Promise<Uint8Array>`
    */
-  generateAuthV3Inputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
+  generateAuthInputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
 
   /**
+   * @deprecated, use generateAuthProof with CircuitId.AuthV2 instead
    * generates auth v2 proof from given identity
    *
    * @param {Uint8Array} hash - challenge that will be signed
@@ -154,15 +156,6 @@ export interface IProofService {
    * @returns `Promise<ZKProof>`
    */
   generateAuthV2Proof(hash: Uint8Array, did: DID): Promise<ZKProof>;
-
-  /**
-   * generates auth v3 proof from given identity
-   *
-   * @param {Uint8Array} hash - challenge that will be signed
-   * @param {DID} did - identity that will generate a proof
-   * @returns `Promise<ZKProof>`
-   */
-  generateAuthV3Proof(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<ZKProof>;
 
   /**
    * Generate auth proof from given identity with generic params
@@ -418,42 +411,30 @@ export class ProofService implements IProofService {
     identifier: DID,
     opts?: AuthProofGenerationOptions
   ): Promise<ZeroKnowledgeProofAuthResponse> {
+    if (
+      circuitId !== CircuitId.AuthV2 &&
+      circuitId !== CircuitId.AuthV3 &&
+      circuitId !== CircuitId.AuthV3_8_32
+    ) {
+      throw new Error('CircuitId is not supported');
+    }
     if (!opts) {
       opts = {
         challenge: 0n
       };
     }
 
-    let zkProof;
+    const challenge = opts.challenge
+      ? BytesHelper.intToBytes(opts.challenge).reverse()
+      : new Uint8Array(32);
+    const authInputs = await this.generateAuthInputs(challenge, identifier, circuitId);
 
-    switch (circuitId) {
-      case CircuitId.AuthV2:
-        {
-          const challenge = opts.challenge
-            ? BytesHelper.intToBytes(opts.challenge).reverse()
-            : new Uint8Array(32);
-          zkProof = await this.generateAuthV2Proof(challenge, identifier);
-        }
-        return {
-          circuitId: circuitId,
-          proof: zkProof.proof,
-          pub_signals: zkProof.pub_signals
-        };
-      case CircuitId.AuthV3:
-      case CircuitId.AuthV3_8_32: {
-        const challenge = opts.challenge
-          ? BytesHelper.intToBytes(opts.challenge).reverse()
-          : new Uint8Array(32);
-        zkProof = await this.generateAuthV3Proof(challenge, identifier, circuitId);
-        return {
-          circuitId: circuitId,
-          proof: zkProof.proof,
-          pub_signals: zkProof.pub_signals
-        };
-      }
-      default:
-        throw new Error(`CircuitId ${circuitId} is not supported`);
-    }
+    const zkProof = await this._prover.generate(authInputs, circuitId);
+    return {
+      circuitId: circuitId,
+      proof: zkProof.proof,
+      pub_signals: zkProof.pub_signals
+    };
   }
 
   /** {@inheritdoc IProofService.transitState} */
@@ -583,13 +564,13 @@ export class ProofService implements IProofService {
     return authInputs.inputsMarshal();
   }
 
-  /** {@inheritdoc IProofService.generateAuthV3Inputs} */
-  async generateAuthV3Inputs(
-    hash: Uint8Array,
-    did: DID,
-    circuitId: CircuitId
-  ): Promise<Uint8Array> {
-    if (circuitId !== CircuitId.AuthV3 && circuitId !== CircuitId.AuthV3_8_32) {
+  /** {@inheritdoc IProofService.generateAuthInputs} */
+  async generateAuthInputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array> {
+    if (
+      circuitId !== CircuitId.AuthV2 &&
+      circuitId !== CircuitId.AuthV3 &&
+      circuitId !== CircuitId.AuthV3_8_32
+    ) {
       throw new Error('CircuitId is not supported');
     }
 
@@ -606,7 +587,7 @@ export class ProofService implements IProofService {
 
     const gistProof = toGISTProof(stateProof);
 
-    const authInputs = new AuthV3Inputs();
+    const authInputs = new AuthV3Inputs(); // works for both v3 and v2
     if (circuitId === CircuitId.AuthV3_8_32) {
       authInputs.mtLevel = 8;
       authInputs.mtLevelOnChain = 32;
@@ -626,21 +607,9 @@ export class ProofService implements IProofService {
 
   /** {@inheritdoc IProofService.generateAuthV2Proof} */
   async generateAuthV2Proof(challenge: Uint8Array, did: DID): Promise<ZKProof> {
-    const authInputs = await this.generateAuthV2Inputs(challenge, did, CircuitId.AuthV2);
+    const authInputs = await this.generateAuthInputs(challenge, did, CircuitId.AuthV2);
 
     const zkProof = await this._prover.generate(authInputs, CircuitId.AuthV2);
-    return zkProof;
-  }
-
-  /** {@inheritdoc IProofService.generateAuthV3Proof} */
-  async generateAuthV3Proof(
-    challenge: Uint8Array,
-    did: DID,
-    circuitId: CircuitId
-  ): Promise<ZKProof> {
-    const authInputs = await this.generateAuthV3Inputs(challenge, did, circuitId);
-
-    const zkProof = await this._prover.generate(authInputs, circuitId);
     return zkProof;
   }
 

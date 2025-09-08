@@ -123,7 +123,7 @@ describe('auth', () => {
 
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -699,7 +699,7 @@ describe('auth', () => {
 
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1673,15 +1673,15 @@ describe('auth', () => {
       [
         {
           circuitId: CircuitId.AuthV2,
-          prepareFunc: proofService.generateAuthV2Inputs.bind(proofService)
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
         },
         {
           circuitId: CircuitId.AuthV3,
-          prepareFunc: proofService.generateAuthV3Inputs.bind(proofService)
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
         },
         {
           circuitId: CircuitId.AuthV3_8_32,
-          prepareFunc: proofService.generateAuthV3Inputs.bind(proofService)
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
         }
       ],
       proofService.verifyState.bind(proofService)
@@ -1860,15 +1860,15 @@ describe('auth', () => {
       [
         {
           circuitId: CircuitId.AuthV2,
-          prepareFunc: proofService.generateAuthV2Inputs.bind(proofService)
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
         },
         {
           circuitId: CircuitId.AuthV3,
-          prepareFunc: proofService.generateAuthV3Inputs.bind(proofService)
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
         },
         {
           circuitId: CircuitId.AuthV3_8_32,
-          prepareFunc: proofService.generateAuthV3Inputs.bind(proofService)
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
         }
       ],
       proofService.verifyState.bind(proofService)
