@@ -1,7 +1,7 @@
 import { IKeyProvider } from '../kms';
 import { KmsKeyId, KmsKeyType } from '../store/types';
 import { AbstractPrivateKeyStore } from '../store/abstract-key-store';
-import { byteDecoder, hexToBytes } from '../../utils';
+import { byteDecoder } from '../../utils';
 import * as providerHelpers from '../provider-helpers';
 const { subtle } = globalThis.crypto;
 
