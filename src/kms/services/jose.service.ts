@@ -18,7 +18,7 @@ export class JoseService {
       ...rest
     };
 
-    const jwe = await new CompactEncrypt(msg)
+    const jwe = new CompactEncrypt(msg)
       .setProtectedHeader(protectedHeader)
       .encrypt(recipientJWK as JWK);
 

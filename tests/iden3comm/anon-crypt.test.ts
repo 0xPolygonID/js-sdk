@@ -3,7 +3,7 @@ import {
   DIDDocument,
   KmsKeyId,
   InMemoryPrivateKeyStore,
-  RsaKeyProvider,
+  RsaOAEPKeyProvider,
   PROTOCOL_CONSTANTS,
   JoseService,
   IPackageManager,
@@ -28,7 +28,7 @@ describe('AnonCrypt packer tests', () => {
     kid: string;
   }> => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
-    const kmsProvider = new RsaKeyProvider(memoryKeyStore);
+    const kmsProvider = new RsaOAEPKeyProvider(memoryKeyStore);
     const kmsKeyId = await kmsProvider.newPrivateKeyFromSeed(
       new TextEncoder().encode(`${did}#encryptionKey1`)
     );

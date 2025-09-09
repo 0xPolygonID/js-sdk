@@ -5,19 +5,22 @@ import { byteDecoder, hexToBytes } from '../../utils';
 import * as providerHelpers from '../provider-helpers';
 const { subtle } = globalThis.crypto;
 
-export class RsaKeyProvider implements IKeyProvider {
-  private readonly _capabilities: KeyUsage[] = ['encrypt', 'decrypt', 'wrapKey', 'unwrapKey'];
+const defaultParams: RsaHashedKeyGenParams = {
+  name: 'RSA-OAEP',
+  modulusLength: 2048,
+  publicExponent: new Uint8Array([1, 0, 1]), // 65537
+  hash: 'SHA-256'
+};
 
-  private readonly _params = {
-    name: 'RSA-OAEP',
-    modulusLength: 2048,
-    publicExponent: new Uint8Array([1, 0, 1]), // 65537
-    hash: 'SHA-256'
-  };
+export class RsaOAEPKeyProvider implements IKeyProvider {
+  private readonly _capabilities: KeyUsage[] = ['encrypt', 'decrypt', 'wrapKey', 'unwrapKey'];
 
   keyType: KmsKeyType = KmsKeyType.RsaOaep256;
 
-  constructor(private readonly _keyStore: AbstractPrivateKeyStore) {}
+  constructor(
+    private readonly _keyStore: AbstractPrivateKeyStore,
+    private readonly _params: RsaHashedKeyGenParams = defaultParams
+  ) {}
 
   /**
    * get private key store
@@ -37,7 +40,11 @@ export class RsaKeyProvider implements IKeyProvider {
       id: providerHelpers.keyPath(this.keyType, seedHash)
     };
 
-    const keyPair = await subtle.generateKey(this._params, true, this._capabilities);
+    const keyPair = (await subtle.generateKey(
+      this._params as AlgorithmIdentifier,
+      true,
+      this._capabilities
+    )) as CryptoKeyPair;
 
     // Export the private key as JWK
     const jwk = await subtle.exportKey('jwk', keyPair.privateKey);
@@ -64,53 +71,6 @@ export class RsaKeyProvider implements IKeyProvider {
     return Promise.resolve(JSON.stringify(publicKey));
   }
 
-  list(): Promise<{ alias: string; key: string }[]> {
-    return this._keyStore.list();
-  }
-
-  async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {
-    const privateKey = await this._keyStore.get({ alias: keyId.id });
-    const privateKeyJwk = JSON.parse(privateKey);
-    const signature = await window.crypto.subtle.sign(
-      {
-        name: 'RSA-PSS',
-        saltLength: 32
-      },
-      privateKeyJwk,
-      data
-    );
-    return new Uint8Array(signature);
-  }
-
-  async verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
-    const publicKey = await this.publicKey(keyId);
-    const publicKeyJwk = JSON.parse(publicKey);
-    const signature = hexToBytes(signatureHex);
-    const isValid = await window.crypto.subtle.verify(
-      {
-        name: 'RSA-PSS',
-        saltLength: 32
-      },
-      publicKeyJwk,
-      signature,
-      message
-    );
-    return isValid;
-  }
-
-  async generatePrivateKey(): Promise<JsonWebKey> {
-    // Generate RSA key pair
-    const keyPair = await subtle.generateKey(
-      this._params,
-      true, // extractable
-      this._capabilities // usages
-    );
-
-    // Export the private key as JWK
-    const jwk = await subtle.exportKey('jwk', keyPair.privateKey);
-    return jwk;
-  }
-
   async publicKeyFromPrivateKey(privateKey: JsonWebKey): Promise<JsonWebKey> {
     const publicKey = {
       kty: privateKey.kty,
@@ -121,5 +81,19 @@ export class RsaKeyProvider implements IKeyProvider {
     };
 
     return publicKey;
+  }
+
+  list(): Promise<{ alias: string; key: string }[]> {
+    return this._keyStore.list();
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async sign(keyId: KmsKeyId, data: Uint8Array): Promise<Uint8Array> {
+    throw new Error('Sign is not supported by RSA OAEP');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
+    throw new Error('Signature verification is not supported by RSA OAEP');
   }
 }
