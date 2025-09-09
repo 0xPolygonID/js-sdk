@@ -9,20 +9,22 @@ import {
   CredentialsOnchainOfferMessage,
   IPackageManager,
   JWSPackerParams,
-  MessageFetchRequestMessage
+  MessageFetchRequestMessage,
+  ZKPPackerParams
 } from '../types';
 
 import { W3CCredential } from '../../verifiable';
 import { ICredentialWallet, getUserDIDFromCredential } from '../../credentials';
 
 import { byteDecoder, byteEncoder } from '../../utils';
-import { proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
-  IProtocolMessageHandler
+  IProtocolMessageHandler,
+  defaultProvingMethodAlg,
+  getProvingMethodAlgFromJWZ
 } from './message-handler';
 import { verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
@@ -36,7 +38,7 @@ import { IOnchainIssuer } from '../../storage';
  */
 export type FetchHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams;
   headers?: {
     [key: string]: string;
   };
@@ -197,7 +199,7 @@ export class FetchHandler
     ctx: {
       mediaType?: MediaType;
       headers?: HeadersInit;
-      packerOptions?: JWSPackerParams;
+      packerOptions?: JWSPackerParams | ZKPPackerParams;
     }
   ): Promise<W3CCredential[] | BasicMessage> {
     if (!ctx.mediaType) {
@@ -226,7 +228,7 @@ export class FetchHandler
         ctx.mediaType === MediaType.SignedMessage
           ? ctx.packerOptions
           : {
-              provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+              provingMethodAlg: ctx?.packerOptions?.provingMethodAlg || defaultProvingMethodAlg
             };
 
       const senderDID = DID.parse(offerMessage.to);
@@ -296,6 +298,27 @@ export class FetchHandler
     );
     if (!opts?.allowExpiredMessages) {
       verifyExpiresTime(offerMessage);
+    }
+
+    if (!opts?.packerOptions?.provingMethodAlg) {
+      const messageProvingMethodAlg =
+        opts?.messageProvingMethodAlg || (await getProvingMethodAlgFromJWZ(offer));
+      const zkpPackerOptions = {
+        provingMethodAlg: messageProvingMethodAlg,
+        senderDID: DID.parse(offerMessage.to)
+      };
+      if (!opts) {
+        opts = {
+          mediaType: MediaType.ZKPMessage,
+          packerOptions: zkpPackerOptions
+        };
+      }
+      if (!opts.packerOptions?.provingMethodAlg) {
+        opts.packerOptions = {
+          ...opts.packerOptions,
+          ...zkpPackerOptions
+        };
+      }
     }
     const result = await this.handleOfferMessage(offerMessage, {
       mediaType: opts?.mediaType,

@@ -14,7 +14,7 @@ import {
   Attachment
 } from '../types';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
-import { proving } from '@iden3/js-jwz';
+import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
@@ -24,9 +24,14 @@ import { CircuitId } from '../../circuits';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
-  IProtocolMessageHandler
+  IProtocolMessageHandler,
+  defaultProvingMethodAlg
 } from './message-handler';
-import { parseAcceptProfile } from '../utils';
+import {
+  acceptHasProvingMethodAlg,
+  buildAcceptFromProvingMethodAlg,
+  parseAcceptProfile
+} from '../utils';
 
 /**
  * Options to pass to createAuthorizationRequest function
@@ -172,7 +177,7 @@ type AuthRespOptions = {
   acceptedProofGenerationDelay?: number;
 };
 
-export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
+export type AuthMessageHandlerOptions = BasicHandlerOptions & (AuthReqOptions | AuthRespOptions);
 /**
  *
  * Options to pass to auth handler
@@ -183,6 +188,7 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: JWSPackerParams;
+  preferredAuthProvingMethod?: ProvingMethodAlg;
 };
 
 /**
@@ -263,11 +269,7 @@ export class AuthHandler
     }
 
     const responseType = PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
-    const mediaType = this.getSupportedMediaTypeByProfile(
-      ctx,
-      responseType,
-      authRequest.body.accept
-    );
+    const mediaType = this.getSupportedMediaTypeByProfile(ctx, authRequest.body.accept);
     const from = DID.parse(authRequest.from);
 
     const responseScope = await processZeroKnowledgeProofRequests(
@@ -329,7 +331,10 @@ export class AuthHandler
       opts.mediaType === MediaType.SignedMessage
         ? opts.packerOptions
         : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
+            provingMethodAlg: this.getDefaultProvingMethodAlg(
+              opts.preferredAuthProvingMethod,
+              authRequest.body.accept
+            )
           };
 
     const token = byteDecoder.decode(
@@ -490,7 +495,6 @@ export class AuthHandler
 
   private getSupportedMediaTypeByProfile(
     ctx: AuthReqOptions,
-    responseType: string,
     profile?: string[] | undefined
   ): MediaType {
     let mediaType: MediaType;
@@ -516,5 +520,44 @@ export class AuthHandler
       mediaType = ctx.mediaType;
     }
     return mediaType;
+  }
+
+  private getDefaultProvingMethodAlg(
+    preferredAuthProvingMethod?: ProvingMethodAlg,
+    accept?: string[]
+  ): ProvingMethodAlg {
+    if (
+      preferredAuthProvingMethod &&
+      this._packerMgr.isProfileSupported(
+        MediaType.ZKPMessage,
+        buildAcceptFromProvingMethodAlg(preferredAuthProvingMethod)
+      ) &&
+      (!accept?.length || acceptHasProvingMethodAlg(accept, preferredAuthProvingMethod))
+    ) {
+      return preferredAuthProvingMethod;
+    }
+    if (accept?.length) {
+      const authV3_8_32 = proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg;
+      if (
+        acceptHasProvingMethodAlg(accept, authV3_8_32) &&
+        this._packerMgr.isProfileSupported(
+          MediaType.ZKPMessage,
+          buildAcceptFromProvingMethodAlg(authV3_8_32)
+        )
+      ) {
+        return authV3_8_32;
+      }
+      const authV3 = proving.provingMethodGroth16AuthV3Instance.methodAlg;
+      if (
+        acceptHasProvingMethodAlg(accept, authV3) &&
+        this._packerMgr.isProfileSupported(
+          MediaType.ZKPMessage,
+          buildAcceptFromProvingMethodAlg(authV3)
+        )
+      ) {
+        return authV3;
+      }
+    }
+    return defaultProvingMethodAlg;
   }
 }

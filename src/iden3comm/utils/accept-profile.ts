@@ -1,3 +1,4 @@
+import { ProvingMethodAlg } from '@iden3/js-jwz';
 import {
   MediaType,
   ProtocolVersion,
@@ -27,6 +28,29 @@ function isAcceptJwsAlgorithms(value: string): boolean {
 function isAcceptJwzAlgorithms(value: string): boolean {
   return Object.values(AcceptJwzAlgorithms).includes(value as AcceptJwzAlgorithms);
 }
+
+export const buildAcceptFromProvingMethodAlg = (provingMethodAlg: ProvingMethodAlg): string => {
+  const [alg, circuitId] = provingMethodAlg.toString().split(':');
+  return `${ProtocolVersion.V1};env=${MediaType.ZKPMessage};circuitId=${circuitId};alg=${alg}`;
+};
+
+export const acceptHasProvingMethodAlg = (
+  accept: string[],
+  provingMethodAlg: ProvingMethodAlg
+): boolean => {
+  const [provingAlg, provingCircuitId] = provingMethodAlg.toString().split(':');
+  for (const profile of accept) {
+    const { env, circuits, alg } = parseAcceptProfile(profile);
+    if (
+      env === MediaType.ZKPMessage &&
+      circuits?.includes(provingCircuitId as AcceptAuthCircuits) &&
+      (!alg || (alg as unknown as AcceptJwzAlgorithms)?.includes(provingAlg as AcceptJwzAlgorithms))
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
 
 function isAcceptJweAlgorithms(value: string): boolean {
   return Object.values(AcceptJweAlgorithms).includes(value as AcceptJweAlgorithms);
