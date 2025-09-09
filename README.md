@@ -12,7 +12,7 @@ npm install @0xpolygonid/js-sdk
 
 ## Circuits
 
-And place actual circuits to `test/proofs/testdata`
+Place the actual circuits in `test/proofs/testdata`
 
 ```bash
 curl -LO https://circuits.privado.id/latest.zip
@@ -41,7 +41,7 @@ export RHS_CONTRACT_ADDRESS="reverse hash service contract address"
 
 ## Examples
 
-Please see [examples](https://github.com/0xPolygonID/js-sdk-examples) for visit examples information.
+Please see the [examples](https://github.com/0xPolygonID/js-sdk-examples) for more information.
 
 ## Documentation
 
