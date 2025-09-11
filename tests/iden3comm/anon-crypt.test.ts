@@ -7,11 +7,33 @@ import {
   PROTOCOL_CONSTANTS,
   JoseService,
   IPackageManager,
-  PackageManager,
-  KMS
+  FSCircuitStorage,
+  CircuitId,
+  CredentialStatusResolverRegistry,
+  CredentialStatusType,
+  RHSResolver,
+  CredentialWallet,
+  IdentityWallet,
+  ProofService,
+  AuthorizationResponseMessage,
+  BasicMessage
 } from '../../src';
 import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
+import path from 'path';
+import {
+  IPFS_URL,
+  MOCK_STATE_STORAGE,
+  SEED_USER,
+  createIdentity,
+  getInMemoryDataStorage,
+  getPackageMgr,
+  registerKeyProvidersInMemoryKMS
+} from '../helpers';
+import { schemaLoaderForTests } from '../mocks/schema';
+import { ProvingMethodAlg } from '@iden3/js-jwz';
+import { DID } from '@iden3/js-iden3-core';
+import { AuthorizationRequest } from 'ethers';
 
 const senderMockedPrivateRsaKeyJwk: JsonWebKey = {
   key_ops: ['decrypt', 'unwrapKey'],
@@ -44,8 +66,9 @@ const recipientMockedPrivateRsaKeyJwk: JsonWebKey = {
 };
 
 describe('AnonCrypt packer tests', () => {
-  const endUserDid = 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT';
-  const mobileDid = 'did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49';
+  const aliceDid = 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT';
+  const bobDid = 'did:iden3:polygon:amoy:x7Z95VkUuyo6mqraJw2VGwCfqTzdqhM1RVjRHzcpK';
+  const zkRoomDid = 'did:iden3:privado:main:2SZu1G6YDUtk9AAY6TZic24CcCYcZvtdyp1cQv9cig';
 
   const initKeyStore = async (
     did: string,
@@ -57,6 +80,43 @@ describe('AnonCrypt packer tests', () => {
     publicKeyJwk: JsonWebKey;
     kid: string;
   }> => {
+    const kms = registerKeyProvidersInMemoryKMS();
+    const dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
+    const circuitStorage = new FSCircuitStorage({
+      dirname: path.join(__dirname, '../proofs/testdata')
+    });
+
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    const credWallet = new CredentialWallet(dataStorage, resolvers);
+    const idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+
+    const { did: userDID } = await createIdentity(idWallet, {
+      seed: SEED_USER
+    });
+    const merklizeOpts = {
+      documentLoader: schemaLoaderForTests({
+        ipfsNodeURL: IPFS_URL
+      })
+    };
+
+    const proofService = new ProofService(
+      idWallet,
+      credWallet,
+      circuitStorage,
+      MOCK_STATE_STORAGE,
+      merklizeOpts
+    );
+
+    const packerManager = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthInputs.bind(proofService),
+      proofService.verifyState.bind(proofService)
+    );
+
     const memoryKeyStore = new InMemoryPrivateKeyStore();
 
     // mock get to return mocked key by alias
@@ -97,13 +157,11 @@ describe('AnonCrypt packer tests', () => {
         })
       } as unknown as Resolvable);
 
-    const kms = new KMS();
     kms.registerKeyProvider(kmsProvider.keyType, kmsProvider);
 
     const joseService = new JoseService(kms);
 
     const packer = new AnonCryptPacker(joseService, resolver, [kmsKeyId]);
-    const packerManager = new PackageManager();
     packerManager.registerPackers([packer]);
 
     return {
@@ -120,13 +178,13 @@ describe('AnonCrypt packer tests', () => {
       packerManager: endUserPackageManager,
       didDocument: endUserDidDocument,
       kid: endUserKid
-    } = await initKeyStore(endUserDid);
+    } = await initKeyStore(aliceDid);
 
     const {
       packerManager: mobilePackageManager,
       didDocument: mobileDidDocument,
       kid: mobileKid
-    } = await initKeyStore(mobileDid, {
+    } = await initKeyStore(bobDid, {
       resolve: async () =>
         ({
           didDocument: endUserDidDocument
@@ -140,8 +198,8 @@ describe('AnonCrypt packer tests', () => {
       thid: crypto.randomUUID(),
       typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
       type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.VERIFICATION_REQUEST_MESSAGE_TYPE,
-      from: mobileDid,
-      to: endUserDid
+      from: bobDid,
+      to: aliceDid
     };
 
     // 2. mobile side encrypts the message with end user's public key
@@ -173,8 +231,8 @@ describe('AnonCrypt packer tests', () => {
       thid: crypto.randomUUID(),
       typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
       type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.VERIFICATION_RESPONSE_MESSAGE_TYPE,
-      from: endUserDid,
-      to: mobileDid,
+      from: aliceDid,
+      to: bobDid,
       body: {
         did_doc: mobileDidDocument
       }
@@ -194,5 +252,74 @@ describe('AnonCrypt packer tests', () => {
 
     expect(unpackedResponseMsg).toEqual(responseMsg);
     expect(unpackedResponseMediaType).toEqual(PROTOCOL_CONSTANTS.MediaType.EncryptedMessage);
+  });
+
+  it.only('share profile endpoint (Bob share Profile with Alice)', async () => {
+    const { kid: aliceUserKid } = await initKeyStore(aliceDid);
+
+    const { packerManager: bobPackageManager, didDocument: bobDidDocument } = await initKeyStore(
+      bobDid
+    );
+
+    // 1. Bob encrypts (JWE) auth-response (with profile) with Alice public key.
+    const messageToEncrypt: BasicMessage = {
+      id: crypto.randomUUID(),
+      thid: crypto.randomUUID(),
+      typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
+      body: {
+        scope: [] // profile data would be here
+      },
+      from: bobDid,
+      to: aliceDid
+    };
+
+    const encryptedMsgToAlice = await bobPackageManager.packMessage(
+      PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
+      messageToEncrypt,
+      {
+        alg: PROTOCOL_CONSTANTS.AcceptJweAlgorithms.RSA_OAEP_256,
+        enc: PROTOCOL_CONSTANTS.JweEncryption.A256GCM,
+        kid: aliceUserKid,
+        typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage
+      }
+    );
+
+    const jweTokenString = new TextDecoder().decode(encryptedMsgToAlice);
+    console.log('JWE encryptedMsgToEndUser', jweTokenString);
+    // 2. Bob pack (JWZ) the message for ZK-Room (authorization + DID DOC share) + JWE Attachment
+    const messageToZkRoom: AuthorizationResponseMessage = {
+      id: crypto.randomUUID(),
+      thid: crypto.randomUUID(),
+      typ: PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
+      body: {
+        did_doc: bobDidDocument,
+        scope: []
+      },
+      from: bobDid,
+      to: zkRoomDid,
+      attachments: [
+        {
+          id: '1',
+          data: {
+            json: {
+              token: jweTokenString
+            }
+          }
+        }
+      ]
+    };
+    const jwz = await bobPackageManager.packMessage(
+      PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
+      messageToZkRoom,
+      {
+        senderDID: DID.parse(bobDid),
+        provingMethodAlg: new ProvingMethodAlg('groth16', 'authV2')
+      }
+    );
+
+    console.log('JWZ to ZK-Room', new TextDecoder().decode(jwz));
+    expect(jwz).toBeDefined();
   });
 });
