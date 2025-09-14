@@ -1,36 +1,44 @@
-import { CompactDecryptResult, CompactEncrypt, JWK, compactDecrypt } from 'jose';
-import { KMS } from '../kms';
-import { KmsKeyId } from '../store/types';
+import { generalDecrypt, GeneralDecryptResult, GeneralEncrypt, GeneralJWE } from 'jose';
 
 export type JoseParams = {
   alg: string;
   enc: string;
-  skid?: string;
-  [key: string]: unknown;
+  typ: string;
+  recipients: {
+    kid: string;
+    recipientJWK: JsonWebKey;
+  }[];
 };
 
 export class JoseService {
-  constructor(private readonly _kms: KMS) {}
+  async encrypt(msg: Uint8Array, options: JoseParams): Promise<GeneralJWE> {
+    const { enc, typ, alg, recipients } = options;
+    // const { recipientJWK, ...rest } = options;
+    // const protectedHeader = {
+    //   ...rest
+    // };
 
-  async encrypt(msg: Uint8Array, options: JoseParams): Promise<string> {
-    const { recipientJWK, ...rest } = options;
-    const protectedHeader = {
-      ...rest
-    };
+    // const jwe = new CompactEncrypt(msg)
+    //   .setProtectedHeader(protectedHeader)
+    //   .encrypt(recipientJWK as JWK);
 
-    const jwe = new CompactEncrypt(msg)
-      .setProtectedHeader(protectedHeader)
-      .encrypt(recipientJWK as JWK);
+    const generalJwe = new GeneralEncrypt(msg)
+      // .setAdditionalAuthenticatedData(t.context.additionalAuthenticatedData)
+      .setProtectedHeader({ enc, typ })
+      .setSharedUnprotectedHeader({ alg });
+
+    recipients.forEach((recipient) => {
+      generalJwe.addRecipient(recipient.recipientJWK);
+    });
+
+    const jwe: GeneralJWE = await generalJwe.encrypt();
 
     return jwe;
   }
 
-  async decrypt(data: string, kmsKeyId: KmsKeyId): Promise<CompactDecryptResult> {
-    const store = await this._kms.getKeyProvider(kmsKeyId.type)?.getPkStore();
-    if (!store) {
-      throw new Error(`key provider not found for: ${kmsKeyId.type}`);
-    }
-    const pk = await store.get({ alias: kmsKeyId.id });
-    return await compactDecrypt(data, JSON.parse(pk));
+  async decrypt(data: GeneralJWE, pkFunc: () => Promise<CryptoKey>): Promise<GeneralDecryptResult> {
+    const pk = await pkFunc();
+    const result = await generalDecrypt(data, pk);
+    return result;
   }
 }

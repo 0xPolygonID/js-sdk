@@ -1,3 +1,4 @@
+/* eslint-disable @cspell/spellchecker */
 import {
   AnonCryptPacker,
   DIDDocument,
@@ -8,47 +9,62 @@ import {
   JoseService,
   IPackageManager,
   PackageManager,
-  KMS
+  KMS,
+  keyPath
 } from '../../src';
 import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
 
-const senderMockedPrivateRsaKeyJwk: JsonWebKey = {
-  key_ops: ['decrypt', 'unwrapKey'],
-  ext: true,
-  alg: 'RSA-OAEP-256',
-  kty: 'RSA',
-  n: 'zsuP2qoCHdm8UOLNYhQwcRuriCTRdB780u4POpqYV9LIu3mCcK2rpaglTjBPpjvUu5ZAO3IKY-z91Hj4C0JLMA4SYT2udb1arJ3fr2ZZLcpRR-3hzQCYnX_8zZp63LiTv-uhoDKh9pCfZLB7O7eQKbVQcujeVnCXW2dNNDuEf1zrNQh0T3ZirOhYixfIYEqVb9Jrqx605WiXPb4Ur_e2jpfjUkSGKOj-P-zADWNH4wxuL21Wz3sMKHoHycMeCIfteqqrbP0Q67RXb8Q4AxtVsIOMFSYrUgoEVUZ67gCQ0FkgkFS4v8R__wStQp7uSd3_aedQBM3NtjOBG-PHob30hQ',
-  e: 'AQAB',
-  d: 'BOPb6j4QcD_Em_4NAMd88MPIfd7vBAmyjVNbUVW0CgmePQ6txrfYogF0pmFulL3_9RKjwLQc6kmBpBtbNDr0V7XRefKxNDAO25udHUL0k2hgHS0TJJuhwEG1SvBe_Oaxeb2a9BSWb2PynPkuZNZdpprWxOzcSxt8_MiX0wcgRjmzpW0JwjYAx_qn43xqm6apygTLKTMEigx4ZrC2zlHbFt3kcaz-Q93iI8y8jZzRKkUzeMoQV1KEUY793qTS02psckRbi7Q6w-LnV7Y5gY1hhXgfXRz8QTfJcJ2mELCmkhlvIe8KwcpTjP9L51MvzcaZtycU6PS9GNzyRvKjsf5boQ',
-  p: '5jP0x2LQO7GadcQ03VssOulxgA-PpYGBdWBL5cO6jhIhGEMqu3sa-L2VAq3f9BJtlnGdy6FUIV6eb8qcTwqR0r7BIOTmcE0FDFwTasc9WyfKNf4Pt1N55zvEP76iEd6zWodbkan4Q67xpVZ6Ul6P4n56oVO82INNjorba-Uo8mE',
-  q: '5fgVwEr4K1yxZGJ7_Y0bJG_mPRZ4bmdUNLYSKx4ueLCAUqAv-lvY1xo2UEAGW7Au405itF9HEHBbdgc2wROkcRiIUVM5XP9f12KOh88mm5332KHe2Q5KS7Le_uB0y2J4WZHYCtMMUD9AGjJqYTN3fnZsIpsnf0d0-iQwBWdrPKU',
-  dp: 'sBMHY8YZvb7PhMopITJON1U84hWE6rOOoIeiJcC6nVYSiCs_sRys-ZqQMfdqN5YsyghnCEyCO-_SQXF4cyCDfu02bQGHnFfcx6JZm69_J4zcpsWHodIwiIP3TEZ0UjTDfDfR-y1FXgeefrcRYpU_ep8BDwoshHKRzLg6smEaG6E',
-  dq: 'dgSgHQQcYhx6yRqlqRSeRk_K57S9b2NF2ptJrakajkN-R2j_1ksGeDVyhDKnUKyVE4AptYlj7fLLbUH8fo-3B3dglePQ_4HrTJy-qsHLfXdPN3Sy6c-knz6XpFPKfIn3W3g2WC_BFPmwywDuiR2hiFv72LKpTW99f9XMcymE5iU',
-  qi: 'syGTySO_FuJ4KfqeVTbN2oU5OjFYJ72bNcUduVjQqjGFL0FdfZfY7M3LS6S6oyqQ9J1kvce28_JETxKvLPRGprXHrmfGkEqbIftH_LEYEFK3_YHRKYQDqgPn9YCxD4dE2nZuoCpEJ5sc6b_dGOs-zzyMhqtqp8g-IErGTW6Tno4'
-};
-
-const recipientMockedPrivateRsaKeyJwk: JsonWebKey = {
-  key_ops: ['decrypt', 'unwrapKey'],
-  ext: true,
-  alg: 'RSA-OAEP-256',
-  kty: 'RSA',
-  n: 'zOKtDeYPtUI_5CP0p01WUpU6D0RYSGaPfe2U_WBSFMSwcp-yVjj-SeCa9n652UD5H7q3yJ3qGmVOGuDkhNZkCm0mR2wEsidW2lvOa0McTbrVkCDstNYzpIUFYBpGjW2W40DCJi79IXFtwHCxlkm1YFuzv_OPWdhlmSiBn9x1BifEXMCdWcSe9pMGD37BgQ6TMBaP-0r25I2-1KXH6Nastk9ukCA-rW2MjAE9oTycbRckKkr3FXmH-jXP9vSj85AySSxrNDKv6XhYXauXQx8GgHrkA59uv7fe1J1_FyQljBx5K0_0vZ31qFLAhUPBhSKECNLLItG-p-EPP-YwfH-aOw',
-  e: 'AQAB',
-  d: 'RH_YqdfsEobWw5i92B2EKdIYejg4Z-RaPxjqghfs-WKVN41q22bspZiBVr4htqABanlLrrgVJ8QM6_GalUr0YYQCk0hq_YEniZO-HKBwWxCHDEvlt8QRugR7OpkuU2R7WPkyr_9vw_mfXwKObRexm0itfRSaLciqlx0y0VasjWSu5oVBItwYPtiRdtGT8ijNP-so5EzEOfHet9VRflsjpuCMQsKVGdjkv8lRwEKps72DVMHj177V_WS1_Q-sGWfHJ8UijWZFHMRaVPTfZfiNIQDmhqHyE8rJxchEslmdCcdSPUxWQFzTD5DcySwUK3y6nWU-GC9yQIbDsHOrYL2r-Q',
-  p: '8asp2K_l0JMKYEPAR9mcxVzRSmk4GHqvfENUZpzdiTWKtRr4fJRPoroNrKHYoP262NWmoAA6ByizEh4RLmWcqeW0KXRj7rNlrKENziIYoPsa9KEOraw8tngZouRASN1uUlzowQfi0KZLa9c1OxSpKlZfZFl8-W9z0UDNk5rnnmc',
-  q: '2QkY9oEsblagI8mg-g9rjGlyeloT-_n8EaPcAKRUP15GqwxR5xVd0NsfTbpq0UmVt-1DOwLxjZj9IoQauIwqRpR3rjm6d0nZDsZ5levmbdJSogh9p6TWtDgtsxCwQDvlZzv3KUeonv38q9Pj0UcvbUcCgjD1Z0vJS4ML_xnHmQ0',
-  dp: 'P_xZsA2ig37rGGHX3y422-qfX1xMhe611-jbx-9wmIuclib188Yw75zjUfnoKXgEqLSo0WQ9-PdFsl5Tnj05JaKz-OXgL6tAGFzsEs_kRXs2v96EzGb2DDnwT7ivbJt0QkpnNfSokSX2gi8Q4Puvbo4_44nuFPz1ZUoLJDG3cbE',
-  dq: 'ueY_-ozkSNJsMps3BlmE7m03wDM94NvcHCP1gps_ClQvRb20vbGgfQ_jfUmKyx8zXaqdpoM78eQ0Fod-98ofP_tVk-cgn6KiiDRa2p6H7lNzshSBxMG9ofposnM99JcZRNapOzOE7EJzVZ6WCaDmr7xeGrPiz4qrrcFe2i_ztlU',
-  qi: '5EPnR-ZCz3RxD1u7u7cP0YFjZWC8CACdNz4hax2jzxcsth2ratG0viUB3FwhHQX-HszHnSCy1yTqavYhEIAaMyFcKC5fO4NTJP4qPMjeiMYcyyLQJNe4frLQ2gEA3cmMYF96A5ILM23zxIlo8as4WgFZj0ZYHMzDEj91yX3iKDU'
+const toPubKey = (pkJwk: JsonWebKey) => {
+  return {
+    kty: pkJwk.kty,
+    n: pkJwk.n,
+    e: pkJwk.e,
+    alg: pkJwk.alg,
+    ext: true
+  };
 };
 
 describe('AnonCrypt packer tests', () => {
-  const endUserDid = 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT';
-  const mobileDid = 'did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49';
+  const endUserData = {
+    did: 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT',
+
+    pkJwk: {
+      key_ops: ['decrypt', 'unwrapKey'],
+      ext: true,
+      kty: 'RSA',
+      n: 'oJ_RM4-dKCwAm_iXCDBzSABwOr5eOCrTVzlLikx0dK1BoO8ilHr9Yx7F3F5Q5exZ6g_lz_5YKSQ31ZNWjAjLOZnRvLkXGA2p_lfFNGGDsW7Xw2OvVy-kX7Y-O1Yn6rGW-ZMCslcc4hdHQbrBa3MdwLFDfAMcHDfZYWOVhU3brGIr0cmXRfZ6U-1hPT-3K_rwCknbiir8GivoLXinIad95JNwyIUytfBc-New_PrcUYoDQH6GI6bu8m2_ya3QuGIR-Lgn5HGcXtd9Lw9qnMc31EcJMKyG1KxMAVUFcoyADDskRCDfd-PWr50Upx_F9V3PE9e7ZOrXRn_hQF0XYG-MGQ',
+      e: 'AQAB',
+      d: 'CLsjNaKp8-Hvbwr8V7Q9gfWPJCxOpg4y4ngBco0tG94Clh9FkY1dambE8dF5I4RdT1cpomyUiXj35X6-qro8JL-HGnNzrUmp2sLV2_7seAe6x_rKUEqNTGwVNie83_mjB6IteHj6f5ItHAYtJxxw6rVgAhTPsXt6MBxoB2DX7ubpmLPzqyTjE_teVjyrj9i9JZ-W1kRMbLWuALviZbrrtEHdEBKaRvtaeWcf5MHuGHw2RCTHhoHzty8NHasdwSsu0t1dL-88ulxDgK9EdYOHZ17dkmNrrUCq0wpa1_InbV_JC9BoN6Fw7_22M67Suq2v9JUg_K4kid45Vumvn_Mq4Q',
+      p: '2kgLhksExewH6ukrXwIMRdKNGRZwWDfprtxjiXW6qg_Qtlo-NX1NUZCilbKAqhYpPdEq2UFElhcF7e1cDkZkhYUQKcOnn_80vWPfoVD8LykDaaNA_E7p1sc78hfm3pKq6AJ26X_qRvV2x0nyFT6S5WykvlRIWRxvr66Y25y192E',
+      q: 'vGE8VBMc4L7IExssUN5bSPidzH8FB9yJw--i8cYGLns-Exqy3XO78GCgvB4yKjmz_M5aMZM9FFqJmbPYI2u3STQNvuv8Fss7YqMYWVLWIi2lzx_5e2_coNB7zfn7yyu9R900Nl9WUlWz2Qtu9yXX-RfT_aBr7wg0z3oIP5BAJ7k',
+      dp: 'j-vOxXXzKLiuo8GnmhYUl3jzFWaJHnGHP4cKjhi0wep5l7I6sDP05eGygXdXhE3mVV7znJl_KmL1wuGsv7DEGJEajh72B_VSBcmzKn7mOAYXvPAqKfGyFq34pXADBh-4Vg9B7kUr6CtybIYh-sXuPxz6JpAVv8OTFEfPe4WBKSE',
+      dq: 'V3Zd6DsngUGS6ywGm1Vh1LN5sGSZFVlTrWEpqk9it1oJLB2NRjxh2e1DM5RhfjFkW9ADGFlgVn7ivDY_99IfOyGr8CTo2jxpyhYnS_Gl8iB3h380-hapvRCPKscSHPal3yPZBhWlonygD_m6_4zWhZSGnI9LDaQlwN7LzZdP8iE',
+      qi: 'rOj_Zb2hTI1Q-K93QDYEvcyaiE266_MbEhqYWOWOik5J2XAmIcb7ns1rNVfJyLXEeu584SZcs0LCwxTZB-nKKcyTbTqKZP9QanjXGZn6jZprt0J5s4PmZPonAFuM8DgpPUJQwKUTlxVPdSm_TtgxC7hbRrhzjGFduROXu_iltZU',
+      alg: 'RSA-OAEP-256'
+    }
+  };
+  const mobileDid = {
+    did: 'did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49',
+
+    pkJwk: {
+      key_ops: ['decrypt', 'unwrapKey'],
+      ext: true,
+      kty: 'RSA',
+      n: 'tIL5_bVycsTktTjfTRiPYV1cdJdgngGgN_g5ZJm1fpmmXwmZj6uC1wWrkmteiJ9rJF25BhVxQO_D0OjCYmVBDRpchScoP7sBWuAO7nC2u84-csiizynyILpWmeebxRnnsuQENYjXIwVEtZ8-2fD0I3zknJgr8ifxYbHNArJCJuWB_BQRFcWJA0hHpKGwAKZvPuRHCj_17uaEu4aVItgLwuwpiGHPeTlkk7hE4sTQLuHmewjL7jvVziqwLDX2GuI6eL2YTZDZxMiKOFIc1QxD294f5BlF-MZ6CsAO0fdz3Z-NLxrwYWUZUMR8CK-Oq-x-UCC73RzqudhVpuAiaJ4jzw',
+      e: 'AQAB',
+      d: 'NSGgJ5cyuqlNkDHPOEgUW9o5DnBIFfnwiMjdS8kabMsY9zxCINGgz11x5MUJrDkQNkIH5cyF61EnV-RK4t9eyFaMCP0_kZKfkXoFqxUuFBVeuDZqBYQZKpzuRJqxdNBtLHCE9KT0ffBdCwB2ZXvQwGlQeO8pcDtlhxXoe_SwF_ZSnD_39qbhtG9lQiI6boAeKPvm2MQqeRzdVgXfmY3C1UOlwcO75dJsGgowi9OSDFxZ-ug7pRhLWirmg_9K1KTwkfwFsM-URw8mqkoiJ4lti1KDwCV8NoPxVdCl-72rutx2_MPif2k6E86R350cFPkQpQmMLqh-l6q1sqYXGQL2sQ',
+      p: '7daUHtIQTljDzAMvSAfMA64AK_kseliTUvP-KnLlX4W0z_gQ3oxHYVAqA26q7seLz3V0gA3nvka5wqD1dKkoNemLPCU-k1AgVddUSeTIQ19WdYGUwV4J4I8flM1eC68hFzSIdHV9ACls7-a5dH5KaxO8c2sOu9EevrKmhqLLg6s',
+      q: 'wku9Tyd0rHY29QO9WpyVxe1_AjAQYy2LgtquKjJ9v8K3pDwhg7yUxVWuIAlfh20ky-P5Vd12dUv04ww_9rw72Kw54DGzU2ZbvXNSVB_BWLq-g5_XI6VFnNSYwWlU6I82G9Myzx1AmM7lBZZqahiLGDl4MzWA6KZMiTawjDRRPG0',
+      dp: 'tk9RYv6quSOZknyudYxkej2arBpoWbAj3eZh4bAI2tvm6bPBWpY08Qc97Tubk0UqinACSVZfWZ9lLSesfyxbQlgu_n-eI9W7s5FHbw0L5XjjEVeu6zpmX9fV4X46pMItn1gJcRvOIZ2ff5Vge0eDS-jo_6AEvzthUdQnifSoA9k',
+      dq: 'XoRLtlrCRjdHqs9D6PVtYpiTBXRuNGDukhxhR0PCqmtFvI5H23b8hDaW-xy0LQQqN0lSfLO8MXleyqil4RhWoKO_j9F9o9-SV0nnTecYvlox3YP_O2blw1IkcUoVNQCd2NFX0SswxmU3Qg2W_L-twn4KfBbV-9cSOlmxbrLwpc0',
+      qi: 'lzUCZy_66upZse3TgEK1BWyKkpfqTW8vVHIhoGzp5goVZXKZCChtjhFXtX0etdnbo89rUS0fYq4iMloB5IUQ2Ptt-i-DqjpjYZLhdVA937lc5IzEcl7OmUpEHlfCeKmDKhdowJtl4iYhC981isMxH_pctQ_ViU-ZAkpkiLFMvkc',
+      alg: 'RSA-OAEP-256'
+    }
+  };
 
   const initKeyStore = async (
-    did: string,
+    { did, pkJwk }: { did: string; pkJwk: JsonWebKey },
     didDocResolver?: Resolvable
   ): Promise<{
     packerManager: IPackageManager;
@@ -59,18 +75,14 @@ describe('AnonCrypt packer tests', () => {
   }> => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
 
-    // mock get to return mocked key by alias
-    memoryKeyStore.get = ({ alias }: { alias: string }): Promise<string> => {
-      if (alias === 'sender') return Promise.resolve(JSON.stringify(senderMockedPrivateRsaKeyJwk));
-      if (alias === 'recipient')
-        return Promise.resolve(JSON.stringify(recipientMockedPrivateRsaKeyJwk));
-      return Promise.reject(new Error('key not found'));
+    memoryKeyStore.get = () => Promise.resolve(JSON.stringify(pkJwk));
+    const kmsProvider = new RsaOAEPKeyProvider(memoryKeyStore);
+    const kmsKeyId = {
+      type: kmsProvider.keyType,
+      id: keyPath(kmsProvider.keyType, did)
     };
 
-    // return mocked key id
-    const kmsProvider = new RsaOAEPKeyProvider(memoryKeyStore);
-    const kmsKeyId = { id: 'recipient', type: kmsProvider.keyType };
-    const publicKeyJwk = JSON.parse(await kmsProvider.publicKey(kmsKeyId));
+    const publicKeyJwk = toPubKey(pkJwk);
 
     const didDocument = {
       '@context': [
@@ -100,9 +112,9 @@ describe('AnonCrypt packer tests', () => {
     const kms = new KMS();
     kms.registerKeyProvider(kmsProvider.keyType, kmsProvider);
 
-    const joseService = new JoseService(kms);
+    const joseService = new JoseService();
 
-    const packer = new AnonCryptPacker(joseService, resolver, [kmsKeyId]);
+    const packer = new AnonCryptPacker(joseService, kms, resolver, [kmsKeyId]);
     const packerManager = new PackageManager();
     packerManager.registerPackers([packer]);
 
@@ -120,7 +132,7 @@ describe('AnonCrypt packer tests', () => {
       packerManager: endUserPackageManager,
       didDocument: endUserDidDocument,
       kid: endUserKid
-    } = await initKeyStore(endUserDid);
+    } = await initKeyStore(endUserData);
 
     const {
       packerManager: mobilePackageManager,
@@ -140,8 +152,8 @@ describe('AnonCrypt packer tests', () => {
       thid: crypto.randomUUID(),
       typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
       type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.VERIFICATION_REQUEST_MESSAGE_TYPE,
-      from: mobileDid,
-      to: endUserDid
+      from: mobileDid.did,
+      to: endUserData.did
     };
 
     // 2. mobile side encrypts the message with end user's public key
@@ -152,12 +164,10 @@ describe('AnonCrypt packer tests', () => {
       {
         alg: PROTOCOL_CONSTANTS.AcceptJweAlgorithms.RSA_OAEP_256,
         enc: PROTOCOL_CONSTANTS.JweEncryption.A256GCM,
-        kid: endUserKid,
+        recipients: [{ kid: endUserKid }],
         typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage
       }
     );
-
-    console.log('encryptedMsgToEndUser', new TextDecoder().decode(encryptedMsgToEndUser));
 
     // 3. mobile sends message to end user. End user decrypts the message with his private key.
     const { unpackedMessage, unpackedMediaType } = await endUserPackageManager.unpack(
@@ -173,19 +183,18 @@ describe('AnonCrypt packer tests', () => {
       thid: crypto.randomUUID(),
       typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
       type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.VERIFICATION_RESPONSE_MESSAGE_TYPE,
-      from: endUserDid,
-      to: mobileDid,
+      from: endUserData.did,
+      to: mobileDid.did,
       body: {
         did_doc: mobileDidDocument
       }
     };
 
     const packedMessage = await endUserPackageManager.packMessage(unpackedMediaType, responseMsg, {
-      recipientDidDoc: mobileDidDocument,
       alg: PROTOCOL_CONSTANTS.AcceptJweAlgorithms.RSA_OAEP_256,
       enc: PROTOCOL_CONSTANTS.JweEncryption.A256GCM,
       typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
-      kid: mobileKid
+      recipients: [{ kid: mobileKid, didDocument: mobileDidDocument }]
     });
 
     // 5. mobile decrypts the message with his private key
