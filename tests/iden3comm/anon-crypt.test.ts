@@ -82,6 +82,8 @@ describe('AnonCrypt packer tests', () => {
       id: keyPath(kmsProvider.keyType, did)
     };
 
+    const kid = `${kmsKeyId.id.split(':').slice(1).join(':')}#key1`;
+
     const publicKeyJwk = toPubKey(pkJwk);
 
     const didDocument = {
@@ -90,10 +92,10 @@ describe('AnonCrypt packer tests', () => {
         'https://w3id.org/security/suites/ed25519-2020/v1'
       ],
       id: did,
-      keyAgreement: [kmsKeyId.id],
+      keyAgreement: [kid],
       verificationMethod: [
         {
-          id: kmsKeyId.id,
+          id: kid,
           type: 'JsonWebKey2020',
           controller: did,
           publicKeyJwk
@@ -123,7 +125,7 @@ describe('AnonCrypt packer tests', () => {
       kmsKeyId,
       didDocument: didDocument as unknown as DIDDocument,
       publicKeyJwk,
-      kid: kmsKeyId.id
+      kid
     };
   };
 
