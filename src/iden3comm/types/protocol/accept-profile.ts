@@ -1,6 +1,6 @@
 import {
   AcceptAuthCircuits,
-  AcceptJweAlgorithms,
+  AcceptJweKEKAlgorithms,
   AcceptJwsAlgorithms,
   AcceptJwzAlgorithms,
   MediaType,
@@ -11,5 +11,5 @@ export type AcceptProfile = {
   protocolVersion: ProtocolVersion;
   env: MediaType;
   circuits?: AcceptAuthCircuits[];
-  alg?: AcceptJwsAlgorithms[] | AcceptJwzAlgorithms[] | AcceptJweAlgorithms[];
+  alg?: AcceptJwsAlgorithms[] | AcceptJwzAlgorithms[] | AcceptJweKEKAlgorithms[];
 };

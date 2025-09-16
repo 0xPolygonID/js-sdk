@@ -2,7 +2,7 @@ import { Resolvable } from 'did-resolver';
 import { JoseService } from '../../kms/services/jose.service';
 import { base58ToBytes, base64UrlToBytes, byteDecoder, byteEncoder, hexToBytes } from '../../utils';
 import {
-  AcceptJweAlgorithms,
+  AcceptJweKEKAlgorithms,
   MediaType,
   ProtocolVersion,
   VerificationMethodType
@@ -16,22 +16,20 @@ export type RecipientInfo = {
   did: DID;
   didDocument?: DIDDocument;
   keyType?: VerificationMethodType;
-  alg?: AcceptJweAlgorithms;
+  alg?: AcceptJweKEKAlgorithms;
 };
 
 export type JWEPackerParams = {
-  alg: string;
   enc: string;
   recipients: RecipientInfo[];
-  typ?: string;
 };
 
 export class AnonCryptPacker implements IPacker {
   private readonly _supportedProtocolVersions = [ProtocolVersion.V1];
 
   private _supportedAlgorithms = [
-    AcceptJweAlgorithms.RSA_OAEP_256,
-    AcceptJweAlgorithms.ECDH_ES_A256KW
+    AcceptJweKEKAlgorithms.RSA_OAEP_256,
+    AcceptJweKEKAlgorithms.ECDH_ES_A256KW
   ];
 
   constructor(
@@ -53,11 +51,11 @@ export class AnonCryptPacker implements IPacker {
     this._kmsKeyIds = [...new Set([...this._kmsKeyIds, ...keyIds])];
   }
 
-  getSupportedAlgorithms(): AcceptJweAlgorithms[] {
+  getSupportedAlgorithms(): AcceptJweKEKAlgorithms[] {
     return this._supportedAlgorithms;
   }
 
-  registerSupportedAlgorithm(algorithm: AcceptJweAlgorithms): void {
+  registerSupportedAlgorithm(algorithm: AcceptJweKEKAlgorithms): void {
     this._supportedAlgorithms = [...new Set([...this._supportedAlgorithms, algorithm])];
   }
 
@@ -123,7 +121,9 @@ export class AnonCryptPacker implements IPacker {
       throw new Error(`Circuits are not supported for ${env} media type`);
     }
 
-    return Boolean(alg?.some((a) => this._supportedAlgorithms.includes(a as AcceptJweAlgorithms)));
+    return Boolean(
+      alg?.some((a) => this._supportedAlgorithms.includes(a as AcceptJweKEKAlgorithms))
+    );
   }
 
   extractPublicKeyBytes = (vm: VerificationMethod): JsonWebKey | Uint8Array | null => {
@@ -145,6 +145,7 @@ export class AnonCryptPacker implements IPacker {
 
   private async getRecipientsJWKs(recipients: RecipientInfo[]): Promise<
     {
+      alg: string;
       did: string;
       keyType: VerificationMethodType;
       kid: string;
@@ -173,10 +174,14 @@ export class AnonCryptPacker implements IPacker {
         }
 
         const keyType = recipient.keyType ?? 'JsonWebKey2020';
+        const alg = recipient.alg ?? AcceptJweKEKAlgorithms.RSA_OAEP_256;
 
         // !!! TODO: could be more than one key with the same controller and type, taking the first one for now
         const vm = vms.find(
-          (vm) => vm.controller === recipient.did.string() && vm.type === keyType
+          (vm) =>
+            vm.controller === recipient.did.string() &&
+            vm.type === keyType &&
+            vm.publicKeyJwk?.alg === alg
         );
 
         if (!vm) {
@@ -201,6 +206,7 @@ export class AnonCryptPacker implements IPacker {
           did: recipient.did.string(),
           keyType,
           kid: vm.id,
+          alg,
           recipientJWK
         };
       })
@@ -208,16 +214,16 @@ export class AnonCryptPacker implements IPacker {
   }
 
   private async packInternal(message: BasicMessage, params: JWEPackerParams): Promise<Uint8Array> {
-    const { alg, enc, recipients, typ } = params;
-    if (!alg) {
-      throw new Error('Missing algorithm');
-    }
+    const { enc, recipients } = params;
 
     if (!enc) {
       throw new Error('Missing encryption algorithm');
     }
 
-    // !!! TODO: is this check needed?
+    if (!recipients.length) {
+      throw new Error('Missing recipients');
+    }
+
     if (!message.to) {
       throw new Error('Missing recipient DID');
     }
@@ -227,9 +233,8 @@ export class AnonCryptPacker implements IPacker {
     const msg = byteEncoder.encode(JSON.stringify(message));
 
     const jwe = await this._joseService.encrypt(msg, {
-      alg,
       enc,
-      typ: typ || MediaType.EncryptedMessage,
+      typ: MediaType.EncryptedMessage,
       recipients: recipientsJwks
     });
 

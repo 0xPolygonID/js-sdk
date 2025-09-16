@@ -119,12 +119,12 @@ export enum AcceptJwsAlgorithms {
   ES256KR = 'ES256K-R'
 }
 
-export enum AcceptJweAlgorithms {
+export enum AcceptJweKEKAlgorithms {
   ECDH_ES_A256KW = 'ECDH-ES+A256KW',
   RSA_OAEP_256 = 'RSA-OAEP-256'
 }
 
-export enum JweEncryption {
+export enum CEKEncryption {
   A256GCM = 'A256GCM',
   A256CBC_HS512 = 'A256CBC-HS512'
 }

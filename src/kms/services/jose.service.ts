@@ -2,10 +2,10 @@ import { generalDecrypt, GeneralDecryptResult, GeneralEncrypt, GeneralJWE } from
 import { VerificationMethodType } from '../../iden3comm/constants';
 
 export type JoseParams = {
-  alg: string;
   enc: string;
   typ: string;
   recipients: {
+    alg: string;
     did: string;
     keyType: VerificationMethodType;
     kid: string;
@@ -15,14 +15,13 @@ export type JoseParams = {
 
 export class JoseService {
   async encrypt(msg: Uint8Array, options: JoseParams): Promise<GeneralJWE> {
-    const { enc, typ, alg, recipients } = options;
-    const generalJwe = new GeneralEncrypt(msg)
-      .setProtectedHeader({ enc, typ })
-      .setSharedUnprotectedHeader({ alg });
+    const { enc, typ, recipients } = options;
+    const generalJwe = new GeneralEncrypt(msg).setProtectedHeader({ enc, typ });
 
-    recipients.forEach((recipient) => {
-      generalJwe.addRecipient(recipient.recipientJWK).setUnprotectedHeader({
-        kid: recipient.kid
+    recipients.forEach(({ recipientJWK, alg, kid }) => {
+      generalJwe.addRecipient(recipientJWK).setUnprotectedHeader({
+        alg,
+        kid
       });
     });
 

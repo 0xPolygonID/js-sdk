@@ -5,7 +5,7 @@ import {
   AcceptAuthCircuits,
   AcceptJwzAlgorithms,
   AcceptJwsAlgorithms,
-  AcceptJweAlgorithms
+  AcceptJweKEKAlgorithms
 } from '../constants';
 import { AcceptProfile } from '../types';
 
@@ -53,7 +53,7 @@ export const acceptHasProvingMethodAlg = (
 };
 
 function isAcceptJweAlgorithms(value: string): boolean {
-  return Object.values(AcceptJweAlgorithms).includes(value as AcceptJweAlgorithms);
+  return Object.values(AcceptJweKEKAlgorithms).includes(value as AcceptJweKEKAlgorithms);
 }
 
 export const buildAccept = (profiles: AcceptProfile[]): string[] => {
@@ -127,7 +127,7 @@ export const parseAcceptProfile = (profile: string): AcceptProfile => {
     .split(',')
     .map((i) => i.trim());
 
-  let alg: AcceptJwsAlgorithms[] | AcceptJwzAlgorithms[] | AcceptJweAlgorithms[] = [];
+  let alg: AcceptJwsAlgorithms[] | AcceptJwzAlgorithms[] | AcceptJweKEKAlgorithms[] = [];
 
   switch (env) {
     case MediaType.ZKPMessage:
@@ -151,7 +151,7 @@ export const parseAcceptProfile = (profile: string): AcceptProfile => {
         if (!isAcceptJweAlgorithms(i)) {
           throw new Error(`Algorithm '${i}' not supported for '${env}'`);
         }
-        return i as AcceptJweAlgorithms;
+        return i as AcceptJweKEKAlgorithms;
       });
       break;
     default:
