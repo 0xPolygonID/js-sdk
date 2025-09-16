@@ -10,10 +10,12 @@ import {
   IPackageManager,
   PackageManager,
   KMS,
-  keyPath
+  keyPath,
+  RecipientInfo
 } from '../../src';
 import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
+import { DID } from '@iden3/js-iden3-core';
 
 const toPubKey = (pkJwk: JsonWebKey) => {
   return {
@@ -27,7 +29,7 @@ const toPubKey = (pkJwk: JsonWebKey) => {
 
 describe('AnonCrypt packer tests', () => {
   const endUserData = {
-    did: 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT',
+    did: DID.parse('did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT'),
 
     pkJwk: {
       key_ops: ['decrypt', 'unwrapKey'],
@@ -45,7 +47,7 @@ describe('AnonCrypt packer tests', () => {
     }
   };
   const mobileDid = {
-    did: 'did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49',
+    did: DID.parse('did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49'),
 
     pkJwk: {
       key_ops: ['decrypt', 'unwrapKey'],
@@ -64,7 +66,7 @@ describe('AnonCrypt packer tests', () => {
   };
 
   const initKeyStore = async (
-    { did, pkJwk }: { did: string; pkJwk: JsonWebKey },
+    { did, pkJwk }: { did: DID; pkJwk: JsonWebKey },
     didDocResolver?: Resolvable
   ): Promise<{
     packerManager: IPackageManager;
@@ -79,7 +81,7 @@ describe('AnonCrypt packer tests', () => {
     const kmsProvider = new RsaOAEPKeyProvider(memoryKeyStore);
     const kmsKeyId = {
       type: kmsProvider.keyType,
-      id: keyPath(kmsProvider.keyType, did)
+      id: keyPath(kmsProvider.keyType, did.string())
     };
 
     const kid = `${kmsKeyId.id.split(':').slice(1).join(':')}#key1`;
@@ -91,13 +93,13 @@ describe('AnonCrypt packer tests', () => {
         'https://www.w3.org/ns/did/v1',
         'https://w3id.org/security/suites/ed25519-2020/v1'
       ],
-      id: did,
+      id: did.string(),
       keyAgreement: [kid],
       verificationMethod: [
         {
           id: kid,
           type: 'JsonWebKey2020',
-          controller: did,
+          controller: did.string(),
           publicKeyJwk
         }
       ]
@@ -130,22 +132,16 @@ describe('AnonCrypt packer tests', () => {
   };
 
   it('pack / unpack: kid', async () => {
-    const {
-      packerManager: endUserPackageManager,
-      didDocument: endUserDidDocument,
-      kid: endUserKid
-    } = await initKeyStore(endUserData);
+    const { packerManager: endUserPackageManager, didDocument: endUserDidDocument } =
+      await initKeyStore(endUserData);
 
-    const {
-      packerManager: mobilePackageManager,
-      didDocument: mobileDidDocument,
-      kid: mobileKid
-    } = await initKeyStore(mobileDid, {
-      resolve: async () =>
-        ({
-          didDocument: endUserDidDocument
-        } as DIDResolutionResult)
-    });
+    const { packerManager: mobilePackageManager, didDocument: mobileDidDocument } =
+      await initKeyStore(mobileDid, {
+        resolve: async () =>
+          ({
+            didDocument: endUserDidDocument
+          } as DIDResolutionResult)
+      });
 
     // 1. mobile encrypts the message with user's public key. Public key is
 
@@ -154,8 +150,8 @@ describe('AnonCrypt packer tests', () => {
       thid: crypto.randomUUID(),
       typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
       type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.VERIFICATION_REQUEST_MESSAGE_TYPE,
-      from: mobileDid.did,
-      to: endUserData.did
+      from: mobileDid.did.string(),
+      to: endUserData.did.string()
     };
 
     // 2. mobile side encrypts the message with end user's public key
@@ -166,7 +162,7 @@ describe('AnonCrypt packer tests', () => {
       {
         alg: PROTOCOL_CONSTANTS.AcceptJweAlgorithms.RSA_OAEP_256,
         enc: PROTOCOL_CONSTANTS.JweEncryption.A256GCM,
-        recipients: [{ kid: endUserKid }],
+        recipients: [{ did: endUserData.did, keyType: 'JsonWebKey2020' }] as RecipientInfo[],
         typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage
       }
     );
@@ -185,8 +181,8 @@ describe('AnonCrypt packer tests', () => {
       thid: crypto.randomUUID(),
       typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
       type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.VERIFICATION_RESPONSE_MESSAGE_TYPE,
-      from: endUserData.did,
-      to: mobileDid.did,
+      from: endUserData.did.string(),
+      to: mobileDid.did.string(),
       body: {
         did_doc: mobileDidDocument
       }
@@ -196,7 +192,7 @@ describe('AnonCrypt packer tests', () => {
       alg: PROTOCOL_CONSTANTS.AcceptJweAlgorithms.RSA_OAEP_256,
       enc: PROTOCOL_CONSTANTS.JweEncryption.A256GCM,
       typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
-      recipients: [{ kid: mobileKid, didDocument: mobileDidDocument }]
+      recipients: [{ did: mobileDid.did, didDocument: mobileDidDocument }] as RecipientInfo[]
     });
 
     // 5. mobile decrypts the message with his private key

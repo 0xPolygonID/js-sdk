@@ -129,6 +129,15 @@ export enum JweEncryption {
   A256CBC_HS512 = 'A256CBC-HS512'
 }
 
+export type VerificationMethodType =
+  | 'JsonWebKey2020'
+  | 'Ed25519VerificationKey2020'
+  | 'X25519KeyAgreementKey2020'
+  | 'Bls12381G2Key2020'
+  | 'P-256'
+  // eslint-disable-next-line @cspell/spellchecker
+  | 'Multikey';
+
 export const defaultAcceptProfile: AcceptProfile = {
   protocolVersion: ProtocolVersion.V1,
   env: MediaType.ZKPMessage,

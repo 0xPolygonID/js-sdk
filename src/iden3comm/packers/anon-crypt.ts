@@ -1,14 +1,22 @@
 import { Resolvable } from 'did-resolver';
 import { JoseService } from '../../kms/services/jose.service';
 import { base58ToBytes, base64UrlToBytes, byteDecoder, byteEncoder, hexToBytes } from '../../utils';
-import { AcceptJweAlgorithms, MediaType, ProtocolVersion } from '../constants';
+import {
+  AcceptJweAlgorithms,
+  MediaType,
+  ProtocolVersion,
+  VerificationMethodType
+} from '../constants';
 import { BasicMessage, DIDDocument, IPacker, VerificationMethod } from '../types';
 import { parseAcceptProfile, resolveVerificationMethods } from '../utils';
 import { KMS, KmsKeyId } from '../../kms';
+import { DID } from '@iden3/js-iden3-core';
 
 export type RecipientInfo = {
-  kid: string;
-  didDocument: DIDDocument;
+  did: DID;
+  didDocument?: DIDDocument;
+  keyType?: VerificationMethodType;
+  alg?: AcceptJweAlgorithms;
 };
 
 export type JWEPackerParams = {
@@ -30,7 +38,6 @@ export class AnonCryptPacker implements IPacker {
     private readonly _joseService: JoseService,
     private readonly _kms: KMS,
     private readonly _documentResolver: Resolvable,
-
     private _kmsKeyIds: KmsKeyId[]
   ) {}
 
@@ -136,23 +143,22 @@ export class AnonCryptPacker implements IPacker {
     return null;
   };
 
-  private async getRecipientsJWKs(
-    recipients: RecipientInfo[],
-    recipientDid: string
-  ): Promise<
+  private async getRecipientsJWKs(recipients: RecipientInfo[]): Promise<
     {
+      did: string;
+      keyType: VerificationMethodType;
       kid: string;
       recipientJWK: JsonWebKey;
     }[]
   > {
     return Promise.all(
       recipients.map(async (recipient) => {
-        if (!recipient.kid) {
+        if (!recipient.did) {
           throw new Error('Missing target key id');
         }
-        const recipientDidDoc: DIDDocument =
+        const recipientDidDoc: DIDDocument | null =
           recipient.didDocument ??
-          (await this._documentResolver.resolve(recipientDid))?.didDocument;
+          (await this._documentResolver.resolve(recipient.did.string()))?.didDocument;
 
         if (!recipientDidDoc) {
           throw new Error('Recipient DID document not found');
@@ -166,12 +172,18 @@ export class AnonCryptPacker implements IPacker {
           );
         }
 
-        // try to find a managed signing key that matches keyRef
-        const vm = vms.find((vm) => vm.id === recipient.kid);
+        const keyType = recipient.keyType ?? 'JsonWebKey2020';
+
+        // !!! TODO: could be more than one key with the same controller and type, taking the first one for now
+        const vm = vms.find(
+          (vm) => vm.controller === recipient.did.string() && vm.type === keyType
+        );
 
         if (!vm) {
           throw new Error(
-            `No key found with id ${recipient.kid} in DID document of ${recipientDidDoc.id}`
+            `No key found with id ${recipient.did.string()} and type ${keyType} in DID document of ${
+              recipientDidDoc.id
+            }`
           );
         }
 
@@ -186,7 +198,9 @@ export class AnonCryptPacker implements IPacker {
         }
 
         return {
-          kid: recipient.kid,
+          did: recipient.did.string(),
+          keyType,
+          kid: vm.id,
           recipientJWK
         };
       })
@@ -203,12 +217,12 @@ export class AnonCryptPacker implements IPacker {
       throw new Error('Missing encryption algorithm');
     }
 
-    const recipientDid = message.to;
-    if (!recipientDid) {
+    // !!! TODO: is this check needed?
+    if (!message.to) {
       throw new Error('Missing recipient DID');
     }
 
-    const recipientsJwks = await this.getRecipientsJWKs(recipients, recipientDid);
+    const recipientsJwks = await this.getRecipientsJWKs(recipients);
 
     const msg = byteEncoder.encode(JSON.stringify(message));
 

@@ -1,10 +1,13 @@
 import { generalDecrypt, GeneralDecryptResult, GeneralEncrypt, GeneralJWE } from 'jose';
+import { VerificationMethodType } from '../../iden3comm/constants';
 
 export type JoseParams = {
   alg: string;
   enc: string;
   typ: string;
   recipients: {
+    did: string;
+    keyType: VerificationMethodType;
     kid: string;
     recipientJWK: JsonWebKey;
   }[];
