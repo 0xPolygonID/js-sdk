@@ -90,7 +90,6 @@ describe('AnonCrypt packer tests', () => {
   }> => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
 
-    memoryKeyStore.get = () => Promise.resolve(JSON.stringify(pkJwk));
     const kmsProvider = new RsaOAEPKeyProvider(memoryKeyStore);
 
     const publicKeyJwk = await kmsProvider.publicKeyFromPrivateKey(pkJwk);
@@ -101,6 +100,13 @@ describe('AnonCrypt packer tests', () => {
       type: kmsProvider.keyType,
       id: keyPath(kmsProvider.keyType, keyId)
     };
+
+    // memoryKeyStore.importKey({
+    //   alias: kmsKeyId.id,
+    //   key: JSON.stringify(pkJwk)
+    // });
+
+    memoryKeyStore.get = () => Promise.resolve(JSON.stringify(pkJwk));
 
     const kid = `${did.string()}#${keyId}`;
 
