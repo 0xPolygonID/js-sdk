@@ -9,8 +9,9 @@ import {
 } from '../constants';
 import { BasicMessage, DIDDocument, IPacker, VerificationMethod } from '../types';
 import { parseAcceptProfile, resolveVerificationMethods } from '../utils';
-import { KMS, KmsKeyId } from '../../kms';
+import { KMS, KmsKeyType } from '../../kms';
 import { DID } from '@iden3/js-iden3-core';
+import { GeneralJWE } from 'jose';
 
 export type RecipientInfo = {
   did: DID;
@@ -35,20 +36,11 @@ export class AnonCryptPacker implements IPacker {
   constructor(
     private readonly _joseService: JoseService,
     private readonly _kms: KMS,
-    private readonly _documentResolver: Resolvable,
-    private _kmsKeyIds: KmsKeyId[]
+    private readonly _documentResolver: Resolvable
   ) {}
 
   packMessage(msg: BasicMessage, param: JWEPackerParams): Promise<Uint8Array> {
     return this.packInternal(msg, param);
-  }
-
-  getSupportedKeyIds(): KmsKeyId[] {
-    return this._kmsKeyIds;
-  }
-
-  registerSupportedKeyIds(keyIds: KmsKeyId[]): void {
-    this._kmsKeyIds = [...new Set([...this._kmsKeyIds, ...keyIds])];
   }
 
   getSupportedAlgorithms(): AcceptJweKEKAlgorithms[] {
@@ -72,18 +64,39 @@ export class AnonCryptPacker implements IPacker {
   }
 
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
-    const jwe = JSON.parse(byteDecoder.decode(envelope));
+    const jwe: GeneralJWE = JSON.parse(byteDecoder.decode(envelope));
 
-    const promises = this._kmsKeyIds.map((keyId) =>
+    if (!jwe.recipients?.length) {
+      throw new Error('Missing recipients');
+    }
+
+    const promises = jwe.recipients.map((recipient) =>
       this._joseService.decrypt(jwe, async () => {
-        const pkStore = await this._kms.getKeyProvider(keyId.type)?.getPkStore();
-        if (!pkStore) {
-          throw new Error(`Key provider not found for ${keyId.type}`);
+        const kid = recipient.header?.kid;
+        if (!kid) {
+          throw new Error('Missing kid');
         }
+
+        const kmsKeyType = recipient.header?.alg as KmsKeyType;
+
+        if (!kmsKeyType) {
+          throw new Error('Missing kms key type');
+        }
+
+        const pkStore = await this._kms.getKeyProvider(kmsKeyType)?.getPkStore();
+        if (!pkStore) {
+          throw new Error(`Key provider not found for ${kmsKeyType}`);
+        }
+
+        const alias = kid.split('#')[0];
+        if (!alias) {
+          throw new Error('Missing alias');
+        }
+
         try {
-          return JSON.parse(await pkStore.get({ alias: keyId.id })) as CryptoKey;
+          return JSON.parse(await pkStore.get({ alias })) as CryptoKey;
         } catch (error) {
-          throw new Error(`Key not found for ${keyId.id}`);
+          throw new Error(`Key not found for ${alias}`);
         }
       })
     );

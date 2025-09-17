@@ -57,16 +57,7 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   DISCOVERY_PROTOCOL_DISCLOSE_MESSAGE_TYPE:
     `${DIDCOMM_PROTOCOL}discover-features/2.0/disclose` as const,
   // ProblemReportMessageType is type for didcomm problem report
-  PROBLEM_REPORT_MESSAGE_TYPE: `${DIDCOMM_PROTOCOL}report-problem/2.0/problem-report` as const,
-  // VerificationRequestMessageType is type for verification request message
-  VERIFICATION_REQUEST_MESSAGE_TYPE: `${IDEN3_PROTOCOL}passport/0.1/verification-request` as const,
-  // VerificationResponseMessageType is type for verification response message
-  VERIFICATION_RESPONSE_MESSAGE_TYPE:
-    `${IDEN3_PROTOCOL}passport/0.1/verification-response` as const,
-  // AttestationRequestMessageType is type for attestation request message
-  ATTESTATION_REQUEST_MESSAGE_TYPE: `${IDEN3_PROTOCOL}passport/0.1/attestation/request` as const,
-  // AttestationResponseMessageType is type for attestation response message
-  ATTESTATION_RESPONSE_MESSAGE_TYPE: `${IDEN3_PROTOCOL}passport/0.1/attestation/response` as const
+  PROBLEM_REPORT_MESSAGE_TYPE: `${DIDCOMM_PROTOCOL}report-problem/2.0/problem-report` as const
 });
 
 /**

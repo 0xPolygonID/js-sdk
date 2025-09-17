@@ -124,7 +124,7 @@ export class PackageManager implements IPackageManager {
 
   /** {@inheritDoc IPackageManager.getMediaType} */
   getMediaType(envelope: string): MediaType {
-    const error = new Error('Header is missing typ');
+    const error = new Error(`missing header 'typ' in the envelope`);
     const supportedMediaTypes = Object.values(MediaType);
     if (envelope[0] === '{') {
       const envelopeStub = JSON.parse(envelope);
