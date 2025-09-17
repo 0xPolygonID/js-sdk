@@ -36,7 +36,10 @@ export class AnonCryptPacker implements IPacker {
   constructor(
     private readonly _joseService: JoseService,
     private readonly _kms: KMS,
-    private readonly _documentResolver: Resolvable
+    private readonly _documentResolver: Resolvable,
+    private readonly options?: {
+      resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>;
+    }
   ) {}
 
   packMessage(msg: BasicMessage, param: JWEPackerParams): Promise<Uint8Array> {
@@ -81,6 +84,12 @@ export class AnonCryptPacker implements IPacker {
 
         if (!kmsKeyType) {
           throw new Error('Missing kms key type');
+        }
+
+        const privateKey = await this.options?.resolvePrivateKeyByKid?.(kid);
+
+        if (privateKey) {
+          return privateKey;
         }
 
         const pkStore = await this._kms.getKeyProvider(kmsKeyType)?.getPkStore();

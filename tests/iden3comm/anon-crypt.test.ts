@@ -10,21 +10,65 @@ import {
   IPackageManager,
   PackageManager,
   KMS,
-  keyPath,
   RecipientInfo,
   JWEPackerParams,
+  byteDecoder,
+  IKeyProvider,
+  P384Provider,
+  bytesToBase64url,
   defaultRSAOaepKmsIdPathGeneratingFunction,
-  byteDecoder
+  keyPath
 } from '../../src';
 import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
-import { DID } from '@iden3/js-iden3-core';
+import { BytesHelper, DID } from '@iden3/js-iden3-core';
 import { GeneralJWE } from 'jose';
+import { p384 } from '@noble/curves/p384';
+
+const toPublicKeyJwk = (
+  keyStr: string,
+  alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms
+): JsonWebKey => {
+  switch (alg) {
+    case PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.RSA_OAEP_256: {
+      const pubJwk = JSON.parse(keyStr);
+
+      return {
+        kty: pubJwk.kty,
+        n: pubJwk.n,
+        e: pubJwk.e,
+        alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.RSA_OAEP_256,
+        ext: true
+      };
+    }
+
+    case PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.ECDH_ES_A256KW: {
+      const pubJwk = p384.Point.fromHex(keyStr);
+
+      const coordinateByteLength = 48;
+
+      const xBytes = BytesHelper.intToNBytes(pubJwk.x, coordinateByteLength).reverse();
+      const yBytes = BytesHelper.intToNBytes(pubJwk.y, coordinateByteLength).reverse();
+      const x = bytesToBase64url(xBytes);
+      const y = bytesToBase64url(yBytes);
+
+      return {
+        kty: 'EC',
+        crv: 'P-384',
+        alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.ECDH_ES_A256KW,
+        x,
+        y,
+        ext: true
+      };
+    }
+    default:
+      throw new Error(`Unsupported algorithm: ${alg}`);
+  }
+};
 
 describe('AnonCrypt packer tests', () => {
   const endUserData = {
     did: DID.parse('did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT'),
-
     pkJwk: {
       key_ops: ['decrypt', 'unwrapKey'],
       ext: true,
@@ -42,7 +86,6 @@ describe('AnonCrypt packer tests', () => {
   };
   const mobileDid = {
     did: DID.parse('did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49'),
-
     pkJwk: {
       key_ops: ['decrypt', 'unwrapKey'],
       ext: true,
@@ -61,7 +104,6 @@ describe('AnonCrypt packer tests', () => {
 
   const anotherDid = {
     did: DID.parse('did:iden3:polygon:amoy:A6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49'),
-
     pkJwk: {
       key_ops: ['decrypt', 'unwrapKey'],
       ext: true,
@@ -79,36 +121,50 @@ describe('AnonCrypt packer tests', () => {
   };
 
   const initKeyStore = async (
-    { did, pkJwk }: { did: DID; pkJwk: JsonWebKey },
-    didDocResolver?: Resolvable
+    {
+      did,
+      pkJwk,
+      alg
+    }: { did: DID; pkJwk?: JsonWebKey; alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms },
+    didDocResolver?: Resolvable,
+    resolvePrivateKeyByKidFactory?: (
+      keyProvider: IKeyProvider
+    ) => (kid: string) => Promise<CryptoKey>
   ): Promise<{
     packerManager: IPackageManager;
     kmsKeyId: KmsKeyId;
     didDocument: DIDDocument;
-    publicKeyJwk: globalThis.JsonWebKey;
+    publicKeyJwk: JsonWebKey;
     kid: string;
   }> => {
-    const memoryKeyStore = new InMemoryPrivateKeyStore();
+    const store = new InMemoryPrivateKeyStore();
+    const kmsProvider =
+      alg === PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.RSA_OAEP_256
+        ? new RsaOAEPKeyProvider(store)
+        : new P384Provider(store);
 
-    const kmsProvider = new RsaOAEPKeyProvider(memoryKeyStore);
+    let publicKeyJwk: JsonWebKey;
+    let kmsKeyId: KmsKeyId;
 
-    const publicKeyJwk = await kmsProvider.publicKeyFromPrivateKey(pkJwk);
+    if (pkJwk) {
+      publicKeyJwk = toPublicKeyJwk(JSON.stringify(pkJwk), alg);
+      const keyId = defaultRSAOaepKmsIdPathGeneratingFunction(publicKeyJwk);
+      kmsKeyId = {
+        type: kmsProvider.keyType,
+        id: keyPath(kmsProvider.keyType, keyId)
+      };
+      store.get = () => Promise.resolve(JSON.stringify(pkJwk));
+    } else {
+      kmsKeyId = await kmsProvider.newPrivateKey();
 
-    const keyId = defaultRSAOaepKmsIdPathGeneratingFunction(publicKeyJwk);
+      const pubKey = await kmsProvider.publicKey(kmsKeyId);
 
-    const kmsKeyId = {
-      type: kmsProvider.keyType,
-      id: keyPath(kmsProvider.keyType, keyId)
-    };
+      publicKeyJwk = toPublicKeyJwk(pubKey, alg);
+    }
 
-    // memoryKeyStore.importKey({
-    //   alias: kmsKeyId.id,
-    //   key: JSON.stringify(pkJwk)
-    // });
+    const alias = kmsKeyId.id.split(':').pop();
 
-    memoryKeyStore.get = () => Promise.resolve(JSON.stringify(pkJwk));
-
-    const kid = `${did.string()}#${keyId}`;
+    const kid = `${did.string()}#${alias}`;
 
     const didDocument = {
       '@context': [
@@ -140,7 +196,9 @@ describe('AnonCrypt packer tests', () => {
 
     const joseService = new JoseService();
 
-    const packer = new AnonCryptPacker(joseService, kms, resolver);
+    const packer = new AnonCryptPacker(joseService, kms, resolver, {
+      resolvePrivateKeyByKid: resolvePrivateKeyByKidFactory?.(kmsProvider)
+    });
     const packerManager = new PackageManager();
     packerManager.registerPackers([packer]);
 
@@ -153,19 +211,39 @@ describe('AnonCrypt packer tests', () => {
     };
   };
 
-  it('pack / unpack: kid', async () => {
+  const flow = async (
+    alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms,
+    enc: PROTOCOL_CONSTANTS.CEKEncryption,
+    withMockKeys = false,
+    resolvePrivateKeyByKidFactory?: (
+      keyProvider: IKeyProvider
+    ) => (kid: string) => Promise<CryptoKey>
+  ) => {
     const { packerManager: endUserPackageManager, didDocument: endUserDidDocument } =
-      await initKeyStore(endUserData);
+      await initKeyStore(
+        { did: endUserData.did, alg, pkJwk: withMockKeys ? endUserData.pkJwk : undefined },
+        undefined,
+        resolvePrivateKeyByKidFactory
+      );
 
     const { packerManager: mobilePackageManager, didDocument: mobileDidDocument } =
-      await initKeyStore(mobileDid, {
-        resolve: async () =>
-          ({
-            didDocument: endUserDidDocument
-          } as DIDResolutionResult)
-      });
+      await initKeyStore(
+        { did: mobileDid.did, alg, pkJwk: withMockKeys ? mobileDid.pkJwk : undefined },
 
-    const { didDocument: anotherDidDocument } = await initKeyStore(anotherDid);
+        {
+          resolve: async () =>
+            ({
+              didDocument: endUserDidDocument
+            } as DIDResolutionResult)
+        },
+        resolvePrivateKeyByKidFactory
+      );
+
+    const { didDocument: anotherDidDocument } = await initKeyStore({
+      did: anotherDid.did,
+      alg,
+      pkJwk: withMockKeys ? anotherDid.pkJwk : undefined
+    });
 
     // 1. mobile encrypts the message with user's public key. Public key is
 
@@ -184,11 +262,11 @@ describe('AnonCrypt packer tests', () => {
       PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
       messageToEncrypt,
       {
-        alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.RSA_OAEP_256,
-        enc: PROTOCOL_CONSTANTS.CEKEncryption.A256GCM,
+        alg,
+        enc,
         recipients: [
-          { did: endUserData.did },
-          { did: anotherDid.did, didDocument: anotherDidDocument }
+          { did: endUserData.did, alg },
+          { did: anotherDid.did, didDocument: anotherDidDocument, alg }
         ] as RecipientInfo[]
       } as JWEPackerParams
     );
@@ -215,13 +293,13 @@ describe('AnonCrypt packer tests', () => {
     };
 
     const packedMessage = await endUserPackageManager.packMessage(unpackedMediaType, responseMsg, {
-      enc: PROTOCOL_CONSTANTS.CEKEncryption.A256GCM,
+      enc,
       recipients: [
         {
           did: mobileDid.did,
           didDocument: mobileDidDocument,
           keyType: 'JsonWebKey2020',
-          alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.RSA_OAEP_256
+          alg
         }
       ] as RecipientInfo[]
     } as JWEPackerParams);
@@ -232,6 +310,41 @@ describe('AnonCrypt packer tests', () => {
 
     expect(unpackedResponseMsg).toEqual(responseMsg);
     expect(unpackedResponseMediaType).toEqual(PROTOCOL_CONSTANTS.MediaType.EncryptedMessage);
+  };
+
+  it('pack / unpack: kid', async () => {
+    for (const enc of [
+      PROTOCOL_CONSTANTS.CEKEncryption.A256GCM,
+      PROTOCOL_CONSTANTS.CEKEncryption.A256CBC_HS512
+    ]) {
+      await flow(PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.RSA_OAEP_256, enc, true);
+
+      await flow(
+        PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.ECDH_ES_A256KW,
+        enc,
+        false,
+        (keyProvider) => async (kid) => {
+          const pkStore = await keyProvider.getPkStore();
+          const alias = [keyProvider.keyType, kid.split('#').pop()].join(':');
+          const pkHex = await pkStore.get({ alias });
+
+          const pubKey = await keyProvider.publicKey({
+            type: keyProvider.keyType,
+            id: alias
+          });
+
+          const pubkJwk = toPublicKeyJwk(
+            pubKey,
+            PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.ECDH_ES_A256KW
+          );
+
+          return {
+            ...pubkJwk,
+            d: bytesToBase64url(BytesHelper.intToNBytes(BigInt('0x' + pkHex), 48).reverse())
+          } as unknown as CryptoKey;
+        }
+      );
+    }
   });
 
   it('Golang integration test', async () => {

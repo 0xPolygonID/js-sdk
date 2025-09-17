@@ -7,7 +7,8 @@ export enum KmsKeyType {
   BabyJubJub = 'BJJ',
   Secp256k1 = 'Secp256k1',
   Ed25519 = 'Ed25519',
-  RsaOaep256 = 'RSA-OAEP-256'
+  RsaOaep256 = 'RSA-OAEP-256',
+  P384 = 'P-384'
 }
 
 /**
