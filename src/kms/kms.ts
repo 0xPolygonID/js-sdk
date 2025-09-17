@@ -51,6 +51,14 @@ export interface IKeyProvider {
   newPrivateKeyFromSeed(seed: Uint8Array): Promise<KmsKeyId>;
 
   /**
+   * creates new key pair from given public key
+   *
+   * @param {JsonWebKey} privateKey - private key
+   * @returns `Promise<KmsKeyId>`
+   */
+  newPrivateKey(): Promise<KmsKeyId>;
+
+  /**
    * Verifies a message signature using the provided key ID.
    *
    * @param message - The message bytes to verify.
@@ -103,6 +111,14 @@ export class KMS {
       throw new Error(`keyProvider not found for: ${keyType}`);
     }
     return keyProvider.newPrivateKeyFromSeed(bytes);
+  }
+
+  async createKey(keyType: KmsKeyType): Promise<KmsKeyId> {
+    const keyProvider = this._registry.get(keyType);
+    if (!keyProvider) {
+      throw new Error(`keyProvider not found for: ${keyType}`);
+    }
+    return keyProvider.newPrivateKey();
   }
 
   /**

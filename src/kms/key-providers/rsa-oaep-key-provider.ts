@@ -1,8 +1,9 @@
 import { IKeyProvider } from '../kms';
 import { KmsKeyId, KmsKeyType } from '../store/types';
 import { AbstractPrivateKeyStore } from '../store/abstract-key-store';
-import { byteDecoder } from '../../utils';
+import { byteEncoder } from '../../utils';
 import * as providerHelpers from '../provider-helpers';
+import { ethers } from 'ethers';
 const { subtle } = globalThis.crypto;
 
 const defaultParams: RsaHashedKeyGenParams = {
@@ -12,6 +13,11 @@ const defaultParams: RsaHashedKeyGenParams = {
   hash: 'SHA-256'
 };
 
+export const defaultRSAOaepKmsIdPathGeneratingFunction = (publicKey: JsonWebKey) => {
+  const pathBytes = byteEncoder.encode((publicKey.n as string) + (publicKey.e as string));
+  return ethers.keccak256(pathBytes);
+};
+
 export class RsaOAEPKeyProvider implements IKeyProvider {
   private readonly _capabilities: KeyUsage[] = ['encrypt', 'decrypt', 'wrapKey', 'unwrapKey'];
 
@@ -19,7 +25,10 @@ export class RsaOAEPKeyProvider implements IKeyProvider {
 
   constructor(
     private readonly _keyStore: AbstractPrivateKeyStore,
-    private readonly _params: RsaHashedKeyGenParams = defaultParams
+    private readonly _params: RsaHashedKeyGenParams = defaultParams,
+    private readonly _kmsIdPathGeneratingFunction: (
+      publicKey: JsonWebKey
+    ) => string = defaultRSAOaepKmsIdPathGeneratingFunction
   ) {}
 
   /**
@@ -31,15 +40,12 @@ export class RsaOAEPKeyProvider implements IKeyProvider {
     return this._keyStore;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async newPrivateKeyFromSeed(seed: Uint8Array): Promise<KmsKeyId> {
-    // assume this is kid
-    const seedHash = byteDecoder.decode(seed);
+    throw new Error('Not implemented for RSA OAEP, use newPrivateKey instead');
+  }
 
-    const kmsId = {
-      type: this.keyType,
-      id: providerHelpers.keyPath(this.keyType, seedHash)
-    };
-
+  async newPrivateKey(): Promise<KmsKeyId> {
     const keyPair = (await subtle.generateKey(
       this._params as AlgorithmIdentifier,
       true,
@@ -49,10 +55,18 @@ export class RsaOAEPKeyProvider implements IKeyProvider {
     // Export the private key as JWK
     const jwk = await subtle.exportKey('jwk', keyPair.privateKey);
 
+    const publicKey = await this.publicKeyFromPrivateKey(jwk);
+
+    const kmsId = {
+      type: this.keyType,
+      id: providerHelpers.keyPath(this.keyType, this._kmsIdPathGeneratingFunction(publicKey))
+    };
+
     await this._keyStore.importKey({
       alias: kmsId.id,
       key: JSON.stringify(jwk)
     });
+
     return kmsId;
   }
 

@@ -12,21 +12,14 @@ import {
   KMS,
   keyPath,
   RecipientInfo,
-  JWEPackerParams
+  JWEPackerParams,
+  defaultRSAOaepKmsIdPathGeneratingFunction,
+  byteDecoder
 } from '../../src';
 import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
 import { DID } from '@iden3/js-iden3-core';
-
-const toPubKey = (pkJwk: JsonWebKey) => {
-  return {
-    kty: pkJwk.kty,
-    n: pkJwk.n,
-    e: pkJwk.e,
-    alg: pkJwk.alg,
-    ext: true
-  };
-};
+import { GeneralJWE } from 'jose';
 
 describe('AnonCrypt packer tests', () => {
   const endUserData = {
@@ -92,7 +85,7 @@ describe('AnonCrypt packer tests', () => {
     packerManager: IPackageManager;
     kmsKeyId: KmsKeyId;
     didDocument: DIDDocument;
-    publicKeyJwk: JsonWebKey;
+    publicKeyJwk: globalThis.JsonWebKey;
     kid: string;
   }> => {
     const memoryKeyStore = new InMemoryPrivateKeyStore();
@@ -100,14 +93,16 @@ describe('AnonCrypt packer tests', () => {
     memoryKeyStore.get = () => Promise.resolve(JSON.stringify(pkJwk));
     const kmsProvider = new RsaOAEPKeyProvider(memoryKeyStore);
 
+    const publicKeyJwk = await kmsProvider.publicKeyFromPrivateKey(pkJwk);
+
+    const keyId = defaultRSAOaepKmsIdPathGeneratingFunction(publicKeyJwk);
+
     const kmsKeyId = {
       type: kmsProvider.keyType,
-      id: keyPath(kmsProvider.keyType, did.string())
+      id: keyPath(kmsProvider.keyType, keyId)
     };
 
-    const kid = `${kmsKeyId.id.split(':').slice(1).join(':')}#key1`;
-
-    const publicKeyJwk = toPubKey(pkJwk);
+    const kid = `${did.string()}#${keyId}`;
 
     const didDocument = {
       '@context': [
@@ -139,7 +134,7 @@ describe('AnonCrypt packer tests', () => {
 
     const joseService = new JoseService();
 
-    const packer = new AnonCryptPacker(joseService, kms, resolver, [kmsKeyId]);
+    const packer = new AnonCryptPacker(joseService, kms, resolver);
     const packerManager = new PackageManager();
     packerManager.registerPackers([packer]);
 
@@ -172,7 +167,7 @@ describe('AnonCrypt packer tests', () => {
       id: crypto.randomUUID(),
       thid: crypto.randomUUID(),
       typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
-      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.VERIFICATION_REQUEST_MESSAGE_TYPE,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
       from: mobileDid.did.string(),
       to: endUserData.did.string()
     };
@@ -205,7 +200,7 @@ describe('AnonCrypt packer tests', () => {
       id: crypto.randomUUID(),
       thid: crypto.randomUUID(),
       typ: PROTOCOL_CONSTANTS.MediaType.EncryptedMessage,
-      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.VERIFICATION_RESPONSE_MESSAGE_TYPE,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE,
       from: endUserData.did.string(),
       to: mobileDid.did.string(),
       body: {
@@ -231,5 +226,45 @@ describe('AnonCrypt packer tests', () => {
 
     expect(unpackedResponseMsg).toEqual(responseMsg);
     expect(unpackedResponseMediaType).toEqual(PROTOCOL_CONSTANTS.MediaType.EncryptedMessage);
+  });
+
+  it('Golang integration test', async () => {
+    const golangGWE: GeneralJWE = {
+      ciphertext:
+        'Y4JTGPfMcb_qroeLzSLAHl1A18sjI0sQhNOyEh0NPY99meVAQlYvTIs9-bKJ8vnZPpGJe7nWkuMi8I-FSKeOdxPruHGWHiRLVUxVHhtqRmxJ9_18fgMzbldUn9np49j03ooTiYn2pAFEvwpFyQh9SC35CB8Mqr4gTqUfk6LTVde7hyM5k6STNf5NmYtr5LOoT_OYawblk2SyO0654U6DH7x-rYIgZvY3LJYYVSvi4GmJ5vOzm-KPcnDrdzd1MO8E0eFObqlNTInhXWOAypNGEypj_cMS8ofg7F1B7HvIvV8NZS3ZKuDthf9c5siQPe5PgsZjv7UfuojEJAltgwBG8lHW_dPF7-Sg1qO5zdnxpqI3ZHdhOWZYfs2a7rxHvkfXfd-Xlf5AgxcZVYujMJRFVF_2PzGm7rgC5SKgFmzLHkQzH0xGqTdYJ9RI8ybWecHSS-lY-IUAe7Q4uZiSmV-utkpW3DnYuHbFQvFm14yMegk',
+      iv: 'vMUyUg-JL5Yg4ELKiMgC3g',
+      protected:
+        'eyJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwidHlwIjoiYXBwbGljYXRpb24vaWRlbjNjb21tLWVuY3J5cHRlZC1qc29uIn0',
+      recipients: [
+        {
+          header: {
+            alg: 'RSA-OAEP-256',
+            kid: 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT#key1'
+          },
+          encrypted_key:
+            'MxL85rOkjNPFPJKL57QhQV7ZT9BbW07DPoYi_VjeyWWBRjrUNZjKHoauPu_DAf038Sw0vIATzsZGot32znvdUTIyF-hI4YiI_qqb8Bh9tPYBaB4wilIrOaWgRUrhfw8cJpH4iRJTieOfPZPPtfhziOLPAv3M6PQERnl6e9Rnq3Woss5F64NXjJo-6oReqS5OY6MsEYEgTpXfLF2ibbZB-siGnaY-tpvBgZSTagnDJgbO-uexEqdJCI-Q2IjIE5-9NPilGhp9NE3pednpzDdEREplcoti7yH3l3Ecc9rd6YU9ptaXEBv4RYrMwJ_f8IrA_-k6zbgpORclMvsSIG92-Q'
+        },
+        {
+          header: {
+            alg: 'RSA-OAEP-256',
+            kid: 'did:iden3:polygon:amoy:A6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49#key1'
+          },
+          encrypted_key:
+            'DW69p8e2ZSHbmRKRWoZSctF-Eq0Q22pguIFbjqzMoJ7F95h8NYlpswg9JzOL8cb_ns6gi-YuKT2X_R2Y4RcNAjshZvJVtXbVRxm238fN3BQM2LSP0UoaAsXURtpUJjeXmjBQEeo61K9Mn9oxWZHk65dXpuo-cuWDpfXT3WEV_e878kWI5Qp99L2xRQ4Z-XVMi4XREWawHEk8P2F05K-0ppoQCD5zxpAoLIrAKeMYdCT3i6_VC73qhrKgzYf38YLxASzsXF-aQfAMLraZErMyAEUuaAEtS2i5C_jfpvknLtn-iba8p9bUVQhmAA9pGX1mbX6JovU2cz1ZK1OFMjvC7A'
+        }
+      ],
+      tag: '7Z6lWhskArqKPNkjoVEudv3dxwAjqYsksLudkhLjM3I'
+    };
+
+    const expectedMessage = `{"id":"8589c266-f5f4-4a80-8fc8-c1ad4de3e3b4","thid":"43246acb-b772-414e-9c90-f36b37261000","typ":"application/iden3comm-encrypted-json","type":"https://iden3-communication.io/passport/0.1/verification-request","from":"did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49","to":"did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT"}`;
+
+    const joseService = new JoseService();
+    const jwe = await joseService.decrypt(golangGWE, () => {
+      return Promise.resolve(endUserData.pkJwk);
+    });
+
+    const message = byteDecoder.decode(jwe.plaintext);
+
+    expect(message).toEqual(expectedMessage);
   });
 });

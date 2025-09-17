@@ -76,6 +76,11 @@ export class BjjProvider implements IKeyProvider {
     return kmsId;
   }
 
+  async newPrivateKey(): Promise<KmsKeyId> {
+    const seed = globalThis.crypto.getRandomValues(new Uint8Array(32));
+    return this.newPrivateKeyFromSeed(seed);
+  }
+
   /**
    * Gets public key by kmsKeyId
    *

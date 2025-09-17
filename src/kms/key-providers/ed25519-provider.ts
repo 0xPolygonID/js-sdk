@@ -68,6 +68,11 @@ export class Ed25519Provider implements IKeyProvider {
     return kmsId;
   }
 
+  async newPrivateKey(): Promise<KmsKeyId> {
+    const seed = globalThis.crypto.getRandomValues(new Uint8Array(32));
+    return this.newPrivateKeyFromSeed(seed);
+  }
+
   /**
    * Gets public key by kmsKeyId
    * @param {KmsKeyId} keyId - key identifier
