@@ -260,7 +260,7 @@ describe('AnonCrypt packer tests', () => {
 
     const joseService = new JoseService();
     const jwe = await joseService.decrypt(golangGWE, () => {
-      return Promise.resolve(endUserData.pkJwk);
+      return Promise.resolve(endUserData.pkJwk as unknown as CryptoKey);
     });
 
     const message = byteDecoder.decode(jwe.plaintext);
