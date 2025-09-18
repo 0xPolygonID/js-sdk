@@ -11,7 +11,6 @@ import {
 import { Token, Header, ProvingMethodAlg, proving } from '@iden3/js-jwz';
 import { AuthV2PubSignals, AuthV3PubSignals, CircuitId } from '../../circuits/index';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
-import { bytesToProtocolMessage } from '../utils/envelope';
 import {
   ErrNoProvingMethodAlg,
   ErrPackedWithUnsupportedCircuit,
@@ -176,7 +175,7 @@ export class ZKPPacker implements IPacker {
       throw new Error(ErrStateVerificationFailed);
     }
 
-    const message = bytesToProtocolMessage(byteEncoder.encode(token.getPayload()));
+    const message = JSON.parse(token.getPayload());
 
     // should throw if error
     verifySender(token, message);
