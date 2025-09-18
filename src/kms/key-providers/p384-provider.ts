@@ -1,25 +1,22 @@
 import { IKeyProvider } from '../kms';
 import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 import * as providerHelpers from '../provider-helpers';
-import { ed25519 } from '@noble/curves/ed25519';
+import { p384 } from '@noble/curves/p384';
 import { bytesToHex } from '../../utils';
 
 /**
- * Provider for Ed25519 keys
+ * Provider for P384  keys
  * @public
- * @class Ed25519Provider
+ * @class P384 Provider
  * @implements IKeyProvider interface
  */
-export class Ed25519Provider implements IKeyProvider {
+export class P384Provider implements IKeyProvider {
+  readonly keyType: KmsKeyType = KmsKeyType.P384;
   /**
-   * Creates an instance of Ed25519Provider.
-   * @param {KmsKeyType} keyType - kms key type
+   * Creates an instance of P384 Provider.
    * @param {AbstractPrivateKeyStore} keyStore - key store for kms
    */
-  constructor(
-    public readonly keyType: KmsKeyType,
-    private readonly _keyStore: AbstractPrivateKeyStore
-  ) {}
+  constructor(private readonly _keyStore: AbstractPrivateKeyStore) {}
 
   /**
    * get all keys
@@ -45,16 +42,16 @@ export class Ed25519Provider implements IKeyProvider {
   }
 
   /**
-   * generates a ed25519 key from a seed phrase
+   * generates a p384  key from a seed phrase
    * @param {Uint8Array} seed - byte array seed
    * @returns {Promise<KmsKeyId>} kms key identifier
    */
   async newPrivateKeyFromSeed(seed: Uint8Array): Promise<KmsKeyId> {
-    if (seed.length !== 32) {
-      throw new Error('Seed should be 32 bytes');
+    if (seed.length !== 48) {
+      throw new Error('Seed should be 48 bytes');
     }
 
-    const publicKey = ed25519.getPublicKey(seed);
+    const publicKey = p384.getPublicKey(seed);
     const kmsId = {
       type: this.keyType,
       id: providerHelpers.keyPath(this.keyType, bytesToHex(publicKey))
@@ -69,7 +66,7 @@ export class Ed25519Provider implements IKeyProvider {
   }
 
   async newPrivateKey(): Promise<KmsKeyId> {
-    const seed = globalThis.crypto.getRandomValues(new Uint8Array(32));
+    const seed = globalThis.crypto.getRandomValues(new Uint8Array(48));
     return this.newPrivateKeyFromSeed(seed);
   }
 
@@ -80,7 +77,7 @@ export class Ed25519Provider implements IKeyProvider {
    */
   async publicKey(keyId: KmsKeyId): Promise<string> {
     const privateKeyHex = await this.privateKey(keyId);
-    const publicKey = ed25519.getPublicKey(privateKeyHex);
+    const publicKey = p384.getPublicKey(privateKeyHex);
     return bytesToHex(publicKey);
   }
 
@@ -93,7 +90,8 @@ export class Ed25519Provider implements IKeyProvider {
    */
   async sign(keyId: KmsKeyId, digest: Uint8Array): Promise<Uint8Array> {
     const privateKeyHex = await this.privateKey(keyId);
-    return ed25519.sign(digest, privateKeyHex);
+    const signature = p384.sign(digest, privateKeyHex);
+    return signature.toCompactRawBytes();
   }
 
   /**
@@ -105,7 +103,7 @@ export class Ed25519Provider implements IKeyProvider {
    */
   async verify(digest: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
     const publicKeyHex = await this.publicKey(keyId);
-    return ed25519.verify(signatureHex, digest, publicKeyHex);
+    return p384.verify(signatureHex, digest, publicKeyHex);
   }
 
   /**

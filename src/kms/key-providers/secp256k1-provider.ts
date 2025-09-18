@@ -70,6 +70,11 @@ export class Sec256k1Provider implements IKeyProvider {
     return kmsId;
   }
 
+  async newPrivateKey(): Promise<KmsKeyId> {
+    const seed = globalThis.crypto.getRandomValues(new Uint8Array(32));
+    return this.newPrivateKeyFromSeed(seed);
+  }
+
   /**
    * Gets public key by kmsKeyId
    *
@@ -105,6 +110,15 @@ export class Sec256k1Provider implements IKeyProvider {
     }
 
     return base64UrlToBytes(signatureBase64);
+  }
+
+  /**
+   * get private key store
+   *
+   * @returns private key store
+   */
+  async getPkStore(): Promise<AbstractPrivateKeyStore> {
+    return this._keyStore;
   }
 
   /**

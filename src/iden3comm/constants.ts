@@ -68,7 +68,8 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
 export enum MediaType {
   ZKPMessage = 'application/iden3-zkp-json',
   PlainMessage = 'application/iden3comm-plain-json',
-  SignedMessage = 'application/iden3comm-signed-json'
+  SignedMessage = 'application/iden3comm-signed-json',
+  EncryptedMessage = 'application/iden3comm-encrypted-json'
 }
 
 export const SUPPORTED_PUBLIC_KEY_TYPES = {
@@ -108,6 +109,25 @@ export enum AcceptJwsAlgorithms {
   ES256K = 'ES256K',
   ES256KR = 'ES256K-R'
 }
+
+export enum AcceptJweKEKAlgorithms {
+  ECDH_ES_A256KW = 'ECDH-ES+A256KW',
+  RSA_OAEP_256 = 'RSA-OAEP-256'
+}
+
+export enum CEKEncryption {
+  A256GCM = 'A256GCM',
+  A256CBC_HS512 = 'A256CBC-HS512'
+}
+
+export type VerificationMethodType =
+  | 'JsonWebKey2020'
+  | 'Ed25519VerificationKey2020'
+  | 'X25519KeyAgreementKey2020'
+  | 'Bls12381G2Key2020'
+  | 'P-256'
+  // eslint-disable-next-line @cspell/spellchecker
+  | 'Multikey';
 
 export const defaultAcceptProfile: AcceptProfile = {
   protocolVersion: ProtocolVersion.V1,
