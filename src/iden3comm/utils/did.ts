@@ -11,7 +11,7 @@ import {
   hexToBytes
 } from '../../utils';
 import { PROTOCOL_CONSTANTS } from '..';
-import { p384 } from '@noble/curves/nist';
+import { p384 } from '@noble/curves/p384';
 import { BytesHelper } from '@iden3/js-iden3-core';
 
 const DIDAuthenticationSection = 'authentication';
