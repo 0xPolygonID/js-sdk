@@ -9,7 +9,7 @@ import {
 } from '../constants';
 import { BasicMessage, DIDDocument, IPacker, VerificationMethod } from '../types';
 import { parseAcceptProfile, resolveVerificationMethods } from '../utils';
-import { keyPath, KMS, KmsKeyType } from '../../kms';
+import { KMS, KmsKeyType } from '../../kms';
 import { DID } from '@iden3/js-iden3-core';
 import { GeneralJWE } from 'jose';
 
@@ -97,13 +97,11 @@ export class AnonCryptPacker implements IPacker {
           throw new Error(`Key provider not found for ${kmsKeyType}`);
         }
 
-        const [, hex] = kid.split('#');
+        const [, alias] = kid.split('#');
 
-        if (!hex) {
+        if (!alias) {
           throw new Error('Missing key identifier');
         }
-
-        const alias = keyPath(kmsKeyType, hex);
 
         try {
           return JSON.parse(await pkStore.get({ alias })) as CryptoKey;
