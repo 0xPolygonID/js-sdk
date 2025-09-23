@@ -2,7 +2,7 @@ import { SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
 import { DIDDocument, JsonWebKey, VerificationMethod } from 'did-resolver';
 import { secp256k1 as sec } from '@noble/curves/secp256k1';
 
-import { IKeyProvider, KmsKeyType } from '../../kms';
+import { KmsKeyType } from '../../kms';
 import {
   base58ToBytes,
   base64UrlToBytes,
@@ -123,36 +123,4 @@ export const toPublicKeyJwk = (keyStr: string, keyType: KmsKeyType): JsonWebKey 
         `Unsupported key type: ${keyType}. Supported key types ${KmsKeyType.RsaOaep256}, ${KmsKeyType.P384}`
       );
   }
-};
-
-/**
- * generateDidDocWithJsonWebKey2020 - generates a DID Document with JsonWebKey2020 verification method
- * @param did - DID string
- * @param keyProvider - Key provider instance
- * @returns DIDDocument
- */
-export const generateDidDocWithJsonWebKey2020 = async (
-  did: string,
-  keyProvider: IKeyProvider
-): Promise<DIDDocument> => {
-  const keyId = await keyProvider.newPrivateKey();
-  const pubKey = await keyProvider.publicKey(keyId);
-  const alias = keyId.id.split(':').pop();
-  const kid = `${did}#${alias}`;
-  return {
-    '@context': [
-      'https://www.w3.org/ns/did/v1',
-      'https://w3id.org/security/suites/ed25519-2020/v1'
-    ],
-    id: did,
-    keyAgreement: [kid],
-    verificationMethod: [
-      {
-        id: kid,
-        type: 'JsonWebKey2020',
-        controller: did,
-        publicKeyJwk: toPublicKeyJwk(pubKey, keyId.type)
-      }
-    ]
-  };
 };

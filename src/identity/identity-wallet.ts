@@ -59,7 +59,13 @@ import {
 } from '../credentials/status/credential-status-publisher';
 import { InputGenerator, IZKProver } from '../proof';
 import { ITransactionService, TransactionService } from '../blockchain';
-import { DIDDocument, generateDidDocWithJsonWebKey2020 } from '../iden3comm';
+import { DIDDocument } from '../iden3comm';
+import {
+  DEFAULT_DID_CONTEXT,
+  DIDDocumentBuilder,
+  JWK2020_CONTEXT_V1,
+  Jwk2020VerificationMethodBuilder
+} from '../iden3comm/utils';
 
 /**
  * DID creation options
@@ -81,7 +87,10 @@ export type IdentityCreationOptions = {
 export type CreateProfileOptions = {
   tags?: string[];
   didDocument?: DIDDocument;
-  keyProvider?: IKeyProvider;
+  encryptionKeyOps?: {
+    provider?: IKeyProvider;
+    alias?: string;
+  };
 };
 /**
  * Options for creating Auth BJJ credential
@@ -845,7 +854,10 @@ export class IdentityWallet implements IIdentityWallet {
     const profileDID = generateProfileDID(did, nonce);
     const tags = Array.isArray(tagsOrOptions) ? tagsOrOptions : tagsOrOptions?.tags;
     let did_doc = Array.isArray(tagsOrOptions) ? undefined : tagsOrOptions?.didDocument;
-    const keyProvider = Array.isArray(tagsOrOptions) ? undefined : tagsOrOptions?.keyProvider;
+    const encryptionKeyOps = Array.isArray(tagsOrOptions)
+      ? undefined
+      : tagsOrOptions?.encryptionKeyOps;
+
     const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
       did.string()
     );
@@ -863,8 +875,21 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_ALREADY_EXISTS);
     }
 
-    if (!did_doc && keyProvider) {
-      did_doc = await generateDidDocWithJsonWebKey2020(profileDID.string(), keyProvider);
+    if (encryptionKeyOps?.provider) {
+      const vmBuilder = new Jwk2020VerificationMethodBuilder(encryptionKeyOps.provider, {
+        alias: encryptionKeyOps.alias
+      });
+      if (!did_doc) {
+        did_doc = (
+          await new DIDDocumentBuilder(profileDID.string(), [
+            DEFAULT_DID_CONTEXT,
+            JWK2020_CONTEXT_V1
+          ]).addVerificationMethod(vmBuilder)
+        ).build();
+      } else {
+        const vm = await vmBuilder.build(profileDID.string());
+        (did_doc.verificationMethod ??= []).push(vm);
+      }
     }
 
     await this._storage.identity.saveProfile({
