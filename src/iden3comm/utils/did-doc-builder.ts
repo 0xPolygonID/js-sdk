@@ -11,13 +11,14 @@ export class DIDDocumentBuilder {
   private did: string;
   private verificationMethods: VerificationMethod[] = [];
   private keyAgreements: string[] = [];
-  private context: string | string[];
+  private context: string[];
 
   constructor(did: string, context: string | string[] = DEFAULT_DID_CONTEXT) {
     this.did = did;
-    this.context = context.includes(DEFAULT_DID_CONTEXT)
-      ? context
-      : [DEFAULT_DID_CONTEXT, ...context];
+    const contextArr = Array.isArray(context) ? context : [context];
+    this.context = contextArr.includes(DEFAULT_DID_CONTEXT)
+      ? contextArr
+      : [DEFAULT_DID_CONTEXT, ...contextArr];
   }
 
   async addVerificationMethod(vm: IVerificationMethodBuilder): Promise<this> {
