@@ -192,7 +192,7 @@ describe('identity', () => {
     const [{ did_doc: didDocAlias }] = profileWithAlias;
     expect(didDocAlias?.id).to.equal(profileDid5.string());
     const [{ id: idFromAlias }] = didDocAlias?.verificationMethod || [];
-    expect(idFromAlias).to.equal(`${profileDid5.string()}#${keyId.id.split(':').pop()}`);
+    expect(idFromAlias).to.equal(`${profileDid5.string()}#${keyId.id}`);
   });
 
   it('sign', async () => {

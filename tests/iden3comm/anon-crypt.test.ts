@@ -121,7 +121,7 @@ describe('AnonCrypt packer tests', () => {
       publicKeyJwk = toPublicKeyJwk(pubKey, kmsKeyId.type);
     }
 
-    const alias = kmsKeyId.id.split(':').pop();
+    const alias = kmsKeyId.id.split(':');
 
     const kid = `${did.string()}#${alias}`;
 

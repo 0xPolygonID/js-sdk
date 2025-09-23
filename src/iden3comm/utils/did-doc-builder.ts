@@ -67,7 +67,7 @@ export class Jwk2020VerificationMethodBuilder implements IVerificationMethodBuil
       : await this._keyProvider.newPrivateKey();
 
     const pubKey = await this._keyProvider.publicKey(keyId);
-    const alias = (this._alias ?? keyId.id).split(':').pop();
+    const alias = this._alias ?? keyId.id;
     const kid = `${did}#${alias}`;
 
     return {
