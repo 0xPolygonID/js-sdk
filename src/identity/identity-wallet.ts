@@ -76,12 +76,8 @@ export type IdentityCreationOptions = {
 
 /**
  * Options for creating profile
- * tags - optional tag that can be assigned to profile by client
- * didDocument - optional did document to be anchored into the profile
- * keyProvider - optional key provider to generate keys for the did document (used only if didDocument is not provided)
-
-* @type CreateProfileOptions
-*/
+ * @type CreateProfileOptions
+ */
 export type CreateProfileOptions = {
   tags?: string[];
   didDocument?: DIDDocument;

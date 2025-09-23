@@ -120,7 +120,7 @@ export const toPublicKeyJwk = (keyStr: string, keyType: KmsKeyType): JsonWebKey 
     }
     default:
       throw new Error(
-        `Unsupported key type: ${keyType}. Supported key types are: RSA-OAEP-256, P-384`
+        `Unsupported key type: ${keyType}. Supported key types ${KmsKeyType.RsaOaep256}, ${KmsKeyType.P384}`
       );
   }
 };
