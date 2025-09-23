@@ -87,11 +87,17 @@ export type IdentityCreationOptions = {
 export type CreateProfileOptions = {
   tags?: string[];
   didDocument?: DIDDocument;
-  encryptionKeyOps?: {
-    provider?: IKeyProvider;
-    alias?: string;
-  };
+  encryptionKeyOps?: EncryptionKeyOps;
 };
+
+/**
+ * Profile encryption creation options
+ */
+export type EncryptionKeyOps = {
+  provider?: IKeyProvider;
+  alias?: string;
+};
+
 /**
  * Options for creating Auth BJJ credential
  * seed - seed to generate BJJ key pair
@@ -852,11 +858,13 @@ export class IdentityWallet implements IIdentityWallet {
     tagsOrOptions?: string[] | CreateProfileOptions
   ): Promise<DID> {
     const profileDID = generateProfileDID(did, nonce);
-    const tags = Array.isArray(tagsOrOptions) ? tagsOrOptions : tagsOrOptions?.tags;
-    let did_doc = Array.isArray(tagsOrOptions) ? undefined : tagsOrOptions?.didDocument;
-    const encryptionKeyOps = Array.isArray(tagsOrOptions)
-      ? undefined
-      : tagsOrOptions?.encryptionKeyOps;
+    const isArray = Array.isArray(tagsOrOptions);
+    const tags = isArray ? tagsOrOptions : tagsOrOptions?.tags;
+
+    const { didDocument, encryptionKeyOps } = (isArray ? {} : tagsOrOptions ?? {}) as {
+      didDocument?: DIDDocument;
+      encryptionKeyOps?: EncryptionKeyOps;
+    };
 
     const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
       did.string()
@@ -875,6 +883,7 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_ALREADY_EXISTS);
     }
 
+    let did_doc = didDocument;
     if (encryptionKeyOps?.provider) {
       const vmBuilder = new Jwk2020VerificationMethodBuilder(encryptionKeyOps.provider, {
         alias: encryptionKeyOps.alias
