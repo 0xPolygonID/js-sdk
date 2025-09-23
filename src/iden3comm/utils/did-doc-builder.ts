@@ -8,13 +8,11 @@ export const JWK2020_CONTEXT_V1 = 'https://w3id.org/security/suites/jws-2020/v1'
  * DID Document builder
  */
 export class DIDDocumentBuilder {
-  private _did: string;
   private _verificationMethods: VerificationMethod[] = [];
   private _keyAgreements: string[] = [];
   private _context: string[];
 
-  constructor(did: string, context: string | string[] = DEFAULT_DID_CONTEXT) {
-    this._did = did;
+  constructor(private readonly _did: string, context: string | string[] = DEFAULT_DID_CONTEXT) {
     const contextArr = [context].flat();
     this._context = contextArr.includes(DEFAULT_DID_CONTEXT)
       ? contextArr
