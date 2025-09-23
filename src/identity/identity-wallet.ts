@@ -61,7 +61,6 @@ import { InputGenerator, IZKProver } from '../proof';
 import { ITransactionService, TransactionService } from '../blockchain';
 import { DIDDocument } from '../iden3comm';
 import {
-  DEFAULT_DID_CONTEXT,
   DIDDocumentBuilder,
   JWK2020_CONTEXT_V1,
   Jwk2020VerificationMethodBuilder
