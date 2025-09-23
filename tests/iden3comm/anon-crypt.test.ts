@@ -17,54 +17,13 @@ import {
   P384Provider,
   bytesToBase64url,
   defaultRSAOaepKmsIdPathGeneratingFunction,
-  keyPath
+  keyPath,
+  toPublicKeyJwk
 } from '../../src';
 import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
 import { GeneralJWE } from 'jose';
-import { p384 } from '@noble/curves/p384';
-
-const toPublicKeyJwk = (
-  keyStr: string,
-  alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms
-): JsonWebKey => {
-  switch (alg) {
-    case PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.RSA_OAEP_256: {
-      const pubJwk = JSON.parse(keyStr);
-
-      return {
-        kty: pubJwk.kty,
-        n: pubJwk.n,
-        e: pubJwk.e,
-        alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.RSA_OAEP_256,
-        ext: true
-      };
-    }
-
-    case PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.ECDH_ES_A256KW: {
-      const pubJwk = p384.Point.fromHex(keyStr);
-
-      const coordinateByteLength = 48;
-
-      const xBytes = BytesHelper.intToNBytes(pubJwk.x, coordinateByteLength).reverse();
-      const yBytes = BytesHelper.intToNBytes(pubJwk.y, coordinateByteLength).reverse();
-      const x = bytesToBase64url(xBytes);
-      const y = bytesToBase64url(yBytes);
-
-      return {
-        kty: 'EC',
-        crv: 'P-384',
-        alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.ECDH_ES_A256KW,
-        x,
-        y,
-        ext: true
-      };
-    }
-    default:
-      throw new Error(`Unsupported algorithm: ${alg}`);
-  }
-};
 
 describe('AnonCrypt packer tests', () => {
   const endUserData = {
@@ -147,7 +106,7 @@ describe('AnonCrypt packer tests', () => {
     let kmsKeyId: KmsKeyId;
 
     if (pkJwk) {
-      publicKeyJwk = toPublicKeyJwk(JSON.stringify(pkJwk), alg);
+      publicKeyJwk = toPublicKeyJwk(JSON.stringify(pkJwk), kmsProvider.keyType);
       const keyId = defaultRSAOaepKmsIdPathGeneratingFunction(publicKeyJwk);
       kmsKeyId = {
         type: kmsProvider.keyType,
@@ -159,7 +118,7 @@ describe('AnonCrypt packer tests', () => {
 
       const pubKey = await kmsProvider.publicKey(kmsKeyId);
 
-      publicKeyJwk = toPublicKeyJwk(pubKey, alg);
+      publicKeyJwk = toPublicKeyJwk(pubKey, kmsKeyId.type);
     }
 
     const alias = kmsKeyId.id.split(':').pop();
@@ -333,10 +292,7 @@ describe('AnonCrypt packer tests', () => {
             id: alias
           });
 
-          const pubkJwk = toPublicKeyJwk(
-            pubKey,
-            PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.ECDH_ES_A256KW
-          );
+          const pubkJwk = toPublicKeyJwk(pubKey, keyProvider.keyType);
 
           return {
             ...pubkJwk,

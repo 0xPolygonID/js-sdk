@@ -1,9 +1,18 @@
 import { SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
-import { DIDDocument, VerificationMethod } from 'did-resolver';
+import { DIDDocument, JsonWebKey, VerificationMethod } from 'did-resolver';
 import { secp256k1 as sec } from '@noble/curves/secp256k1';
 
-import { KmsKeyType } from '../../kms';
-import { base58ToBytes, base64UrlToBytes, bytesToHex, hexToBytes } from '../../utils';
+import { IKeyProvider, KmsKeyType } from '../../kms';
+import {
+  base58ToBytes,
+  base64UrlToBytes,
+  bytesToBase64url,
+  bytesToHex,
+  hexToBytes
+} from '../../utils';
+import { PROTOCOL_CONSTANTS } from '..';
+import { p384 } from '@noble/curves/nist';
+import { BytesHelper } from '@iden3/js-iden3-core';
 
 const DIDAuthenticationSection = 'authentication';
 export const resolveVerificationMethods = (didDocument: DIDDocument): VerificationMethod[] => {
@@ -68,4 +77,82 @@ export const extractPublicKeyBytes = (
     };
   }
   return { publicKeyBytes: null };
+};
+
+/**
+ * toPublicKeyJwk - converts given key string to JsonWebKey format based on the algorithm
+ * @param keyStr - public key in string format
+ * @param alg - algorithm to be used for conversion
+ * @returns JsonWebKey
+ */
+export const toPublicKeyJwk = (keyStr: string, keyType: KmsKeyType): JsonWebKey => {
+  switch (keyType) {
+    case KmsKeyType.RsaOaep256: {
+      const pubJwk = JSON.parse(keyStr);
+
+      return {
+        kty: pubJwk.kty,
+        n: pubJwk.n,
+        e: pubJwk.e,
+        alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.RSA_OAEP_256,
+        ext: true
+      };
+    }
+
+    case KmsKeyType.P384: {
+      const pubJwk = p384.Point.fromHex(keyStr);
+
+      const coordinateByteLength = 48;
+
+      const xBytes = BytesHelper.intToNBytes(pubJwk.x, coordinateByteLength).reverse();
+      const yBytes = BytesHelper.intToNBytes(pubJwk.y, coordinateByteLength).reverse();
+      const x = bytesToBase64url(xBytes);
+      const y = bytesToBase64url(yBytes);
+
+      return {
+        kty: 'EC',
+        crv: 'P-384',
+        alg: PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.ECDH_ES_A256KW,
+        x,
+        y,
+        ext: true
+      };
+    }
+    default:
+      throw new Error(
+        `Unsupported key type: ${keyType}. Supported key types are: RSA-OAEP-256, P-384`
+      );
+  }
+};
+
+/**
+ * generateDidDocWithJsonWebKey2020 - generates a DID Document with JsonWebKey2020 verification method
+ * @param did - DID string
+ * @param keyProvider - Key provider instance
+ * @returns DIDDocument
+ */
+export const generateDidDocWithJsonWebKey2020 = async (
+  did: string,
+  keyProvider: IKeyProvider
+): Promise<DIDDocument> => {
+  const keyId = await keyProvider.newPrivateKey();
+  const pubKey = await keyProvider.publicKey(keyId);
+  const alias = keyId.id.split(':').pop();
+  const kid = `${did}#${alias}`;
+  return {
+    '@context': [
+      'https://www.w3.org/ns/did/v1',
+      'https://w3id.org/security/suites/ed25519-2020/v1'
+    ],
+    id: did,
+    keyAgreement: [kid],
+    verificationMethod: [
+      {
+        id: kid,
+        type: 'JsonWebKey2020',
+        controller: did,
+        publicKeyJwk: toPublicKeyJwk(pubKey, keyId.type)
+      }
+    ]
+  };
 };

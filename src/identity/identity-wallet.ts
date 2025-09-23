@@ -1,4 +1,4 @@
-import { KMS, KmsKeyId, KmsKeyType } from '../kms';
+import { IKeyProvider, KMS, KmsKeyId, KmsKeyType } from '../kms';
 import {
   Blockchain,
   buildDIDType,
@@ -59,6 +59,7 @@ import {
 } from '../credentials/status/credential-status-publisher';
 import { InputGenerator, IZKProver } from '../proof';
 import { ITransactionService, TransactionService } from '../blockchain';
+import { DIDDocument, generateDidDocWithJsonWebKey2020 } from '../iden3comm';
 
 /**
  * DID creation options
@@ -73,6 +74,19 @@ export type IdentityCreationOptions = {
   networkId?: string;
 } & AuthBJJCredentialCreationOptions;
 
+/**
+ * Options for creating profile
+ * tags - optional tag that can be assigned to profile by client
+ * didDocument - optional did document to be anchored into the profile
+ * keyProvider - optional key provider to generate keys for the did document (used only if didDocument is not provided)
+
+* @type CreateProfileOptions
+*/
+export type CreateProfileOptions = {
+  tags?: string[];
+  didDocument?: DIDDocument;
+  keyProvider?: IKeyProvider;
+};
 /**
  * Options for creating Auth BJJ credential
  * seed - seed to generate BJJ key pair
@@ -175,6 +189,22 @@ export interface IIdentityWallet {
    * @returns `Promise<DID>` - profile did
    */
   createProfile(did: DID, nonce: number | string, verifier: string, tags?: string[]): Promise<DID>;
+
+  /**
+   * Creates profile based on genesis identifier
+   *
+   * @param {DID} did - identity to derive profile from
+   * @param {number |string} nonce - unique integer number to generate a profile
+   * @param {string} verifier - verifier identity/alias in a string from
+   * @param {CreateProfileOptions} options - optional parameters for profile creation
+   * @returns `Promise<DID>` - profile did
+   */
+  createProfile(
+    did: DID,
+    nonce: number | string,
+    verifier: string,
+    options?: CreateProfileOptions
+  ): Promise<DID>;
 
   /**
    * Generates a new key
@@ -814,10 +844,12 @@ export class IdentityWallet implements IIdentityWallet {
     did: DID,
     nonce: number | string,
     verifier: string,
-    tags?: string[]
+    tagsOrOptions?: string[] | CreateProfileOptions
   ): Promise<DID> {
     const profileDID = generateProfileDID(did, nonce);
-
+    const tags = Array.isArray(tagsOrOptions) ? tagsOrOptions : tagsOrOptions?.tags;
+    let did_doc = Array.isArray(tagsOrOptions) ? undefined : tagsOrOptions?.didDocument;
+    const keyProvider = Array.isArray(tagsOrOptions) ? undefined : tagsOrOptions?.keyProvider;
     const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
       did.string()
     );
@@ -835,12 +867,17 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_ALREADY_EXISTS);
     }
 
+    if (!did_doc && keyProvider) {
+      did_doc = await generateDidDocWithJsonWebKey2020(profileDID.string(), keyProvider);
+    }
+
     await this._storage.identity.saveProfile({
       id: profileDID.string(),
       nonce,
       genesisIdentifier: did.string(),
       verifier,
-      tags
+      tags,
+      did_doc
     });
 
     return profileDID;
