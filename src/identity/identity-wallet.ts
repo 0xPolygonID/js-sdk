@@ -897,12 +897,14 @@ export class IdentityWallet implements IIdentityWallet {
         ).build();
       } else {
         const vm = await vmBuilder.build(profileDID.string());
-        (did_doc.verificationMethod ??= []).push(vm);
-        const context = ([] as string[]).concat(did_doc['@context'] ?? []);
-        if (!context.includes(JWK2020_CONTEXT_V1)) {
-          context.push(JWK2020_CONTEXT_V1);
-        }
-        did_doc['@context'] = context;
+        const contextArr = [did_doc['@context']]
+          .flat()
+          .filter((c) => typeof c === 'string') as string[];
+        did_doc = {
+          ...did_doc,
+          verificationMethod: [...(did_doc.verificationMethod ?? []), vm],
+          '@context': [...new Set([...contextArr, JWK2020_CONTEXT_V1])]
+        };
       }
     }
 
