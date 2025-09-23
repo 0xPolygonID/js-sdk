@@ -121,7 +121,7 @@ describe('AnonCrypt packer tests', () => {
       publicKeyJwk = toPublicKeyJwk(pubKey, kmsKeyId.type);
     }
 
-    const alias = kmsKeyId.id.split(':');
+    const alias = kmsKeyId.id;
 
     const kid = `${did.string()}#${alias}`;
 
@@ -282,8 +282,9 @@ describe('AnonCrypt packer tests', () => {
         PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.ECDH_ES_A256KW,
         enc,
         false,
-        (keyProvider) => async (alias) => {
+        (keyProvider) => async (kid) => {
           const pkStore = await keyProvider.getPkStore();
+          const alias = kid.split('#').pop();
           const pkHex = await pkStore.get({ alias });
 
           const pubKey = await keyProvider.publicKey({
