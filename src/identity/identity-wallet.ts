@@ -890,14 +890,19 @@ export class IdentityWallet implements IIdentityWallet {
       });
       if (!did_doc) {
         did_doc = (
-          await new DIDDocumentBuilder(profileDID.string(), [
-            DEFAULT_DID_CONTEXT,
+          await new DIDDocumentBuilder(profileDID.string()).addVerificationMethod(
+            vmBuilder,
             JWK2020_CONTEXT_V1
-          ]).addVerificationMethod(vmBuilder)
+          )
         ).build();
       } else {
         const vm = await vmBuilder.build(profileDID.string());
         (did_doc.verificationMethod ??= []).push(vm);
+        const context = ([] as string[]).concat(did_doc['@context'] ?? []);
+        if (!context.includes(JWK2020_CONTEXT_V1)) {
+          context.push(JWK2020_CONTEXT_V1);
+        }
+        did_doc['@context'] = context;
       }
     }
 

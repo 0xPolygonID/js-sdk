@@ -21,10 +21,18 @@ export class DIDDocumentBuilder {
       : [DEFAULT_DID_CONTEXT, ...contextArr];
   }
 
-  async addVerificationMethod(vm: IVerificationMethodBuilder): Promise<this> {
+  async addVerificationMethod(
+    vm: IVerificationMethodBuilder,
+    context?: string | string[]
+  ): Promise<this> {
     const method = await vm.build(this.did);
     this.verificationMethods.push(method);
     this.keyAgreements.push(method.id);
+    if (context) {
+      this.context = [
+        ...new Set([...this.context, ...(Array.isArray(context) ? context : [context])])
+      ];
+    }
     return this;
   }
 
