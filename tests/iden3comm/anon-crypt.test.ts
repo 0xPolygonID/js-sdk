@@ -282,9 +282,8 @@ describe('AnonCrypt packer tests', () => {
         PROTOCOL_CONSTANTS.AcceptJweKEKAlgorithms.ECDH_ES_A256KW,
         enc,
         false,
-        (keyProvider) => async (kid) => {
+        (keyProvider) => async (alias) => {
           const pkStore = await keyProvider.getPkStore();
-          const alias = [keyProvider.keyType, kid.split('#').pop()].join(':');
           const pkHex = await pkStore.get({ alias });
 
           const pubKey = await keyProvider.publicKey({
