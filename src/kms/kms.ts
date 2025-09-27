@@ -1,4 +1,4 @@
-import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from './store';
+import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType, TypedData } from './store';
 
 /**
  * KeyProvider is responsible for signing and creation of the keys
@@ -75,6 +75,24 @@ export interface IKeyProvider {
    */
   getPkStore(): Promise<AbstractPrivateKeyStore>;
 }
+
+export interface IEthereumKeyProvider {
+  /**
+   * sign eip712 message with agentKms key
+   *
+   * @param {KmsKeyId} keyId - key identifier
+   * @param {AgentOwnershipData} data  - AgentOwnershipData payload
+   * @returns `Promise<Uint8Array>`
+   */
+  signTypedData(keyId: KmsKeyId, typedData: TypedData): Promise<Uint8Array>;
+
+  /**
+   * Gets ethAddress by kmsKeyId
+   * @returns {Promise<string>} Public key as a hex string
+   */
+  getEthAddress(keyId: KmsKeyId): Promise<string>;
+}
+
 /**
  * Key management system class contains different key providers.
  * allows to register custom provider, create key, get public key and sign

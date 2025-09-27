@@ -37,6 +37,8 @@ import {
 } from '../src';
 import { proving } from '@iden3/js-jwz';
 import { JsonRpcProvider } from 'ethers';
+import * as ethers from 'ethers';
+import * as fs from 'node:fs';
 
 export const SEED_ISSUER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 export const SEED_USER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -329,3 +331,36 @@ export const TEST_VERIFICATION_OPTS: VerifyOpts = {
   acceptedStateTransitionDelay: 5 * 60 * 1000, // 5 minutes
   acceptedProofGenerationDelay: 10 * 365 * 24 * 60 * 60 * 1000 // 10 years
 };
+
+interface TestWalletInfo {
+  privateKey: string;
+  publicKey: string;
+  address: string;
+}
+
+export function loadWalletsFromFile(walletPath: string): TestWalletInfo[] {
+  try {
+    if (!fs.existsSync(walletPath)) {
+      throw new Error(`Wallet file not found at ${walletPath}. Run the generation script first.`);
+    }
+    const fileContent = fs.readFileSync(walletPath, 'utf-8');
+    const wallets = JSON.parse(fileContent) as TestWalletInfo[];
+    if (!Array.isArray(wallets)) {
+      throw new Error(`Invalid format in ${walletPath}: Expected a JSON array.`);
+    }
+    console.log(`Successfully loaded ${wallets.length} wallets from ${walletPath}`);
+    return wallets;
+  } catch (error) {
+    console.error(`Error reading or parsing wallet file ${walletPath}:`, error);
+    throw new Error(`Failed to load test wallets: ${error.message}`);
+  }
+}
+
+export function getTestWallet(testWallets: TestWalletInfo[], index: number): ethers.Wallet {
+  if (index < 0 || index >= testWallets.length) {
+    throw new Error(
+      `Invalid test wallet index: ${index}. Only ${testWallets.length} wallets available.`
+    );
+  }
+  return new ethers.Wallet(testWallets[index].privateKey);
+}

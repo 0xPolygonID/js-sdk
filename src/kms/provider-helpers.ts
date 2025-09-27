@@ -1,4 +1,5 @@
-import { KmsKeyType } from './store';
+import { ethers } from 'ethers';
+import { KmsKeyType, TypedData } from './store';
 
 /**
  * builds key path
@@ -10,4 +11,8 @@ import { KmsKeyType } from './store';
 export function keyPath(keyType: KmsKeyType, keyID: string): string {
   const basePath = '';
   return basePath + String(keyType) + ':' + keyID;
+}
+
+export async function signTypedData(signer: ethers.Signer, typedData: TypedData) {
+  return signer.signTypedData(typedData.domain, typedData.types, typedData.message);
 }
