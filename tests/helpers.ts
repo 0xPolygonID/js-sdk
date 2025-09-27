@@ -348,10 +348,8 @@ export function loadWalletsFromFile(walletPath: string): TestWalletInfo[] {
     if (!Array.isArray(wallets)) {
       throw new Error(`Invalid format in ${walletPath}: Expected a JSON array.`);
     }
-    console.log(`Successfully loaded ${wallets.length} wallets from ${walletPath}`);
     return wallets;
   } catch (error) {
-    console.error(`Error reading or parsing wallet file ${walletPath}:`, error);
     throw new Error(`Failed to load test wallets: ${error.message}`);
   }
 }

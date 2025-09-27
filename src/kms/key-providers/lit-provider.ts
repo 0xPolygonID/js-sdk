@@ -6,7 +6,6 @@ import { EthWalletProvider } from '@lit-protocol/lit-auth-client';
 import { LitNodeClient } from '@lit-protocol/lit-node-client';
 import { LitActionResource, LitPKPResource } from '@lit-protocol/auth-helpers';
 
-import { litActionCode } from './lit-action';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { sha256 } from '@iden3/js-crypto';
 import { IKeyProvider } from '../kms';
@@ -14,6 +13,19 @@ import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType, TypedData } from '../sto
 import { bytesToHex, hexToBytes } from '../../utils';
 
 export type LitNetworkValue = (typeof LIT_NETWORK)[keyof typeof LIT_NETWORK];
+
+export const litActionCode = `(async () => {
+  try {
+    await Lit.Actions.signEcdsa({
+      toSign: ethers.utils.arrayify(ethers.utils.sha256(message)),
+      publicKey,
+      sigName
+    });
+    LitActions.setResponse({ response: "true" });
+  } catch (e) {
+    LitActions.setResponse({ response: e.message });
+  }
+})();`;
 
 /**
  * Provider for LitProtocol PKP keys

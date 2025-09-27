@@ -17,7 +17,7 @@ import { BytesHelper, Constants } from '@iden3/js-iden3-core';
 import * as ethers5 from 'ethers5';
 import path from 'path';
 import { getTestWallet, loadWalletsFromFile } from '../helpers';
-import { LIT_NETWORK, LIT_RPC } from '@lit-protocol/constants';
+import { LIT_NETWORK } from '@lit-protocol/constants';
 
 const testFlow = async (provider: IKeyProvider) => {
   const seed1 = getRandomBytes(32);
