@@ -32,6 +32,7 @@ import {
   buildAcceptFromProvingMethodAlg,
   parseAcceptProfile
 } from '../utils';
+import { JWEPackerParams } from '../packers/anon-crypt';
 
 /**
  * Options to pass to createAuthorizationRequest function
@@ -187,7 +188,7 @@ export type AuthMessageHandlerOptions = BasicHandlerOptions & (AuthReqOptions | 
  */
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams;
+  packerOptions?: JWSPackerParams | JWEPackerParams;
   preferredAuthProvingMethod?: ProvingMethodAlg;
 };
 
@@ -328,7 +329,7 @@ export class AuthHandler
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
 
     const packerOpts =
-      opts.mediaType === MediaType.SignedMessage
+      opts.mediaType === MediaType.SignedMessage || opts.mediaType === MediaType.EncryptedMessage
         ? opts.packerOptions
         : {
             provingMethodAlg: this.getDefaultProvingMethodAlg(
