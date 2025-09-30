@@ -421,6 +421,7 @@ export class PaymentHandler
     if (!opts.packerOptions) {
       opts.packerOptions = this._params.packerParams.packerOptions;
     }
+    opts.mediaType = mediaType;
     const senderDID = DID.parse(paymentRequest.to);
     opts.packerOptions = initDefaultPackerOptions(mediaType, opts.packerOptions, {
       provingMethodAlg: await getProvingMethodAlgFromJWZ(request),
