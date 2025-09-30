@@ -10,6 +10,7 @@ import {
   IPackageManager,
   JWSPackerParams,
   MessageFetchRequestMessage,
+  PackerParams,
   ZKPPackerParams
 } from '../types';
 
@@ -199,7 +200,7 @@ export class FetchHandler
     ctx: {
       mediaType?: MediaType;
       headers?: HeadersInit;
-      packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
+      packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
     }
   ): Promise<W3CCredential[] | BasicMessage> {
     if (!ctx.mediaType) {
@@ -280,14 +281,6 @@ export class FetchHandler
     offer: Uint8Array,
     opts?: FetchHandlerOptions
   ): Promise<W3CCredential[]> {
-    if (
-      (opts?.mediaType === MediaType.SignedMessage ||
-        opts?.mediaType === MediaType.EncryptedMessage) &&
-      !opts.packerOptions
-    ) {
-      throw new Error(`packer options are required for ${opts.mediaType}`);
-    }
-
     const offerMessage = await FetchHandler.unpackMessage<CredentialsOfferMessage>(
       this._packerMgr,
       offer,
@@ -297,30 +290,15 @@ export class FetchHandler
       verifyExpiresTime(offerMessage);
     }
 
-    if (!opts?.packerOptions?.provingMethodAlg) {
-      const messageProvingMethodAlg =
-        opts?.messageProvingMethodAlg || (await getProvingMethodAlgFromJWZ(offer));
-      const zkpPackerOptions = {
-        provingMethodAlg: messageProvingMethodAlg,
-        senderDID: DID.parse(offerMessage.to)
-      };
-      if (!opts) {
-        opts = {
-          mediaType: MediaType.ZKPMessage,
-          packerOptions: zkpPackerOptions
-        };
-      }
-      if (!opts.packerOptions?.provingMethodAlg) {
-        opts.packerOptions = {
-          ...opts.packerOptions,
-          ...zkpPackerOptions
-        };
-      }
-    }
+    const mediaType = opts?.mediaType || MediaType.ZKPMessage;
+    const packerOptions = initDefaultPackerOptions(mediaType, opts?.packerOptions, {
+      provingMethodAlg: opts?.messageProvingMethodAlg || (await getProvingMethodAlgFromJWZ(offer)),
+      senderDID: DID.parse(offerMessage.to)
+    });
     const result = await this.handleOfferMessage(offerMessage, {
-      mediaType: opts?.mediaType,
+      mediaType,
       headers: opts?.headers,
-      packerOptions: opts?.packerOptions
+      packerOptions: packerOptions
     });
 
     if (Array.isArray(result)) {

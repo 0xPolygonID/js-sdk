@@ -10,7 +10,8 @@ import {
   ZeroKnowledgeProofAuthResponse,
   ZeroKnowledgeProofQuery,
   ZeroKnowledgeProofRequest,
-  ZeroKnowledgeProofResponse
+  ZeroKnowledgeProofResponse,
+  ZKPPackerParams
 } from '../types';
 import { mergeObjects } from '../../utils';
 import { RevocationStatus, VerifiableConstants, W3CCredential } from '../../verifiable';
@@ -22,6 +23,7 @@ import { ethers, Signer } from 'ethers';
 import { packZkpProof, prepareZkpProof } from '../../storage/blockchain/common';
 import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { defaultProvingMethodAlg } from './message-handler';
+import { JWEPackerParams } from '../packers';
 
 /**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.
@@ -335,7 +337,7 @@ export const verifyExpiresTime = (message: BasicMessage) => {
  */
 export const initDefaultPackerOptions = (
   mediaType: MediaType,
-  packerOptions?: PackerParams,
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams,
   opts?: {
     provingMethodAlg?: ProvingMethodAlg;
     senderDID?: DID;
