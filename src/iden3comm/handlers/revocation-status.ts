@@ -22,6 +22,7 @@ import {
   getProvingMethodAlgFromJWZ
 } from './message-handler';
 import { verifyExpiresTime } from './common';
+import { JWEPackerParams } from '../packers';
 
 /**
  * Defines the options for a RevocationStatusMessageHandler.
@@ -33,7 +34,7 @@ import { verifyExpiresTime } from './common';
 export type RevocationStatusMessageHandlerOptions = BasicHandlerOptions & {
   senderDid: DID;
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
   treeState?: TreeState;
 };
 
@@ -67,7 +68,7 @@ export interface IRevocationStatusHandler {
 /** RevocationStatusHandlerOptions represents revocation status handler options */
 export type RevocationStatusHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
   treeState?: TreeState;
 };
 
@@ -194,8 +195,12 @@ export class RevocationStatusHandler
       };
     }
 
-    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
+    if (
+      (opts.mediaType === MediaType.SignedMessage ||
+        opts.mediaType === MediaType.EncryptedMessage) &&
+      !opts.packerOptions
+    ) {
+      throw new Error(`packer options are required for ${opts.mediaType}`);
     }
 
     const rsRequest = await this.parseRevocationStatusRequest(request);
@@ -210,12 +215,12 @@ export class RevocationStatusHandler
     });
 
     const packerOpts =
-      opts.mediaType === MediaType.SignedMessage
-        ? opts.packerOptions
-        : {
+      opts.mediaType === MediaType.ZKPMessage
+        ? {
             provingMethodAlg:
               opts.packerOptions?.provingMethodAlg || (await getProvingMethodAlgFromJWZ(request))
-          };
+          }
+        : opts.packerOptions;
 
     if (!rsRequest.to) {
       throw new Error(`failed request. empty 'to' field`);

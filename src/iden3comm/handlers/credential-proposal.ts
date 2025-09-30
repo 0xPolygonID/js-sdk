@@ -28,6 +28,7 @@ import {
   getProvingMethodAlgFromJWZ
 } from './message-handler';
 import { verifyExpiresTime } from './common';
+import { JWEPackerParams } from '../packers';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
@@ -165,7 +166,7 @@ export type CredentialProposalHandlerParams = {
     type: string,
     opts?: { msg?: BasicMessage }
   ) => Promise<Proposal>;
-  packerParams: JWSPackerParams | ZKPPackerParams;
+  packerParams: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
 };
 
 /**
@@ -327,10 +328,11 @@ export class CredentialProposalHandler
     opts?: ProposalRequestHandlerOptions
   ): Promise<Uint8Array> {
     if (
-      this._params.packerParams.mediaType === MediaType.SignedMessage &&
+      (this._params.packerParams.mediaType === MediaType.SignedMessage ||
+        this._params.packerParams.mediaType === MediaType.EncryptedMessage) &&
       !this._params.packerParams.packerOptions
     ) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
+      throw new Error(`packer options are required for ${this._params.packerParams.mediaType}`);
     }
 
     const proposalRequest = await this.parseProposalRequest(request);
@@ -346,13 +348,13 @@ export class CredentialProposalHandler
     const response = byteEncoder.encode(JSON.stringify(message));
 
     const packerOpts =
-      this._params.packerParams.mediaType === MediaType.SignedMessage
-        ? this._params.packerParams.packerOptions
-        : {
+      this._params.packerParams.mediaType === MediaType.ZKPMessage
+        ? {
             provingMethodAlg:
               this._params.packerParams.provingMethodAlg ||
               (await getProvingMethodAlgFromJWZ(request))
-          };
+          }
+        : this._params.packerParams.packerOptions;
 
     return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
       senderDID,

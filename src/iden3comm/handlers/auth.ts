@@ -11,7 +11,8 @@ import {
   JWSPackerParams,
   ZeroKnowledgeProofRequest,
   JSONObject,
-  Attachment
+  Attachment,
+  ZKPPackerParams
 } from '../types';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
@@ -188,7 +189,7 @@ export type AuthMessageHandlerOptions = BasicHandlerOptions & (AuthReqOptions | 
  */
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | JWEPackerParams;
+  packerOptions?: JWSPackerParams | JWEPackerParams | ZKPPackerParams;
   preferredAuthProvingMethod?: ProvingMethodAlg;
 };
 
@@ -317,8 +318,12 @@ export class AuthHandler
       };
     }
 
-    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
+    if (
+      (opts.mediaType === MediaType.SignedMessage ||
+        opts.mediaType === MediaType.EncryptedMessage) &&
+      !opts.packerOptions
+    ) {
+      throw new Error(`packer options are required for ${opts.mediaType}`);
     }
 
     const authResponse = await this.handleAuthRequest(authRequest, {
@@ -329,14 +334,14 @@ export class AuthHandler
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
 
     const packerOpts =
-      opts.mediaType === MediaType.SignedMessage || opts.mediaType === MediaType.EncryptedMessage
-        ? opts.packerOptions
-        : {
+      opts.mediaType === MediaType.ZKPMessage
+        ? {
             provingMethodAlg: this.getDefaultProvingMethodAlg(
               opts.preferredAuthProvingMethod,
               authRequest.body.accept
             )
-          };
+          }
+        : opts.packerOptions;
 
     const token = byteDecoder.decode(
       await this._packerMgr.pack(opts.mediaType, msgBytes, {

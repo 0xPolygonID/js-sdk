@@ -7,7 +7,7 @@ import {
   ProtocolVersion,
   VerificationMethodType
 } from '../constants';
-import { BasicMessage, DIDDocument, IPacker, VerificationMethod } from '../types';
+import { BasicMessage, DIDDocument, IPacker, PackerParams, VerificationMethod } from '../types';
 import { parseAcceptProfile, resolveVerificationMethods } from '../utils';
 import { KMS, KmsKeyType } from '../../kms';
 import { DID } from '@iden3/js-iden3-core';
@@ -20,7 +20,7 @@ export type RecipientInfo = {
   alg?: AcceptJweKEKAlgorithms;
 };
 
-export type JWEPackerParams = {
+export type JWEPackerParams = PackerParams & {
   enc: string;
   recipients: RecipientInfo[];
 };

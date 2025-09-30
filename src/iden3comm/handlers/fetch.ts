@@ -28,6 +28,7 @@ import {
 } from './message-handler';
 import { verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
+import { JWEPackerParams } from '../packers';
 
 /**
  *
@@ -38,7 +39,7 @@ import { IOnchainIssuer } from '../../storage';
  */
 export type FetchHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
   headers?: {
     [key: string]: string;
   };
@@ -199,7 +200,7 @@ export class FetchHandler
     ctx: {
       mediaType?: MediaType;
       headers?: HeadersInit;
-      packerOptions?: JWSPackerParams | ZKPPackerParams;
+      packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
     }
   ): Promise<W3CCredential[] | BasicMessage> {
     if (!ctx.mediaType) {
@@ -225,11 +226,11 @@ export class FetchHandler
       const msgBytes = byteEncoder.encode(JSON.stringify(fetchRequest));
 
       const packerOpts =
-        ctx.mediaType === MediaType.SignedMessage
-          ? ctx.packerOptions
-          : {
+        ctx.mediaType === MediaType.ZKPMessage
+          ? {
               provingMethodAlg: ctx?.packerOptions?.provingMethodAlg || defaultProvingMethodAlg
-            };
+            }
+          : ctx.packerOptions;
 
       const senderDID = DID.parse(offerMessage.to);
       const token = byteDecoder.decode(
@@ -287,8 +288,12 @@ export class FetchHandler
     offer: Uint8Array,
     opts?: FetchHandlerOptions
   ): Promise<W3CCredential[]> {
-    if (opts?.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
+    if (
+      (opts?.mediaType === MediaType.SignedMessage ||
+        opts?.mediaType === MediaType.EncryptedMessage) &&
+      !opts.packerOptions
+    ) {
+      throw new Error(`packer options are required for ${opts.mediaType}`);
     }
 
     const offerMessage = await FetchHandler.unpackMessage<CredentialsOfferMessage>(

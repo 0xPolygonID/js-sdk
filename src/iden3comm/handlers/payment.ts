@@ -42,6 +42,7 @@ import { Resolvable } from 'did-resolver';
 import { verifyExpiresTime } from './common';
 import { Keypair } from '@solana/web3.js';
 import { buildEvmPayment, verifyEIP712TypedData } from '../../utils/payments/evm';
+import { JWEPackerParams } from '../packers';
 
 /** @beta PaymentRequestCreationOptions represents payment-request creation options */
 export type PaymentRequestCreationOptions = {
@@ -214,7 +215,7 @@ export type PaymentRequestMessageHandlerOptions = BasicHandlerOptions & {
   */
   nonce: string;
   erc20TokenApproveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>;
-  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
   mediaType?: MediaType;
 };
 
@@ -402,10 +403,11 @@ export class PaymentHandler
     opts: PaymentRequestMessageHandlerOptions
   ): Promise<Uint8Array | null> {
     if (
-      this._params.packerParams.mediaType === MediaType.SignedMessage &&
+      (this._params.packerParams.mediaType === MediaType.SignedMessage ||
+        this._params.packerParams.mediaType === MediaType.ZKPMessage) &&
       !this._params.packerParams.packerOptions
     ) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
+      throw new Error(`packer options are required for ${this._params.packerParams.mediaType}`);
     }
 
     const paymentRequest = await this.parsePaymentRequest(request);
@@ -425,8 +427,11 @@ export class PaymentHandler
     if (!opts.packerOptions) {
       opts.packerOptions = this._params.packerParams.packerOptions;
     }
-    if (!opts?.packerOptions && opts.mediaType === MediaType.SignedMessage) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
+    if (
+      !opts?.packerOptions &&
+      (opts.mediaType === MediaType.SignedMessage || opts.mediaType === MediaType.EncryptedMessage)
+    ) {
+      throw new Error(`packer options are required for ${opts.mediaType}`);
     }
 
     const senderDID = DID.parse(paymentRequest.to);

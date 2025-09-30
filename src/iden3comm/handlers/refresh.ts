@@ -15,6 +15,7 @@ import { DID } from '@iden3/js-iden3-core';
 import { ICredentialWallet } from '../../credentials';
 import * as uuid from 'uuid';
 import { defaultProvingMethodAlg } from './message-handler';
+import { JWEPackerParams } from '../packers';
 
 /**
  * RefreshHandlerOptions contains options for RefreshHandler
@@ -35,7 +36,7 @@ export interface RefreshHandlerOptions {
  */
 export interface RefreshOptions {
   reason?: string;
-  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
   mediaType?: MediaType;
 }
 
