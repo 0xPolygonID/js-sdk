@@ -7,6 +7,7 @@ import {
   DIDDocument,
   IPackageManager,
   JWSPackerParams,
+  PackerParams,
   ZKPPackerParams
 } from '../types';
 
@@ -166,7 +167,7 @@ export type CredentialProposalHandlerParams = {
     type: string,
     opts?: { msg?: BasicMessage }
   ) => Promise<Proposal>;
-  packerParams: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
+  packerParams: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
 };
 
 /**

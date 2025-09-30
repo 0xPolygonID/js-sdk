@@ -39,7 +39,7 @@ import { JWEPackerParams } from '../packers';
  */
 export type FetchHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
   headers?: {
     [key: string]: string;
   };

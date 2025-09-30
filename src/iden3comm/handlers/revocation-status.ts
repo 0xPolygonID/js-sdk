@@ -4,6 +4,7 @@ import {
   BasicMessage,
   IPackageManager,
   JWSPackerParams,
+  PackerParams,
   RevocationStatusRequestMessage,
   RevocationStatusResponseMessage,
   ZKPPackerParams
@@ -34,7 +35,7 @@ import { JWEPackerParams } from '../packers';
 export type RevocationStatusMessageHandlerOptions = BasicHandlerOptions & {
   senderDid: DID;
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
   treeState?: TreeState;
 };
 
@@ -68,7 +69,7 @@ export interface IRevocationStatusHandler {
 /** RevocationStatusHandlerOptions represents revocation status handler options */
 export type RevocationStatusHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
   treeState?: TreeState;
 };
 

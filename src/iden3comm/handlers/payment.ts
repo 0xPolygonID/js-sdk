@@ -215,7 +215,7 @@ export type PaymentRequestMessageHandlerOptions = BasicHandlerOptions & {
   */
   nonce: string;
   erc20TokenApproveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>;
-  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
   mediaType?: MediaType;
 };
 
@@ -417,19 +417,15 @@ export class PaymentHandler
     if (!opts?.allowExpiredMessages) {
       verifyExpiresTime(paymentRequest);
     }
-    if (!opts?.mediaType) {
-      opts.mediaType = this._params.packerParams.mediaType || MediaType.ZKPMessage;
-    }
+    const mediaType = opts.mediaType || this._params.packerParams.mediaType || MediaType.ZKPMessage;
     if (!opts.packerOptions) {
       opts.packerOptions = this._params.packerParams.packerOptions;
     }
     const senderDID = DID.parse(paymentRequest.to);
-    if (opts.mediaType === MediaType.ZKPMessage && !opts.packerOptions?.provingMethodAlg) {
-      opts.packerOptions = {
-        provingMethodAlg: await getProvingMethodAlgFromJWZ(request),
-        senderDID
-      };
-    }
+    opts.packerOptions = initDefaultPackerOptions(mediaType, opts.packerOptions, {
+      provingMethodAlg: await getProvingMethodAlgFromJWZ(request),
+      senderDID
+    });
     const agentMessage = await this.handlePaymentRequestMessage(paymentRequest, opts);
     if (!agentMessage) {
       return null;

@@ -12,7 +12,8 @@ import {
   ZeroKnowledgeProofRequest,
   JSONObject,
   Attachment,
-  ZKPPackerParams
+  ZKPPackerParams,
+  PackerParams
 } from '../types';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
@@ -193,7 +194,7 @@ export type AuthMessageHandlerOptions = BasicHandlerOptions & (AuthReqOptions | 
  */
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | JWEPackerParams | ZKPPackerParams;
+  packerOptions?: JWSPackerParams | JWEPackerParams | ZKPPackerParams | PackerParams;
   preferredAuthProvingMethod?: ProvingMethodAlg;
 };
 

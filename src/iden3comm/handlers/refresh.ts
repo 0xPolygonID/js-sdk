@@ -6,6 +6,7 @@ import {
   CredentialRefreshMessage,
   IPackageManager,
   JWSPackerParams,
+  PackerParams,
   ZKPPackerParams
 } from '../types';
 
@@ -36,7 +37,7 @@ export interface RefreshHandlerOptions {
  */
 export interface RefreshOptions {
   reason?: string;
-  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams;
+  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
   mediaType?: MediaType;
 }
 
