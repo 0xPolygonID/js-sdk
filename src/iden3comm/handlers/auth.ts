@@ -20,7 +20,11 @@ import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
+import {
+  initDefaultPackerOptions,
+  processZeroKnowledgeProofRequests,
+  verifyExpiresTime
+} from './common';
 import { CircuitId } from '../../circuits';
 import {
   AbstractMessageHandler,
@@ -318,14 +322,6 @@ export class AuthHandler
       };
     }
 
-    if (
-      (opts.mediaType === MediaType.SignedMessage ||
-        opts.mediaType === MediaType.EncryptedMessage) &&
-      !opts.packerOptions
-    ) {
-      throw new Error(`packer options are required for ${opts.mediaType}`);
-    }
-
     const authResponse = await this.handleAuthRequest(authRequest, {
       senderDid: did,
       mediaType: opts.mediaType
@@ -333,21 +329,15 @@ export class AuthHandler
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
 
-    const packerOpts =
-      opts.mediaType === MediaType.ZKPMessage
-        ? {
-            provingMethodAlg: this.getDefaultProvingMethodAlg(
-              opts.preferredAuthProvingMethod,
-              authRequest.body.accept
-            )
-          }
-        : opts.packerOptions;
-
+    const packerOpts = initDefaultPackerOptions(opts.mediaType, opts.packerOptions, {
+      provingMethodAlg: this.getDefaultProvingMethodAlg(
+        opts.preferredAuthProvingMethod,
+        authRequest.body.accept
+      ),
+      senderDID: did
+    });
     const token = byteDecoder.decode(
-      await this._packerMgr.pack(opts.mediaType, msgBytes, {
-        senderDID: did,
-        ...packerOpts
-      })
+      await this._packerMgr.pack(opts.mediaType, msgBytes, packerOpts)
     );
 
     return { authRequest, authResponse, token };

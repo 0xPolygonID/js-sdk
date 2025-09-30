@@ -39,7 +39,7 @@ import {
 import { PaymentFeatures, PaymentRequestDataType, PaymentType } from '../../verifiable';
 import { Signer } from 'ethers';
 import { Resolvable } from 'did-resolver';
-import { verifyExpiresTime } from './common';
+import { initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { Keypair } from '@solana/web3.js';
 import { buildEvmPayment, verifyEIP712TypedData } from '../../utils/payments/evm';
 import { JWEPackerParams } from '../packers';
@@ -370,10 +370,14 @@ export class PaymentHandler
 
     const paymentMessage = createPayment(senderDID, receiverDID, payments);
     const mediaType = ctx?.mediaType || this._params.packerParams.mediaType || MediaType.ZKPMessage;
-    const packerParams = ctx?.packerOptions || this._params.packerParams;
-    if (mediaType === MediaType.ZKPMessage && !packerParams?.provingMethodAlg) {
-      packerParams.provingMethodAlg = ctx.messageProvingMethodAlg;
-    }
+    const packerParams = initDefaultPackerOptions(
+      mediaType,
+      ctx?.packerOptions || this._params.packerParams,
+      {
+        senderDID: senderDID,
+        provingMethodAlg: ctx.messageProvingMethodAlg
+      }
+    );
     const response = await this.packMessage(paymentMessage, senderDID, mediaType, packerParams);
 
     const agentResult = await fetch(paymentRequest.body.agent, {
@@ -402,14 +406,6 @@ export class PaymentHandler
     request: Uint8Array,
     opts: PaymentRequestMessageHandlerOptions
   ): Promise<Uint8Array | null> {
-    if (
-      (this._params.packerParams.mediaType === MediaType.SignedMessage ||
-        this._params.packerParams.mediaType === MediaType.ZKPMessage) &&
-      !this._params.packerParams.packerOptions
-    ) {
-      throw new Error(`packer options are required for ${this._params.packerParams.mediaType}`);
-    }
-
     const paymentRequest = await this.parsePaymentRequest(request);
     if (!paymentRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
@@ -427,13 +423,6 @@ export class PaymentHandler
     if (!opts.packerOptions) {
       opts.packerOptions = this._params.packerParams.packerOptions;
     }
-    if (
-      !opts?.packerOptions &&
-      (opts.mediaType === MediaType.SignedMessage || opts.mediaType === MediaType.EncryptedMessage)
-    ) {
-      throw new Error(`packer options are required for ${opts.mediaType}`);
-    }
-
     const senderDID = DID.parse(paymentRequest.to);
     if (opts.mediaType === MediaType.ZKPMessage && !opts.packerOptions?.provingMethodAlg) {
       opts.packerOptions = {

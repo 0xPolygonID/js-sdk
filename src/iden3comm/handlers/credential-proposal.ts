@@ -27,7 +27,7 @@ import {
   IProtocolMessageHandler,
   getProvingMethodAlgFromJWZ
 } from './message-handler';
-import { verifyExpiresTime } from './common';
+import { initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { JWEPackerParams } from '../packers';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
@@ -327,14 +327,6 @@ export class CredentialProposalHandler
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
     opts?: ProposalRequestHandlerOptions
   ): Promise<Uint8Array> {
-    if (
-      (this._params.packerParams.mediaType === MediaType.SignedMessage ||
-        this._params.packerParams.mediaType === MediaType.EncryptedMessage) &&
-      !this._params.packerParams.packerOptions
-    ) {
-      throw new Error(`packer options are required for ${this._params.packerParams.mediaType}`);
-    }
-
     const proposalRequest = await this.parseProposalRequest(request);
     if (!proposalRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
@@ -347,19 +339,15 @@ export class CredentialProposalHandler
     const message = await this.handleProposalRequestMessage(proposalRequest);
     const response = byteEncoder.encode(JSON.stringify(message));
 
-    const packerOpts =
-      this._params.packerParams.mediaType === MediaType.ZKPMessage
-        ? {
-            provingMethodAlg:
-              this._params.packerParams.provingMethodAlg ||
-              (await getProvingMethodAlgFromJWZ(request))
-          }
-        : this._params.packerParams.packerOptions;
-
-    return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
-      senderDID,
-      ...packerOpts
-    });
+    const packerOpts = initDefaultPackerOptions(
+      this._params.packerParams.mediaType,
+      this._params.packerParams.packerOptions,
+      {
+        provingMethodAlg: await getProvingMethodAlgFromJWZ(request),
+        senderDID
+      }
+    );
+    return this._packerMgr.pack(this._params.packerParams.mediaType, response, packerOpts);
   }
 
   /**

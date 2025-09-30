@@ -21,7 +21,7 @@ import {
   IProtocolMessageHandler,
   getProvingMethodAlgFromJWZ
 } from './message-handler';
-import { verifyExpiresTime } from './common';
+import { initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { JWEPackerParams } from '../packers';
 
 /**
@@ -195,14 +195,6 @@ export class RevocationStatusHandler
       };
     }
 
-    if (
-      (opts.mediaType === MediaType.SignedMessage ||
-        opts.mediaType === MediaType.EncryptedMessage) &&
-      !opts.packerOptions
-    ) {
-      throw new Error(`packer options are required for ${opts.mediaType}`);
-    }
-
     const rsRequest = await this.parseRevocationStatusRequest(request);
     if (!opts.allowExpiredMessages) {
       verifyExpiresTime(rsRequest);
@@ -214,22 +206,19 @@ export class RevocationStatusHandler
       treeState: opts.treeState
     });
 
-    const packerOpts =
-      opts.mediaType === MediaType.ZKPMessage
-        ? {
-            provingMethodAlg:
-              opts.packerOptions?.provingMethodAlg || (await getProvingMethodAlgFromJWZ(request))
-          }
-        : opts.packerOptions;
-
     if (!rsRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
-
     const senderDID = DID.parse(rsRequest.to);
-    return this._packerMgr.pack(opts.mediaType, byteEncoder.encode(JSON.stringify(response)), {
+    const packerOpts = initDefaultPackerOptions(opts.mediaType, opts.packerOptions, {
       senderDID,
-      ...packerOpts
+      provingMethodAlg:
+        opts.packerOptions?.provingMethodAlg || (await getProvingMethodAlgFromJWZ(request))
     });
+    return this._packerMgr.pack(
+      opts.mediaType,
+      byteEncoder.encode(JSON.stringify(response)),
+      packerOpts
+    );
   }
 }

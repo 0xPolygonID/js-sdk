@@ -6,6 +6,7 @@ import {
   BasicMessage,
   JsonDocumentObject,
   JWSPackerParams,
+  PackerParams,
   ZeroKnowledgeProofAuthResponse,
   ZeroKnowledgeProofQuery,
   ZeroKnowledgeProofRequest,
@@ -19,6 +20,8 @@ import { CircuitId } from '../../circuits';
 import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
 import { ethers, Signer } from 'ethers';
 import { packZkpProof, prepareZkpProof } from '../../storage/blockchain/common';
+import { ProvingMethodAlg } from '@iden3/js-jwz';
+import { defaultProvingMethodAlg } from './message-handler';
 
 /**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.
@@ -321,4 +324,44 @@ export const verifyExpiresTime = (message: BasicMessage) => {
   if (message?.expires_time && message.expires_time < getUnixTimestamp(new Date())) {
     throw new Error('Message expired');
   }
+};
+
+/**
+ * Initializes default packer options based on the media type and provided options.
+ * @param mediaType - The media type of the message.
+ * @param packerOptions - Optional packer parameters.
+ * @param opts - Additional options including proving method algorithm and sender DID.
+ * @returns PackerParams
+ */
+export const initDefaultPackerOptions = (
+  mediaType: MediaType,
+  packerOptions?: PackerParams,
+  opts?: {
+    provingMethodAlg?: ProvingMethodAlg;
+    senderDID?: DID;
+  }
+): PackerParams => {
+  if (mediaType === MediaType.SignedMessage || mediaType === MediaType.EncryptedMessage) {
+    if (!packerOptions) {
+      throw new Error(`packer options are required for ${mediaType}`);
+    }
+    return packerOptions;
+  }
+
+  if (mediaType === MediaType.PlainMessage) {
+    return {};
+  }
+
+  if (mediaType === MediaType.ZKPMessage) {
+    const zkpPackerParams = {
+      provingMethodAlg:
+        packerOptions?.provingMethodAlg || opts?.provingMethodAlg || defaultProvingMethodAlg,
+      senderDID: packerOptions?.senderDID || opts?.senderDID
+    };
+    if (!zkpPackerParams.senderDID) {
+      throw new Error('senderDID is required for ZKPMessage');
+    }
+    return zkpPackerParams;
+  }
+  throw new Error(`unsupported media type ${mediaType}`);
 };

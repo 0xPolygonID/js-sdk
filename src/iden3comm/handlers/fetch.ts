@@ -23,10 +23,9 @@ import {
   AbstractMessageHandler,
   BasicHandlerOptions,
   IProtocolMessageHandler,
-  defaultProvingMethodAlg,
   getProvingMethodAlgFromJWZ
 } from './message-handler';
-import { verifyExpiresTime } from './common';
+import { initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
 import { JWEPackerParams } from '../packers';
 
@@ -225,19 +224,12 @@ export class FetchHandler
 
       const msgBytes = byteEncoder.encode(JSON.stringify(fetchRequest));
 
-      const packerOpts =
-        ctx.mediaType === MediaType.ZKPMessage
-          ? {
-              provingMethodAlg: ctx?.packerOptions?.provingMethodAlg || defaultProvingMethodAlg
-            }
-          : ctx.packerOptions;
-
       const senderDID = DID.parse(offerMessage.to);
+      const packerOpts = initDefaultPackerOptions(ctx.mediaType, ctx.packerOptions, {
+        senderDID
+      });
       const token = byteDecoder.decode(
-        await this._packerMgr.pack(ctx.mediaType, msgBytes, {
-          senderDID,
-          ...packerOpts
-        })
+        await this._packerMgr.pack(ctx.mediaType, msgBytes, packerOpts)
       );
       try {
         if (!offerMessage?.body?.url) {
