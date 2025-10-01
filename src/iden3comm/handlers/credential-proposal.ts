@@ -5,10 +5,7 @@ import {
   CredentialOffer,
   CredentialsOfferMessage,
   DIDDocument,
-  IPackageManager,
-  JWSPackerParams,
-  PackerParams,
-  ZKPPackerParams
+  IPackageManager
 } from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
@@ -28,8 +25,7 @@ import {
   IProtocolMessageHandler,
   getProvingMethodAlgFromJWZ
 } from './message-handler';
-import { initDefaultPackerOptions, verifyExpiresTime } from './common';
-import { JWEPackerParams } from '../packers';
+import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
@@ -167,7 +163,7 @@ export type CredentialProposalHandlerParams = {
     type: string,
     opts?: { msg?: BasicMessage }
   ) => Promise<Proposal>;
-  packerParams: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
+  packerParams: HandlerPackerParams;
 };
 
 /**

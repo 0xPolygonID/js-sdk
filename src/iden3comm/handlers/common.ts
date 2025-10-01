@@ -26,6 +26,15 @@ import { defaultProvingMethodAlg } from './message-handler';
 import { JWEPackerParams } from '../packers';
 
 /**
+ * Union type for handler packer parameters.
+ */
+export type HandlerPackerParams =
+  | JWSPackerParams
+  | JWEPackerParams
+  | ZKPPackerParams
+  | PackerParams;
+
+/**
  * Groups the ZeroKnowledgeProofRequest objects based on their groupId.
  * Returns a Map where the key is the groupId and the value is an object containing the query and linkNonce.
  *
@@ -337,7 +346,7 @@ export const verifyExpiresTime = (message: BasicMessage) => {
  */
 export const initDefaultPackerOptions = (
   mediaType: MediaType,
-  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams,
+  packerOptions?: HandlerPackerParams,
   opts?: {
     provingMethodAlg?: ProvingMethodAlg;
     senderDID?: DID;

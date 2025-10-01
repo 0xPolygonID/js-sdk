@@ -3,11 +3,8 @@ import { MediaType } from '../constants';
 import {
   BasicMessage,
   IPackageManager,
-  JWSPackerParams,
-  PackerParams,
   RevocationStatusRequestMessage,
-  RevocationStatusResponseMessage,
-  ZKPPackerParams
+  RevocationStatusResponseMessage
 } from '../types';
 
 import { DID } from '@iden3/js-iden3-core';
@@ -22,8 +19,7 @@ import {
   IProtocolMessageHandler,
   getProvingMethodAlgFromJWZ
 } from './message-handler';
-import { initDefaultPackerOptions, verifyExpiresTime } from './common';
-import { JWEPackerParams } from '../packers';
+import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 
 /**
  * Defines the options for a RevocationStatusMessageHandler.
@@ -35,7 +31,7 @@ import { JWEPackerParams } from '../packers';
 export type RevocationStatusMessageHandlerOptions = BasicHandlerOptions & {
   senderDid: DID;
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
+  packerOptions?: HandlerPackerParams;
   treeState?: TreeState;
 };
 
@@ -69,7 +65,7 @@ export interface IRevocationStatusHandler {
 /** RevocationStatusHandlerOptions represents revocation status handler options */
 export type RevocationStatusHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
+  packerOptions?: HandlerPackerParams;
   treeState?: TreeState;
 };
 

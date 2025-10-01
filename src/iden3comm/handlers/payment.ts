@@ -1,12 +1,6 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
-import {
-  BasicMessage,
-  IPackageManager,
-  JWSPackerParams,
-  PackerParams,
-  ZKPPackerParams
-} from '../types';
+import { BasicMessage, IPackageManager, PackerParams } from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
@@ -39,10 +33,9 @@ import {
 import { PaymentFeatures, PaymentRequestDataType, PaymentType } from '../../verifiable';
 import { Signer } from 'ethers';
 import { Resolvable } from 'did-resolver';
-import { initDefaultPackerOptions, verifyExpiresTime } from './common';
+import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { Keypair } from '@solana/web3.js';
 import { buildEvmPayment, verifyEIP712TypedData } from '../../utils/payments/evm';
-import { JWEPackerParams } from '../packers';
 
 /** @beta PaymentRequestCreationOptions represents payment-request creation options */
 export type PaymentRequestCreationOptions = {
@@ -215,7 +208,7 @@ export type PaymentRequestMessageHandlerOptions = BasicHandlerOptions & {
   */
   nonce: string;
   erc20TokenApproveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>;
-  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
+  packerOptions?: HandlerPackerParams;
   mediaType?: MediaType;
 };
 

@@ -8,10 +8,7 @@ import {
   CredentialsOfferMessage,
   CredentialsOnchainOfferMessage,
   IPackageManager,
-  JWSPackerParams,
-  MessageFetchRequestMessage,
-  PackerParams,
-  ZKPPackerParams
+  MessageFetchRequestMessage
 } from '../types';
 
 import { W3CCredential } from '../../verifiable';
@@ -26,9 +23,8 @@ import {
   IProtocolMessageHandler,
   getProvingMethodAlgFromJWZ
 } from './message-handler';
-import { initDefaultPackerOptions, verifyExpiresTime } from './common';
+import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
-import { JWEPackerParams } from '../packers';
 
 /**
  *
@@ -39,7 +35,7 @@ import { JWEPackerParams } from '../packers';
  */
 export type FetchHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
+  packerOptions?: HandlerPackerParams;
   headers?: {
     [key: string]: string;
   };
@@ -200,7 +196,7 @@ export class FetchHandler
     ctx: {
       mediaType?: MediaType;
       headers?: HeadersInit;
-      packerOptions?: JWSPackerParams | ZKPPackerParams | JWEPackerParams | PackerParams;
+      packerOptions?: HandlerPackerParams;
     }
   ): Promise<W3CCredential[] | BasicMessage> {
     if (!ctx.mediaType) {

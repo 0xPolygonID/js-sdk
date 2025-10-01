@@ -8,12 +8,9 @@ import {
   AuthorizationResponseMessage,
   BasicMessage,
   IPackageManager,
-  JWSPackerParams,
   ZeroKnowledgeProofRequest,
   JSONObject,
-  Attachment,
-  ZKPPackerParams,
-  PackerParams
+  Attachment
 } from '../types';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
@@ -22,6 +19,7 @@ import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
 import {
+  HandlerPackerParams,
   initDefaultPackerOptions,
   processZeroKnowledgeProofRequests,
   verifyExpiresTime
@@ -38,7 +36,6 @@ import {
   buildAcceptFromProvingMethodAlg,
   parseAcceptProfile
 } from '../utils';
-import { JWEPackerParams } from '../packers/anon-crypt';
 
 /**
  * Options to pass to createAuthorizationRequest function
@@ -194,7 +191,7 @@ export type AuthMessageHandlerOptions = BasicHandlerOptions & (AuthReqOptions | 
  */
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | JWEPackerParams | ZKPPackerParams | PackerParams;
+  packerOptions?: HandlerPackerParams;
   preferredAuthProvingMethod?: ProvingMethodAlg;
 };
 
