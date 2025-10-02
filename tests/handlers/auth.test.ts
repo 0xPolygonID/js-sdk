@@ -73,6 +73,8 @@ import {
 import { getRandomBytes } from '@iden3/js-crypto';
 import {
   AcceptAuthCircuits,
+  AcceptJweKEKAlgorithms,
+  CEKEncryption,
   defaultAcceptProfile,
   MediaType,
   ProtocolVersion
@@ -238,6 +240,45 @@ describe('auth', () => {
     const result = await packageMgr.unpack(tokenBytes);
 
     expect(JSON.stringify(result.unpackedMessage)).to.equal(JSON.stringify(authRes.authResponse));
+
+    const authResEncrypted = await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
+      mediaType: MediaType.EncryptedMessage,
+      packerOptions: {
+        enc: CEKEncryption.A256GCM,
+        recipients: [
+          {
+            alg: AcceptJweKEKAlgorithms.RSA_OAEP_256,
+            did: DID.parse('did:iden3:billions:main:2VnNCwMe2hxUAU5sLqsaCYXJr4a6wkHZXeTM8iBhc2'),
+            didDocument: {
+              '@context': [
+                'https://www.w3.org/ns/did/v1',
+                'https://w3id.org/security/suites/jws-2020/v1'
+              ],
+              id: 'did:iden3:billions:main:2VnNCwMe2hxUAU5sLqsaCYXJr4a6wkHZXeTM8iBhc2',
+              keyAgreement: [
+                'did:iden3:billions:main:2VnNCwMe2hxUAU5sLqsaCYXJr4a6wkHZXeTM8iBhc2#RSA-OAEP-256:0xfd49a959865e7740f600fc3af4b670a8d107e0f80214ac03c58e416f1cdf6864'
+              ],
+              verificationMethod: [
+                {
+                  controller: 'did:iden3:billions:main:2VnNCwMe2hxUAU5sLqsaCYXJr4a6wkHZXeTM8iBhc2',
+                  id: 'did:iden3:billions:main:2VnNCwMe2hxUAU5sLqsaCYXJr4a6wkHZXeTM8iBhc2#RSA-OAEP-256:0xfd49a959865e7740f600fc3af4b670a8d107e0f80214ac03c58e416f1cdf6864',
+                  publicKeyJwk: {
+                    alg: 'RSA-OAEP-256',
+                    // eslint-disable-next-line @cspell/spellchecker
+                    e: 'AQAB',
+                    ext: true,
+                    kty: 'RSA',
+                    n: 'ngY1zZibNQUYVrPfhYxiw5gbM1-zMucYPxYAoAmd6F3A0T-VBiwnTpoHYAYpu5iZCz_l4mchj2H2sN8R4wy-jF3lTimp08E7FM-GRkCOAK_Bf3-2X11efV_WShGbfU0toCJlAQhHHobwb4Vkgy2wAxvjA5R6yZLerpsoRmHm6GeUq4bUza-sDMYvw_-SwAbWMkg9vW8AACa70XwcENga2L1ST1y0pJFIqTo91kD0qY8zJrpwbm3DbohnHpHA6MWh2T4pxvMrEyzZFs69ZK8lkea4eV_H1dgholMWQ67HAXL1rg86Lc2ruCKG-oK-x-HloqsWsyhNgLeMrANfMwkU2w'
+                  },
+                  type: 'JsonWebKey2020'
+                }
+              ]
+            }
+          }
+        ]
+      }
+    });
+    expect(authResEncrypted.token).to.be.a('string');
   });
 
   it('request-response flow profiles', async () => {

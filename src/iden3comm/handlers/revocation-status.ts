@@ -3,10 +3,8 @@ import { MediaType } from '../constants';
 import {
   BasicMessage,
   IPackageManager,
-  JWSPackerParams,
   RevocationStatusRequestMessage,
-  RevocationStatusResponseMessage,
-  ZKPPackerParams
+  RevocationStatusResponseMessage
 } from '../types';
 
 import { DID } from '@iden3/js-iden3-core';
@@ -21,7 +19,7 @@ import {
   IProtocolMessageHandler,
   getProvingMethodAlgFromJWZ
 } from './message-handler';
-import { verifyExpiresTime } from './common';
+import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 
 /**
  * Defines the options for a RevocationStatusMessageHandler.
@@ -33,7 +31,7 @@ import { verifyExpiresTime } from './common';
 export type RevocationStatusMessageHandlerOptions = BasicHandlerOptions & {
   senderDid: DID;
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  packerOptions?: HandlerPackerParams;
   treeState?: TreeState;
 };
 
@@ -67,7 +65,7 @@ export interface IRevocationStatusHandler {
 /** RevocationStatusHandlerOptions represents revocation status handler options */
 export type RevocationStatusHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  packerOptions?: HandlerPackerParams;
   treeState?: TreeState;
 };
 
@@ -194,10 +192,6 @@ export class RevocationStatusHandler
       };
     }
 
-    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
     const rsRequest = await this.parseRevocationStatusRequest(request);
     if (!opts.allowExpiredMessages) {
       verifyExpiresTime(rsRequest);
@@ -209,22 +203,19 @@ export class RevocationStatusHandler
       treeState: opts.treeState
     });
 
-    const packerOpts =
-      opts.mediaType === MediaType.SignedMessage
-        ? opts.packerOptions
-        : {
-            provingMethodAlg:
-              opts.packerOptions?.provingMethodAlg || (await getProvingMethodAlgFromJWZ(request))
-          };
-
     if (!rsRequest.to) {
       throw new Error(`failed request. empty 'to' field`);
     }
-
     const senderDID = DID.parse(rsRequest.to);
-    return this._packerMgr.pack(opts.mediaType, byteEncoder.encode(JSON.stringify(response)), {
+    const packerOpts = initDefaultPackerOptions(opts.mediaType, opts.packerOptions, {
       senderDID,
-      ...packerOpts
+      provingMethodAlg:
+        opts.packerOptions?.provingMethodAlg || (await getProvingMethodAlgFromJWZ(request))
     });
+    return this._packerMgr.pack(
+      opts.mediaType,
+      byteEncoder.encode(JSON.stringify(response)),
+      packerOpts
+    );
   }
 }

@@ -1,13 +1,7 @@
 import { MediaType } from '../constants';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
-import {
-  CredentialIssuanceMessage,
-  CredentialRefreshMessage,
-  IPackageManager,
-  JWSPackerParams,
-  ZKPPackerParams
-} from '../types';
+import { CredentialIssuanceMessage, CredentialRefreshMessage, IPackageManager } from '../types';
 
 import { RefreshServiceType, W3CCredential } from '../../verifiable';
 import { byteEncoder } from '../../utils';
@@ -15,6 +9,7 @@ import { DID } from '@iden3/js-iden3-core';
 import { ICredentialWallet } from '../../credentials';
 import * as uuid from 'uuid';
 import { defaultProvingMethodAlg } from './message-handler';
+import { HandlerPackerParams } from './common';
 
 /**
  * RefreshHandlerOptions contains options for RefreshHandler
@@ -35,7 +30,7 @@ export interface RefreshHandlerOptions {
  */
 export interface RefreshOptions {
   reason?: string;
-  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  packerOptions?: HandlerPackerParams;
   mediaType?: MediaType;
 }
 
