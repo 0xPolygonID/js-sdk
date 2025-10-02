@@ -282,7 +282,7 @@ export class AnonCryptPacker implements IPacker {
       recipients = [{ encrypted_key: decodedJWE.encrypted_key, header: decodedJWE.header }];
       delete decodedJWE.encrypted_key;
       delete decodedJWE.header;
-      decodedJWE['recipients'] = recipients;
+      decodedJWE.recipients = recipients;
     }
     return decodedJWE as GeneralJWE;
   }
