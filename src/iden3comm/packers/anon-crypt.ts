@@ -11,7 +11,7 @@ import { BasicMessage, DIDDocument, IPacker, PackerParams, VerificationMethod } 
 import { parseAcceptProfile, resolveVerificationMethods } from '../utils';
 import { KMS, KmsKeyType } from '../../kms';
 import { DID } from '@iden3/js-iden3-core';
-import { GeneralJWE } from 'jose';
+import { GeneralJWE, JWEHeaderParameters } from 'jose';
 
 export type RecipientInfo = {
   did: DID;
@@ -67,7 +67,7 @@ export class AnonCryptPacker implements IPacker {
   }
 
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
-    const jwe: GeneralJWE = JSON.parse(byteDecoder.decode(envelope));
+    const jwe: GeneralJWE = this.decodeGeneralJWE(envelope);
 
     if (!jwe.recipients?.length) {
       throw new Error('Missing recipients');
@@ -262,5 +262,28 @@ export class AnonCryptPacker implements IPacker {
     });
 
     return byteEncoder.encode(JSON.stringify(jwe));
+  }
+
+  private decodeGeneralJWE(envelope: Uint8Array): GeneralJWE {
+    const decodedJWE = JSON.parse(byteDecoder.decode(envelope));
+    let recipients: { encrypted_key: string; header: JWEHeaderParameters }[] = [];
+    if (
+      decodedJWE.encrypted_key &&
+      typeof decodedJWE.encrypted_key === 'string' &&
+      decodedJWE.header &&
+      typeof decodedJWE.header === 'object'
+    ) {
+      if (decodedJWE.recipients) {
+        throw Error(
+          'both `recipients` and `encrypted_key`/`header` headers are present in JWE token'
+        );
+      }
+
+      recipients = [{ encrypted_key: decodedJWE.encrypted_key, header: decodedJWE.header }];
+      delete decodedJWE.encrypted_key;
+      delete decodedJWE.header;
+      decodedJWE['recipients'] = recipients;
+    }
+    return decodedJWE as GeneralJWE;
   }
 }
