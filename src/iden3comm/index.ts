@@ -5,4 +5,5 @@ export * from './handlers';
 export * from './utils';
 
 import * as PROTOCOL_CONSTANTS from './constants';
-export { PROTOCOL_CONSTANTS };
+import * as notification from './notification';
+export { PROTOCOL_CONSTANTS, notification };
