@@ -79,10 +79,11 @@ export class DidResolverStateReadonlyStorage implements IStateStorage {
     if (!info && !published) {
       throw new Error(VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST);
     }
-    if (info) {
-      info.id = id; // info id from resolver is DID
-      info.state = opts?.state.bigInt(); // state in hex from resolver
+    if (!info) {
+      throw new Error('State info not found');
     }
+    info.id = id; // info id from resolver is DID
+    info.state = opts?.state?.bigInt(); // state in hex from resolver
     return { ...info };
   }
 
