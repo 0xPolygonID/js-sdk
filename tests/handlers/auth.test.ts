@@ -1266,7 +1266,7 @@ describe('auth', () => {
               context:
                 'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
               credentialSubject: { documentType: { $eq: 99 } },
-              proofType: ProofType.BJJSignature,
+              // proofType: ProofType.BJJSignature, <-- proof type is optional
               type: 'KYCAgeCredential'
             }
           }

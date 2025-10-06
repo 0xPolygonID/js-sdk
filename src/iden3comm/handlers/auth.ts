@@ -376,6 +376,9 @@ export class AuthHandler
         (resp) => resp.id.toString() === proofRequest.id.toString()
       );
       if (!proofResp) {
+        if (proofRequest.optional) {
+          continue;
+        }
         throw new Error(`proof is not given for requestId ${proofRequest.id}`);
       }
 
