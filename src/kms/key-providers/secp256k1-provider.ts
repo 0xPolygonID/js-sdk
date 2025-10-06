@@ -144,6 +144,7 @@ export class Sec256k1Provider implements IKeyProvider, IEIP712Provider {
   async signTypedData(
     keyId: KmsKeyId,
     typedData: TypedData,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     opts: {
       [key: string]: unknown;
     } = {}

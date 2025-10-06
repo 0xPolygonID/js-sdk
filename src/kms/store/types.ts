@@ -27,5 +27,6 @@ export interface KmsKeyId {
 export interface TypedData {
   domain: TypedDataDomain;
   types: Record<string, Array<TypedDataField>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   message: Record<string, any>;
 }

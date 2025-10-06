@@ -205,6 +205,7 @@ export class KMS {
   }
 }
 
+// eslint-disable-next-line @cspell/spellchecker
 export interface IEIP712Provider {
   /**
    * sign eip712 message with agentKms key
