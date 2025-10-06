@@ -158,10 +158,6 @@ export class Sec256k1Provider implements IKeyProvider, IEIP712Provider {
       typedData.message
     );
 
-    if (typeof signature !== 'string') {
-      throw new Error('signature must be a string');
-    }
-
     return hexToBytes(signature);
   }
 
