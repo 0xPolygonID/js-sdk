@@ -63,9 +63,6 @@ const zeroInt = 0n;
  * @class PubSignalsVerifier
  */
 export class PubSignalsVerifier {
-  userId!: Id;
-  challenge!: bigint;
-
   /**
    * Creates an instance of PubSignalsVerifier.
    * @param {DocumentLoader} _documentLoader document loader
@@ -116,9 +113,6 @@ export class PubSignalsVerifier {
       throw new Error('requestId is not presented in proof public signals');
     }
 
-    this.userId = mtpv2PubSignals.userID;
-    this.challenge = mtpv2PubSignals.requestID;
-
     // verify query
     const outs: ClaimOutputs = {
       issuerId: mtpv2PubSignals.issuerID,
@@ -157,7 +151,7 @@ export class PubSignalsVerifier {
     }
 
     // verify ID ownership
-    this.verifyIdOwnership(sender, challenge);
+    this.verifyIdOwnership(sender, challenge, mtpv2PubSignals.userID, mtpv2PubSignals.requestID);
     return mtpv2PubSignals;
   };
 
@@ -173,9 +167,6 @@ export class PubSignalsVerifier {
     sigV2PubSignals = sigV2PubSignals.pubSignalsUnmarshal(
       byteEncoder.encode(JSON.stringify(pubSignals))
     );
-
-    this.userId = sigV2PubSignals.userID;
-    this.challenge = sigV2PubSignals.requestID;
 
     // verify query
     const outs: ClaimOutputs = {
@@ -211,7 +202,7 @@ export class PubSignalsVerifier {
       );
     }
     // verify Id ownership
-    this.verifyIdOwnership(sender, challenge);
+    this.verifyIdOwnership(sender, challenge, sigV2PubSignals.userID, sigV2PubSignals.requestID);
 
     return sigV2PubSignals;
   };
@@ -227,9 +218,6 @@ export class PubSignalsVerifier {
   }: VerifyContext): Promise<BaseConfig> => {
     let v3PubSignals = new AtomicQueryV3PubSignals();
     v3PubSignals = v3PubSignals.pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(pubSignals)));
-
-    this.userId = v3PubSignals.userID;
-    this.challenge = v3PubSignals.requestID;
 
     // verify query
     const outs: ClaimOutputs = {
@@ -375,8 +363,8 @@ export class PubSignalsVerifier {
         opts
       );
     }
-
-    this.verifyIdOwnership(sender, challenge);
+    // verify Id ownership
+    this.verifyIdOwnership(sender, challenge, v3PubSignals.userID, v3PubSignals.requestID);
 
     return v3PubSignals;
   };
@@ -392,12 +380,9 @@ export class PubSignalsVerifier {
       byteEncoder.encode(JSON.stringify(pubSignals))
     );
 
-    this.userId = authV2PubSignals.userID;
-    this.challenge = authV2PubSignals.challenge;
-
     // no query verification
     // verify state
-    const gist = await this.checkGlobalState(authV2PubSignals.GISTRoot, this.userId);
+    const gist = await this.checkGlobalState(authV2PubSignals.GISTRoot, authV2PubSignals.userID);
 
     let acceptedStateTransitionDelay = PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY;
     if (opts?.acceptedStateTransitionDelay) {
@@ -413,7 +398,7 @@ export class PubSignalsVerifier {
     }
 
     // verify Id ownership
-    this.verifyIdOwnership(sender, challenge);
+    this.verifyIdOwnership(sender, challenge, authV2PubSignals.userID, authV2PubSignals.challenge);
     return new BaseConfig();
   };
 
@@ -508,16 +493,21 @@ export class PubSignalsVerifier {
     return multiQueryPubSignals as unknown as BaseConfig;
   };
 
-  private verifyIdOwnership = (sender: string, challenge: bigint): void => {
+  private verifyIdOwnership = (
+    sender: string,
+    challenge: bigint,
+    expectedUserId: Id,
+    expectedChallenge: bigint
+  ): void => {
     const senderId = DID.idFromDID(DID.parse(sender));
-    if (senderId.string() !== this.userId.string()) {
+    if (senderId.string() !== expectedUserId.string()) {
       throw new Error(
-        `sender id is not used for proof creation, expected ${sender}, user from public signals: ${this.userId.string()}`
+        `sender id is not used for proof creation, expected ${sender}, user from public signals: ${expectedUserId.string()}`
       );
     }
-    if (challenge !== this.challenge) {
+    if (challenge !== expectedChallenge) {
       throw new Error(
-        `challenge is not used for proof creation, expected ${challenge}, challenge from public signals: ${this.challenge}  `
+        `challenge is not used for proof creation, expected ${challenge}, challenge from public signals: ${expectedChallenge}  `
       );
     }
   };
