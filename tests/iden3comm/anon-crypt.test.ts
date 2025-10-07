@@ -18,12 +18,14 @@ import {
   bytesToBase64url,
   defaultRSAOaepKmsIdPathGeneratingFunction,
   keyPath,
-  toPublicKeyJwk
+  toPublicKeyJwk,
+  byteEncoder
 } from '../../src';
 import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
-import { GeneralJWE } from 'jose';
+import { flattenedDecrypt, FlattenedJWE, GeneralJWE } from 'jose';
+import { S } from 'vitest/dist/chunks/config.d.D2ROskhv.js';
 
 describe('AnonCrypt packer tests', () => {
   const endUserData = {
@@ -284,7 +286,7 @@ describe('AnonCrypt packer tests', () => {
         false,
         (keyProvider) => async (kid) => {
           const pkStore = await keyProvider.getPkStore();
-          const alias = kid.split('#').pop();
+          const alias = kid.split('#').pop()!;
           const pkHex = await pkStore.get({ alias });
 
           const pubKey = await keyProvider.publicKey({
@@ -303,7 +305,7 @@ describe('AnonCrypt packer tests', () => {
     }
   });
 
-  it('Golang integration test', async () => {
+  it('Golang integration test multiple recipient', async () => {
     const golangGWE: GeneralJWE = {
       ciphertext:
         'Y4JTGPfMcb_qroeLzSLAHl1A18sjI0sQhNOyEh0NPY99meVAQlYvTIs9-bKJ8vnZPpGJe7nWkuMi8I-FSKeOdxPruHGWHiRLVUxVHhtqRmxJ9_18fgMzbldUn9np49j03ooTiYn2pAFEvwpFyQh9SC35CB8Mqr4gTqUfk6LTVde7hyM5k6STNf5NmYtr5LOoT_OYawblk2SyO0654U6DH7x-rYIgZvY3LJYYVSvi4GmJ5vOzm-KPcnDrdzd1MO8E0eFObqlNTInhXWOAypNGEypj_cMS8ofg7F1B7HvIvV8NZS3ZKuDthf9c5siQPe5PgsZjv7UfuojEJAltgwBG8lHW_dPF7-Sg1qO5zdnxpqI3ZHdhOWZYfs2a7rxHvkfXfd-Xlf5AgxcZVYujMJRFVF_2PzGm7rgC5SKgFmzLHkQzH0xGqTdYJ9RI8ybWecHSS-lY-IUAe7Q4uZiSmV-utkpW3DnYuHbFQvFm14yMegk',
@@ -341,5 +343,63 @@ describe('AnonCrypt packer tests', () => {
     const message = byteDecoder.decode(jwe.plaintext);
 
     expect(message).toEqual(expectedMessage);
+  });
+
+  it('Golang integration test single recipient', async () => {
+    const golangGWE: FlattenedJWE = {
+      ciphertext:
+        'PI7rfG2aIGND0VovpKy3Z61AxnpEsSktSS3Io3OSk8J_5CWtGlTVoZQskDZvpN8HD9Ry2yLaKm6I5tXi1lhHNq14hIcmPmcJGT-uW_QWVE7sNCawM6OQyoEW_r6OrMfYGwrwbrtG0O8ARAJIV1oDq27Kzx39NsbZOk9ALixXmwPkc33sEyKNE6LZdIhH38xScpAyZgd93xG-zQDLwpBiyGUCaMp4v959eLPU6N3TYLKdXdEAe2oKVMPI6F5oy5pRYt4HVyZIk9tY8hufaylVVRHQfQYq4w4ntXgKpVgD8xYZCfujVhVi7MfzxxGOfOVPpPOrKOfaWlkjqzR4c7JlHMcCg-xfrlb1CtqLDQ6yit45aEpTu_0Chnt9sgdLaFdsTAdoO-_6RzMIcihoX5r6hz5SeWHpOg00kpqFPbx1fGs4sUWDDQ58o0wgosgxBeEfvGcY9f8LDAg4zAsPCFelfOPqnzzM8g',
+      encrypted_key:
+        'lMs9iyQ9YfIJ_vW8lFPo7OLFbMLAAED1hfUyxb5bZkSSo6tYPsijAfrG8BvGHSp6eVz8Px1YLyy1fQApBOWieHT775MTgxZFJfGaydv7BCTw3SBzhFBesJX3JNPKT9lB4p5FUhwHknDw1ZQ-o9gk41-Kv-hvpedJQE6YwIr85CuoRRciSdg84JVR9SvxVISkgdr4pH2N6UBaqEBPs0NLVbbT9FMAWnv8pPQzsfjOZSiNxIS1Dk9MB6n45aFiZ9PW86CXcMEDSR64Mvni1x9hzptEo0DibqhifTT6f9Gk52wAGnAFAci3f1g_nqnOMWiYijPiQ0saoQzf6kd_MBkhqQ',
+      header: {
+        alg: 'RSA-OAEP-256',
+        kid: 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT#key1'
+      },
+      iv: 'iE0vd5IUMuimFzUK',
+      protected:
+        'eyJhbGciOiJSU0EtT0FFUC0yNTYiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoiZGlkOmlkZW4zOmJpbGxpb25zOnRlc3Q6MlZ4bm9pTnFkTVB5SE10VXdBRXpobldxWEdrRWVKcEFwNG50VGtMOFhUI2tleTEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9pZGVuM2NvbW0tZW5jcnlwdGVkLWpzb24ifQ',
+      tag: 'G3i_v-TS67ch_9__GHQJBQ'
+    };
+
+    const kms = new KMS();
+
+    const joseService = new JoseService();
+
+    const packer = new AnonCryptPacker(
+      joseService,
+      kms,
+      {
+        resolve: async () => ({
+          undefined
+        })
+      } as unknown as Resolvable,
+      {
+        resolvePrivateKeyByKid: (k: string) => {
+          return Promise.resolve({
+            kty: 'RSA',
+            n: 'oJ_RM4-dKCwAm_iXCDBzSABwOr5eOCrTVzlLikx0dK1BoO8ilHr9Yx7F3F5Q5exZ6g_lz_5YKSQ31ZNWjAjLOZnRvLkXGA2p_lfFNGGDsW7Xw2OvVy-kX7Y-O1Yn6rGW-ZMCslcc4hdHQbrBa3MdwLFDfAMcHDfZYWOVhU3brGIr0cmXRfZ6U-1hPT-3K_rwCknbiir8GivoLXinIad95JNwyIUytfBc-New_PrcUYoDQH6GI6bu8m2_ya3QuGIR-Lgn5HGcXtd9Lw9qnMc31EcJMKyG1KxMAVUFcoyADDskRCDfd-PWr50Upx_F9V3PE9e7ZOrXRn_hQF0XYG-MGQ',
+            e: 'AQAB',
+            d: 'CLsjNaKp8-Hvbwr8V7Q9gfWPJCxOpg4y4ngBco0tG94Clh9FkY1dambE8dF5I4RdT1cpomyUiXj35X6-qro8JL-HGnNzrUmp2sLV2_7seAe6x_rKUEqNTGwVNie83_mjB6IteHj6f5ItHAYtJxxw6rVgAhTPsXt6MBxoB2DX7ubpmLPzqyTjE_teVjyrj9i9JZ-W1kRMbLWuALviZbrrtEHdEBKaRvtaeWcf5MHuGHw2RCTHhoHzty8NHasdwSsu0t1dL-88ulxDgK9EdYOHZ17dkmNrrUCq0wpa1_InbV_JC9BoN6Fw7_22M67Suq2v9JUg_K4kid45Vumvn_Mq4Q',
+            p: '2kgLhksExewH6ukrXwIMRdKNGRZwWDfprtxjiXW6qg_Qtlo-NX1NUZCilbKAqhYpPdEq2UFElhcF7e1cDkZkhYUQKcOnn_80vWPfoVD8LykDaaNA_E7p1sc78hfm3pKq6AJ26X_qRvV2x0nyFT6S5WykvlRIWRxvr66Y25y192E',
+            q: 'vGE8VBMc4L7IExssUN5bSPidzH8FB9yJw--i8cYGLns-Exqy3XO78GCgvB4yKjmz_M5aMZM9FFqJmbPYI2u3STQNvuv8Fss7YqMYWVLWIi2lzx_5e2_coNB7zfn7yyu9R900Nl9WUlWz2Qtu9yXX-RfT_aBr7wg0z3oIP5BAJ7k',
+            dp: 'j-vOxXXzKLiuo8GnmhYUl3jzFWaJHnGHP4cKjhi0wep5l7I6sDP05eGygXdXhE3mVV7znJl_KmL1wuGsv7DEGJEajh72B_VSBcmzKn7mOAYXvPAqKfGyFq34pXADBh-4Vg9B7kUr6CtybIYh-sXuPxz6JpAVv8OTFEfPe4WBKSE',
+            dq: 'V3Zd6DsngUGS6ywGm1Vh1LN5sGSZFVlTrWEpqk9it1oJLB2NRjxh2e1DM5RhfjFkW9ADGFlgVn7ivDY_99IfOyGr8CTo2jxpyhYnS_Gl8iB3h380-hapvRCPKscSHPal3yPZBhWlonygD_m6_4zWhZSGnI9LDaQlwN7LzZdP8iE',
+            qi: 'rOj_Zb2hTI1Q-K93QDYEvcyaiE266_MbEhqYWOWOik5J2XAmIcb7ns1rNVfJyLXEeu584SZcs0LCwxTZB-nKKcyTbTqKZP9QanjXGZn6jZprt0J5s4PmZPonAFuM8DgpPUJQwKUTlxVPdSm_TtgxC7hbRrhzjGFduROXu_iltZU',
+            alg: 'RSA-OAEP-256'
+          } as unknown as CryptoKey);
+        }
+      }
+    );
+    const message = await packer.unpack(byteEncoder.encode(JSON.stringify(golangGWE)));
+    console.log('message', JSON.stringify(message));
+    const expectedMessage = {
+      id: '8589c266-f5f4-4a80-8fc8-c1ad4de3e3b4',
+      thid: '43246acb-b772-414e-9c90-f36b37261000',
+      typ: 'application/iden3comm-encrypted-json',
+      type: 'https://iden3-communication.io/passport/0.1/verification-request',
+      from: 'did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49',
+      to: 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT'
+    };
+    expect(message).to.be.deep.equal(expectedMessage);
   });
 });

@@ -11,7 +11,7 @@ import { BasicMessage, DIDDocument, IPacker, PackerParams, VerificationMethod } 
 import { parseAcceptProfile, resolveVerificationMethods } from '../utils';
 import { KMS, KmsKeyType } from '../../kms';
 import { DID } from '@iden3/js-iden3-core';
-import { GeneralJWE, JWEHeaderParameters } from 'jose';
+import { decodeProtectedHeader, GeneralJWE, JWEHeaderParameters } from 'jose';
 
 export type RecipientInfo = {
   did: DID;
@@ -69,19 +69,22 @@ export class AnonCryptPacker implements IPacker {
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
     const jwe: GeneralJWE = this.decodeGeneralJWE(envelope);
 
+    if (!jwe.protected) {
+      throw new Error('Missing protected header');
+    }
     if (!jwe.recipients?.length) {
       throw new Error('Missing recipients');
     }
+    const protectedHeaders = decodeProtectedHeader(jwe);
 
     const promises = jwe.recipients.map((recipient) =>
       this._joseService.decrypt(jwe, async () => {
-        const kid = recipient.header?.kid;
+        const kid = recipient.header?.kid || protectedHeaders.kid; // try to use protected kid if there is no kid in recipient header
         if (!kid) {
           throw new Error('Missing kid');
         }
 
-        const kmsKeyType = recipient.header?.alg as KmsKeyType;
-
+        const kmsKeyType = (recipient.header?.alg || protectedHeaders.alg) as KmsKeyType;
         if (!kmsKeyType) {
           throw new Error('Missing kms key type');
         }
@@ -279,11 +282,33 @@ export class AnonCryptPacker implements IPacker {
         );
       }
 
-      recipients = [{ encrypted_key: decodedJWE.encrypted_key, header: decodedJWE.header }];
+      const protectedHeader = decodeProtectedHeader(decodedJWE);
+
+      recipients = [
+        {
+          encrypted_key: decodedJWE.encrypted_key,
+          header: this.removeDuplicates(protectedHeader, decodedJWE.header || {})
+        }
+      ];
+
       delete decodedJWE.encrypted_key;
       delete decodedJWE.header;
       decodedJWE.recipients = recipients;
     }
     return decodedJWE as GeneralJWE;
+  }
+
+  /**
+   * Removes fields from recipient header that duplicate protected header values.
+   */
+  private removeDuplicates(
+    protectedHeader: Record<string, any>,
+    recipientHeader: Record<string, any>
+  ) {
+    const cleaned = { ...recipientHeader };
+    for (const [key, value] of Object.entries(protectedHeader)) {
+      if (cleaned[key] === value) delete cleaned[key];
+    }
+    return cleaned;
   }
 }
