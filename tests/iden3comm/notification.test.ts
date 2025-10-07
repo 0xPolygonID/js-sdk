@@ -10,7 +10,7 @@ describe('notification tests', () => {
   const id = 'did:iden3:polygon:mumbai:115gD96EyyqQhLjjNQ6s5mHRMczRRute7nUDgCH9ot';
   const pushService: Service = {
     id: `${id}#push`,
-    type: notification.PUSH_NOTIFICATION_SERVICE_TYPE,
+    type: notification.NotificationServiceType.Push,
     serviceEndpoint: 'http://localhost:3000/push',
 
     metadata: {
@@ -26,32 +26,41 @@ describe('notification tests', () => {
   const msg = new TextEncoder().encode(`"here can be a json protocol message from issuer"`);
 
   it('should notify success', async () => {
-    const doc = {
+    const didDocument = {
       '@context': ['https://www.w3.org/ns/did/v1'],
       id: id,
       service: [pushService]
     };
 
-    const loader: notification.NotificationLoader = {
-      load: () =>
+    const publisher: notification.INotificationProvider = {
+      type: notification.NotificationServiceType.Push,
+      send: () =>
         Promise.resolve({
+          status: notification.NotificationStatus.Success,
           devices: JSON.parse(pushGatewaySuccessMock)
         })
     };
 
-    const resp = await notification.Notify(msg, doc, loader);
+    const notifier = new notification.PushNotifier(publisher);
+
+    const resp = await notifier.notify(msg, { didDocument });
     expect(resp).toHaveLength(1);
     expect(resp[0].devices).toHaveLength(1);
-    expect(resp[0].devices[0].status).toBe(notification.DeviceNotificationStatus.Success);
+    expect((resp[0].devices as notification.DeviceNotificationResult[])[0].status).toBe(
+      notification.DeviceNotificationStatus.Success
+    );
   });
 
   it('should throw error `no device info in push service`', async () => {
     pushService.metadata.devices = [];
+    const notifier = new notification.PushNotifier();
     await expect(
-      notification.Notify(msg, {
-        '@context': ['https://www.w3.org/ns/did/v1'],
-        id: id,
-        service: [pushService]
+      notifier.notify(msg, {
+        didDocument: {
+          '@context': ['https://www.w3.org/ns/did/v1'],
+          id: id,
+          service: [pushService]
+        }
       })
     ).rejects.toThrow('no devices in push service');
   });
@@ -60,12 +69,14 @@ describe('notification tests', () => {
     pushService.metadata = {
       devices: []
     };
-    const doc = {
+    const didDocument = {
       '@context': ['https://www.w3.org/ns/did/v1'],
       id: id,
       service: []
     };
-    await expect(notification.Notify(msg, doc, undefined)).rejects.toThrow(
+    const notifier = new notification.PushNotifier();
+
+    await expect(notifier.notify(msg, { didDocument })).rejects.toThrow(
       'no push service in did document'
     );
   });
@@ -80,21 +91,26 @@ describe('notification tests', () => {
       }
     ];
 
-    const doc = {
+    const didDocument = {
       '@context': ['https://www.w3.org/ns/did/v1'],
       id: id,
       service: [pushService]
     };
-
-    const loader: notification.NotificationLoader = {
-      load: () =>
+    const publisher: notification.INotificationProvider = {
+      type: notification.NotificationServiceType.Push,
+      send: () =>
         Promise.resolve({
+          status: notification.NotificationStatus.Success,
           devices: JSON.parse(pushGatewayRejectedMock)
         })
     };
-    const resp = await notification.Notify(msg, doc, loader);
+    const notifier = new notification.PushNotifier(publisher);
+
+    const resp = await notifier.notify(msg, { didDocument });
     expect(resp).toHaveLength(1);
     expect(resp[0].devices).toHaveLength(1);
-    expect(resp[0].devices[0].status).toBe(notification.DeviceNotificationStatus.Rejected);
+    expect((resp[0].devices as notification.DeviceNotificationResult[])[0].status).toBe(
+      notification.DeviceNotificationStatus.Rejected
+    );
   });
 });
