@@ -5,9 +5,7 @@ import {
   CredentialOffer,
   CredentialsOfferMessage,
   DIDDocument,
-  IPackageManager,
-  JWSPackerParams,
-  ZKPPackerParams
+  IPackageManager
 } from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
@@ -27,7 +25,7 @@ import {
   IProtocolMessageHandler,
   getProvingMethodAlgFromJWZ
 } from './message-handler';
-import { verifyExpiresTime } from './common';
+import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
@@ -165,7 +163,7 @@ export type CredentialProposalHandlerParams = {
     type: string,
     opts?: { msg?: BasicMessage }
   ) => Promise<Proposal>;
-  packerParams: JWSPackerParams | ZKPPackerParams;
+  packerParams: HandlerPackerParams;
 };
 
 /**
@@ -326,13 +324,6 @@ export class CredentialProposalHandler
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
     opts?: ProposalRequestHandlerOptions
   ): Promise<Uint8Array> {
-    if (
-      this._params.packerParams.mediaType === MediaType.SignedMessage &&
-      !this._params.packerParams.packerOptions
-    ) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
     const proposalRequest = await this.parseProposalRequest(request);
     if (!proposalRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
@@ -345,19 +336,15 @@ export class CredentialProposalHandler
     const message = await this.handleProposalRequestMessage(proposalRequest);
     const response = byteEncoder.encode(JSON.stringify(message));
 
-    const packerOpts =
-      this._params.packerParams.mediaType === MediaType.SignedMessage
-        ? this._params.packerParams.packerOptions
-        : {
-            provingMethodAlg:
-              this._params.packerParams.provingMethodAlg ||
-              (await getProvingMethodAlgFromJWZ(request))
-          };
-
-    return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
-      senderDID,
-      ...packerOpts
-    });
+    const packerOpts = initDefaultPackerOptions(
+      this._params.packerParams.mediaType,
+      this._params.packerParams.packerOptions,
+      {
+        provingMethodAlg: await getProvingMethodAlgFromJWZ(request),
+        senderDID
+      }
+    );
+    return this._packerMgr.pack(this._params.packerParams.mediaType, response, packerOpts);
   }
 
   /**

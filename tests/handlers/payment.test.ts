@@ -8,8 +8,6 @@ import {
   FSCircuitStorage,
   ProofService,
   CircuitId,
-  PlainPacker,
-  PackageManager,
   PaymentRequestDataType,
   byteEncoder,
   PaymentType,
@@ -84,8 +82,6 @@ describe('payment-request handler', () => {
   let paymentHandler: IPaymentHandler;
   let userDID, issuerDID: DID;
   let agentMessageResponse: BasicMessage;
-  const packageManager: IPackageManager = new PackageManager();
-  packageManager.registerPackers([new PlainPacker()]);
 
   const payContractAbi = [
     {
@@ -925,7 +921,7 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
       paymentReqCryptoV1Info
     ]);
-    const msgBytesRequest = await packageManager.pack(
+    const msgBytesRequest = await packageMgr.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
@@ -937,7 +933,7 @@ describe('payment-request handler', () => {
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
     }
-    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageMgr.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(
       PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
@@ -948,7 +944,7 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
       paymentReqPaymentRailsV1Info
     ]);
-    const msgBytesRequest = await packageManager.pack(
+    const msgBytesRequest = await packageMgr.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
@@ -960,7 +956,7 @@ describe('payment-request handler', () => {
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
     }
-    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageMgr.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(
       PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
@@ -971,7 +967,7 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
       paymentReqPaymentRailsERC20V1Info
     ]);
-    const msgBytesRequest = await packageManager.pack(
+    const msgBytesRequest = await packageMgr.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
@@ -984,7 +980,7 @@ describe('payment-request handler', () => {
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
     }
-    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageMgr.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(
       PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
@@ -998,7 +994,7 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, newAgent, [
       paymentReqCryptoV1Info
     ]);
-    const msgBytesRequest = await packageManager.pack(
+    const msgBytesRequest = await packageMgr.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
@@ -1085,7 +1081,7 @@ describe('payment-request handler', () => {
     const paymentRequest = createPaymentRequest(issuerDID, userDID, agent, [
       paymentReqCryptoV1Info
     ]);
-    const msgBytesRequest = await packageManager.pack(
+    const msgBytesRequest = await packageMgr.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
@@ -1097,7 +1093,7 @@ describe('payment-request handler', () => {
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
     }
-    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageMgr.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(
       PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
@@ -1139,7 +1135,7 @@ describe('payment-request handler', () => {
       ]
     );
 
-    const msgBytesRequest = await packageManager.pack(
+    const msgBytesRequest = await packageMgr.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
@@ -1151,7 +1147,7 @@ describe('payment-request handler', () => {
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
     }
-    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageMgr.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(
       PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
@@ -1191,7 +1187,7 @@ describe('payment-request handler', () => {
       }
     );
 
-    const msgBytesRequest = await packageManager.pack(
+    const msgBytesRequest = await packageMgr.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
@@ -1203,7 +1199,7 @@ describe('payment-request handler', () => {
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
     }
-    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageMgr.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(
       PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
@@ -1243,7 +1239,7 @@ describe('payment-request handler', () => {
       }
     );
 
-    const msgBytesRequest = await packageManager.pack(
+    const msgBytesRequest = await packageMgr.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
@@ -1255,7 +1251,7 @@ describe('payment-request handler', () => {
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
     }
-    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageMgr.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(
       PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
@@ -1297,7 +1293,7 @@ describe('payment-request handler', () => {
       ]
     );
 
-    const msgBytesRequest = await packageManager.pack(
+    const msgBytesRequest = await packageMgr.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
@@ -1318,7 +1314,7 @@ describe('payment-request handler', () => {
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
     }
-    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageMgr.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(
       PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE
@@ -1360,7 +1356,7 @@ describe('payment-request handler', () => {
       ]
     );
 
-    const msgBytesRequest = await packageManager.pack(
+    const msgBytesRequest = await packageMgr.pack(
       MediaType.PlainMessage,
       byteEncoder.encode(JSON.stringify(paymentRequest)),
       {}
@@ -1372,7 +1368,7 @@ describe('payment-request handler', () => {
     if (!agentMessageBytes) {
       fail('handlePaymentRequest is not expected null response');
     }
-    const { unpackedMessage: agentMessage } = await packageManager.unpack(agentMessageBytes);
+    const { unpackedMessage: agentMessage } = await packageMgr.unpack(agentMessageBytes);
 
     expect((agentMessage as BasicMessage).type).to.be.eq(
       PROTOCOL_MESSAGE_TYPE.PROPOSAL_MESSAGE_TYPE

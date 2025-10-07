@@ -33,10 +33,14 @@ import {
   ZKPPacker,
   byteEncoder,
   VerifyOpts,
-  CircuitId
+  CircuitId,
+  AnonCryptPacker,
+  JoseService,
+  RsaOAEPKeyProvider
 } from '../src';
 import { proving } from '@iden3/js-jwz';
 import { JsonRpcProvider } from 'ethers';
+import { Resolvable } from 'did-resolver';
 
 export const SEED_ISSUER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 export const SEED_USER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -259,7 +263,16 @@ export const getPackageMgr = async (
   const mgr: IPackageManager = new PackageManager();
   const packer = new ZKPPacker(provingParamMap, verificationParamMap);
   const plainPacker = new PlainPacker();
-  mgr.registerPackers([packer, plainPacker]);
+  const kms = new KMS();
+  const kmsProvider = new RsaOAEPKeyProvider(new InMemoryPrivateKeyStore());
+  kms.registerKeyProvider(kmsProvider.keyType, kmsProvider);
+  const resolver = {
+    resolve: async () => ({
+      didDocument: {}
+    })
+  } as unknown as Resolvable;
+  const anonCryptPacker = new AnonCryptPacker(new JoseService(), kms, resolver);
+  mgr.registerPackers([packer, plainPacker, anonCryptPacker]);
 
   return mgr;
 };

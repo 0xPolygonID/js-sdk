@@ -8,9 +8,7 @@ import {
   CredentialsOfferMessage,
   CredentialsOnchainOfferMessage,
   IPackageManager,
-  JWSPackerParams,
-  MessageFetchRequestMessage,
-  ZKPPackerParams
+  MessageFetchRequestMessage
 } from '../types';
 
 import { W3CCredential } from '../../verifiable';
@@ -23,10 +21,9 @@ import {
   AbstractMessageHandler,
   BasicHandlerOptions,
   IProtocolMessageHandler,
-  defaultProvingMethodAlg,
   getProvingMethodAlgFromJWZ
 } from './message-handler';
-import { verifyExpiresTime } from './common';
+import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
 
 /**
@@ -38,7 +35,7 @@ import { IOnchainIssuer } from '../../storage';
  */
 export type FetchHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  packerOptions?: HandlerPackerParams;
   headers?: {
     [key: string]: string;
   };
@@ -199,7 +196,7 @@ export class FetchHandler
     ctx: {
       mediaType?: MediaType;
       headers?: HeadersInit;
-      packerOptions?: JWSPackerParams | ZKPPackerParams;
+      packerOptions?: HandlerPackerParams;
     }
   ): Promise<W3CCredential[] | BasicMessage> {
     if (!ctx.mediaType) {
@@ -224,19 +221,12 @@ export class FetchHandler
 
       const msgBytes = byteEncoder.encode(JSON.stringify(fetchRequest));
 
-      const packerOpts =
-        ctx.mediaType === MediaType.SignedMessage
-          ? ctx.packerOptions
-          : {
-              provingMethodAlg: ctx?.packerOptions?.provingMethodAlg || defaultProvingMethodAlg
-            };
-
       const senderDID = DID.parse(offerMessage.to);
+      const packerOpts = initDefaultPackerOptions(ctx.mediaType, ctx.packerOptions, {
+        senderDID
+      });
       const token = byteDecoder.decode(
-        await this._packerMgr.pack(ctx.mediaType, msgBytes, {
-          senderDID,
-          ...packerOpts
-        })
+        await this._packerMgr.pack(ctx.mediaType, msgBytes, packerOpts)
       );
       try {
         if (!offerMessage?.body?.url) {
@@ -287,10 +277,6 @@ export class FetchHandler
     offer: Uint8Array,
     opts?: FetchHandlerOptions
   ): Promise<W3CCredential[]> {
-    if (opts?.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
     const offerMessage = await FetchHandler.unpackMessage<CredentialsOfferMessage>(
       this._packerMgr,
       offer,
@@ -300,30 +286,15 @@ export class FetchHandler
       verifyExpiresTime(offerMessage);
     }
 
-    if (!opts?.packerOptions?.provingMethodAlg) {
-      const messageProvingMethodAlg =
-        opts?.messageProvingMethodAlg || (await getProvingMethodAlgFromJWZ(offer));
-      const zkpPackerOptions = {
-        provingMethodAlg: messageProvingMethodAlg,
-        senderDID: DID.parse(offerMessage.to)
-      };
-      if (!opts) {
-        opts = {
-          mediaType: MediaType.ZKPMessage,
-          packerOptions: zkpPackerOptions
-        };
-      }
-      if (!opts.packerOptions?.provingMethodAlg) {
-        opts.packerOptions = {
-          ...opts.packerOptions,
-          ...zkpPackerOptions
-        };
-      }
-    }
+    const mediaType = opts?.mediaType || MediaType.ZKPMessage;
+    const packerOptions = initDefaultPackerOptions(mediaType, opts?.packerOptions, {
+      provingMethodAlg: opts?.messageProvingMethodAlg || (await getProvingMethodAlgFromJWZ(offer)),
+      senderDID: DID.parse(offerMessage.to)
+    });
     const result = await this.handleOfferMessage(offerMessage, {
-      mediaType: opts?.mediaType,
+      mediaType,
       headers: opts?.headers,
-      packerOptions: opts?.packerOptions
+      packerOptions: packerOptions
     });
 
     if (Array.isArray(result)) {

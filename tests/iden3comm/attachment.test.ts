@@ -18,6 +18,7 @@ import * as uuid from 'uuid';
 import { getRandomBytes } from '@iden3/js-crypto';
 import { Blockchain, buildDIDType, DID, DidMethod, Id, NetworkId } from '@iden3/js-iden3-core';
 import { describe, it, vi, expect } from 'vitest';
+import { MediaType } from '../../src/iden3comm/constants';
 
 describe('Attachments', () => {
   const didType = buildDIDType(DidMethod.Iden3, Blockchain.Polygon, NetworkId.Amoy);
@@ -116,7 +117,9 @@ describe('Attachments', () => {
 
     const credentialProposalHandler = new CredentialProposalHandler(pkgManager, identityWallet, {
       agentUrl: 'http://issuer.com',
-      packerParams: {},
+      packerParams: {
+        mediaType: MediaType.PlainMessage
+      },
       proposalResolverFn
     });
 

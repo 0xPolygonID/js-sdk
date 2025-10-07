@@ -8,7 +8,6 @@ import {
   AuthorizationResponseMessage,
   BasicMessage,
   IPackageManager,
-  JWSPackerParams,
   ZeroKnowledgeProofRequest,
   JSONObject,
   Attachment
@@ -19,7 +18,12 @@ import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
+import {
+  HandlerPackerParams,
+  initDefaultPackerOptions,
+  processZeroKnowledgeProofRequests,
+  verifyExpiresTime
+} from './common';
 import { CircuitId } from '../../circuits';
 import {
   AbstractMessageHandler,
@@ -187,7 +191,7 @@ export type AuthMessageHandlerOptions = BasicHandlerOptions & (AuthReqOptions | 
  */
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams;
+  packerOptions?: HandlerPackerParams;
   preferredAuthProvingMethod?: ProvingMethodAlg;
 };
 
@@ -316,10 +320,6 @@ export class AuthHandler
       };
     }
 
-    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
     const authResponse = await this.handleAuthRequest(authRequest, {
       senderDid: did,
       mediaType: opts.mediaType
@@ -327,21 +327,15 @@ export class AuthHandler
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
 
-    const packerOpts =
-      opts.mediaType === MediaType.SignedMessage
-        ? opts.packerOptions
-        : {
-            provingMethodAlg: this.getDefaultProvingMethodAlg(
-              opts.preferredAuthProvingMethod,
-              authRequest.body.accept
-            )
-          };
-
+    const packerOpts = initDefaultPackerOptions(opts.mediaType, opts.packerOptions, {
+      provingMethodAlg: this.getDefaultProvingMethodAlg(
+        opts.preferredAuthProvingMethod,
+        authRequest.body.accept
+      ),
+      senderDID: did
+    });
     const token = byteDecoder.decode(
-      await this._packerMgr.pack(opts.mediaType, msgBytes, {
-        senderDID: did,
-        ...packerOpts
-      })
+      await this._packerMgr.pack(opts.mediaType, msgBytes, packerOpts)
     );
 
     return { authRequest, authResponse, token };
@@ -382,6 +376,9 @@ export class AuthHandler
         (resp) => resp.id.toString() === proofRequest.id.toString()
       );
       if (!proofResp) {
+        if (proofRequest.optional) {
+          continue;
+        }
         throw new Error(`proof is not given for requestId ${proofRequest.id}`);
       }
 

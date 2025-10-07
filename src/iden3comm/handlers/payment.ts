@@ -1,12 +1,6 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import { MediaType } from '../constants';
-import {
-  BasicMessage,
-  IPackageManager,
-  JWSPackerParams,
-  PackerParams,
-  ZKPPackerParams
-} from '../types';
+import { BasicMessage, IPackageManager, PackerParams } from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
@@ -39,7 +33,7 @@ import {
 import { PaymentFeatures, PaymentRequestDataType, PaymentType } from '../../verifiable';
 import { Signer } from 'ethers';
 import { Resolvable } from 'did-resolver';
-import { verifyExpiresTime } from './common';
+import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { Keypair } from '@solana/web3.js';
 import { buildEvmPayment, verifyEIP712TypedData } from '../../utils/payments/evm';
 
@@ -214,7 +208,7 @@ export type PaymentRequestMessageHandlerOptions = BasicHandlerOptions & {
   */
   nonce: string;
   erc20TokenApproveHandler?: (data: Iden3PaymentRailsERC20RequestV1) => Promise<string>;
-  packerOptions?: JWSPackerParams | ZKPPackerParams;
+  packerOptions?: HandlerPackerParams;
   mediaType?: MediaType;
 };
 
@@ -369,10 +363,14 @@ export class PaymentHandler
 
     const paymentMessage = createPayment(senderDID, receiverDID, payments);
     const mediaType = ctx?.mediaType || this._params.packerParams.mediaType || MediaType.ZKPMessage;
-    const packerParams = ctx?.packerOptions || this._params.packerParams;
-    if (mediaType === MediaType.ZKPMessage && !packerParams?.provingMethodAlg) {
-      packerParams.provingMethodAlg = ctx.messageProvingMethodAlg;
-    }
+    const packerParams = initDefaultPackerOptions(
+      mediaType,
+      ctx?.packerOptions || this._params.packerParams,
+      {
+        senderDID: senderDID,
+        provingMethodAlg: ctx.messageProvingMethodAlg
+      }
+    );
     const response = await this.packMessage(paymentMessage, senderDID, mediaType, packerParams);
 
     const agentResult = await fetch(paymentRequest.body.agent, {
@@ -401,13 +399,6 @@ export class PaymentHandler
     request: Uint8Array,
     opts: PaymentRequestMessageHandlerOptions
   ): Promise<Uint8Array | null> {
-    if (
-      this._params.packerParams.mediaType === MediaType.SignedMessage &&
-      !this._params.packerParams.packerOptions
-    ) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
     const paymentRequest = await this.parsePaymentRequest(request);
     if (!paymentRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
@@ -419,23 +410,16 @@ export class PaymentHandler
     if (!opts?.allowExpiredMessages) {
       verifyExpiresTime(paymentRequest);
     }
-    if (!opts?.mediaType) {
-      opts.mediaType = this._params.packerParams.mediaType || MediaType.ZKPMessage;
-    }
+    const mediaType = opts.mediaType || this._params.packerParams.mediaType || MediaType.ZKPMessage;
     if (!opts.packerOptions) {
       opts.packerOptions = this._params.packerParams.packerOptions;
     }
-    if (!opts?.packerOptions && opts.mediaType === MediaType.SignedMessage) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
+    opts.mediaType = mediaType;
     const senderDID = DID.parse(paymentRequest.to);
-    if (opts.mediaType === MediaType.ZKPMessage && !opts.packerOptions?.provingMethodAlg) {
-      opts.packerOptions = {
-        provingMethodAlg: await getProvingMethodAlgFromJWZ(request),
-        senderDID
-      };
-    }
+    opts.packerOptions = initDefaultPackerOptions(mediaType, opts.packerOptions, {
+      provingMethodAlg: await getProvingMethodAlgFromJWZ(request),
+      senderDID
+    });
     const agentMessage = await this.handlePaymentRequestMessage(paymentRequest, opts);
     if (!agentMessage) {
       return null;
