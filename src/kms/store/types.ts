@@ -1,3 +1,5 @@
+import { TypedDataDomain, TypedDataField } from 'ethers';
+
 /**
  * Key type that can be used in the key management system
  *
@@ -20,4 +22,11 @@ export enum KmsKeyType {
 export interface KmsKeyId {
   type: KmsKeyType;
   id: string;
+}
+
+export interface TypedData {
+  domain: TypedDataDomain;
+  types: Record<string, Array<TypedDataField>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  message: Record<string, any>;
 }
