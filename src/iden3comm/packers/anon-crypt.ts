@@ -270,10 +270,7 @@ export class AnonCryptPacker implements IPacker {
   private decodeGeneralJWE(envelope: Uint8Array): GeneralJWE {
     const decodedJWE = JSON.parse(byteDecoder.decode(envelope));
     let recipients: { encrypted_key: string; header: JWEHeaderParameters }[] = [];
-    if (
-      decodedJWE.encrypted_key &&
-      typeof decodedJWE.encrypted_key === 'string' 
-    ) {
+    if (decodedJWE.encrypted_key && typeof decodedJWE.encrypted_key === 'string') {
       if (decodedJWE.recipients) {
         throw Error(
           'both `recipients` and `encrypted_key`/`header` headers are present in JWE token'

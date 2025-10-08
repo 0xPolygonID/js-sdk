@@ -405,12 +405,15 @@ describe('AnonCrypt packer tests', () => {
 
   it('Golang integration test single recipient ( only protected headers)', async () => {
     const golangGWE: FlattenedJWE = {
-    "ciphertext": "G94AlOo9R0Bz1L8ypk_Ls4KyjbxjsU2FK3X-HZifdkC9mcVP3wZ4zc2Lgca4jlLzHG4bG5LSS9spVhiZhZ0FFq6Lyo8PtEVAxvW8QmquvgHJ5kJqYK1Wuiry-_hzIdwJqBwc3SCIkTi15KON-LaBFW20dRS4QN8BFVQw6inbxb7gA3ULqLxU-iy6A2oHRiHTQ5A-8PrPvURtf6kxaP1JZ6ozmMSLfpZY7WezvFCgnokYa4eeIoDYYBduSxMnGdYbSZqq_wN-WujTxc1hVdyOYiz-YaZs6UiemzGl8_5F5i5B4Mx0Pf28kzTUzs3ivZtawtWPI8mxNdIuPRg4ivrz2EooIBba9eAEgMj_JdYFI9RQtf0LlCBlcIzdnsC_BwSZgpM5alqOUgRH7SECMB00oon73qlw0ZxLbqxSScXcStwHaJEcrrKw5ZzsM5IB7etqP4Wz9q95e8V3y79ms7l4m48HqbcXjQ",
-    "encrypted_key": "aF0cMjVh4k2je1Y5neP-JD_Z4gSXkbfcVwq-S4f_4-5vCqY7kJAtQZYeyaLSVweU2inm5hvwYgf9dnn7q4wX_P1tPLAS5jYYSJd5-ev89av2vlGIPQApAshcKGrTM01Zg9Ewl19bCoTXsfU632AC4V3_Qj5-nkl3m7M-_7rVbvj8yeLtJaYDHdDnF7OORZrYnu-vYENArnhHuE4S9MsnByF2TSO_eZ0_aL8DljTvtvjo9G6J8tV5IbuRz6nOokVuRHoPlyq22ONACW7nHh1sGVd7gTeztsT2z9JAi5szdMe23rgbpTu3FbnG7yxAunQ5MnCLJ5OljGK1BDLpdPOrpw",
-    "iv": "ZrFLdKgYqa1LrWIC",
-    "protected": "eyJhbGciOiJSU0EtT0FFUC0yNTYiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoiZGlkOmlkZW4zOmJpbGxpb25zOnRlc3Q6MlZ4bm9pTnFkTVB5SE10VXdBRXpobldxWEdrRWVKcEFwNG50VGtMOFhUI2tleTEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9pZGVuM2NvbW0tZW5jcnlwdGVkLWpzb24ifQ",
-    "tag": "rbUb5eW4Hgng-AMd-OPxeQ"
-}
+      ciphertext:
+        'G94AlOo9R0Bz1L8ypk_Ls4KyjbxjsU2FK3X-HZifdkC9mcVP3wZ4zc2Lgca4jlLzHG4bG5LSS9spVhiZhZ0FFq6Lyo8PtEVAxvW8QmquvgHJ5kJqYK1Wuiry-_hzIdwJqBwc3SCIkTi15KON-LaBFW20dRS4QN8BFVQw6inbxb7gA3ULqLxU-iy6A2oHRiHTQ5A-8PrPvURtf6kxaP1JZ6ozmMSLfpZY7WezvFCgnokYa4eeIoDYYBduSxMnGdYbSZqq_wN-WujTxc1hVdyOYiz-YaZs6UiemzGl8_5F5i5B4Mx0Pf28kzTUzs3ivZtawtWPI8mxNdIuPRg4ivrz2EooIBba9eAEgMj_JdYFI9RQtf0LlCBlcIzdnsC_BwSZgpM5alqOUgRH7SECMB00oon73qlw0ZxLbqxSScXcStwHaJEcrrKw5ZzsM5IB7etqP4Wz9q95e8V3y79ms7l4m48HqbcXjQ',
+      encrypted_key:
+        'aF0cMjVh4k2je1Y5neP-JD_Z4gSXkbfcVwq-S4f_4-5vCqY7kJAtQZYeyaLSVweU2inm5hvwYgf9dnn7q4wX_P1tPLAS5jYYSJd5-ev89av2vlGIPQApAshcKGrTM01Zg9Ewl19bCoTXsfU632AC4V3_Qj5-nkl3m7M-_7rVbvj8yeLtJaYDHdDnF7OORZrYnu-vYENArnhHuE4S9MsnByF2TSO_eZ0_aL8DljTvtvjo9G6J8tV5IbuRz6nOokVuRHoPlyq22ONACW7nHh1sGVd7gTeztsT2z9JAi5szdMe23rgbpTu3FbnG7yxAunQ5MnCLJ5OljGK1BDLpdPOrpw',
+      iv: 'ZrFLdKgYqa1LrWIC',
+      protected:
+        'eyJhbGciOiJSU0EtT0FFUC0yNTYiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoiZGlkOmlkZW4zOmJpbGxpb25zOnRlc3Q6MlZ4bm9pTnFkTVB5SE10VXdBRXpobldxWEdrRWVKcEFwNG50VGtMOFhUI2tleTEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9pZGVuM2NvbW0tZW5jcnlwdGVkLWpzb24ifQ',
+      tag: 'rbUb5eW4Hgng-AMd-OPxeQ'
+    };
 
     const kms = new KMS();
 
