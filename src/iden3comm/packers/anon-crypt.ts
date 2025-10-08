@@ -272,9 +272,7 @@ export class AnonCryptPacker implements IPacker {
     let recipients: { encrypted_key: string; header: JWEHeaderParameters }[] = [];
     if (
       decodedJWE.encrypted_key &&
-      typeof decodedJWE.encrypted_key === 'string' &&
-      decodedJWE.header &&
-      typeof decodedJWE.header === 'object'
+      typeof decodedJWE.encrypted_key === 'string' 
     ) {
       if (decodedJWE.recipients) {
         throw Error(

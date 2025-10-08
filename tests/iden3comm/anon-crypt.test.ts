@@ -345,7 +345,7 @@ describe('AnonCrypt packer tests', () => {
     expect(message).toEqual(expectedMessage);
   });
 
-  it('Golang integration test single recipient', async () => {
+  it('Golang integration test single recipient ( disjoint headers persist)', async () => {
     const golangGWE: FlattenedJWE = {
       ciphertext:
         'PI7rfG2aIGND0VovpKy3Z61AxnpEsSktSS3Io3OSk8J_5CWtGlTVoZQskDZvpN8HD9Ry2yLaKm6I5tXi1lhHNq14hIcmPmcJGT-uW_QWVE7sNCawM6OQyoEW_r6OrMfYGwrwbrtG0O8ARAJIV1oDq27Kzx39NsbZOk9ALixXmwPkc33sEyKNE6LZdIhH38xScpAyZgd93xG-zQDLwpBiyGUCaMp4v959eLPU6N3TYLKdXdEAe2oKVMPI6F5oy5pRYt4HVyZIk9tY8hufaylVVRHQfQYq4w4ntXgKpVgD8xYZCfujVhVi7MfzxxGOfOVPpPOrKOfaWlkjqzR4c7JlHMcCg-xfrlb1CtqLDQ6yit45aEpTu_0Chnt9sgdLaFdsTAdoO-_6RzMIcihoX5r6hz5SeWHpOg00kpqFPbx1fGs4sUWDDQ58o0wgosgxBeEfvGcY9f8LDAg4zAsPCFelfOPqnzzM8g',
@@ -360,6 +360,57 @@ describe('AnonCrypt packer tests', () => {
         'eyJhbGciOiJSU0EtT0FFUC0yNTYiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoiZGlkOmlkZW4zOmJpbGxpb25zOnRlc3Q6MlZ4bm9pTnFkTVB5SE10VXdBRXpobldxWEdrRWVKcEFwNG50VGtMOFhUI2tleTEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9pZGVuM2NvbW0tZW5jcnlwdGVkLWpzb24ifQ',
       tag: 'G3i_v-TS67ch_9__GHQJBQ'
     };
+
+    const kms = new KMS();
+
+    const joseService = new JoseService();
+
+    const packer = new AnonCryptPacker(
+      joseService,
+      kms,
+      {
+        resolve: async () => ({
+          undefined
+        })
+      } as unknown as Resolvable,
+      {
+        resolvePrivateKeyByKid: (k: string) => {
+          return Promise.resolve({
+            kty: 'RSA',
+            n: 'oJ_RM4-dKCwAm_iXCDBzSABwOr5eOCrTVzlLikx0dK1BoO8ilHr9Yx7F3F5Q5exZ6g_lz_5YKSQ31ZNWjAjLOZnRvLkXGA2p_lfFNGGDsW7Xw2OvVy-kX7Y-O1Yn6rGW-ZMCslcc4hdHQbrBa3MdwLFDfAMcHDfZYWOVhU3brGIr0cmXRfZ6U-1hPT-3K_rwCknbiir8GivoLXinIad95JNwyIUytfBc-New_PrcUYoDQH6GI6bu8m2_ya3QuGIR-Lgn5HGcXtd9Lw9qnMc31EcJMKyG1KxMAVUFcoyADDskRCDfd-PWr50Upx_F9V3PE9e7ZOrXRn_hQF0XYG-MGQ',
+            e: 'AQAB',
+            d: 'CLsjNaKp8-Hvbwr8V7Q9gfWPJCxOpg4y4ngBco0tG94Clh9FkY1dambE8dF5I4RdT1cpomyUiXj35X6-qro8JL-HGnNzrUmp2sLV2_7seAe6x_rKUEqNTGwVNie83_mjB6IteHj6f5ItHAYtJxxw6rVgAhTPsXt6MBxoB2DX7ubpmLPzqyTjE_teVjyrj9i9JZ-W1kRMbLWuALviZbrrtEHdEBKaRvtaeWcf5MHuGHw2RCTHhoHzty8NHasdwSsu0t1dL-88ulxDgK9EdYOHZ17dkmNrrUCq0wpa1_InbV_JC9BoN6Fw7_22M67Suq2v9JUg_K4kid45Vumvn_Mq4Q',
+            p: '2kgLhksExewH6ukrXwIMRdKNGRZwWDfprtxjiXW6qg_Qtlo-NX1NUZCilbKAqhYpPdEq2UFElhcF7e1cDkZkhYUQKcOnn_80vWPfoVD8LykDaaNA_E7p1sc78hfm3pKq6AJ26X_qRvV2x0nyFT6S5WykvlRIWRxvr66Y25y192E',
+            q: 'vGE8VBMc4L7IExssUN5bSPidzH8FB9yJw--i8cYGLns-Exqy3XO78GCgvB4yKjmz_M5aMZM9FFqJmbPYI2u3STQNvuv8Fss7YqMYWVLWIi2lzx_5e2_coNB7zfn7yyu9R900Nl9WUlWz2Qtu9yXX-RfT_aBr7wg0z3oIP5BAJ7k',
+            dp: 'j-vOxXXzKLiuo8GnmhYUl3jzFWaJHnGHP4cKjhi0wep5l7I6sDP05eGygXdXhE3mVV7znJl_KmL1wuGsv7DEGJEajh72B_VSBcmzKn7mOAYXvPAqKfGyFq34pXADBh-4Vg9B7kUr6CtybIYh-sXuPxz6JpAVv8OTFEfPe4WBKSE',
+            dq: 'V3Zd6DsngUGS6ywGm1Vh1LN5sGSZFVlTrWEpqk9it1oJLB2NRjxh2e1DM5RhfjFkW9ADGFlgVn7ivDY_99IfOyGr8CTo2jxpyhYnS_Gl8iB3h380-hapvRCPKscSHPal3yPZBhWlonygD_m6_4zWhZSGnI9LDaQlwN7LzZdP8iE',
+            qi: 'rOj_Zb2hTI1Q-K93QDYEvcyaiE266_MbEhqYWOWOik5J2XAmIcb7ns1rNVfJyLXEeu584SZcs0LCwxTZB-nKKcyTbTqKZP9QanjXGZn6jZprt0J5s4PmZPonAFuM8DgpPUJQwKUTlxVPdSm_TtgxC7hbRrhzjGFduROXu_iltZU',
+            alg: 'RSA-OAEP-256'
+          } as unknown as CryptoKey);
+        }
+      }
+    );
+    const message = await packer.unpack(byteEncoder.encode(JSON.stringify(golangGWE)));
+    console.log('message', JSON.stringify(message));
+    const expectedMessage = {
+      id: '8589c266-f5f4-4a80-8fc8-c1ad4de3e3b4',
+      thid: '43246acb-b772-414e-9c90-f36b37261000',
+      typ: 'application/iden3comm-encrypted-json',
+      type: 'https://iden3-communication.io/passport/0.1/verification-request',
+      from: 'did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49',
+      to: 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT'
+    };
+    expect(message).to.be.deep.equal(expectedMessage);
+  });
+
+  it('Golang integration test single recipient ( only protected headers)', async () => {
+    const golangGWE: FlattenedJWE = {
+    "ciphertext": "G94AlOo9R0Bz1L8ypk_Ls4KyjbxjsU2FK3X-HZifdkC9mcVP3wZ4zc2Lgca4jlLzHG4bG5LSS9spVhiZhZ0FFq6Lyo8PtEVAxvW8QmquvgHJ5kJqYK1Wuiry-_hzIdwJqBwc3SCIkTi15KON-LaBFW20dRS4QN8BFVQw6inbxb7gA3ULqLxU-iy6A2oHRiHTQ5A-8PrPvURtf6kxaP1JZ6ozmMSLfpZY7WezvFCgnokYa4eeIoDYYBduSxMnGdYbSZqq_wN-WujTxc1hVdyOYiz-YaZs6UiemzGl8_5F5i5B4Mx0Pf28kzTUzs3ivZtawtWPI8mxNdIuPRg4ivrz2EooIBba9eAEgMj_JdYFI9RQtf0LlCBlcIzdnsC_BwSZgpM5alqOUgRH7SECMB00oon73qlw0ZxLbqxSScXcStwHaJEcrrKw5ZzsM5IB7etqP4Wz9q95e8V3y79ms7l4m48HqbcXjQ",
+    "encrypted_key": "aF0cMjVh4k2je1Y5neP-JD_Z4gSXkbfcVwq-S4f_4-5vCqY7kJAtQZYeyaLSVweU2inm5hvwYgf9dnn7q4wX_P1tPLAS5jYYSJd5-ev89av2vlGIPQApAshcKGrTM01Zg9Ewl19bCoTXsfU632AC4V3_Qj5-nkl3m7M-_7rVbvj8yeLtJaYDHdDnF7OORZrYnu-vYENArnhHuE4S9MsnByF2TSO_eZ0_aL8DljTvtvjo9G6J8tV5IbuRz6nOokVuRHoPlyq22ONACW7nHh1sGVd7gTeztsT2z9JAi5szdMe23rgbpTu3FbnG7yxAunQ5MnCLJ5OljGK1BDLpdPOrpw",
+    "iv": "ZrFLdKgYqa1LrWIC",
+    "protected": "eyJhbGciOiJSU0EtT0FFUC0yNTYiLCJlbmMiOiJBMjU2R0NNIiwia2lkIjoiZGlkOmlkZW4zOmJpbGxpb25zOnRlc3Q6MlZ4bm9pTnFkTVB5SE10VXdBRXpobldxWEdrRWVKcEFwNG50VGtMOFhUI2tleTEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9pZGVuM2NvbW0tZW5jcnlwdGVkLWpzb24ifQ",
+    "tag": "rbUb5eW4Hgng-AMd-OPxeQ"
+}
 
     const kms = new KMS();
 
