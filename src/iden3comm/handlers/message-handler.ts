@@ -8,6 +8,7 @@ import { ProvingMethodAlg, Token, proving } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { verifyExpiresTime } from './common';
 import { byteDecoder } from '../../utils';
+import { EncryptedIssuanceResponseOptions } from './encrypted-issuance-response';
 
 /**
  * Default proving method algorithm for ZKP messages
@@ -142,6 +143,7 @@ export class MessageHandler {
       | RevocationStatusMessageHandlerOptions
       | PaymentRequestMessageHandlerOptions
       | PaymentHandlerOptions
+      | EncryptedIssuanceResponseOptions
       | { senderDid?: DID; [key: string]: unknown }
   ): Promise<Uint8Array | null> {
     const { unpackedMediaType, unpackedMessage: message } =

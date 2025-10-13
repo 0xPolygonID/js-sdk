@@ -227,7 +227,10 @@ export const getInMemoryDataStorage = (states: IStateStorage) => {
 export const getPackageMgr = async (
   circuitData: CircuitData,
   prepareFn: AuthDataPrepareFunc,
-  stateVerificationFn: StateVerificationFunc
+  stateVerificationFn: StateVerificationFunc,
+  opts?: {
+    resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>;
+  }
 ): Promise<IPackageManager> => {
   const authInputsHandler = new DataPrepareHandlerFunc(prepareFn);
 
@@ -271,7 +274,9 @@ export const getPackageMgr = async (
       didDocument: {}
     })
   } as unknown as Resolvable;
-  const anonCryptPacker = new AnonCryptPacker(new JoseService(), kms, resolver);
+  const anonCryptPacker = new AnonCryptPacker(new JoseService(), kms, resolver, {
+    resolvePrivateKeyByKid: opts?.resolvePrivateKeyByKid
+  });
   mgr.registerPackers([packer, plainPacker, anonCryptPacker]);
 
   return mgr;

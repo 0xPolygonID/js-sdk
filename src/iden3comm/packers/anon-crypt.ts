@@ -250,9 +250,9 @@ export class AnonCryptPacker implements IPacker {
       throw new Error('Missing recipients');
     }
 
-    if (!message.to) {
-      throw new Error('Missing recipient DID');
-    }
+    // if (!message.to) {
+    //   throw new Error('Missing recipient DID');
+    // }
 
     const recipientsJwks = await this.getRecipientsJWKs(recipients);
 

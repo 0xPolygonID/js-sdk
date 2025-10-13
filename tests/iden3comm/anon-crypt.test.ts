@@ -24,8 +24,7 @@ import {
 import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
-import { flattenedDecrypt, FlattenedJWE, GeneralJWE } from 'jose';
-import { S } from 'vitest/dist/chunks/config.d.D2ROskhv.js';
+import { FlattenedJWE, GeneralJWE } from 'jose';
 
 describe('AnonCrypt packer tests', () => {
   const endUserData = {
