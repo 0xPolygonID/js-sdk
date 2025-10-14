@@ -204,21 +204,6 @@ describe('auth', () => {
       recipients: await getRecipientsJWKs(recipients, mockResolver),
       typ: MediaType.EncryptedMessage
     });
-    // const encryptedIssuanceResponse = await packageMgr.pack(
-    //   MediaType.EncryptedMessage,
-    //   byteEncoder.encode(JSON.stringify(toEncrypt)),
-    //   {
-    //     alg: AcceptJweKEKAlgorithms.RSA_OAEP_256,
-    //     enc: CEKEncryption.A256GCM,
-    //     recipients: [
-    //       {
-    //         did: userDID,
-    //         didDocument: userDIDDoc,
-    //         alg: AcceptJweKEKAlgorithms.RSA_OAEP_256
-    //       }
-    //     ]
-    //   }
-    // );
 
     const proofSerialized = w3cCred.proof ? JSON.parse(JSON.stringify(w3cCred.proof)) : [];
     const msg: EncryptedCredentialIssuanceMessage = {
