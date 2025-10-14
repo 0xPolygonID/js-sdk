@@ -10,9 +10,8 @@ import {
   BasicHandlerOptions,
   IProtocolMessageHandler
 } from './message-handler';
-import { JoseService } from '../../kms';
-import { GeneralJWE } from 'jose';
-import { decodeGeneralJWE } from '../utils';
+import { JoseService, KMS } from '../../kms';
+import { decryptsJWE } from '../utils';
 import { byteDecoder, byteEncoder } from '../../utils';
 
 /**
@@ -22,9 +21,7 @@ import { byteDecoder, byteEncoder } from '../../utils';
  * @public
  * @interface EncryptedIssuanceResponseOptions
  */
-export type EncryptedIssuanceResponseOptions = BasicHandlerOptions & {
-  pkFunc: () => Promise<CryptoKey>;
-};
+export type EncryptedIssuanceResponseOptions = BasicHandlerOptions;
 
 /**
  * Handler for encrypted issuance response messages
@@ -43,7 +40,13 @@ export class EncryptedIssuanceResponseHandler
    *
    * @param _credentialWallet The credential wallet used for managing credentials.
    */
-  constructor(private readonly _credentialWallet: ICredentialWallet) {
+  constructor(
+    private readonly _credentialWallet: ICredentialWallet,
+    private readonly options: {
+      resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>;
+      kms?: KMS;
+    }
+  ) {
     super();
     this._joseService = new JoseService();
   }
@@ -55,8 +58,7 @@ export class EncryptedIssuanceResponseHandler
     switch (message.type) {
       case PROTOCOL_MESSAGE_TYPE.ENCRYPTED_CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE: {
         await this.handleEncryptedIssuanceResponseMessage(
-          message as EncryptedCredentialIssuanceMessage,
-          ctx.pkFunc
+          message as EncryptedCredentialIssuanceMessage
         );
         return null;
       }
@@ -66,14 +68,17 @@ export class EncryptedIssuanceResponseHandler
   }
 
   private async handleEncryptedIssuanceResponseMessage(
-    message: EncryptedCredentialIssuanceMessage,
-    pkFunc: () => Promise<CryptoKey>
+    message: EncryptedCredentialIssuanceMessage
   ): Promise<W3CCredential> {
-    if (!pkFunc) {
-      throw new Error('Missing private key function');
-    }
-    const jwe: GeneralJWE = decodeGeneralJWE(byteEncoder.encode(JSON.stringify(message.body.data)));
-    const { plaintext } = await this._joseService.decrypt(jwe, pkFunc);
+    const plaintext = await decryptsJWE(
+      byteEncoder.encode(JSON.stringify(message.body.data)),
+      this._joseService,
+      {
+        resolvePrivateKeyByKid: this.options?.resolvePrivateKeyByKid,
+        kms: this.options.kms
+      }
+    );
+
     const credential = W3CCredential.fromJSON({
       ...JSON.parse(byteDecoder.decode(plaintext)),
       proof: message.body.proof

@@ -5,6 +5,74 @@ import { resolveVerificationMethods } from './did';
 import { VerificationMethod } from '../types';
 import { base58ToBytes, base64UrlToBytes, byteDecoder, hexToBytes } from '../../utils';
 import { GeneralJWE, JWEHeaderParameters, decodeProtectedHeader } from 'jose';
+import { JoseService, KMS, KmsKeyType } from '../../kms';
+
+/**
+ * decryptsJWE decrypts JWE message
+ * @param envelope encrypted message
+ * @param joseService jose service
+ * @param keyOpts key options to resolve private keys
+ * @returns decrypted payload
+ */
+export const decryptsJWE = async (
+  envelope: Uint8Array,
+  joseService: JoseService,
+  keyOpts: {
+    resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>;
+    kms?: KMS;
+  }
+) => {
+  const jwe: GeneralJWE = decodeGeneralJWE(envelope);
+
+  if (!jwe.protected) {
+    throw new Error('Missing protected header');
+  }
+  if (!jwe.recipients?.length) {
+    throw new Error('Missing recipients');
+  }
+  const protectedHeaders = decodeProtectedHeader(jwe);
+
+  const promises = jwe.recipients.map((recipient) =>
+    joseService.decrypt(jwe, async () => {
+      const kid = recipient.header?.kid || protectedHeaders.kid; // try to use protected kid if there is no kid in recipient header
+      if (!kid) {
+        throw new Error('Missing kid');
+      }
+
+      const kmsKeyType = (recipient.header?.alg || protectedHeaders.alg) as KmsKeyType;
+      if (!kmsKeyType) {
+        throw new Error('Missing kms key type');
+      }
+
+      const privateKey = await keyOpts.resolvePrivateKeyByKid?.(kid);
+
+      if (privateKey) {
+        return privateKey;
+      }
+
+      const pkStore = await keyOpts.kms?.getKeyProvider(kmsKeyType)?.getPkStore();
+      if (!pkStore) {
+        throw new Error(`Key provider not found for ${kmsKeyType}`);
+      }
+
+      const [, alias] = kid.split('#');
+
+      if (!alias) {
+        throw new Error('Missing key identifier');
+      }
+
+      try {
+        return JSON.parse(await pkStore.get({ alias })) as CryptoKey;
+      } catch (error) {
+        throw new Error(`Key not found for ${alias}`);
+      }
+    })
+  );
+
+  const result = await Promise.any(promises);
+
+  return result.plaintext;
+};
 
 export const getRecipientsJWKs = (
   recipients: RecipientInfo[],

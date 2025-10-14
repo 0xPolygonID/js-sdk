@@ -160,7 +160,9 @@ describe('auth', () => {
 
     joseService = new JoseService();
 
-    encryptedIssuanceResponseHandler = new EncryptedIssuanceResponseHandler(credWallet);
+    encryptedIssuanceResponseHandler = new EncryptedIssuanceResponseHandler(credWallet, {
+      resolvePrivateKeyByKid: pkFunc
+    });
     authHandler = new AuthHandler(packageMgr, proofService);
     const { did: didIssuer, credential: issuerAuthCredential } = await createIdentity(idWallet);
     expect(issuerAuthCredential).not.to.be.undefined;
@@ -222,9 +224,7 @@ describe('auth', () => {
       to: userDID.string()
     };
 
-    await encryptedIssuanceResponseHandler.handle(msg, {
-      pkFunc
-    });
+    await encryptedIssuanceResponseHandler.handle(msg, {});
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1730736196,

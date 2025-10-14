@@ -8,10 +8,9 @@ import {
   VerificationMethodType
 } from '../constants';
 import { BasicMessage, DIDDocument, IPacker, PackerParams } from '../types';
-import { decodeGeneralJWE, getRecipientsJWKs, parseAcceptProfile } from '../utils';
-import { KMS, KmsKeyType } from '../../kms';
+import { decryptsJWE, getRecipientsJWKs, parseAcceptProfile } from '../utils';
+import { KMS } from '../../kms';
 import { DID } from '@iden3/js-iden3-core';
-import { decodeProtectedHeader, GeneralJWE } from 'jose';
 
 export type RecipientInfo = {
   did: DID;
@@ -67,56 +66,10 @@ export class AnonCryptPacker implements IPacker {
   }
 
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
-    const jwe: GeneralJWE = decodeGeneralJWE(envelope);
-
-    if (!jwe.protected) {
-      throw new Error('Missing protected header');
-    }
-    if (!jwe.recipients?.length) {
-      throw new Error('Missing recipients');
-    }
-    const protectedHeaders = decodeProtectedHeader(jwe);
-
-    const promises = jwe.recipients.map((recipient) =>
-      this._joseService.decrypt(jwe, async () => {
-        const kid = recipient.header?.kid || protectedHeaders.kid; // try to use protected kid if there is no kid in recipient header
-        if (!kid) {
-          throw new Error('Missing kid');
-        }
-
-        const kmsKeyType = (recipient.header?.alg || protectedHeaders.alg) as KmsKeyType;
-        if (!kmsKeyType) {
-          throw new Error('Missing kms key type');
-        }
-
-        const privateKey = await this.options?.resolvePrivateKeyByKid?.(kid);
-
-        if (privateKey) {
-          return privateKey;
-        }
-
-        const pkStore = await this._kms.getKeyProvider(kmsKeyType)?.getPkStore();
-        if (!pkStore) {
-          throw new Error(`Key provider not found for ${kmsKeyType}`);
-        }
-
-        const [, alias] = kid.split('#');
-
-        if (!alias) {
-          throw new Error('Missing key identifier');
-        }
-
-        try {
-          return JSON.parse(await pkStore.get({ alias })) as CryptoKey;
-        } catch (error) {
-          throw new Error(`Key not found for ${alias}`);
-        }
-      })
-    );
-
-    const result = await Promise.any(promises);
-
-    const { plaintext } = result;
+    const plaintext = await decryptsJWE(envelope, this._joseService, {
+      resolvePrivateKeyByKid: this.options?.resolvePrivateKeyByKid,
+      kms: this._kms
+    });
 
     return JSON.parse(byteDecoder.decode(plaintext)) as BasicMessage;
   }
