@@ -1,6 +1,6 @@
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
-import { BasicMessage, EncryptedCredentialIssuanceMessage, IPackageManager } from '../types';
+import { BasicMessage, EncryptedCredentialIssuanceMessage } from '../types';
 
 import { W3CCredential } from '../../verifiable';
 import { ICredentialWallet } from '../../credentials';
@@ -10,7 +10,10 @@ import {
   BasicHandlerOptions,
   IProtocolMessageHandler
 } from './message-handler';
-import { byteEncoder } from '../../utils';
+import { JoseService } from '../../kms';
+import { GeneralJWE } from 'jose';
+import { decodeGeneralJWE } from '../utils';
+import { byteDecoder, byteEncoder } from '../../utils';
 
 /**
  *
@@ -19,7 +22,9 @@ import { byteEncoder } from '../../utils';
  * @public
  * @interface EncryptedIssuanceResponseOptions
  */
-export type EncryptedIssuanceResponseOptions = BasicHandlerOptions;
+export type EncryptedIssuanceResponseOptions = BasicHandlerOptions & {
+  pkFunc: () => Promise<CryptoKey>;
+};
 
 /**
  * Handler for encrypted issuance response messages
@@ -32,19 +37,15 @@ export class EncryptedIssuanceResponseHandler
   extends AbstractMessageHandler
   implements IProtocolMessageHandler
 {
+  private readonly _joseService: JoseService;
   /**
    * Constructs a new instance of the EncryptedIssuanceResponseHandler class.
    *
-   * @param _packerMgr The package manager used for packing and unpacking data.
    * @param _credentialWallet The credential wallet used for managing credentials.
-   * @param opts Optional configuration options for the handler.
    */
-  constructor(
-    private readonly _packerMgr: IPackageManager,
-    private readonly _credentialWallet: ICredentialWallet,
-    private readonly opts?: object
-  ) {
+  constructor(private readonly _credentialWallet: ICredentialWallet) {
     super();
+    this._joseService = new JoseService();
   }
 
   async handle(
@@ -54,7 +55,8 @@ export class EncryptedIssuanceResponseHandler
     switch (message.type) {
       case PROTOCOL_MESSAGE_TYPE.ENCRYPTED_CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE: {
         await this.handleEncryptedIssuanceResponseMessage(
-          message as EncryptedCredentialIssuanceMessage
+          message as EncryptedCredentialIssuanceMessage,
+          ctx.pkFunc
         );
         return null;
       }
@@ -64,13 +66,16 @@ export class EncryptedIssuanceResponseHandler
   }
 
   private async handleEncryptedIssuanceResponseMessage(
-    message: EncryptedCredentialIssuanceMessage
+    message: EncryptedCredentialIssuanceMessage,
+    pkFunc: () => Promise<CryptoKey>
   ): Promise<W3CCredential> {
-    const credentialUnpacked = await this._packerMgr.unpack(
-      byteEncoder.encode(JSON.stringify(message.body.data))
-    );
+    if (!pkFunc) {
+      throw new Error('Missing private key function');
+    }
+    const jwe: GeneralJWE = decodeGeneralJWE(byteEncoder.encode(JSON.stringify(message.body.data)));
+    const { plaintext } = await this._joseService.decrypt(jwe, pkFunc);
     const credential = W3CCredential.fromJSON({
-      ...credentialUnpacked.unpackedMessage,
+      ...JSON.parse(byteDecoder.decode(plaintext)),
       proof: message.body.proof
     });
     await this._credentialWallet.save(credential);

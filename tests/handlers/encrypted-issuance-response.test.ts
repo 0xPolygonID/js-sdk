@@ -22,10 +22,10 @@ import {
   createAuthorizationRequest,
   EncryptedIssuanceResponseHandler,
   EncryptedCredentialIssuanceMessage,
-  byteDecoder,
   toPublicKeyJwk,
   KmsKeyType,
-  BJJSignatureProof2021
+  JoseService,
+  getRecipientsJWKs
 } from '../../src';
 import { DID } from '@iden3/js-iden3-core';
 import { describe, expect, it, beforeEach } from 'vitest';
@@ -49,7 +49,7 @@ import {
 } from '../../src/iden3comm/constants';
 import { schemaLoaderForTests } from '../mocks/schema';
 import * as uuid from 'uuid';
-import { DIDDocument } from 'did-resolver';
+import { DIDDocument, Resolvable } from 'did-resolver';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -64,7 +64,9 @@ describe('auth', () => {
   let userDID: DID;
   let issuerDID: DID;
   let userDIDDoc: DIDDocument;
-
+  let joseService: JoseService;
+  let mockResolver: Resolvable;
+  let pkFunc: () => Promise<CryptoKey>;
   let merklizeOpts;
   beforeEach(async () => {
     const kms = registerKeyProvidersInMemoryKMS();
@@ -115,6 +117,18 @@ describe('auth', () => {
       qi: 'CvIzm858pE_4gW_yr7mUfl6Qo7jacUzim2sFM1kObBg_sNDLW-P8L2zGjmDJxUCHeYG6Gdj-219MN1-qQQnBhpg5LLENkFoseumv_2A8i0uP_j2MMlNFed7P0yGwwfZwcjAmieN2ULfbxJ1Vs7XYg6bzPoM7Sb0JyZRAQfcBtLk',
       alg: 'RSA-OAEP-256'
     };
+    pkFunc = async () => {
+      return await crypto.subtle.importKey(
+        'jwk',
+        pkJwk,
+        {
+          name: 'RSA-OAEP',
+          hash: 'SHA-256'
+        },
+        true,
+        ['decrypt']
+      );
+    };
     userDIDDoc = {
       '@context': [
         'https://www.w3.org/ns/did/v1',
@@ -131,18 +145,22 @@ describe('auth', () => {
         }
       ]
     };
+    mockResolver = {
+      resolve: async () => ({
+        didDocument: userDIDDoc,
+        didResolutionMetadata: {},
+        didDocumentMetadata: {}
+      })
+    };
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
       proofService.generateAuthInputs.bind(proofService),
-      proofService.verifyState.bind(proofService),
-      {
-        resolvePrivateKeyByKid: async (kid: string) => {
-          return pkJwk as unknown as CryptoKey;
-        }
-      }
+      proofService.verifyState.bind(proofService)
     );
 
-    encryptedIssuanceResponseHandler = new EncryptedIssuanceResponseHandler(packageMgr, credWallet);
+    joseService = new JoseService();
+
+    encryptedIssuanceResponseHandler = new EncryptedIssuanceResponseHandler(credWallet);
     authHandler = new AuthHandler(packageMgr, proofService);
     const { did: didIssuer, credential: issuerAuthCredential } = await createIdentity(idWallet);
     expect(issuerAuthCredential).not.to.be.undefined;
@@ -172,21 +190,35 @@ describe('auth', () => {
     const w3cCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
     const toEncrypt = w3cCred.toJSON();
     delete toEncrypt.proof;
-    const encryptedIssuanceResponse = await packageMgr.pack(
-      MediaType.EncryptedMessage,
-      byteEncoder.encode(JSON.stringify(toEncrypt)),
+
+    const recipients = [
       {
-        alg: AcceptJweKEKAlgorithms.RSA_OAEP_256,
-        enc: CEKEncryption.A256GCM,
-        recipients: [
-          {
-            did: userDID,
-            didDocument: userDIDDoc,
-            alg: AcceptJweKEKAlgorithms.RSA_OAEP_256
-          }
-        ]
+        did: userDID,
+        didDocument: userDIDDoc,
+        alg: AcceptJweKEKAlgorithms.RSA_OAEP_256
       }
-    );
+    ];
+
+    const encryptedCred = await joseService.encrypt(byteEncoder.encode(JSON.stringify(toEncrypt)), {
+      enc: CEKEncryption.A256GCM,
+      recipients: await getRecipientsJWKs(recipients, mockResolver),
+      typ: MediaType.EncryptedMessage
+    });
+    // const encryptedIssuanceResponse = await packageMgr.pack(
+    //   MediaType.EncryptedMessage,
+    //   byteEncoder.encode(JSON.stringify(toEncrypt)),
+    //   {
+    //     alg: AcceptJweKEKAlgorithms.RSA_OAEP_256,
+    //     enc: CEKEncryption.A256GCM,
+    //     recipients: [
+    //       {
+    //         did: userDID,
+    //         didDocument: userDIDDoc,
+    //         alg: AcceptJweKEKAlgorithms.RSA_OAEP_256
+    //       }
+    //     ]
+    //   }
+    // );
 
     const proofSerialized = w3cCred.proof ? JSON.parse(JSON.stringify(w3cCred.proof)) : [];
     const msg: EncryptedCredentialIssuanceMessage = {
@@ -198,14 +230,16 @@ describe('auth', () => {
         id: w3cCred.id,
         type: w3cCred.credentialStatus.type,
         context: w3cCred['@context'][w3cCred['@context'].length - 1],
-        data: JSON.parse(byteDecoder.decode(encryptedIssuanceResponse)),
+        data: encryptedCred,
         proof: proofSerialized
       },
       from: issuerDID.string(),
       to: userDID.string()
     };
 
-    await encryptedIssuanceResponseHandler.handle(msg, {});
+    await encryptedIssuanceResponseHandler.handle(msg, {
+      pkFunc
+    });
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1730736196,

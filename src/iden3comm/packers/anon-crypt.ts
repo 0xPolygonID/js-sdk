@@ -1,17 +1,17 @@
 import { Resolvable } from 'did-resolver';
 import { JoseService } from '../../kms/services/jose.service';
-import { base58ToBytes, base64UrlToBytes, byteDecoder, byteEncoder, hexToBytes } from '../../utils';
+import { byteDecoder, byteEncoder } from '../../utils';
 import {
   AcceptJweKEKAlgorithms,
   MediaType,
   ProtocolVersion,
   VerificationMethodType
 } from '../constants';
-import { BasicMessage, DIDDocument, IPacker, PackerParams, VerificationMethod } from '../types';
-import { parseAcceptProfile, resolveVerificationMethods } from '../utils';
+import { BasicMessage, DIDDocument, IPacker, PackerParams } from '../types';
+import { decodeGeneralJWE, getRecipientsJWKs, parseAcceptProfile } from '../utils';
 import { KMS, KmsKeyType } from '../../kms';
 import { DID } from '@iden3/js-iden3-core';
-import { decodeProtectedHeader, GeneralJWE, JWEHeaderParameters } from 'jose';
+import { decodeProtectedHeader, GeneralJWE } from 'jose';
 
 export type RecipientInfo = {
   did: DID;
@@ -67,7 +67,7 @@ export class AnonCryptPacker implements IPacker {
   }
 
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
-    const jwe: GeneralJWE = this.decodeGeneralJWE(envelope);
+    const jwe: GeneralJWE = decodeGeneralJWE(envelope);
 
     if (!jwe.protected) {
       throw new Error('Missing protected header');
@@ -152,93 +152,6 @@ export class AnonCryptPacker implements IPacker {
     );
   }
 
-  extractPublicKeyBytes = (vm: VerificationMethod): JsonWebKey | Uint8Array | null => {
-    if (vm.publicKeyBase58) {
-      return base58ToBytes(vm.publicKeyBase58);
-    }
-    if (vm.publicKeyBase64) {
-      return base64UrlToBytes(vm.publicKeyBase64);
-    }
-    if (vm.publicKeyHex) {
-      return hexToBytes(vm.publicKeyHex);
-    }
-    if (vm.publicKeyJwk) {
-      return vm.publicKeyJwk;
-    }
-
-    return null;
-  };
-
-  private async getRecipientsJWKs(recipients: RecipientInfo[]): Promise<
-    {
-      alg: string;
-      did: string;
-      keyType: VerificationMethodType;
-      kid: string;
-      recipientJWK: JsonWebKey;
-    }[]
-  > {
-    return Promise.all(
-      recipients.map(async (recipient) => {
-        if (!recipient.did) {
-          throw new Error('Missing target key id');
-        }
-        const recipientDidDoc: DIDDocument | null =
-          recipient.didDocument ??
-          (await this._documentResolver.resolve(recipient.did.string()))?.didDocument;
-
-        if (!recipientDidDoc) {
-          throw new Error('Recipient DID document not found');
-        }
-
-        const vms = resolveVerificationMethods(recipientDidDoc);
-
-        if (!vms.length) {
-          throw new Error(
-            `No verification methods defined in the DID document of ${recipientDidDoc.id}`
-          );
-        }
-
-        const keyType = recipient.keyType ?? 'JsonWebKey2020';
-        const alg = recipient.alg ?? AcceptJweKEKAlgorithms.RSA_OAEP_256;
-
-        // !!! TODO: could be more than one key with the same controller and type, taking the first one for now
-        const vm = vms.find(
-          (vm) =>
-            vm.controller === recipient.did.string() &&
-            vm.type === keyType &&
-            vm.publicKeyJwk?.alg === alg
-        );
-
-        if (!vm) {
-          throw new Error(
-            `No key found with id ${recipient.did.string()} and type ${keyType} in DID document of ${
-              recipientDidDoc.id
-            }`
-          );
-        }
-
-        const recipientJWK = this.extractPublicKeyBytes(vm);
-
-        if (!recipientJWK) {
-          throw new Error('No public key found');
-        }
-
-        if (recipientJWK instanceof Uint8Array) {
-          throw new Error('Public key is not a JWK');
-        }
-
-        return {
-          did: recipient.did.string(),
-          keyType,
-          kid: vm.id,
-          alg,
-          recipientJWK
-        };
-      })
-    );
-  }
-
   private async packInternal(message: BasicMessage, params: JWEPackerParams): Promise<Uint8Array> {
     const { enc, recipients } = params;
 
@@ -250,11 +163,11 @@ export class AnonCryptPacker implements IPacker {
       throw new Error('Missing recipients');
     }
 
-    // if (!message.to) {
-    //   throw new Error('Missing recipient DID');
-    // }
+    if (!message.to) {
+      throw new Error('Missing recipient DID');
+    }
 
-    const recipientsJwks = await this.getRecipientsJWKs(recipients);
+    const recipientsJwks = await getRecipientsJWKs(recipients, this._documentResolver);
 
     const msg = byteEncoder.encode(JSON.stringify(message));
 
@@ -265,45 +178,5 @@ export class AnonCryptPacker implements IPacker {
     });
 
     return byteEncoder.encode(JSON.stringify(jwe));
-  }
-
-  private decodeGeneralJWE(envelope: Uint8Array): GeneralJWE {
-    const decodedJWE = JSON.parse(byteDecoder.decode(envelope));
-    let recipients: { encrypted_key: string; header: JWEHeaderParameters }[] = [];
-    if (decodedJWE.encrypted_key && typeof decodedJWE.encrypted_key === 'string') {
-      if (decodedJWE.recipients) {
-        throw Error(
-          'both `recipients` and `encrypted_key`/`header` headers are present in JWE token'
-        );
-      }
-
-      const protectedHeader = decodeProtectedHeader(decodedJWE);
-
-      recipients = [
-        {
-          encrypted_key: decodedJWE.encrypted_key,
-          header: this.removeDuplicates(protectedHeader, decodedJWE.header || {})
-        }
-      ];
-
-      delete decodedJWE.encrypted_key;
-      delete decodedJWE.header;
-      decodedJWE.recipients = recipients;
-    }
-    return decodedJWE as GeneralJWE;
-  }
-
-  /**
-   * Removes fields from recipient header that duplicate protected header values.
-   */
-  private removeDuplicates(
-    protectedHeader: Record<string, any>,
-    recipientHeader: Record<string, any>
-  ) {
-    const cleaned = { ...recipientHeader };
-    for (const [key, value] of Object.entries(protectedHeader)) {
-      if (cleaned[key] === value) delete cleaned[key];
-    }
-    return cleaned;
   }
 }
