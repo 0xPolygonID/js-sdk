@@ -8,7 +8,6 @@ import {
 } from '../constants';
 import { BasicMessage, DIDDocument, IPacker, PackerParams } from '../types';
 import { getRecipientsJWKs, parseAcceptProfile } from '../utils';
-import { KMS } from '../../kms';
 import { DID } from '@iden3/js-iden3-core';
 import { JoseService } from '../services';
 import { FlattenedJWE, GeneralJWE } from 'jose';

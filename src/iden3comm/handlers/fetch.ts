@@ -26,7 +26,7 @@ import {
 } from './message-handler';
 import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
-import { JoseService, KMS } from '../..';
+import { JoseService } from '../services/jose';
 import { FlattenedJWE, GeneralJWE } from 'jose';
 
 /**
