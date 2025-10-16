@@ -1,4 +1,4 @@
-/* eslint-disable @cspell/spellchecker */
+/* eslint-disable @cspell/spellchecker, no-console */
 import {
   AnonCryptPacker,
   DIDDocument,
@@ -24,8 +24,7 @@ import {
 import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
-import { flattenedDecrypt, FlattenedJWE, GeneralJWE } from 'jose';
-import { S } from 'vitest/dist/chunks/config.d.D2ROskhv.js';
+import { FlattenedJWE, GeneralJWE } from 'jose';
 
 describe('AnonCrypt packer tests', () => {
   const endUserData = {
@@ -286,7 +285,7 @@ describe('AnonCrypt packer tests', () => {
         false,
         (keyProvider) => async (kid) => {
           const pkStore = await keyProvider.getPkStore();
-          const alias = kid.split('#').pop()!;
+          const alias = kid.split('#').pop()!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
           const pkHex = await pkStore.get({ alias });
 
           const pubKey = await keyProvider.publicKey({
@@ -374,6 +373,7 @@ describe('AnonCrypt packer tests', () => {
         })
       } as unknown as Resolvable,
       {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         resolvePrivateKeyByKid: (k: string) => {
           return Promise.resolve({
             kty: 'RSA',
@@ -428,6 +428,7 @@ describe('AnonCrypt packer tests', () => {
         })
       } as unknown as Resolvable,
       {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         resolvePrivateKeyByKid: (k: string) => {
           return Promise.resolve({
             kty: 'RSA',

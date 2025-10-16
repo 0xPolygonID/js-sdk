@@ -297,8 +297,8 @@ export class AnonCryptPacker implements IPacker {
    * Removes fields from recipient header that duplicate protected header values.
    */
   private removeDuplicates(
-    protectedHeader: Record<string, any>,
-    recipientHeader: Record<string, any>
+    protectedHeader: Record<string, any>, //eslint-disable-line @typescript-eslint/no-explicit-any
+    recipientHeader: Record<string, any> //eslint-disable-line @typescript-eslint/no-explicit-any
   ) {
     const cleaned = { ...recipientHeader };
     for (const [key, value] of Object.entries(protectedHeader)) {
