@@ -1,4 +1,4 @@
-/* eslint-disable @cspell/spellchecker */
+/* eslint-disable @cspell/spellchecker, no-console */
 import {
   AnonCryptPacker,
   DIDDocument,
@@ -286,7 +286,7 @@ describe('AnonCrypt packer tests', () => {
         false,
         (keyProvider) => async (kid) => {
           const pkStore = await keyProvider.getPkStore();
-          const alias = kid.split('#').pop()!;
+          const alias = kid.split('#').pop()!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
           const pkHex = await pkStore.get({ alias });
 
           const pubKey = await keyProvider.publicKey({
@@ -363,10 +363,8 @@ describe('AnonCrypt packer tests', () => {
       tag: 'G3i_v-TS67ch_9__GHQJBQ'
     };
 
-    const kms = new KMS();
-
     const joseService = new JoseService({
-      resolvePrivateKeyByKid: (k: string) => {
+      resolvePrivateKeyByKid: () => {
         return Promise.resolve({
           kty: 'RSA',
           n: 'oJ_RM4-dKCwAm_iXCDBzSABwOr5eOCrTVzlLikx0dK1BoO8ilHr9Yx7F3F5Q5exZ6g_lz_5YKSQ31ZNWjAjLOZnRvLkXGA2p_lfFNGGDsW7Xw2OvVy-kX7Y-O1Yn6rGW-ZMCslcc4hdHQbrBa3MdwLFDfAMcHDfZYWOVhU3brGIr0cmXRfZ6U-1hPT-3K_rwCknbiir8GivoLXinIad95JNwyIUytfBc-New_PrcUYoDQH6GI6bu8m2_ya3QuGIR-Lgn5HGcXtd9Lw9qnMc31EcJMKyG1KxMAVUFcoyADDskRCDfd-PWr50Upx_F9V3PE9e7ZOrXRn_hQF0XYG-MGQ',
@@ -413,7 +411,7 @@ describe('AnonCrypt packer tests', () => {
     };
 
     const joseService = new JoseService({
-      resolvePrivateKeyByKid: (k: string) => {
+      resolvePrivateKeyByKid: () => {
         return Promise.resolve({
           kty: 'RSA',
           n: 'oJ_RM4-dKCwAm_iXCDBzSABwOr5eOCrTVzlLikx0dK1BoO8ilHr9Yx7F3F5Q5exZ6g_lz_5YKSQ31ZNWjAjLOZnRvLkXGA2p_lfFNGGDsW7Xw2OvVy-kX7Y-O1Yn6rGW-ZMCslcc4hdHQbrBa3MdwLFDfAMcHDfZYWOVhU3brGIr0cmXRfZ6U-1hPT-3K_rwCknbiir8GivoLXinIad95JNwyIUytfBc-New_PrcUYoDQH6GI6bu8m2_ya3QuGIR-Lgn5HGcXtd9Lw9qnMc31EcJMKyG1KxMAVUFcoyADDskRCDfd-PWr50Upx_F9V3PE9e7ZOrXRn_hQF0XYG-MGQ',
