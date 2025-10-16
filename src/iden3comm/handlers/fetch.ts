@@ -7,6 +7,7 @@ import {
   CredentialIssuanceMessage,
   CredentialsOfferMessage,
   CredentialsOnchainOfferMessage,
+  EncryptedCredentialIssuanceMessage,
   IPackageManager,
   MessageFetchRequestMessage
 } from '../types';
@@ -25,6 +26,8 @@ import {
 } from './message-handler';
 import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
+import { JoseService } from '../services/jose';
+import { FlattenedJWE, GeneralJWE } from 'jose';
 
 /**
  *
@@ -130,6 +133,7 @@ export class FetchHandler
     private readonly opts?: {
       credentialWallet: ICredentialWallet;
       onchainIssuer?: IOnchainIssuer;
+      joseService?: JoseService;
     }
   ) {
     super();
@@ -165,6 +169,12 @@ export class FetchHandler
           return null;
         }
         return result as BasicMessage;
+      }
+      case PROTOCOL_MESSAGE_TYPE.ENCRYPTED_CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE: {
+        await this.handleEncryptedIssuanceResponseMessage(
+          message as EncryptedCredentialIssuanceMessage
+        );
+        return null;
       }
       default:
         return super.handle(message, ctx);
@@ -385,6 +395,25 @@ export class FetchHandler
       byteEncoder.encode(JSON.stringify(request)),
       {}
     );
+  }
+  private async handleEncryptedIssuanceResponseMessage(
+    message: EncryptedCredentialIssuanceMessage
+  ): Promise<W3CCredential> {
+    if (!this.opts?.joseService) {
+      throw new Error(
+        'JoseService is not initialized. Encrypted issuance response cannot be handled'
+      );
+    }
+    const { plaintext } = await this.opts.joseService.decrypt(
+      message.body.data as GeneralJWE | FlattenedJWE
+    );
+
+    const credential = W3CCredential.fromJSON({
+      ...JSON.parse(byteDecoder.decode(plaintext)),
+      proof: message.body.proof
+    });
+    await this.opts?.credentialWallet.save(credential);
+    return credential;
   }
 
   private async handleIssuanceResponseMsg(issuanceMsg: CredentialIssuanceMessage): Promise<null> {

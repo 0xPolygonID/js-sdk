@@ -20,12 +20,12 @@ import {
   buildAccept,
   AcceptProfile,
   createAuthorizationRequest,
-  EncryptedIssuanceResponseHandler,
   EncryptedCredentialIssuanceMessage,
   toPublicKeyJwk,
   KmsKeyType,
   JoseService,
-  getRecipientsJWKs
+  getRecipientsJWKs,
+  FetchHandler
 } from '../../src';
 import { DID } from '@iden3/js-iden3-core';
 import { describe, expect, it, beforeEach } from 'vitest';
@@ -50,6 +50,7 @@ import {
 import { schemaLoaderForTests } from '../mocks/schema';
 import * as uuid from 'uuid';
 import { DIDDocument, Resolvable } from 'did-resolver';
+import { Options } from '@iden3/js-jsonld-merklization';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -57,7 +58,7 @@ describe('auth', () => {
 
   let dataStorage: IDataStorage;
   let proofService: ProofService;
-  let encryptedIssuanceResponseHandler: EncryptedIssuanceResponseHandler;
+  let fetchHandler: FetchHandler;
   let authHandler: IAuthHandler;
   let packageMgr: IPackageManager;
 
@@ -66,8 +67,8 @@ describe('auth', () => {
   let userDIDDoc: DIDDocument;
   let joseService: JoseService;
   let mockResolver: Resolvable;
-  let pkFunc: () => Promise<CryptoKey>;
-  let merklizeOpts;
+  let pkFunc: (kid: string) => Promise<CryptoKey>;
+  let merklizeOpts: Options;
   beforeEach(async () => {
     const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
@@ -158,11 +159,12 @@ describe('auth', () => {
       proofService.verifyState.bind(proofService)
     );
 
-    joseService = new JoseService();
-
-    encryptedIssuanceResponseHandler = new EncryptedIssuanceResponseHandler(credWallet, {
-      resolvePrivateKeyByKid: pkFunc
+    const joseService = new JoseService({ kms, resolvePrivateKeyByKid: pkFunc });
+    fetchHandler = new FetchHandler(packageMgr, {
+      credentialWallet: credWallet,
+      joseService
     });
+
     authHandler = new AuthHandler(packageMgr, proofService);
     const { did: didIssuer, credential: issuerAuthCredential } = await createIdentity(idWallet);
     expect(issuerAuthCredential).not.to.be.undefined;
@@ -200,6 +202,7 @@ describe('auth', () => {
         alg: AcceptJweKEKAlgorithms.RSA_OAEP_256
       }
     ];
+    const joseService = new JoseService({ resolvePrivateKeyByKid: pkFunc });
 
     const encryptedCred = await joseService.encrypt(byteEncoder.encode(JSON.stringify(toEncrypt)), {
       enc: CEKEncryption.A256GCM,
@@ -224,7 +227,7 @@ describe('auth', () => {
       to: userDID.string()
     };
 
-    await encryptedIssuanceResponseHandler.handle(msg, {});
+    await fetchHandler.handle(msg, { mediaType: MediaType.EncryptedMessage });
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1730736196,
