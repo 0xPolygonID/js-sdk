@@ -61,7 +61,7 @@ export class JoseService {
       return this.resolveKey(kid);
     };
 
-    if (data.hasOwnProperty('encrypted_key')) {
+    if (Object.prototype.hasOwnProperty.call(data,'encrypted_key')) {
       const flattenedJWE: FlattenedJWE = data as FlattenedJWE;
 
       flattenedJWE.header = this.removeDuplicates(

@@ -404,7 +404,7 @@ export class FetchHandler
         'JoseService is not initialized. Encrypted issuance response cannot be handled'
       );
     }
-    const { plaintext } = await this.opts.joseService?.decrypt(
+    const { plaintext } = await this.opts.joseService.decrypt(
       message.body.data as GeneralJWE | FlattenedJWE
     );
 
