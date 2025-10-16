@@ -159,7 +159,7 @@ describe('auth', () => {
       proofService.verifyState.bind(proofService)
     );
 
-    const joseService = new JoseService({ kms, resolvePrivateKeyByKid: pkFunc });
+    joseService = new JoseService({ kms, resolvePrivateKeyByKid: pkFunc });
     fetchHandler = new FetchHandler(packageMgr, {
       credentialWallet: credWallet,
       joseService
@@ -202,8 +202,6 @@ describe('auth', () => {
         alg: AcceptJweKEKAlgorithms.RSA_OAEP_256
       }
     ];
-    const joseService = new JoseService({ resolvePrivateKeyByKid: pkFunc });
-
     const encryptedCred = await joseService.encrypt(byteEncoder.encode(JSON.stringify(toEncrypt)), {
       enc: CEKEncryption.A256GCM,
       recipients: await getRecipientsJWKs(recipients, mockResolver),
