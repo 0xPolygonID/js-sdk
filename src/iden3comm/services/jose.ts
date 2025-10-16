@@ -23,6 +23,12 @@ export type JoseParams = {
   }[];
 };
 
+/**
+ * JoseService performs encryption and decryption of messages based on JOSE standard
+ *
+ * @beta
+ * @class JoseService
+ */
 export class JoseService {
   resolveKeyByKid?: (kid: string) => Promise<CryptoKey>;
   kms?: KMS;
@@ -61,7 +67,7 @@ export class JoseService {
       return this.resolveKey(kid);
     };
 
-    if (Object.prototype.hasOwnProperty.call(data,'encrypted_key')) {
+    if (Object.prototype.hasOwnProperty.call(data, 'encrypted_key')) {
       const flattenedJWE: FlattenedJWE = data as FlattenedJWE;
 
       flattenedJWE.header = this.removeDuplicates(
