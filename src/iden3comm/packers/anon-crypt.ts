@@ -27,7 +27,6 @@ export type JWEPackerParams = PackerParams & {
 
 export class AnonCryptPacker implements IPacker {
   private readonly _supportedProtocolVersions = [ProtocolVersion.V1];
-  private readonly _joseService: JoseService;
 
   private _supportedAlgorithms = [
     AcceptJweKEKAlgorithms.RSA_OAEP_256,
@@ -35,17 +34,9 @@ export class AnonCryptPacker implements IPacker {
   ];
 
   constructor(
-    private readonly _kms: KMS,
-    private readonly _documentResolver: Resolvable,
-    private readonly options?: {
-      resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>;
-    }
-  ) {
-    this._joseService = new JoseService({
-      resolvePrivateKeyByKid: this.options?.resolvePrivateKeyByKid,
-      kms: this._kms
-    });
-  }
+    private readonly _joseService: JoseService,
+    private readonly _documentResolver: Resolvable
+  ) {}
 
   packMessage(msg: BasicMessage, param: JWEPackerParams): Promise<Uint8Array> {
     return this.packInternal(msg, param);

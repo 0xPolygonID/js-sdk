@@ -159,10 +159,10 @@ describe('auth', () => {
       proofService.verifyState.bind(proofService)
     );
 
+    const joseService = new JoseService({ kms, resolvePrivateKeyByKid: pkFunc });
     fetchHandler = new FetchHandler(packageMgr, {
       credentialWallet: credWallet,
-      kms: kms,
-      encryptedCredentialOptions: { resolvePrivateKeyByKid: pkFunc }
+      joseService
     });
 
     authHandler = new AuthHandler(packageMgr, proofService);

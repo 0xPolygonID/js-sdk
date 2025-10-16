@@ -28,7 +28,7 @@ export class JoseService {
   kms?: KMS;
 
   constructor(params: { resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>; kms?: KMS }) {
-    if (!params?.resolvePrivateKeyByKid && !params?.kms) {
+    if (!params.resolvePrivateKeyByKid && !params.kms) {
       throw new Error('Either resolvePrivateKeyByKid or kms must be provided');
     }
     this.resolveKeyByKid = params?.resolvePrivateKeyByKid;

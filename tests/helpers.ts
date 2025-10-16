@@ -274,9 +274,10 @@ export const getPackageMgr = async (
       didDocument: {}
     })
   } as unknown as Resolvable;
-  const anonCryptPacker = new AnonCryptPacker(new JoseService(), kms, resolver, {
-    resolvePrivateKeyByKid: opts?.resolvePrivateKeyByKid
-  });
+  const anonCryptPacker = new AnonCryptPacker(
+    new JoseService({ kms, resolvePrivateKeyByKid: opts?.resolvePrivateKeyByKid }),
+    resolver
+  );
   mgr.registerPackers([packer, plainPacker, anonCryptPacker]);
 
   return mgr;

@@ -121,8 +121,6 @@ export class FetchHandler
   extends AbstractMessageHandler
   implements IFetchHandler, IProtocolMessageHandler
 {
-  private joseService?: JoseService;
-
   /**
    * Constructs a new instance of the FetchHandler class.
    *
@@ -135,25 +133,12 @@ export class FetchHandler
     private readonly opts?: {
       credentialWallet: ICredentialWallet;
       onchainIssuer?: IOnchainIssuer;
-      kms?: KMS;
-      encryptedCredentialOptions?: {
-        resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>;
-      };
+      joseService?: JoseService;
     }
   ) {
     super();
   }
 
-  // initializes jose service only when encrypted issuance response message is handled
-  getJoseService: () => JoseService = () => {
-    if (!this.joseService) {
-      this.joseService = new JoseService({
-        kms: this.opts?.kms,
-        resolvePrivateKeyByKid: this.opts?.encryptedCredentialOptions?.resolvePrivateKeyByKid
-      });
-    }
-    return this.joseService;
-  };
   async handle(
     message: BasicMessage,
     ctx: FetchMessageHandlerOptions
@@ -414,7 +399,12 @@ export class FetchHandler
   private async handleEncryptedIssuanceResponseMessage(
     message: EncryptedCredentialIssuanceMessage
   ): Promise<W3CCredential> {
-    const { plaintext } = await this.getJoseService().decrypt(
+    if (!this.opts?.joseService) {
+      throw new Error(
+        'JoseService is not initialized. Encrypted issuance response cannot be handled'
+      );
+    }
+    const { plaintext } = await this.opts.joseService?.decrypt(
       message.body.data as GeneralJWE | FlattenedJWE
     );
 
