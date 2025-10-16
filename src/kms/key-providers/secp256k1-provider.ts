@@ -1,11 +1,10 @@
-import { IEIP712Provider, IKeyProvider } from '../kms';
+import { IKeyProvider } from '../kms';
 import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType, TypedData } from '../store';
 import * as providerHelpers from '../provider-helpers';
 import { base64UrlToBytes, bytesToHex } from '../../utils';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { sha256 } from '@iden3/js-crypto';
 import { ES256KSigner, hexToBytes } from 'did-jwt';
-import { ethers } from 'ethers';
 
 /**
  * Provider for Secp256k1
@@ -13,7 +12,7 @@ import { ethers } from 'ethers';
  * @class Secp256k1Provider
  * @implements implements IKeyProvider interface
  */
-export class Sec256k1Provider implements IKeyProvider, IEIP712Provider {
+export class Sec256k1Provider implements IKeyProvider {
   /**
    * key type that is handled by BJJ Provider
    * @type {KmsKeyType}
@@ -132,44 +131,6 @@ export class Sec256k1Provider implements IKeyProvider, IEIP712Provider {
   async verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
     const publicKeyHex = await this.publicKey(keyId);
     return secp256k1.verify(signatureHex, sha256(message), publicKeyHex);
-  }
-
-  /**
-   * Signs EIP712 the given data using the private key associated with the specified key identifier.
-   * @param keyId - The key identifier to use for signing.
-   * @param typedData - The TypedData to sign.
-   * @param opts - Optional parameters.
-   * @returns A Promise that resolves to the signature as a Uint8Array.
-   */
-  async signTypedData(
-    keyId: KmsKeyId,
-    typedData: TypedData,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    opts: {
-      [key: string]: unknown;
-    } = {}
-  ): Promise<Uint8Array> {
-    const privateKeyHex = await this._keyStore.get({ alias: keyId.id });
-
-    const wallet = new ethers.Wallet(privateKeyHex);
-
-    const signature = await wallet.signTypedData(
-      typedData.domain,
-      typedData.types,
-      typedData.message
-    );
-
-    return hexToBytes(signature);
-  }
-
-  /**
-   * Computes ETH address by key id
-   *
-   * @param {KmsKeyId} keyId - key id
-   */
-  async getEthAddress(keyId: KmsKeyId): Promise<string> {
-    const publicKey = await this.publicKey(keyId);
-    return ethers.computeAddress('0x' + publicKey);
   }
 
   private async privateKey(keyId: KmsKeyId): Promise<string> {
