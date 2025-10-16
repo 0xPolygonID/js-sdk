@@ -1,5 +1,4 @@
 import { Resolvable } from 'did-resolver';
-import { JoseService } from '../../kms/services/jose.service';
 import { byteDecoder, byteEncoder } from '../../utils';
 import {
   AcceptJweKEKAlgorithms,
@@ -8,9 +7,11 @@ import {
   VerificationMethodType
 } from '../constants';
 import { BasicMessage, DIDDocument, IPacker, PackerParams } from '../types';
-import { decryptsJWE, getRecipientsJWKs, parseAcceptProfile } from '../utils';
+import { getRecipientsJWKs, parseAcceptProfile } from '../utils';
 import { KMS } from '../../kms';
 import { DID } from '@iden3/js-iden3-core';
+import { JoseService } from '../services';
+import { FlattenedJWE, GeneralJWE } from 'jose';
 
 export type RecipientInfo = {
   did: DID;
@@ -26,6 +27,7 @@ export type JWEPackerParams = PackerParams & {
 
 export class AnonCryptPacker implements IPacker {
   private readonly _supportedProtocolVersions = [ProtocolVersion.V1];
+  private readonly _joseService: JoseService;
 
   private _supportedAlgorithms = [
     AcceptJweKEKAlgorithms.RSA_OAEP_256,
@@ -33,13 +35,17 @@ export class AnonCryptPacker implements IPacker {
   ];
 
   constructor(
-    private readonly _joseService: JoseService,
     private readonly _kms: KMS,
     private readonly _documentResolver: Resolvable,
     private readonly options?: {
       resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>;
     }
-  ) {}
+  ) {
+    this._joseService = new JoseService({
+      resolvePrivateKeyByKid: this.options?.resolvePrivateKeyByKid,
+      kms: this._kms
+    });
+  }
 
   packMessage(msg: BasicMessage, param: JWEPackerParams): Promise<Uint8Array> {
     return this.packInternal(msg, param);
@@ -66,11 +72,9 @@ export class AnonCryptPacker implements IPacker {
   }
 
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
-    const plaintext = await decryptsJWE(envelope, this._joseService, {
-      resolvePrivateKeyByKid: this.options?.resolvePrivateKeyByKid,
-      kms: this._kms
-    });
-
+    const { plaintext } = await this._joseService.decrypt(
+      JSON.parse(byteDecoder.decode(envelope)) as GeneralJWE | FlattenedJWE
+    );
     return JSON.parse(byteDecoder.decode(plaintext)) as BasicMessage;
   }
 

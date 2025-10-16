@@ -7,6 +7,7 @@ import {
   CredentialIssuanceMessage,
   CredentialsOfferMessage,
   CredentialsOnchainOfferMessage,
+  EncryptedCredentialIssuanceMessage,
   IPackageManager,
   MessageFetchRequestMessage
 } from '../types';
@@ -25,6 +26,8 @@ import {
 } from './message-handler';
 import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
+import { JoseService, KMS } from '../..';
+import { FlattenedJWE, GeneralJWE } from 'jose';
 
 /**
  *
@@ -118,6 +121,8 @@ export class FetchHandler
   extends AbstractMessageHandler
   implements IFetchHandler, IProtocolMessageHandler
 {
+  private joseService?: JoseService;
+
   /**
    * Constructs a new instance of the FetchHandler class.
    *
@@ -130,11 +135,25 @@ export class FetchHandler
     private readonly opts?: {
       credentialWallet: ICredentialWallet;
       onchainIssuer?: IOnchainIssuer;
+      kms?: KMS;
+      encryptedCredentialOptions?: {
+        resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>;
+      };
     }
   ) {
     super();
   }
 
+  // initializes jose service only when encrypted issuance response message is handled
+  getJoseService: () => JoseService = () => {
+    if (!this.joseService) {
+      this.joseService = new JoseService({
+        kms: this.opts?.kms,
+        resolvePrivateKeyByKid: this.opts?.encryptedCredentialOptions?.resolvePrivateKeyByKid
+      });
+    }
+    return this.joseService;
+  };
   async handle(
     message: BasicMessage,
     ctx: FetchMessageHandlerOptions
@@ -165,6 +184,12 @@ export class FetchHandler
           return null;
         }
         return result as BasicMessage;
+      }
+      case PROTOCOL_MESSAGE_TYPE.ENCRYPTED_CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE: {
+        await this.handleEncryptedIssuanceResponseMessage(
+          message as EncryptedCredentialIssuanceMessage
+        );
+        return null;
       }
       default:
         return super.handle(message, ctx);
@@ -385,6 +410,20 @@ export class FetchHandler
       byteEncoder.encode(JSON.stringify(request)),
       {}
     );
+  }
+  private async handleEncryptedIssuanceResponseMessage(
+    message: EncryptedCredentialIssuanceMessage
+  ): Promise<W3CCredential> {
+    const { plaintext } = await this.getJoseService().decrypt(
+      message.body.data as GeneralJWE | FlattenedJWE
+    );
+
+    const credential = W3CCredential.fromJSON({
+      ...JSON.parse(byteDecoder.decode(plaintext)),
+      proof: message.body.proof
+    });
+    await this.opts?.credentialWallet.save(credential);
+    return credential;
   }
 
   private async handleIssuanceResponseMsg(issuanceMsg: CredentialIssuanceMessage): Promise<null> {
