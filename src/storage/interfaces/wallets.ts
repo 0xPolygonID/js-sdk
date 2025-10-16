@@ -19,7 +19,7 @@ export interface IEthereumWallet {
   /**
    * Gets ethAddress for the kmsKeyId
    * @param {KmsKeyId} keyId - key identifier
-   * @returns {Promise<string>} Public key as a hex string
+   * @returns {Promise<string>} Ethereum address as a hex string
    */
   getEthAddress(keyId: KmsKeyId): Promise<string>;
 
