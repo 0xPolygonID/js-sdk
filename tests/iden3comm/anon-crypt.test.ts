@@ -23,7 +23,7 @@ import {
   DefaultKMSKeyResolver,
   KmsKeyType
 } from '../../src';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
 import { FlattenedJWE, GeneralJWE } from 'jose';

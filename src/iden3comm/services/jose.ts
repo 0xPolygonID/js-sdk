@@ -9,7 +9,6 @@ import {
   JWEHeaderParameters
 } from 'jose';
 import { VerificationMethodType } from '../constants';
-import { KMS, KmsKeyType } from '../../kms';
 
 export type JoseParams = {
   enc: string;
