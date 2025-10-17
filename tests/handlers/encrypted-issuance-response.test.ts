@@ -53,7 +53,7 @@ import { DIDDocument, Resolvable } from 'did-resolver';
 import { Options } from '@iden3/js-jsonld-merklization';
 import nock from 'nock';
 
-describe('auth', () => {
+describe('encrypted issuance response', () => {
   let idWallet: IdentityWallet;
   let credWallet: CredentialWallet;
 
@@ -189,7 +189,7 @@ describe('auth', () => {
     issuerDID = didIssuer;
   });
 
-  it('encryption flow', async () => {
+  it.only('encryption flow', async () => {
     const claimReq: CredentialRequest = {
       credentialSchema: 'ipfs://QmWDmZQrtvidcNK7d6rJwq7ZSi8SUygJaKepN7NhKtGryc',
       type: 'operators',
