@@ -1,4 +1,4 @@
-import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType, TypedData } from './store';
+import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from './store';
 
 /**
  * KeyProvider is responsible for signing and creation of the keys
@@ -203,27 +203,4 @@ export class KMS {
   getKeyProvider(keyType: KmsKeyType): IKeyProvider | undefined {
     return this._registry.get(keyType);
   }
-}
-
-// eslint-disable-next-line @cspell/spellchecker
-export interface IEIP712Provider {
-  /**
-   * sign eip712 message with agentKms key
-   *
-   * @param {KmsKeyId} keyId - key identifier
-   * @param {TypedData} typedData  - Typed data to sign
-   * @param {Object} [opts] - Optional parameters
-   * @returns `Promise<Uint8Array>`
-   */
-  signTypedData(
-    keyId: KmsKeyId,
-    typedData: TypedData,
-    opts?: { [key: string]: unknown }
-  ): Promise<Uint8Array>;
-
-  /**
-   * Gets ethAddress by kmsKeyId
-   * @returns {Promise<string>} Public key as a hex string
-   */
-  getEthAddress(keyId: KmsKeyId): Promise<string>;
 }
