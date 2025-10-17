@@ -30,16 +30,7 @@ export type JoseParams = {
  * @class JoseService
  */
 export class JoseService {
-  resolveKeyByKid?: (kid: string) => Promise<CryptoKey>;
-  kms?: KMS;
-
-  constructor(params: { resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>; kms?: KMS }) {
-    if (!params.resolvePrivateKeyByKid && !params.kms) {
-      throw new Error('Either resolvePrivateKeyByKid or kms must be provided');
-    }
-    this.resolveKeyByKid = params?.resolvePrivateKeyByKid;
-    this.kms = params?.kms;
-  }
+  constructor(private readonly resolvePrivateKeyByKid: (kid: string) => Promise<CryptoKey>) {}
 
   async encrypt(msg: Uint8Array, options: JoseParams): Promise<GeneralJWE> {
     const { enc, typ, recipients } = options;
@@ -64,7 +55,7 @@ export class JoseService {
       if (!kid) {
         throw new Error('kid is required');
       }
-      return this.resolveKey(kid);
+      return this.resolvePrivateKeyByKid(kid);
     };
 
     if (Object.prototype.hasOwnProperty.call(data, 'encrypted_key')) {
@@ -77,37 +68,6 @@ export class JoseService {
       return flattenedDecrypt(data as FlattenedJWE, getKey);
     }
     return generalDecrypt(data as GeneralJWE, getKey);
-  }
-
-  private async resolveKey(kid: string): Promise<CryptoKey> {
-    if (this.resolveKeyByKid) {
-      return this.resolveKeyByKid(kid);
-    }
-    if (!this.kms) {
-      throw new Error('Either resolvePrivateKeyByKid or kms must be provided to JoseService');
-    }
-
-    const [, alias] = kid.split('#');
-
-    if (!alias) {
-      throw new Error('Missing key identifier');
-    }
-    const [keyType] = alias.split(':');
-
-    if (!keyType) {
-      throw new Error('Missing key type in alias for default key resolver');
-    }
-
-    const pkStore = await this.kms.getKeyProvider(keyType as KmsKeyType)?.getPkStore();
-    if (!pkStore) {
-      throw new Error(`Key provider not found for ${keyType}`);
-    }
-
-    try {
-      return JSON.parse(await pkStore.get({ alias })) as CryptoKey;
-    } catch (error) {
-      throw new Error(`Key not found for ${alias}`);
-    }
   }
 
   private removeDuplicates = (

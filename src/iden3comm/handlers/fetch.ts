@@ -412,7 +412,11 @@ export class FetchHandler
       ...JSON.parse(byteDecoder.decode(plaintext)),
       proof: message.body.proof
     });
+
+    // TODO validate proofs on decrypted credential
+
     await this.opts?.credentialWallet.save(credential);
+
     return credential;
   }
 
