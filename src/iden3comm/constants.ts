@@ -57,7 +57,10 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   DISCOVERY_PROTOCOL_DISCLOSE_MESSAGE_TYPE:
     `${DIDCOMM_PROTOCOL}discover-features/2.0/disclose` as const,
   // ProblemReportMessageType is type for didcomm problem report
-  PROBLEM_REPORT_MESSAGE_TYPE: `${DIDCOMM_PROTOCOL}report-problem/2.0/problem-report` as const
+  PROBLEM_REPORT_MESSAGE_TYPE: `${DIDCOMM_PROTOCOL}report-problem/2.0/problem-report` as const,
+  // EncryptedCredentialIssuanceResponseMessageType is type for encrypted credential issuance
+  ENCRYPTED_CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE:
+    `${IDEN3_PROTOCOL}credentials/0.1/encrypted-issuance-response` as const
 });
 
 /**

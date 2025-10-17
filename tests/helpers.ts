@@ -36,7 +36,8 @@ import {
   CircuitId,
   AnonCryptPacker,
   JoseService,
-  RsaOAEPKeyProvider
+  RsaOAEPKeyProvider,
+  DefaultKMSKeyResolver
 } from '../src';
 import { proving } from '@iden3/js-jwz';
 import { JsonRpcProvider } from 'ethers';
@@ -227,7 +228,10 @@ export const getInMemoryDataStorage = (states: IStateStorage) => {
 export const getPackageMgr = async (
   circuitData: CircuitData,
   prepareFn: AuthDataPrepareFunc,
-  stateVerificationFn: StateVerificationFunc
+  stateVerificationFn: StateVerificationFunc,
+  opts?: {
+    resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>;
+  }
 ): Promise<IPackageManager> => {
   const authInputsHandler = new DataPrepareHandlerFunc(prepareFn);
 
@@ -271,7 +275,12 @@ export const getPackageMgr = async (
       didDocument: {}
     })
   } as unknown as Resolvable;
-  const anonCryptPacker = new AnonCryptPacker(new JoseService(), kms, resolver);
+
+  const joseService = new JoseService(
+    opts?.resolvePrivateKeyByKid || new DefaultKMSKeyResolver(kms).resolvePrivateKeyByKid
+  );
+
+  const anonCryptPacker = new AnonCryptPacker(joseService, resolver);
   mgr.registerPackers([packer, plainPacker, anonCryptPacker]);
 
   return mgr;

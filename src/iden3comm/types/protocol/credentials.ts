@@ -1,3 +1,4 @@
+import { FlattenedJWE, GeneralJWE } from 'jose';
 import { W3CCredential } from '../../../verifiable';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
 import { BasicMessage, JsonDocumentObject, RequiredBasicMessage } from '../packer';
@@ -93,4 +94,19 @@ export type CredentialRefreshMessage = RequiredBasicMessage & {
 export type CredentialRefreshMessageBody = {
   id: string;
   reason: string;
+};
+
+/** EncryptedCredentialIssuanceMessage represent Iden3message for encrypted credential issuance */
+export type EncryptedCredentialIssuanceMessage = RequiredBasicMessage & {
+  body: EncryptedIssuanceMessageBody;
+  type: typeof PROTOCOL_MESSAGE_TYPE.ENCRYPTED_CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE;
+};
+
+/** EncryptedIssuanceMessageBody is struct the represents message when encrypted credential is issued */
+export type EncryptedIssuanceMessageBody = {
+  id: string;
+  data: GeneralJWE | FlattenedJWE;
+  type: string;
+  context: string;
+  proof: object | unknown[];
 };
