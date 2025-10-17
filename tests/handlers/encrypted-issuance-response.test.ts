@@ -77,8 +77,8 @@ describe('auth', () => {
       dirname: path.join(__dirname, '../proofs/testdata')
     });
 
-    const resolverURL = 'http://127.0.0.1:8080';
-    nock(resolverURL)
+    const didResolverUrl = 'http://127.0.0.1:8080';
+    nock(didResolverUrl)
       .get(
         // eslint-disable-next-line @cspell/spellchecker
         '/did%3Aiden3%3Apolygon%3Aamoy%3AxCRp75DgAdS63W65fmXHz6p9DwdonuRU9e46DifhX'
@@ -176,10 +176,11 @@ describe('auth', () => {
     joseService = new JoseService(pkFunc);
     fetchHandler = new FetchHandler(packageMgr, {
       credentialWallet: credWallet,
-      documentLoader: schemaLoaderForTests(),
+      merklizeOptions: {
+        documentLoader: schemaLoaderForTests()
+      },
       joseService,
-      resolverURL,
-      credStatusResolverRegistry: resolvers
+      didResolverUrl
     });
 
     authHandler = new AuthHandler(packageMgr, proofService);

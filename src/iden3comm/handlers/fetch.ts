@@ -32,7 +32,7 @@ import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from
 import { IOnchainIssuer } from '../../storage';
 import { JoseService } from '../services/jose';
 import { FlattenedJWE, GeneralJWE } from 'jose';
-import { DocumentLoader } from '@iden3/js-jsonld-merklization';
+import { Options } from '@iden3/js-jsonld-merklization';
 
 /**
  *
@@ -137,9 +137,8 @@ export class FetchHandler
     private readonly _packerMgr: IPackageManager,
     private readonly opts?: {
       credentialWallet?: ICredentialWallet;
-      resolverURL?: string;
-      documentLoader?: DocumentLoader;
-      credStatusResolverRegistry?: CredentialStatusResolverRegistry;
+      didResolverUrl?: string;
+      merklizeOptions?: Options;
       onchainIssuer?: IOnchainIssuer;
       joseService?: JoseService;
     }
@@ -426,27 +425,24 @@ export class FetchHandler
         'please provide credential wallet in options for encrypted issuance response handling'
       );
     }
-    if (!this.opts?.resolverURL) {
+    if (!this.opts?.didResolverUrl) {
       throw new Error(
         'please provide resolver URL in options for encrypted issuance response handling'
       );
     }
-    if (!this.opts?.documentLoader) {
-      throw new Error(
-        'please provide document loader in options for encrypted issuance response handling'
-      );
-    }
-    if (!this.opts?.credStatusResolverRegistry) {
-      throw new Error(
-        'please provide credential status resolver registry in options for encrypted issuance response handling'
-      );
+    if (!this.opts?.merklizeOptions) {
+      throw new Error('please provide merklize options for encrypted issuance response handling');
     }
 
-    const isValid = await credential.verifyProofs(this.opts.resolverURL, {
-      credStatusResolverRegistry: this.opts.credStatusResolverRegistry,
-      merklizeOptions: {
-        documentLoader: this.opts.documentLoader
-      }
+    const credStatusResolverRegistry =
+      this.opts.credentialWallet.getCredentialStatusResolverRegistry();
+    if (!credStatusResolverRegistry) {
+      throw new Error('credential status resolver registry is not available in credential wallet');
+    }
+
+    const isValid = await credential.verifyProofs(this.opts.didResolverUrl, {
+      credStatusResolverRegistry,
+      merklizeOptions: this.opts.merklizeOptions
     });
     if (!isValid) {
       throw new Error('credential proof verification failed');
