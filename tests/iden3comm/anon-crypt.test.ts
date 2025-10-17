@@ -19,7 +19,9 @@ import {
   defaultRSAOaepKmsIdPathGeneratingFunction,
   keyPath,
   toPublicKeyJwk,
-  byteEncoder
+  byteEncoder,
+  DefaultKMSKeyResolver,
+  KmsKeyType
 } from '../../src';
 import { describe, it, expect } from 'vitest';
 import { DIDResolutionResult, JsonWebKey, Resolvable } from 'did-resolver';
@@ -154,10 +156,10 @@ describe('AnonCrypt packer tests', () => {
     const kms = new KMS();
     kms.registerKeyProvider(kmsProvider.keyType, kmsProvider);
 
-    const joseService = new JoseService({
-      resolvePrivateKeyByKid: resolvePrivateKeyByKidFactory?.(kmsProvider),
-      kms
-    });
+    const defaultKMSKeyResolver = new DefaultKMSKeyResolver(kms);
+    const joseService = new JoseService(
+      resolvePrivateKeyByKidFactory?.(kmsProvider) || defaultKMSKeyResolver.resolvePrivateKeyByKid
+    );
 
     const packer = new AnonCryptPacker(joseService, resolver);
     const packerManager = new PackageManager();
@@ -335,10 +337,8 @@ describe('AnonCrypt packer tests', () => {
 
     const expectedMessage = `{"id":"8589c266-f5f4-4a80-8fc8-c1ad4de3e3b4","thid":"43246acb-b772-414e-9c90-f36b37261000","typ":"application/iden3comm-encrypted-json","type":"https://iden3-communication.io/passport/0.1/verification-request","from":"did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49","to":"did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT"}`;
 
-    const joseService = new JoseService({
-      resolvePrivateKeyByKid: () => {
-        return Promise.resolve(endUserData.pkJwk as unknown as CryptoKey);
-      }
+    const joseService = new JoseService(() => {
+      return Promise.resolve(endUserData.pkJwk as unknown as CryptoKey);
     });
     const jwe = await joseService.decrypt(golangGWE);
 
@@ -363,21 +363,19 @@ describe('AnonCrypt packer tests', () => {
       tag: 'G3i_v-TS67ch_9__GHQJBQ'
     };
 
-    const joseService = new JoseService({
-      resolvePrivateKeyByKid: () => {
-        return Promise.resolve({
-          kty: 'RSA',
-          n: 'oJ_RM4-dKCwAm_iXCDBzSABwOr5eOCrTVzlLikx0dK1BoO8ilHr9Yx7F3F5Q5exZ6g_lz_5YKSQ31ZNWjAjLOZnRvLkXGA2p_lfFNGGDsW7Xw2OvVy-kX7Y-O1Yn6rGW-ZMCslcc4hdHQbrBa3MdwLFDfAMcHDfZYWOVhU3brGIr0cmXRfZ6U-1hPT-3K_rwCknbiir8GivoLXinIad95JNwyIUytfBc-New_PrcUYoDQH6GI6bu8m2_ya3QuGIR-Lgn5HGcXtd9Lw9qnMc31EcJMKyG1KxMAVUFcoyADDskRCDfd-PWr50Upx_F9V3PE9e7ZOrXRn_hQF0XYG-MGQ',
-          e: 'AQAB',
-          d: 'CLsjNaKp8-Hvbwr8V7Q9gfWPJCxOpg4y4ngBco0tG94Clh9FkY1dambE8dF5I4RdT1cpomyUiXj35X6-qro8JL-HGnNzrUmp2sLV2_7seAe6x_rKUEqNTGwVNie83_mjB6IteHj6f5ItHAYtJxxw6rVgAhTPsXt6MBxoB2DX7ubpmLPzqyTjE_teVjyrj9i9JZ-W1kRMbLWuALviZbrrtEHdEBKaRvtaeWcf5MHuGHw2RCTHhoHzty8NHasdwSsu0t1dL-88ulxDgK9EdYOHZ17dkmNrrUCq0wpa1_InbV_JC9BoN6Fw7_22M67Suq2v9JUg_K4kid45Vumvn_Mq4Q',
-          p: '2kgLhksExewH6ukrXwIMRdKNGRZwWDfprtxjiXW6qg_Qtlo-NX1NUZCilbKAqhYpPdEq2UFElhcF7e1cDkZkhYUQKcOnn_80vWPfoVD8LykDaaNA_E7p1sc78hfm3pKq6AJ26X_qRvV2x0nyFT6S5WykvlRIWRxvr66Y25y192E',
-          q: 'vGE8VBMc4L7IExssUN5bSPidzH8FB9yJw--i8cYGLns-Exqy3XO78GCgvB4yKjmz_M5aMZM9FFqJmbPYI2u3STQNvuv8Fss7YqMYWVLWIi2lzx_5e2_coNB7zfn7yyu9R900Nl9WUlWz2Qtu9yXX-RfT_aBr7wg0z3oIP5BAJ7k',
-          dp: 'j-vOxXXzKLiuo8GnmhYUl3jzFWaJHnGHP4cKjhi0wep5l7I6sDP05eGygXdXhE3mVV7znJl_KmL1wuGsv7DEGJEajh72B_VSBcmzKn7mOAYXvPAqKfGyFq34pXADBh-4Vg9B7kUr6CtybIYh-sXuPxz6JpAVv8OTFEfPe4WBKSE',
-          dq: 'V3Zd6DsngUGS6ywGm1Vh1LN5sGSZFVlTrWEpqk9it1oJLB2NRjxh2e1DM5RhfjFkW9ADGFlgVn7ivDY_99IfOyGr8CTo2jxpyhYnS_Gl8iB3h380-hapvRCPKscSHPal3yPZBhWlonygD_m6_4zWhZSGnI9LDaQlwN7LzZdP8iE',
-          qi: 'rOj_Zb2hTI1Q-K93QDYEvcyaiE266_MbEhqYWOWOik5J2XAmIcb7ns1rNVfJyLXEeu584SZcs0LCwxTZB-nKKcyTbTqKZP9QanjXGZn6jZprt0J5s4PmZPonAFuM8DgpPUJQwKUTlxVPdSm_TtgxC7hbRrhzjGFduROXu_iltZU',
-          alg: 'RSA-OAEP-256'
-        } as unknown as CryptoKey);
-      }
+    const joseService = new JoseService(() => {
+      return Promise.resolve({
+        kty: 'RSA',
+        n: 'oJ_RM4-dKCwAm_iXCDBzSABwOr5eOCrTVzlLikx0dK1BoO8ilHr9Yx7F3F5Q5exZ6g_lz_5YKSQ31ZNWjAjLOZnRvLkXGA2p_lfFNGGDsW7Xw2OvVy-kX7Y-O1Yn6rGW-ZMCslcc4hdHQbrBa3MdwLFDfAMcHDfZYWOVhU3brGIr0cmXRfZ6U-1hPT-3K_rwCknbiir8GivoLXinIad95JNwyIUytfBc-New_PrcUYoDQH6GI6bu8m2_ya3QuGIR-Lgn5HGcXtd9Lw9qnMc31EcJMKyG1KxMAVUFcoyADDskRCDfd-PWr50Upx_F9V3PE9e7ZOrXRn_hQF0XYG-MGQ',
+        e: 'AQAB',
+        d: 'CLsjNaKp8-Hvbwr8V7Q9gfWPJCxOpg4y4ngBco0tG94Clh9FkY1dambE8dF5I4RdT1cpomyUiXj35X6-qro8JL-HGnNzrUmp2sLV2_7seAe6x_rKUEqNTGwVNie83_mjB6IteHj6f5ItHAYtJxxw6rVgAhTPsXt6MBxoB2DX7ubpmLPzqyTjE_teVjyrj9i9JZ-W1kRMbLWuALviZbrrtEHdEBKaRvtaeWcf5MHuGHw2RCTHhoHzty8NHasdwSsu0t1dL-88ulxDgK9EdYOHZ17dkmNrrUCq0wpa1_InbV_JC9BoN6Fw7_22M67Suq2v9JUg_K4kid45Vumvn_Mq4Q',
+        p: '2kgLhksExewH6ukrXwIMRdKNGRZwWDfprtxjiXW6qg_Qtlo-NX1NUZCilbKAqhYpPdEq2UFElhcF7e1cDkZkhYUQKcOnn_80vWPfoVD8LykDaaNA_E7p1sc78hfm3pKq6AJ26X_qRvV2x0nyFT6S5WykvlRIWRxvr66Y25y192E',
+        q: 'vGE8VBMc4L7IExssUN5bSPidzH8FB9yJw--i8cYGLns-Exqy3XO78GCgvB4yKjmz_M5aMZM9FFqJmbPYI2u3STQNvuv8Fss7YqMYWVLWIi2lzx_5e2_coNB7zfn7yyu9R900Nl9WUlWz2Qtu9yXX-RfT_aBr7wg0z3oIP5BAJ7k',
+        dp: 'j-vOxXXzKLiuo8GnmhYUl3jzFWaJHnGHP4cKjhi0wep5l7I6sDP05eGygXdXhE3mVV7znJl_KmL1wuGsv7DEGJEajh72B_VSBcmzKn7mOAYXvPAqKfGyFq34pXADBh-4Vg9B7kUr6CtybIYh-sXuPxz6JpAVv8OTFEfPe4WBKSE',
+        dq: 'V3Zd6DsngUGS6ywGm1Vh1LN5sGSZFVlTrWEpqk9it1oJLB2NRjxh2e1DM5RhfjFkW9ADGFlgVn7ivDY_99IfOyGr8CTo2jxpyhYnS_Gl8iB3h380-hapvRCPKscSHPal3yPZBhWlonygD_m6_4zWhZSGnI9LDaQlwN7LzZdP8iE',
+        qi: 'rOj_Zb2hTI1Q-K93QDYEvcyaiE266_MbEhqYWOWOik5J2XAmIcb7ns1rNVfJyLXEeu584SZcs0LCwxTZB-nKKcyTbTqKZP9QanjXGZn6jZprt0J5s4PmZPonAFuM8DgpPUJQwKUTlxVPdSm_TtgxC7hbRrhzjGFduROXu_iltZU',
+        alg: 'RSA-OAEP-256'
+      } as unknown as CryptoKey);
     });
 
     const packer = new AnonCryptPacker(joseService, {
@@ -410,21 +408,19 @@ describe('AnonCrypt packer tests', () => {
       tag: 'rbUb5eW4Hgng-AMd-OPxeQ'
     };
 
-    const joseService = new JoseService({
-      resolvePrivateKeyByKid: () => {
-        return Promise.resolve({
-          kty: 'RSA',
-          n: 'oJ_RM4-dKCwAm_iXCDBzSABwOr5eOCrTVzlLikx0dK1BoO8ilHr9Yx7F3F5Q5exZ6g_lz_5YKSQ31ZNWjAjLOZnRvLkXGA2p_lfFNGGDsW7Xw2OvVy-kX7Y-O1Yn6rGW-ZMCslcc4hdHQbrBa3MdwLFDfAMcHDfZYWOVhU3brGIr0cmXRfZ6U-1hPT-3K_rwCknbiir8GivoLXinIad95JNwyIUytfBc-New_PrcUYoDQH6GI6bu8m2_ya3QuGIR-Lgn5HGcXtd9Lw9qnMc31EcJMKyG1KxMAVUFcoyADDskRCDfd-PWr50Upx_F9V3PE9e7ZOrXRn_hQF0XYG-MGQ',
-          e: 'AQAB',
-          d: 'CLsjNaKp8-Hvbwr8V7Q9gfWPJCxOpg4y4ngBco0tG94Clh9FkY1dambE8dF5I4RdT1cpomyUiXj35X6-qro8JL-HGnNzrUmp2sLV2_7seAe6x_rKUEqNTGwVNie83_mjB6IteHj6f5ItHAYtJxxw6rVgAhTPsXt6MBxoB2DX7ubpmLPzqyTjE_teVjyrj9i9JZ-W1kRMbLWuALviZbrrtEHdEBKaRvtaeWcf5MHuGHw2RCTHhoHzty8NHasdwSsu0t1dL-88ulxDgK9EdYOHZ17dkmNrrUCq0wpa1_InbV_JC9BoN6Fw7_22M67Suq2v9JUg_K4kid45Vumvn_Mq4Q',
-          p: '2kgLhksExewH6ukrXwIMRdKNGRZwWDfprtxjiXW6qg_Qtlo-NX1NUZCilbKAqhYpPdEq2UFElhcF7e1cDkZkhYUQKcOnn_80vWPfoVD8LykDaaNA_E7p1sc78hfm3pKq6AJ26X_qRvV2x0nyFT6S5WykvlRIWRxvr66Y25y192E',
-          q: 'vGE8VBMc4L7IExssUN5bSPidzH8FB9yJw--i8cYGLns-Exqy3XO78GCgvB4yKjmz_M5aMZM9FFqJmbPYI2u3STQNvuv8Fss7YqMYWVLWIi2lzx_5e2_coNB7zfn7yyu9R900Nl9WUlWz2Qtu9yXX-RfT_aBr7wg0z3oIP5BAJ7k',
-          dp: 'j-vOxXXzKLiuo8GnmhYUl3jzFWaJHnGHP4cKjhi0wep5l7I6sDP05eGygXdXhE3mVV7znJl_KmL1wuGsv7DEGJEajh72B_VSBcmzKn7mOAYXvPAqKfGyFq34pXADBh-4Vg9B7kUr6CtybIYh-sXuPxz6JpAVv8OTFEfPe4WBKSE',
-          dq: 'V3Zd6DsngUGS6ywGm1Vh1LN5sGSZFVlTrWEpqk9it1oJLB2NRjxh2e1DM5RhfjFkW9ADGFlgVn7ivDY_99IfOyGr8CTo2jxpyhYnS_Gl8iB3h380-hapvRCPKscSHPal3yPZBhWlonygD_m6_4zWhZSGnI9LDaQlwN7LzZdP8iE',
-          qi: 'rOj_Zb2hTI1Q-K93QDYEvcyaiE266_MbEhqYWOWOik5J2XAmIcb7ns1rNVfJyLXEeu584SZcs0LCwxTZB-nKKcyTbTqKZP9QanjXGZn6jZprt0J5s4PmZPonAFuM8DgpPUJQwKUTlxVPdSm_TtgxC7hbRrhzjGFduROXu_iltZU',
-          alg: 'RSA-OAEP-256'
-        } as unknown as CryptoKey);
-      }
+    const joseService = new JoseService(() => {
+      return Promise.resolve({
+        kty: 'RSA',
+        n: 'oJ_RM4-dKCwAm_iXCDBzSABwOr5eOCrTVzlLikx0dK1BoO8ilHr9Yx7F3F5Q5exZ6g_lz_5YKSQ31ZNWjAjLOZnRvLkXGA2p_lfFNGGDsW7Xw2OvVy-kX7Y-O1Yn6rGW-ZMCslcc4hdHQbrBa3MdwLFDfAMcHDfZYWOVhU3brGIr0cmXRfZ6U-1hPT-3K_rwCknbiir8GivoLXinIad95JNwyIUytfBc-New_PrcUYoDQH6GI6bu8m2_ya3QuGIR-Lgn5HGcXtd9Lw9qnMc31EcJMKyG1KxMAVUFcoyADDskRCDfd-PWr50Upx_F9V3PE9e7ZOrXRn_hQF0XYG-MGQ',
+        e: 'AQAB',
+        d: 'CLsjNaKp8-Hvbwr8V7Q9gfWPJCxOpg4y4ngBco0tG94Clh9FkY1dambE8dF5I4RdT1cpomyUiXj35X6-qro8JL-HGnNzrUmp2sLV2_7seAe6x_rKUEqNTGwVNie83_mjB6IteHj6f5ItHAYtJxxw6rVgAhTPsXt6MBxoB2DX7ubpmLPzqyTjE_teVjyrj9i9JZ-W1kRMbLWuALviZbrrtEHdEBKaRvtaeWcf5MHuGHw2RCTHhoHzty8NHasdwSsu0t1dL-88ulxDgK9EdYOHZ17dkmNrrUCq0wpa1_InbV_JC9BoN6Fw7_22M67Suq2v9JUg_K4kid45Vumvn_Mq4Q',
+        p: '2kgLhksExewH6ukrXwIMRdKNGRZwWDfprtxjiXW6qg_Qtlo-NX1NUZCilbKAqhYpPdEq2UFElhcF7e1cDkZkhYUQKcOnn_80vWPfoVD8LykDaaNA_E7p1sc78hfm3pKq6AJ26X_qRvV2x0nyFT6S5WykvlRIWRxvr66Y25y192E',
+        q: 'vGE8VBMc4L7IExssUN5bSPidzH8FB9yJw--i8cYGLns-Exqy3XO78GCgvB4yKjmz_M5aMZM9FFqJmbPYI2u3STQNvuv8Fss7YqMYWVLWIi2lzx_5e2_coNB7zfn7yyu9R900Nl9WUlWz2Qtu9yXX-RfT_aBr7wg0z3oIP5BAJ7k',
+        dp: 'j-vOxXXzKLiuo8GnmhYUl3jzFWaJHnGHP4cKjhi0wep5l7I6sDP05eGygXdXhE3mVV7znJl_KmL1wuGsv7DEGJEajh72B_VSBcmzKn7mOAYXvPAqKfGyFq34pXADBh-4Vg9B7kUr6CtybIYh-sXuPxz6JpAVv8OTFEfPe4WBKSE',
+        dq: 'V3Zd6DsngUGS6ywGm1Vh1LN5sGSZFVlTrWEpqk9it1oJLB2NRjxh2e1DM5RhfjFkW9ADGFlgVn7ivDY_99IfOyGr8CTo2jxpyhYnS_Gl8iB3h380-hapvRCPKscSHPal3yPZBhWlonygD_m6_4zWhZSGnI9LDaQlwN7LzZdP8iE',
+        qi: 'rOj_Zb2hTI1Q-K93QDYEvcyaiE266_MbEhqYWOWOik5J2XAmIcb7ns1rNVfJyLXEeu584SZcs0LCwxTZB-nKKcyTbTqKZP9QanjXGZn6jZprt0J5s4PmZPonAFuM8DgpPUJQwKUTlxVPdSm_TtgxC7hbRrhzjGFduROXu_iltZU',
+        alg: 'RSA-OAEP-256'
+      } as unknown as CryptoKey);
     });
 
     const packer = new AnonCryptPacker(joseService, {
@@ -434,6 +430,79 @@ describe('AnonCrypt packer tests', () => {
     } as unknown as Resolvable);
     const message = await packer.unpack(byteEncoder.encode(JSON.stringify(golangGWE)));
     console.log('message', JSON.stringify(message));
+    const expectedMessage = {
+      id: '8589c266-f5f4-4a80-8fc8-c1ad4de3e3b4',
+      thid: '43246acb-b772-414e-9c90-f36b37261000',
+      typ: 'application/iden3comm-encrypted-json',
+      type: 'https://iden3-communication.io/passport/0.1/verification-request',
+      from: 'did:iden3:polygon:amoy:x6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49',
+      to: 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT'
+    };
+    expect(message).to.be.deep.equal(expectedMessage);
+  });
+
+  it('Check default kms is working', async () => {
+    const golangGWE: GeneralJWE = {
+      ciphertext:
+        'Y4JTGPfMcb_qroeLzSLAHl1A18sjI0sQhNOyEh0NPY99meVAQlYvTIs9-bKJ8vnZPpGJe7nWkuMi8I-FSKeOdxPruHGWHiRLVUxVHhtqRmxJ9_18fgMzbldUn9np49j03ooTiYn2pAFEvwpFyQh9SC35CB8Mqr4gTqUfk6LTVde7hyM5k6STNf5NmYtr5LOoT_OYawblk2SyO0654U6DH7x-rYIgZvY3LJYYVSvi4GmJ5vOzm-KPcnDrdzd1MO8E0eFObqlNTInhXWOAypNGEypj_cMS8ofg7F1B7HvIvV8NZS3ZKuDthf9c5siQPe5PgsZjv7UfuojEJAltgwBG8lHW_dPF7-Sg1qO5zdnxpqI3ZHdhOWZYfs2a7rxHvkfXfd-Xlf5AgxcZVYujMJRFVF_2PzGm7rgC5SKgFmzLHkQzH0xGqTdYJ9RI8ybWecHSS-lY-IUAe7Q4uZiSmV-utkpW3DnYuHbFQvFm14yMegk',
+      iv: 'vMUyUg-JL5Yg4ELKiMgC3g',
+      protected:
+        'eyJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwidHlwIjoiYXBwbGljYXRpb24vaWRlbjNjb21tLWVuY3J5cHRlZC1qc29uIn0',
+      recipients: [
+        {
+          header: {
+            alg: 'RSA-OAEP-256',
+            kid: 'did:iden3:billions:test:2VxnoiNqdMPyHMtUwAEzhnWqXGkEeJpAp4ntTkL8XT#RSA-OAEP-256:0x506f983a3fffac7f9bd934cdde71f2979887633ef445745cccf391555778e5b7'
+          },
+          encrypted_key:
+            'MxL85rOkjNPFPJKL57QhQV7ZT9BbW07DPoYi_VjeyWWBRjrUNZjKHoauPu_DAf038Sw0vIATzsZGot32znvdUTIyF-hI4YiI_qqb8Bh9tPYBaB4wilIrOaWgRUrhfw8cJpH4iRJTieOfPZPPtfhziOLPAv3M6PQERnl6e9Rnq3Woss5F64NXjJo-6oReqS5OY6MsEYEgTpXfLF2ibbZB-siGnaY-tpvBgZSTagnDJgbO-uexEqdJCI-Q2IjIE5-9NPilGhp9NE3pednpzDdEREplcoti7yH3l3Ecc9rd6YU9ptaXEBv4RYrMwJ_f8IrA_-k6zbgpORclMvsSIG92-Q'
+        },
+        {
+          header: {
+            alg: 'RSA-OAEP-256',
+            kid: 'did:iden3:polygon:amoy:A6x5sor7zpxUwajVSoHGg8aAhoHNoAW1xFDTPCF49#key1'
+          },
+          encrypted_key:
+            'DW69p8e2ZSHbmRKRWoZSctF-Eq0Q22pguIFbjqzMoJ7F95h8NYlpswg9JzOL8cb_ns6gi-YuKT2X_R2Y4RcNAjshZvJVtXbVRxm238fN3BQM2LSP0UoaAsXURtpUJjeXmjBQEeo61K9Mn9oxWZHk65dXpuo-cuWDpfXT3WEV_e878kWI5Qp99L2xRQ4Z-XVMi4XREWawHEk8P2F05K-0ppoQCD5zxpAoLIrAKeMYdCT3i6_VC73qhrKgzYf38YLxASzsXF-aQfAMLraZErMyAEUuaAEtS2i5C_jfpvknLtn-iba8p9bUVQhmAA9pGX1mbX6JovU2cz1ZK1OFMjvC7A'
+        }
+      ],
+      tag: '7Z6lWhskArqKPNkjoVEudv3dxwAjqYsksLudkhLjM3I'
+    };
+
+    const privateKey = {
+      kty: 'RSA',
+      n: 'oJ_RM4-dKCwAm_iXCDBzSABwOr5eOCrTVzlLikx0dK1BoO8ilHr9Yx7F3F5Q5exZ6g_lz_5YKSQ31ZNWjAjLOZnRvLkXGA2p_lfFNGGDsW7Xw2OvVy-kX7Y-O1Yn6rGW-ZMCslcc4hdHQbrBa3MdwLFDfAMcHDfZYWOVhU3brGIr0cmXRfZ6U-1hPT-3K_rwCknbiir8GivoLXinIad95JNwyIUytfBc-New_PrcUYoDQH6GI6bu8m2_ya3QuGIR-Lgn5HGcXtd9Lw9qnMc31EcJMKyG1KxMAVUFcoyADDskRCDfd-PWr50Upx_F9V3PE9e7ZOrXRn_hQF0XYG-MGQ',
+      e: 'AQAB',
+      d: 'CLsjNaKp8-Hvbwr8V7Q9gfWPJCxOpg4y4ngBco0tG94Clh9FkY1dambE8dF5I4RdT1cpomyUiXj35X6-qro8JL-HGnNzrUmp2sLV2_7seAe6x_rKUEqNTGwVNie83_mjB6IteHj6f5ItHAYtJxxw6rVgAhTPsXt6MBxoB2DX7ubpmLPzqyTjE_teVjyrj9i9JZ-W1kRMbLWuALviZbrrtEHdEBKaRvtaeWcf5MHuGHw2RCTHhoHzty8NHasdwSsu0t1dL-88ulxDgK9EdYOHZ17dkmNrrUCq0wpa1_InbV_JC9BoN6Fw7_22M67Suq2v9JUg_K4kid45Vumvn_Mq4Q',
+      p: '2kgLhksExewH6ukrXwIMRdKNGRZwWDfprtxjiXW6qg_Qtlo-NX1NUZCilbKAqhYpPdEq2UFElhcF7e1cDkZkhYUQKcOnn_80vWPfoVD8LykDaaNA_E7p1sc78hfm3pKq6AJ26X_qRvV2x0nyFT6S5WykvlRIWRxvr66Y25y192E',
+      q: 'vGE8VBMc4L7IExssUN5bSPidzH8FB9yJw--i8cYGLns-Exqy3XO78GCgvB4yKjmz_M5aMZM9FFqJmbPYI2u3STQNvuv8Fss7YqMYWVLWIi2lzx_5e2_coNB7zfn7yyu9R900Nl9WUlWz2Qtu9yXX-RfT_aBr7wg0z3oIP5BAJ7k',
+      dp: 'j-vOxXXzKLiuo8GnmhYUl3jzFWaJHnGHP4cKjhi0wep5l7I6sDP05eGygXdXhE3mVV7znJl_KmL1wuGsv7DEGJEajh72B_VSBcmzKn7mOAYXvPAqKfGyFq34pXADBh-4Vg9B7kUr6CtybIYh-sXuPxz6JpAVv8OTFEfPe4WBKSE',
+      dq: 'V3Zd6DsngUGS6ywGm1Vh1LN5sGSZFVlTrWEpqk9it1oJLB2NRjxh2e1DM5RhfjFkW9ADGFlgVn7ivDY_99IfOyGr8CTo2jxpyhYnS_Gl8iB3h380-hapvRCPKscSHPal3yPZBhWlonygD_m6_4zWhZSGnI9LDaQlwN7LzZdP8iE',
+      qi: 'rOj_Zb2hTI1Q-K93QDYEvcyaiE266_MbEhqYWOWOik5J2XAmIcb7ns1rNVfJyLXEeu584SZcs0LCwxTZB-nKKcyTbTqKZP9QanjXGZn6jZprt0J5s4PmZPonAFuM8DgpPUJQwKUTlxVPdSm_TtgxC7hbRrhzjGFduROXu_iltZU',
+      alg: 'RSA-OAEP-256'
+    };
+    const publicKey = toPublicKeyJwk(JSON.stringify(privateKey), KmsKeyType.RsaOaep256);
+
+    const kmsId = {
+      type: KmsKeyType.RsaOaep256,
+      id: keyPath(KmsKeyType.RsaOaep256, defaultRSAOaepKmsIdPathGeneratingFunction(publicKey))
+    };
+
+    const store = new InMemoryPrivateKeyStore();
+    store.importKey({ key: JSON.stringify(privateKey), alias: kmsId.id });
+
+    const kms = new KMS();
+    kms.registerKeyProvider(KmsKeyType.RsaOaep256, new RsaOAEPKeyProvider(store));
+
+    const defaultKMSKeyResolver = new DefaultKMSKeyResolver(kms);
+    const joseService = new JoseService(defaultKMSKeyResolver.resolvePrivateKeyByKid);
+
+    const packer = new AnonCryptPacker(joseService, {
+      resolve: async () => ({
+        undefined
+      })
+    } as unknown as Resolvable);
+    const message = await packer.unpack(byteEncoder.encode(JSON.stringify(golangGWE)));
     const expectedMessage = {
       id: '8589c266-f5f4-4a80-8fc8-c1ad4de3e3b4',
       thid: '43246acb-b772-414e-9c90-f36b37261000',

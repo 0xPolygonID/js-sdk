@@ -160,7 +160,7 @@ describe('auth', () => {
       proofService.verifyState.bind(proofService)
     );
 
-    joseService = new JoseService({ kms, resolvePrivateKeyByKid: pkFunc });
+    joseService = new JoseService(pkFunc);
     fetchHandler = new FetchHandler(packageMgr, {
       credentialWallet: credWallet,
       joseService
