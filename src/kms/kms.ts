@@ -1,4 +1,4 @@
-import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType, TypedData } from './store';
+import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from './store';
 
 /**
  * KeyProvider is responsible for signing and creation of the keys

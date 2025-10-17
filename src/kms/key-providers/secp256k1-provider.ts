@@ -1,5 +1,5 @@
 import { IKeyProvider } from '../kms';
-import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType, TypedData } from '../store';
+import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 import * as providerHelpers from '../provider-helpers';
 import { base64UrlToBytes, bytesToHex } from '../../utils';
 import { secp256k1 } from '@noble/curves/secp256k1';
