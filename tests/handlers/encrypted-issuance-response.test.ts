@@ -51,6 +51,7 @@ import { schemaLoaderForTests } from '../mocks/schema';
 import * as uuid from 'uuid';
 import { DIDDocument, Resolvable } from 'did-resolver';
 import { Options } from '@iden3/js-jsonld-merklization';
+import nock from 'nock';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -75,6 +76,18 @@ describe('auth', () => {
     const circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, '../proofs/testdata')
     });
+
+    const resolverURL = 'http://127.0.0.1:8080';
+    nock(resolverURL)
+      .get(
+        // eslint-disable-next-line @cspell/spellchecker
+        '/did%3Aiden3%3Apolygon%3Aamoy%3AxCRp75DgAdS63W65fmXHz6p9DwdonuRU9e46DifhX'
+      )
+      .query(true)
+      .reply(
+        200,
+        `{"@context":"https://w3id.org/did-resolution/v1","didDocument":{"@context":["https://www.w3.org/ns/did/v1","https://schema.iden3.io/core/jsonld/auth.jsonld","https://schema.iden3.io/core/jsonld/iden3proofs.jsonld"],"id":"did:iden3:polygon:amoy:xCRp75DgAdS63W65fmXHz6p9DwdonuRU9e46DifhX","verificationMethod":[{"id":"did:iden3:polygon:amoy:xCRp75DgAdS63W65fmXHz6p9DwdonuRU9e46DifhX#state-info","type":"Iden3StateInfo2023","controller":"did:iden3:polygon:amoy:xCRp75DgAdS63W65fmXHz6p9DwdonuRU9e46DifhX","stateContractAddress":"80002:0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124","published":true,"info":{"id":"did:iden3:polygon:amoy:xCRp75DgAdS63W65fmXHz6p9DwdonuRU9e46DifhX","state":"22963e52a4c04ef499f1d2930867ebdb5596a73dbcd77477b5519a299ff7b815","replacedByState":"0000000000000000000000000000000000000000000000000000000000000000","createdAtTimestamp":"1712064534","replacedAtTimestamp":"0","createdAtBlock":"5385826","replacedAtBlock":"0"},"global":{"root":"91b89ac20f2411d5de9f1cc391f638a22663540afdc6f1ca518122442d042c12","replacedByRoot":"0000000000000000000000000000000000000000000000000000000000000000","createdAtTimestamp":"1760698561","replacedAtTimestamp":"0","createdAtBlock":"27820419","replacedAtBlock":"0","proof":{"existence":true,"siblings":["6428243689143242579702662860293569107169128685670360705797187716912585400809","13916390246083716610426973259336923723042584181578975450095930261645419346768","6787007861770220911533618052183574885526628363444701572849759471729003906015","19234483659313806775982183828556447891383099480517044188636343922073232481136","20921983194991124171439531697595774634090474519647673971227110609532572429462","5945569071812011198185305748300166038940265935245815771367263985444037970898","6760478877200736598117691600599786032243777914883026717305057472022943262937","16502742759241010481262019563221317012845110701799281147810562405312572053050","17039157786522947034661581292309131577618445627804580521584846207597468329369","20352172584502922024019844821731534659815935437798441747251718170651937542438","5482943901689678350542510324589250522521490744665079376271847689643896607611","20018394220441038160429825695199484304178089569371620495728373476640253935543","0","19159073135126042532051922779630339345464122677209002400701389439392546962918","10288916032437376206488569455477188755078920211019952184968871094980800314411","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],"type":"Iden3SparseMerkleTreeProof"}}}]},"didResolutionMetadata":{"@context":["https://schema.iden3.io/core/jsonld/resolution.jsonld"],"contentType":"application/did+ld+json","retrieved":"2025-10-17T11:22:31.265727308Z","type":"Iden3ResolutionMetadata"},"didDocumentMetadata":{}}`
+      );
 
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
@@ -163,7 +176,10 @@ describe('auth', () => {
     joseService = new JoseService(pkFunc);
     fetchHandler = new FetchHandler(packageMgr, {
       credentialWallet: credWallet,
-      joseService
+      documentLoader: schemaLoaderForTests(),
+      joseService,
+      resolverURL,
+      credStatusResolverRegistry: resolvers
     });
 
     authHandler = new AuthHandler(packageMgr, proofService);

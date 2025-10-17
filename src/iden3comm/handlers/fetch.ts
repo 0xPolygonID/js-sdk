@@ -12,8 +12,12 @@ import {
   MessageFetchRequestMessage
 } from '../types';
 
-import { W3CCredential } from '../../verifiable';
-import { ICredentialWallet, getUserDIDFromCredential } from '../../credentials';
+import { ProofType, W3CCredential } from '../../verifiable';
+import {
+  CredentialStatusResolverRegistry,
+  ICredentialWallet,
+  getUserDIDFromCredential
+} from '../../credentials';
 
 import { byteDecoder, byteEncoder } from '../../utils';
 import { DID } from '@iden3/js-iden3-core';
@@ -28,6 +32,7 @@ import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from
 import { IOnchainIssuer } from '../../storage';
 import { JoseService } from '../services/jose';
 import { FlattenedJWE, GeneralJWE } from 'jose';
+import { DocumentLoader } from '@iden3/js-jsonld-merklization';
 
 /**
  *
@@ -131,7 +136,10 @@ export class FetchHandler
   constructor(
     private readonly _packerMgr: IPackageManager,
     private readonly opts?: {
-      credentialWallet: ICredentialWallet;
+      credentialWallet?: ICredentialWallet;
+      resolverURL?: string;
+      documentLoader?: DocumentLoader;
+      credStatusResolverRegistry?: CredentialStatusResolverRegistry;
       onchainIssuer?: IOnchainIssuer;
       joseService?: JoseService;
     }
@@ -413,10 +421,53 @@ export class FetchHandler
       proof: message.body.proof
     });
 
-    // TODO validate proofs on decrypted credential
+    if (!this.opts?.credentialWallet) {
+      throw new Error(
+        'please provide credential wallet in options for encrypted issuance response handling'
+      );
+    }
+    if (!this.opts?.resolverURL) {
+      throw new Error(
+        'please provide resolver URL in options for encrypted issuance response handling'
+      );
+    }
+    if (!this.opts?.documentLoader) {
+      throw new Error(
+        'please provide document loader in options for encrypted issuance response handling'
+      );
+    }
+    if (!this.opts?.credStatusResolverRegistry) {
+      throw new Error(
+        'please provide credential status resolver registry in options for encrypted issuance response handling'
+      );
+    }
 
-    await this.opts?.credentialWallet.save(credential);
-
+    if (Array.isArray(credential.proof)) {
+      for (const proof of credential.proof) {
+        const proofValid = await credential.verifyProof(
+          proof['type'] as ProofType,
+          this.opts.resolverURL,
+          {
+            merklizeOptions: {
+              documentLoader: this.opts.documentLoader
+            },
+            credStatusResolverRegistry: this.opts.credStatusResolverRegistry
+          }
+        );
+        if (!proofValid) {
+          throw new Error('credential proof verification failed');
+        }
+      }
+    } else {
+      const proofValid = await credential.verifyProof(
+        (credential.proof as unknown as { type: ProofType })['type'] as ProofType,
+        this.opts.resolverURL
+      );
+      if (!proofValid) {
+        throw new Error('credential proof verification failed');
+      }
+    }
+    await this.opts?.credentialWallet?.save(credential);
     return credential;
   }
 
