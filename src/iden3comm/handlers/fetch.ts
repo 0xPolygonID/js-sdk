@@ -12,12 +12,8 @@ import {
   MessageFetchRequestMessage
 } from '../types';
 
-import { ProofType, W3CCredential } from '../../verifiable';
-import {
-  CredentialStatusResolverRegistry,
-  ICredentialWallet,
-  getUserDIDFromCredential
-} from '../../credentials';
+import { W3CCredential } from '../../verifiable';
+import { ICredentialWallet, getUserDIDFromCredential } from '../../credentials';
 
 import { byteDecoder, byteEncoder } from '../../utils';
 import { DID } from '@iden3/js-iden3-core';
@@ -264,6 +260,15 @@ export class FetchHandler
         const { unpackedMessage: message } = await this._packerMgr.unpack(
           new Uint8Array(arrayBuffer)
         );
+        if (
+          message.type === PROTOCOL_MESSAGE_TYPE.ENCRYPTED_CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE
+        ) {
+          return [
+            await this.handleEncryptedIssuanceResponseMessage(
+              message as EncryptedCredentialIssuanceMessage
+            )
+          ];
+        }
         if (message.type !== PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE) {
           return message;
         }
