@@ -263,11 +263,10 @@ export class FetchHandler
         if (
           message.type === PROTOCOL_MESSAGE_TYPE.ENCRYPTED_CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE
         ) {
-          return [
-            await this.handleEncryptedIssuanceResponseMessage(
-              message as EncryptedCredentialIssuanceMessage
-            )
-          ];
+          await this.handleEncryptedIssuanceResponseMessage(
+            message as EncryptedCredentialIssuanceMessage
+          );
+          return [];
         }
         if (message.type !== PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE) {
           return message;
@@ -410,7 +409,7 @@ export class FetchHandler
   }
   private async handleEncryptedIssuanceResponseMessage(
     message: EncryptedCredentialIssuanceMessage
-  ): Promise<W3CCredential> {
+  ): Promise<null> {
     if (!this.opts?.joseService) {
       throw new Error(
         'JoseService is not initialized. Encrypted issuance response cannot be handled'
@@ -453,7 +452,7 @@ export class FetchHandler
       throw new Error('credential proof verification failed');
     }
     await this.opts?.credentialWallet?.save(credential);
-    return credential;
+    return null;
   }
 
   private async handleIssuanceResponseMsg(issuanceMsg: CredentialIssuanceMessage): Promise<null> {
