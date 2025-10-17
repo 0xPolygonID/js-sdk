@@ -189,7 +189,7 @@ describe('encrypted issuance response', () => {
     issuerDID = didIssuer;
   });
 
-  it.only('encryption flow', async () => {
+  it('encryption flow', async () => {
     const claimReq: CredentialRequest = {
       credentialSchema: 'ipfs://QmWDmZQrtvidcNK7d6rJwq7ZSi8SUygJaKepN7NhKtGryc',
       type: 'operators',
