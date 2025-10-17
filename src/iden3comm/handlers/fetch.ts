@@ -442,30 +442,14 @@ export class FetchHandler
       );
     }
 
-    if (Array.isArray(credential.proof)) {
-      for (const proof of credential.proof) {
-        const proofValid = await credential.verifyProof(
-          proof['type'] as ProofType,
-          this.opts.resolverURL,
-          {
-            merklizeOptions: {
-              documentLoader: this.opts.documentLoader
-            },
-            credStatusResolverRegistry: this.opts.credStatusResolverRegistry
-          }
-        );
-        if (!proofValid) {
-          throw new Error('credential proof verification failed');
-        }
+    const isValid = await credential.verifyProofs(this.opts.resolverURL, {
+      credStatusResolverRegistry: this.opts.credStatusResolverRegistry,
+      merklizeOptions: {
+        documentLoader: this.opts.documentLoader
       }
-    } else {
-      const proofValid = await credential.verifyProof(
-        (credential.proof as unknown as { type: ProofType })['type'] as ProofType,
-        this.opts.resolverURL
-      );
-      if (!proofValid) {
-        throw new Error('credential proof verification failed');
-      }
+    });
+    if (!isValid) {
+      throw new Error('credential proof verification failed');
     }
     await this.opts?.credentialWallet?.save(credential);
     return credential;
