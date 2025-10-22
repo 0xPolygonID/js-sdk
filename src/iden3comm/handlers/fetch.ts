@@ -7,6 +7,7 @@ import {
   CredentialIssuanceMessage,
   CredentialsOfferMessage,
   CredentialsOnchainOfferMessage,
+  EncryptedCredentialIssuanceMessage,
   IPackageManager,
   MessageFetchRequestMessage
 } from '../types';
@@ -25,6 +26,9 @@ import {
 } from './message-handler';
 import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 import { IOnchainIssuer } from '../../storage';
+import { JoseService } from '../services/jose';
+import { FlattenedJWE, GeneralJWE } from 'jose';
+import { Options } from '@iden3/js-jsonld-merklization';
 
 /**
  *
@@ -128,8 +132,11 @@ export class FetchHandler
   constructor(
     private readonly _packerMgr: IPackageManager,
     private readonly opts?: {
-      credentialWallet: ICredentialWallet;
+      credentialWallet?: ICredentialWallet;
+      didResolverUrl?: string;
+      merklizeOptions?: Options;
       onchainIssuer?: IOnchainIssuer;
+      joseService?: JoseService;
     }
   ) {
     super();
@@ -165,6 +172,12 @@ export class FetchHandler
           return null;
         }
         return result as BasicMessage;
+      }
+      case PROTOCOL_MESSAGE_TYPE.ENCRYPTED_CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE: {
+        await this.handleEncryptedIssuanceResponseMessage(
+          message as EncryptedCredentialIssuanceMessage
+        );
+        return null;
       }
       default:
         return super.handle(message, ctx);
@@ -247,6 +260,14 @@ export class FetchHandler
         const { unpackedMessage: message } = await this._packerMgr.unpack(
           new Uint8Array(arrayBuffer)
         );
+        if (
+          message.type === PROTOCOL_MESSAGE_TYPE.ENCRYPTED_CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE
+        ) {
+          await this.handleEncryptedIssuanceResponseMessage(
+            message as EncryptedCredentialIssuanceMessage
+          );
+          return [];
+        }
         if (message.type !== PROTOCOL_MESSAGE_TYPE.CREDENTIAL_ISSUANCE_RESPONSE_MESSAGE_TYPE) {
           return message;
         }
@@ -385,6 +406,53 @@ export class FetchHandler
       byteEncoder.encode(JSON.stringify(request)),
       {}
     );
+  }
+  private async handleEncryptedIssuanceResponseMessage(
+    message: EncryptedCredentialIssuanceMessage
+  ): Promise<null> {
+    if (!this.opts?.joseService) {
+      throw new Error(
+        'JoseService is not initialized. Encrypted issuance response cannot be handled'
+      );
+    }
+    const { plaintext } = await this.opts.joseService.decrypt(
+      message.body.data as GeneralJWE | FlattenedJWE
+    );
+
+    const credential = W3CCredential.fromJSON({
+      ...JSON.parse(byteDecoder.decode(plaintext)),
+      proof: message.body.proof
+    });
+
+    if (!this.opts?.credentialWallet) {
+      throw new Error(
+        'please provide credential wallet in options for encrypted issuance response handling'
+      );
+    }
+    if (!this.opts?.didResolverUrl) {
+      throw new Error(
+        'please provide resolver URL in options for encrypted issuance response handling'
+      );
+    }
+    if (!this.opts?.merklizeOptions) {
+      throw new Error('please provide merklize options for encrypted issuance response handling');
+    }
+
+    const credStatusResolverRegistry =
+      this.opts.credentialWallet.getCredentialStatusResolverRegistry();
+    if (!credStatusResolverRegistry) {
+      throw new Error('credential status resolver registry is not available in credential wallet');
+    }
+
+    const isValid = await credential.verifyProofs(this.opts.didResolverUrl, {
+      credStatusResolverRegistry,
+      merklizeOptions: this.opts.merklizeOptions
+    });
+    if (!isValid) {
+      throw new Error('credential proof verification failed');
+    }
+    await this.opts?.credentialWallet?.save(credential);
+    return null;
   }
 
   private async handleIssuanceResponseMsg(issuanceMsg: CredentialIssuanceMessage): Promise<null> {

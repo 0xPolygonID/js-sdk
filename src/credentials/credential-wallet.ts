@@ -143,6 +143,12 @@ export interface ICredentialWallet {
     cred: W3CCredential;
     revStatus: RevocationStatus;
   }>;
+
+  /**
+   * getCredentialStatusResolverRegistry
+   * @returns {CredentialStatusResolverRegistry | undefined} - returns credential status resolver registry or undefined
+   */
+  getCredentialStatusResolverRegistry(): CredentialStatusResolverRegistry | undefined;
 }
 
 /**
@@ -178,6 +184,13 @@ export class CredentialWallet implements ICredentialWallet {
         new AgentResolver()
       );
     }
+  }
+
+  /**
+   * {@inheritDoc ICredentialWallet.getCredentialStatusResolverRegistry}
+   */
+  getCredentialStatusResolverRegistry(): CredentialStatusResolverRegistry | undefined {
+    return this._credentialStatusResolverRegistry;
   }
 
   /**
