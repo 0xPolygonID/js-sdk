@@ -8,5 +8,6 @@ export type Attachment = {
 };
 
 export type AttachData = {
-  json: JsonDocumentObject;
+  json?: JsonDocumentObject;
+  base64?: string;
 };
