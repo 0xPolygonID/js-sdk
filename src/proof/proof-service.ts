@@ -48,7 +48,7 @@ import {
   ZeroKnowledgeProofAuthResponse
 } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
-import { ICircuitStorage, IStateStorage } from '../storage';
+import { ICircuitStorage, IProofStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import {
   AuthProofGenerationOptions,
@@ -79,6 +79,7 @@ export type VerificationResultMetadata = {
  */
 export type ProofServiceOptions = Options & {
   prover?: IZKProver;
+  cacheProofsStorage?: IProofStorage;
 };
 
 export interface ProofVerifyOpts {
@@ -218,6 +219,7 @@ export class ProofService implements IProofService {
   private readonly _ldOptions: Options;
   private readonly _inputsGenerator: InputGenerator;
   private readonly _pubSignalsVerifier: PubSignalsVerifier;
+  private readonly _cacheProofsStorage?: IProofStorage;
   /**
    * Creates an instance of ProofService.
    * @param {IIdentityWallet} _identityWallet - identity wallet
@@ -239,6 +241,7 @@ export class ProofService implements IProofService {
       opts?.documentLoader ?? cacheLoader(opts),
       _stateStorage
     );
+    this._cacheProofsStorage = opts?.cacheProofsStorage;
   }
 
   /** {@inheritdoc IProofService.verifyProof} */
@@ -278,6 +281,12 @@ export class ProofService implements IProofService {
     identifier: DID,
     opts?: ProofGenerationOptions
   ): Promise<ZeroKnowledgeProofResponse> {
+    if (this._cacheProofsStorage) {
+      const cachedProof = await this._cacheProofsStorage.getProof(proofReq);
+      if (cachedProof) {
+        return cachedProof;
+      }
+    }
     if (!opts) {
       opts = {
         skipRevocation: false,
@@ -396,13 +405,17 @@ export class ProofService implements IProofService {
 
     const { proof, pub_signals } = await this._prover.generate(inputs, proofReq.circuitId);
 
-    return {
+    const zkpRes = {
       id: proofReq.id,
       circuitId: proofReq.circuitId,
       vp,
       proof,
       pub_signals
     };
+    if (this._cacheProofsStorage) {
+      await this._cacheProofsStorage.storeProof(proofReq, zkpRes);
+    }
+    return zkpRes;
   }
 
   /** {@inheritdoc IProofService.generateAuthProof} */
