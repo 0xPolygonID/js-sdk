@@ -32,10 +32,16 @@ import {
   W3CCredential,
   ZKPPacker,
   byteEncoder,
-  VerifyOpts
+  VerifyOpts,
+  CircuitId,
+  AnonCryptPacker,
+  JoseService,
+  RsaOAEPKeyProvider,
+  DefaultKMSKeyResolver
 } from '../src';
 import { proving } from '@iden3/js-jwz';
 import { JsonRpcProvider } from 'ethers';
+import { Resolvable } from 'did-resolver';
 
 export const SEED_ISSUER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
 export const SEED_USER: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
@@ -45,6 +51,7 @@ export const STATE_CONTRACT = process.env.STATE_CONTRACT_ADDRESS as string;
 export const RPC_URL = process.env.RPC_URL as string;
 export const WALLET_KEY = process.env.WALLET_KEY as string;
 export const IPFS_URL = process.env.IPFS_URL as string;
+export const SOLANA_BASE_58_PK = process.env.SOLANA_BASE_58_PK as string;
 
 export const createIdentity = async (
   wallet: IIdentityWallet,
@@ -221,7 +228,10 @@ export const getInMemoryDataStorage = (states: IStateStorage) => {
 export const getPackageMgr = async (
   circuitData: CircuitData,
   prepareFn: AuthDataPrepareFunc,
-  stateVerificationFn: StateVerificationFunc
+  stateVerificationFn: StateVerificationFunc,
+  opts?: {
+    resolvePrivateKeyByKid?: (kid: string) => Promise<CryptoKey>;
+  }
 ): Promise<IPackageManager> => {
   const authInputsHandler = new DataPrepareHandlerFunc(prepareFn);
 
@@ -253,6 +263,81 @@ export const getPackageMgr = async (
     provingKey: circuitData.provingKey,
     wasm: circuitData.wasm
   });
+
+  const mgr: IPackageManager = new PackageManager();
+  const packer = new ZKPPacker(provingParamMap, verificationParamMap);
+  const plainPacker = new PlainPacker();
+  const kms = new KMS();
+  const kmsProvider = new RsaOAEPKeyProvider(new InMemoryPrivateKeyStore());
+  kms.registerKeyProvider(kmsProvider.keyType, kmsProvider);
+  const resolver = {
+    resolve: async () => ({
+      didDocument: {}
+    })
+  } as unknown as Resolvable;
+
+  const joseService = new JoseService(
+    opts?.resolvePrivateKeyByKid || new DefaultKMSKeyResolver(kms).resolvePrivateKeyByKid
+  );
+
+  const anonCryptPacker = new AnonCryptPacker(joseService, resolver);
+  mgr.registerPackers([packer, plainPacker, anonCryptPacker]);
+
+  return mgr;
+};
+
+export const getPackageMgrV3 = async (
+  circuitData: CircuitData[],
+  prepareFns: { circuitId: CircuitId; prepareFunc: AuthDataPrepareFunc }[],
+  stateVerificationFn: StateVerificationFunc
+): Promise<IPackageManager> => {
+  const verificationFn = new VerificationHandlerFunc(stateVerificationFn);
+
+  const mapKeys = [
+    proving.provingMethodGroth16AuthV2Instance.methodAlg.toString(),
+    proving.provingMethodGroth16AuthV3Instance.methodAlg.toString(),
+    proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg.toString()
+  ];
+
+  const provingParamMap: Map<string, ProvingParams> = new Map();
+  const verificationParamMap: Map<string, VerificationParams> = new Map();
+
+  for (const mapKey of mapKeys) {
+    const mapKeyCircuitId = mapKey.split(':')[1];
+    const circuitDataItem = circuitData.find((c) => c.circuitId === mapKeyCircuitId);
+    if (!circuitDataItem) {
+      throw new Error(`Circuit data not found for ${mapKeyCircuitId}`);
+    }
+    if (!circuitDataItem.verificationKey) {
+      throw new Error(`verification key doesn't exist for ${circuitDataItem.circuitId}`);
+    }
+
+    verificationParamMap.set(mapKey, {
+      key: circuitDataItem.verificationKey,
+      verificationFn
+    });
+
+    if (!circuitDataItem.provingKey) {
+      throw new Error(`proving doesn't exist for ${circuitDataItem.circuitId}`);
+    }
+    if (!circuitDataItem.wasm) {
+      throw new Error(`wasm file doesn't exist for ${circuitDataItem.circuitId}`);
+    }
+
+    const prepareFn = prepareFns.find(
+      (f) => f.circuitId === circuitDataItem.circuitId
+    )?.prepareFunc;
+    if (!prepareFn) {
+      throw new Error(`Prepare function not found for ${circuitDataItem.circuitId}`);
+    }
+    const authInputsHandler = new DataPrepareHandlerFunc(prepareFn);
+
+    provingParamMap.set(mapKey, {
+      dataPreparer: authInputsHandler,
+      provingKey: circuitDataItem.provingKey,
+      wasm: circuitDataItem.wasm
+    });
+  }
 
   const mgr: IPackageManager = new PackageManager();
   const packer = new ZKPPacker(provingParamMap, verificationParamMap);

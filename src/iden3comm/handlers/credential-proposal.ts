@@ -1,21 +1,20 @@
 import { PROTOCOL_MESSAGE_TYPE, MediaType } from '../constants';
 import {
+  Attachment,
   BasicMessage,
   CredentialOffer,
   CredentialsOfferMessage,
   DIDDocument,
-  IPackageManager,
-  PackerParams
+  IPackageManager
 } from '../types';
 
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import * as uuid from 'uuid';
-import { proving } from '@iden3/js-jwz';
 import {
   Proposal,
-  ProposalRequestCredential,
   ProposalRequestMessage,
-  ProposalMessage
+  ProposalMessage,
+  ProposalRequestCredential
 } from '../types/protocol/proposal-request';
 import { IIdentityWallet } from '../../identity';
 import { byteEncoder } from '../../utils';
@@ -23,15 +22,17 @@ import { W3CCredential } from '../../verifiable';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
-  IProtocolMessageHandler
+  IProtocolMessageHandler,
+  getProvingMethodAlgFromJWZ
 } from './message-handler';
-import { verifyExpiresTime } from './common';
+import { HandlerPackerParams, initDefaultPackerOptions, verifyExpiresTime } from './common';
 
 /** @beta ProposalRequestCreationOptions represents proposal-request creation options */
 export type ProposalRequestCreationOptions = {
   credentials: ProposalRequestCredential[];
   did_doc?: DIDDocument;
   expires_time?: Date;
+  attachments?: Attachment[];
 };
 
 /** @beta ProposalCreationOptions represents proposal creation options */
@@ -60,9 +61,13 @@ export function createProposalRequest(
     to: receiver.string(),
     typ: MediaType.PlainMessage,
     type: PROTOCOL_MESSAGE_TYPE.PROPOSAL_REQUEST_MESSAGE_TYPE,
-    body: opts,
+    body: {
+      credentials: opts.credentials,
+      did_doc: opts.did_doc
+    },
     created_time: getUnixTimestamp(new Date()),
-    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined,
+    attachments: opts.attachments
   };
   return request;
 }
@@ -153,8 +158,12 @@ export type ProposalHandlerOptions = BasicHandlerOptions & {
 /** @beta CredentialProposalHandlerParams represents credential proposal handler params */
 export type CredentialProposalHandlerParams = {
   agentUrl: string;
-  proposalResolverFn: (context: string, type: string) => Promise<Proposal>;
-  packerParams: PackerParams;
+  proposalResolverFn: (
+    context: string,
+    type: string,
+    opts?: { msg?: BasicMessage }
+  ) => Promise<Proposal>;
+  packerParams: HandlerPackerParams;
 };
 
 /**
@@ -281,7 +290,9 @@ export class CredentialProposalHandler
       }
 
       // credential not found in the wallet, prepare proposal protocol message
-      const proposal = await this._params.proposalResolverFn(cred.context, cred.type);
+      const proposal = await this._params.proposalResolverFn(cred.context, cred.type, {
+        msg: proposalRequest
+      });
       if (!proposal) {
         throw new Error(`can't resolve Proposal for type: ${cred.type}, context: ${cred.context}`);
       }
@@ -313,13 +324,6 @@ export class CredentialProposalHandler
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
     opts?: ProposalRequestHandlerOptions
   ): Promise<Uint8Array> {
-    if (
-      this._params.packerParams.mediaType === MediaType.SignedMessage &&
-      !this._params.packerParams.packerOptions
-    ) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
     const proposalRequest = await this.parseProposalRequest(request);
     if (!proposalRequest.from) {
       throw new Error(`failed request. empty 'from' field`);
@@ -332,17 +336,15 @@ export class CredentialProposalHandler
     const message = await this.handleProposalRequestMessage(proposalRequest);
     const response = byteEncoder.encode(JSON.stringify(message));
 
-    const packerOpts =
-      this._params.packerParams.mediaType === MediaType.SignedMessage
-        ? this._params.packerParams.packerOptions
-        : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-          };
-
-    return this._packerMgr.pack(this._params.packerParams.mediaType, response, {
-      senderDID,
-      ...packerOpts
-    });
+    const packerOpts = initDefaultPackerOptions(
+      this._params.packerParams.mediaType,
+      this._params.packerParams.packerOptions,
+      {
+        provingMethodAlg: await getProvingMethodAlgFromJWZ(request),
+        senderDID
+      }
+    );
+    return this._packerMgr.pack(this._params.packerParams.mediaType, response, packerOpts);
   }
 
   /**

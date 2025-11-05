@@ -7,6 +7,8 @@ import {
 import {
   AuthV2Inputs,
   AuthV2PubSignals,
+  AuthV3Inputs,
+  AuthV3PubSignals,
   CircuitId,
   Operators,
   Query,
@@ -126,6 +128,7 @@ export interface IProofService {
   ): Promise<ZeroKnowledgeProofResponse>;
 
   /**
+   * @deprecated, use generateAuthInputs with CircuitId.AuthV2 instead
    * generates auth inputs
    *
    * @param {Uint8Array} hash - challenge that will be signed
@@ -136,6 +139,17 @@ export interface IProofService {
   generateAuthV2Inputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
 
   /**
+   * generates Auth inputs
+   *
+   * @param {Uint8Array} hash - challenge that will be signed
+   * @param {DID} did - identity that will generate a proof
+   * @param {CircuitId} circuitId - circuit id for authentication
+   * @returns `Promise<Uint8Array>`
+   */
+  generateAuthInputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array>;
+
+  /**
+   * @deprecated, use generateAuthProof with CircuitId.AuthV2 instead
    * generates auth v2 proof from given identity
    *
    * @param {Uint8Array} hash - challenge that will be signed
@@ -402,30 +416,30 @@ export class ProofService implements IProofService {
     identifier: DID,
     opts?: AuthProofGenerationOptions
   ): Promise<ZeroKnowledgeProofAuthResponse> {
+    if (
+      circuitId !== CircuitId.AuthV2 &&
+      circuitId !== CircuitId.AuthV3 &&
+      circuitId !== CircuitId.AuthV3_8_32
+    ) {
+      throw new Error('CircuitId is not supported');
+    }
     if (!opts) {
       opts = {
         challenge: 0n
       };
     }
 
-    let zkProof;
+    const challenge = opts.challenge
+      ? BytesHelper.intToBytes(opts.challenge).reverse()
+      : new Uint8Array(32);
+    const authInputs = await this.generateAuthInputs(challenge, identifier, circuitId);
 
-    switch (circuitId) {
-      case CircuitId.AuthV2:
-        {
-          const challenge = opts.challenge
-            ? BytesHelper.intToBytes(opts.challenge).reverse()
-            : new Uint8Array(32);
-          zkProof = await this.generateAuthV2Proof(challenge, identifier);
-        }
-        return {
-          circuitId: circuitId,
-          proof: zkProof.proof,
-          pub_signals: zkProof.pub_signals
-        };
-      default:
-        throw new Error(`CircuitId ${circuitId} is not supported`);
-    }
+    const zkProof = await this._prover.generate(authInputs, circuitId);
+    return {
+      circuitId: circuitId,
+      proof: zkProof.proof,
+      pub_signals: zkProof.pub_signals
+    };
   }
 
   /** {@inheritdoc IProofService.transitState} */
@@ -583,9 +597,50 @@ export class ProofService implements IProofService {
     return authInputs.inputsMarshal();
   }
 
+  /** {@inheritdoc IProofService.generateAuthInputs} */
+  async generateAuthInputs(hash: Uint8Array, did: DID, circuitId: CircuitId): Promise<Uint8Array> {
+    if (
+      circuitId !== CircuitId.AuthV2 &&
+      circuitId !== CircuitId.AuthV3 &&
+      circuitId !== CircuitId.AuthV3_8_32
+    ) {
+      throw new Error('CircuitId is not supported');
+    }
+
+    const { nonce: authProfileNonce, genesisDID } =
+      await this._identityWallet.getGenesisDIDMetadata(did);
+
+    const challenge = BytesHelper.bytesToInt(hash.reverse());
+
+    const authPrepared = await this._inputsGenerator.prepareAuthBJJCredential(genesisDID);
+
+    const signature = await this._identityWallet.signChallenge(challenge, authPrepared.credential);
+    const id = DID.idFromDID(genesisDID);
+    const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
+
+    const gistProof = toGISTProof(stateProof);
+
+    const authInputs = new AuthV3Inputs(); // works for both v3 and v2
+    if (circuitId === CircuitId.AuthV3_8_32) {
+      authInputs.mtLevel = 8;
+      authInputs.mtLevelOnChain = 32;
+    }
+
+    authInputs.genesisID = id;
+    authInputs.profileNonce = BigInt(authProfileNonce);
+    authInputs.authClaim = authPrepared.coreClaim;
+    authInputs.authClaimIncMtp = authPrepared.incProof.proof;
+    authInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
+    authInputs.treeState = authPrepared.incProof.treeState;
+    authInputs.signature = signature;
+    authInputs.challenge = challenge;
+    authInputs.gistProof = gistProof;
+    return authInputs.inputsMarshal();
+  }
+
   /** {@inheritdoc IProofService.generateAuthV2Proof} */
   async generateAuthV2Proof(challenge: Uint8Array, did: DID): Promise<ZKProof> {
-    const authInputs = await this.generateAuthV2Inputs(challenge, did, CircuitId.AuthV2);
+    const authInputs = await this.generateAuthInputs(challenge, did, CircuitId.AuthV2);
 
     const zkProof = await this._prover.generate(authInputs, CircuitId.AuthV2);
     return zkProof;
@@ -598,15 +653,28 @@ export class ProofService implements IProofService {
       acceptedStateTransitionDelay: PROTOCOL_CONSTANTS.DEFAULT_AUTH_VERIFY_DELAY
     }
   ): Promise<boolean> {
-    if (circuitId !== CircuitId.AuthV2) {
+    if (
+      circuitId !== CircuitId.AuthV2 &&
+      circuitId !== CircuitId.AuthV3 &&
+      circuitId !== CircuitId.AuthV3_8_32
+    ) {
       throw new Error(`CircuitId is not supported ${circuitId}`);
     }
 
-    const authV2PubSignals = new AuthV2PubSignals().pubSignalsUnmarshal(
-      byteEncoder.encode(JSON.stringify(pubSignals))
-    );
-    const gistRoot = authV2PubSignals.GISTRoot.bigInt();
-    const userId = authV2PubSignals.userID.bigInt();
+    let gistRoot, userId;
+    if (circuitId === CircuitId.AuthV2) {
+      const authV2PubSignals = new AuthV2PubSignals().pubSignalsUnmarshal(
+        byteEncoder.encode(JSON.stringify(pubSignals))
+      );
+      gistRoot = authV2PubSignals.GISTRoot.bigInt();
+      userId = authV2PubSignals.userID.bigInt();
+    } else {
+      const authV3PubSignals = new AuthV3PubSignals().pubSignalsUnmarshal(
+        byteEncoder.encode(JSON.stringify(pubSignals))
+      );
+      gistRoot = authV3PubSignals.GISTRoot.bigInt();
+      userId = authV3PubSignals.userID.bigInt();
+    }
     const globalStateInfo = await this._stateStorage.getGISTRootInfo(gistRoot, userId);
 
     if (globalStateInfo.root !== gistRoot) {

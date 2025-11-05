@@ -8,24 +8,34 @@ import {
   AuthorizationResponseMessage,
   BasicMessage,
   IPackageManager,
-  JWSPackerParams,
   ZeroKnowledgeProofRequest,
-  JSONObject
+  JSONObject,
+  Attachment
 } from '../types';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
-import { proving } from '@iden3/js-jwz';
+import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
+import {
+  HandlerPackerParams,
+  initDefaultPackerOptions,
+  processZeroKnowledgeProofRequests,
+  verifyExpiresTime
+} from './common';
 import { CircuitId } from '../../circuits';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
-  IProtocolMessageHandler
+  IProtocolMessageHandler,
+  defaultProvingMethodAlg
 } from './message-handler';
-import { parseAcceptProfile } from '../utils';
+import {
+  acceptHasProvingMethodAlg,
+  buildAcceptFromProvingMethodAlg,
+  parseAcceptProfile
+} from '../utils';
 
 /**
  * Options to pass to createAuthorizationRequest function
@@ -35,6 +45,7 @@ export type AuthorizationRequestCreateOptions = {
   accept?: string[];
   scope?: ZeroKnowledgeProofRequest[];
   expires_time?: Date;
+  attachments?: Attachment[];
 };
 
 /**
@@ -84,7 +95,8 @@ export function createAuthorizationRequestWithMessage(
       scope: opts?.scope ?? []
     },
     created_time: getUnixTimestamp(new Date()),
-    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined,
+    attachments: opts?.attachments
   };
   return request;
 }
@@ -169,7 +181,7 @@ type AuthRespOptions = {
   acceptedProofGenerationDelay?: number;
 };
 
-export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
+export type AuthMessageHandlerOptions = BasicHandlerOptions & (AuthReqOptions | AuthRespOptions);
 /**
  *
  * Options to pass to auth handler
@@ -179,7 +191,8 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
  */
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams;
+  packerOptions?: HandlerPackerParams;
+  preferredAuthProvingMethod?: ProvingMethodAlg;
 };
 
 /**
@@ -260,11 +273,7 @@ export class AuthHandler
     }
 
     const responseType = PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
-    const mediaType = this.getSupportedMediaTypeByProfile(
-      ctx,
-      responseType,
-      authRequest.body.accept
-    );
+    const mediaType = this.getSupportedMediaTypeByProfile(ctx, authRequest.body.accept);
     const from = DID.parse(authRequest.from);
 
     const responseScope = await processZeroKnowledgeProofRequests(
@@ -311,10 +320,6 @@ export class AuthHandler
       };
     }
 
-    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
     const authResponse = await this.handleAuthRequest(authRequest, {
       senderDid: did,
       mediaType: opts.mediaType
@@ -322,18 +327,15 @@ export class AuthHandler
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
 
-    const packerOpts =
-      opts.mediaType === MediaType.SignedMessage
-        ? opts.packerOptions
-        : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-          };
-
+    const packerOpts = initDefaultPackerOptions(opts.mediaType, opts.packerOptions, {
+      provingMethodAlg: this.getDefaultProvingMethodAlg(
+        opts.preferredAuthProvingMethod,
+        authRequest.body.accept
+      ),
+      senderDID: did
+    });
     const token = byteDecoder.decode(
-      await this._packerMgr.pack(opts.mediaType, msgBytes, {
-        senderDID: did,
-        ...packerOpts
-      })
+      await this._packerMgr.pack(opts.mediaType, msgBytes, packerOpts)
     );
 
     return { authRequest, authResponse, token };
@@ -374,6 +376,9 @@ export class AuthHandler
         (resp) => resp.id.toString() === proofRequest.id.toString()
       );
       if (!proofResp) {
+        if (proofRequest.optional) {
+          continue;
+        }
         throw new Error(`proof is not given for requestId ${proofRequest.id}`);
       }
 
@@ -487,7 +492,6 @@ export class AuthHandler
 
   private getSupportedMediaTypeByProfile(
     ctx: AuthReqOptions,
-    responseType: string,
     profile?: string[] | undefined
   ): MediaType {
     let mediaType: MediaType;
@@ -513,5 +517,44 @@ export class AuthHandler
       mediaType = ctx.mediaType;
     }
     return mediaType;
+  }
+
+  private getDefaultProvingMethodAlg(
+    preferredAuthProvingMethod?: ProvingMethodAlg,
+    accept?: string[]
+  ): ProvingMethodAlg {
+    if (
+      preferredAuthProvingMethod &&
+      this._packerMgr.isProfileSupported(
+        MediaType.ZKPMessage,
+        buildAcceptFromProvingMethodAlg(preferredAuthProvingMethod)
+      ) &&
+      (!accept?.length || acceptHasProvingMethodAlg(accept, preferredAuthProvingMethod))
+    ) {
+      return preferredAuthProvingMethod;
+    }
+    if (accept?.length) {
+      const authV3_8_32 = proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg;
+      if (
+        acceptHasProvingMethodAlg(accept, authV3_8_32) &&
+        this._packerMgr.isProfileSupported(
+          MediaType.ZKPMessage,
+          buildAcceptFromProvingMethodAlg(authV3_8_32)
+        )
+      ) {
+        return authV3_8_32;
+      }
+      const authV3 = proving.provingMethodGroth16AuthV3Instance.methodAlg;
+      if (
+        acceptHasProvingMethodAlg(accept, authV3) &&
+        this._packerMgr.isProfileSupported(
+          MediaType.ZKPMessage,
+          buildAcceptFromProvingMethodAlg(authV3)
+        )
+      ) {
+        return authV3;
+      }
+    }
+    return defaultProvingMethodAlg;
   }
 }

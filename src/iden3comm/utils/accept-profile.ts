@@ -1,9 +1,11 @@
+import { ProvingMethodAlg } from '@iden3/js-jwz';
 import {
   MediaType,
   ProtocolVersion,
   AcceptAuthCircuits,
   AcceptJwzAlgorithms,
-  AcceptJwsAlgorithms
+  AcceptJwsAlgorithms,
+  AcceptJweKEKAlgorithms
 } from '../constants';
 import { AcceptProfile } from '../types';
 
@@ -25,6 +27,33 @@ function isAcceptJwsAlgorithms(value: string): boolean {
 
 function isAcceptJwzAlgorithms(value: string): boolean {
   return Object.values(AcceptJwzAlgorithms).includes(value as AcceptJwzAlgorithms);
+}
+
+export const buildAcceptFromProvingMethodAlg = (provingMethodAlg: ProvingMethodAlg): string => {
+  const [alg, circuitId] = provingMethodAlg.toString().split(':');
+  return `${ProtocolVersion.V1};env=${MediaType.ZKPMessage};circuitId=${circuitId};alg=${alg}`;
+};
+
+export const acceptHasProvingMethodAlg = (
+  accept: string[],
+  provingMethodAlg: ProvingMethodAlg
+): boolean => {
+  const [provingAlg, provingCircuitId] = provingMethodAlg.toString().split(':');
+  for (const profile of accept) {
+    const { env, circuits, alg } = parseAcceptProfile(profile);
+    if (
+      env === MediaType.ZKPMessage &&
+      circuits?.includes(provingCircuitId as AcceptAuthCircuits) &&
+      (!alg || (alg as unknown as AcceptJwzAlgorithms)?.includes(provingAlg as AcceptJwzAlgorithms))
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
+function isAcceptJweAlgorithms(value: string): boolean {
+  return Object.values(AcceptJweKEKAlgorithms).includes(value as AcceptJweKEKAlgorithms);
 }
 
 export const buildAccept = (profiles: AcceptProfile[]): string[] => {
@@ -83,33 +112,50 @@ export const parseAcceptProfile = (profile: string): AcceptProfile => {
   }
 
   const algIndex = params.findIndex((i: string) => i.includes('alg='));
-  let alg: AcceptJwsAlgorithms[] | AcceptJwzAlgorithms[] | undefined = undefined;
-  if (algIndex > 0) {
-    if (env === MediaType.ZKPMessage) {
-      alg = params[algIndex]
-        .split('=')[1]
-        .split(',')
-        .map((i) => {
-          i = i.trim();
-          if (!isAcceptJwzAlgorithms(i)) {
-            throw new Error(`Algorithm '${i}' not supported for '${env}'`);
-          }
-          return i as AcceptJwzAlgorithms;
-        });
-    } else if (env === MediaType.SignedMessage) {
-      alg = params[algIndex]
-        .split('=')[1]
-        .split(',')
-        .map((i) => {
-          i = i.trim();
-          if (!isAcceptJwsAlgorithms(i)) {
-            throw new Error(`Algorithm '${i}' not supported for '${env}'`);
-          }
-          return i as AcceptJwsAlgorithms;
-        });
-    } else {
-      throw new Error(`Algorithm not supported for '${env}'`);
-    }
+
+  if (algIndex === -1) {
+    return {
+      protocolVersion,
+      env,
+      circuits,
+      alg: undefined
+    };
+  }
+
+  const algValues = params[algIndex]
+    .split('=')[1]
+    .split(',')
+    .map((i) => i.trim());
+
+  let alg: AcceptJwsAlgorithms[] | AcceptJwzAlgorithms[] | AcceptJweKEKAlgorithms[] = [];
+
+  switch (env) {
+    case MediaType.ZKPMessage:
+      alg = algValues.map((i) => {
+        if (!isAcceptJwzAlgorithms(i)) {
+          throw new Error(`Algorithm '${i}' not supported for '${env}'`);
+        }
+        return i as AcceptJwzAlgorithms;
+      });
+      break;
+    case MediaType.SignedMessage:
+      alg = algValues.map((i) => {
+        if (!isAcceptJwsAlgorithms(i)) {
+          throw new Error(`Algorithm '${i}' not supported for '${env}'`);
+        }
+        return i as AcceptJwsAlgorithms;
+      });
+      break;
+    case MediaType.EncryptedMessage:
+      alg = algValues.map((i) => {
+        if (!isAcceptJweAlgorithms(i)) {
+          throw new Error(`Algorithm '${i}' not supported for '${env}'`);
+        }
+        return i as AcceptJweKEKAlgorithms;
+      });
+      break;
+    default:
+      throw new Error(`Algorithms not supported for '${env}'`);
   }
 
   return {

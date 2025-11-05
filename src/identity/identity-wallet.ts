@@ -1,4 +1,4 @@
-import { KMS, KmsKeyId, KmsKeyType } from '../kms';
+import { IKeyProvider, KMS, KmsKeyId, KmsKeyType } from '../kms';
 import {
   Blockchain,
   buildDIDType,
@@ -59,6 +59,12 @@ import {
 } from '../credentials/status/credential-status-publisher';
 import { InputGenerator, IZKProver } from '../proof';
 import { ITransactionService, TransactionService } from '../blockchain';
+import { DIDDocument } from '../iden3comm';
+import {
+  DIDDocumentBuilder,
+  JWK2020_CONTEXT_V1,
+  Jwk2020VerificationMethodBuilder
+} from '../iden3comm/utils';
 
 /**
  * DID creation options
@@ -72,6 +78,24 @@ export type IdentityCreationOptions = {
   blockchain?: string;
   networkId?: string;
 } & AuthBJJCredentialCreationOptions;
+
+/**
+ * Options for creating profile
+ * @type CreateProfileOptions
+ */
+export type CreateProfileOptions = {
+  tags?: string[];
+  didDocument?: DIDDocument;
+  encryptionKeyOps?: EncryptionKeyOps;
+};
+
+/**
+ * Profile encryption creation options
+ */
+export type EncryptionKeyOps = {
+  provider?: IKeyProvider;
+  alias?: string;
+};
 
 /**
  * Options for creating Auth BJJ credential
@@ -175,6 +199,22 @@ export interface IIdentityWallet {
    * @returns `Promise<DID>` - profile did
    */
   createProfile(did: DID, nonce: number | string, verifier: string, tags?: string[]): Promise<DID>;
+
+  /**
+   * Creates profile based on genesis identifier
+   *
+   * @param {DID} did - identity to derive profile from
+   * @param {number |string} nonce - unique integer number to generate a profile
+   * @param {string} verifier - verifier identity/alias in a string from
+   * @param {CreateProfileOptions} options - optional parameters for profile creation
+   * @returns `Promise<DID>` - profile did
+   */
+  createProfile(
+    did: DID,
+    nonce: number | string,
+    verifier: string,
+    options?: CreateProfileOptions
+  ): Promise<DID>;
 
   /**
    * Generates a new key
@@ -814,9 +854,16 @@ export class IdentityWallet implements IIdentityWallet {
     did: DID,
     nonce: number | string,
     verifier: string,
-    tags?: string[]
+    tagsOrOptions?: string[] | CreateProfileOptions
   ): Promise<DID> {
     const profileDID = generateProfileDID(did, nonce);
+    const isArray = Array.isArray(tagsOrOptions);
+    const tags = isArray ? tagsOrOptions : tagsOrOptions?.tags;
+
+    const { didDocument, encryptionKeyOps } = (isArray ? {} : tagsOrOptions ?? {}) as {
+      didDocument?: DIDDocument;
+      encryptionKeyOps?: EncryptionKeyOps;
+    };
 
     const identityProfiles = await this._storage.identity.getProfilesByGenesisIdentifier(
       did.string()
@@ -835,12 +882,38 @@ export class IdentityWallet implements IIdentityWallet {
       throw new Error(VerifiableConstants.ERRORS.ID_WALLET_PROFILE_ALREADY_EXISTS);
     }
 
+    let did_doc = didDocument;
+    if (encryptionKeyOps?.provider) {
+      const vmBuilder = new Jwk2020VerificationMethodBuilder(encryptionKeyOps.provider, {
+        alias: encryptionKeyOps.alias
+      });
+      if (!did_doc) {
+        did_doc = (
+          await new DIDDocumentBuilder(profileDID.string()).addVerificationMethod(
+            vmBuilder,
+            JWK2020_CONTEXT_V1
+          )
+        ).build();
+      } else {
+        const vm = await vmBuilder.build(profileDID.string());
+        const contextArr = [did_doc['@context']]
+          .flat()
+          .filter((c) => typeof c === 'string') as string[];
+        did_doc = {
+          ...did_doc,
+          verificationMethod: [...(did_doc.verificationMethod ?? []), vm],
+          '@context': [...new Set([...contextArr, JWK2020_CONTEXT_V1])]
+        };
+      }
+    }
+
     await this._storage.identity.saveProfile({
       id: profileDID.string(),
       nonce,
       genesisIdentifier: did.string(),
       verifier,
-      tags
+      tags,
+      did_doc
     });
 
     return profileDID;
