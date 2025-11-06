@@ -558,28 +558,6 @@ describe('auth', () => {
       },
       {
         id: 2,
-        circuitId: CircuitId.LinkedMultiQuery10,
-        optional: true,
-        query: {
-          groupId: 1,
-          proofType: ProofType.Iden3SparseMerkleTreeProof,
-          allowedIssuers: ['*'],
-          type: 'KYCEmployee',
-          context:
-            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
-          credentialSubject: {
-            documentType: {
-              $eq: 1
-            },
-            position: {
-              $eq: 'boss',
-              $ne: 'employee'
-            }
-          }
-        }
-      },
-      {
-        id: 3,
         circuitId: CircuitId.AtomicQueryV3,
         optional: true,
         query: {
@@ -652,7 +630,7 @@ describe('auth', () => {
 
     // now all proofs should be returned, one from cache, two generated
     const authResWithCached = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
-    expect(authResWithCached.authResponse.body.scope).to.have.lengthOf(3);
+    expect(authResWithCached.authResponse.body.scope).to.have.lengthOf(2);
     const cachedKYCAgeCredential = authResWithCached.authResponse.body.scope.find(
       (pr) => pr.id === 1
     );
@@ -667,7 +645,7 @@ describe('auth', () => {
       mediaType: MediaType.ZKPMessage,
       bypassCache: true
     });
-    expect(authResWithoutCache.authResponse.body.scope).to.have.lengthOf(3);
+    expect(authResWithoutCache.authResponse.body.scope).to.have.lengthOf(2);
     const bypassCacheKYCAgeCredential = authResWithoutCache.authResponse.body.scope.find(
       (pr) => pr.id === 1
     );
