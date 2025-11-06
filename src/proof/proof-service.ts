@@ -281,7 +281,7 @@ export class ProofService implements IProofService {
     identifier: DID,
     opts?: ProofGenerationOptions
   ): Promise<ZeroKnowledgeProofResponse> {
-    if (this._cacheProofsStorage) {
+    if (this._cacheProofsStorage && !opts?.bypassCache) {
       const cachedProof = await this._cacheProofsStorage.getProof(proofReq);
       if (cachedProof) {
         return cachedProof;

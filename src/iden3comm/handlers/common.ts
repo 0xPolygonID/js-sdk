@@ -98,6 +98,7 @@ export const processZeroKnowledgeProofRequests = async (
     supportedCircuits: CircuitId[];
     ethSigner?: Signer;
     challenge?: bigint;
+    bypassCache?: boolean;
   }
 ): Promise<ZeroKnowledgeProofResponse[]> => {
   const requestScope = requests ?? [];
@@ -158,7 +159,8 @@ export const processZeroKnowledgeProofRequests = async (
         skipRevocation: Boolean(query.skipClaimRevocationCheck),
         credential: credWithRevStatus?.cred,
         credentialRevocationStatus: credWithRevStatus?.revStatus,
-        linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined
+        linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined,
+        bypassCache: opts.bypassCache
       });
     } catch (error: unknown) {
       const expectedErrors = [

@@ -661,6 +661,20 @@ describe('auth', () => {
     expect(generatedKYCAgeCredential.pub_signals[timestampPubSignalIndex]).to.equal(
       cachedKYCAgeCredential?.pub_signals[timestampPubSignalIndex]
     );
+
+    // bypass cache and generate all new proofs
+    const authResWithoutCache = await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
+      mediaType: MediaType.ZKPMessage,
+      bypassCache: true
+    });
+    expect(authResWithoutCache.authResponse.body.scope).to.have.lengthOf(3);
+    const bypassCacheKYCAgeCredential = authResWithoutCache.authResponse.body.scope.find(
+      (pr) => pr.id === 1
+    );
+    expect(bypassCacheKYCAgeCredential).to.not.be.undefined;
+    expect(cachedKYCAgeCredential?.pub_signals[timestampPubSignalIndex]).to.not.equal(
+      bypassCacheKYCAgeCredential?.pub_signals[timestampPubSignalIndex]
+    );
   });
 
   it('auth flow identity (profile) with ethereum identity issuer with circuits V3', async () => {
