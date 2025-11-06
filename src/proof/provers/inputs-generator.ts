@@ -105,6 +105,8 @@ export const circuitValidator: {
   [CircuitId.AuthV3]: { maxQueriesCount: 0, supportedOperations: [] },
   [CircuitId.AuthV3_8_32]: { maxQueriesCount: 0, supportedOperations: [] },
   [CircuitId.StateTransition]: { maxQueriesCount: 0, supportedOperations: [] },
+  [CircuitId.LinkedMultiQuery3]: { maxQueriesCount: 3, supportedOperations: allOperations },
+  [CircuitId.LinkedMultiQuery5]: { maxQueriesCount: 5, supportedOperations: allOperations },
   [CircuitId.LinkedMultiQuery10]: { maxQueriesCount: 10, supportedOperations: allOperations }
 };
 
@@ -591,16 +593,14 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  private linkedMultiQuery10PrepareInputs = async ({
-    preparedCredential,
-    params,
-    proofReq,
-    circuitQueries
-  }: InputContext): Promise<Uint8Array> => {
+  private linkedMultiQueryNPrepareInputs = async (
+    queryCount: number,
+    { preparedCredential, params, proofReq, circuitQueries }: InputContext
+  ): Promise<Uint8Array> => {
     const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
-    const circuitInputs = new LinkedMultiQueryInputs();
+    const circuitInputs = new LinkedMultiQueryInputs(queryCount);
     circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
 
     circuitInputs.claim = circuitClaimData.claim;
@@ -615,9 +615,19 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
+  private linkedMultiQuery10PrepareInputs = async (ctx: InputContext): Promise<Uint8Array> =>
+    this.linkedMultiQueryNPrepareInputs(10, ctx);
+
+  private linkedMultiQuery5PrepareInputs = async (ctx: InputContext): Promise<Uint8Array> =>
+    this.linkedMultiQueryNPrepareInputs(5, ctx);
+
+  private linkedMultiQuery3PrepareInputs = async (ctx: InputContext): Promise<Uint8Array> =>
+    this.linkedMultiQueryNPrepareInputs(3, ctx);
+
   private transformV2QueryOperator(operator: number): number {
     return operator === Operators.SD || operator === Operators.NOOP ? Operators.EQ : operator;
   }
+
   private checkOperatorSupport(circuitId: string, operator: number) {
     const supportedOperators = circuitValidator[circuitId as CircuitId].supportedOperations;
     if (!supportedOperators.includes(operator)) {

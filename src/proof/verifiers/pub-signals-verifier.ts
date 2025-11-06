@@ -9,10 +9,7 @@ import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
 import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
 import { AuthV2PubSignals } from '../../circuits/auth-v2';
 import { BaseConfig } from '../../circuits/common';
-import {
-  LinkedMultiQueryPubSignals,
-  LinkedMultiQueryInputs
-} from '../../circuits/linked-multi-query';
+import { LinkedMultiQueryPubSignals } from '../../circuits/linked-multi-query';
 import { CircuitId } from '../../circuits/models';
 import {
   checkQueryRequest,
@@ -402,12 +399,11 @@ export class PubSignalsVerifier {
     return new BaseConfig();
   };
 
-  private linkedMultiQuery10Verify = async ({
-    query,
-    verifiablePresentation,
-    pubSignals
-  }: VerifyContext): Promise<BaseConfig> => {
-    let multiQueryPubSignals = new LinkedMultiQueryPubSignals();
+  private linkedMultiQueryNVerify = async (
+    { query, verifiablePresentation, pubSignals }: VerifyContext,
+    queryCount: number
+  ): Promise<BaseConfig> => {
+    let multiQueryPubSignals = new LinkedMultiQueryPubSignals(queryCount);
 
     multiQueryPubSignals = multiQueryPubSignals.pubSignalsUnmarshal(
       byteEncoder.encode(JSON.stringify(pubSignals))
@@ -439,7 +435,7 @@ export class PubSignalsVerifier {
 
     const request: { queryHash: bigint; queryMeta: QueryMetadata }[] = [];
     const merklized = queriesMetadata[0]?.merklizedSchema ? 1 : 0;
-    for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
+    for (let i = 0; i < multiQueryPubSignals.queryCount; i++) {
       const queryMeta = queriesMetadata[i];
       const values = queryMeta?.values ?? [];
       const valArrSize = values.length;
@@ -473,7 +469,7 @@ export class PubSignalsVerifier {
     pubSignalsMeta.sort(queryHashCompare);
     request.sort(queryHashCompare);
 
-    for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
+    for (let i = 0; i < multiQueryPubSignals.queryCount; i++) {
       if (request[i].queryHash != pubSignalsMeta[i].queryHash) {
         throw new Error('query hashes do not match');
       }
@@ -492,6 +488,15 @@ export class PubSignalsVerifier {
 
     return multiQueryPubSignals as unknown as BaseConfig;
   };
+
+  private linkedMultiQuery10Verify = async (ctx: VerifyContext): Promise<BaseConfig> =>
+    this.linkedMultiQueryNVerify(ctx, 10);
+
+  private linkedMultiQuery5Verify = async (ctx: VerifyContext): Promise<BaseConfig> =>
+    this.linkedMultiQueryNVerify(ctx, 5);
+
+  private linkedMultiQuery3Verify = async (ctx: VerifyContext): Promise<BaseConfig> =>
+    this.linkedMultiQueryNVerify(ctx, 3);
 
   private verifyIdOwnership = (
     sender: string,
