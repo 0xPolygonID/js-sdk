@@ -281,12 +281,6 @@ export class ProofService implements IProofService {
     identifier: DID,
     opts?: ProofGenerationOptions
   ): Promise<ZeroKnowledgeProofResponse> {
-    if (this._cacheProofsStorage && !opts?.bypassCache) {
-      const cachedProof = await this._cacheProofsStorage.getProof(proofReq);
-      if (cachedProof) {
-        return cachedProof;
-      }
-    }
     if (!opts) {
       opts = {
         skipRevocation: false,
@@ -315,6 +309,16 @@ export class ProofService implements IProofService {
         VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY +
           ` ${JSON.stringify(proofReq.query)}`
       );
+    }
+
+    if (this._cacheProofsStorage && !opts?.bypassCache) {
+      const cachedProof = await this._cacheProofsStorage.getProof(
+        credentialWithRevStatus.cred.id,
+        proofReq
+      );
+      if (cachedProof) {
+        return cachedProof;
+      }
     }
 
     const credentialCoreClaim = await this._identityWallet.getCoreClaimFromCredential(
@@ -413,7 +417,7 @@ export class ProofService implements IProofService {
       pub_signals
     };
     if (this._cacheProofsStorage) {
-      await this._cacheProofsStorage.storeProof(proofReq, zkpRes);
+      await this._cacheProofsStorage.storeProof(credentialWithRevStatus.cred.id, proofReq, zkpRes);
     }
     return zkpRes;
   }

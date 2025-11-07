@@ -15,17 +15,21 @@ export class InMemoryProofStorage implements IProofStorage {
     const maxSize = options?.maxSize ?? 1000;
     this._cache = createInMemoryCache<ZeroKnowledgeProofResponse>({ maxSize, ttl });
   }
-  getProof(request: ZeroKnowledgeProofRequest): Promise<ZeroKnowledgeProofResponse | undefined> {
-    return this._cache.get(this.keyFromZKPRequest(request));
+  getProof(
+    credentialId: string,
+    request: ZeroKnowledgeProofRequest
+  ): Promise<ZeroKnowledgeProofResponse | undefined> {
+    return this._cache.get(this.keyFromZKPRequest(credentialId, request));
   }
   storeProof(
+    credentialId: string,
     request: ZeroKnowledgeProofRequest,
     response: ZeroKnowledgeProofResponse
   ): Promise<void> {
-    return this._cache.set(this.keyFromZKPRequest(request), response);
+    return this._cache.set(this.keyFromZKPRequest(credentialId, request), response);
   }
 
-  private keyFromZKPRequest = (r: ZeroKnowledgeProofRequest) => {
+  private keyFromZKPRequest = (credId: string, r: ZeroKnowledgeProofRequest) => {
     const cs = r.query.credentialSubject
       ? Object.keys(r.query.credentialSubject)
           .sort()
@@ -35,7 +39,7 @@ export class InMemoryProofStorage implements IProofStorage {
           .join('|')
       : '';
     const s =
-      `id=${r.id}|circuit=${r.circuitId}|opt=${!!r.optional}|` +
+      `credId=${credId}|id=${r.id}|circuit=${r.circuitId}|opt=${!!r.optional}|` +
       `ctx=${r.query.context}|type=${r.query.type}|proofType=${r.query.proofType ?? ''}|` +
       `rev=${r.query.skipClaimRevocationCheck ?? ''}|group=${r.query.groupId ?? ''}|` +
       `issuers=[${r.query.allowedIssuers.sort().join(',')}]|` +
