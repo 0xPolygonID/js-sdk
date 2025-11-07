@@ -2894,13 +2894,16 @@ describe('auth', () => {
         circuitId: CircuitId.LinkedMultiQuery10,
         optional: false,
         query: {
-          groupId: 1,
           proofType: ProofType.BJJSignature,
           allowedIssuers: ['*'],
           type: 'BasicPerson',
           context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL',
           credentialStatus: {},
-          credentialSubject: {}
+          credentialSubject: {},
+          expirationDate: {
+            $eq: getDateFromUnixTimestamp(2793526400).toISOString()
+          },
+          issuanceDate: {}
         }
       }
     ];
