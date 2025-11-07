@@ -79,7 +79,10 @@ describe('identity', () => {
     idWallet = new IdentityWallet(registerKeyProvidersInMemoryKMS(), dataStorage, credWallet);
   });
 
-  it('createIdentity', async () => {
+  it('createIdentity with profile metadata check', async () => {
+    const expectedMetadata = {
+      shareSettings: { denied: { configurationId: ['requestId1', 'requestId2'] } }
+    };
     const { did, credential } = await createIdentity(idWallet);
 
     expect(did.string()).to.equal(expectedDID);
@@ -90,6 +93,21 @@ describe('identity', () => {
       did.string(),
       MerkleTreeType.Claims
     );
+
+    const verifier = 'http://verifier.com/';
+
+    const profileDid = await idWallet.createProfile(did, 10, verifier, {
+      metadata: expectedMetadata
+    });
+
+    const dbProfile = await idWallet.getProfilesByVerifier(verifier);
+
+    expect(dbProfile).not.to.be.undefined;
+    expect(dbProfile.length).to.be.eq(1);
+    expect(dbProfile[0].id).to.equal(profileDid.string());
+    expect(dbProfile[0].genesisIdentifier).to.equal(did.string());
+    expect(dbProfile[0].nonce).to.equal(10);
+    expect(dbProfile[0].metadata).to.deep.equal(expectedMetadata);
 
     expect((await claimsTree.root()).bigInt()).not.to.equal(0);
   });
