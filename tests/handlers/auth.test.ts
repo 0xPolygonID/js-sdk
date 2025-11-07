@@ -2844,7 +2844,9 @@ describe('auth', () => {
 
     const verifiableCredential = authRes.authResponse.body.scope[0].vp?.verifiableCredential;
     const vpCredentialSubject = verifiableCredential?.credentialSubject;
-    expect(vpCredentialSubject).to.toMatchObject(basicPersonCred.credentialSubject);
+    const expectedCredSubject = basicPersonCred.credentialSubject;
+    delete expectedCredSubject.id;
+    expect(vpCredentialSubject).to.toMatchObject(expectedCredSubject);
 
     const vpCredentialStatus = verifiableCredential?.credentialStatus;
     expect(vpCredentialStatus?.revocationNonce).to.equal(basicPersonCred.revocationOpts.nonce);
