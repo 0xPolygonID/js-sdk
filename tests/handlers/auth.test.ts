@@ -2842,12 +2842,11 @@ describe('auth', () => {
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');
 
-    const vpCredentialSubject =
-      authRes.authResponse.body.scope[0].vp?.verifiableCredential.credentialSubject;
+    const verifiableCredential = authRes.authResponse.body.scope[0].vp?.verifiableCredential;
+    const vpCredentialSubject = verifiableCredential?.credentialSubject;
     expect(vpCredentialSubject).to.toMatchObject(basicPersonCred.credentialSubject);
 
-    const vpCredentialStatus =
-      authRes.authResponse.body.scope[0].vp?.verifiableCredential.credentialStatus;
+    const vpCredentialStatus = verifiableCredential?.credentialStatus;
     expect(vpCredentialStatus?.revocationNonce).to.equal(basicPersonCred.revocationOpts.nonce);
     expect(vpCredentialStatus?.type).to.equal(basicPersonCred.revocationOpts.type);
 

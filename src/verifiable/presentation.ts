@@ -1,7 +1,7 @@
-import { CredentialStatusType, VerifiableConstants } from './constants';
+import { VerifiableConstants } from './constants';
 import { Options, Path } from '@iden3/js-jsonld-merklization';
 import { W3CCredential } from './credential';
-import { PropertyQueryKind, QueryMetadata } from '../proof';
+import { QueryMetadata } from '../proof';
 import { VerifiablePresentation, JsonDocumentObject } from '../iden3comm';
 
 export const stringByPath = (obj: { [key: string]: unknown }, path: string): string => {
@@ -25,7 +25,6 @@ export const buildFieldPath = async (
   ldSchema: string,
   contextType: string,
   field: string,
-  kind: PropertyQueryKind = 'credentialSubject',
   opts?: Options
 ): Promise<Path> => {
   let path = new Path();
@@ -33,28 +32,22 @@ export const buildFieldPath = async (
   if (field) {
     path = await Path.getContextPathKey(ldSchema, contextType, field, opts);
   }
-  if (kind === 'credentialSubject') {
-    path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
-  }
 
-  if (Object.values(CredentialStatusType).includes(contextType as CredentialStatusType)) {
-    path.prepend([VerifiableConstants.CREDENTIAL_STATUS_PATH]);
+  switch (ldSchema) {
+    case VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT:
+      path.prepend([VerifiableConstants.CREDENTIAL_STATUS_PATH]);
+      break;
+    case VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018:
+      break;
+    default:
+      path.prepend([VerifiableConstants.CREDENTIAL_SUBJECT_PATH]);
   }
   return path;
 };
 
-export const findValue = (
-  fieldName: string,
-  credential: W3CCredential,
-  kind: PropertyQueryKind = 'credentialSubject'
-): JsonDocumentObject => {
+export const findValue = (fieldName: string, credential: W3CCredential): JsonDocumentObject => {
   const [first, ...rest] = fieldName.split('.');
-  let v;
-  if (kind === 'credentialSubject') {
-    v = credential.credentialSubject[first];
-  } else {
-    v = credential[first as keyof W3CCredential];
-  }
+  let v: unknown = credential[first as keyof W3CCredential];
 
   for (const part of rest) {
     v = (v as JsonDocumentObject)[part];
@@ -81,44 +74,45 @@ export const createVerifiablePresentation = (
       '@context': credential['@context'],
       type: vcTypes,
       credentialSubject: {
+        id: credential.credentialSubject.id,
         type: tp
+      },
+      credentialStatus: {
+        id: credential.credentialStatus?.id,
+        type: credential.credentialStatus?.type
       }
     }
   };
 
-  let result: JsonDocumentObject = {};
-  let w3cResult: JsonDocumentObject = {
-    credentialStatus: {}
-  };
+  let w3cResult: JsonDocumentObject = {};
   for (const query of queries) {
     const parts = query.fieldName.split('.');
     const current: JsonDocumentObject = parts.reduceRight(
       (acc: JsonDocumentObject, part: string) => {
-        if (result[part]) {
-          return { [part]: { ...(result[part] as JsonDocumentObject), ...acc } };
+        if (w3cResult[part]) {
+          return { [part]: { ...(w3cResult[part] as JsonDocumentObject), ...acc } };
         }
         return { [part]: acc };
       },
-      findValue(query.fieldName, credential, query.kind) as JsonDocumentObject
+      findValue(query.fieldName, credential) as JsonDocumentObject
     );
 
-    if (!query.kind || query.kind === 'credentialSubject') {
-      result = { ...result, ...current };
-    } else {
-      w3cResult = { ...w3cResult, ...current };
-    }
+    w3cResult = { ...w3cResult, ...current };
   }
 
-  w3cResult.credentialStatus = {
-    ...(w3cResult.credentialStatus as object),
-    id: credential.credentialStatus.id,
-    type: credential.credentialStatus.type
-  };
+  if (w3cResult.credentialStatus) {
+    w3cResult.credentialStatus = {
+      ...skeleton.verifiableCredential.credentialStatus,
+      ...(w3cResult.credentialStatus as JsonDocumentObject)
+    };
+  }
 
-  skeleton.verifiableCredential.credentialSubject = {
-    ...skeleton.verifiableCredential.credentialSubject,
-    ...result
-  };
+  if (w3cResult.credentialSubject) {
+    w3cResult.credentialSubject = {
+      ...skeleton.verifiableCredential.credentialSubject,
+      ...(w3cResult.credentialSubject as JsonDocumentObject)
+    };
+  }
 
   skeleton.verifiableCredential = {
     ...skeleton.verifiableCredential,

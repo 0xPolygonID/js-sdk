@@ -486,7 +486,6 @@ export class PubSignalsVerifier {
       if (request[i].queryMeta?.operator === Operators.SD) {
         const disclosedValue = await fieldValueFromVerifiablePresentation(
           request[i].queryMeta.fieldName,
-          request[i].queryMeta.kind,
           verifiablePresentation,
           this._documentLoader
         );

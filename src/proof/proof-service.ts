@@ -356,10 +356,7 @@ export class ProofService implements IProofService {
     for (const propertyMetadata of propertiesMetadata) {
       let credentialType = proofReq.query['type'] as string;
       // todo: check if we can move this to the parseQueryMetadata function
-      if (
-        propertyMetadata?.kind === 'w3cV1' &&
-        propertyMetadata.fieldName.startsWith('credentialStatus.')
-      ) {
+      if (propertyMetadata.fieldName.startsWith('credentialStatus.')) {
         credentialType = preparedCredential.credential.credentialStatus.type;
       }
       const queryMetadata = await parseQueryMetadata(
@@ -507,19 +504,9 @@ export class ProofService implements IProofService {
     }
 
     if (queryMetadata.operator === Operators.SD) {
-      const [first, ...rest] = queryMetadata.fieldName.split('.');
       let v;
-      if (queryMetadata?.kind === 'w3cV1') {
-        v = credential[first as keyof W3CCredential];
-        if (
-          queryMetadata.fieldName === 'credentialStatus' ||
-          queryMetadata.fieldName === 'credentialSubject'
-        ) {
-          v = (v as JsonDocumentObject).id;
-        }
-      } else {
-        v = credential.credentialSubject[first];
-      }
+      const [first, ...rest] = queryMetadata.fieldName.split('.');
+      v = credential[first as keyof W3CCredential];
       for (const part of rest) {
         v = (v as JsonDocumentObject)[part];
       }
@@ -550,11 +537,9 @@ export class ProofService implements IProofService {
   ): ZeroKnowledgeProofRequest {
     const { credentialStatus, credentialSubject } = request.query;
     if (credentialSubject && Object.keys(credentialSubject).length === 0) {
-      request.query.credentialSubjectFullDisclosure = true;
       request.query.credentialSubject = flattenToQueryShape(cred.credentialSubject);
     }
     if (credentialStatus && Object.keys(credentialStatus).length === 0) {
-      request.query.credentialStatusFullDisclosure = true;
       request.query.credentialStatus = flattenToQueryShape(cred.credentialStatus);
     }
     return request;
