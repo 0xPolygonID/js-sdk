@@ -159,60 +159,30 @@ const flattenNestedObject = (
   return result;
 };
 
-const parseCredentialStatus = (
+export const parseDocumentToPropertyQueries = (
+  documentName: 'credentialStatus' | 'credentialSubject',
   document?: JsonDocumentObject,
   vp?: VerifiablePresentation
 ): PropertyQuery[] => {
-  const fieldName = 'credentialStatus';
   if (!document) {
     return [{ operator: QueryOperators.$noop, fieldName: '' }];
   }
   // if document is empty, full disclosure is needed
   if (Object.entries(document).length === 0) {
     if (!vp) {
-      throw new Error(`VerifiablePresentation is required for full disclosure of credentialStatus`);
+      throw new Error(`VerifiablePresentation is required for full disclosure of ${documentName}`);
     }
     const queries: PropertyQuery[] = [];
     const flattened = flattenToQueryShape(
-      (vp.verifiableCredential as Record<string, any>)[fieldName],
-      fieldName
+      (vp.verifiableCredential as Record<string, any>)[documentName],
+      documentName
     );
     queries.push(...parseJsonDocumentObject(flattened));
     return queries;
   }
   const flattenedObject = flattenNestedObject(
     document as Record<string, JsonDocumentObject | undefined>,
-    fieldName
-  );
-  return parseJsonDocumentObject(flattenedObject);
-};
-
-const parseCredentialSubjectWithVP = (
-  document?: JsonDocumentObject,
-  vp?: VerifiablePresentation
-): PropertyQuery[] => {
-  const fieldName = 'credentialSubject';
-  if (!document) {
-    return [{ operator: QueryOperators.$noop, fieldName: '' }];
-  }
-  // if document is empty, full disclosure is needed
-  if (Object.entries(document).length === 0) {
-    if (!vp) {
-      throw new Error(
-        `VerifiablePresentation is required for full disclosure of credentialSubject`
-      );
-    }
-    const queries: PropertyQuery[] = [];
-    const flattened = flattenToQueryShape(
-      (vp.verifiableCredential as Record<string, any>)[fieldName],
-      fieldName
-    );
-    queries.push(...parseJsonDocumentObject(flattened));
-    return queries;
-  }
-  const flattenedObject = flattenNestedObject(
-    document as Record<string, JsonDocumentObject | undefined>,
-    fieldName
+    documentName
   );
   return parseJsonDocumentObject(flattenedObject);
 };
@@ -269,6 +239,11 @@ export const parseJsonDocumentObject = (document?: JsonDocumentObject): Property
   return queries;
 };
 
+/**
+ * @deprecated use parseDocumentToPropertyQueries instead
+ * @param credentialSubject credentialSubject object
+ * @returns PropertyQuery[]
+ */
 export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): PropertyQuery[] => {
   return parseJsonDocumentObject(credentialSubject);
 };
@@ -388,7 +363,11 @@ export const parseProofQueryMetadata = async (
   options: Options,
   vp?: VerifiablePresentation
 ): Promise<QueryMetadata[]> => {
-  const propertyQuery = parseCredentialSubjectWithVP(query.credentialSubject, vp);
+  const propertyQuery = parseDocumentToPropertyQueries(
+    'credentialSubject',
+    query.credentialSubject,
+    vp
+  );
   if (query.expirationDate) {
     propertyQuery.push(...parseJsonDocumentObject({ expirationDate: query.expirationDate }));
   }
@@ -397,7 +376,11 @@ export const parseProofQueryMetadata = async (
   }
 
   if (query.credentialStatus) {
-    const credSubject = parseCredentialStatus(query.credentialStatus, vp);
+    const credSubject = parseDocumentToPropertyQueries(
+      'credentialStatus',
+      query.credentialStatus,
+      vp
+    );
     propertyQuery.push(...credSubject);
   }
 
@@ -421,7 +404,7 @@ export const parseQueriesMetadata = async (
   credentialSubject: JsonDocumentObject,
   options: Options
 ): Promise<QueryMetadata[]> => {
-  const queriesMetadata = parseCredentialSubject(credentialSubject);
+  const queriesMetadata = parseDocumentToPropertyQueries('credentialSubject', credentialSubject);
   return Promise.all(
     queriesMetadata.map((m) => parseQueryMetadata(m, ldContextJSON, credentialType, options))
   );
