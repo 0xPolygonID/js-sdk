@@ -262,8 +262,9 @@ export const parseQueryMetadata = async (
       ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT;
       break;
     case 'credentialSubject':
-    case '':
       propertyQuery.fieldName = propertyQuery.fieldName.replace('credentialSubject.', '');
+      break;
+    case '':
       break;
     default:
       ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;

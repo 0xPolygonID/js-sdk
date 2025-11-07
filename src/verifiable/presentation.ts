@@ -74,7 +74,7 @@ export const createVerifiablePresentation = (
       '@context': credential['@context'],
       type: vcTypes,
       credentialSubject: {
-        // id: credential.credentialSubject.id,
+        // id: credential.credentialSubject.id, // Should we include id in credentialSubject?
         type: tp
       },
       credentialStatus: {

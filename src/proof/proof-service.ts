@@ -539,7 +539,7 @@ export class ProofService implements IProofService {
     if (credentialSubject && Object.keys(credentialSubject).length === 0) {
       request.query.credentialSubject = flattenToQueryShape(cred.credentialSubject);
     }
-    if (credentialStatus && Object.keys(credentialStatus).length === 0) {
+    if (credentialStatus && Object.keys(credentialStatus).length === 0 && cred.credentialStatus) {
       request.query.credentialStatus = flattenToQueryShape(cred.credentialStatus);
     }
     return request;
