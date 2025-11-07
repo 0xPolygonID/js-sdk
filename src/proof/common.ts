@@ -139,6 +139,9 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
     );
     propertiesMetadata.push(...parseJsonDocumentObject(flattenedObject));
   }
+  if (propertiesMetadata.length === 0) {
+    return [{ operator: QueryOperators.$noop, fieldName: '' }];
+  }
   return propertiesMetadata;
 };
 
@@ -284,6 +287,7 @@ export const parseQueryMetadata = async (
       ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT;
       break;
     case 'credentialSubject':
+    case '':
       propertyQuery.fieldName = propertyQuery.fieldName.replace('credentialSubject.', '');
       break;
     default:
