@@ -160,7 +160,7 @@ export const processZeroKnowledgeProofRequests = async (
         credential: credWithRevStatus?.cred,
         credentialRevocationStatus: credWithRevStatus?.revStatus,
         linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined,
-        bypassProofsCache: opts.bypassProofsCache
+        bypassCache: opts.bypassProofsCache
       });
     } catch (error: unknown) {
       const expectedErrors = [

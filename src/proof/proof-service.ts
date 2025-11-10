@@ -311,7 +311,7 @@ export class ProofService implements IProofService {
       );
     }
 
-    if (this._proofsCacheStorage && !opts?.bypassProofsCache) {
+    if (this._proofsCacheStorage && !opts?.bypassCache) {
       const cachedProof = await this._proofsCacheStorage.getProof(
         credentialWithRevStatus.cred.id,
         proofReq

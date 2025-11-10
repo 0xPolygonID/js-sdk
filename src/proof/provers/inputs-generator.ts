@@ -50,7 +50,7 @@ export type ProofGenerationOptions = {
   credentialRevocationStatus?: RevocationStatus;
   verifierDid?: DID;
   linkNonce?: bigint;
-  bypassProofsCache?: boolean;
+  bypassCache?: boolean;
 };
 
 export type AuthProofGenerationOptions = {
