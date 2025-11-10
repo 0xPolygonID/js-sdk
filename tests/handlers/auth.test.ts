@@ -2804,6 +2804,18 @@ describe('auth', () => {
     const proofReqs: ZeroKnowledgeProofRequest[] = [
       {
         id: 1,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'BasicPerson',
+          context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL'
+        }
+      },
+      {
+        id: 2,
         circuitId: CircuitId.LinkedMultiQuery10,
         optional: false,
         query: {
@@ -2842,7 +2854,7 @@ describe('auth', () => {
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');
 
-    const verifiableCredential = authRes.authResponse.body.scope[0].vp?.verifiableCredential;
+    const verifiableCredential = authRes.authResponse.body.scope[1].vp?.verifiableCredential;
     const vpCredentialSubject = verifiableCredential?.credentialSubject;
     const { id: credSubjId, ...expectedCredSubject } = basicPersonCred.credentialSubject;
     expect(vpCredentialSubject).to.toMatchObject(expectedCredSubject);
