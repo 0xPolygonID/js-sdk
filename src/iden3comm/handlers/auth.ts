@@ -173,7 +173,7 @@ export interface IAuthHandler {
 type AuthReqOptions = {
   senderDid: DID;
   mediaType?: MediaType;
-  bypassCache?: boolean;
+  bypassProofsCache?: boolean;
 };
 
 type AuthRespOptions = {
@@ -194,7 +194,7 @@ export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: HandlerPackerParams;
   preferredAuthProvingMethod?: ProvingMethodAlg;
-  bypassCache?: boolean;
+  bypassProofsCache?: boolean;
 };
 
 /**
@@ -283,7 +283,11 @@ export class AuthHandler
       authRequest?.body.scope,
       from,
       this._proofService,
-      { mediaType, supportedCircuits: this._supportedCircuits, bypassCache: ctx.bypassCache }
+      {
+        mediaType,
+        supportedCircuits: this._supportedCircuits,
+        bypassProofsCache: ctx.bypassProofsCache
+      }
     );
 
     return {
@@ -325,7 +329,7 @@ export class AuthHandler
     const authResponse = await this.handleAuthRequest(authRequest, {
       senderDid: did,
       mediaType: opts.mediaType,
-      bypassCache: opts.bypassCache
+      bypassProofsCache: opts.bypassProofsCache
     });
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));

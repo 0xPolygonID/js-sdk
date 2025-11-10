@@ -514,7 +514,7 @@ describe('auth', () => {
   it('auth flow identity (profile) with circuits V3 and caching', async () => {
     proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE, {
       ...merklizeOpts,
-      cacheProofsStorage: new InMemoryProofStorage()
+      proofsCacheStorage: new InMemoryProofStorage()
     });
     authHandler = new AuthHandler(packageMgr, proofService);
 
@@ -643,7 +643,7 @@ describe('auth', () => {
     // bypass cache and generate all new proofs
     const authResWithoutCache = await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
       mediaType: MediaType.ZKPMessage,
-      bypassCache: true
+      bypassProofsCache: true
     });
     expect(authResWithoutCache.authResponse.body.scope).to.have.lengthOf(2);
     const bypassCacheKYCAgeCredential = authResWithoutCache.authResponse.body.scope.find(

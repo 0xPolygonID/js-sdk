@@ -79,7 +79,7 @@ export type VerificationResultMetadata = {
  */
 export type ProofServiceOptions = Options & {
   prover?: IZKProver;
-  cacheProofsStorage?: IProofStorage;
+  proofsCacheStorage?: IProofStorage;
 };
 
 export interface ProofVerifyOpts {
@@ -219,7 +219,7 @@ export class ProofService implements IProofService {
   private readonly _ldOptions: Options;
   private readonly _inputsGenerator: InputGenerator;
   private readonly _pubSignalsVerifier: PubSignalsVerifier;
-  private readonly _cacheProofsStorage?: IProofStorage;
+  private readonly _proofsCacheStorage?: IProofStorage;
   /**
    * Creates an instance of ProofService.
    * @param {IIdentityWallet} _identityWallet - identity wallet
@@ -241,7 +241,7 @@ export class ProofService implements IProofService {
       opts?.documentLoader ?? cacheLoader(opts),
       _stateStorage
     );
-    this._cacheProofsStorage = opts?.cacheProofsStorage;
+    this._proofsCacheStorage = opts?.proofsCacheStorage;
   }
 
   /** {@inheritdoc IProofService.verifyProof} */
@@ -311,8 +311,8 @@ export class ProofService implements IProofService {
       );
     }
 
-    if (this._cacheProofsStorage && !opts?.bypassCache) {
-      const cachedProof = await this._cacheProofsStorage.getProof(
+    if (this._proofsCacheStorage && !opts?.bypassProofsCache) {
+      const cachedProof = await this._proofsCacheStorage.getProof(
         credentialWithRevStatus.cred.id,
         proofReq
       );
@@ -416,8 +416,8 @@ export class ProofService implements IProofService {
       proof,
       pub_signals
     };
-    if (this._cacheProofsStorage) {
-      await this._cacheProofsStorage.storeProof(credentialWithRevStatus.cred.id, proofReq, zkpRes);
+    if (this._proofsCacheStorage) {
+      await this._proofsCacheStorage.storeProof(credentialWithRevStatus.cred.id, proofReq, zkpRes);
     }
     return zkpRes;
   }
