@@ -38,7 +38,7 @@ export const createZkpRequestCacheKey = (
   const params = r.params
     ? Object.keys(r.params)
         .sort()
-        .map((k) => `${k}:${(r.params as any)[k]}`)
+        .map((k) => `${k}:${(r.params as JsonDocumentObject)[k]}`)
         .join('|')
     : '';
   const s =
