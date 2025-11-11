@@ -49,7 +49,7 @@ import {
   ZeroKnowledgeProofAuthResponse
 } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
-import { ICircuitStorage, IStateStorage } from '../storage';
+import { ICircuitStorage, IProofStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import {
   AuthProofGenerationOptions,
@@ -80,6 +80,7 @@ export type VerificationResultMetadata = {
  */
 export type ProofServiceOptions = Options & {
   prover?: IZKProver;
+  proofsCacheStorage?: IProofStorage;
 };
 
 export interface ProofVerifyOpts {
@@ -219,6 +220,7 @@ export class ProofService implements IProofService {
   private readonly _ldOptions: Options;
   private readonly _inputsGenerator: InputGenerator;
   private readonly _pubSignalsVerifier: PubSignalsVerifier;
+  private readonly _proofsCacheStorage?: IProofStorage;
   /**
    * Creates an instance of ProofService.
    * @param {IIdentityWallet} _identityWallet - identity wallet
@@ -240,6 +242,7 @@ export class ProofService implements IProofService {
       opts?.documentLoader ?? cacheLoader(opts),
       _stateStorage
     );
+    this._proofsCacheStorage = opts?.proofsCacheStorage;
   }
 
   /** {@inheritdoc IProofService.verifyProof} */
@@ -307,6 +310,16 @@ export class ProofService implements IProofService {
         VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_QUERY +
           ` ${JSON.stringify(proofReq.query)}`
       );
+    }
+
+    if (this._proofsCacheStorage && !opts?.bypassCache) {
+      const cachedProof = await this._proofsCacheStorage.getProof(
+        credentialWithRevStatus.cred.id,
+        proofReq
+      );
+      if (cachedProof) {
+        return cachedProof;
+      }
     }
 
     const credentialCoreClaim = await this._identityWallet.getCoreClaimFromCredential(
@@ -398,13 +411,17 @@ export class ProofService implements IProofService {
 
     const { proof, pub_signals } = await this._prover.generate(inputs, proofReq.circuitId);
 
-    return {
+    const zkpRes = {
       id: proofReq.id,
       circuitId: proofReq.circuitId,
       vp,
       proof,
       pub_signals
     };
+    if (this._proofsCacheStorage) {
+      await this._proofsCacheStorage.storeProof(credentialWithRevStatus.cred.id, proofReq, zkpRes);
+    }
+    return zkpRes;
   }
 
   /** {@inheritdoc IProofService.generateAuthProof} */

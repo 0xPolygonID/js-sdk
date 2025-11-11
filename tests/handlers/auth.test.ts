@@ -47,7 +47,8 @@ import {
   createAuthorizationRequest,
   createInMemoryCache,
   DEFAULT_CACHE_MAX_SIZE,
-  RootInfo
+  RootInfo,
+  InMemoryProofStorage
 } from '../../src';
 import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import {
@@ -98,12 +99,13 @@ describe('auth', () => {
 
   let userDID: DID;
   let issuerDID: DID;
+  let circuitStorage: FSCircuitStorage;
 
   let merklizeOpts;
   beforeEach(async () => {
     const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
-    const circuitStorage = new FSCircuitStorage({
+    circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, '../proofs/testdata')
     });
 
@@ -515,6 +517,150 @@ describe('auth', () => {
     expect(token).to.be.a('object');
   });
 
+  it('auth flow identity (profile) with circuits V3 and caching', async () => {
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE, {
+      ...merklizeOpts,
+      proofsCacheStorage: new InMemoryProofStorage()
+    });
+    authHandler = new AuthHandler(packageMgr, proofService);
+
+    const profileDID = await idWallet.createProfile(userDID, 777, issuerDID.string());
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const ageCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
+    await credWallet.save(ageCred);
+    // all optional, currently have only KYCAgeCredential credential
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: true,
+        query: {
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+          credentialSubject: {
+            documentType: {
+              $eq: 99
+            }
+          }
+        }
+      },
+      {
+        id: 2,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: true,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            hireDate: {
+              $eq: '2023-12-11'
+            }
+          }
+        },
+        params: {
+          nullifierSessionId: '12345'
+        }
+      }
+    ];
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'message',
+      scope: proofReqs
+    };
+
+    const authReq: AuthorizationRequestMessage = {
+      id: uuid.v4(),
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: uuid.v4(),
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    // handle and cache KYCAgeCredential, skip others (all optional)
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    expect(authRes.authResponse.body.scope).to.have.lengthOf(1);
+    const generatedKYCAgeCredential = authRes.authResponse.body.scope[0];
+    expect(generatedKYCAgeCredential).to.not.be.undefined;
+
+    // issue KYCEmployee credential
+    const employeeCredRequest: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCEmployee-v101.json',
+      type: 'KYCEmployee',
+      credentialSubject: {
+        id: profileDID.string(),
+        ZKPexperiance: true,
+        hireDate: '2023-12-11',
+        position: 'boss',
+        salary: 200,
+        documentType: 1
+      },
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(
+      issuerDID,
+      employeeCredRequest,
+      merklizeOpts
+    );
+
+    await credWallet.save(employeeCred);
+
+    // now all proofs should be returned, one from cache, two generated
+    const authResWithCached = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    expect(authResWithCached.authResponse.body.scope).to.have.lengthOf(2);
+    const cachedKYCAgeCredential = authResWithCached.authResponse.body.scope.find(
+      (pr) => pr.id === 1
+    );
+    expect(cachedKYCAgeCredential).to.not.be.undefined;
+    const timestampPubSignalIndex = 11;
+    expect(generatedKYCAgeCredential.pub_signals[timestampPubSignalIndex]).to.equal(
+      cachedKYCAgeCredential?.pub_signals[timestampPubSignalIndex]
+    );
+
+    // bypass cache and generate all new proofs
+    const authResWithoutCache = await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
+      mediaType: MediaType.ZKPMessage,
+      bypassProofsCache: true
+    });
+    expect(authResWithoutCache.authResponse.body.scope).to.have.lengthOf(2);
+    const bypassCacheKYCAgeCredential = authResWithoutCache.authResponse.body.scope.find(
+      (pr) => pr.id === 1
+    );
+    expect(bypassCacheKYCAgeCredential).to.not.be.undefined;
+    expect(cachedKYCAgeCredential?.pub_signals[timestampPubSignalIndex]).to.not.equal(
+      bypassCacheKYCAgeCredential?.pub_signals[timestampPubSignalIndex]
+    );
+  });
+
   it('auth flow identity (profile) with ethereum identity issuer with circuits V3', async () => {
     const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
 
@@ -723,10 +869,6 @@ describe('auth', () => {
       mt: new InMemoryMerkleTreeStorage(40),
       states: new EthStateStorage(stateEthConfig)
     };
-    const circuitStorage = new FSCircuitStorage({
-      dirname: path.join(__dirname, '../proofs/testdata')
-    });
-
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -1691,9 +1833,6 @@ describe('auth', () => {
 
     const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(eth);
-    const circuitStorage = new FSCircuitStorage({
-      dirname: path.join(__dirname, '../proofs/testdata')
-    });
 
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
@@ -1878,10 +2017,6 @@ describe('auth', () => {
 
     const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(eth);
-    const circuitStorage = new FSCircuitStorage({
-      dirname: path.join(__dirname, '../proofs/testdata')
-    });
-
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(
       CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
@@ -2579,9 +2714,6 @@ describe('auth', () => {
     await handleAuthorizationRequest(userDID, authReqBody);
 
     // add second Bjj auth credential
-    const circuitStorage = new FSCircuitStorage({
-      dirname: path.join(__dirname, '../proofs/testdata')
-    });
     const prover = new NativeProver(circuitStorage);
 
     const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
