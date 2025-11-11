@@ -7,20 +7,23 @@ import {
   Operators,
   QueryOperators
 } from '../circuits';
-import { StateProof } from '../storage/entities/state';
 import {
   MerkleTreeProofWithTreeState,
   RevocationStatus,
   W3CCredential,
   buildFieldPath,
   getSerializationAttrFromContext,
-  getFieldSlotIndex
+  getFieldSlotIndex,
+  VerifiableConstants,
+  ProofQuery,
+  CredentialStatusType
 } from '../verifiable';
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { byteEncoder } from '../utils';
-import { JsonDocumentObject } from '../iden3comm';
+import { JsonDocumentObject, VerifiablePresentation, ZeroKnowledgeProofQuery } from '../iden3comm';
 import { Claim } from '@iden3/js-iden3-core';
 import { poseidon } from '@iden3/js-crypto';
+import { StateProof } from '../storage';
 
 export type PreparedCredential = {
   credential: W3CCredential;
@@ -112,14 +115,105 @@ export type QueryMetadata = PropertyQuery & {
   merklizedSchema: boolean;
 };
 
-export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): PropertyQuery[] => {
-  // credentialSubject is empty
-  if (!credentialSubject) {
+export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] => {
+  const propertiesMetadata: PropertyQuery[] = [];
+  if (query.credentialSubject) {
+    const credSubjFlattened = flattenNestedObject(
+      query.credentialSubject as Record<string, JsonDocumentObject | undefined>,
+      'credentialSubject'
+    );
+    propertiesMetadata.push(...parseJsonDocumentObject(credSubjFlattened));
+  }
+  if (query.expirationDate) {
+    const expirationDate = parseJsonDocumentObject({ expirationDate: query.expirationDate });
+    propertiesMetadata.push(...expirationDate);
+  }
+  if (query.issuanceDate) {
+    const issuanceDate = parseJsonDocumentObject({ issuanceDate: query.issuanceDate });
+    propertiesMetadata.push(...issuanceDate);
+  }
+  if (query.credentialStatus) {
+    const flattenedObject = flattenNestedObject(
+      query.credentialStatus as Record<string, JsonDocumentObject | undefined>,
+      'credentialStatus'
+    );
+    propertiesMetadata.push(...parseJsonDocumentObject(flattenedObject));
+  }
+  if (propertiesMetadata.length === 0) {
+    return [{ operator: QueryOperators.$noop, fieldName: '' }];
+  }
+  return propertiesMetadata;
+};
+
+const flattenNestedObject = (
+  input: Record<string, JsonDocumentObject | undefined>,
+  parentKey: string
+): Record<string, JsonDocumentObject> => {
+  const result: Record<string, JsonDocumentObject> = {};
+
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined) {
+      result[`${parentKey}.${key}`] = value;
+    }
+  }
+  return result;
+};
+
+export const parseDocumentToPropertyQueries = (
+  documentName: 'credentialStatus' | 'credentialSubject',
+  document?: JsonDocumentObject,
+  vp?: VerifiablePresentation
+): PropertyQuery[] => {
+  if (!document) {
+    return [{ operator: QueryOperators.$noop, fieldName: '' }];
+  }
+  // if document is empty, full disclosure is needed
+  if (Object.entries(document).length === 0) {
+    if (!vp) {
+      throw new Error(`VerifiablePresentation is required for full disclosure of ${documentName}`);
+    }
+    const queries: PropertyQuery[] = [];
+    const flattened = flattenToQueryShape(
+      (vp.verifiableCredential as Record<string, any>)[documentName],
+      documentName
+    );
+    queries.push(...parseJsonDocumentObject(flattened));
+    return queries;
+  }
+  const flattenedObject = flattenNestedObject(
+    document as Record<string, JsonDocumentObject | undefined>,
+    documentName
+  );
+  return parseJsonDocumentObject(flattenedObject);
+};
+
+export const flattenToQueryShape = (
+  obj: Record<string, any>,
+  parentKey = ''
+): JsonDocumentObject => {
+  const result: JsonDocumentObject = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === 'id' || key === 'type') {
+      continue;
+    }
+    const fullKey = parentKey ? `${parentKey}.${key}` : key;
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      Object.assign(result, flattenToQueryShape(value, fullKey));
+    } else {
+      result[fullKey] = {};
+    }
+  }
+  return result;
+};
+
+export const parseJsonDocumentObject = (document?: JsonDocumentObject): PropertyQuery[] => {
+  // document is empty
+  if (!document) {
     return [{ operator: QueryOperators.$noop, fieldName: '' }];
   }
 
   const queries: PropertyQuery[] = [];
-  const entries = Object.entries(credentialSubject);
+  const entries = Object.entries(document);
   if (!entries.length) {
     throw new Error(`query must have at least 1 predicate`);
   }
@@ -130,7 +224,7 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
     const isSelectiveDisclosure = fieldReqEntries.length === 0;
 
     if (isSelectiveDisclosure) {
-      queries.push({ operator: QueryOperators.$sd, fieldName: fieldName });
+      queries.push({ operator: QueryOperators.$sd, fieldName });
       continue;
     }
 
@@ -145,12 +239,37 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
   return queries;
 };
 
+/**
+ * @deprecated use parseDocumentToPropertyQueries instead
+ * @param credentialSubject credentialSubject object
+ * @returns PropertyQuery[]
+ */
+export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): PropertyQuery[] => {
+  return parseJsonDocumentObject(credentialSubject);
+};
+
 export const parseQueryMetadata = async (
   propertyQuery: PropertyQuery,
   ldContextJSON: string,
   credentialType: string,
   options: Options
 ): Promise<QueryMetadata> => {
+  const replacedFieldName = propertyQuery.fieldName;
+  const [fieldParentObj] = propertyQuery.fieldName.split('.');
+  switch (fieldParentObj) {
+    case 'credentialStatus':
+      propertyQuery.fieldName = propertyQuery.fieldName.replace('credentialStatus.', '');
+      ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT;
+      break;
+    case 'credentialSubject':
+      propertyQuery.fieldName = propertyQuery.fieldName.replace('credentialSubject.', '');
+      break;
+    case '':
+      break;
+    default:
+      ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
+      credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
+  }
   const query: QueryMetadata = {
     ...propertyQuery,
     slotIndex: 0,
@@ -234,7 +353,50 @@ export const parseQueryMetadata = async (
     }
     query.values = values;
   }
+  query.fieldName = replacedFieldName;
   return query;
+};
+
+export const parseProofQueryMetadata = async (
+  credentialType: string,
+  ldContextJSON: string,
+  query: ProofQuery,
+  options: Options,
+  vp?: VerifiablePresentation
+): Promise<QueryMetadata[]> => {
+  const propertyQuery = parseDocumentToPropertyQueries(
+    'credentialSubject',
+    query.credentialSubject,
+    vp
+  );
+  if (query.expirationDate) {
+    propertyQuery.push(...parseJsonDocumentObject({ expirationDate: query.expirationDate }));
+  }
+  if (query.issuanceDate) {
+    propertyQuery.push(...parseJsonDocumentObject({ issuanceDate: query.issuanceDate }));
+  }
+
+  if (query.credentialStatus) {
+    const credSubject = parseDocumentToPropertyQueries(
+      'credentialStatus',
+      query.credentialStatus,
+      vp
+    );
+    propertyQuery.push(...credSubject);
+  }
+
+  return Promise.all(
+    propertyQuery.map((p) => {
+      let credType = credentialType;
+      if (p.fieldName.startsWith('credentialStatus.')) {
+        if (!vp?.verifiableCredential?.credentialStatus?.type) {
+          throw new Error('credentialStatus.type is required for w3cV1 queries');
+        }
+        credType = vp?.verifiableCredential?.credentialStatus?.type;
+      }
+      return parseQueryMetadata(p, ldContextJSON, credType, options);
+    })
+  );
 };
 
 export const parseQueriesMetadata = async (
@@ -243,7 +405,7 @@ export const parseQueriesMetadata = async (
   credentialSubject: JsonDocumentObject,
   options: Options
 ): Promise<QueryMetadata[]> => {
-  const queriesMetadata = parseCredentialSubject(credentialSubject);
+  const queriesMetadata = parseDocumentToPropertyQueries('credentialSubject', credentialSubject);
   return Promise.all(
     queriesMetadata.map((m) => parseQueryMetadata(m, ldContextJSON, credentialType, options))
   );

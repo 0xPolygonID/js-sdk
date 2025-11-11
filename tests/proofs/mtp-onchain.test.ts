@@ -237,7 +237,7 @@ describe.sequential('mtp onchain proofs', () => {
       challenge: BigInt(2),
       skipRevocation: false
     });
-    expect(vp).to.be.undefined;
+    expect(vp).not.to.be.undefined;
 
     const isValid = await proofService.verifyProof({ proof, pub_signals }, circuitId);
     expect(isValid).to.be.true;

@@ -27,8 +27,9 @@ import {
 import {
   PreparedCredential,
   QueryMetadata,
-  parseCredentialSubject,
+  flattenToQueryShape,
   parseQueryMetadata,
+  parseZKPQuery,
   toGISTProof,
   transformQueryValueToBigInts
 } from './common';
@@ -343,9 +344,9 @@ export class ProofService implements IProofService {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
-    const propertiesMetadata = parseCredentialSubject(
-      proofReq.query.credentialSubject as JsonDocumentObject
-    );
+    proofReq = this.preprocessZeroKnowledgeProofRequest(proofReq, preparedCredential.credential);
+
+    const propertiesMetadata = parseZKPQuery(proofReq.query);
     if (!propertiesMetadata.length) {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
     }
@@ -362,18 +363,21 @@ export class ProofService implements IProofService {
 
     const ldContext = await this.loadLdContext(context);
 
-    const credentialType = proofReq.query['type'] as string;
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];
 
     for (const propertyMetadata of propertiesMetadata) {
+      let credentialType = proofReq.query['type'] as string;
+      // todo: check if we can move this to the parseQueryMetadata function
+      if (propertyMetadata.fieldName.startsWith('credentialStatus.')) {
+        credentialType = preparedCredential.credential.credentialStatus.type;
+      }
       const queryMetadata = await parseQueryMetadata(
         propertyMetadata,
         byteDecoder.decode(ldContext),
         credentialType,
         this._ldOptions
       );
-
       queriesMetadata.push(queryMetadata);
       const circuitQuery = await this.toCircuitsQuery(
         preparedCredential.credential,
@@ -396,16 +400,14 @@ export class ProofService implements IProofService {
       circuitQueries
     );
 
+    const credentialType = proofReq.query['type'];
     const sdQueries = queriesMetadata.filter((q) => q.operator === Operators.SD);
-    let vp: VerifiablePresentation | undefined;
-    if (sdQueries.length) {
-      vp = createVerifiablePresentation(
-        context,
-        credentialType,
-        preparedCredential.credential,
-        sdQueries
-      );
-    }
+    const vp = createVerifiablePresentation(
+      context,
+      credentialType,
+      preparedCredential.credential,
+      sdQueries
+    );
 
     const { proof, pub_signals } = await this._prover.generate(inputs, proofReq.circuitId);
 
@@ -519,8 +521,9 @@ export class ProofService implements IProofService {
     }
 
     if (queryMetadata.operator === Operators.SD) {
+      let v;
       const [first, ...rest] = queryMetadata.fieldName.split('.');
-      let v = credential.credentialSubject[first];
+      v = credential[first as keyof W3CCredential];
       for (const part of rest) {
         v = (v as JsonDocumentObject)[part];
       }
@@ -542,6 +545,21 @@ export class ProofService implements IProofService {
       throw new Error(`can't load ld context from url ${context}`);
     }
     return byteEncoder.encode(JSON.stringify(ldSchema));
+  }
+
+  // for full object SD
+  private preprocessZeroKnowledgeProofRequest(
+    request: ZeroKnowledgeProofRequest,
+    cred: W3CCredential
+  ): ZeroKnowledgeProofRequest {
+    const { credentialStatus, credentialSubject } = request.query;
+    if (credentialSubject && Object.keys(credentialSubject).length === 0) {
+      request.query.credentialSubject = flattenToQueryShape(cred.credentialSubject);
+    }
+    if (credentialStatus && Object.keys(credentialStatus).length === 0 && cred.credentialStatus) {
+      request.query.credentialStatus = flattenToQueryShape(cred.credentialStatus);
+    }
+    return request;
   }
 
   /** {@inheritdoc IProofService.generateAuthV2Inputs} */

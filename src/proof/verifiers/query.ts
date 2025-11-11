@@ -271,7 +271,7 @@ export const fieldValueFromVerifiablePresentation = async (
 
   let merklizedPath: Path;
   try {
-    const p = `verifiableCredential.credentialSubject.${fieldName}`;
+    const p = `verifiableCredential.${fieldName}`;
     merklizedPath = await Path.fromDocument(null, strVerifiablePresentation, p, {
       documentLoader: ldLoader
     });

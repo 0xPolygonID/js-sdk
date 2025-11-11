@@ -51,7 +51,13 @@ import {
   InMemoryProofStorage
 } from '../../src';
 import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
-import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import {
+  Blockchain,
+  DID,
+  DidMethod,
+  NetworkId,
+  getDateFromUnixTimestamp
+} from '@iden3/js-iden3-core';
 import { describe, expect, it, beforeEach } from 'vitest';
 import { ethers } from 'ethers';
 import * as uuid from 'uuid';
@@ -2896,6 +2902,367 @@ describe('auth', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     await expect(authHandler.handleAuthorizationRequest(userDID, msgBytes)).rejects.toThrow(
       'no packer with profile which meets `accept` header requirements'
+    );
+  });
+
+  it('credential status + credential subject full SD', async () => {
+    const profileDID = await idWallet.createProfile(userDID, 777, issuerDID.string());
+    const basicPersonCred: CredentialRequest = {
+      credentialSchema: 'ipfs://QmTojMfyzxehCJVw7aUrdWuxdF68R7oLYooGHCUr9wwsef',
+      type: 'BasicPerson',
+      credentialSubject: {
+        id: profileDID.string(),
+        fullName: 'John Doe',
+        firstName: 'John',
+        familyName: 'Doe',
+        dateOfBirth: 838531598,
+        governmentIdentifier: 'RRRRR',
+        governmentIdentifierType: 'passport',
+        placeOfBirth: {
+          countryCode: 'UA-ua'
+        }
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL,
+        nonce: 2837597946
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(issuerDID, basicPersonCred, merklizeOpts);
+
+    await credWallet.saveAll([employeeCred]);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.AtomicQueryV3,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'BasicPerson',
+          context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL'
+        }
+      },
+      {
+        id: 2,
+        circuitId: CircuitId.LinkedMultiQuery10,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'BasicPerson',
+          context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL',
+          credentialStatus: {},
+          credentialSubject: {}
+        }
+      }
+    ];
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'message',
+      scope: proofReqs
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    const tokenStr = authRes.token;
+    expect(tokenStr).to.be.a('string');
+    const token = await Token.parse(tokenStr);
+    expect(token).to.be.a('object');
+
+    const verifiableCredential = authRes.authResponse.body.scope[1].vp?.verifiableCredential;
+    const vpCredentialSubject = verifiableCredential?.credentialSubject;
+    const { id: credSubjId, ...expectedCredSubject } = basicPersonCred.credentialSubject;
+    expect(vpCredentialSubject).to.toMatchObject(expectedCredSubject);
+    expect(credSubjId).to.not.empty;
+
+    const vpCredentialStatus = verifiableCredential?.credentialStatus;
+    expect(vpCredentialStatus?.revocationNonce).to.equal(basicPersonCred.revocationOpts.nonce);
+    expect(vpCredentialStatus?.type).to.equal(basicPersonCred.revocationOpts.type);
+
+    await authHandler.handleAuthorizationResponse(
+      authRes.authResponse,
+      authReq,
+      TEST_VERIFICATION_OPTS
+    );
+  });
+
+  it('credential status + credential subject full SD (more than 10 queries)', async () => {
+    const profileDID = await idWallet.createProfile(userDID, 777, issuerDID.string());
+    const basicPersonCred: CredentialRequest = {
+      credentialSchema: 'ipfs://QmTojMfyzxehCJVw7aUrdWuxdF68R7oLYooGHCUr9wwsef',
+      type: 'BasicPerson',
+      credentialSubject: {
+        id: profileDID.string(),
+        fullName: 'John Doe',
+        firstName: 'John',
+        familyName: 'Doe',
+        dateOfBirth: 838531598,
+        governmentIdentifier: 'RRRRR',
+        governmentIdentifierType: 'passport',
+        placeOfBirth: {
+          countryCode: 'UA-ua',
+          region: 'Kyiv'
+        }
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL,
+        nonce: 2837597946
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(issuerDID, basicPersonCred, merklizeOpts);
+
+    await credWallet.saveAll([employeeCred]);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.LinkedMultiQuery10,
+        optional: false,
+        query: {
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'BasicPerson',
+          context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL',
+          credentialStatus: {},
+          credentialSubject: {},
+          expirationDate: {
+            $eq: getDateFromUnixTimestamp(2793526400).toISOString()
+          },
+          issuanceDate: {}
+        }
+      }
+    ];
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'message',
+      scope: proofReqs
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    await expect(authHandler.handleAuthorizationRequest(userDID, msgBytes)).rejects.toThrow(
+      'circuit linkedMultiQuery10-beta.1 supports only 10 queries'
+    );
+  });
+
+  it('w3c field request: revocation nonce $eq, expirationDate $eq, issuanceDate SD', async () => {
+    const profileDID = await idWallet.createProfile(userDID, 777, issuerDID.string());
+
+    const basicPersonCredRequest: CredentialRequest = {
+      credentialSchema: 'ipfs://QmTojMfyzxehCJVw7aUrdWuxdF68R7oLYooGHCUr9wwsef',
+      type: 'BasicPerson',
+      credentialSubject: {
+        id: profileDID.string(),
+        fullName: 'John Doe',
+        firstName: 'John',
+        familyName: 'Doe',
+        dateOfBirth: 838531598,
+        governmentIdentifier: 'RRRRR',
+        governmentIdentifierType: 'passport',
+        placeOfBirth: {
+          countryCode: 'UA-ua'
+        }
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL,
+        nonce: 2837597946
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(
+      issuerDID,
+      basicPersonCredRequest,
+      merklizeOpts
+    );
+
+    await credWallet.saveAll([employeeCred]);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.LinkedMultiQuery10,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'BasicPerson',
+          context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL',
+          credentialStatus: {
+            revocationNonce: {
+              $eq: 2837597946
+            }
+          },
+          expirationDate: {
+            $eq: getDateFromUnixTimestamp(2793526400).toISOString()
+          },
+          issuanceDate: {},
+          credentialSubject: {
+            'placeOfBirth.countryCode': {}
+          }
+        }
+      }
+    ];
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'message',
+      scope: proofReqs
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    const tokenStr = authRes.token;
+    expect(tokenStr).to.be.a('string');
+    const token = await Token.parse(tokenStr);
+    expect(token).to.be.a('object');
+
+    await authHandler.handleAuthorizationResponse(
+      authRes.authResponse,
+      authReq,
+      TEST_VERIFICATION_OPTS
+    );
+  });
+
+  it('w3c field request: revocation nonce SD, expirationDate SD, issuanceDate SD', async () => {
+    const profileDID = await idWallet.createProfile(userDID, 777, issuerDID.string());
+
+    const basicPersonCredRequest: CredentialRequest = {
+      credentialSchema: 'ipfs://QmTojMfyzxehCJVw7aUrdWuxdF68R7oLYooGHCUr9wwsef',
+      type: 'BasicPerson',
+      credentialSubject: {
+        id: profileDID.string(),
+        fullName: 'John Doe',
+        firstName: 'John',
+        familyName: 'Doe',
+        dateOfBirth: 838531598,
+        governmentIdentifier: 'RRRRR',
+        governmentIdentifierType: 'passport',
+        placeOfBirth: {
+          countryCode: 'UA-ua'
+        }
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL,
+        nonce: 2837597946
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(
+      issuerDID,
+      basicPersonCredRequest,
+      merklizeOpts
+    );
+
+    await credWallet.saveAll([employeeCred]);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.LinkedMultiQuery10,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'BasicPerson',
+          context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL',
+          credentialStatus: {
+            revocationNonce: {}
+          },
+          expirationDate: {},
+          issuanceDate: {},
+          credentialSubject: {
+            'placeOfBirth.countryCode': {}
+          }
+        }
+      }
+    ];
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'message',
+      scope: proofReqs
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    const tokenStr = authRes.token;
+    expect(tokenStr).to.be.a('string');
+    const token = await Token.parse(tokenStr);
+    expect(token).to.be.a('object');
+
+    const vpCredentialStatus =
+      authRes.authResponse.body.scope[0].vp?.verifiableCredential.credentialStatus;
+    expect(vpCredentialStatus?.revocationNonce).to.equal(
+      basicPersonCredRequest.revocationOpts.nonce
+    );
+    expect(authRes.authResponse.body.scope[0].vp?.verifiableCredential['expirationDate']).to.equal(
+      getDateFromUnixTimestamp(basicPersonCredRequest.expiration as number).toISOString()
+    );
+    expect(authRes.authResponse.body.scope[0].vp?.verifiableCredential['issuanceDate']).to.be.a(
+      'string'
+    );
+    expect(vpCredentialStatus?.type).to.equal(basicPersonCredRequest.revocationOpts.type);
+
+    await authHandler.handleAuthorizationResponse(
+      authRes.authResponse,
+      authReq,
+      TEST_VERIFICATION_OPTS
     );
   });
 });

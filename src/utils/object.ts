@@ -12,6 +12,15 @@ export function mergeObjects(
   credSubject: JsonDocumentObject,
   otherCredSubject: JsonDocumentObject
 ) {
+  if (!credSubject && otherCredSubject) {
+    return otherCredSubject;
+  }
+  if (!otherCredSubject && credSubject) {
+    return credSubject;
+  }
+  if (!credSubject && !otherCredSubject) {
+    return {};
+  }
   let result = {} as JsonDocumentObject;
   const credSubjectKeys = Object.keys(credSubject);
 
