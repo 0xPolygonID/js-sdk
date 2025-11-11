@@ -81,7 +81,7 @@ describe('identity', () => {
 
   it('createIdentity with profile metadata check', async () => {
     const expectedMetadata = {
-      shareSettings: { denied: { configurationId: ['requestId1', 'requestId2'] } }
+      profileShareSettings: { forbidden: { configurationId: ['requestId1', 'requestId2'] } }
     };
     const { did, credential } = await createIdentity(idWallet);
 
