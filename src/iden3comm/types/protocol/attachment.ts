@@ -4,6 +4,7 @@ export type Attachment = {
   id: string;
   description?: string;
   media_type?: string;
+  format?: string;
   data: AttachData;
 };
 
