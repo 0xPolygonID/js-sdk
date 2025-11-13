@@ -81,11 +81,22 @@ export class ContractRequestHandler
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
     CircuitId.AtomicQueryV3OnChain,
+    CircuitId.AtomicQueryV3OnChainStable,
+    CircuitId.AtomicQueryV3OnChainStable_16_16_64_16_32,
+
     // Now we support off-chain circuits on-chain
     // TODO: We need to create validators for them
     CircuitId.AuthV2,
-    CircuitId.AtomicQueryV3,
-    CircuitId.LinkedMultiQuery10
+    CircuitId.AuthV3,
+    CircuitId.AuthV3_8_32,
+    CircuitId.AtomicQueryV3Stable,
+    CircuitId.AtomicQueryV3Stable_16_16_64,
+    CircuitId.AtomicQueryV3Universal,
+    CircuitId.AtomicQueryV3Universal_16_16_64,
+    CircuitId.LinkedMultiQuery10,
+    CircuitId.LinkedMultiQuery10V2,
+    CircuitId.LinkedMultiQuery3,
+    CircuitId.LinkedMultiQuery5
   ];
 
   /**

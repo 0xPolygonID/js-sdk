@@ -105,9 +105,30 @@ export const circuitValidator: {
   [CircuitId.AuthV3]: { maxQueriesCount: 0, supportedOperations: [] },
   [CircuitId.AuthV3_8_32]: { maxQueriesCount: 0, supportedOperations: [] },
   [CircuitId.StateTransition]: { maxQueriesCount: 0, supportedOperations: [] },
+  [CircuitId.LinkedMultiQuery10]: { maxQueriesCount: 10, supportedOperations: allOperations },
+
+  [CircuitId.AtomicQueryV3Stable]: { maxQueriesCount: 1, supportedOperations: allOperations },
+  [CircuitId.AtomicQueryV3Stable_16_16_64]: {
+    maxQueriesCount: 1,
+    supportedOperations: allOperations
+  },
+  [CircuitId.AtomicQueryV3OnChainStable]: {
+    maxQueriesCount: 1,
+    supportedOperations: allOperations
+  },
+  [CircuitId.AtomicQueryV3OnChainStable_16_16_64_16_32]: {
+    maxQueriesCount: 1,
+    supportedOperations: allOperations
+  },
+  [CircuitId.AtomicQueryV3Universal]: { maxQueriesCount: 1, supportedOperations: allOperations },
+  [CircuitId.AtomicQueryV3Universal_16_16_64]: {
+    maxQueriesCount: 1,
+    supportedOperations: allOperations
+  },
+
+  [CircuitId.LinkedMultiQuery10V2]: { maxQueriesCount: 10, supportedOperations: allOperations },
   [CircuitId.LinkedMultiQuery3]: { maxQueriesCount: 3, supportedOperations: allOperations },
-  [CircuitId.LinkedMultiQuery5]: { maxQueriesCount: 5, supportedOperations: allOperations },
-  [CircuitId.LinkedMultiQuery10]: { maxQueriesCount: 10, supportedOperations: allOperations }
+  [CircuitId.LinkedMultiQuery5]: { maxQueriesCount: 5, supportedOperations: allOperations }
 };
 
 export class InputGenerator {
@@ -119,7 +140,7 @@ export class InputGenerator {
 
   async generateInputs(ctx: InputContext): Promise<Uint8Array> {
     const { circuitId } = ctx.proofReq;
-    const fnName = `${circuitId.split('-')[0]}PrepareInputs`;
+    const fnName = `${circuitId.replace(/-beta\.1/g, 'Beta').replace(/-/g, '_')}PrepareInputs`;
 
     const queriesLength = ctx.circuitQueries.length;
 
@@ -439,13 +460,11 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  private credentialAtomicQueryV3PrepareInputs = async ({
-    preparedCredential,
-    identifier,
-    proofReq,
-    params,
-    circuitQueries
-  }: InputContext): Promise<Uint8Array> => {
+  private credentialAtomicQueryV3BetaPrepareInputs = async (
+    { preparedCredential, identifier, proofReq, params, circuitQueries }: InputContext,
+    mtLevel?: number,
+    mtLevelClaim?: number
+  ): Promise<Uint8Array> => {
     const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
@@ -468,7 +487,7 @@ export class InputGenerator {
         break;
     }
 
-    const circuitInputs = new AtomicQueryV3Inputs();
+    const circuitInputs = new AtomicQueryV3Inputs({ mtLevel, mtLevelClaim });
     circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.claim = {
       issuerID: circuitClaimData?.issuerId,
@@ -501,13 +520,27 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
-  private credentialAtomicQueryV3OnChainPrepareInputs = async ({
-    preparedCredential,
-    identifier,
-    proofReq,
-    params,
-    circuitQueries
-  }: InputContext): Promise<Uint8Array> => {
+  private credentialAtomicQueryV3PrepareInputs = async (ctx: InputContext): Promise<Uint8Array> =>
+    this.credentialAtomicQueryV3BetaPrepareInputs(ctx);
+
+  private credentialAtomicQueryV3_16_16_64PrepareInputs = async (
+    ctx: InputContext
+  ): Promise<Uint8Array> => this.credentialAtomicQueryV3BetaPrepareInputs(ctx, 16, 16);
+
+  private credentialAtomicQueryV3UniversalPrepareInputs = async (
+    ctx: InputContext
+  ): Promise<Uint8Array> => this.credentialAtomicQueryV3BetaPrepareInputs(ctx);
+
+  private credentialAtomicQueryV3Universal_16_16_64PrepareInputs = async (
+    ctx: InputContext
+  ): Promise<Uint8Array> => this.credentialAtomicQueryV3BetaPrepareInputs(ctx, 16, 16);
+
+  private credentialAtomicQueryV3OnChainBetaPrepareInputs = async (
+    { preparedCredential, identifier, proofReq, params, circuitQueries }: InputContext,
+    mtLevel?: number,
+    mtLevelClaim?: number,
+    mtLevelOnChain?: number
+  ): Promise<Uint8Array> => {
     const id = DID.idFromDID(identifier);
 
     const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
@@ -532,7 +565,7 @@ export class InputGenerator {
         break;
     }
 
-    const circuitInputs = new AtomicQueryV3OnChainInputs();
+    const circuitInputs = new AtomicQueryV3OnChainInputs({ mtLevel, mtLevelClaim, mtLevelOnChain });
     circuitInputs.id = DID.idFromDID(identifier);
     circuitInputs.claim = {
       issuerID: circuitClaimData?.issuerId,
@@ -593,6 +626,14 @@ export class InputGenerator {
     return circuitInputs.inputsMarshal();
   };
 
+  private credentialAtomicQueryV3OnChainPrepareInputs = async (
+    ctx: InputContext
+  ): Promise<Uint8Array> => this.credentialAtomicQueryV3OnChainBetaPrepareInputs(ctx);
+
+  private credentialAtomicQueryV3OnChain_16_16_64_16_32PrepareInputs = async (
+    ctx: InputContext
+  ): Promise<Uint8Array> => this.credentialAtomicQueryV3OnChainBetaPrepareInputs(ctx, 16, 16, 32);
+
   private linkedMultiQueryNPrepareInputs = async (
     queryCount: number,
     { preparedCredential, params, proofReq, circuitQueries }: InputContext
@@ -614,6 +655,9 @@ export class InputGenerator {
     });
     return circuitInputs.inputsMarshal();
   };
+
+  private linkedMultiQuery10BetaPrepareInputs = async (ctx: InputContext): Promise<Uint8Array> =>
+    this.linkedMultiQueryNPrepareInputs(10, ctx);
 
   private linkedMultiQuery10PrepareInputs = async (ctx: InputContext): Promise<Uint8Array> =>
     this.linkedMultiQueryNPrepareInputs(10, ctx);

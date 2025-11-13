@@ -14,7 +14,6 @@ import { Query, ValueProof } from './models';
  * LinkedMultiQuery circuit representation
  * Inputs and public signals declaration, marshalling and parsing
  *
- * @beta
  * @class LinkedMultiQueryInputs
  */
 export class LinkedMultiQueryInputs extends BaseConfig {
@@ -110,9 +109,6 @@ export class LinkedMultiQueryInputs extends BaseConfig {
   }
 }
 
-/**
- * @beta
- */
 interface LinkedMultiQueryCircuitInputs {
   linkNonce: string;
   issuerClaim: string[];
@@ -130,33 +126,26 @@ interface LinkedMultiQueryCircuitInputs {
 }
 
 // LinkedMultiQueryPubSignals linkedMultiQuery10.circom public signals
-/**
- * public signals
- *
- * @beta
- * @class LinkedMultiQueryPubSignals
- */
 export class LinkedMultiQueryPubSignals {
   linkID!: bigint;
   merklized!: number;
   operatorOutput!: bigint[];
   circuitQueryHash!: bigint[];
 
-  constructor(private readonly _queryCount: number) {}
-
-  get queryCount() {
-    return this._queryCount;
+  constructor(public readonly queryCount: number) {
+    if (this.queryCount < 1) {
+      throw new Error('queryCount must be greater than 0');
+    }
   }
 
   /**
    * PubSignalsUnmarshal unmarshal linkedMultiQuery10.circom public inputs to LinkedMultiQueryPubSignals
    *
-   * @beta
    * @param {Uint8Array} data
    * @returns LinkedMultiQueryPubSignals
    */
   pubSignalsUnmarshal(data: Uint8Array): LinkedMultiQueryPubSignals {
-    const len = 22;
+    const len = 2 + this.queryCount * 2;
     const sVals: string[] = JSON.parse(byteDecoder.decode(data));
 
     if (sVals.length !== len) {
@@ -182,7 +171,7 @@ export class LinkedMultiQueryPubSignals {
 
     // - circuitQueryHash
     this.circuitQueryHash = [];
-    for (let i = 0; i < this._queryCount; i++) {
+    for (let i = 0; i < this.queryCount; i++) {
       this.circuitQueryHash.push(BigInt(sVals[fieldIdx]));
       fieldIdx++;
     }
