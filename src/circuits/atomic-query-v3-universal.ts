@@ -52,7 +52,7 @@ export class AtomicQueryV3UniversalPubSignals extends BaseConfig {
     this.issuerState = Hash.fromString(pubSignals[fieldIdx]);
     fieldIdx++;
 
-    this.linkID;
+    this.linkID = BigInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     this.nullifier = BigInt(pubSignals[fieldIdx]);
