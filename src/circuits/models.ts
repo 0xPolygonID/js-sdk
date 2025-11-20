@@ -121,13 +121,13 @@ export enum CircuitId {
 
   AtomicQueryV3Stable = 'credentialAtomicQueryV3',
   AtomicQueryV3Stable_16_16_64 = 'credentialAtomicQueryV3-16-16-64',
+
   AtomicQueryV3OnChainStable = 'credentialAtomicQueryV3OnChain',
   AtomicQueryV3OnChainStable_16_16_64_16_32 = 'credentialAtomicQueryV3OnChain-16-16-64-16-32',
-  AtomicQueryV3Universal = 'credentialAtomicQueryV3Universal',
-  AtomicQueryV3Universal_16_16_64 = 'credentialAtomicQueryV3Universal-16-16-64',
-  LinkedMultiQuery3 = 'linkedMultiQuery3',
-  LinkedMultiQuery5 = 'linkedMultiQuery5',
-  LinkedMultiQuery10V2 = 'linkedMultiQuery10'
+
+  LinkedMultiQuery3Stable = 'linkedMultiQuery3',
+  LinkedMultiQuery5Stable = 'linkedMultiQuery5',
+  LinkedMultiQuery10Stable = 'linkedMultiQuery10'
 }
 
 /**

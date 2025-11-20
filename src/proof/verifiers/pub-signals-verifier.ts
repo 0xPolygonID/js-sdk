@@ -12,8 +12,7 @@ import {
   AuthV2PubSignals,
   LinkedMultiQueryPubSignals,
   BaseConfig,
-  Operators,
-  AtomicQueryV3UniversalPubSignals
+  Operators
 } from '../../circuits';
 import {
   checkQueryRequest,
@@ -214,7 +213,7 @@ export class PubSignalsVerifier {
     circuitOpts: {
       mtLevel?: number;
       mtLevelClaim?: number;
-      v3PubSignals: AtomicQueryV3UniversalPubSignals | AtomicQueryV3PubSignals;
+      v3PubSignals: AtomicQueryV3PubSignals;
     }
   ): Promise<BaseConfig> => {
     const { query, verifiablePresentation, sender, challenge, opts, params, circuitId } = ctx;
@@ -371,44 +370,6 @@ export class PubSignalsVerifier {
     // verify Id ownership
     this.verifyIdOwnership(sender, challenge, v3PubSignals.userID, v3PubSignals.requestID);
 
-    if (
-      circuitId === CircuitId.AtomicQueryV3Universal ||
-      circuitId === CircuitId.AtomicQueryV3Universal_16_16_64
-    ) {
-      const merklized = queryMetadata?.merklizedSchema ? 1 : 0;
-
-      const {
-        value: values,
-        claimSchema: schema,
-        slotIndex,
-        operator,
-        claimPathKey,
-        valueArraySize,
-        isRevocationChecked,
-        verifierID,
-        nullifierSessionID
-      } = v3PubSignals;
-      const calculatedCircuitQueryHash = calculateQueryHashV3(
-        values,
-        schema,
-        slotIndex,
-        operator,
-        claimPathKey.toString(),
-        valueArraySize,
-        merklized.toString(),
-        isRevocationChecked.toString(),
-        verifierID.bigInt().toString(),
-        nullifierSessionID.toString()
-      );
-
-      if (
-        (v3PubSignals as AtomicQueryV3UniversalPubSignals).circuitQueryHash !==
-        calculatedCircuitQueryHash
-      ) {
-        throw new Error('circuit query hash does not match');
-      }
-    }
-
     return v3PubSignals;
   };
 
@@ -434,27 +395,6 @@ export class PubSignalsVerifier {
   private credentialAtomicQueryV3_16_16_64Verify = async (
     ctx: VerifyContext
   ): Promise<BaseConfig> => this.credentialAtomicQueryV3BetaVerify(ctx, 16, 16);
-
-  private credentialAtomicQueryV3UniversalVerify = async (
-    ctx: VerifyContext,
-    mtLevel?: number,
-    mtLevelClaim?: number
-  ): Promise<BaseConfig> => {
-    const v3PubSignals = new AtomicQueryV3UniversalPubSignals({
-      mtLevel,
-      mtLevelClaim
-    }).pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(ctx.pubSignals)));
-
-    return await this.performQueryVerificationV3(ctx, {
-      v3PubSignals,
-      mtLevel,
-      mtLevelClaim
-    });
-  };
-
-  private credentialAtomicQueryV3Universal_16_16_64Verify = async (
-    ctx: VerifyContext
-  ): Promise<BaseConfig> => this.credentialAtomicQueryV3UniversalVerify(ctx, 16, 16);
 
   private authV2Verify = async ({
     sender,

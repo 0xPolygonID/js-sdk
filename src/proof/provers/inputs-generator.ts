@@ -121,15 +121,10 @@ export const circuitValidator: {
     maxQueriesCount: 1,
     supportedOperations: allOperations
   },
-  [CircuitId.AtomicQueryV3Universal]: { maxQueriesCount: 1, supportedOperations: allOperations },
-  [CircuitId.AtomicQueryV3Universal_16_16_64]: {
-    maxQueriesCount: 1,
-    supportedOperations: allOperations
-  },
 
-  [CircuitId.LinkedMultiQuery10V2]: { maxQueriesCount: 10, supportedOperations: allOperations },
-  [CircuitId.LinkedMultiQuery3]: { maxQueriesCount: 3, supportedOperations: allOperations },
-  [CircuitId.LinkedMultiQuery5]: { maxQueriesCount: 5, supportedOperations: allOperations }
+  [CircuitId.LinkedMultiQuery10Stable]: { maxQueriesCount: 10, supportedOperations: allOperations },
+  [CircuitId.LinkedMultiQuery3Stable]: { maxQueriesCount: 3, supportedOperations: allOperations },
+  [CircuitId.LinkedMultiQuery5Stable]: { maxQueriesCount: 5, supportedOperations: allOperations }
 };
 
 export class InputGenerator {

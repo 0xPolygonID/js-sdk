@@ -91,12 +91,10 @@ export class ContractRequestHandler
     CircuitId.AuthV3_8_32,
     CircuitId.AtomicQueryV3Stable,
     CircuitId.AtomicQueryV3Stable_16_16_64,
-    CircuitId.AtomicQueryV3Universal,
-    CircuitId.AtomicQueryV3Universal_16_16_64,
     CircuitId.LinkedMultiQuery10,
-    CircuitId.LinkedMultiQuery10V2,
-    CircuitId.LinkedMultiQuery3,
-    CircuitId.LinkedMultiQuery5
+    CircuitId.LinkedMultiQuery10Stable,
+    CircuitId.LinkedMultiQuery3Stable,
+    CircuitId.LinkedMultiQuery5Stable
   ];
 
   /**
