@@ -13,26 +13,22 @@ export class InMemoryProofStorage implements IProofStorage {
     this._cache = createInMemoryCache<ZeroKnowledgeProofResponse>({ maxSize, ttl });
   }
   getProof(
+    profileDID: DID,
     credentialId: string,
-    request: ZeroKnowledgeProofRequest,
-    opts?: {
-      profileDID: DID;
-    }
+    request: ZeroKnowledgeProofRequest
   ): Promise<ZeroKnowledgeProofResponse | undefined> {
     return this._cache.get(
-      createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, request, credentialId, opts)
+      createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, request, credentialId)
     );
   }
   storeProof(
+    profileDID: DID,
     credentialId: string,
     request: ZeroKnowledgeProofRequest,
-    response: ZeroKnowledgeProofResponse,
-    opts?: {
-      profileDID: DID;
-    }
+    response: ZeroKnowledgeProofResponse
   ): Promise<void> {
     return this._cache.set(
-      createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, request, credentialId, opts),
+      createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, request, credentialId),
       response
     );
   }

@@ -313,9 +313,9 @@ export class ProofService implements IProofService {
 
     if (this._proofsCacheStorage && !opts?.bypassCache) {
       const cachedProof = await this._proofsCacheStorage.getProof(
+        identifier,
         credentialWithRevStatus.cred.id,
-        proofReq,
-        { profileDID: identifier }
+        proofReq
       );
       if (cachedProof) {
         return cachedProof;
@@ -418,9 +418,12 @@ export class ProofService implements IProofService {
       pub_signals
     };
     if (this._proofsCacheStorage) {
-      await this._proofsCacheStorage.storeProof(credentialWithRevStatus.cred.id, proofReq, zkpRes, {
-        profileDID: identifier
-      });
+      await this._proofsCacheStorage.storeProof(
+        identifier,
+        credentialWithRevStatus.cred.id,
+        proofReq,
+        zkpRes
+      );
     }
     return zkpRes;
   }

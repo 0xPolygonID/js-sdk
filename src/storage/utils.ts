@@ -25,13 +25,15 @@ export enum CACHE_KEY_VERSION {
   V1 = 'v1'
 }
 
+/**
+ * @beta
+ * Creates a cache key for a zero-knowledge proof request.
+ */
 export const createZkpRequestCacheKey = (
   version: CACHE_KEY_VERSION,
+  profileDID: DID,
   r: ZeroKnowledgeProofRequest,
-  credId: string,
-  opts?: {
-    profileDID?: DID;
-  }
+  credId: string
 ) => {
   const cs = r.query.credentialSubject
     ? Object.keys(r.query.credentialSubject)
@@ -50,9 +52,6 @@ export const createZkpRequestCacheKey = (
     `ctx=${r.query.context}|type=${r.query.type}|proofType=${r.query.proofType ?? ''}|` +
     `rev=${r.query.skipClaimRevocationCheck ?? ''}|group=${r.query.groupId ?? ''}|` +
     `issuers=[${r.query.allowedIssuers.sort().join(',')}]|` +
-    `cs={${cs}}|params=${params}`;
-  if (opts?.profileDID) {
-    s.concat(`|profile=${opts.profileDID.toString()}`);
-  }
+    `cs={${cs}}|params=${params}|profile=${profileDID.toString()}`;
   return `${version}:${sha256(toUtf8Bytes(s))}`;
 };

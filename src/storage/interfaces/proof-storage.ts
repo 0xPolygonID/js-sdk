@@ -2,6 +2,7 @@ import { DID } from '@iden3/js-iden3-core';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../../iden3comm';
 
 /**
+ * @beta
  * Interface that defines methods for zkp proof storage
  *
  * @public
@@ -9,6 +10,7 @@ import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../../ide
  */
 export interface IProofStorage {
   /**
+   *
    * gets cached proof
    *
    * @param credentialId - credential id
@@ -16,11 +18,9 @@ export interface IProofStorage {
    * @returns `Promise<ZeroKnowledgeProofResponse | undefined>`
    */
   getProof(
+    profileDID: DID,
     credentialId: string,
-    request: ZeroKnowledgeProofRequest,
-    opts?: {
-      profileDID: DID;
-    }
+    request: ZeroKnowledgeProofRequest
   ): Promise<ZeroKnowledgeProofResponse | undefined>;
 
   /**
@@ -32,11 +32,9 @@ export interface IProofStorage {
    * @returns `Promise<void>`
    */
   storeProof(
+    profileDID: DID,
     credentialId: string,
     request: ZeroKnowledgeProofRequest,
-    response: ZeroKnowledgeProofResponse,
-    opts?: {
-      profileDID: DID;
-    }
+    response: ZeroKnowledgeProofResponse
   ): Promise<void>;
 }
