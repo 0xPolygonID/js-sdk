@@ -28,6 +28,10 @@ export enum CACHE_KEY_VERSION {
 /**
  * @beta
  * Creates a cache key for a zero-knowledge proof request.
+ * @param version - The cache key version.
+ * @param profileDID - The DID of the profile.
+ * @param r - The zero-knowledge proof request.
+ * @param credId - The credential ID.
  */
 export const createZkpRequestCacheKey = (
   version: CACHE_KEY_VERSION,

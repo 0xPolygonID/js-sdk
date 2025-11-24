@@ -12,7 +12,7 @@ export interface IProofStorage {
   /**
    *
    * gets cached proof
-   *
+   * @param profileDID - profile DID
    * @param credentialId - credential id
    * @param request - ZeroKnowledgeProofRequest
    * @returns `Promise<ZeroKnowledgeProofResponse | undefined>`
@@ -25,7 +25,7 @@ export interface IProofStorage {
 
   /**
    * stores proof
-   *
+   * @param profileDID - profile DID
    * @param credentialId - credential id
    * @param request - ZeroKnowledgeProofRequest
    * @param response - ZeroKnowledgeProofResponse
