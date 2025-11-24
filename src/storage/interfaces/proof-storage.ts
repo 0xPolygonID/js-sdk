@@ -1,3 +1,4 @@
+import { DID } from '@iden3/js-iden3-core';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../../iden3comm';
 
 /**
@@ -16,7 +17,10 @@ export interface IProofStorage {
    */
   getProof(
     credentialId: string,
-    request: ZeroKnowledgeProofRequest
+    request: ZeroKnowledgeProofRequest,
+    opts?: {
+      profileDID: DID;
+    }
   ): Promise<ZeroKnowledgeProofResponse | undefined>;
 
   /**
@@ -30,6 +34,9 @@ export interface IProofStorage {
   storeProof(
     credentialId: string,
     request: ZeroKnowledgeProofRequest,
-    response: ZeroKnowledgeProofResponse
+    response: ZeroKnowledgeProofResponse,
+    opts?: {
+      profileDID: DID;
+    }
   ): Promise<void>;
 }
