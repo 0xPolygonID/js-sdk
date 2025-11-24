@@ -325,7 +325,7 @@ describe('contract-request', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQueryV3OnChainStable_16_16_64_16_32,
+      circuitId: CircuitId.AtomicQueryV3OnChainStable,
       optional: false,
       query: {
         allowedIssuers: ['*'],

@@ -52,6 +52,7 @@ import { ICircuitStorage, IProofStorage, IStateStorage } from '../storage';
 import { byteDecoder, byteEncoder } from '../utils/encoding';
 import {
   AuthProofGenerationOptions,
+  GenerateInputsResult,
   InputGenerator,
   ProofGenerationOptions,
   ProofInputsParams
@@ -383,7 +384,7 @@ export class ProofService implements IProofService {
       circuitQueries.push(circuitQuery);
     }
 
-    const inputs = await this.generateInputs(
+    const { inputs, metadata } = await this.generateInputs(
       preparedCredential,
       genesisDID,
       proofReq,
@@ -407,11 +408,13 @@ export class ProofService implements IProofService {
       );
     }
 
-    const { proof, pub_signals } = await this._prover.generate(inputs, proofReq.circuitId);
+    const circuitId = metadata?.targetCircuitId ?? proofReq.circuitId;
+
+    const { proof, pub_signals } = await this._prover.generate(inputs, circuitId);
 
     const zkpRes = {
       id: proofReq.id,
-      circuitId: proofReq.circuitId,
+      circuitId,
       vp,
       proof,
       pub_signals
@@ -477,7 +480,7 @@ export class ProofService implements IProofService {
     proofReq: ZeroKnowledgeProofRequest,
     params: ProofInputsParams,
     circuitQueries: Query[]
-  ): Promise<Uint8Array> {
+  ): Promise<GenerateInputsResult> {
     return this._inputsGenerator.generateInputs({
       preparedCredential,
       identifier,

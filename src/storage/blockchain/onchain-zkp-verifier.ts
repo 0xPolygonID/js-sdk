@@ -90,8 +90,7 @@ type OnChainZKPVerifierCircuitId =
   | CircuitId.AtomicQueryMTPV2OnChain
   | CircuitId.AtomicQuerySigV2OnChain
   | CircuitId.AtomicQueryV3OnChain
-  | CircuitId.AtomicQueryV3OnChainStable
-  | CircuitId.AtomicQueryV3OnChainStable_16_16_64_16_32;
+  | CircuitId.AtomicQueryV3OnChainStable;
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
@@ -111,8 +110,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
     CircuitId.AtomicQueryV3OnChain,
-    CircuitId.AtomicQueryV3OnChainStable,
-    CircuitId.AtomicQueryV3OnChainStable_16_16_64_16_32
+    CircuitId.AtomicQueryV3OnChainStable
   ];
 
   private static readonly _supportedCircuitsPubSignalsMap: Record<
@@ -130,10 +128,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     [CircuitId.AtomicQuerySigV2OnChain]: { ctor: AtomicQuerySigV2OnChainPubSignals },
     [CircuitId.AtomicQueryV3OnChain]: { ctor: AtomicQueryV3OnChainPubSignals },
     [CircuitId.AtomicQueryV3OnChainStable]: { ctor: AtomicQueryV3OnChainPubSignals },
-    [CircuitId.AtomicQueryV3OnChainStable_16_16_64_16_32]: {
-      ctor: AtomicQueryV3OnChainPubSignals,
-      opts: { mtLevel: 16, mtLevelClaim: 16, mtLevelOnChain: 32 }
-    },
     [CircuitId.AuthV2]: { ctor: AuthV2PubSignals },
     [CircuitId.AuthV3]: { ctor: AuthV2PubSignals },
     [CircuitId.AuthV3_8_32]: { ctor: AuthV2PubSignals }

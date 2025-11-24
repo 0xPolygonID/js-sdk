@@ -201,7 +201,7 @@ describe('auth', () => {
     };
     const proofForNonExistingConditionWithGroupId: ZeroKnowledgeProofRequest = {
       id: 1730736199,
-      circuitId: CircuitId.AtomicQueryV3Stable_16_16_64,
+      circuitId: CircuitId.AtomicQueryV3Stable,
       optional: true,
       query: {
         allowedIssuers: ['*'],
@@ -426,7 +426,7 @@ describe('auth', () => {
     const proofReqs: ZeroKnowledgeProofRequest[] = [
       {
         id: 1,
-        circuitId: CircuitId.AtomicQueryV3Stable_16_16_64,
+        circuitId: CircuitId.AtomicQueryV3Stable,
         optional: false,
         query: {
           proofType: ProofType.BJJSignature,
@@ -443,7 +443,7 @@ describe('auth', () => {
       },
       {
         id: 2,
-        circuitId: CircuitId.LinkedMultiQuery3Stable,
+        circuitId: CircuitId.LinkedMultiQueryStable,
         optional: false,
         query: {
           groupId: 1,
@@ -465,7 +465,7 @@ describe('auth', () => {
       },
       {
         id: 3,
-        circuitId: CircuitId.AtomicQueryV3Stable_16_16_64,
+        circuitId: CircuitId.AtomicQueryV3Stable,
         optional: false,
         query: {
           groupId: 1,

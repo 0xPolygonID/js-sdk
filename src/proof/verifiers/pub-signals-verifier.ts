@@ -81,7 +81,7 @@ export class PubSignalsVerifier {
    * @returns `Promise<BaseConfig>`
    */
   async verify(circuitId: string, ctx: VerifyContext): Promise<BaseConfig> {
-    const fnName = `${circuitId.replace('-beta.1', 'Beta').replace(/-/g, '_')}Verify`;
+    const fnName = `${circuitId.replace('-beta.1', '').replace(/-/g, '_')}Verify`;
     const fn = (
       this as unknown as {
         [k: string]: (ctx: VerifyContext & { circuitId: string }) => Promise<BaseConfig>;
