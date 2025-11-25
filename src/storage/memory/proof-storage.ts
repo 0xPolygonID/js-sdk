@@ -1,3 +1,4 @@
+import { DID } from '@iden3/js-iden3-core';
 import { ZeroKnowledgeProofRequest, ZeroKnowledgeProofResponse } from '../../iden3comm';
 import { DEFAULT_PROOF_VERIFY_DELAY } from '../../iden3comm/constants';
 import { IProofStorage } from '../interfaces';
@@ -12,18 +13,22 @@ export class InMemoryProofStorage implements IProofStorage {
     this._cache = createInMemoryCache<ZeroKnowledgeProofResponse>({ maxSize, ttl });
   }
   getProof(
+    profileDID: DID,
     credentialId: string,
     request: ZeroKnowledgeProofRequest
   ): Promise<ZeroKnowledgeProofResponse | undefined> {
-    return this._cache.get(createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, request, credentialId));
+    return this._cache.get(
+      createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, request, credentialId)
+    );
   }
   storeProof(
+    profileDID: DID,
     credentialId: string,
     request: ZeroKnowledgeProofRequest,
     response: ZeroKnowledgeProofResponse
   ): Promise<void> {
     return this._cache.set(
-      createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, request, credentialId),
+      createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, request, credentialId),
       response
     );
   }

@@ -313,6 +313,7 @@ export class ProofService implements IProofService {
 
     if (this._proofsCacheStorage && !opts?.bypassCache) {
       const cachedProof = await this._proofsCacheStorage.getProof(
+        identifier,
         credentialWithRevStatus.cred.id,
         proofReq
       );
@@ -417,7 +418,12 @@ export class ProofService implements IProofService {
       pub_signals
     };
     if (this._proofsCacheStorage) {
-      await this._proofsCacheStorage.storeProof(credentialWithRevStatus.cred.id, proofReq, zkpRes);
+      await this._proofsCacheStorage.storeProof(
+        identifier,
+        credentialWithRevStatus.cred.id,
+        proofReq,
+        zkpRes
+      );
     }
     return zkpRes;
   }

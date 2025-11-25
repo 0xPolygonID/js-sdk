@@ -1,3 +1,4 @@
+import { DID } from '@iden3/js-iden3-core';
 import { JsonDocumentObject, ZeroKnowledgeProofRequest } from '../iden3comm';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from './entities';
 import { sha256, toUtf8Bytes } from 'ethers';
@@ -24,8 +25,17 @@ export enum CACHE_KEY_VERSION {
   V1 = 'v1'
 }
 
+/**
+ * @beta
+ * Creates a cache key for a zero-knowledge proof request.
+ * @param version - The cache key version.
+ * @param profileDID - The DID of the profile.
+ * @param r - The zero-knowledge proof request.
+ * @param credId - The credential ID.
+ */
 export const createZkpRequestCacheKey = (
   version: CACHE_KEY_VERSION,
+  profileDID: DID,
   r: ZeroKnowledgeProofRequest,
   credId: string
 ) => {
@@ -46,6 +56,6 @@ export const createZkpRequestCacheKey = (
     `ctx=${r.query.context}|type=${r.query.type}|proofType=${r.query.proofType ?? ''}|` +
     `rev=${r.query.skipClaimRevocationCheck ?? ''}|group=${r.query.groupId ?? ''}|` +
     `issuers=[${r.query.allowedIssuers.sort().join(',')}]|` +
-    `cs={${cs}}|params=${params}`;
+    `cs={${cs}}|params=${params}|profile=${profileDID.toString()}`;
   return `${version}:${sha256(toUtf8Bytes(s))}`;
 };
