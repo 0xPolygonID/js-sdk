@@ -1,7 +1,9 @@
 import { DID } from '@iden3/js-iden3-core';
-import { JsonDocumentObject, ZeroKnowledgeProofRequest } from '../iden3comm';
+import { ZeroKnowledgeProofRequest } from '../iden3comm';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from './entities';
-import { sha256, toUtf8Bytes } from 'ethers';
+import { sha256 } from 'ethers';
+import canonicalizeData from 'canonicalize';
+import { byteEncoder } from '../utils';
 
 export const MERKLE_TREE_TYPES: MerkleTreeType[] = [
   MerkleTreeType.Claims,
@@ -39,23 +41,10 @@ export const createZkpRequestCacheKey = (
   r: ZeroKnowledgeProofRequest,
   credId: string
 ) => {
-  const cs = r.query.credentialSubject
-    ? Object.keys(r.query.credentialSubject)
-        .sort()
-        .map((k) => `${k}:${JSON.stringify((r.query.credentialSubject as JsonDocumentObject)[k])}`)
-        .join('|')
-    : '';
-  const params = r.params
-    ? Object.keys(r.params)
-        .sort()
-        .map((k) => `${k}:${(r.params as JsonDocumentObject)[k]}`)
-        .join('|')
-    : '';
-  const s =
-    `credId=${credId}|id=${r.id}|circuit=${r.circuitId}|opt=${!!r.optional}|` +
-    `ctx=${r.query.context}|type=${r.query.type}|proofType=${r.query.proofType ?? ''}|` +
-    `rev=${r.query.skipClaimRevocationCheck ?? ''}|group=${r.query.groupId ?? ''}|` +
-    `issuers=[${r.query.allowedIssuers.sort().join(',')}]|` +
-    `cs={${cs}}|params=${params}|profile=${profileDID.toString()}`;
-  return `${version}:${sha256(toUtf8Bytes(s))}`;
+  const canonical = canonicalizeData(r);
+  if (!canonical) {
+    throw new Error('Failed to canonicalize ZKP request');
+  }
+  const requestCanonicalBytes = byteEncoder.encode(canonical);
+  return `${version}:${profileDID.string()}:${credId}:${sha256(requestCanonicalBytes)}`;
 };
