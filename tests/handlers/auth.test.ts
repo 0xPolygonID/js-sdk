@@ -186,7 +186,7 @@ describe('auth', () => {
 
     const proofForNonExistingCondition: ZeroKnowledgeProofRequest = {
       id: 1730736198,
-      circuitId: CircuitId.AtomicQueryV3,
+      circuitId: CircuitId.AtomicQueryV3Stable,
       optional: true,
       query: {
         allowedIssuers: ['*'],
@@ -201,7 +201,7 @@ describe('auth', () => {
     };
     const proofForNonExistingConditionWithGroupId: ZeroKnowledgeProofRequest = {
       id: 1730736199,
-      circuitId: CircuitId.AtomicQueryV3,
+      circuitId: CircuitId.AtomicQueryV3Stable,
       optional: true,
       query: {
         allowedIssuers: ['*'],
@@ -426,7 +426,7 @@ describe('auth', () => {
     const proofReqs: ZeroKnowledgeProofRequest[] = [
       {
         id: 1,
-        circuitId: CircuitId.AtomicQueryV3,
+        circuitId: CircuitId.AtomicQueryV3Stable,
         optional: false,
         query: {
           proofType: ProofType.BJJSignature,
@@ -443,7 +443,7 @@ describe('auth', () => {
       },
       {
         id: 2,
-        circuitId: CircuitId.LinkedMultiQuery10,
+        circuitId: CircuitId.LinkedMultiQueryStable,
         optional: false,
         query: {
           groupId: 1,
@@ -465,7 +465,7 @@ describe('auth', () => {
       },
       {
         id: 3,
-        circuitId: CircuitId.AtomicQueryV3,
+        circuitId: CircuitId.AtomicQueryV3Stable,
         optional: false,
         query: {
           groupId: 1,
@@ -2135,7 +2135,7 @@ describe('auth', () => {
         {
           protocolVersion: ProtocolVersion.V1,
           env: MediaType.ZKPMessage,
-          circuits: [AcceptAuthCircuits.AuthV3_8_32]
+          circuits: [AcceptAuthCircuits.AuthV3]
         }
       ])
     };
@@ -2153,14 +2153,14 @@ describe('auth', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const jwzRequest = await packageMgr.pack(MediaType.ZKPMessage, msgBytes, {
       senderDID: issuerDID,
-      provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3-8-32')
+      provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3')
     });
     const authRes = await authHandler.handleAuthorizationRequest(userDID, jwzRequest);
 
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
     const resToken = await Token.parse(tokenStr);
-    expect(resToken.circuitId).to.be.eq(CircuitId.AuthV3_8_32);
+    expect(resToken.circuitId).to.be.eq(CircuitId.AuthV3);
 
     const { response } = await authHandler.handleAuthorizationResponse(
       authRes.authResponse,
@@ -2172,7 +2172,7 @@ describe('auth', () => {
       byteEncoder.encode(JSON.stringify(response)),
       {
         senderDID: issuerDID,
-        provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3-8-32')
+        provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3')
       }
     );
 

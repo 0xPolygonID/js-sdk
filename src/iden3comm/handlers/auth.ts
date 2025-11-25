@@ -214,7 +214,9 @@ export class AuthHandler
     CircuitId.AtomicQueryV3,
     CircuitId.AtomicQuerySigV2,
     CircuitId.AtomicQueryMTPV2,
-    CircuitId.LinkedMultiQuery10
+    CircuitId.AtomicQueryV3Stable,
+    CircuitId.LinkedMultiQuery10,
+    CircuitId.LinkedMultiQueryStable
   ];
   /**
    * Creates an instance of AuthHandler.

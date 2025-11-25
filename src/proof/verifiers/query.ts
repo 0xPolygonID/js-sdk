@@ -92,11 +92,9 @@ export async function checkQueryRequest(
 export function checkCircuitQueriesLength(circuitId: CircuitId, queriesMetadata: QueryMetadata[]) {
   const circuitValidationData = circuitValidator[circuitId];
 
-  if (queriesMetadata.length > circuitValidationData.maxQueriesCount) {
+  if (queriesMetadata.length > circuitValidationData.validation.maxQueriesCount) {
     throw new Error(
-      `circuit ${circuitId} supports only ${
-        circuitValidator[circuitId as CircuitId].maxQueriesCount
-      } queries`
+      `circuit ${circuitId} supports only ${circuitValidationData.validation.maxQueriesCount} queries`
     );
   }
 }
@@ -104,7 +102,7 @@ export function checkCircuitQueriesLength(circuitId: CircuitId, queriesMetadata:
 export function checkCircuitOperator(circuitId: CircuitId, operator: number) {
   const circuitValidationData = circuitValidator[circuitId];
 
-  if (!circuitValidationData.supportedOperations.includes(operator)) {
+  if (!circuitValidationData.validation.supportedOperations.includes(operator)) {
     throw new Error(
       `circuit ${circuitId} not support ${getOperatorNameByValue(operator)} operator`
     );
