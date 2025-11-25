@@ -232,7 +232,7 @@ describe('createZkpRequestCacheKey', () => {
     const key1 = createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, r1, credId);
     const key2 = createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, r2, credId);
 
-    expect(key1).toBe(key2);
+    expect(key1).to.equal(key2);
   });
 
   it('produces different key for different request', () => {
@@ -279,6 +279,6 @@ describe('createZkpRequestCacheKey', () => {
     const key1 = createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, r1, credId);
     const key2 = createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, r2, credId);
 
-    expect(key1).not.equal(key2);
+    expect(key1).not.to.equal(key2);
   });
 });
