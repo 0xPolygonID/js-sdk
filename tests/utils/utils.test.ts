@@ -218,7 +218,7 @@ describe('createZkpRequestCacheKey', () => {
         credentialSubject: {
           email: {}
         },
-        allowedIssuers: ['did:issuer:1', 'did:issuer:2'],
+        allowedIssuers: ['did:issuer:2', 'did:issuer:1'],
         skipClaimRevocationCheck: false,
         proofType: ProofType.BJJSignature,
         type: 'EmailCredential',

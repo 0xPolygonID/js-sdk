@@ -41,6 +41,7 @@ export const createZkpRequestCacheKey = (
   r: ZeroKnowledgeProofRequest,
   credId: string
 ) => {
+  r.query.allowedIssuers.sort();
   const canonical = canonicalizeData(r);
   if (!canonical) {
     throw new Error('Failed to canonicalize ZKP request');
