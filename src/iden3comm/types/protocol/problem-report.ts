@@ -4,7 +4,7 @@ import { BasicMessage } from '../packer';
 /** ProblemReportMessage is struct for problem report message */
 export type ProblemReportMessage = BasicMessage & {
   body: ProblemReportMessageBody;
-  pthid: string;
+  pthid?: string;
   ack?: string[];
   type: typeof PROTOCOL_MESSAGE_TYPE.PROBLEM_REPORT_MESSAGE_TYPE;
 };
