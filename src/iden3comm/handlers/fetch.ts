@@ -248,7 +248,8 @@ export class FetchHandler
         const resp = await fetch(offerMessage.body.url, {
           method: 'post',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type':
+              ctx.mediaType === MediaType.PlainMessage ? 'application/json' : 'text/plain',
             ...ctx.headers
           },
           body: token
