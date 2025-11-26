@@ -1,4 +1,4 @@
-import { MediaType } from '../constants';
+import { MEDIA_TYPE_TO_CONTENT_TYPE, MediaType } from '../constants';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
 import {
@@ -248,8 +248,7 @@ export class FetchHandler
         const resp = await fetch(offerMessage.body.url, {
           method: 'post',
           headers: {
-            'Content-Type':
-              ctx.mediaType === MediaType.PlainMessage ? 'application/json' : 'text/plain',
+            'Content-Type': MEDIA_TYPE_TO_CONTENT_TYPE[ctx.mediaType],
             ...ctx.headers
           },
           body: token

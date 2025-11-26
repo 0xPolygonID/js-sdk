@@ -78,6 +78,14 @@ export enum MediaType {
   EncryptedMessage = 'application/iden3comm-encrypted-json'
 }
 
+// Mapping from MediaType to Content-Type header value
+export const MEDIA_TYPE_TO_CONTENT_TYPE: Record<MediaType, string> = {
+  [MediaType.ZKPMessage]: 'text/plain',
+  [MediaType.PlainMessage]: 'application/json',
+  [MediaType.SignedMessage]: 'text/plain',
+  [MediaType.EncryptedMessage]: 'application/json'
+};
+
 export const SUPPORTED_PUBLIC_KEY_TYPES = {
   ES256K: [
     'EcdsaSecp256k1VerificationKey2019',
