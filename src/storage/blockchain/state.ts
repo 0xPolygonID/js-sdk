@@ -386,7 +386,7 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getGISTRootInfo} */
   async getGISTRootInfo(root: bigint, id: bigint): Promise<RootInfo> {
-    const cacheKey = this.getRootCacheKey(root);
+    const cacheKey = this.getRootCacheKey(id, root);
     if (!this._disableCache) {
       // Check cache first
       const cachedResult = await this._rootResolveCache?.get(cacheKey);
@@ -454,18 +454,18 @@ export class EthStateStorage implements IStateStorage {
   }
 
   private getGistProofCacheKey(id: bigint): string {
-    return `gist-${id.toString()}`;
+    return `gist:${id.toString()}`;
   }
 
   private getLatestStateCacheKey(id: bigint): string {
-    return `latest-${id.toString()}`;
+    return `latest-state:${id.toString()}`;
   }
 
   private getStateCacheKey(id: bigint, state: bigint): string {
-    return `${id.toString()}-${state.toString()}`;
+    return `state:${id.toString()}-${state.toString()}`;
   }
 
-  private getRootCacheKey(root: bigint): string {
-    return root.toString();
+  private getRootCacheKey(id: bigint, root: bigint): string {
+    return `root:${id.toString()}-${root.toString()}`;
   }
 }
