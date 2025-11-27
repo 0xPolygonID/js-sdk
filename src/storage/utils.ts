@@ -1,6 +1,9 @@
-import { JsonDocumentObject, ZeroKnowledgeProofRequest } from '../iden3comm';
+import { DID } from '@iden3/js-iden3-core';
+import { ZeroKnowledgeProofRequest } from '../iden3comm';
 import { IdentityMerkleTreeMetaInformation, MerkleTreeType } from './entities';
-import { sha256, toUtf8Bytes } from 'ethers';
+import { sha256 } from 'ethers';
+import canonicalizeData from 'canonicalize';
+import { byteEncoder } from '../utils';
 
 export const MERKLE_TREE_TYPES: MerkleTreeType[] = [
   MerkleTreeType.Claims,
@@ -24,28 +27,31 @@ export enum CACHE_KEY_VERSION {
   V1 = 'v1'
 }
 
+/**
+ * @beta
+ * Creates a cache key for a zero-knowledge proof request.
+ * @param version - The cache key version.
+ * @param profileDID - The DID of the profile.
+ * @param r - The zero-knowledge proof request.
+ * @param credId - The credential ID.
+ */
 export const createZkpRequestCacheKey = (
   version: CACHE_KEY_VERSION,
+  profileDID: DID,
   r: ZeroKnowledgeProofRequest,
   credId: string
 ) => {
-  const cs = r.query.credentialSubject
-    ? Object.keys(r.query.credentialSubject)
-        .sort()
-        .map((k) => `${k}:${JSON.stringify((r.query.credentialSubject as JsonDocumentObject)[k])}`)
-        .join('|')
-    : '';
-  const params = r.params
-    ? Object.keys(r.params)
-        .sort()
-        .map((k) => `${k}:${(r.params as JsonDocumentObject)[k]}`)
-        .join('|')
-    : '';
-  const s =
-    `credId=${credId}|id=${r.id}|circuit=${r.circuitId}|opt=${!!r.optional}|` +
-    `ctx=${r.query.context}|type=${r.query.type}|proofType=${r.query.proofType ?? ''}|` +
-    `rev=${r.query.skipClaimRevocationCheck ?? ''}|group=${r.query.groupId ?? ''}|` +
-    `issuers=[${r.query.allowedIssuers.sort().join(',')}]|` +
-    `cs={${cs}}|params=${params}`;
-  return `${version}:${sha256(toUtf8Bytes(s))}`;
+  const payload = {
+    ...r,
+    query: {
+      ...r.query,
+      allowedIssuers: [...r.query.allowedIssuers].sort()
+    }
+  };
+  const canonical = canonicalizeData(payload);
+  if (!canonical) {
+    throw new Error('Failed to canonicalize ZKP request');
+  }
+  const requestCanonicalBytes = byteEncoder.encode(canonical);
+  return `${version}:${profileDID.string()}:${credId}:${sha256(requestCanonicalBytes)}`;
 };
