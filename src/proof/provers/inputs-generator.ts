@@ -19,8 +19,8 @@ import {
   MTProof,
   Operators,
   Query,
-  QueryOperators,
   TreeState,
+  circuitValidator,
   getOperatorNameByValue
 } from '../../circuits';
 import {
@@ -65,71 +65,6 @@ type InputContext = {
   proofReq: ZeroKnowledgeProofRequest;
   params: ProofInputsParams;
   circuitQueries: Query[];
-};
-
-const allOperations = Object.values(QueryOperators);
-const v2Operations = [
-  Operators.NOOP,
-  Operators.EQ,
-  Operators.LT,
-  Operators.GT,
-  Operators.IN,
-  Operators.NIN,
-  Operators.NE,
-  Operators.SD
-];
-const v2OnChainOperations = [
-  Operators.EQ,
-  Operators.LT,
-  Operators.GT,
-  Operators.IN,
-  Operators.NIN,
-  Operators.NE
-];
-
-const noQueriesValidation = { validation: { maxQueriesCount: 0, supportedOperations: [] } };
-const credentialAtomicQueryV2Validation = {
-  validation: { maxQueriesCount: 1, supportedOperations: v2Operations }
-};
-const credentialAtomicQueryV2OnChainValidation = {
-  validation: { maxQueriesCount: 1, supportedOperations: v2OnChainOperations }
-};
-const credentialAtomicQueryV3Validation = {
-  validation: { maxQueriesCount: 1, supportedOperations: allOperations }
-};
-
-export const circuitValidator: {
-  [k in CircuitId]: {
-    validation: { maxQueriesCount: number; supportedOperations: Operators[] };
-    subVersions?: string[];
-  };
-} = {
-  [CircuitId.AtomicQueryMTPV2]: credentialAtomicQueryV2Validation,
-  [CircuitId.AtomicQueryMTPV2OnChain]: credentialAtomicQueryV2OnChainValidation,
-  [CircuitId.AtomicQuerySigV2]: credentialAtomicQueryV2Validation,
-  [CircuitId.AtomicQuerySigV2OnChain]: credentialAtomicQueryV2OnChainValidation,
-  [CircuitId.AtomicQueryV3]: credentialAtomicQueryV3Validation,
-  [CircuitId.AtomicQueryV3OnChain]: credentialAtomicQueryV3Validation,
-  [CircuitId.AuthV2]: noQueriesValidation,
-  [CircuitId.AuthV3]: noQueriesValidation,
-  [CircuitId.AuthV3_8_32]: noQueriesValidation,
-  [CircuitId.StateTransition]: noQueriesValidation,
-  [CircuitId.LinkedMultiQuery10]: {
-    validation: { maxQueriesCount: 10, supportedOperations: allOperations }
-  },
-
-  [CircuitId.AtomicQueryV3Stable]: {
-    ...credentialAtomicQueryV3Validation,
-    subVersions: ['16-16-64']
-  },
-  [CircuitId.AtomicQueryV3OnChainStable]: {
-    ...credentialAtomicQueryV3Validation,
-    subVersions: ['16-16-64-16-32']
-  },
-  [CircuitId.LinkedMultiQueryStable]: {
-    validation: { maxQueriesCount: 10, supportedOperations: allOperations },
-    subVersions: ['3', '5', '10']
-  }
 };
 
 export type GenerateInputsResult = {
@@ -509,15 +444,27 @@ export class InputGenerator {
       if (!subversions) {
         return undefined;
       }
-
+      const mtLevelsProofs = [
+        circuitClaimData.nonRevProof.proof,
+        circuitClaimData.signatureProof?.issuerAuthIncProof.proof,
+        circuitClaimData.signatureProof?.issuerAuthNonRevProof.proof,
+        circuitClaimData.proof,
+        query.valueProof?.mtp
+      ];
       for (const subversion of subversions) {
-        const [mtLevel, mtLevelClaim] = subversion.split('-').map(parseInt);
+        const { mtLevel, mtLevelClaim, targetCircuitId } = subversion;
+        if (!mtLevel || !mtLevelClaim) {
+          continue;
+        }
+        const mtLevelsValid = mtLevelsProofs.reduce((acc, proof) => {
+          if (!proof) {
+            return acc;
+          }
+          const allSiblings = proof.allSiblings();
+          return acc && allSiblings.length <= mtLevel - 1;
+        }, true);
 
-        if (
-          circuitClaimData.nonRevProof.proof.allSiblings().length <= mtLevel - 1 &&
-          query.valueProof?.mtp.allSiblings().length <= mtLevelClaim - 1
-        ) {
-          const targetCircuitId = `${proofReq.circuitId}-${subversion}`;
+        if (mtLevelsValid) {
           return { mtLevel, mtLevelClaim, targetCircuitId };
         }
       }
@@ -613,15 +560,30 @@ export class InputGenerator {
         return undefined;
       }
 
+      const mtLevelsProofs = [
+        circuitClaimData.nonRevProof.proof,
+        circuitClaimData.signatureProof?.issuerAuthIncProof.proof,
+        circuitClaimData.signatureProof?.issuerAuthNonRevProof.proof,
+        circuitClaimData.proof,
+        query.valueProof?.mtp
+      ];
       for (const subversion of subversions) {
-        const [mtLevel, mtLevelClaim, , , mtLevelOnChain] = subversion.split('-').map(parseInt);
+        const { mtLevel, mtLevelClaim, mtLevelOnChain, targetCircuitId } = subversion;
+        if (!mtLevel || !mtLevelClaim || !mtLevelOnChain) {
+          continue;
+        }
 
-        if (
-          circuitClaimData.nonRevProof.proof.allSiblings().length <= mtLevel - 1 &&
-          (query.valueProof?.mtp.allSiblings() ?? []).length <= mtLevelClaim - 1 &&
-          gistProof.proof.allSiblings().length <= mtLevelOnChain - 1
-        ) {
-          const targetCircuitId = `${proofReq.circuitId}-${subversion}`;
+        const mtLevelsValid = mtLevelsProofs.reduce((acc, proof) => {
+          if (!proof) {
+            return acc;
+          }
+          const allSiblings = proof.allSiblings();
+          return acc && allSiblings.length <= mtLevel - 1;
+        }, true);
+
+        const gistMtpValid = gistProof.proof.allSiblings().length <= mtLevelOnChain - 1;
+
+        if (mtLevelsValid && gistMtpValid) {
           return { mtLevel, mtLevelClaim, mtLevelOnChain, targetCircuitId };
         }
       }

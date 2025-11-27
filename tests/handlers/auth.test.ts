@@ -170,7 +170,7 @@ describe('auth', () => {
     await credWallet.save(issuerCred);
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1730736196,
-      circuitId: CircuitId.AtomicQueryV3,
+      circuitId: CircuitId.AtomicQueryV3Stable,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -238,6 +238,12 @@ describe('auth', () => {
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
     const tokenBytes = byteEncoder.encode(tokenStr);
+
+    const { response } = await authHandler.handleAuthorizationResponse(
+      authRes.authResponse,
+      authReq
+    );
+    expect(response).to.be.a('object');
 
     const result = await packageMgr.unpack(tokenBytes);
 
@@ -356,6 +362,9 @@ describe('auth', () => {
 
     const resp = await authHandler.handleAuthorizationRequest(authProfileDID, msgBytes);
     expect(resp).not.to.be.undefined;
+
+    const { response } = await authHandler.handleAuthorizationResponse(resp.authResponse, authReq);
+    expect(response).to.be.a('object');
   });
 
   it('auth flow identity (profile) with circuits V3', async () => {
@@ -509,6 +518,12 @@ describe('auth', () => {
     expect(tokenStr).to.be.a('string');
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');
+
+    const { response } = await authHandler.handleAuthorizationResponse(
+      authRes.authResponse,
+      authReq
+    );
+    expect(response).to.be.a('object');
   });
 
   it('auth flow identity (profile) with circuits V3 and caching', async () => {

@@ -24,7 +24,7 @@ import {
   processZeroKnowledgeProofRequests,
   verifyExpiresTime
 } from './common';
-import { CircuitId } from '../../circuits';
+import { CircuitId, circuitValidator } from '../../circuits';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
@@ -392,7 +392,18 @@ export class AuthHandler
       }
 
       const circuitId = proofResp.circuitId;
-      if (circuitId !== proofRequest.circuitId) {
+      const supportedCircuits = Object.keys(circuitValidator).reduce((acc, key) => {
+        const circuitId = key as CircuitId;
+        acc.push(circuitId);
+        const circuitValidation =
+          circuitValidator[circuitId]?.subVersions?.map(
+            (subversion) => subversion.targetCircuitId
+          ) ?? [];
+        acc.push(...circuitValidation);
+        return acc;
+      }, [] as CircuitId[]);
+
+      if (!supportedCircuits.includes(proofRequest.circuitId)) {
         throw new Error(
           `proof is not given for requested circuit expected: ${proofRequest.circuitId}, given ${circuitId}`
         );
