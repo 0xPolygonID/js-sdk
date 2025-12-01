@@ -41,7 +41,7 @@ import {
   ICircuitStorage,
   PROTOCOL_CONSTANTS
 } from '../src';
-import {  ProvingMethodAlg } from '@iden3/js-jwz';
+import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { JsonRpcProvider } from 'ethers';
 import { Resolvable } from 'did-resolver';
 
