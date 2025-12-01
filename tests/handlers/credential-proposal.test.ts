@@ -26,12 +26,12 @@ import {
 import {
   MOCK_STATE_STORAGE,
   getInMemoryDataStorage,
-  getPackageMgr,
   registerKeyProvidersInMemoryKMS,
   createIdentity,
   SEED_USER,
   SEED_ISSUER,
-  RHS_URL
+  RHS_URL,
+  initPackageMgr
 } from '../helpers';
 
 import { describe, expect, it, beforeEach } from 'vitest';
@@ -86,9 +86,15 @@ describe('proposal-request handler', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
-    packageMgr = await getPackageMgr(
-      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthInputs.bind(proofService),
+    packageMgr = await initPackageMgr(
+      kms,
+      circuitStorage,
+      [
+        {
+          circuitId: CircuitId.AuthV2,
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
+        }
+      ],
       proofService.verifyState.bind(proofService)
     );
     proposalRequestHandler = new CredentialProposalHandler(packageMgr, idWallet, {

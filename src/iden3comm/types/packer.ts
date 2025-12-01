@@ -112,6 +112,12 @@ export type AuthDataPrepareFunc = (
   circuitId: CircuitId
 ) => Promise<Uint8Array>;
 
+export type AuthCircuitDataPrepareFunc = (
+  hash: Uint8Array,
+  did: DID,
+  circuitId: CircuitId
+) => Promise<{ inputs: Uint8Array; targetCircuitId: CircuitId }>;
+
 /**
  *  signature of state function verifier
  */

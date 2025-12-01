@@ -51,8 +51,16 @@ export const circuitValidator: {
   [CircuitId.AtomicQueryV3]: credentialAtomicQueryV3Validation,
   [CircuitId.AtomicQueryV3OnChain]: credentialAtomicQueryV3Validation,
   [CircuitId.AuthV2]: noQueriesValidation,
-  [CircuitId.AuthV3]: noQueriesValidation,
-  [CircuitId.AuthV3_8_32]: noQueriesValidation,
+  [CircuitId.AuthV3]: {
+    ...noQueriesValidation,
+    subVersions: [
+      {
+        targetCircuitId: (CircuitId.AuthV3 + '-8-32') as CircuitId,
+        mtLevel: 8,
+        mtLevelOnChain: 32
+      }
+    ]
+  },
   [CircuitId.StateTransition]: noQueriesValidation,
   [CircuitId.LinkedMultiQuery10]: {
     validation: { maxQueriesCount: 10, supportedOperations: allOperations }
@@ -96,4 +104,21 @@ export const circuitValidator: {
       }
     ]
   }
+};
+
+export const getCircuitIdsWithSubVersions = (filterCircuitIds?: CircuitId[]): CircuitId[] => {
+  return Object.keys(circuitValidator).reduce((acc, key) => {
+    const circuitId = key as CircuitId;
+    // if filterCircuitIds is provided, only include circuits that are in the filterCircuitIds, else include all circuits
+    if (filterCircuitIds && !filterCircuitIds.includes(circuitId)) {
+      return acc;
+    }
+
+    acc.push(circuitId);
+    const targetCircuitIds =
+      circuitValidator[circuitId]?.subVersions?.map((subversion) => subversion.targetCircuitId) ??
+      [];
+    acc.push(...targetCircuitIds);
+    return acc;
+  }, [] as CircuitId[]);
 };

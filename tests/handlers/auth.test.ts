@@ -59,7 +59,6 @@ import {
   getInMemoryDataStorage,
   registerKeyProvidersInMemoryKMS,
   IPFS_URL,
-  getPackageMgr,
   createIdentity,
   SEED_USER,
   RHS_URL,
@@ -69,7 +68,7 @@ import {
   SEED_ISSUER,
   TEST_VERIFICATION_OPTS,
   MOCK_STATE_STORAGE,
-  getPackageMgrV3
+  initPackageMgr
 } from '../helpers';
 import { getRandomBytes } from '@iden3/js-crypto';
 import {
@@ -125,9 +124,19 @@ describe('auth', () => {
       merklizeOpts
     );
 
-    packageMgr = await getPackageMgr(
-      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthInputs.bind(proofService),
+    packageMgr = await initPackageMgr(
+      kms,
+      circuitStorage,
+      [
+        {
+          circuitId: CircuitId.AuthV2,
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
+        },
+        {
+          circuitId: CircuitId.AuthV3,
+          prepareFunc: proofService.generateAuthCircuitInputs.bind(proofService)
+        }
+      ],
       proofService.verifyState.bind(proofService)
     );
 
@@ -895,9 +904,15 @@ describe('auth', () => {
       merklizeOpts
     );
 
-    packageMgr = await getPackageMgr(
-      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthInputs.bind(proofService),
+    packageMgr = await initPackageMgr(
+      kms,
+      circuitStorage,
+      [
+        {
+          circuitId: CircuitId.AuthV2,
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
+        }
+      ],
       proofService.verifyState.bind(proofService)
     );
 
@@ -1859,12 +1874,9 @@ describe('auth', () => {
       seed: getRandomBytes(32)
     });
 
-    packageMgr = await getPackageMgrV3(
-      [
-        await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-        await circuitStorage.loadCircuitData(CircuitId.AuthV3),
-        await circuitStorage.loadCircuitData(CircuitId.AuthV3_8_32)
-      ],
+    packageMgr = await initPackageMgr(
+      kms,
+      circuitStorage,
       [
         {
           circuitId: CircuitId.AuthV2,
@@ -1872,11 +1884,7 @@ describe('auth', () => {
         },
         {
           circuitId: CircuitId.AuthV3,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
-        },
-        {
-          circuitId: CircuitId.AuthV3_8_32,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
+          prepareFunc: proofService.generateAuthCircuitInputs.bind(proofService)
         }
       ],
       proofService.verifyState.bind(proofService)
@@ -1941,18 +1949,19 @@ describe('auth', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const jwzRequest = await packageMgr.pack(MediaType.ZKPMessage, msgBytes, {
       senderDID: issuerDID,
-      provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3')
+      provingMethodAlg: new ProvingMethodAlg('groth16', CircuitId.AuthV3)
     });
     const authRes = await authHandler.handleAuthorizationRequest(userDID, jwzRequest, {
       mediaType: MediaType.ZKPMessage,
-      preferredAuthProvingMethod: new ProvingMethodAlg('groth16', 'authV3')
+      preferredAuthProvingMethod: new ProvingMethodAlg('groth16', CircuitId.AuthV3)
     });
 
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
 
     const resToken = await Token.parse(tokenStr);
-    expect(resToken.circuitId).to.be.eq(CircuitId.AuthV3);
+    const expectedCircuitId = CircuitId.AuthV3 + '-8-32';
+    expect(resToken.circuitId).to.be.eq(expectedCircuitId);
 
     const { response } = await authHandler.handleAuthorizationResponse(
       authRes.authResponse,
@@ -1965,11 +1974,14 @@ describe('auth', () => {
       byteEncoder.encode(JSON.stringify(response)),
       {
         senderDID: issuerDID,
-        provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3')
+        provingMethodAlg: new ProvingMethodAlg('groth16', CircuitId.AuthV3)
       }
     );
 
-    expect(token).to.be.a.string;
+    // unpack token
+    const unpacked = await packageMgr.unpack(token);
+
+    expect(unpacked.unpackedMediaType).to.be.eq(PROTOCOL_CONSTANTS.MediaType.ZKPMessage);
 
     /*
 
@@ -2017,7 +2029,7 @@ describe('auth', () => {
     */
   });
 
-  it('auth response: TestVerifyV3MessageWithSigProof_Linked_SD&LT (AuthV3-8-32 from accept)', async () => {
+  it('auth response: TestVerifyV3MessageWithSigProof_Linked_SD&LT', async () => {
     const stateEthConfig = defaultEthConnectionConfig;
     stateEthConfig.url = RPC_URL;
     stateEthConfig.contractAddress = STATE_CONTRACT;
@@ -2042,12 +2054,9 @@ describe('auth', () => {
       seed: getRandomBytes(32)
     });
 
-    packageMgr = await getPackageMgrV3(
-      [
-        await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-        await circuitStorage.loadCircuitData(CircuitId.AuthV3),
-        await circuitStorage.loadCircuitData(CircuitId.AuthV3_8_32)
-      ],
+    packageMgr = await initPackageMgr(
+      kms,
+      circuitStorage,
       [
         {
           circuitId: CircuitId.AuthV2,
@@ -2055,11 +2064,7 @@ describe('auth', () => {
         },
         {
           circuitId: CircuitId.AuthV3,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
-        },
-        {
-          circuitId: CircuitId.AuthV3_8_32,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
+          prepareFunc: proofService.generateAuthCircuitInputs.bind(proofService)
         }
       ],
       proofService.verifyState.bind(proofService)
@@ -2175,7 +2180,7 @@ describe('auth', () => {
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
     const resToken = await Token.parse(tokenStr);
-    expect(resToken.circuitId).to.be.eq(CircuitId.AuthV3);
+    expect(resToken.circuitId).to.be.eq(CircuitId.AuthV3 + '-8-32');
 
     const { response } = await authHandler.handleAuthorizationResponse(
       authRes.authResponse,
