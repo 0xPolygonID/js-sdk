@@ -2854,6 +2854,20 @@ describe('auth', () => {
   });
 
   it('request-response flow identity - accept header not supported', async () => {
+    const tempKms = new KMS();
+    packageMgr = await initPackageMgr(
+      tempKms,
+      circuitStorage,
+      [
+        {
+          circuitId: CircuitId.AuthV2,
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
+        }
+      ],
+      proofService.verifyState.bind(proofService)
+    );
+    authHandler = new AuthHandler(packageMgr, proofService);
+
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
