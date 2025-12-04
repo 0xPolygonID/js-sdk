@@ -11,7 +11,8 @@ import { ITransactionService, TransactionService } from '../../blockchain';
 import { prepareZkpProof } from './common';
 import { ICache, createInMemoryCache } from '../memory';
 import { PROTOCOL_CONSTANTS } from '../../iden3comm';
-import { DEFAULT_CACHE_MAX_SIZE } from '../../verifiable';
+import { DEFAULT_CACHE_MAX_SIZE, VerifiableConstants } from '../../verifiable';
+import { isIdentityDoesNotExistError } from './errors';
 
 /**
  * Configuration options for caching behavior
@@ -199,15 +200,39 @@ export class EthStateStorage implements IStateStorage {
   async getLatestStateById(id: bigint): Promise<StateInfo> {
     const cacheKey = this.getLatestStateCacheKey(id);
     if (!this._disableCache) {
-      // Check cache first
       const cachedResult = await this._latestStateResolveCache?.get(cacheKey);
       if (cachedResult) {
+        // If cached result indicates non-existence, throw error
+        if (cachedResult.state === 0n && cachedResult.createdAtTimestamp === 0n) {
+          throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST_CUSTOM_ERROR);
+        }
         return cachedResult;
       }
     }
 
     const { stateContract } = this.getStateContractAndProviderForId(id);
-    const rawData = await stateContract.getStateInfoById(id);
+    let rawData: string[] = [];
+    try {
+      rawData = await stateContract.getStateInfoById(id);
+    } catch (e) {
+      if (isIdentityDoesNotExistError(e) && !this._disableCache) {
+        // Cache a placeholder to avoid repeated calls for non-existing identities
+        await this._latestStateResolveCache?.set(
+          cacheKey,
+          {
+            id: id,
+            state: 0n,
+            replacedByState: 0n,
+            createdAtTimestamp: 0n,
+            replacedAtTimestamp: 0n,
+            createdAtBlock: 0n,
+            replacedAtBlock: 0n
+          },
+          this._latestStateCacheOptions.ttl
+        );
+      }
+      throw e;
+    }
     const stateInfo: StateInfo = {
       id: BigInt(rawData[0]),
       state: BigInt(rawData[1]),
