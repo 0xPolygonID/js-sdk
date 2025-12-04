@@ -71,7 +71,7 @@ export interface QueryWithFieldName {
  * @type VerificationResultMetadata
  */
 export type VerificationResultMetadata = {
-  linkID?: number;
+  linkID?: bigint;
 };
 
 /**
@@ -272,7 +272,7 @@ export class ProofService implements IProofService {
     };
     const pubSignals = await this._pubSignalsVerifier.verify(proofResp.circuitId, verifyContext);
 
-    return { linkID: (pubSignals as unknown as { linkID?: number }).linkID };
+    return { linkID: (pubSignals as unknown as { linkID?: bigint }).linkID };
   }
 
   /** {@inheritdoc IProofService.generateProof} */
