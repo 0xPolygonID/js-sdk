@@ -326,6 +326,7 @@ export class EthStateStorage implements IStateStorage {
     };
 
     const { txnHash } = await this._transactionService.sendTransactionRequest(signer, request);
+    await this._latestStateResolveCache?.delete(this.getLatestStateCacheKey(userId.bigInt()));
 
     return txnHash;
   }
@@ -368,7 +369,7 @@ export class EthStateStorage implements IStateStorage {
     };
 
     const { txnHash } = await this._transactionService.sendTransactionRequest(signer, request);
-
+    await this._latestStateResolveCache?.delete(this.getLatestStateCacheKey(userId.bigInt()));
     return txnHash;
   }
 
