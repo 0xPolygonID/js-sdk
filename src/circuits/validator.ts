@@ -87,20 +87,16 @@ export const circuitValidator: {
       }
     ]
   },
-  [CircuitId.LinkedMultiQueryStable]: {
+  [CircuitId.LinkedMultiQuery10Stable]: {
     validation: { maxQueriesCount: 10, supportedOperations: allOperations },
     subVersions: [
       {
         queryCount: 3,
-        targetCircuitId: (CircuitId.LinkedMultiQueryStable + '3') as CircuitId
+        targetCircuitId: (CircuitId.LinkedMultiQuery10Stable.slice(0, -2) + '3') as CircuitId
       },
       {
         queryCount: 5,
-        targetCircuitId: (CircuitId.LinkedMultiQueryStable + '5') as CircuitId
-      },
-      {
-        queryCount: 10,
-        targetCircuitId: (CircuitId.LinkedMultiQueryStable + '10') as CircuitId
+        targetCircuitId: (CircuitId.LinkedMultiQuery10Stable.slice(0, -2) + '5') as CircuitId
       }
     ]
   }
@@ -109,8 +105,10 @@ export const circuitValidator: {
 export const getCircuitIdsWithSubVersions = (filterCircuitIds?: CircuitId[]): CircuitId[] => {
   return Object.keys(circuitValidator).reduce((acc, key) => {
     const circuitId = key as CircuitId;
+
+    const applyFilter = filterCircuitIds && filterCircuitIds.length > 0;
     // if filterCircuitIds is provided, only include circuits that are in the filterCircuitIds, else include all circuits
-    if (filterCircuitIds && !filterCircuitIds.includes(circuitId)) {
+    if (applyFilter && !filterCircuitIds.includes(circuitId)) {
       return acc;
     }
 

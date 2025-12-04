@@ -461,7 +461,7 @@ describe('auth', () => {
       },
       {
         id: 2,
-        circuitId: CircuitId.LinkedMultiQueryStable,
+        circuitId: CircuitId.LinkedMultiQuery10Stable,
         optional: false,
         query: {
           groupId: 1,

@@ -149,16 +149,16 @@ export class ZKPPacker implements IPacker {
 
     let targetCircuitId = provingMethodAlg.circuitId as CircuitId;
 
-    const testHash = Uint8Array.from(new Array(32).fill(0).map((_, index) => index));
+    const testHash = Uint8Array.from(new Array(32).fill(0).map(() => 1));
 
-    const result = await provingParams?.dataPreparer?.prepare(
+    const testResult = await provingParams?.dataPreparer?.prepare(
       testHash,
       params.senderDID,
       provingMethodAlg.circuitId as CircuitId
     );
 
-    if (typeof result === 'object' && 'targetCircuitId' in result) {
-      targetCircuitId = result.targetCircuitId;
+    if (typeof testResult === 'object' && 'targetCircuitId' in testResult) {
+      targetCircuitId = testResult.targetCircuitId;
     }
 
     const token = new Token(
@@ -285,9 +285,9 @@ const verifySender = async (
   if (!msg.from) {
     throw new Error(ErrSenderNotUsedTokenCreation);
   }
-  const authSignals = (
-    token.circuitId === CircuitId.AuthV2 ? new AuthV2PubSignals() : new AuthV3PubSignals()
-  ).pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(token.zkProof.pub_signals)));
+  const authSignals = new AuthV3PubSignals().pubSignalsUnmarshal(
+    byteEncoder.encode(JSON.stringify(token.zkProof.pub_signals))
+  );
   const did = DID.parseFromId(authSignals.userID);
 
   const msgHash = await token.getMessageHash();

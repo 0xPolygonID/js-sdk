@@ -89,7 +89,7 @@ export class ContractRequestHandler
     CircuitId.AuthV3,
     CircuitId.LinkedMultiQuery10,
     CircuitId.AtomicQueryV3Stable,
-    CircuitId.LinkedMultiQueryStable
+    CircuitId.LinkedMultiQuery10Stable
   ];
 
   /**
