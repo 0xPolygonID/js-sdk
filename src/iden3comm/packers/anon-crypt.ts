@@ -37,7 +37,7 @@ export class AnonCryptPacker implements IPacker {
     private readonly _documentResolver: Resolvable
   ) {}
 
-  packMessage(msg: BasicMessage, param: JWEPackerParams): Promise<Uint8Array> {
+  async packMessage(msg: BasicMessage, param: JWEPackerParams): Promise<Uint8Array> {
     return this.packInternal(msg, param);
   }
 
