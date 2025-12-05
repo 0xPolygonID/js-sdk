@@ -11,7 +11,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: "lts/*"
 
       - name: Cache node modules
         uses: actions/cache@v4
@@ -36,13 +36,19 @@ jobs:
         run: mkdir ./tests/proofs/testdata && wget https://circuits.privado.id/latest.zip -P ./tests/proofs/testdata
 
       - name: Unzip circuits to folder
-        run: cd ./tests/proofs/testdata && unzip latest.zip && cd - && pwd
+        run: cd ./tests/proofs/testdata && unzip latest.zip && rm latest.zip && cd - && pwd
 
       - name: Download authV3 circuits
-        run:  wget https://circuits.privado.id/trusted-setup-authV3-3.0.0.zip -P ./tests/proofs/testdata
+        run: wget https://circuits.privado.id/trusted-setup-authV3-3.0.0.zip -P ./tests/proofs/testdata
 
       - name: Unzip circuits to folder
-        run: cd ./tests/proofs/testdata && unzip trusted-setup-authV3-3.0.0.zip && cd - && pwd
+        run: cd ./tests/proofs/testdata && unzip trusted-setup-authV3-3.0.0.zip && rm trusted-setup-authV3-3.0.0.zip && cd - && pwd
+
+      - name: Download atomicQueryV3 circuits
+        run: wget https://pse-trusted-setup.s3.eu-west-1.amazonaws.com/credentialAtomicV3.zip -P ./tests/proofs/testdata
+
+      - name: Unzip credentialAtomicV3 circuits to testdata folder
+        run: cd ./tests/proofs/testdata && unzip credentialAtomicV3.zip && rm credentialAtomicV3.zip && cd - && pwd
 
       - name: Run Tests
         env:

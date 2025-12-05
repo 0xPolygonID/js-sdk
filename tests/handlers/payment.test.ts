@@ -25,7 +25,7 @@ import {
 import {
   MOCK_STATE_STORAGE,
   getInMemoryDataStorage,
-  getPackageMgr,
+  initPackageMgr,
   registerKeyProvidersInMemoryKMS,
   createIdentity,
   SEED_USER,
@@ -836,9 +836,15 @@ describe('payment-request handler', () => {
         return Promise.resolve({ didDocument: ethDidResolution } as DIDResolutionResult);
       }
     };
-    packageMgr = await getPackageMgr(
-      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthInputs.bind(proofService),
+    packageMgr = await initPackageMgr(
+      kms,
+      circuitStorage,
+      [
+        {
+          circuitId: CircuitId.AuthV2,
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
+        }
+      ],
       proofService.verifyState.bind(proofService)
     );
     paymentHandler = new PaymentHandler(packageMgr, {

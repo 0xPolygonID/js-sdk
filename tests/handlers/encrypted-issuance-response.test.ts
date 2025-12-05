@@ -33,7 +33,7 @@ import {
   getInMemoryDataStorage,
   registerKeyProvidersInMemoryKMS,
   IPFS_URL,
-  getPackageMgr,
+  initPackageMgr,
   createIdentity,
   SEED_USER,
   RHS_URL,
@@ -167,9 +167,15 @@ describe('encrypted issuance response', () => {
         didDocumentMetadata: {}
       })
     };
-    packageMgr = await getPackageMgr(
-      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthInputs.bind(proofService),
+    packageMgr = await initPackageMgr(
+      kms,
+      circuitStorage,
+      [
+        {
+          circuitId: CircuitId.AuthV2,
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
+        }
+      ],
       proofService.verifyState.bind(proofService)
     );
 

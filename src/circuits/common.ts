@@ -66,6 +66,22 @@ export class BaseConfig {
   getMTLevelOnChain(): number {
     return this.mtLevelOnChain ? this.mtLevelOnChain : defaultMTLevelsOnChain;
   }
+
+  setMTLevel(mtLevel: number): void {
+    this.mtLevel = mtLevel;
+  }
+
+  setMTLevelOnChain(mtLevelOnChain: number): void {
+    this.mtLevelOnChain = mtLevelOnChain;
+  }
+
+  setMTLevelClaim(mtLevelClaim: number): void {
+    this.mtLevelClaim = mtLevelClaim;
+  }
+
+  setMaxValueArraySize(maxValueArraySize: number): void {
+    this.maxValueArraySize = maxValueArraySize;
+  }
 }
 
 /**
@@ -258,4 +274,12 @@ export interface IStateInfoPubSignals {
    * @returns {OnChainStateInfo}
    */
   getStatesInfo(): StatesInfo;
+
+  /**
+   * unmarshal pub signals to IStateInfoPubSignals
+   *
+   * @param {Uint8Array} data
+   * @returns IStateInfoPubSignals
+   */
+  pubSignalsUnmarshal(data: Uint8Array): IStateInfoPubSignals;
 }

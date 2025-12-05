@@ -18,7 +18,7 @@ import {
 import {
   MOCK_STATE_STORAGE,
   getInMemoryDataStorage,
-  getPackageMgr,
+  initPackageMgr,
   registerKeyProvidersInMemoryKMS,
   createIdentity,
   SEED_USER,
@@ -49,9 +49,15 @@ describe('revocation status', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
-    packageMgr = await getPackageMgr(
-      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthInputs.bind(proofService),
+    packageMgr = await initPackageMgr(
+      kms,
+      circuitStorage,
+      [
+        {
+          circuitId: CircuitId.AuthV2,
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
+        }
+      ],
       proofService.verifyState.bind(proofService)
     );
     rsHandler = new RevocationStatusHandler(packageMgr, idWallet);
