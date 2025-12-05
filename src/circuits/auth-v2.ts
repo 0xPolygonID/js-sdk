@@ -30,16 +30,6 @@ export class AuthV2Inputs extends BaseConfig {
   signature!: Signature;
   challenge!: bigint;
 
-  constructor(opts?: { mtLevel?: number; mtLevelOnChain?: number }) {
-    super();
-    if (!opts) {
-      return;
-    }
-    const { mtLevel, mtLevelOnChain } = opts;
-    mtLevel && this.setMTLevel(mtLevel);
-    mtLevelOnChain && this.setMTLevelOnChain(mtLevelOnChain);
-  }
-
   validate(): void {
     if (!this.genesisID) {
       throw new Error(CircuitError.EmptyId);
