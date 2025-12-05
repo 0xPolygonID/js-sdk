@@ -120,3 +120,19 @@ export const getCircuitIdsWithSubVersions = (filterCircuitIds?: CircuitId[]): Ci
     return acc;
   }, [] as CircuitId[]);
 };
+
+export const getGroupedCircuitIdsWithSubVersions = (filterCircuitId: CircuitId): CircuitId[] => {
+  return Object.keys(circuitValidator).reduce<CircuitId[]>((acc, key) => {
+    const circuitId = key as CircuitId;
+
+    const subVersions = circuitValidator[circuitId]?.subVersions ?? [];
+
+    const group = [...subVersions.map((subversion) => subversion.targetCircuitId), circuitId];
+
+    if (filterCircuitId && !group.includes(filterCircuitId)) {
+      return acc;
+    }
+
+    return group;
+  }, []);
+};
