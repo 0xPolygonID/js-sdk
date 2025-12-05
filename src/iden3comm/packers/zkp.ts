@@ -10,12 +10,7 @@ import {
   AuthCircuitDataPrepareFunc
 } from '../types';
 import { Token, Header, ProvingMethodAlg, proving } from '@iden3/js-jwz';
-import {
-  AuthV2PubSignals,
-  AuthV3PubSignals,
-  CircuitId,
-  getCircuitIdsWithSubVersions
-} from '../../circuits/index';
+import { AuthV3PubSignals, CircuitId, getCircuitIdsWithSubVersions } from '../../circuits/index';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
 import {
   ErrNoProvingMethodAlg,
