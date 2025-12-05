@@ -301,6 +301,7 @@ export class AuthHandler
         message: authRequest?.body?.message,
         scope: responseScope
       },
+      created_time: getUnixTimestamp(new Date()),
       from: to.string(),
       to: authRequest.from
     };
