@@ -30,7 +30,7 @@ import {
   SEED_USER,
   createIdentity,
   getInMemoryDataStorage,
-  getPackageMgr,
+  initPackageMgr,
   registerKeyProvidersInMemoryKMS
 } from '../helpers';
 
@@ -137,9 +137,15 @@ describe('fetch', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
-    packageMgr = await getPackageMgr(
-      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthInputs.bind(proofService),
+    packageMgr = await initPackageMgr(
+      kms,
+      circuitStorage,
+      [
+        {
+          circuitId: CircuitId.AuthV2,
+          prepareFunc: proofService.generateAuthInputs.bind(proofService)
+        }
+      ],
       proofService.verifyState.bind(proofService)
     );
     fetchHandler = new FetchHandler(packageMgr, {

@@ -20,11 +20,21 @@ const zero = '0';
 /**
  * AtomicQueryV3OnChainInputs ZK private inputs for credentialAtomicQueryV3OnChain.circom
  *
- * @beta
  * @class AtomicQueryV3OnChainInputs
  * @extends {BaseConfig}
  */
 export class AtomicQueryV3OnChainInputs extends BaseConfig {
+  constructor(opts?: { mtLevel?: number; mtLevelClaim?: number; mtLevelOnChain?: number }) {
+    super();
+    if (!opts) {
+      return;
+    }
+    const { mtLevel, mtLevelClaim, mtLevelOnChain } = opts;
+    mtLevel && this.setMTLevel(mtLevel);
+    mtLevelClaim && this.setMTLevelClaim(mtLevelClaim);
+    mtLevelOnChain && this.setMTLevelOnChain(mtLevelOnChain);
+  }
+
   requestID!: bigint;
   id!: Id;
   profileNonce!: bigint;
@@ -331,7 +341,6 @@ export class AtomicQueryV3OnChainInputs extends BaseConfig {
 }
 
 /**
- * @beta
  * AtomicQueryV3OnChainCircuitInputs type represents credentialAtomicQueryV3OnChain.circom private inputs required by prover
  */
 interface AtomicQueryV3OnChainCircuitInputs {

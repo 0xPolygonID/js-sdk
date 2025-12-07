@@ -24,7 +24,7 @@ import {
   processZeroKnowledgeProofRequests,
   verifyExpiresTime
 } from './common';
-import { CircuitId } from '../../circuits';
+import { CircuitId, getGroupedCircuitIdsWithSubVersions } from '../../circuits';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
@@ -214,7 +214,9 @@ export class AuthHandler
     CircuitId.AtomicQueryV3,
     CircuitId.AtomicQuerySigV2,
     CircuitId.AtomicQueryMTPV2,
-    CircuitId.LinkedMultiQuery10
+    CircuitId.AtomicQueryV3Stable,
+    CircuitId.LinkedMultiQuery10,
+    CircuitId.LinkedMultiQuery10Stable
   ];
   /**
    * Creates an instance of AuthHandler.
@@ -390,10 +392,15 @@ export class AuthHandler
         throw new Error(`proof is not given for requestId ${proofRequest.id}`);
       }
 
-      const circuitId = proofResp.circuitId;
-      if (circuitId !== proofRequest.circuitId) {
+      const allCircuitsSubversions = getGroupedCircuitIdsWithSubVersions(
+        proofRequest.circuitId as CircuitId
+      );
+
+      if (!allCircuitsSubversions.includes(proofRequest.circuitId)) {
         throw new Error(
-          `proof is not given for requested circuit expected: ${proofRequest.circuitId}, given ${circuitId}`
+          `proof is not given for requested circuit expected: ${
+            proofRequest.circuitId
+          }, given ${allCircuitsSubversions.join(', ')}`
         );
       }
 
@@ -542,16 +549,6 @@ export class AuthHandler
       return preferredAuthProvingMethod;
     }
     if (accept?.length) {
-      const authV3_8_32 = proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg;
-      if (
-        acceptHasProvingMethodAlg(accept, authV3_8_32) &&
-        this._packerMgr.isProfileSupported(
-          MediaType.ZKPMessage,
-          buildAcceptFromProvingMethodAlg(authV3_8_32)
-        )
-      ) {
-        return authV3_8_32;
-      }
       const authV3 = proving.provingMethodGroth16AuthV3Instance.methodAlg;
       if (
         acceptHasProvingMethodAlg(accept, authV3) &&

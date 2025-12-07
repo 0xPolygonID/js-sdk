@@ -6,7 +6,7 @@ import { getOperatorNameByValue, Operators, QueryOperators } from '../../circuit
 import { CircuitId } from '../../circuits/models';
 import { calculateCoreSchemaHash, ProofQuery, VerifiableConstants } from '../../verifiable';
 import { QueryMetadata } from '../common';
-import { circuitValidator } from '../provers';
+import { circuitValidator } from '../../circuits';
 import { JsonLd } from 'jsonld/jsonld-spec';
 import { VerifiablePresentation } from '../../iden3comm';
 import { ethers } from 'ethers';
@@ -89,20 +89,36 @@ export async function checkQueryRequest(
   return;
 }
 
+const findCircuitValidation = (
+  circuitId: CircuitId
+): { maxQueriesCount: number; supportedOperations: Operators[] } => {
+  for (const key in circuitValidator) {
+    const validator = circuitValidator[key as CircuitId];
+    if (key === circuitId) {
+      return validator.validation;
+    }
+    for (const subversion of validator.subVersions ?? []) {
+      if (subversion.targetCircuitId === circuitId) {
+        return validator.validation;
+      }
+    }
+  }
+
+  throw new Error(`circuit validation for ${circuitId} is not found`);
+};
+
 export function checkCircuitQueriesLength(circuitId: CircuitId, queriesMetadata: QueryMetadata[]) {
-  const circuitValidationData = circuitValidator[circuitId];
+  const circuitValidationData = findCircuitValidation(circuitId);
 
   if (queriesMetadata.length > circuitValidationData.maxQueriesCount) {
     throw new Error(
-      `circuit ${circuitId} supports only ${
-        circuitValidator[circuitId as CircuitId].maxQueriesCount
-      } queries`
+      `circuit ${circuitId} supports only ${circuitValidationData.maxQueriesCount} queries`
     );
   }
 }
 
 export function checkCircuitOperator(circuitId: CircuitId, operator: number) {
-  const circuitValidationData = circuitValidator[circuitId];
+  const circuitValidationData = findCircuitValidation(circuitId);
 
   if (!circuitValidationData.supportedOperations.includes(operator)) {
     throw new Error(

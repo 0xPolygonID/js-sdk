@@ -8,7 +8,17 @@ import { AuthV2Inputs, AuthV2PubSignals } from './auth-v2';
  * @class AuthV3Inputs
  * @extends {BaseConfig}
  */
-export class AuthV3Inputs extends AuthV2Inputs {}
+export class AuthV3Inputs extends AuthV2Inputs {
+  constructor(opts?: { mtLevel?: number; mtLevelOnChain?: number }) {
+    super();
+    if (!opts) {
+      return;
+    }
+    const { mtLevel, mtLevelOnChain } = opts;
+    mtLevel && this.setMTLevel(mtLevel);
+    mtLevelOnChain && this.setMTLevelOnChain(mtLevelOnChain);
+  }
+}
 // AuthV3PubSignals auth.circom public signals
 /**
  * public signals
