@@ -24,7 +24,7 @@ import {
   processZeroKnowledgeProofRequests,
   verifyExpiresTime
 } from './common';
-import { CircuitId, getCircuitIdsWithSubVersions } from '../../circuits';
+import { CircuitId, getGroupedCircuitIdsWithSubVersions } from '../../circuits';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
@@ -392,13 +392,15 @@ export class AuthHandler
         throw new Error(`proof is not given for requestId ${proofRequest.id}`);
       }
 
-      const supportedCircuits = getCircuitIdsWithSubVersions();
+      const allCircuitsSubversions = getGroupedCircuitIdsWithSubVersions(
+        proofRequest.circuitId as CircuitId
+      );
 
-      if (!supportedCircuits.includes(proofRequest.circuitId)) {
+      if (!allCircuitsSubversions.includes(proofRequest.circuitId)) {
         throw new Error(
           `proof is not given for requested circuit expected: ${
             proofRequest.circuitId
-          }, given ${supportedCircuits.join(', ')}`
+          }, given ${allCircuitsSubversions.join(', ')}`
         );
       }
 
