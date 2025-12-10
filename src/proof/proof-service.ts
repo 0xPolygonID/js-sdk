@@ -9,6 +9,7 @@ import {
   AuthV3Inputs,
   AuthV3PubSignals,
   CircuitId,
+  circuitValidator,
   getCircuitIdsWithSubVersions,
   Operators,
   Query,
@@ -29,7 +30,6 @@ import {
   QueryMetadata,
   parseCredentialSubject,
   parseQueryMetadata,
-  selectTargetCircuit,
   toGISTProof,
   transformQueryValueToBigInts
 } from './common';
@@ -685,7 +685,8 @@ export class ProofService implements IProofService {
     inputs: Uint8Array;
     targetCircuitId: CircuitId;
   }> {
-    if (![CircuitId.AuthV2, CircuitId.AuthV3].includes(circuitId)) {
+    const authV3_8_32 = 'authV3-8-32' as CircuitId;
+    if (![CircuitId.AuthV2, CircuitId.AuthV3, authV3_8_32].includes(circuitId)) {
       throw new Error('CircuitId is not supported');
     }
 
@@ -702,13 +703,50 @@ export class ProofService implements IProofService {
 
     const gistProof = toGISTProof(stateProof);
 
-    const { mtLevel, mtLevelOnChain, targetCircuitId } = (await selectTargetCircuit(
-      did,
-      this._identityWallet,
-      this._inputsGenerator,
-      this._stateStorage,
-      circuitId
-    )) ?? {
+    const selectTargetCircuit = ():
+      | { mtLevel: number; mtLevelOnChain: number; targetCircuitId: CircuitId | string }
+      | undefined => {
+      if (circuitId === authV3_8_32) {
+        const subversion = circuitValidator[CircuitId.AuthV3].subVersions?.find(
+          (i) => i.targetCircuitId === authV3_8_32
+        );
+        if (!subversion || !subversion.mtLevel || !subversion.mtLevelOnChain) {
+          return undefined;
+        }
+        return {
+          mtLevel: subversion.mtLevel,
+          mtLevelOnChain: subversion.mtLevelOnChain,
+          targetCircuitId: authV3_8_32
+        };
+      }
+      const subversions = circuitValidator[circuitId].subVersions;
+      if (!subversions) {
+        return undefined;
+      }
+      const mtLevelsProofs = [authPrepared.nonRevProof.proof, authPrepared.incProof.proof];
+      for (const subversion of subversions) {
+        const { mtLevel, mtLevelOnChain, targetCircuitId } = subversion;
+        if (!mtLevel || !mtLevelOnChain) {
+          continue;
+        }
+        const mtLevelsValid = mtLevelsProofs.reduce((acc, proof) => {
+          if (!proof) {
+            return acc;
+          }
+          const allSiblings = proof.allSiblings();
+          return acc && allSiblings.length <= mtLevel - 1;
+        }, true);
+
+        const gistMtpValid = gistProof.proof.allSiblings().length <= mtLevelOnChain - 1;
+
+        if (mtLevelsValid && gistMtpValid) {
+          return { mtLevel, mtLevelOnChain, targetCircuitId };
+        }
+      }
+      return undefined;
+    };
+
+    const { mtLevel, mtLevelOnChain, targetCircuitId } = selectTargetCircuit() ?? {
       targetCircuitId: circuitId as CircuitId
     };
 

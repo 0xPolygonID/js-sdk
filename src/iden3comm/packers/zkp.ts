@@ -172,7 +172,7 @@ export class ZKPPacker implements IPacker {
         const result = await provingParams?.dataPreparer?.prepare(
           hash,
           params.senderDID,
-          circuitId === 'authV3-8-32' ? CircuitId.AuthV3 : (circuitId as CircuitId)
+          circuitId as CircuitId
         );
 
         if (!result) {
