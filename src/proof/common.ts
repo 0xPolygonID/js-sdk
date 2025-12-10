@@ -1,8 +1,6 @@
 import { NodeAux, Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 import {
   buildTreeState,
-  CircuitId,
-  circuitValidator,
   ClaimNonRevStatus,
   GISTProof,
   isValidOperation,
@@ -21,11 +19,8 @@ import {
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { byteEncoder } from '../utils';
 import { JsonDocumentObject } from '../iden3comm';
-import { Claim, DID } from '@iden3/js-iden3-core';
+import { Claim } from '@iden3/js-iden3-core';
 import { poseidon } from '@iden3/js-crypto';
-import { IIdentityWallet } from '../identity';
-import { InputGenerator } from './provers';
-import { IStateStorage } from '../storage';
 
 export type PreparedCredential = {
   credential: W3CCredential;
