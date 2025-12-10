@@ -156,6 +156,15 @@ export class ZKPPacker implements IPacker {
       targetCircuitId = testResult.targetCircuitId;
     }
 
+    if (targetCircuitId !== params.provingMethodAlg.circuitId) {
+      provingMethodAlg = new ProvingMethodAlg(params.provingMethodAlg.alg, targetCircuitId);
+      provingMethod = await getProvingMethod(provingMethodAlg);
+      provingParams = this.provingParamsMap.get(provingMethodAlg.toString());
+      if (!provingParams) {
+        throw new Error(ErrNoProvingMethodAlg);
+      }
+    }
+
     const token = new Token(
       provingMethod,
       byteDecoder.decode(payload),
@@ -163,7 +172,7 @@ export class ZKPPacker implements IPacker {
         const result = await provingParams?.dataPreparer?.prepare(
           hash,
           params.senderDID,
-          circuitId as CircuitId
+          circuitId === 'authV3-8-32' ? CircuitId.AuthV3 : (circuitId as CircuitId)
         );
 
         if (!result) {
@@ -177,17 +186,6 @@ export class ZKPPacker implements IPacker {
         return result;
       }
     );
-
-    if (targetCircuitId !== params.provingMethodAlg.circuitId) {
-      provingMethodAlg = new ProvingMethodAlg(params.provingMethodAlg.alg, targetCircuitId);
-      provingMethod = await getProvingMethod(provingMethodAlg);
-      provingParams = this.provingParamsMap.get(provingMethodAlg.toString());
-      if (!provingParams) {
-        throw new Error(ErrNoProvingMethodAlg);
-      }
-    }
-
-    token.setHeader(Header.CircuitId, targetCircuitId);
     token.setHeader(Header.Type, MediaType.ZKPMessage);
     const tokenStr = await token.prove(provingParams.provingKey, provingParams.wasm);
     return byteEncoder.encode(tokenStr);

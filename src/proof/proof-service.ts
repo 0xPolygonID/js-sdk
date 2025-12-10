@@ -9,7 +9,6 @@ import {
   AuthV3Inputs,
   AuthV3PubSignals,
   CircuitId,
-  circuitValidator,
   getCircuitIdsWithSubVersions,
   Operators,
   Query,
@@ -30,6 +29,7 @@ import {
   QueryMetadata,
   parseCredentialSubject,
   parseQueryMetadata,
+  selectTargetCircuit,
   toGISTProof,
   transformQueryValueToBigInts
 } from './common';
@@ -702,37 +702,13 @@ export class ProofService implements IProofService {
 
     const gistProof = toGISTProof(stateProof);
 
-    const selectTargetCircuit = ():
-      | { mtLevel: number; mtLevelOnChain: number; targetCircuitId: CircuitId | string }
-      | undefined => {
-      const subversions = circuitValidator[circuitId].subVersions;
-      if (!subversions) {
-        return undefined;
-      }
-      const mtLevelsProofs = [authPrepared.nonRevProof.proof, authPrepared.incProof.proof];
-      for (const subversion of subversions) {
-        const { mtLevel, mtLevelOnChain, targetCircuitId } = subversion;
-        if (!mtLevel || !mtLevelOnChain) {
-          continue;
-        }
-        const mtLevelsValid = mtLevelsProofs.reduce((acc, proof) => {
-          if (!proof) {
-            return acc;
-          }
-          const allSiblings = proof.allSiblings();
-          return acc && allSiblings.length <= mtLevel - 1;
-        }, true);
-
-        const gistMtpValid = gistProof.proof.allSiblings().length <= mtLevelOnChain - 1;
-
-        if (mtLevelsValid && gistMtpValid) {
-          return { mtLevel, mtLevelOnChain, targetCircuitId };
-        }
-      }
-      return undefined;
-    };
-
-    const { mtLevel, mtLevelOnChain, targetCircuitId } = selectTargetCircuit() ?? {
+    const { mtLevel, mtLevelOnChain, targetCircuitId } = (await selectTargetCircuit(
+      did,
+      this._identityWallet,
+      this._inputsGenerator,
+      this._stateStorage,
+      circuitId
+    )) ?? {
       targetCircuitId: circuitId as CircuitId
     };
 

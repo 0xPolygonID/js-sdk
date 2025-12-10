@@ -1,6 +1,8 @@
 import { NodeAux, Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 import {
   buildTreeState,
+  CircuitId,
+  circuitValidator,
   ClaimNonRevStatus,
   GISTProof,
   isValidOperation,
@@ -19,8 +21,11 @@ import {
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { byteEncoder } from '../utils';
 import { JsonDocumentObject } from '../iden3comm';
-import { Claim } from '@iden3/js-iden3-core';
+import { Claim, DID } from '@iden3/js-iden3-core';
 import { poseidon } from '@iden3/js-crypto';
+import { IIdentityWallet } from '../identity';
+import { InputGenerator } from './provers';
+import { IStateStorage } from '../storage';
 
 export type PreparedCredential = {
   credential: W3CCredential;
@@ -270,4 +275,45 @@ const transformExistsValue = (value: unknown): bigint[] => {
     return [BigInt(value)];
   }
   throw new Error('exists operator value must be true or false');
+};
+
+export const selectTargetCircuit = async (
+  did: DID,
+  identityWallet: IIdentityWallet,
+  inputsGenerator: InputGenerator,
+  stateStorage: IStateStorage,
+  circuitId: CircuitId
+): Promise<
+  { mtLevel: number; mtLevelOnChain: number; targetCircuitId: CircuitId | string } | undefined
+> => {
+  const { genesisDID } = await identityWallet.getGenesisDIDMetadata(did);
+  const authPrepared = await inputsGenerator.prepareAuthBJJCredential(genesisDID);
+  const subversions = circuitValidator[circuitId].subVersions;
+  if (!subversions) {
+    return undefined;
+  }
+  const mtLevelsProofs = [authPrepared.nonRevProof.proof, authPrepared.incProof.proof];
+  for (const subversion of subversions) {
+    const { mtLevel, mtLevelOnChain, targetCircuitId } = subversion;
+    if (!mtLevel || !mtLevelOnChain) {
+      continue;
+    }
+    const mtLevelsValid = mtLevelsProofs.reduce((acc, proof) => {
+      if (!proof) {
+        return acc;
+      }
+      const allSiblings = proof.allSiblings();
+      return acc && allSiblings.length <= mtLevel - 1;
+    }, true);
+
+    const id = DID.idFromDID(genesisDID);
+    const stateProof = await stateStorage.getGISTProof(id.bigInt());
+    const gistProof = toGISTProof(stateProof);
+    const gistMtpValid = gistProof.proof.allSiblings().length <= mtLevelOnChain - 1;
+
+    if (mtLevelsValid && gistMtpValid) {
+      return { mtLevel, mtLevelOnChain, targetCircuitId };
+    }
+  }
+  return undefined;
 };
