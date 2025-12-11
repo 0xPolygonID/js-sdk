@@ -135,9 +135,7 @@ export class ZKPPacker implements IPacker {
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
     let provingMethodAlg = params.provingMethodAlg;
 
-    let provingMethod = await getProvingMethod(provingMethodAlg);
     let provingParams = this.provingParamsMap.get(provingMethodAlg.toString());
-
     if (!provingParams) {
       throw new Error(ErrNoProvingMethodAlg);
     }
@@ -155,6 +153,15 @@ export class ZKPPacker implements IPacker {
     if (typeof testResult === 'object' && 'targetCircuitId' in testResult) {
       targetCircuitId = testResult.targetCircuitId;
     }
+
+    if (targetCircuitId !== params.provingMethodAlg.circuitId) {
+      provingMethodAlg = new ProvingMethodAlg(params.provingMethodAlg.alg, targetCircuitId);
+      provingParams = this.provingParamsMap.get(provingMethodAlg.toString());
+      if (!provingParams) {
+        throw new Error(ErrNoProvingMethodAlg);
+      }
+    }
+    const provingMethod = await getProvingMethod(provingMethodAlg);
 
     const token = new Token(
       provingMethod,
@@ -177,17 +184,6 @@ export class ZKPPacker implements IPacker {
         return result;
       }
     );
-
-    if (targetCircuitId !== params.provingMethodAlg.circuitId) {
-      provingMethodAlg = new ProvingMethodAlg(params.provingMethodAlg.alg, targetCircuitId);
-      provingMethod = await getProvingMethod(provingMethodAlg);
-      provingParams = this.provingParamsMap.get(provingMethodAlg.toString());
-      if (!provingParams) {
-        throw new Error(ErrNoProvingMethodAlg);
-      }
-    }
-
-    token.setHeader(Header.CircuitId, targetCircuitId);
     token.setHeader(Header.Type, MediaType.ZKPMessage);
     const tokenStr = await token.prove(provingParams.provingKey, provingParams.wasm);
     return byteEncoder.encode(tokenStr);
