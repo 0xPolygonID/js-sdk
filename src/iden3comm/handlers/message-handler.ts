@@ -20,6 +20,9 @@ export const defaultProvingMethodAlg = proving.provingMethodGroth16AuthV2Instanc
 export type BasicHandlerOptions = {
   allowExpiredMessages?: boolean;
   messageProvingMethodAlg?: ProvingMethodAlg;
+  headers?: {
+    [key: string]: string;
+  };
 };
 
 /**

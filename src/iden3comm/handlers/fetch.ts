@@ -40,9 +40,6 @@ import { Options } from '@iden3/js-jsonld-merklization';
 export type FetchHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: HandlerPackerParams;
-  headers?: {
-    [key: string]: string;
-  };
 };
 
 /**
