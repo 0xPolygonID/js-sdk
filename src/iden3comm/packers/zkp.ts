@@ -10,7 +10,12 @@ import {
   AuthCircuitDataPrepareFunc
 } from '../types';
 import { Token, Header, ProvingMethodAlg, proving } from '@iden3/js-jwz';
-import { AuthV3PubSignals, CircuitId, getCircuitIdsWithSubVersions } from '../../circuits/index';
+import {
+  AuthV3PubSignals,
+  CircuitId,
+  getCircuitIdsWithSubVersions,
+  getGroupedCircuitIdsWithSubVersions
+} from '../../circuits';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
 import {
   ErrNoProvingMethodAlg,
@@ -52,7 +57,7 @@ export class DataPrepareHandlerFunc {
     hash: Uint8Array,
     did: DID,
     circuitId: CircuitId
-  ): Promise<Uint8Array | { inputs: Uint8Array; targetCircuitId: CircuitId }> {
+  ): Promise<Uint8Array | { inputs: Uint8Array; targetCircuitId: string }> {
     return this.dataPrepareFunc(hash, did, circuitId);
   }
 }
@@ -133,63 +138,56 @@ export class ZKPPacker implements IPacker {
    * @returns `Promise<Uint8Array>`
    */
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
-    let provingMethodAlg = params.provingMethodAlg;
+    const provingMethodAlg = params.provingMethodAlg;
 
-    let provingMethod = await getProvingMethod(provingMethodAlg);
-    let provingParams = this.provingParamsMap.get(provingMethodAlg.toString());
+    const provingMethod = await getProvingMethod(provingMethodAlg);
+    const provingParams = this.provingParamsMap.get(
+      new ProvingMethodAlg(provingMethodAlg.alg, provingMethodAlg.circuitId).toString()
+    );
 
     if (!provingParams) {
       throw new Error(ErrNoProvingMethodAlg);
     }
 
-    let targetCircuitId = provingMethodAlg.circuitId as CircuitId;
+    const prepareInputsFn = provingParams.dataPreparer.dataPrepareFunc;
 
-    const testHash = Uint8Array.from(new Array(32).fill(0).map(() => 1));
-
-    const testResult = await provingParams?.dataPreparer?.prepare(
-      testHash,
-      params.senderDID,
+    const dynamicProvingParams = getGroupedCircuitIdsWithSubVersions(
       provingMethodAlg.circuitId as CircuitId
-    );
-
-    if (typeof testResult === 'object' && 'targetCircuitId' in testResult) {
-      targetCircuitId = testResult.targetCircuitId;
-    }
-
-    const token = new Token(
-      provingMethod,
-      byteDecoder.decode(payload),
-      async (hash: Uint8Array, circuitId: string) => {
-        const result = await provingParams?.dataPreparer?.prepare(
-          hash,
-          params.senderDID,
-          circuitId as CircuitId
+    ).reduce<{ circuitId: CircuitId; provingKey: Uint8Array; wasm: Uint8Array }[]>(
+      (acc, circuitId) => {
+        const provingParams = this.provingParamsMap.get(
+          new ProvingMethodAlg(provingMethodAlg.alg, circuitId).toString()
         );
 
-        if (!result) {
-          throw new Error(ErrNoProvingMethodAlg);
+        if (provingParams) {
+          return [
+            ...acc,
+            {
+              circuitId,
+              provingKey: provingParams.provingKey,
+              wasm: provingParams.wasm
+            }
+          ];
         }
-
-        if (typeof result === 'object' && 'inputs' in result) {
-          return result.inputs;
-        }
-
-        return result;
-      }
+        return acc;
+      },
+      []
     );
 
-    if (targetCircuitId !== params.provingMethodAlg.circuitId) {
-      provingMethodAlg = new ProvingMethodAlg(params.provingMethodAlg.alg, targetCircuitId);
-      provingMethod = await getProvingMethod(provingMethodAlg);
-      provingParams = this.provingParamsMap.get(provingMethodAlg.toString());
-      if (!provingParams) {
-        throw new Error(ErrNoProvingMethodAlg);
-      }
-    }
+    const token = new Token(provingMethod, byteDecoder.decode(payload));
 
-    token.setHeader(Header.CircuitId, targetCircuitId);
+    token.setHeader(Header.CircuitId, params.provingMethodAlg.circuitId);
     token.setHeader(Header.Type, MediaType.ZKPMessage);
-    const tokenStr = await token.prove(provingParams.provingKey, provingParams.wasm);
+    const tokenStr = await token.dynamicProve({
+      provingParams: dynamicProvingParams,
+      inputsPreparerFn: async (hash, circuitId) => {
+        const result = await prepareInputsFn(hash, params.senderDID, circuitId as CircuitId);
+        if (result instanceof Uint8Array) {
+          return { inputs: result, targetCircuitId: circuitId };
+        }
+        return result;
+      }
+    });
     return byteEncoder.encode(tokenStr);
   }
 
