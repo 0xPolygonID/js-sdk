@@ -175,7 +175,7 @@ type AuthReqOptions = {
   senderDid: DID;
   mediaType?: MediaType;
   bypassProofsCache?: boolean;
-  senderDIDDocument?: DIDDocument
+  senderDIDDocument?: DIDDocument;
 };
 
 type AuthRespOptions = {
@@ -197,7 +197,7 @@ export type AuthHandlerOptions = BasicHandlerOptions & {
   packerOptions?: HandlerPackerParams;
   preferredAuthProvingMethod?: ProvingMethodAlg;
   bypassProofsCache?: boolean;
-  senderDIDDocument?: DIDDocument
+  senderDIDDocument?: DIDDocument;
 };
 
 /**
