@@ -10,7 +10,8 @@ import {
   IPackageManager,
   ZeroKnowledgeProofRequest,
   JSONObject,
-  Attachment
+  Attachment,
+  DIDDocument
 } from '../types';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
@@ -174,6 +175,7 @@ type AuthReqOptions = {
   senderDid: DID;
   mediaType?: MediaType;
   bypassProofsCache?: boolean;
+  senderDIDDocument?: DIDDocument;
 };
 
 type AuthRespOptions = {
@@ -195,6 +197,7 @@ export type AuthHandlerOptions = BasicHandlerOptions & {
   packerOptions?: HandlerPackerParams;
   preferredAuthProvingMethod?: ProvingMethodAlg;
   bypassProofsCache?: boolean;
+  senderDIDDocument?: DIDDocument;
 };
 
 /**
@@ -297,7 +300,8 @@ export class AuthHandler
       thid: authRequest.thid ?? guid,
       body: {
         message: authRequest?.body?.message,
-        scope: responseScope
+        scope: responseScope,
+        did_doc: ctx.senderDIDDocument
       },
       created_time: getUnixTimestamp(new Date()),
       from: to.string(),
@@ -330,7 +334,8 @@ export class AuthHandler
     const authResponse = await this.handleAuthRequest(authRequest, {
       senderDid: did,
       mediaType: opts.mediaType,
-      bypassProofsCache: opts.bypassProofsCache
+      bypassProofsCache: opts.bypassProofsCache,
+      senderDIDDocument: opts.senderDIDDocument
     });
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
