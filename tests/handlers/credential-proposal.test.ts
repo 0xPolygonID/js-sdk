@@ -7,7 +7,6 @@ import {
   CredentialStatusType,
   FSCircuitStorage,
   ProofService,
-  CircuitId,
   byteEncoder,
   ICredentialProposalHandler,
   CredentialProposalHandler,
@@ -38,6 +37,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import path from 'path';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { DID } from '@iden3/js-iden3-core';
+import { proving } from '@iden3/js-jwz';
 
 describe('proposal-request handler', () => {
   let packageMgr: IPackageManager;
@@ -91,7 +91,7 @@ describe('proposal-request handler', () => {
       circuitStorage,
       [
         {
-          circuitId: CircuitId.AuthV2,
+          provingMethod: proving.provingMethodGroth16AuthV2Instance,
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         }
       ],

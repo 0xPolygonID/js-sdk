@@ -52,6 +52,7 @@ import * as uuid from 'uuid';
 import { DIDDocument, Resolvable } from 'did-resolver';
 import { Options } from '@iden3/js-jsonld-merklization';
 import nock from 'nock';
+import { proving } from '@iden3/js-jwz';
 
 describe('encrypted issuance response', () => {
   let idWallet: IdentityWallet;
@@ -172,7 +173,7 @@ describe('encrypted issuance response', () => {
       circuitStorage,
       [
         {
-          circuitId: CircuitId.AuthV2,
+          provingMethod: proving.provingMethodGroth16AuthV2Instance,
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         }
       ],

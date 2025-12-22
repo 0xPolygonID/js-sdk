@@ -187,10 +187,33 @@ export type VerificationParams = {
 };
 
 /**
+ * Params for dynamic verification of auth circuit public signals
+ */
+export type DynamicVerificationParams = {
+  verificationFn: VerificationHandlerFunc;
+  params: {
+    circuitId: CircuitId;
+    verificationKey: Uint8Array;
+  }[];
+};
+
+/**
  * Params for generation of proof for auth circuit
  */
 export type ProvingParams = {
   dataPreparer: DataPrepareHandlerFunc;
   provingKey: Uint8Array;
   wasm: Uint8Array;
+};
+
+/**
+ *
+ */
+export type DynamicProvingParams = {
+  dataPreparer: DataPrepareHandlerFunc;
+  params: {
+    circuitId: CircuitId;
+    provingKey: Uint8Array;
+    wasm: Uint8Array;
+  }[];
 };

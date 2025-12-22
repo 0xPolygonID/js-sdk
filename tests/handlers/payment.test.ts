@@ -7,7 +7,6 @@ import {
   CredentialStatusType,
   FSCircuitStorage,
   ProofService,
-  CircuitId,
   PaymentRequestDataType,
   byteEncoder,
   PaymentType,
@@ -72,6 +71,7 @@ import bs58 from 'bs58';
 import { deserialize, serialize } from 'borsh';
 import { sha256 } from '@iden3/js-crypto';
 import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
+import { proving } from '@iden3/js-jwz';
 
 describe('payment-request handler', () => {
   afterEach(() => {
@@ -841,7 +841,7 @@ describe('payment-request handler', () => {
       circuitStorage,
       [
         {
-          circuitId: CircuitId.AuthV2,
+          provingMethod: proving.provingMethodGroth16AuthV2Instance,
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         }
       ],

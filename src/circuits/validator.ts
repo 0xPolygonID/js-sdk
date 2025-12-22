@@ -32,17 +32,19 @@ const credentialAtomicQueryV3Validation = {
   validation: { maxQueriesCount: 1, supportedOperations: allOperations }
 };
 
+export type CircuitValidatorItem = {
+  validation: { maxQueriesCount: number; supportedOperations: Operators[] };
+  subVersions?: {
+    mtLevel?: number;
+    mtLevelClaim?: number;
+    mtLevelOnChain?: number;
+    queryCount?: number;
+    targetCircuitId: CircuitId;
+  }[];
+};
+
 export const circuitValidator: {
-  [k in CircuitId]: {
-    validation: { maxQueriesCount: number; supportedOperations: Operators[] };
-    subVersions?: {
-      mtLevel?: number;
-      mtLevelClaim?: number;
-      mtLevelOnChain?: number;
-      queryCount?: number;
-      targetCircuitId: CircuitId;
-    }[];
-  };
+  [k in CircuitId]: CircuitValidatorItem;
 } = {
   [CircuitId.AtomicQueryMTPV2]: credentialAtomicQueryV2Validation,
   [CircuitId.AtomicQueryMTPV2OnChain]: credentialAtomicQueryV2OnChainValidation,

@@ -50,7 +50,7 @@ import {
   RootInfo,
   InMemoryProofStorage
 } from '../../src';
-import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
+import { proving, ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { describe, expect, it, beforeEach } from 'vitest';
 import { ethers } from 'ethers';
@@ -129,11 +129,11 @@ describe('auth', () => {
       circuitStorage,
       [
         {
-          circuitId: CircuitId.AuthV2,
+          provingMethod: proving.provingMethodGroth16AuthV2Instance,
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         },
         {
-          circuitId: CircuitId.AuthV3,
+          provingMethod: proving.provingMethodGroth16AuthV3Instance,
           prepareFunc: proofService.generateAuthCircuitInputs.bind(proofService)
         }
       ],
@@ -909,7 +909,7 @@ describe('auth', () => {
       circuitStorage,
       [
         {
-          circuitId: CircuitId.AuthV2,
+          provingMethod: proving.provingMethodGroth16AuthV2Instance,
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         }
       ],
@@ -1883,11 +1883,11 @@ describe('auth', () => {
       circuitStorage,
       [
         {
-          circuitId: CircuitId.AuthV2,
+          provingMethod: proving.provingMethodGroth16AuthV2Instance,
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         },
         {
-          circuitId: CircuitId.AuthV3,
+          provingMethod: proving.provingMethodGroth16AuthV3Instance,
           prepareFunc: proofService.generateAuthCircuitInputs.bind(proofService)
         }
       ],
@@ -1973,7 +1973,7 @@ describe('auth', () => {
     expect(tokenStr).to.be.a('string');
 
     const resToken = await Token.parse(tokenStr);
-    const expectedCircuitId = CircuitId.AuthV3 + '-8-32';
+    const expectedCircuitId = CircuitId.AuthV3;
     expect(resToken.circuitId).to.be.eq(expectedCircuitId);
 
     const { response } = await authHandler.handleAuthorizationResponse(
@@ -2075,11 +2075,11 @@ describe('auth', () => {
       circuitStorage,
       [
         {
-          circuitId: CircuitId.AuthV2,
+          provingMethod: proving.provingMethodGroth16AuthV2Instance,
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         },
         {
-          circuitId: CircuitId.AuthV3,
+          provingMethod: proving.provingMethodGroth16AuthV3Instance,
           prepareFunc: proofService.generateAuthCircuitInputs.bind(proofService)
         }
       ],
@@ -2199,7 +2199,7 @@ describe('auth', () => {
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
     const resToken = await Token.parse(tokenStr);
-    expect(resToken.circuitId).to.be.eq(CircuitId.AuthV3 + '-8-32');
+    expect(resToken.circuitId).to.be.eq(CircuitId.AuthV3);
 
     const { response } = await authHandler.handleAuthorizationResponse(
       authRes.authResponse,
@@ -2882,7 +2882,7 @@ describe('auth', () => {
       circuitStorage,
       [
         {
-          circuitId: CircuitId.AuthV2,
+          provingMethod: proving.provingMethodGroth16AuthV2Instance,
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         }
       ],
