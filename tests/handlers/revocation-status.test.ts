@@ -7,7 +7,6 @@ import {
   CredentialStatusType,
   FSCircuitStorage,
   ProofService,
-  CircuitId,
   IRevocationStatusHandler,
   RevocationStatusHandler,
   RevocationStatusRequestMessage,
@@ -28,6 +27,7 @@ import {
 import * as uuid from 'uuid';
 import { describe, expect, it, beforeEach } from 'vitest';
 import path from 'path';
+import { proving } from '@iden3/js-jwz';
 
 describe('revocation status', () => {
   let packageMgr: IPackageManager;
@@ -54,7 +54,7 @@ describe('revocation status', () => {
       circuitStorage,
       [
         {
-          circuitId: CircuitId.AuthV2,
+          provingMethod: proving.provingMethodGroth16AuthV2Instance,
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         }
       ],

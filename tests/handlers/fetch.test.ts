@@ -17,7 +17,6 @@ import {
   CredentialIssuanceMessage,
   FSCircuitStorage,
   ProofService,
-  CircuitId,
   MessageHandler,
   PlainPacker
 } from '../../src';
@@ -41,6 +40,7 @@ import * as uuid from 'uuid';
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import nock from 'nock';
+import { proving } from '@iden3/js-jwz';
 
 describe('fetch', () => {
   afterEach(() => {
@@ -142,7 +142,7 @@ describe('fetch', () => {
       circuitStorage,
       [
         {
-          circuitId: CircuitId.AuthV2,
+          provingMethod: proving.provingMethodGroth16AuthV2Instance,
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         }
       ],

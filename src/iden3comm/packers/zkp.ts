@@ -7,18 +7,16 @@ import {
   StateVerificationFunc,
   VerificationParams,
   ZKPPackerParams,
-  AuthCircuitDataPrepareFunc
+  AuthCircuitDataPrepareFunc,
+  DynamicVerificationParams,
+  DynamicProvingParams
 } from '../types';
 import { Token, Header, ProvingMethodAlg, proving } from '@iden3/js-jwz';
-import {
-  AuthV3PubSignals,
-  CircuitId,
-  getCircuitIdsWithSubVersions,
-  getGroupedCircuitIdsWithSubVersions
-} from '../../circuits';
+import { AuthV3PubSignals, CircuitId, getCircuitIdsWithSubVersions } from '../../circuits';
 import { BytesHelper, DID } from '@iden3/js-iden3-core';
 import {
   ErrNoProvingMethodAlg,
+  ErrNoProvingParams,
   ErrPackedWithUnsupportedCircuit,
   ErrProofIsInvalid,
   ErrSenderNotUsedTokenCreation,
@@ -100,12 +98,15 @@ export class ZKPPacker implements IPacker {
   private readonly supportedCircuitIds: string[];
   /**
    * Creates an instance of ZKPPacker.
-   * @param {Map<string, ProvingParams>} provingParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
-   * @param {Map<string, VerificationParams>} verificationParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
+   * @param {Map<string, ProvingParams | DynamicVerificationParams>} provingParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
+   * @param {Map<string, VerificationParams | DynamicVerificationParams>} verificationParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
    */
   constructor(
-    public readonly provingParamsMap: Map<string, ProvingParams>,
-    public readonly verificationParamsMap: Map<string, VerificationParams>,
+    public readonly provingParamsMap: Map<string, ProvingParams | DynamicProvingParams>,
+    public readonly verificationParamsMap: Map<
+      string,
+      VerificationParams | DynamicVerificationParams
+    >,
     private readonly _opts: StateVerificationOpts = {
       acceptedStateTransitionDelay: DEFAULT_AUTH_VERIFY_DELAY
     }
@@ -141,47 +142,40 @@ export class ZKPPacker implements IPacker {
     const provingMethodAlg = params.provingMethodAlg;
 
     const provingMethod = await getProvingMethod(provingMethodAlg);
-    const provingParams = this.provingParamsMap.get(
-      new ProvingMethodAlg(provingMethodAlg.alg, provingMethodAlg.circuitId).toString()
-    );
-
-    if (!provingParams) {
+    if (!provingMethod) {
       throw new Error(ErrNoProvingMethodAlg);
     }
+    const provingParams = this.provingParamsMap.get(provingMethodAlg.toString());
 
-    const prepareInputsFn = provingParams.dataPreparer.dataPrepareFunc;
+    if (!provingParams) {
+      throw new Error(ErrNoProvingParams);
+    }
 
-    const dynamicProvingParams = getGroupedCircuitIdsWithSubVersions(
-      provingMethodAlg.circuitId as CircuitId
-    ).reduce<{ circuitId: CircuitId; provingKey: Uint8Array; wasm: Uint8Array }[]>(
-      (acc, circuitId) => {
-        const provingParams = this.provingParamsMap.get(
-          new ProvingMethodAlg(provingMethodAlg.alg, circuitId).toString()
-        );
-
-        if (provingParams) {
-          return [
-            ...acc,
-            {
-              circuitId,
-              provingKey: provingParams.provingKey,
-              wasm: provingParams.wasm
-            }
-          ];
-        }
-        return acc;
-      },
-      []
-    );
+    const dynamicProvingParams: DynamicProvingParams =
+      'params' in provingParams
+        ? provingParams
+        : {
+            dataPreparer: provingParams.dataPreparer,
+            params: [
+              {
+                circuitId: provingMethodAlg.circuitId as CircuitId,
+                provingKey: provingParams.provingKey,
+                wasm: provingParams.wasm
+              }
+            ]
+          };
 
     const token = new Token(provingMethod, byteDecoder.decode(payload));
-
     token.setHeader(Header.CircuitId, params.provingMethodAlg.circuitId);
     token.setHeader(Header.Type, MediaType.ZKPMessage);
     const tokenStr = await token.dynamicProve({
-      provingParams: dynamicProvingParams,
+      provingParams: dynamicProvingParams.params,
       inputsPreparerFn: async (hash, circuitId) => {
-        const result = await prepareInputsFn(hash, params.senderDID, circuitId as CircuitId);
+        const result = await dynamicProvingParams.dataPreparer.dataPrepareFunc(
+          hash,
+          params.senderDID,
+          circuitId as CircuitId
+        );
         if (result instanceof Uint8Array) {
           return { inputs: result, targetCircuitId: circuitId };
         }
@@ -200,11 +194,26 @@ export class ZKPPacker implements IPacker {
   async unpack(envelope: Uint8Array): Promise<BasicMessage> {
     const token = await Token.parse(byteDecoder.decode(envelope));
     const provingMethodAlg = new ProvingMethodAlg(token.alg, token.circuitId);
+
     const verificationParams = this.verificationParamsMap.get(provingMethodAlg.toString());
-    if (!verificationParams?.key) {
+    if (!verificationParams) {
       throw new Error(ErrPackedWithUnsupportedCircuit);
     }
-    const isValid = await token.verify(verificationParams?.key);
+
+    const dynamicVerificationParams =
+      'params' in verificationParams
+        ? verificationParams.params
+        : [
+            {
+              circuitId: provingMethodAlg.circuitId as CircuitId,
+              verificationKey: verificationParams.key
+            }
+          ];
+
+    const isValid = await token.dynamicVerify({
+      verificationKeysMap: dynamicVerificationParams
+    });
+
     if (!isValid) {
       throw new Error(ErrProofIsInvalid);
     }
