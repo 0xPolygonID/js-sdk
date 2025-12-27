@@ -118,6 +118,10 @@ export const processZeroKnowledgeProofRequests = async (
       const isCircuitSupported = opts.supportedCircuits.includes(proofReq.circuitId as CircuitId);
       if (!isCircuitSupported) {
         if (proofReq.optional) {
+          // eslint-disable-next-line no-console
+          console.log(
+            `Circuit ${proofReq.circuitId} is not supported, skipping optional proof request`
+          );
           continue;
         }
         throw new Error(`Circuit ${proofReq.circuitId} is not allowed`);
@@ -140,6 +144,8 @@ export const processZeroKnowledgeProofRequests = async (
           );
           if (!credWithRevStatus.cred) {
             if (proofReq.optional) {
+              // eslint-disable-next-line no-console
+              console.log(`No credential found for optional proof request, skipping`);
               continue;
             }
             throw new Error(
@@ -177,6 +183,8 @@ export const processZeroKnowledgeProofRequests = async (
           )) &&
         proofReq.optional
       ) {
+        // eslint-disable-next-line no-console
+        console.log(`Error in optional proof request: ${error.message}, skipping`);
         continue;
       }
       throw error;
