@@ -1,7 +1,7 @@
 import { Hex } from '@iden3/js-crypto';
 import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
-import { DIDResolutionResult, VerificationMethod, DIDResolutionMetadata } from 'did-resolver';
+import { DIDResolutionResult, VerificationMethod } from 'did-resolver';
 import { keccak256 } from 'ethers';
 import { hexToBytes } from './encoding';
 
@@ -114,7 +114,7 @@ export const resolveDidDocument = async (
     gist?: Hash;
     signature?: DIDDocumentSignature;
   }
-): Promise<DIDResolutionMetadata> => {
+): Promise<DIDResolutionResult> => {
   let didString = encodeURIComponent(did.string());
   // for gist resolve we have to `hide` user did (look into resolver implementation)
   const isGistRequest = opts?.gist && !opts.state;
