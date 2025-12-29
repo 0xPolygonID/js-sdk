@@ -38,7 +38,7 @@ import {
   VerifiablePresentation,
   JsonDocumentObject
 } from '../../iden3comm';
-import { isRootDoesNotExistError, isStateDoesNotExistError } from '../../storage/blockchain/errors';
+import { isRootDoesNotExistError } from '../../storage/blockchain/errors';
 
 /**
  *  Verify Context - params for pub signal verification

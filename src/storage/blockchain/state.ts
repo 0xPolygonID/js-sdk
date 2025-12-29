@@ -289,7 +289,9 @@ export class EthStateStorage implements IStateStorage {
       const isGenesis = getIsGenesisStateById(Id.fromBigInt(id), state);
 
       if (!isGenesis) {
-        throw new Error('State is not genesis and not registered in the smart contract');
+        throw new Error(
+          `State ${state} for identity ${id} is not genesis and not registered in the smart contract`
+        );
       }
 
       stateInfo = {
