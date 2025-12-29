@@ -81,6 +81,7 @@ import {
   ProtocolVersion
 } from '../../src/iden3comm/constants';
 import { schemaLoaderForTests } from '../mocks/schema';
+import { Options } from '@iden3/js-jsonld-merklization';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -95,7 +96,7 @@ describe('auth', () => {
   let issuerDID: DID;
   let circuitStorage: FSCircuitStorage;
 
-  let merklizeOpts;
+  let merklizeOpts: Options;
   beforeEach(async () => {
     const kms = registerKeyProvidersInMemoryKMS();
     dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);

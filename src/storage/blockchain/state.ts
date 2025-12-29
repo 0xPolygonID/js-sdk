@@ -4,7 +4,7 @@ import { IStateStorage, UserStateTransitionInfo } from '../interfaces/state';
 import { Contract, JsonRpcProvider, Signer, TransactionRequest } from 'ethers';
 import { StateInfo } from '../entities/state';
 import { StateTransitionPubSignals } from '../../circuits';
-import { byteEncoder } from '../../utils';
+import { byteEncoder, getIsGenesisStateById } from '../../utils';
 import abi from './abi/State.json';
 import { DID, getChainId, Id } from '@iden3/js-iden3-core';
 import { ITransactionService, TransactionService } from '../../blockchain';
@@ -12,7 +12,7 @@ import { prepareZkpProof } from './common';
 import { ICache, createInMemoryCache } from '../memory';
 import { PROTOCOL_CONSTANTS } from '../../iden3comm';
 import { DEFAULT_CACHE_MAX_SIZE, VerifiableConstants } from '../../verifiable';
-import { isIdentityDoesNotExistError } from './errors';
+import { isIdentityDoesNotExistError, isStateDoesNotExistError } from './errors';
 
 /**
  * Configuration options for caching behavior
@@ -99,6 +99,15 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
   rpcResponseTimeout: 5000,
   waitReceiptCycleTime: 30000,
   waitBlockCycleTime: 3000
+};
+
+const defaultStateInfo: Partial<StateInfo> = {
+  state: 0n,
+  replacedByState: 0n,
+  createdAtTimestamp: 0n,
+  replacedAtTimestamp: 0n,
+  createdAtBlock: 0n,
+  replacedAtBlock: 0n
 };
 
 /**
@@ -220,13 +229,8 @@ export class EthStateStorage implements IStateStorage {
         await this._latestStateResolveCache?.set(
           cacheKey,
           {
-            id: id,
-            state: 0n,
-            replacedByState: 0n,
-            createdAtTimestamp: 0n,
-            replacedAtTimestamp: 0n,
-            createdAtBlock: 0n,
-            replacedAtBlock: 0n
+            id,
+            ...defaultStateInfo
           },
           this._latestStateCacheOptions.ttl
         );
@@ -264,22 +268,43 @@ export class EthStateStorage implements IStateStorage {
     }
 
     const { stateContract } = this.getStateContractAndProviderForId(id);
-    const rawData = await stateContract.getStateInfoByIdAndState(id, state);
-    const stateInfo: StateInfo = {
-      id: BigInt(rawData[0]),
-      state: BigInt(rawData[1]),
-      replacedByState: BigInt(rawData[2]),
-      createdAtTimestamp: BigInt(rawData[3]),
-      replacedAtTimestamp: BigInt(rawData[4]),
-      createdAtBlock: BigInt(rawData[5]),
-      replacedAtBlock: BigInt(rawData[6])
-    };
+
+    let stateInfo: StateInfo;
+
+    try {
+      const rawData = await stateContract.getStateInfoByIdAndState(id, state);
+      stateInfo = {
+        id: BigInt(rawData[0]),
+        state: BigInt(rawData[1]),
+        replacedByState: BigInt(rawData[2]),
+        createdAtTimestamp: BigInt(rawData[3]),
+        replacedAtTimestamp: BigInt(rawData[4]),
+        createdAtBlock: BigInt(rawData[5]),
+        replacedAtBlock: BigInt(rawData[6])
+      };
+    } catch (e) {
+      if (!isStateDoesNotExistError(e)) {
+        throw e;
+      }
+      const isGenesis = getIsGenesisStateById(Id.fromBigInt(id), state);
+
+      if (!isGenesis) {
+        throw new Error('State is not genesis and not registered in the smart contract');
+      }
+
+      stateInfo = {
+        id,
+        ...defaultStateInfo,
+        state
+      };
+    }
 
     const ttl =
       stateInfo.replacedAtTimestamp === 0n
         ? this._stateCacheOptions.notReplacedTtl
         : this._stateCacheOptions.replacedTtl;
     !this._disableCache && (await this._stateResolveCache?.set(cacheKey, stateInfo, ttl));
+
     return stateInfo;
   }
 
