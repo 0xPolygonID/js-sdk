@@ -31,7 +31,7 @@ export function isGenesisState(did: DID, state: bigint | string): boolean {
  * Checks if state is genesis state by id
  *
  * @param {Id} id - id
- * @param {bigint} state  - hash on bigInt or hex string format
+ * @param {bigint} state  - hash as bigint
  * @returns boolean
  */
 export function getIsGenesisStateById(id: Id, state: bigint): boolean {
