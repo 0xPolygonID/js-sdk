@@ -1,8 +1,8 @@
 import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { DocumentLoader, getDocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
-import { IStateStorage, RootInfo, StateInfo } from '../../storage';
-import { byteEncoder, isGenesisState } from '../../utils';
+import { IStateStorage, RootInfo } from '../../storage';
+import { byteEncoder } from '../../utils';
 import { calculateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
 import {
   AtomicQueryMTPV2PubSignals,
@@ -37,7 +37,7 @@ import {
   VerifiablePresentation,
   JsonDocumentObject
 } from '../../iden3comm';
-import { isRootDoesNotExistError, isStateDoesNotExistError } from '../../storage/blockchain/errors';
+import { isRootDoesNotExistError } from '../../storage/blockchain/errors';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -627,24 +627,7 @@ export class PubSignalsVerifier {
     transitionTimestamp: number | string;
   }> {
     const idBigInt = id.bigInt();
-    const did = DID.parseFromId(id);
-    // check if id is genesis
-    const isGenesis = isGenesisState(did, state);
-    let contractState: StateInfo;
-    try {
-      contractState = await this._stateStorage.getStateInfoByIdAndState(idBigInt, state);
-    } catch (e) {
-      if (isStateDoesNotExistError(e)) {
-        if (isGenesis) {
-          return {
-            latest: true,
-            transitionTimestamp: 0
-          };
-        }
-        throw new Error('State is not genesis and not registered in the smart contract');
-      }
-      throw e;
-    }
+    const contractState = await this._stateStorage.getStateInfoByIdAndState(idBigInt, state);
 
     if (!contractState.id || contractState.id.toString() !== idBigInt.toString()) {
       throw new Error(`state was recorded for another identity`);

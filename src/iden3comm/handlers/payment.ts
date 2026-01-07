@@ -377,6 +377,7 @@ export class PaymentHandler
       method: 'POST',
       body: response.buffer as ArrayBuffer,
       headers: {
+        ...ctx.headers,
         'Content-Type':
           this._params.packerParams.mediaType === MediaType.PlainMessage
             ? 'application/json'

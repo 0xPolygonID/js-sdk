@@ -24,6 +24,17 @@ export function isGenesisState(did: DID, state: bigint | string): boolean {
     state = Hash.fromHex(state).bigInt();
   }
   const id = DID.idFromDID(did);
+  return getIsGenesisStateById(id, state);
+}
+
+/**
+ * Checks if state is genesis state by id
+ *
+ * @param {Id} id - id
+ * @param {bigint} state  - hash as bigint
+ * @returns boolean
+ */
+export function getIsGenesisStateById(id: Id, state: bigint): boolean {
   const { method, blockchain, networkId } = DID.decodePartsFromId(id);
   const type = buildDIDType(method, blockchain, networkId);
   const idFromState = Id.idGenesisFromIdenState(type, state);
