@@ -7,6 +7,7 @@ import {
   CredentialStatusType,
   FSCircuitStorage,
   ProofService,
+  CircuitId,
   IRevocationStatusHandler,
   RevocationStatusHandler,
   RevocationStatusRequestMessage,
@@ -17,7 +18,7 @@ import {
 import {
   MOCK_STATE_STORAGE,
   getInMemoryDataStorage,
-  initPackageMgr,
+  getPackageMgr,
   registerKeyProvidersInMemoryKMS,
   createIdentity,
   SEED_USER,
@@ -27,7 +28,6 @@ import {
 import * as uuid from 'uuid';
 import { describe, expect, it, beforeEach } from 'vitest';
 import path from 'path';
-import { proving } from '@iden3/js-jwz';
 
 describe('revocation status', () => {
   let packageMgr: IPackageManager;
@@ -49,15 +49,9 @@ describe('revocation status', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
-    packageMgr = await initPackageMgr(
-      kms,
-      circuitStorage,
-      [
-        {
-          provingMethod: proving.provingMethodGroth16AuthV2Instance,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
-        }
-      ],
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
     rsHandler = new RevocationStatusHandler(packageMgr, idWallet);

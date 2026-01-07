@@ -7,6 +7,7 @@ import {
   CredentialStatusType,
   FSCircuitStorage,
   ProofService,
+  CircuitId,
   byteEncoder,
   ICredentialProposalHandler,
   CredentialProposalHandler,
@@ -25,19 +26,18 @@ import {
 import {
   MOCK_STATE_STORAGE,
   getInMemoryDataStorage,
+  getPackageMgr,
   registerKeyProvidersInMemoryKMS,
   createIdentity,
   SEED_USER,
   SEED_ISSUER,
-  RHS_URL,
-  initPackageMgr
+  RHS_URL
 } from '../helpers';
 
 import { describe, expect, it, beforeEach } from 'vitest';
 import path from 'path';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
 import { DID } from '@iden3/js-iden3-core';
-import { proving } from '@iden3/js-jwz';
 
 describe('proposal-request handler', () => {
   let packageMgr: IPackageManager;
@@ -45,7 +45,7 @@ describe('proposal-request handler', () => {
   let credWallet: ICredentialWallet;
   let proposalRequestHandler: ICredentialProposalHandler;
   const agentUrl = 'http://localhost:8001/api/v1/agent';
-  let userDID, issuerDID: DID;
+  let userDID: DID, issuerDID: DID;
   const packageManager: IPackageManager = new PackageManager();
   packageManager.registerPackers([new PlainPacker()]);
 
@@ -86,15 +86,9 @@ describe('proposal-request handler', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
-    packageMgr = await initPackageMgr(
-      kms,
-      circuitStorage,
-      [
-        {
-          provingMethod: proving.provingMethodGroth16AuthV2Instance,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
-        }
-      ],
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
     proposalRequestHandler = new CredentialProposalHandler(packageMgr, idWallet, {

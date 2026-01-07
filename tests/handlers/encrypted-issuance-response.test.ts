@@ -33,7 +33,7 @@ import {
   getInMemoryDataStorage,
   registerKeyProvidersInMemoryKMS,
   IPFS_URL,
-  initPackageMgr,
+  getPackageMgr,
   createIdentity,
   SEED_USER,
   RHS_URL,
@@ -52,7 +52,6 @@ import * as uuid from 'uuid';
 import { DIDDocument, Resolvable } from 'did-resolver';
 import { Options } from '@iden3/js-jsonld-merklization';
 import nock from 'nock';
-import { proving } from '@iden3/js-jwz';
 
 describe('encrypted issuance response', () => {
   let idWallet: IdentityWallet;
@@ -168,15 +167,9 @@ describe('encrypted issuance response', () => {
         didDocumentMetadata: {}
       })
     };
-    packageMgr = await initPackageMgr(
-      kms,
-      circuitStorage,
-      [
-        {
-          provingMethod: proving.provingMethodGroth16AuthV2Instance,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
-        }
-      ],
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 

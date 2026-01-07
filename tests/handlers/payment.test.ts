@@ -7,6 +7,7 @@ import {
   CredentialStatusType,
   FSCircuitStorage,
   ProofService,
+  CircuitId,
   PaymentRequestDataType,
   byteEncoder,
   PaymentType,
@@ -24,7 +25,7 @@ import {
 import {
   MOCK_STATE_STORAGE,
   getInMemoryDataStorage,
-  initPackageMgr,
+  getPackageMgr,
   registerKeyProvidersInMemoryKMS,
   createIdentity,
   SEED_USER,
@@ -71,7 +72,6 @@ import bs58 from 'bs58';
 import { deserialize, serialize } from 'borsh';
 import { sha256 } from '@iden3/js-crypto';
 import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from '@solana/spl-token';
-import { proving } from '@iden3/js-jwz';
 
 describe('payment-request handler', () => {
   afterEach(() => {
@@ -80,7 +80,7 @@ describe('payment-request handler', () => {
 
   let packageMgr: IPackageManager;
   let paymentHandler: IPaymentHandler;
-  let userDID, issuerDID: DID;
+  let userDID: DID, issuerDID: DID;
   let agentMessageResponse: BasicMessage;
 
   const payContractAbi = [
@@ -836,15 +836,9 @@ describe('payment-request handler', () => {
         return Promise.resolve({ didDocument: ethDidResolution } as DIDResolutionResult);
       }
     };
-    packageMgr = await initPackageMgr(
-      kms,
-      circuitStorage,
-      [
-        {
-          provingMethod: proving.provingMethodGroth16AuthV2Instance,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
-        }
-      ],
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
     paymentHandler = new PaymentHandler(packageMgr, {

@@ -17,6 +17,7 @@ import {
   CredentialIssuanceMessage,
   FSCircuitStorage,
   ProofService,
+  CircuitId,
   MessageHandler,
   PlainPacker
 } from '../../src';
@@ -29,7 +30,7 @@ import {
   SEED_USER,
   createIdentity,
   getInMemoryDataStorage,
-  initPackageMgr,
+  getPackageMgr,
   registerKeyProvidersInMemoryKMS
 } from '../helpers';
 
@@ -40,7 +41,6 @@ import * as uuid from 'uuid';
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import nock from 'nock';
-import { proving } from '@iden3/js-jwz';
 
 describe('fetch', () => {
   afterEach(() => {
@@ -137,15 +137,9 @@ describe('fetch', () => {
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
-    packageMgr = await initPackageMgr(
-      kms,
-      circuitStorage,
-      [
-        {
-          provingMethod: proving.provingMethodGroth16AuthV2Instance,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
-        }
-      ],
+    packageMgr = await getPackageMgr(
+      await circuitStorage.loadCircuitData(CircuitId.AuthV2),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
     fetchHandler = new FetchHandler(packageMgr, {
