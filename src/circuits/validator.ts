@@ -118,17 +118,21 @@ export const getCircuitIdsWithSubVersions = (filterCircuitIds?: CircuitId[]): Ci
 };
 
 export const getGroupedCircuitIdsWithSubVersions = (filterCircuitId: CircuitId): CircuitId[] => {
-  return Object.keys(circuitValidator).reduce<CircuitId[]>((acc, key) => {
+  for (const key of Object.keys(circuitValidator)) {
     const circuitId = key as CircuitId;
-
     const subVersions = circuitValidator[circuitId]?.subVersions ?? [];
-
     const group = [...subVersions.map((subversion) => subversion.targetCircuitId), circuitId];
 
-    if (filterCircuitId && !group.includes(filterCircuitId)) {
-      return acc;
+    if (group.includes(filterCircuitId)) {
+      return group;
     }
+  }
 
-    return group;
-  }, []);
+  const validatorItem = circuitValidator[filterCircuitId];
+  if (validatorItem) {
+    const subVersions = validatorItem.subVersions ?? [];
+    return [...subVersions.map((subversion) => subversion.targetCircuitId), filterCircuitId];
+  }
+
+  return [filterCircuitId];
 };

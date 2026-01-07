@@ -9,8 +9,8 @@
 import { JsonDocumentObject } from '../iden3comm';
 
 export function mergeObjects(
-  credSubject: JsonDocumentObject | undefined,
-  otherCredSubject: JsonDocumentObject | undefined
+  credSubject: JsonDocumentObject | undefined = {},
+  otherCredSubject: JsonDocumentObject | undefined = {}
 ) {
   credSubject = credSubject ?? {};
   otherCredSubject = otherCredSubject ?? {};

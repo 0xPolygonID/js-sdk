@@ -132,7 +132,7 @@ export class LinkedMultiQueryPubSignals {
   operatorOutput!: bigint[];
   circuitQueryHash!: bigint[];
 
-  constructor(public readonly queryCount: number) {
+  constructor(public readonly queryCount: number = 10) {
     if (this.queryCount < 1) {
       throw new Error('queryCount must be greater than 0');
     }
