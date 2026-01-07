@@ -228,7 +228,7 @@ export class PubSignalsVerifier {
       operator: v3PubSignals.operator,
       value: v3PubSignals.value,
       timestamp: v3PubSignals.timestamp,
-      merklized: (v3PubSignals as AtomicQueryV3PubSignals).merklized,
+      merklized: v3PubSignals.merklized,
       claimPathKey: v3PubSignals.claimPathKey,
       valueArraySize: v3PubSignals.getValueArrSize(),
       operatorOutput: v3PubSignals.operatorOutput,

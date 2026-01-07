@@ -53,11 +53,11 @@ describe('validator', () => {
     const testCases = [
       {
         filterCircuitId: CircuitId.AuthV3,
-        expectedCircuitIds: ['authV3', 'authV3-8-32']
+        expectedCircuitIds: ['authV3']
       },
       {
         filterCircuitId: 'authV3-8-32' as CircuitId,
-        expectedCircuitIds: ['authV3', 'authV3-8-32']
+        expectedCircuitIds: ['authV3-8-32']
       },
       {
         filterCircuitId: CircuitId.AtomicQueryV3Stable,

@@ -549,6 +549,16 @@ export class AuthHandler
       return preferredAuthProvingMethod;
     }
     if (accept?.length) {
+      const authV3_8_32 = proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg;
+      if (
+        acceptHasProvingMethodAlg(accept, authV3_8_32) &&
+        this._packerMgr.isProfileSupported(
+          MediaType.ZKPMessage,
+          buildAcceptFromProvingMethodAlg(authV3_8_32)
+        )
+      ) {
+        return authV3_8_32;
+      }
       const authV3 = proving.provingMethodGroth16AuthV3Instance.methodAlg;
       if (
         acceptHasProvingMethodAlg(accept, authV3) &&

@@ -22,6 +22,7 @@ import {
   AtomicQuerySigV2OnChainPubSignals,
   AtomicQueryV3OnChainPubSignals,
   AuthV2PubSignals,
+  AuthV3PubSignals,
   CircuitId,
   getCircuitIdsWithSubVersions,
   IStateInfoPubSignals,
@@ -87,6 +88,7 @@ export const toTxDataArgs = function (res: TxPreparationResultSubmitResponse) {
 type OnChainZKPVerifierCircuitId =
   | CircuitId.AuthV2
   | CircuitId.AuthV3
+  | CircuitId.AuthV3_8_32
   | CircuitId.AtomicQueryMTPV2OnChain
   | CircuitId.AtomicQuerySigV2OnChain
   | CircuitId.AtomicQueryV3OnChain
@@ -106,6 +108,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   private static readonly _supportedCircuits: OnChainZKPVerifierCircuitId[] = [
     CircuitId.AuthV2,
     CircuitId.AuthV3,
+    CircuitId.AuthV3_8_32,
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
     CircuitId.AtomicQueryV3OnChain,
@@ -128,7 +131,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     [CircuitId.AtomicQueryV3OnChain]: { ctor: AtomicQueryV3OnChainPubSignals },
     [CircuitId.AtomicQueryV3OnChainStable]: { ctor: AtomicQueryV3OnChainPubSignals },
     [CircuitId.AuthV2]: { ctor: AuthV2PubSignals },
-    [CircuitId.AuthV3]: { ctor: AuthV2PubSignals }
+    [CircuitId.AuthV3]: { ctor: AuthV3PubSignals },
+    [CircuitId.AuthV3_8_32]: { ctor: AuthV3PubSignals, opts: { mtLevel: 8, mtLevelClaim: 32 } }
   };
 
   /**

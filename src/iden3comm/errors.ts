@@ -12,4 +12,3 @@ export const ErrPackedWithUnsupportedCircuit = 'message was packed with unsuppor
 export const ErrProofIsInvalid = 'message proof is invalid';
 export const ErrStateVerificationFailed = 'message state verification failed';
 export const ErrNoProvingMethodAlg = 'unknown proving method algorithm';
-export const ErrNoProvingParams = 'unknown proving parameters';

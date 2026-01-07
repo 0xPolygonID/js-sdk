@@ -76,7 +76,7 @@ import {
 import { AbstractMessageHandler } from '../../src/iden3comm/handlers/message-handler';
 import { schemaLoaderForTests } from '../mocks/schema';
 import { DIDResolutionResult } from 'did-resolver';
-import { getDocumentLoader } from '@iden3/js-jsonld-merklization';
+import { getDocumentLoader, Options } from '@iden3/js-jsonld-merklization';
 import zkpVerifierABI from '../../src/storage/blockchain/abi/ZkpVerifier.json';
 
 describe('contract-request', () => {
@@ -95,7 +95,7 @@ describe('contract-request', () => {
   const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
   const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-  let merklizeOpts;
+  let merklizeOpts: Options;
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
@@ -374,7 +374,12 @@ describe('contract-request', () => {
       options
     );
 
-    expect((ciResponse as Map<string, ZeroKnowledgeProofResponse>).has('txhash1')).to.be.true;
+    const mockHashKey = 'txhash1';
+
+    expect(ciResponse.has(mockHashKey)).to.be.true;
+    expect(ciResponse.get(mockHashKey)?.circuitId).to.equal(
+      'credentialAtomicQueryV3OnChain-16-16-64-16-32'
+    );
   });
 
   it('contract universal verifier v2 request flow', async () => {
@@ -1068,25 +1073,25 @@ describe('contract-request', () => {
     };
 
     const networkConfigs = {
-      amoy: (contractAddress) => ({
+      amoy: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: '<>',
         contractAddress,
         chainId: 80002
       }),
-      privadoMain: (contractAddress) => ({
+      privadoMain: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: '<>',
         contractAddress,
         chainId: 21000
       }),
-      privadoTest: (contractAddress) => ({
+      privadoTest: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-testnet.privado.id',
         contractAddress,
         chainId: 21001
       }),
-      lineaSepolia: (contractAddress) => ({
+      lineaSepolia: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: '<>',
         contractAddress,
@@ -1433,19 +1438,19 @@ describe('contract-request', () => {
     };
 
     const networkConfigs = {
-      amoy: (contractAddress) => ({
+      amoy: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: '<>',
         contractAddress,
         chainId: 80002
       }),
-      privadoMain: (contractAddress) => ({
+      privadoMain: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-mainnet.privado.id',
         contractAddress,
         chainId: 21000
       }),
-      privadoTest: (contractAddress) => ({
+      privadoTest: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-testnet.privado.id',
         contractAddress,
@@ -1618,19 +1623,19 @@ describe('contract-request', () => {
     };
 
     const networkConfigs = {
-      amoy: (contractAddress) => ({
+      amoy: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: '<>',
         contractAddress,
         chainId: 80002
       }),
-      privadoMain: (contractAddress) => ({
+      privadoMain: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-mainnet.privado.id',
         contractAddress,
         chainId: 21000
       }),
-      privadoTest: (contractAddress) => ({
+      privadoTest: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-testnet.privado.id',
         contractAddress,
@@ -1753,19 +1758,19 @@ describe('contract-request', () => {
     };
 
     const networkConfigs = {
-      amoy: (contractAddress) => ({
+      amoy: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: rpcUrl,
         contractAddress,
         chainId: 80002
       }),
-      privadoMain: (contractAddress) => ({
+      privadoMain: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-mainnet.privado.id',
         contractAddress,
         chainId: 21000
       }),
-      privadoTest: (contractAddress) => ({
+      privadoTest: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-testnet.privado.id',
         contractAddress,
