@@ -32,15 +32,17 @@ const credentialAtomicQueryV3Validation = {
   validation: { maxQueriesCount: 1, supportedOperations: allOperations }
 };
 
+export type CircuitSubversion = {
+  mtLevel?: number;
+  mtLevelClaim?: number;
+  mtLevelOnChain?: number;
+  queryCount?: number;
+  targetCircuitId: CircuitId;
+};
+
 export type CircuitValidatorItem = {
   validation: { maxQueriesCount: number; supportedOperations: Operators[] };
-  subVersions?: {
-    mtLevel?: number;
-    mtLevelClaim?: number;
-    mtLevelOnChain?: number;
-    queryCount?: number;
-    targetCircuitId: CircuitId;
-  }[];
+  subVersions?: CircuitSubversion[];
 };
 
 export const circuitValidator: {

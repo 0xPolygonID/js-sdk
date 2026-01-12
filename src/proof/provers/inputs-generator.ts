@@ -15,6 +15,7 @@ import {
   AtomicQueryV3OnChainInputs,
   CircuitClaim,
   CircuitId,
+  CircuitSubversion,
   LinkedMultiQueryInputs,
   MTProof,
   Operators,
@@ -37,6 +38,7 @@ import {
   getUserDIDFromCredential
 } from '../../credentials';
 import { isEthereumIdentity } from '../../utils';
+import { Proof } from '@iden3/js-merkletree';
 
 export type DIDProfileMetadata = {
   authProfileNonce: number | string;
@@ -437,41 +439,15 @@ export class InputGenerator {
 
     const query = circuitQueries[0];
 
-    const selectTargetCircuit = ():
-      | { mtLevel: number; mtLevelClaim: number; targetCircuitId: CircuitId | string }
-      | undefined => {
-      const subversions = circuitValidator[proofReq.circuitId as CircuitId].subVersions;
-      if (!subversions) {
-        return undefined;
-      }
-      const mtLevelsProofs = [
-        circuitClaimData.nonRevProof.proof,
-        circuitClaimData.signatureProof?.issuerAuthIncProof.proof,
-        circuitClaimData.signatureProof?.issuerAuthNonRevProof.proof,
-        circuitClaimData.proof,
-        query.valueProof?.mtp
-      ];
-      for (const subversion of subversions) {
-        const { mtLevel, mtLevelClaim, targetCircuitId } = subversion;
-        if (!mtLevel || !mtLevelClaim) {
-          continue;
-        }
-        const mtLevelsValid = mtLevelsProofs.reduce((acc, proof) => {
-          if (!proof) {
-            return acc;
-          }
-          const allSiblings = proof.allSiblings();
-          return acc && allSiblings.length <= mtLevel - 1;
-        }, true);
+    const proofsToCheck: { proof?: Proof; levelKey: keyof CircuitSubversion }[] = [
+      { proof: circuitClaimData.nonRevProof.proof, levelKey: 'mtLevel' },
+      { proof: circuitClaimData.signatureProof?.issuerAuthIncProof.proof, levelKey: 'mtLevel' },
+      { proof: circuitClaimData.signatureProof?.issuerAuthNonRevProof.proof, levelKey: 'mtLevel' },
+      { proof: circuitClaimData.proof, levelKey: 'mtLevel' },
+      { proof: query.valueProof?.mtp, levelKey: 'mtLevelClaim' }
+    ];
 
-        if (mtLevelsValid) {
-          return { mtLevel, mtLevelClaim, targetCircuitId };
-        }
-      }
-      return undefined;
-    };
-
-    const targetCircuitInfo = selectTargetCircuit();
+    const targetCircuitInfo = selectV3TargetCircuit(proofReq.circuitId, proofsToCheck);
     const { mtLevel, mtLevelClaim, targetCircuitId } = targetCircuitInfo ?? {
       targetCircuitId: proofReq.circuitId
     };
@@ -497,11 +473,11 @@ export class InputGenerator {
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
-    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? 0n;
     circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionId
       ? BigInt(proofReq.params?.nullifierSessionId?.toString())
-      : BigInt(0);
+      : 0n;
 
     this.checkOperatorSupport(proofReq.circuitId, query.operator);
 
@@ -547,50 +523,23 @@ export class InputGenerator {
     const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
     const gistProof = toGISTProof(stateProof);
 
-    const selectTargetCircuit = ():
-      | {
-          mtLevel: number;
-          mtLevelClaim: number;
-          mtLevelOnChain: number;
-          targetCircuitId: CircuitId | string;
-        }
-      | undefined => {
-      const subversions = circuitValidator[proofReq.circuitId as CircuitId].subVersions;
-      if (!subversions) {
-        return undefined;
-      }
+    const mtLevelsProofs: { proof?: Proof; levelKey: keyof CircuitSubversion }[] = [
+      { proof: circuitClaimData.nonRevProof.proof, levelKey: 'mtLevel' },
+      { proof: circuitClaimData.signatureProof?.issuerAuthIncProof.proof, levelKey: 'mtLevel' },
+      {
+        proof: circuitClaimData.signatureProof?.issuerAuthNonRevProof.proof,
+        levelKey: 'mtLevel'
+      },
+      { proof: circuitClaimData.proof, levelKey: 'mtLevel' },
+      { proof: query.valueProof?.mtp, levelKey: 'mtLevelClaim' },
+      { proof: gistProof.proof, levelKey: 'mtLevelOnChain' }
+    ];
 
-      const mtLevelsProofs = [
-        circuitClaimData.nonRevProof.proof,
-        circuitClaimData.signatureProof?.issuerAuthIncProof.proof,
-        circuitClaimData.signatureProof?.issuerAuthNonRevProof.proof,
-        circuitClaimData.proof,
-        query.valueProof?.mtp
-      ];
-      for (const subversion of subversions) {
-        const { mtLevel, mtLevelClaim, mtLevelOnChain, targetCircuitId } = subversion;
-        if (!mtLevel || !mtLevelClaim || !mtLevelOnChain) {
-          continue;
-        }
-
-        const mtLevelsValid = mtLevelsProofs.reduce((acc, proof) => {
-          if (!proof) {
-            return acc;
-          }
-          const allSiblings = proof.allSiblings();
-          return acc && allSiblings.length <= mtLevel - 1;
-        }, true);
-
-        const gistMtpValid = gistProof.proof.allSiblings().length <= mtLevelOnChain - 1;
-
-        if (mtLevelsValid && gistMtpValid) {
-          return { mtLevel, mtLevelClaim, mtLevelOnChain, targetCircuitId };
-        }
-      }
-      return undefined;
-    };
-
-    const { mtLevel, mtLevelClaim, mtLevelOnChain, targetCircuitId } = selectTargetCircuit() ?? {
+    const { mtLevel, mtLevelClaim, mtLevelOnChain, targetCircuitId } = selectV3TargetCircuit(
+      proofReq.circuitId,
+      mtLevelsProofs,
+      true
+    ) ?? {
       targetCircuitId: proofReq.circuitId
     };
 
@@ -615,11 +564,11 @@ export class InputGenerator {
     circuitInputs.currentTimeStamp = getUnixTimestamp(new Date());
 
     circuitInputs.proofType = proofType;
-    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? 0n;
     circuitInputs.verifierID = params.verifierDid ? DID.idFromDID(params.verifierDid) : undefined;
     circuitInputs.nullifierSessionID = proofReq.params?.nullifierSessionId
       ? BigInt(proofReq.params?.nullifierSessionId?.toString())
-      : BigInt(0);
+      : 0n;
 
     const isEthIdentity = isEthereumIdentity(identifier);
     circuitInputs.isBJJAuthEnabled = isEthIdentity ? 0 : 1;
@@ -689,7 +638,7 @@ export class InputGenerator {
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     const circuitInputs = new LinkedMultiQueryInputs(queryCount);
-    circuitInputs.linkNonce = params.linkNonce ?? BigInt(0);
+    circuitInputs.linkNonce = params.linkNonce ?? 0n;
 
     circuitInputs.claim = circuitClaimData.claim;
     circuitInputs.query = circuitQueries;
@@ -719,4 +668,43 @@ export class InputGenerator {
       );
     }
   }
+}
+
+function selectV3TargetCircuit(
+  circuitId: CircuitId,
+  treesToCheck: { proof?: Proof; levelKey: keyof CircuitSubversion }[],
+  isOnChain = false
+): CircuitSubversion | undefined {
+  const subversions = circuitValidator[circuitId].subVersions;
+  if (!subversions) {
+    return undefined;
+  }
+
+  for (const subversion of subversions) {
+    const { mtLevel, mtLevelClaim, mtLevelOnChain, targetCircuitId } = subversion;
+    const filedLevelsDefined = isOnChain
+      ? [mtLevel, mtLevelClaim, mtLevelOnChain]
+      : [mtLevel, mtLevelClaim];
+
+    if (filedLevelsDefined.some((lvl) => typeof lvl === 'undefined')) {
+      continue;
+    }
+
+    const mtLevelsValid = treesToCheck.reduce((acc, proofMap) => {
+      if (!proofMap.proof) {
+        return acc;
+      }
+      const allSiblings = proofMap.proof.allSiblings();
+      const levelDepth = subversion[proofMap.levelKey];
+      if (typeof levelDepth !== 'number') {
+        return acc;
+      }
+      return acc && allSiblings.length <= levelDepth - 1;
+    }, true);
+
+    if (mtLevelsValid) {
+      return { mtLevel, mtLevelClaim, mtLevelOnChain, targetCircuitId };
+    }
+  }
+  return undefined;
 }
