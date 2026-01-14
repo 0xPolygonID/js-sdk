@@ -22,7 +22,10 @@ import {
   AtomicQuerySigV2OnChainPubSignals,
   AtomicQueryV3OnChainPubSignals,
   AuthV2PubSignals,
+  AuthV3PubSignals,
   CircuitId,
+  getCircuitIdsWithSubVersions,
+  IStateInfoPubSignals,
   StatesInfo
 } from '../../circuits';
 import { byteEncoder, bytesToHex, DIDDocumentSignature, resolveDidDocument } from '../../utils';
@@ -84,9 +87,12 @@ export const toTxDataArgs = function (res: TxPreparationResultSubmitResponse) {
 
 type OnChainZKPVerifierCircuitId =
   | CircuitId.AuthV2
+  | CircuitId.AuthV3
+  | CircuitId.AuthV3_8_32
   | CircuitId.AtomicQueryMTPV2OnChain
   | CircuitId.AtomicQuerySigV2OnChain
-  | CircuitId.AtomicQueryV3OnChain;
+  | CircuitId.AtomicQueryV3OnChain
+  | CircuitId.AtomicQueryV3OnChainStable;
 
 /**
  * OnChainZKPVerifier is a class that allows to interact with the OnChainZKPVerifier contract
@@ -101,16 +107,32 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
    */
   private static readonly _supportedCircuits: OnChainZKPVerifierCircuitId[] = [
     CircuitId.AuthV2,
+    CircuitId.AuthV3,
+    CircuitId.AuthV3_8_32,
     CircuitId.AtomicQueryMTPV2OnChain,
     CircuitId.AtomicQuerySigV2OnChain,
-    CircuitId.AtomicQueryV3OnChain
+    CircuitId.AtomicQueryV3OnChain,
+    CircuitId.AtomicQueryV3OnChainStable
   ];
 
-  private static readonly _supportedCircuitsPubSignalsMap = {
-    [CircuitId.AtomicQueryMTPV2OnChain]: AtomicQueryMTPV2OnChainPubSignals,
-    [CircuitId.AtomicQuerySigV2OnChain]: AtomicQuerySigV2OnChainPubSignals,
-    [CircuitId.AtomicQueryV3OnChain]: AtomicQueryV3OnChainPubSignals,
-    [CircuitId.AuthV2]: AuthV2PubSignals
+  private static readonly _supportedCircuitsPubSignalsMap: Record<
+    OnChainZKPVerifierCircuitId,
+    {
+      ctor: new (opts?: {
+        mtLevel?: number;
+        mtLevelClaim?: number;
+        mtLevelOnChain?: number;
+      }) => IStateInfoPubSignals;
+      opts?: { mtLevel?: number; mtLevelClaim?: number; mtLevelOnChain?: number };
+    }
+  > = {
+    [CircuitId.AtomicQueryMTPV2OnChain]: { ctor: AtomicQueryMTPV2OnChainPubSignals },
+    [CircuitId.AtomicQuerySigV2OnChain]: { ctor: AtomicQuerySigV2OnChainPubSignals },
+    [CircuitId.AtomicQueryV3OnChain]: { ctor: AtomicQueryV3OnChainPubSignals },
+    [CircuitId.AtomicQueryV3OnChainStable]: { ctor: AtomicQueryV3OnChainPubSignals },
+    [CircuitId.AuthV2]: { ctor: AuthV2PubSignals },
+    [CircuitId.AuthV3]: { ctor: AuthV3PubSignals },
+    [CircuitId.AuthV3_8_32]: { ctor: AuthV3PubSignals, opts: { mtLevel: 8, mtLevelClaim: 32 } }
   };
 
   /**
@@ -449,7 +471,8 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
   }
 
   private static checkSupportedCircuit(circuitId: CircuitId) {
-    if (!this._supportedCircuits.includes(circuitId as OnChainZKPVerifierCircuitId)) {
+    const circuitsWithSubVersions = getCircuitIdsWithSubVersions(this._supportedCircuits);
+    if (!circuitsWithSubVersions.includes(circuitId)) {
       throw new Error(`Circuit ${circuitId} not supported by OnChainZKPVerifier`);
     }
   }
@@ -642,14 +665,15 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     onChainCircuitId: OnChainZKPVerifierCircuitId,
     inputs: string[]
   ): StatesInfo {
-    const PubSignals = this._supportedCircuitsPubSignalsMap[onChainCircuitId];
+    const PubSignals = this._supportedCircuitsPubSignalsMap[onChainCircuitId].ctor;
     if (!PubSignals) {
       throw new Error(`Circuit ${onChainCircuitId} not supported by OnChainZKPVerifier`);
     }
-    const atomicQueryPubSignals = new PubSignals();
+    const atomicQueryPubSignals = new PubSignals(
+      this._supportedCircuitsPubSignalsMap[onChainCircuitId].opts
+    );
     const encodedInputs = byteEncoder.encode(JSON.stringify(inputs));
-    atomicQueryPubSignals.pubSignalsUnmarshal(encodedInputs);
-    return atomicQueryPubSignals.getStatesInfo();
+    return atomicQueryPubSignals.pubSignalsUnmarshal(encodedInputs).getStatesInfo();
   }
 
   private static async resolveDidDocumentEip712MessageAndSignature(

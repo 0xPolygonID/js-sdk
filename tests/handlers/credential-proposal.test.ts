@@ -45,7 +45,7 @@ describe('proposal-request handler', () => {
   let credWallet: ICredentialWallet;
   let proposalRequestHandler: ICredentialProposalHandler;
   const agentUrl = 'http://localhost:8001/api/v1/agent';
-  let userDID, issuerDID: DID;
+  let userDID: DID, issuerDID: DID;
   const packageManager: IPackageManager = new PackageManager();
   packageManager.registerPackers([new PlainPacker()]);
 

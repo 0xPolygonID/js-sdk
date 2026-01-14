@@ -1,37 +1,52 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { DID } from '@iden3/js-iden3-core';
+
 import {
   EthStateStorage,
   EthConnectionConfig,
   VerifiableConstants,
   defaultEthConnectionConfig
 } from '../../src';
-import { DID } from '@iden3/js-iden3-core';
 
-const mockContract = {
-  getStateInfoByIdAndState: vi.fn(),
-  getStateInfoById: vi.fn(),
-  getGISTProof: vi.fn(),
-  getGISTRootInfo: vi.fn(),
-  connect: vi.fn(),
-  transitState: {
-    estimateGas: vi.fn(),
-    populateTransaction: vi.fn()
-  },
-  transitStateGeneric: {
-    estimateGas: vi.fn(),
-    populateTransaction: vi.fn()
-  }
-};
+const { mockContract, MockContract, MockJsonRpcProvider } = vi.hoisted(() => {
+  const mockContractObj = {
+    getStateInfoByIdAndState: vi.fn(),
+    getStateInfoById: vi.fn(),
+    getGISTProof: vi.fn(),
+    getGISTRootInfo: vi.fn(),
+    connect: vi.fn(),
+    transitState: {
+      estimateGas: vi.fn(),
+      populateTransaction: vi.fn()
+    },
+    transitStateGeneric: {
+      estimateGas: vi.fn(),
+      populateTransaction: vi.fn()
+    }
+  };
 
-const mockProvider = {
-  getFeeData: vi.fn().mockResolvedValue({
-    maxFeePerGas: 100n,
-    maxPriorityFeePerGas: 50n
-  })
-};
+  const mockProviderObj = {
+    getFeeData: vi.fn().mockResolvedValue({
+      maxFeePerGas: 100n,
+      maxPriorityFeePerGas: 50n
+    })
+  };
+
+  return {
+    mockContract: mockContractObj,
+    mockProvider: mockProviderObj,
+    MockContract: function () {
+      return mockContractObj;
+    },
+    MockJsonRpcProvider: function () {
+      return mockProviderObj;
+    }
+  };
+});
+
 vi.mock('ethers', () => ({
-  Contract: vi.fn(() => mockContract),
-  JsonRpcProvider: vi.fn(() => mockProvider)
+  Contract: MockContract,
+  JsonRpcProvider: MockJsonRpcProvider
 }));
 
 describe('EthStateStorage', () => {

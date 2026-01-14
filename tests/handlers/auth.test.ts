@@ -171,7 +171,7 @@ describe('auth', () => {
     await credWallet.save(issuerCred);
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1730736196,
-      circuitId: CircuitId.AtomicQueryV3,
+      circuitId: CircuitId.AtomicQueryV3Stable,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -187,7 +187,7 @@ describe('auth', () => {
 
     const proofForNonExistingCondition: ZeroKnowledgeProofRequest = {
       id: 1730736198,
-      circuitId: CircuitId.AtomicQueryV3,
+      circuitId: CircuitId.AtomicQueryV3Stable,
       optional: true,
       query: {
         allowedIssuers: ['*'],
@@ -202,7 +202,7 @@ describe('auth', () => {
     };
     const proofForNonExistingConditionWithGroupId: ZeroKnowledgeProofRequest = {
       id: 1730736199,
-      circuitId: CircuitId.AtomicQueryV3,
+      circuitId: CircuitId.AtomicQueryV3Stable,
       optional: true,
       query: {
         allowedIssuers: ['*'],
@@ -235,6 +235,10 @@ describe('auth', () => {
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+
+    expect(authRes.authResponse.body.scope[0].circuitId).to.equal(
+      'credentialAtomicQueryV3-16-16-64'
+    );
 
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
@@ -427,7 +431,7 @@ describe('auth', () => {
     const proofReqs: ZeroKnowledgeProofRequest[] = [
       {
         id: 1,
-        circuitId: CircuitId.AtomicQueryV3,
+        circuitId: CircuitId.AtomicQueryV3Stable,
         optional: false,
         query: {
           proofType: ProofType.BJJSignature,
@@ -444,7 +448,7 @@ describe('auth', () => {
       },
       {
         id: 2,
-        circuitId: CircuitId.LinkedMultiQuery10,
+        circuitId: CircuitId.LinkedMultiQuery10Stable,
         optional: false,
         query: {
           groupId: 1,
@@ -466,7 +470,7 @@ describe('auth', () => {
       },
       {
         id: 3,
-        circuitId: CircuitId.AtomicQueryV3,
+        circuitId: CircuitId.AtomicQueryV3Stable,
         optional: false,
         query: {
           groupId: 1,
@@ -510,6 +514,17 @@ describe('auth', () => {
     expect(tokenStr).to.be.a('string');
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');
+
+    const { response } = await authHandler.handleAuthorizationResponse(
+      authRes.authResponse,
+      authReq
+    );
+    expect(response).to.be.a('object');
+
+    expect(response.body.scope).to.have.lengthOf(3);
+    const circuits = response.body.scope.map((c) => c.circuitId);
+    expect(circuits).toContain('credentialAtomicQueryV3-16-16-64');
+    expect(circuits).toContain('linkedMultiQuery3');
   });
 
   it('auth flow identity (profile) with circuits V3 and caching', async () => {
