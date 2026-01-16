@@ -125,7 +125,7 @@ interface LinkedMultiQueryCircuitInputs {
   valueArraySize: number[];
 }
 
-// LinkedMultiQueryPubSignals linkedMultiQuery10.circom public signals
+// LinkedMultiQueryPubSignals linkedMultiQuery.circom public signals
 export class LinkedMultiQueryPubSignals {
   linkID!: bigint;
   merklized!: number;
@@ -139,7 +139,7 @@ export class LinkedMultiQueryPubSignals {
   }
 
   /**
-   * PubSignalsUnmarshal unmarshal linkedMultiQuery10.circom public inputs to LinkedMultiQueryPubSignals
+   * PubSignalsUnmarshal unmarshal linkedMultiQuery.circom public inputs to LinkedMultiQueryPubSignals
    *
    * @param {Uint8Array} data
    * @returns LinkedMultiQueryPubSignals

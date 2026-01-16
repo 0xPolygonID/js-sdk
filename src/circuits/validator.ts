@@ -83,16 +83,16 @@ export const circuitValidator: {
       }
     ]
   },
-  [CircuitId.LinkedMultiQuery10Stable]: {
+  [CircuitId.LinkedMultiQueryStable]: {
     validation: { maxQueriesCount: 10, supportedOperations: allOperations },
     subVersions: [
       {
         queryCount: 3,
-        targetCircuitId: (CircuitId.LinkedMultiQuery10Stable.slice(0, -2) + '3') as CircuitId
+        targetCircuitId: (CircuitId.LinkedMultiQueryStable + '3') as CircuitId
       },
       {
         queryCount: 5,
-        targetCircuitId: (CircuitId.LinkedMultiQuery10Stable.slice(0, -2) + '5') as CircuitId
+        targetCircuitId: (CircuitId.LinkedMultiQueryStable + '5') as CircuitId
       }
     ]
   }
