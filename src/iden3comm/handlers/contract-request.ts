@@ -87,9 +87,10 @@ export class ContractRequestHandler
     // TODO: We need to create validators for them
     CircuitId.AuthV2,
     CircuitId.AuthV3,
+    CircuitId.AuthV3_8_32,
     CircuitId.LinkedMultiQuery10,
     CircuitId.AtomicQueryV3Stable,
-    CircuitId.LinkedMultiQuery10Stable
+    CircuitId.LinkedMultiQueryStable
   ];
 
   /**

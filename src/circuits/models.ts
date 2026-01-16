@@ -123,7 +123,7 @@ export enum CircuitId {
 
   AtomicQueryV3OnChainStable = 'credentialAtomicQueryV3OnChain',
 
-  LinkedMultiQuery10Stable = 'linkedMultiQuery10'
+  LinkedMultiQueryStable = 'linkedMultiQuery'
 }
 
 /**

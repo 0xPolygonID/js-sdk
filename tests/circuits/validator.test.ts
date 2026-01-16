@@ -22,7 +22,7 @@ describe('validator', () => {
       'credentialAtomicQueryV3OnChain-16-16-64-16-32',
       'linkedMultiQuery3',
       'linkedMultiQuery5',
-      'linkedMultiQuery10'
+      'linkedMultiQuery'
     ];
     const testCases = [
       {
@@ -34,8 +34,8 @@ describe('validator', () => {
         expectedCircuitIds: allCircuitIds
       },
       {
-        filterCircuitIds: [CircuitId.LinkedMultiQuery10Stable],
-        expectedCircuitIds: ['linkedMultiQuery3', 'linkedMultiQuery5', 'linkedMultiQuery10']
+        filterCircuitIds: [CircuitId.LinkedMultiQueryStable],
+        expectedCircuitIds: ['linkedMultiQuery3', 'linkedMultiQuery5', 'linkedMultiQuery']
       },
       {
         filterCircuitIds: [CircuitId.AtomicQueryV3Stable],
@@ -75,12 +75,12 @@ describe('validator', () => {
         ]
       },
       {
-        filterCircuitId: CircuitId.LinkedMultiQuery10Stable,
-        expectedCircuitIds: ['linkedMultiQuery10', 'linkedMultiQuery5', 'linkedMultiQuery3']
+        filterCircuitId: CircuitId.LinkedMultiQueryStable,
+        expectedCircuitIds: ['linkedMultiQuery', 'linkedMultiQuery5', 'linkedMultiQuery3']
       },
       {
         filterCircuitId: 'linkedMultiQuery3' as CircuitId,
-        expectedCircuitIds: ['linkedMultiQuery10', 'linkedMultiQuery5', 'linkedMultiQuery3']
+        expectedCircuitIds: ['linkedMultiQuery', 'linkedMultiQuery5', 'linkedMultiQuery3']
       }
     ];
     testCases.forEach((testCase) => {

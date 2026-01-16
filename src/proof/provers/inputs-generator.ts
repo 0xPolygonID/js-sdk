@@ -620,16 +620,16 @@ export class InputGenerator {
       if (circuitQueries.length <= 3) {
         return {
           queryCount: 3,
-          targetCircuitId: CircuitId.LinkedMultiQuery10Stable.slice(0, -2) + '3'
+          targetCircuitId: CircuitId.LinkedMultiQueryStable + '3'
         };
       }
       if (circuitQueries.length <= 5) {
         return {
           queryCount: 5,
-          targetCircuitId: CircuitId.LinkedMultiQuery10Stable.slice(0, -2) + '5'
+          targetCircuitId: CircuitId.LinkedMultiQueryStable + '5'
         };
       }
-      return { queryCount: 10, targetCircuitId: CircuitId.LinkedMultiQuery10Stable };
+      return { queryCount: 10, targetCircuitId: CircuitId.LinkedMultiQueryStable };
     };
 
     const { queryCount, targetCircuitId } = resolveQueryCount(circuitId);
