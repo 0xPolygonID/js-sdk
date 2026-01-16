@@ -95,11 +95,53 @@ describe('auth', () => {
   let userDID: DID;
   let issuerDID: DID;
   let circuitStorage: FSCircuitStorage;
+  const rpcUrl = process.env.RPC_URL as string;
 
   let merklizeOpts: Options;
   beforeEach(async () => {
     const kms = registerKeyProvidersInMemoryKMS();
-    dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
+    const networkConfigs = {
+      amoy: (contractAddress: string) => ({
+        ...defaultEthConnectionConfig,
+        url: rpcUrl,
+        contractAddress,
+        chainId: 80002
+      }),
+      privadoMain: (contractAddress: string) => ({
+        ...defaultEthConnectionConfig,
+        url: 'https://rpc-mainnet.privado.id',
+        contractAddress,
+        chainId: 21000
+      }),
+      privadoTest: (contractAddress: string) => ({
+        ...defaultEthConnectionConfig,
+        url: 'https://rpc-testnet.privado.id',
+        contractAddress,
+        chainId: 21001
+      })
+    };
+
+    const CONTRACTS = {
+      AMOY_STATE_CONTRACT: '0x1a4cC30f2aA0377b0c3bc9848766D90cb4404124',
+      AMOY_UNIVERSAL_VERIFIER: '0xfcc86A79fCb057A8e55C6B853dff9479C3cf607c',
+      PRIVADO_TEST_STATE_CONTRACT: '0xEF75Eb00E6Ac36b5C215aEBe6CD7Bca9b2Eb33be',
+      PRIVADO_MAIN_STATE_CONTRACT: '0x0DDd8701C91d8d1Ba35c9DbA98A45fe5bA8A877E',
+      VALIDATOR_ADDRESS_V3: '0xd179f29d00Cd0E8978eb6eB847CaCF9E2A956336'
+    };
+    const issuerAmoyStateEthConfig = networkConfigs.amoy(CONTRACTS.AMOY_STATE_CONTRACT);
+
+    const issuerAmoyTestStateEthConfig = networkConfigs.amoy(CONTRACTS.PRIVADO_TEST_STATE_CONTRACT);
+
+    const userStateEthConfig = networkConfigs.privadoMain(CONTRACTS.PRIVADO_MAIN_STATE_CONTRACT);
+
+    const ethStorage = new EthStateStorage([
+      issuerAmoyStateEthConfig,
+      userStateEthConfig,
+      issuerAmoyTestStateEthConfig
+    ]);
+    dataStorage = getInMemoryDataStorage(ethStorage);
+
+    // dataStorage = getInMemoryDataStorage(MOCK_STATE_STORAGE);
     circuitStorage = new FSCircuitStorage({
       dirname: path.join(__dirname, '../proofs/testdata')
     });
@@ -118,13 +160,7 @@ describe('auth', () => {
       })
     };
 
-    proofService = new ProofService(
-      idWallet,
-      credWallet,
-      circuitStorage,
-      MOCK_STATE_STORAGE,
-      merklizeOpts
-    );
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, ethStorage, merklizeOpts);
 
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
@@ -135,7 +171,7 @@ describe('auth', () => {
     authHandler = new AuthHandler(packageMgr, proofService);
 
     const { did: didUser, credential: userAuthCredential } = await createIdentity(idWallet, {
-      seed: SEED_USER
+      // seed: SEED_USER
     });
     userDID = didUser;
 
@@ -363,7 +399,7 @@ describe('auth', () => {
     expect(resp).not.to.be.undefined;
   });
 
-  it('auth flow identity (profile) with circuits V3', async () => {
+  it.only('auth flow identity (profile) with circuits V3', async () => {
     const profileDID = await idWallet.createProfile(userDID, 777, issuerDID.string());
 
     const claimReq: CredentialRequest = {
@@ -512,6 +548,7 @@ describe('auth', () => {
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
     const tokenStr = authRes.token;
     expect(tokenStr).to.be.a('string');
+    console.log(tokenStr);
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');
 

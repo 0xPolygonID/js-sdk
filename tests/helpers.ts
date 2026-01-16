@@ -61,7 +61,7 @@ export const createIdentity = async (
     method: DidMethod.Iden3,
     blockchain: Blockchain.Polygon,
     networkId: NetworkId.Amoy,
-    seed: SEED_ISSUER,
+    // seed: SEED_ISSUER,
     revocationOpts: {
       type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
       id: RHS_URL
