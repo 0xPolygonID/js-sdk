@@ -80,7 +80,7 @@ describe('payment-request handler', () => {
 
   let packageMgr: IPackageManager;
   let paymentHandler: IPaymentHandler;
-  let userDID, issuerDID: DID;
+  let userDID: DID, issuerDID: DID;
   let agentMessageResponse: BasicMessage;
 
   const payContractAbi = [

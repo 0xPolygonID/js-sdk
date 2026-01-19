@@ -24,6 +24,10 @@ export class ProvingMethodGroth16Authv2 implements ProvingMethod {
     return this.methodAlg.circuitId;
   }
 
+  get supportedCircuits(): string[] {
+    return [CircuitId.AuthV2];
+  }
+
   // Verify return no error for any proof
   //eslint-disable-next-line @typescript-eslint/no-unused-vars
   async verify(

@@ -1,19 +1,19 @@
 import { DID, getDateFromUnixTimestamp, Id } from '@iden3/js-iden3-core';
 import { DocumentLoader, getDocumentLoader, Path } from '@iden3/js-jsonld-merklization';
 import { Hash } from '@iden3/js-merkletree';
-import { IStateStorage, RootInfo, StateInfo } from '../../storage';
-import { byteEncoder, isGenesisState } from '../../utils';
+import { IStateStorage, RootInfo } from '../../storage';
+import { byteEncoder } from '../../utils';
 import { calculateCoreSchemaHash, ProofQuery, ProofType } from '../../verifiable';
-import { AtomicQueryMTPV2PubSignals } from '../../circuits/atomic-query-mtp-v2';
-import { AtomicQuerySigV2PubSignals } from '../../circuits/atomic-query-sig-v2';
-import { AtomicQueryV3PubSignals } from '../../circuits/atomic-query-v3';
-import { AuthV2PubSignals } from '../../circuits/auth-v2';
-import { BaseConfig } from '../../circuits/common';
 import {
+  AtomicQueryMTPV2PubSignals,
+  AtomicQuerySigV2PubSignals,
+  AtomicQueryV3PubSignals,
+  CircuitId,
+  AuthV2PubSignals,
   LinkedMultiQueryPubSignals,
-  LinkedMultiQueryInputs
-} from '../../circuits/linked-multi-query';
-import { CircuitId } from '../../circuits/models';
+  BaseConfig,
+  Operators
+} from '../../circuits';
 import {
   checkQueryRequest,
   ClaimOutputs,
@@ -29,7 +29,6 @@ import {
   checkCircuitOperator
 } from './query';
 import { parseQueriesMetadata, QueryMetadata } from '../common';
-import { Operators } from '../../circuits';
 import { calculateQueryHashV3 } from './query-hash';
 import { JsonLd } from 'jsonld/jsonld-spec';
 import {
@@ -38,7 +37,7 @@ import {
   VerifiablePresentation,
   JsonDocumentObject
 } from '../../iden3comm';
-import { isRootDoesNotExistError, isStateDoesNotExistError } from '../../storage/blockchain/errors';
+import { isRootDoesNotExistError } from '../../storage/blockchain/errors';
 
 /**
  *  Verify Context - params for pub signal verification
@@ -82,14 +81,16 @@ export class PubSignalsVerifier {
    * @returns `Promise<BaseConfig>`
    */
   async verify(circuitId: string, ctx: VerifyContext): Promise<BaseConfig> {
-    const fnName = `${circuitId.split('-')[0]}Verify`;
-    const fn = (this as unknown as { [k: string]: (ctx: VerifyContext) => Promise<BaseConfig> })[
-      fnName
-    ];
+    const fnName = `${circuitId.replace('-beta.1', '').replace(/-/g, '_')}Verify`;
+    const fn = (
+      this as unknown as {
+        [k: string]: (ctx: VerifyContext & { circuitId: string }) => Promise<BaseConfig>;
+      }
+    )[fnName];
     if (!fn) {
       throw new Error(`public signals verifier for ${circuitId} not found`);
     }
-    return fn(ctx);
+    return fn({ ...ctx, circuitId });
   }
 
   private credentialAtomicQueryMTPV2Verify = async ({
@@ -207,17 +208,17 @@ export class PubSignalsVerifier {
     return sigV2PubSignals;
   };
 
-  private credentialAtomicQueryV3Verify = async ({
-    query,
-    verifiablePresentation,
-    sender,
-    challenge,
-    pubSignals,
-    opts,
-    params
-  }: VerifyContext): Promise<BaseConfig> => {
-    let v3PubSignals = new AtomicQueryV3PubSignals();
-    v3PubSignals = v3PubSignals.pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(pubSignals)));
+  private performQueryVerificationV3 = async (
+    ctx: VerifyContext & { circuitId?: CircuitId },
+    circuitOpts: {
+      mtLevel?: number;
+      mtLevelClaim?: number;
+      v3PubSignals: AtomicQueryV3PubSignals;
+    }
+  ): Promise<BaseConfig> => {
+    const { query, verifiablePresentation, sender, challenge, opts, params, circuitId } = ctx;
+
+    const { v3PubSignals } = circuitOpts;
 
     // verify query
     const outs: ClaimOutputs = {
@@ -257,7 +258,10 @@ export class PubSignalsVerifier {
       }
     );
 
-    const circuitId = CircuitId.AtomicQueryV3;
+    if (!circuitId) {
+      throw new Error('circuitId is not provided');
+    }
+
     await checkQueryRequest(
       query,
       queriesMetadata,
@@ -369,6 +373,29 @@ export class PubSignalsVerifier {
     return v3PubSignals;
   };
 
+  private credentialAtomicQueryV3BetaVerify = async (
+    ctx: VerifyContext & { circuitId?: CircuitId },
+    mtLevel?: number,
+    mtLevelClaim?: number
+  ): Promise<BaseConfig> => {
+    const v3PubSignals = new AtomicQueryV3PubSignals({ mtLevel, mtLevelClaim }).pubSignalsUnmarshal(
+      byteEncoder.encode(JSON.stringify(ctx.pubSignals))
+    );
+
+    return await this.performQueryVerificationV3(ctx, {
+      v3PubSignals,
+      mtLevel,
+      mtLevelClaim
+    });
+  };
+
+  private credentialAtomicQueryV3Verify = async (ctx: VerifyContext): Promise<BaseConfig> =>
+    this.credentialAtomicQueryV3BetaVerify(ctx);
+
+  private credentialAtomicQueryV3_16_16_64Verify = async (
+    ctx: VerifyContext
+  ): Promise<BaseConfig> => this.credentialAtomicQueryV3BetaVerify(ctx, 16, 16);
+
   private authV2Verify = async ({
     sender,
     challenge,
@@ -402,12 +429,11 @@ export class PubSignalsVerifier {
     return new BaseConfig();
   };
 
-  private linkedMultiQuery10Verify = async ({
-    query,
-    verifiablePresentation,
-    pubSignals
-  }: VerifyContext): Promise<BaseConfig> => {
-    let multiQueryPubSignals = new LinkedMultiQueryPubSignals();
+  private linkedMultiQueryNVerify = async (
+    { query, verifiablePresentation, pubSignals }: VerifyContext,
+    queryCount: number
+  ): Promise<BaseConfig> => {
+    let multiQueryPubSignals = new LinkedMultiQueryPubSignals(queryCount);
 
     multiQueryPubSignals = multiQueryPubSignals.pubSignalsUnmarshal(
       byteEncoder.encode(JSON.stringify(pubSignals))
@@ -439,7 +465,7 @@ export class PubSignalsVerifier {
 
     const request: { queryHash: bigint; queryMeta: QueryMetadata }[] = [];
     const merklized = queriesMetadata[0]?.merklizedSchema ? 1 : 0;
-    for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
+    for (let i = 0; i < multiQueryPubSignals.queryCount; i++) {
       const queryMeta = queriesMetadata[i];
       const values = queryMeta?.values ?? [];
       const valArrSize = values.length;
@@ -473,7 +499,7 @@ export class PubSignalsVerifier {
     pubSignalsMeta.sort(queryHashCompare);
     request.sort(queryHashCompare);
 
-    for (let i = 0; i < LinkedMultiQueryInputs.queryCount; i++) {
+    for (let i = 0; i < multiQueryPubSignals.queryCount; i++) {
       if (request[i].queryHash != pubSignalsMeta[i].queryHash) {
         throw new Error('query hashes do not match');
       }
@@ -492,6 +518,18 @@ export class PubSignalsVerifier {
 
     return multiQueryPubSignals as unknown as BaseConfig;
   };
+
+  private linkedMultiQuery10BetaVerify = async (ctx: VerifyContext): Promise<BaseConfig> =>
+    this.linkedMultiQueryNVerify(ctx, 10);
+
+  private linkedMultiQuery10Verify = async (ctx: VerifyContext): Promise<BaseConfig> =>
+    this.linkedMultiQueryNVerify(ctx, 10);
+
+  private linkedMultiQuery5Verify = async (ctx: VerifyContext): Promise<BaseConfig> =>
+    this.linkedMultiQueryNVerify(ctx, 5);
+
+  private linkedMultiQuery3Verify = async (ctx: VerifyContext): Promise<BaseConfig> =>
+    this.linkedMultiQueryNVerify(ctx, 3);
 
   private verifyIdOwnership = (
     sender: string,
@@ -589,24 +627,7 @@ export class PubSignalsVerifier {
     transitionTimestamp: number | string;
   }> {
     const idBigInt = id.bigInt();
-    const did = DID.parseFromId(id);
-    // check if id is genesis
-    const isGenesis = isGenesisState(did, state);
-    let contractState: StateInfo;
-    try {
-      contractState = await this._stateStorage.getStateInfoByIdAndState(idBigInt, state);
-    } catch (e) {
-      if (isStateDoesNotExistError(e)) {
-        if (isGenesis) {
-          return {
-            latest: true,
-            transitionTimestamp: 0
-          };
-        }
-        throw new Error('State is not genesis and not registered in the smart contract');
-      }
-      throw e;
-    }
+    const contractState = await this._stateStorage.getStateInfoByIdAndState(idBigInt, state);
 
     if (!contractState.id || contractState.id.toString() !== idBigInt.toString()) {
       throw new Error(`state was recorded for another identity`);
