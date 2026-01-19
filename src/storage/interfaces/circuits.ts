@@ -5,8 +5,17 @@ import { CircuitData } from '../entities/circuitData';
  * Circuit load mode
  */
 export enum CircuitLoadMode {
+  /**
+   * Load only proving keys
+   */
   Proving = 'proving',
+  /**
+   * Load only verification keys
+   */
   Verification = 'verification',
+  /**
+   * Load all circuit files
+   */
   Full = 'full'
 }
 
@@ -28,6 +37,7 @@ export interface ICircuitStorage {
    * load circuit keys by id
    *
    * @param {CircuitId} circuitId - circuit id
+   * @param {CircuitLoadOpts} [opts] - load options, determines which circuit files are loaded (e.g. proving keys, verification keys, or all files)
    * @returns `{Promise<CircuitData>}`
    */
   loadCircuitData(circuitId: CircuitId, opts?: CircuitLoadOpts): Promise<CircuitData>;
