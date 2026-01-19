@@ -1,6 +1,6 @@
 import { CircuitId } from '../../circuits';
 import { CircuitData } from '../entities/circuitData';
-import { ICircuitStorage } from '../interfaces/circuits';
+import { CircuitLoadMode, CircuitLoadOpts, ICircuitStorage } from '../interfaces/circuits';
 
 /**
  * Options for FSCircuitStorage,
@@ -84,11 +84,25 @@ export class FSCircuitStorage implements ICircuitStorage {
    * @param {CircuitId} circuitId - id of the circuit
    * @returns `Promise<CircuitData>`
    */
-  async loadCircuitData(circuitId: CircuitId): Promise<CircuitData> {
-    const verificationKey = await this.loadCircuitFile(circuitId, this._verificationKeyPath);
-    const provingKey = await this.loadCircuitFile(circuitId, this._provingKeyPath);
-    const wasm = await this.loadCircuitFile(circuitId, this._wasmFilePath);
-
+  async loadCircuitData(circuitId: CircuitId, opts?: CircuitLoadOpts): Promise<CircuitData> {
+    const mode = opts?.mode ?? CircuitLoadMode.Full;
+    let wasm: Uint8Array | null = null;
+    let provingKey: Uint8Array | null = null;
+    let verificationKey: Uint8Array | null = null;
+    switch (mode) {
+      case CircuitLoadMode.Verification:
+        verificationKey = await this.loadCircuitFile(circuitId, this._verificationKeyPath);
+        break;
+      case CircuitLoadMode.Proving:
+        wasm = await this.loadCircuitFile(circuitId, this._wasmFilePath);
+        provingKey = await this.loadCircuitFile(circuitId, this._provingKeyPath);
+        break;
+      case CircuitLoadMode.Full:
+      default:
+        verificationKey = await this.loadCircuitFile(circuitId, this._verificationKeyPath);
+        provingKey = await this.loadCircuitFile(circuitId, this._provingKeyPath);
+        wasm = await this.loadCircuitFile(circuitId, this._wasmFilePath);
+    }
     return {
       circuitId,
       wasm,

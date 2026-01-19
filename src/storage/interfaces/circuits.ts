@@ -2,6 +2,22 @@ import { CircuitId } from '../../circuits';
 import { CircuitData } from '../entities/circuitData';
 
 /**
+ * Circuit load mode
+ */
+export enum CircuitLoadMode {
+  Proving = 'proving',
+  Verification = 'verification',
+  Full = 'full'
+}
+
+/**
+ * Circuit load options
+ */
+export type CircuitLoadOpts = {
+  mode: CircuitLoadMode;
+};
+
+/**
  * Interface to work with circuit files
  *
  * @public
@@ -14,7 +30,7 @@ export interface ICircuitStorage {
    * @param {CircuitId} circuitId - circuit id
    * @returns `{Promise<CircuitData>}`
    */
-  loadCircuitData(circuitId: CircuitId): Promise<CircuitData>;
+  loadCircuitData(circuitId: CircuitId, opts?: CircuitLoadOpts): Promise<CircuitData>;
 
   /**
    * saves circuit files by circuit id
