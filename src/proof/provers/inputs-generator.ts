@@ -652,8 +652,9 @@ export class InputGenerator {
     return { inputs: circuitInputs.inputsMarshal(), metadata: { targetCircuitId } };
   };
 
-  linkedMultiQuery10PrepareInputs = async (ctx: InputContext): Promise<GenerateInputsResult> =>
-    this.linkedMultiQueryPrepareInputs(ctx);
+  private linkedMultiQuery10PrepareInputs = async (
+    ctx: InputContext
+  ): Promise<GenerateInputsResult> => this.linkedMultiQueryPrepareInputs(ctx);
 
   private transformV2QueryOperator(operator: number): number {
     return operator === Operators.SD || operator === Operators.NOOP ? Operators.EQ : operator;

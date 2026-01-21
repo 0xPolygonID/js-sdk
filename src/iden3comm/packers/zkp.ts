@@ -9,20 +9,18 @@ import {
   ZKPPackerParams
 } from '../types';
 import { Token, Header, ProvingMethodAlg, proving } from '@iden3/js-jwz';
-import { AuthV2PubSignals, AuthV3PubSignals, CircuitId } from '../../circuits/index';
-import { BytesHelper, DID } from '@iden3/js-iden3-core';
+import { CircuitId } from '../../circuits';
+import { DID } from '@iden3/js-iden3-core';
 import {
   ErrNoProvingMethodAlg,
   ErrPackedWithUnsupportedCircuit,
   ErrProofIsInvalid,
-  ErrSenderNotUsedTokenCreation,
-  ErrStateVerificationFailed,
-  ErrUnknownCircuitID
+  ErrStateVerificationFailed
 } from '../errors';
 import { AcceptJwzAlgorithms, MediaType, ProtocolVersion } from '../constants';
 import { byteDecoder, byteEncoder } from '../../utils';
 import { DEFAULT_AUTH_VERIFY_DELAY } from '../constants';
-import { parseAcceptProfile } from '../utils';
+import { getSupportedProfiles, isProfileSupported, verifySender } from './zkp-packer-utils';
 
 const { getProvingMethod } = proving;
 
@@ -189,64 +187,22 @@ export class ZKPPacker implements IPacker {
 
   /** {@inheritDoc IPacker.getSupportedProfiles} */
   getSupportedProfiles(): string[] {
-    return this.supportedProtocolVersions.map(
-      (v) =>
-        `${v};env=${this.mediaType()};alg=${this.supportedAlgorithms.join(
-          ','
-        )};circuitIds=${this.supportedCircuitIds.join(',')}`
+    return getSupportedProfiles(
+      this.supportedProtocolVersions,
+      this.mediaType(),
+      this.supportedAlgorithms,
+      this.supportedCircuitIds
     );
   }
 
   /** {@inheritDoc IPacker.isProfileSupported} */
   isProfileSupported(profile: string) {
-    const { protocolVersion, env, circuits, alg } = parseAcceptProfile(profile);
-
-    if (!this.supportedProtocolVersions.includes(protocolVersion)) {
-      return false;
-    }
-
-    if (env !== this.mediaType()) {
-      return false;
-    }
-
-    const supportedCircuitIds = this.supportedCircuitIds;
-    const circuitIdSupported =
-      !circuits?.length || circuits.some((c) => supportedCircuitIds.includes(c));
-
-    const supportedAlgArr = this.supportedAlgorithms;
-    const algSupported =
-      !alg?.length || alg.some((a) => supportedAlgArr.includes(a as AcceptJwzAlgorithms));
-    return algSupported && circuitIdSupported;
+    return isProfileSupported(
+      profile,
+      this.supportedProtocolVersions,
+      this.mediaType(),
+      this.supportedAlgorithms,
+      this.supportedCircuitIds
+    );
   }
 }
-
-const verifySender = async (token: Token, msg: BasicMessage): Promise<void> => {
-  switch (token.circuitId) {
-    case CircuitId.AuthV2:
-    case CircuitId.AuthV3_8_32:
-    case CircuitId.AuthV3:
-      {
-        if (!msg.from) {
-          throw new Error(ErrSenderNotUsedTokenCreation);
-        }
-        const authSignals = (
-          token.circuitId === CircuitId.AuthV2 ? new AuthV2PubSignals() : new AuthV3PubSignals()
-        ).pubSignalsUnmarshal(byteEncoder.encode(JSON.stringify(token.zkProof.pub_signals)));
-        const did = DID.parseFromId(authSignals.userID);
-
-        const msgHash = await token.getMessageHash();
-        const challenge = BytesHelper.bytesToInt(msgHash.reverse());
-
-        if (challenge !== authSignals.challenge) {
-          throw new Error(ErrSenderNotUsedTokenCreation);
-        }
-
-        if (msg.from !== did.string()) {
-          throw new Error(ErrSenderNotUsedTokenCreation);
-        }
-      }
-      break;
-    default:
-      throw new Error(ErrUnknownCircuitID);
-  }
-};

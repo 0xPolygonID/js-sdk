@@ -82,6 +82,7 @@ import {
 } from '../../src/iden3comm/constants';
 import { schemaLoaderForTests } from '../mocks/schema';
 import { Options } from '@iden3/js-jsonld-merklization';
+import { byteDecoder } from '../../src/utils/encoding';
 
 describe('auth', () => {
   let idWallet: IdentityWallet;
@@ -2044,11 +2045,7 @@ describe('auth', () => {
     });
 
     packageMgr = await getPackageMgrV3(
-      [
-        await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-        await circuitStorage.loadCircuitData(CircuitId.AuthV3),
-        await circuitStorage.loadCircuitData(CircuitId.AuthV3_8_32)
-      ],
+      [], // no circuits loaded here, because we provided circuitStorage
       [
         {
           circuitId: CircuitId.AuthV2,
@@ -2063,7 +2060,10 @@ describe('auth', () => {
           prepareFunc: proofService.generateAuthInputs.bind(proofService)
         }
       ],
-      proofService.verifyState.bind(proofService)
+      proofService.verifyState.bind(proofService),
+      {
+        circuitStorage
+      }
     );
 
     authHandler = new AuthHandler(packageMgr, proofService);
@@ -2183,6 +2183,7 @@ describe('auth', () => {
       authReq,
       TEST_VERIFICATION_OPTS
     );
+
     const token = await packageMgr.pack(
       PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
       byteEncoder.encode(JSON.stringify(response)),
@@ -2192,8 +2193,13 @@ describe('auth', () => {
       }
     );
 
-    expect(token).to.be.a.string;
+    expect(byteDecoder.decode(token)).toBeTypeOf('string');
+
+    const unpacked = await packageMgr.unpack(token);
+
+    expect(unpacked.unpackedMediaType).to.eq(PROTOCOL_CONSTANTS.MediaType.ZKPMessage);
   });
+
   it('auth response: TestVerifyV3MessageWithMtpProof_Merklized_noop', async () => {
     const claimReq: CredentialRequest = {
       credentialSchema:
