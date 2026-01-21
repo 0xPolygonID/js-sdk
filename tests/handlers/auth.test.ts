@@ -75,6 +75,7 @@ import { getRandomBytes } from '@iden3/js-crypto';
 import {
   AcceptAuthCircuits,
   AcceptJweKEKAlgorithms,
+  AcceptJwzAlgorithms,
   CEKEncryption,
   defaultAcceptProfile,
   MediaType,
@@ -1144,7 +1145,7 @@ describe('auth', () => {
           '19016949225277755690019647385855936969928994210905992628301967883803670436510',
           '1'
         ],
-        protocol: 'groth16'
+        protocol: AcceptJwzAlgorithms.Groth16
       },
       pub_signals: [
         '1',
@@ -1943,11 +1944,14 @@ describe('auth', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const jwzRequest = await packageMgr.pack(MediaType.ZKPMessage, msgBytes, {
       senderDID: issuerDID,
-      provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3')
+      provingMethodAlg: new ProvingMethodAlg(AcceptJwzAlgorithms.Groth16, CircuitId.AuthV3)
     });
     const authRes = await authHandler.handleAuthorizationRequest(userDID, jwzRequest, {
       mediaType: MediaType.ZKPMessage,
-      preferredAuthProvingMethod: new ProvingMethodAlg('groth16', 'authV3')
+      preferredAuthProvingMethod: new ProvingMethodAlg(
+        AcceptJwzAlgorithms.Groth16,
+        CircuitId.AuthV3
+      )
     });
 
     const tokenStr = authRes.token;
@@ -1967,7 +1971,7 @@ describe('auth', () => {
       byteEncoder.encode(JSON.stringify(response)),
       {
         senderDID: issuerDID,
-        provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3')
+        provingMethodAlg: new ProvingMethodAlg(AcceptJwzAlgorithms.Groth16, CircuitId.AuthV3)
       }
     );
 
@@ -2011,7 +2015,7 @@ describe('auth', () => {
       byteEncoder.encode(JSON.stringify(resp2)),
       {
         senderDID: issuerDID,
-        provingMethodAlg: new ProvingMethodAlg('groth16', 'authV2')
+        provingMethodAlg: new ProvingMethodAlg(AcceptJwzAlgorithms.Groth16, 'authV2')
       }
     );
 
@@ -2169,7 +2173,7 @@ describe('auth', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const jwzRequest = await packageMgr.pack(MediaType.ZKPMessage, msgBytes, {
       senderDID: issuerDID,
-      provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3-8-32')
+      provingMethodAlg: new ProvingMethodAlg(AcceptJwzAlgorithms.Groth16, CircuitId.AuthV3_8_32)
     });
     const authRes = await authHandler.handleAuthorizationRequest(userDID, jwzRequest);
 
@@ -2188,8 +2192,8 @@ describe('auth', () => {
       PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
       byteEncoder.encode(JSON.stringify(response)),
       {
-        senderDID: issuerDID,
-        provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3-8-32')
+        senderDID: userDID,
+        provingMethodAlg: new ProvingMethodAlg(AcceptJwzAlgorithms.Groth16, CircuitId.AuthV3_8_32)
       }
     );
 

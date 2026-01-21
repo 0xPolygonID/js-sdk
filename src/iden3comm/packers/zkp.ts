@@ -176,7 +176,7 @@ export class ZKPPacker implements IPacker {
     const message = JSON.parse(token.getPayload());
 
     // should throw if error
-    verifySender(token, message);
+    await verifySender(token, message);
 
     return message;
   }

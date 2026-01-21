@@ -58,12 +58,12 @@ describe('JWZ Packer', () => {
       provingKey: new Uint8Array([1]),
       wasm: new Uint8Array([2])
     };
-    const loadCircuitDataMock = vi.fn();
+    const localLoadCircuitDataMock = vi.fn();
     const circuitStorage: ICircuitStorage = {
-      loadCircuitData: loadCircuitDataMock
+      loadCircuitData: localLoadCircuitDataMock
     } as unknown as ICircuitStorage;
 
-    loadCircuitDataMock.mockResolvedValue({
+    localLoadCircuitDataMock.mockResolvedValue({
       provingKey: params.provingKey,
       wasm: params.wasm,
       verificationKey: new Uint8Array([3])
