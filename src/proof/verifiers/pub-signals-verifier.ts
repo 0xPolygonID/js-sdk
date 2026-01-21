@@ -519,7 +519,7 @@ export class PubSignalsVerifier {
     return multiQueryPubSignals as unknown as BaseConfig;
   };
 
-  private linkedMultiQuery10BetaVerify = async (ctx: VerifyContext): Promise<BaseConfig> =>
+  private linkedMultiQuery10Verify = async (ctx: VerifyContext): Promise<BaseConfig> =>
     this.linkedMultiQueryNVerify(ctx, 10);
 
   private linkedMultiQueryVerify = async (ctx: VerifyContext): Promise<BaseConfig> =>
