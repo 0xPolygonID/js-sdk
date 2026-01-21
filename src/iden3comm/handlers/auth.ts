@@ -396,11 +396,11 @@ export class AuthHandler
         proofRequest.circuitId as CircuitId
       );
 
-      if (!allCircuitsSubversions.includes(proofRequest.circuitId)) {
+      if (!allCircuitsSubversions.includes(proofResp.circuitId as CircuitId)) {
         throw new Error(
-          `proof is not given for requested circuit expected: ${
-            proofRequest.circuitId
-          }, given ${allCircuitsSubversions.join(', ')}`
+          `proof is not given for requested circuit expected: ${allCircuitsSubversions.join(
+            ', '
+          )}, given ${proofResp.circuitId} `
         );
       }
 
