@@ -2,7 +2,7 @@ import { verifyGroth16Proof, ZKProof } from '@iden3/js-jwz';
 import { witnessBuilder } from './witness_calculator';
 import * as snarkjs from 'snarkjs';
 import * as ffjavascript from 'ffjavascript';
-import { ICircuitStorage } from '../../storage';
+import { CircuitLoadMode, ICircuitStorage } from '../../storage';
 import { CircuitId } from '../../circuits';
 import { byteDecoder } from '../../utils';
 
@@ -50,7 +50,9 @@ export class NativeProver implements IZKProver {
    */
   async verify(zkp: ZKProof, circuitId: CircuitId): Promise<boolean> {
     try {
-      const circuitData = await this._circuitStorage.loadCircuitData(circuitId);
+      const circuitData = await this._circuitStorage.loadCircuitData(circuitId, {
+        mode: CircuitLoadMode.Verification
+      });
 
       if (!circuitData.verificationKey) {
         throw new Error(`verification file doesn't exist for circuit ${circuitId}`);
@@ -72,7 +74,9 @@ export class NativeProver implements IZKProver {
    * @returns `Promise<ZKProof>`
    */
   async generate(inputs: Uint8Array, circuitId: CircuitId): Promise<ZKProof> {
-    const circuitData = await this._circuitStorage.loadCircuitData(circuitId);
+    const circuitData = await this._circuitStorage.loadCircuitData(circuitId, {
+      mode: CircuitLoadMode.Proving
+    });
     if (!circuitData.wasm) {
       throw new Error(`wasm file doesn't exist for circuit ${circuitId}`);
     }
