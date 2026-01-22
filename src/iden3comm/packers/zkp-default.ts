@@ -1,4 +1,4 @@
-import { ProvingMethodAlg } from '@iden3/js-jwz';
+import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
 import { IProofService } from '../../proof';
 import { CircuitLoadMode, ICircuitStorage } from '../../storage';
@@ -42,9 +42,11 @@ export class DefaultZKPPacker extends ZKPPacker {
    * @throws If the circuit data (proving key or wasm) is not found for the given circuit ID.
    */
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
-    const circuitId = params.provingMethodAlg.circuitId;
+    const provingMethodAlg = params.provingMethodAlg;
+    const circuitId = provingMethodAlg.circuitId as CircuitId;
+    const provingParamsKey = provingMethodAlg.toString();
 
-    if (!this.provingParamsMap.has(params.provingMethodAlg.toString())) {
+    if (!this.provingParamsMap.has(provingParamsKey)) {
       const { provingKey, wasm } = await this.circuitStorage.loadCircuitData(
         circuitId as CircuitId,
         {
@@ -54,7 +56,7 @@ export class DefaultZKPPacker extends ZKPPacker {
       if (!provingKey || !wasm) {
         throw new Error(`circuit data not found for circuit id: ${circuitId}`);
       }
-      this.provingParamsMap.set(params.provingMethodAlg.toString(), {
+      this.provingParamsMap.set(provingParamsKey, {
         provingKey,
         wasm,
         dataPreparer: new DataPrepareHandlerFunc(
