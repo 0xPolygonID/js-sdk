@@ -44,14 +44,16 @@ export class DefaultZKPPacker extends ZKPPacker {
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
     const circuitId = params.provingMethodAlg.circuitId;
 
-    const { provingKey, wasm } = await this.circuitStorage.loadCircuitData(circuitId as CircuitId, {
-      mode: CircuitLoadMode.Proving
-    });
-    if (!provingKey || !wasm) {
-      throw new Error(`circuit data not found for circuit id: ${circuitId}`);
-    }
-
     if (!this.provingParamsMap.has(params.provingMethodAlg.toString())) {
+      const { provingKey, wasm } = await this.circuitStorage.loadCircuitData(
+        circuitId as CircuitId,
+        {
+          mode: CircuitLoadMode.Proving
+        }
+      );
+      if (!provingKey || !wasm) {
+        throw new Error(`circuit data not found for circuit id: ${circuitId}`);
+      }
       this.provingParamsMap.set(params.provingMethodAlg.toString(), {
         provingKey,
         wasm,
