@@ -1,4 +1,4 @@
-import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
+import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { CircuitId } from '../../circuits';
 import { IProofService } from '../../proof';
 import { CircuitLoadMode, ICircuitStorage } from '../../storage';
