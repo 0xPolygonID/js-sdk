@@ -48,7 +48,8 @@ import {
   createInMemoryCache,
   DEFAULT_CACHE_MAX_SIZE,
   RootInfo,
-  InMemoryProofStorage
+  InMemoryProofStorage,
+  byteDecoder
 } from '../../src';
 import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -69,7 +70,8 @@ import {
   SEED_ISSUER,
   TEST_VERIFICATION_OPTS,
   MOCK_STATE_STORAGE,
-  getPackageMgrV3
+  getPackageMgrV3,
+  getPackageManagerWithDefaultZKPPacker
 } from '../helpers';
 import { getRandomBytes } from '@iden3/js-crypto';
 import {
@@ -2043,28 +2045,7 @@ describe('auth', () => {
       seed: getRandomBytes(32)
     });
 
-    packageMgr = await getPackageMgrV3(
-      [
-        await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-        await circuitStorage.loadCircuitData(CircuitId.AuthV3),
-        await circuitStorage.loadCircuitData(CircuitId.AuthV3_8_32)
-      ],
-      [
-        {
-          circuitId: CircuitId.AuthV2,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
-        },
-        {
-          circuitId: CircuitId.AuthV3,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
-        },
-        {
-          circuitId: CircuitId.AuthV3_8_32,
-          prepareFunc: proofService.generateAuthInputs.bind(proofService)
-        }
-      ],
-      proofService.verifyState.bind(proofService)
-    );
+    packageMgr = getPackageManagerWithDefaultZKPPacker(circuitStorage, proofService);
 
     authHandler = new AuthHandler(packageMgr, proofService);
 
@@ -2187,12 +2168,18 @@ describe('auth', () => {
       PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
       byteEncoder.encode(JSON.stringify(response)),
       {
-        senderDID: issuerDID,
+        senderDID: userDID,
         provingMethodAlg: new ProvingMethodAlg('groth16', 'authV3-8-32')
       }
     );
 
     expect(token).to.be.a.string;
+
+    expect(byteDecoder.decode(token)).toBeTypeOf('string');
+
+    const unpacked = await packageMgr.unpack(token);
+
+    expect(unpacked.unpackedMediaType).to.eq(PROTOCOL_CONSTANTS.MediaType.ZKPMessage);
   });
   it('auth response: TestVerifyV3MessageWithMtpProof_Merklized_noop', async () => {
     const claimReq: CredentialRequest = {

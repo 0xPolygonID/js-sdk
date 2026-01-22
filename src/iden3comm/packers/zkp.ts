@@ -87,7 +87,7 @@ export class VerificationHandlerFunc {
 export class ZKPPacker implements IPacker {
   private readonly supportedProtocolVersions = [ProtocolVersion.V1];
   private readonly supportedAlgorithms = [AcceptJwzAlgorithms.Groth16];
-  private readonly supportedCircuitIds: string[];
+  protected supportedCircuitIds: string[];
   /**
    * Creates an instance of ZKPPacker.
    * @param {Map<string, ProvingParams>} provingParamsMap - string is derived by JSON.parse(ProvingMethodAlg)
@@ -147,15 +147,10 @@ export class ZKPPacker implements IPacker {
     return byteEncoder.encode(tokenStr);
   }
 
-  /**
-   * validate envelope which is jwz token
-   *
-   * @param {Uint8Array} envelope
-   * @returns `Promise<BasicMessage>`
-   */
-  async unpack(envelope: Uint8Array): Promise<BasicMessage> {
-    const token = await Token.parse(byteDecoder.decode(envelope));
-    const provingMethodAlg = new ProvingMethodAlg(token.alg, token.circuitId);
+  protected async unpackMessage(
+    token: Token,
+    provingMethodAlg: ProvingMethodAlg
+  ): Promise<BasicMessage> {
     const verificationParams = this.verificationParamsMap.get(provingMethodAlg.toString());
     if (!verificationParams?.key) {
       throw new Error(ErrPackedWithUnsupportedCircuit);
@@ -178,9 +173,25 @@ export class ZKPPacker implements IPacker {
     const message = JSON.parse(token.getPayload());
 
     // should throw if error
-    verifySender(token, message);
+    await verifySender(token, message);
 
     return message;
+  }
+
+  protected parseToken(msg: Uint8Array): Promise<Token> {
+    return Token.parse(byteDecoder.decode(msg));
+  }
+
+  /**
+   * validate envelope which is jwz token
+   *
+   * @param {Uint8Array} envelope
+   * @returns `Promise<BasicMessage>`
+   */
+  async unpack(envelope: Uint8Array): Promise<BasicMessage> {
+    const token = await this.parseToken(envelope);
+    const provingMethodAlg = new ProvingMethodAlg(token.alg, token.circuitId);
+    return this.unpackMessage(token, provingMethodAlg);
   }
 
   mediaType(): MediaType {
