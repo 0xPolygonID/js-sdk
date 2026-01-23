@@ -232,13 +232,14 @@ export class ZKPPacker implements IPacker {
   }
 
   protected validateZKPPackerParams(value: ZKPPackerParams) {
-    if (!(value instanceof ProvingMethodAlg)) {
+    const { provingMethodAlg } = value;
+    if (!(provingMethodAlg instanceof ProvingMethodAlg)) {
       throw new TypeError('provingMethodAlg must be an instance of ProvingMethodAlg');
     }
-    if (!value.alg) {
+    if (!provingMethodAlg.alg) {
       throw new Error(`provingMethodAlg.alg is required and must be a non-empty string`);
     }
-    if (!value.circuitId) {
+    if (!provingMethodAlg.circuitId) {
       throw new Error(`provingMethodAlg.circuitId is required and must be a non-empty string`);
     }
   }
