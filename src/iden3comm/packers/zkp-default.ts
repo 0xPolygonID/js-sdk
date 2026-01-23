@@ -42,15 +42,7 @@ export class DefaultZKPPacker extends ZKPPacker {
    * @throws If the circuit data (proving key or wasm) is not found for the given circuit ID.
    */
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
-    if (!(params.provingMethodAlg instanceof ProvingMethodAlg)) {
-      throw new Error('provingMethodAlg must be an instance of ProvingMethodAlg');
-    }
-    if (!params.provingMethodAlg.alg) {
-      throw new Error('provingMethodAlg.alg is required');
-    }
-    if (!params.provingMethodAlg.circuitId) {
-      throw new Error('provingMethodAlg.circuitId is required');
-    }
+    this.validateZKPPackerParams(params);
     const provingParamsKey = params.provingMethodAlg.toString();
     const circuitId = params.provingMethodAlg.circuitId;
     if (!this.provingParamsMap.has(provingParamsKey)) {
