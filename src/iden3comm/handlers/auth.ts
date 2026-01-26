@@ -538,38 +538,35 @@ export class AuthHandler
     preferredAuthProvingMethod?: ProvingMethodAlg,
     accept?: string[]
   ): ProvingMethodAlg {
-    if (
-      preferredAuthProvingMethod &&
-      this._packerMgr.isProfileSupported(
-        MediaType.ZKPMessage,
-        buildAcceptFromProvingMethodAlg(preferredAuthProvingMethod)
-      ) &&
-      (!accept?.length || acceptHasProvingMethodAlg(accept, preferredAuthProvingMethod))
-    ) {
-      return preferredAuthProvingMethod;
+    // if no accept is given, return default
+    if (!accept?.length) {
+      return defaultProvingMethodAlg;
     }
-    if (accept?.length) {
-      const authV3_8_32 = proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg;
+
+    const preferredOrder = [
+      proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg,
+      proving.provingMethodGroth16AuthV3Instance.methodAlg
+    ];
+    if (preferredAuthProvingMethod) {
+      const idx = preferredOrder.indexOf(preferredAuthProvingMethod);
+      if (idx !== -1) {
+        preferredOrder.splice(idx, 1);
+      }
+      preferredOrder.unshift(preferredAuthProvingMethod);
+    }
+
+    for (const methodAlg of preferredOrder) {
       if (
-        acceptHasProvingMethodAlg(accept, authV3_8_32) &&
         this._packerMgr.isProfileSupported(
           MediaType.ZKPMessage,
-          buildAcceptFromProvingMethodAlg(authV3_8_32)
-        )
+          buildAcceptFromProvingMethodAlg(methodAlg)
+        ) &&
+        acceptHasProvingMethodAlg(accept, methodAlg)
       ) {
-        return authV3_8_32;
-      }
-      const authV3 = proving.provingMethodGroth16AuthV3Instance.methodAlg;
-      if (
-        acceptHasProvingMethodAlg(accept, authV3) &&
-        this._packerMgr.isProfileSupported(
-          MediaType.ZKPMessage,
-          buildAcceptFromProvingMethodAlg(authV3)
-        )
-      ) {
-        return authV3;
+        return methodAlg;
       }
     }
+
     return defaultProvingMethodAlg;
   }
 }

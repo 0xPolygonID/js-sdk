@@ -51,7 +51,7 @@ import {
   InMemoryProofStorage,
   byteDecoder
 } from '../../src';
-import { ProvingMethodAlg, Token } from '@iden3/js-jwz';
+import { ProvingMethodAlg, Token, proving } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { describe, expect, it, beforeEach } from 'vitest';
 import { ethers } from 'ethers';
@@ -1928,7 +1928,14 @@ describe('auth', () => {
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
       reason: 'reason',
-      scope: [proofReq]
+      scope: [proofReq],
+      accept: buildAccept([
+        {
+          protocolVersion: ProtocolVersion.V1,
+          env: MediaType.ZKPMessage,
+          circuits: [AcceptAuthCircuits.AuthV3]
+        }
+      ])
     };
 
     const id = uuid.v4();
@@ -2181,6 +2188,66 @@ describe('auth', () => {
 
     expect(unpacked.unpackedMediaType).to.eq(PROTOCOL_CONSTANTS.MediaType.ZKPMessage);
   });
+
+  it('auth response: Preferred is set, but no accept - default should be used', async () => {
+    const stateEthConfig = defaultEthConnectionConfig;
+    stateEthConfig.url = RPC_URL;
+    stateEthConfig.contractAddress = STATE_CONTRACT;
+    stateEthConfig.chainId = 80002;
+    const eth = new EthStateStorage(stateEthConfig);
+
+    const kms = registerKeyProvidersInMemoryKMS();
+    dataStorage = getInMemoryDataStorage(eth);
+    const resolvers = new CredentialStatusResolverRegistry();
+    resolvers.register(
+      CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+      new RHSResolver(dataStorage.states)
+    );
+    credWallet = new CredentialWallet(dataStorage, resolvers);
+    idWallet = new IdentityWallet(kms, dataStorage, credWallet);
+
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, eth, merklizeOpts);
+    const { did: issuerDID } = await createIdentity(idWallet, {
+      seed: getRandomBytes(32)
+    });
+    const { did: userDID } = await createIdentity(idWallet, {
+      seed: getRandomBytes(32)
+    });
+
+    packageMgr = getPackageManagerWithDefaultZKPPacker(circuitStorage, proofService);
+
+    authHandler = new AuthHandler(packageMgr, proofService);
+
+    // no accept here
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      scope: []
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    // preferred auth proving method set to auth V3_8_32, but no accept, so auth v2 should be used
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
+      mediaType: PROTOCOL_CONSTANTS.MediaType.ZKPMessage,
+      preferredAuthProvingMethod: proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg
+    });
+
+    const tokenStr = authRes.token;
+    expect(tokenStr).to.be.a('string');
+    const resToken = await Token.parse(tokenStr);
+    expect(resToken.circuitId).to.be.eq(CircuitId.AuthV2);
+  });
+
   it('auth response: TestVerifyV3MessageWithMtpProof_Merklized_noop', async () => {
     const claimReq: CredentialRequest = {
       credentialSchema:
