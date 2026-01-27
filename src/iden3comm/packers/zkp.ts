@@ -128,6 +128,7 @@ export class ZKPPacker implements IPacker {
    * @returns `Promise<Uint8Array>`
    */
   async pack(payload: Uint8Array, params: ZKPPackerParams): Promise<Uint8Array> {
+    this.validateZKPPackerParams(params);
     const provingMethod = await getProvingMethod(params.provingMethodAlg);
     const provingParams = this.provingParamsMap.get(params.provingMethodAlg.toString());
 
@@ -228,6 +229,19 @@ export class ZKPPacker implements IPacker {
     const algSupported =
       !alg?.length || alg.some((a) => supportedAlgArr.includes(a as AcceptJwzAlgorithms));
     return algSupported && circuitIdSupported;
+  }
+
+  protected validateZKPPackerParams(value: ZKPPackerParams) {
+    const { provingMethodAlg } = value;
+    if (!(provingMethodAlg instanceof ProvingMethodAlg)) {
+      throw new TypeError('provingMethodAlg must be an instance of ProvingMethodAlg');
+    }
+    if (!provingMethodAlg.alg) {
+      throw new Error(`provingMethodAlg.alg is required and must be a non-empty string`);
+    }
+    if (!provingMethodAlg.circuitId) {
+      throw new Error(`provingMethodAlg.circuitId is required and must be a non-empty string`);
+    }
   }
 }
 
