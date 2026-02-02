@@ -373,7 +373,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     let encodedAuthProof = '';
 
     switch (authProof.authMethod) {
-      case AuthMethod.AUTHV2: {
+      case AuthMethod.AUTHV2:
+      case AuthMethod.AUTHV3:
+      case AuthMethod.AUTHV3_8_32: {
         const preparedZkpProof = prepareZkpProof((authProof as AuthProofZKP).zkp.proof);
         encodedAuthProof = packZkpProof(
           (authProof as AuthProofZKP).zkp.pub_signals,
@@ -388,7 +390,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         break;
       }
       default:
-        throw new Error('auth proof must use method AuthV2 or ethIdentity');
+        throw new Error('auth proof must use method authV2, authV3, authV3-8-32 or ethIdentity');
     }
 
     // Process all the responses
@@ -410,7 +412,11 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       pub_signals: zkProof.pub_signals
     }));
 
-    if (authProof.authMethod == AuthMethod.AUTHV2) {
+    if (
+      authProof.authMethod == AuthMethod.AUTHV2 ||
+      authProof.authMethod == AuthMethod.AUTHV3 ||
+      authProof.authMethod == AuthMethod.AUTHV3_8_32
+    ) {
       allZkProofs.push({
         circuitId: (authProof as AuthProofZKP).zkp.circuitId as OnChainZKPVerifierCircuitId,
         pub_signals: (authProof as AuthProofZKP).zkp.pub_signals

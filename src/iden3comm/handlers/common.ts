@@ -231,7 +231,7 @@ export const processProofAuth = async (
         if (!opts.senderAddress) {
           throw new Error('Sender address is not provided');
         }
-        const challengeAuth = calcChallengeAuthV2(opts.senderAddress, opts.zkpResponses);
+        const challengeAuth = calcChallengeAuth(opts.senderAddress, opts.zkpResponses);
 
         const zkpRes: ZeroKnowledgeProofAuthResponse = await proofService.generateAuthProof(
           circuitId as unknown as CircuitId,
@@ -240,7 +240,7 @@ export const processProofAuth = async (
         );
         return {
           authProof: {
-            authMethod: AuthMethod.AUTHV2,
+            authMethod: circuitId as string as AuthMethod,
             zkp: zkpRes
           }
         };
@@ -292,12 +292,12 @@ export const processProofResponse = (zkProof: ZeroKnowledgeProofResponse) => {
 };
 
 /**
- * Calculates the challenge authentication V2 value.
+ * Calculates the challenge authentication authV2, authV3, authV3-8-32 value.
  * @param senderAddress - The address of the sender.
  * @param zkpResponses - An array of ZeroKnowledgeProofResponse objects.
  * @returns A bigint representing the challenge authentication value.
  */
-export const calcChallengeAuthV2 = (
+export const calcChallengeAuth = (
   senderAddress: string,
   zkpResponses: ZeroKnowledgeProofResponse[]
 ): bigint => {
