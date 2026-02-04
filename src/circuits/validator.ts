@@ -1,3 +1,9 @@
+import { AtomicQueryMTPV2OnChainPubSignals } from './atomic-query-mtp-v2-on-chain';
+import { AtomicQuerySigV2OnChainPubSignals } from './atomic-query-sig-v2-on-chain';
+import { AtomicQueryV3OnChainPubSignals } from './atomic-query-v3-on-chain';
+import { AuthV2PubSignals } from './auth-v2';
+import { AuthV3PubSignals } from './auth-v3';
+import { IStateInfoPubSignals } from './common';
 import { Operators, QueryOperators } from './comparer';
 import { CircuitId } from './models';
 
@@ -38,25 +44,52 @@ export type CircuitSubversion = {
   mtLevelOnChain?: number;
   queryCount?: number;
   targetCircuitId: CircuitId;
+  ctor?: new (opts?: {
+    mtLevel?: number;
+    mtLevelClaim?: number;
+    mtLevelOnChain?: number;
+  }) => IStateInfoPubSignals;
 };
 
 export type CircuitValidatorItem = {
   validation: { maxQueriesCount: number; supportedOperations: Operators[] };
   subVersions?: CircuitSubversion[];
+  ctor?: new (opts?: {
+    mtLevel?: number;
+    mtLevelClaim?: number;
+    mtLevelOnChain?: number;
+  }) => IStateInfoPubSignals;
+  mtLevel?: number;
+  mtLevelClaim?: number;
+  mtLevelOnChain?: number;
 };
 
 export const circuitValidator: {
   [k in CircuitId]: CircuitValidatorItem;
 } = {
   [CircuitId.AtomicQueryMTPV2]: credentialAtomicQueryV2Validation,
-  [CircuitId.AtomicQueryMTPV2OnChain]: credentialAtomicQueryV2OnChainValidation,
+  [CircuitId.AtomicQueryMTPV2OnChain]: {
+    ...credentialAtomicQueryV2OnChainValidation,
+    ctor: AtomicQueryMTPV2OnChainPubSignals
+  },
   [CircuitId.AtomicQuerySigV2]: credentialAtomicQueryV2Validation,
-  [CircuitId.AtomicQuerySigV2OnChain]: credentialAtomicQueryV2OnChainValidation,
+  [CircuitId.AtomicQuerySigV2OnChain]: {
+    ...credentialAtomicQueryV2OnChainValidation,
+    ctor: AtomicQuerySigV2OnChainPubSignals
+  },
   [CircuitId.AtomicQueryV3]: credentialAtomicQueryV3Validation,
-  [CircuitId.AtomicQueryV3OnChain]: credentialAtomicQueryV3Validation,
-  [CircuitId.AuthV2]: noQueriesValidation,
-  [CircuitId.AuthV3]: noQueriesValidation,
-  [CircuitId.AuthV3_8_32]: noQueriesValidation,
+  [CircuitId.AtomicQueryV3OnChain]: {
+    ...credentialAtomicQueryV3Validation,
+    ctor: AtomicQueryV3OnChainPubSignals
+  },
+  [CircuitId.AuthV2]: { ...noQueriesValidation, ctor: AuthV2PubSignals },
+  [CircuitId.AuthV3]: { ...noQueriesValidation, ctor: AuthV3PubSignals },
+  [CircuitId.AuthV3_8_32]: {
+    ...noQueriesValidation,
+    ctor: AuthV3PubSignals,
+    mtLevel: 8,
+    mtLevelClaim: 32
+  },
   [CircuitId.StateTransition]: noQueriesValidation,
   [CircuitId.LinkedMultiQuery10]: {
     validation: { maxQueriesCount: 10, supportedOperations: allOperations }
@@ -79,9 +112,11 @@ export const circuitValidator: {
         mtLevel: 16,
         mtLevelClaim: 16,
         mtLevelOnChain: 32,
-        targetCircuitId: (CircuitId.AtomicQueryV3OnChainStable + '-16-16-64-16-32') as CircuitId
+        targetCircuitId: (CircuitId.AtomicQueryV3OnChainStable + '-16-16-64-16-32') as CircuitId,
+        ctor: AtomicQueryV3OnChainPubSignals
       }
-    ]
+    ],
+    ctor: AtomicQueryV3OnChainPubSignals
   },
   [CircuitId.LinkedMultiQueryStable]: {
     validation: { maxQueriesCount: 10, supportedOperations: allOperations },
@@ -137,4 +172,57 @@ export const getGroupedCircuitIdsWithSubVersions = (filterCircuitId: CircuitId):
   }
 
   return [filterCircuitId];
+};
+
+export const getCtorForCircuitId = (
+  circuitIdToFind: CircuitId
+):
+  | {
+      ctor: new (opts?: {
+        mtLevel?: number;
+        mtLevelClaim?: number;
+        mtLevelOnChain?: number;
+      }) => IStateInfoPubSignals;
+      opts?: { mtLevel?: number; mtLevelClaim?: number; mtLevelOnChain?: number };
+    }
+  | undefined => {
+  for (const key of Object.keys(circuitValidator)) {
+    const circuitId = key as CircuitId;
+
+    if (circuitId === circuitIdToFind && circuitValidator[circuitId].ctor) {
+      return {
+        ctor: circuitValidator[circuitId].ctor,
+        opts:
+          circuitValidator[circuitId].mtLevel ||
+          circuitValidator[circuitId].mtLevelClaim ||
+          circuitValidator[circuitId].mtLevelOnChain
+            ? {
+                mtLevel: circuitValidator[circuitId].mtLevel,
+                mtLevelClaim: circuitValidator[circuitId].mtLevelClaim,
+                mtLevelOnChain: circuitValidator[circuitId].mtLevelOnChain
+              }
+            : undefined
+      };
+    }
+
+    const subVersions = circuitValidator[circuitId]?.subVersions ?? [];
+    if (subVersions.length > 0) {
+      const subVersion = subVersions.find(
+        (subversion) => subversion.targetCircuitId === circuitIdToFind
+      );
+      if (subVersion && subVersion.ctor) {
+        return {
+          ctor: subVersion.ctor,
+          opts:
+            subVersion.mtLevel || subVersion.mtLevelClaim || subVersion.mtLevelOnChain
+              ? {
+                  mtLevel: subVersion.mtLevel,
+                  mtLevelClaim: subVersion.mtLevelClaim,
+                  mtLevelOnChain: subVersion.mtLevelOnChain
+                }
+              : undefined
+        };
+      }
+    }
+  }
 };

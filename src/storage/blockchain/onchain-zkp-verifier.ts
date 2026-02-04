@@ -25,6 +25,7 @@ import {
   AuthV3PubSignals,
   CircuitId,
   getCircuitIdsWithSubVersions,
+  getCtorForCircuitId,
   IStateInfoPubSignals,
   StatesInfo
 } from '../../circuits';
@@ -671,13 +672,14 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     onChainCircuitId: OnChainZKPVerifierCircuitId,
     inputs: string[]
   ): StatesInfo {
-    const PubSignals = this._supportedCircuitsPubSignalsMap[onChainCircuitId].ctor;
-    if (!PubSignals) {
+    const ctorInfo = getCtorForCircuitId(onChainCircuitId);
+
+    if (!ctorInfo || !ctorInfo.ctor) {
       throw new Error(`Circuit ${onChainCircuitId} not supported by OnChainZKPVerifier`);
     }
-    const atomicQueryPubSignals = new PubSignals(
-      this._supportedCircuitsPubSignalsMap[onChainCircuitId].opts
-    );
+
+    const PubSignals = ctorInfo.ctor;
+    const atomicQueryPubSignals = new PubSignals(ctorInfo.opts);
     const encodedInputs = byteEncoder.encode(JSON.stringify(inputs));
     return atomicQueryPubSignals.pubSignalsUnmarshal(encodedInputs).getStatesInfo();
   }

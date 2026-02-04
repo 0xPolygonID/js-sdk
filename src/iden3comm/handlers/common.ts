@@ -286,7 +286,7 @@ export const processProofResponse = (zkProof: ZeroKnowledgeProofResponse) => {
     preparedZkpProof.c
   );
 
-  const metadata = emptyBytes;
+  const metadata = ethers.AbiCoder.defaultAbiCoder().encode(['string'], [zkProof.circuitId]);
 
   return { requestId, zkProofEncoded, metadata };
 };
