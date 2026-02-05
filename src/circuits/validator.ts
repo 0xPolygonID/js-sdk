@@ -3,7 +3,7 @@ import { AtomicQuerySigV2OnChainPubSignals } from './atomic-query-sig-v2-on-chai
 import { AtomicQueryV3OnChainPubSignals } from './atomic-query-v3-on-chain';
 import { AuthV2PubSignals } from './auth-v2';
 import { AuthV3PubSignals } from './auth-v3';
-import { IStateInfoPubSignals } from './common';
+import { IUnmarshallerPubSignals } from './common';
 import { Operators, QueryOperators } from './comparer';
 import { CircuitId } from './models';
 
@@ -44,21 +44,16 @@ export type CircuitSubversion = {
   mtLevelOnChain?: number;
   queryCount?: number;
   targetCircuitId: CircuitId;
-  ctor?: new (opts?: {
-    mtLevel?: number;
-    mtLevelClaim?: number;
-    mtLevelOnChain?: number;
-  }) => IStateInfoPubSignals;
 };
 
 export type CircuitValidatorItem = {
   validation: { maxQueriesCount: number; supportedOperations: Operators[] };
   subVersions?: CircuitSubversion[];
-  ctor?: new (opts?: {
+  unmarshaller?: new (opts?: {
     mtLevel?: number;
     mtLevelClaim?: number;
     mtLevelOnChain?: number;
-  }) => IStateInfoPubSignals;
+  }) => IUnmarshallerPubSignals;
   mtLevel?: number;
   mtLevelClaim?: number;
   mtLevelOnChain?: number;
@@ -70,23 +65,23 @@ export const circuitValidator: {
   [CircuitId.AtomicQueryMTPV2]: credentialAtomicQueryV2Validation,
   [CircuitId.AtomicQueryMTPV2OnChain]: {
     ...credentialAtomicQueryV2OnChainValidation,
-    ctor: AtomicQueryMTPV2OnChainPubSignals
+    unmarshaller: AtomicQueryMTPV2OnChainPubSignals
   },
   [CircuitId.AtomicQuerySigV2]: credentialAtomicQueryV2Validation,
   [CircuitId.AtomicQuerySigV2OnChain]: {
     ...credentialAtomicQueryV2OnChainValidation,
-    ctor: AtomicQuerySigV2OnChainPubSignals
+    unmarshaller: AtomicQuerySigV2OnChainPubSignals
   },
   [CircuitId.AtomicQueryV3]: credentialAtomicQueryV3Validation,
   [CircuitId.AtomicQueryV3OnChain]: {
     ...credentialAtomicQueryV3Validation,
-    ctor: AtomicQueryV3OnChainPubSignals
+    unmarshaller: AtomicQueryV3OnChainPubSignals
   },
-  [CircuitId.AuthV2]: { ...noQueriesValidation, ctor: AuthV2PubSignals },
-  [CircuitId.AuthV3]: { ...noQueriesValidation, ctor: AuthV3PubSignals },
+  [CircuitId.AuthV2]: { ...noQueriesValidation, unmarshaller: AuthV2PubSignals },
+  [CircuitId.AuthV3]: { ...noQueriesValidation, unmarshaller: AuthV3PubSignals },
   [CircuitId.AuthV3_8_32]: {
     ...noQueriesValidation,
-    ctor: AuthV3PubSignals,
+    unmarshaller: AuthV3PubSignals,
     mtLevel: 8,
     mtLevelClaim: 32
   },
@@ -112,11 +107,10 @@ export const circuitValidator: {
         mtLevel: 16,
         mtLevelClaim: 16,
         mtLevelOnChain: 32,
-        targetCircuitId: (CircuitId.AtomicQueryV3OnChainStable + '-16-16-64-16-32') as CircuitId,
-        ctor: AtomicQueryV3OnChainPubSignals
+        targetCircuitId: (CircuitId.AtomicQueryV3OnChainStable + '-16-16-64-16-32') as CircuitId
       }
     ],
-    ctor: AtomicQueryV3OnChainPubSignals
+    unmarshaller: AtomicQueryV3OnChainPubSignals
   },
   [CircuitId.LinkedMultiQueryStable]: {
     validation: { maxQueriesCount: 10, supportedOperations: allOperations },
@@ -174,24 +168,24 @@ export const getGroupedCircuitIdsWithSubVersions = (filterCircuitId: CircuitId):
   return [filterCircuitId];
 };
 
-export const getCtorForCircuitId = (
+export const getUnmarshallerForCircuitId = (
   circuitIdToFind: CircuitId
 ):
   | {
-      ctor: new (opts?: {
+      unmarshaller: new (opts?: {
         mtLevel?: number;
         mtLevelClaim?: number;
         mtLevelOnChain?: number;
-      }) => IStateInfoPubSignals;
+      }) => IUnmarshallerPubSignals;
       opts?: { mtLevel?: number; mtLevelClaim?: number; mtLevelOnChain?: number };
     }
   | undefined => {
   for (const key of Object.keys(circuitValidator)) {
     const circuitId = key as CircuitId;
 
-    if (circuitId === circuitIdToFind && circuitValidator[circuitId].ctor) {
+    if (circuitId === circuitIdToFind && circuitValidator[circuitId].unmarshaller) {
       return {
-        ctor: circuitValidator[circuitId].ctor,
+        unmarshaller: circuitValidator[circuitId].unmarshaller,
         opts:
           circuitValidator[circuitId].mtLevel ||
           circuitValidator[circuitId].mtLevelClaim ||
@@ -210,9 +204,9 @@ export const getCtorForCircuitId = (
       const subVersion = subVersions.find(
         (subversion) => subversion.targetCircuitId === circuitIdToFind
       );
-      if (subVersion && subVersion.ctor) {
+      if (subVersion && circuitValidator[circuitId].unmarshaller) {
         return {
-          ctor: subVersion.ctor,
+          unmarshaller: circuitValidator[circuitId].unmarshaller,
           opts:
             subVersion.mtLevel || subVersion.mtLevelClaim || subVersion.mtLevelOnChain
               ? {

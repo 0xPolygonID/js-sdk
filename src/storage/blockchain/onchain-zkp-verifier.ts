@@ -25,7 +25,7 @@ import {
   AuthV3PubSignals,
   CircuitId,
   getCircuitIdsWithSubVersions,
-  getCtorForCircuitId,
+  getUnmarshallerForCircuitId,
   IStateInfoPubSignals,
   StatesInfo
 } from '../../circuits';
@@ -414,9 +414,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     }));
 
     if (
-      authProof.authMethod == AuthMethod.AUTHV2 ||
-      authProof.authMethod == AuthMethod.AUTHV3 ||
-      authProof.authMethod == AuthMethod.AUTHV3_8_32
+      [AuthMethod.AUTHV2, AuthMethod.AUTHV3, AuthMethod.AUTHV3_8_32].includes(authProof.authMethod)
     ) {
       allZkProofs.push({
         circuitId: (authProof as AuthProofZKP).zkp.circuitId as OnChainZKPVerifierCircuitId,
@@ -672,16 +670,16 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     onChainCircuitId: OnChainZKPVerifierCircuitId,
     inputs: string[]
   ): StatesInfo {
-    const ctorInfo = getCtorForCircuitId(onChainCircuitId);
+    const unmarshallerForCircuitId = getUnmarshallerForCircuitId(onChainCircuitId);
 
-    if (!ctorInfo || !ctorInfo.ctor) {
+    if (!unmarshallerForCircuitId || !unmarshallerForCircuitId.unmarshaller) {
       throw new Error(`Circuit ${onChainCircuitId} not supported by OnChainZKPVerifier`);
     }
 
-    const PubSignals = ctorInfo.ctor;
-    const atomicQueryPubSignals = new PubSignals(ctorInfo.opts);
+    const PubSignals = unmarshallerForCircuitId.unmarshaller;
+    const queryPubSignals = new PubSignals(unmarshallerForCircuitId.opts);
     const encodedInputs = byteEncoder.encode(JSON.stringify(inputs));
-    return atomicQueryPubSignals.pubSignalsUnmarshal(encodedInputs).getStatesInfo();
+    return queryPubSignals.pubSignalsUnmarshal(encodedInputs).getStatesInfo();
   }
 
   private static async resolveDidDocumentEip712MessageAndSignature(

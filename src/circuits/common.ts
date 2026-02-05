@@ -265,16 +265,24 @@ export type StatesInfo = {
  * state pub signals
  *
  * @public
- * @interface   IStatePubSignals
+ * @interface   IStateInfoPubSignals
  */
-export interface IStateInfoPubSignals {
+export interface IStateInfoPubSignals extends IUnmarshallerPubSignals {
   /**
    * return object with state params
    *
    * @returns {OnChainStateInfo}
    */
   getStatesInfo(): StatesInfo;
+}
 
+/**
+ * pub signals unmarshaller
+ *
+ * @public
+ * @interface   IUnmarshallerPubSignals
+ */
+export interface IUnmarshallerPubSignals {
   /**
    * unmarshal pub signals to IStateInfoPubSignals
    *
