@@ -679,7 +679,15 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     const PubSignals = unmarshallerForCircuitId.unmarshaller;
     const queryPubSignals = new PubSignals(unmarshallerForCircuitId.opts);
     const encodedInputs = byteEncoder.encode(JSON.stringify(inputs));
-    return queryPubSignals.pubSignalsUnmarshal(encodedInputs).getStatesInfo();
+
+    const pubSignalUnmarshalled = queryPubSignals.pubSignalsUnmarshal(encodedInputs);
+    if ((<IStateInfoPubSignals>pubSignalUnmarshalled).getStatesInfo === undefined) {
+      throw new Error(
+        `Public signals unmarshaller for circuit ${onChainCircuitId} does not support getStatesInfo method`
+      );
+    }
+
+    return (<IStateInfoPubSignals>pubSignalUnmarshalled).getStatesInfo();
   }
 
   private static async resolveDidDocumentEip712MessageAndSignature(

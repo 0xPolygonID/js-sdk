@@ -289,5 +289,5 @@ export interface IUnmarshallerPubSignals {
    * @param {Uint8Array} data
    * @returns IStateInfoPubSignals
    */
-  pubSignalsUnmarshal(data: Uint8Array): IStateInfoPubSignals;
+  pubSignalsUnmarshal(data: Uint8Array): IUnmarshallerPubSignals;
 }
