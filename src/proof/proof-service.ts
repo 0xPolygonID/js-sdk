@@ -312,6 +312,14 @@ export class ProofService implements IProofService {
       );
     }
 
+    if (
+      !opts.allowExpiredCredentials &&
+      credentialWithRevStatus.cred?.expirationDate &&
+      new Date(credentialWithRevStatus.cred.expirationDate) < new Date()
+    ) {
+      throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_CREDENTIAL_IS_EXPIRED);
+    }
+
     if (this._proofsCacheStorage && !opts?.bypassCache) {
       const cachedProof = await this._proofsCacheStorage.getProof(
         identifier,
@@ -411,7 +419,15 @@ export class ProofService implements IProofService {
 
     const circuitId = metadata?.targetCircuitId ?? proofReq.circuitId;
 
-    const { proof, pub_signals } = await this._prover.generate(inputs, circuitId);
+    let proof, pub_signals;
+    try {
+      ({ proof, pub_signals } = await this._prover.generate(inputs, circuitId));
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      throw new Error(`Proof generation failed for circuit ${circuitId}: ${errorMessage}`, {
+        cause: e
+      });
+    }
 
     const zkpRes = {
       id: proofReq.id,

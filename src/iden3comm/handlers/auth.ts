@@ -174,6 +174,7 @@ type AuthReqOptions = {
   senderDid: DID;
   mediaType?: MediaType;
   bypassProofsCache?: boolean;
+  allowExpiredCredentials?: boolean;
 };
 
 type AuthRespOptions = {
@@ -195,6 +196,7 @@ export type AuthHandlerOptions = BasicHandlerOptions & {
   packerOptions?: HandlerPackerParams;
   preferredAuthProvingMethod?: ProvingMethodAlg;
   bypassProofsCache?: boolean;
+  allowExpiredCredentials?: boolean;
 };
 
 /**
@@ -288,7 +290,8 @@ export class AuthHandler
       {
         mediaType,
         supportedCircuits: this._supportedCircuits,
-        bypassProofsCache: ctx.bypassProofsCache
+        bypassProofsCache: ctx.bypassProofsCache,
+        allowExpiredCredentials: ctx.allowExpiredCredentials
       }
     );
 
@@ -332,7 +335,8 @@ export class AuthHandler
     const authResponse = await this.handleAuthRequest(authRequest, {
       senderDid: did,
       mediaType: opts.mediaType,
-      bypassProofsCache: opts.bypassProofsCache
+      bypassProofsCache: opts.bypassProofsCache,
+      allowExpiredCredentials: opts.allowExpiredCredentials
     });
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));

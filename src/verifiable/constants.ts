@@ -42,6 +42,7 @@ export const VerifiableConstants = Object.freeze({
     PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH:
       'subject and auth profiles are not derived from the same did',
     PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST: 'no queries in zkp request',
+    PROOF_SERVICE_CREDENTIAL_IS_EXPIRED: 'credential is expired',
 
     // credential wallet
 
