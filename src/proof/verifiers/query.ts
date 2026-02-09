@@ -315,11 +315,9 @@ export const fieldValueFromVerifiablePresentation = async (
   return await value.mtEntry();
 };
 
-export function calculateGroupId(requestIds: bigint[]): bigint {
-  const types = Array(requestIds.length).fill('uint256');
-
+export function calculateGroupId(): bigint {
   const groupID =
-    BigInt(ethers.keccak256(ethers.solidityPacked(types, requestIds))) &
+    BigInt(ethers.keccak256(ethers.randomBytes(32))) &
     // It should fit in a field number in the circuit (max 253 bits). With this we truncate to 252 bits for the group ID
     BigInt('0x0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
 
