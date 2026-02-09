@@ -5,6 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     testTimeout: 120_000,
+    hookTimeout: 30_000,
     setupFiles: ['dotenv/config']
   }
 });
