@@ -116,26 +116,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     CircuitId.AtomicQueryV3OnChainStable
   ];
 
-  private static readonly _supportedCircuitsPubSignalsMap: Record<
-    OnChainZKPVerifierCircuitId,
-    {
-      ctor: new (opts?: {
-        mtLevel?: number;
-        mtLevelClaim?: number;
-        mtLevelOnChain?: number;
-      }) => IStateInfoPubSignals;
-      opts?: { mtLevel?: number; mtLevelClaim?: number; mtLevelOnChain?: number };
-    }
-  > = {
-    [CircuitId.AtomicQueryMTPV2OnChain]: { ctor: AtomicQueryMTPV2OnChainPubSignals },
-    [CircuitId.AtomicQuerySigV2OnChain]: { ctor: AtomicQuerySigV2OnChainPubSignals },
-    [CircuitId.AtomicQueryV3OnChain]: { ctor: AtomicQueryV3OnChainPubSignals },
-    [CircuitId.AtomicQueryV3OnChainStable]: { ctor: AtomicQueryV3OnChainPubSignals },
-    [CircuitId.AuthV2]: { ctor: AuthV2PubSignals },
-    [CircuitId.AuthV3]: { ctor: AuthV3PubSignals },
-    [CircuitId.AuthV3_8_32]: { ctor: AuthV3PubSignals, opts: { mtLevel: 8, mtLevelClaim: 32 } }
-  };
-
   /**
    *
    * Creates an instance of OnChainZKPVerifier.

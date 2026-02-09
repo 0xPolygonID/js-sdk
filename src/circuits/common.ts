@@ -284,10 +284,10 @@ export interface IStateInfoPubSignals extends IUnmarshallerPubSignals {
  */
 export interface IUnmarshallerPubSignals {
   /**
-   * unmarshal pub signals to IStateInfoPubSignals
+   * unmarshal pub signals to IUnmarshallerPubSignals
    *
    * @param {Uint8Array} data
-   * @returns IStateInfoPubSignals
+   * @returns IUnmarshallerPubSignals
    */
   pubSignalsUnmarshal(data: Uint8Array): IUnmarshallerPubSignals;
 }
