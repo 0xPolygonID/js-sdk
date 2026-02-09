@@ -424,8 +424,9 @@ export class ProofService implements IProofService {
       ({ proof, pub_signals } = await this._prover.generate(inputs, circuitId));
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
+      const cause = e instanceof Error ? e : new Error(errorMessage);
       throw new Error(`Proof generation failed for circuit ${circuitId}: ${errorMessage}`, {
-        cause: e
+        cause
       });
     }
 

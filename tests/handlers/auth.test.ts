@@ -2969,7 +2969,7 @@ describe('auth', () => {
     );
   });
 
-  it('auth flow with expired credential and allowExpiredCredential option', async () => {
+  it('auth flow with expired credential and allowExpiredCredentials option', async () => {
     const claimReq: CredentialRequest = {
       credentialSchema:
         'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
@@ -3035,6 +3035,7 @@ describe('auth', () => {
         allowExpiredCredentials: true,
         mediaType: MediaType.ZKPMessage
       });
+      throw new Error('Expected error was not thrown');
     } catch (err) {
       expect(err).to.be.instanceOf(Error);
       expect((err as Error).message).to.include('Proof generation failed for circuit ');
