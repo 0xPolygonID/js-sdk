@@ -2979,7 +2979,7 @@ describe('auth', () => {
         birthday: 19960424,
         documentType: 99
       },
-      expiration: 1770651804,
+      expiration: 1770651804, // expired credential
       revocationOpts: {
         type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
         id: RHS_URL

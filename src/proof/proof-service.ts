@@ -314,7 +314,7 @@ export class ProofService implements IProofService {
 
     if (
       !opts.allowExpiredCredentials &&
-      credentialWithRevStatus.cred?.expirationDate &&
+      credentialWithRevStatus.cred.expirationDate &&
       new Date(credentialWithRevStatus.cred.expirationDate) < new Date()
     ) {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_CREDENTIAL_IS_EXPIRED);
