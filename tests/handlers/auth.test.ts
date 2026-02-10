@@ -2968,4 +2968,78 @@ describe('auth', () => {
       'no packer with profile which meets `accept` header requirements'
     );
   });
+
+  it('auth flow with expired credential and allowExpiredCredentials option', async () => {
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 1770651804, // expired credential
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
+    await credWallet.save(issuerCred);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.AtomicQueryV3Stable,
+        optional: false,
+        query: {
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+          credentialSubject: {
+            documentType: {
+              $eq: 99
+            }
+          }
+        }
+      }
+    ];
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'message',
+      scope: proofReqs
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    await expect(authHandler.handleAuthorizationRequest(userDID, msgBytes)).rejects.toThrow(
+      VerifiableConstants.ERRORS.PROOF_SERVICE_CREDENTIAL_IS_EXPIRED
+    );
+
+    try {
+      await authHandler.handleAuthorizationRequest(userDID, msgBytes, {
+        allowExpiredCredentials: true,
+        mediaType: MediaType.ZKPMessage
+      });
+      throw new Error('Expected error was not thrown');
+    } catch (err) {
+      expect(err).to.be.instanceOf(Error);
+      expect((err as Error).message).to.include('Proof generation failed for circuit ');
+      expect((err as Error).cause).to.be.instanceOf(Error);
+    }
+  });
 });

@@ -99,6 +99,7 @@ export const processZeroKnowledgeProofRequests = async (
     ethSigner?: Signer;
     challenge?: bigint;
     bypassProofsCache?: boolean;
+    allowExpiredCredentials?: boolean;
   }
 ): Promise<ZeroKnowledgeProofResponse[]> => {
   const requestScope = requests ?? [];
@@ -166,7 +167,8 @@ export const processZeroKnowledgeProofRequests = async (
         credential: credWithRevStatus?.cred,
         credentialRevocationStatus: credWithRevStatus?.revStatus,
         linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined,
-        bypassCache: opts.bypassProofsCache
+        bypassCache: opts.bypassProofsCache,
+        allowExpiredCredentials: opts.allowExpiredCredentials
       });
     } catch (error: unknown) {
       const expectedErrors = [
