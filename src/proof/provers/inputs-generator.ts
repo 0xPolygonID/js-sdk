@@ -53,6 +53,7 @@ export type ProofGenerationOptions = {
   verifierDid?: DID;
   linkNonce?: bigint;
   bypassCache?: boolean;
+  allowExpiredCredentials?: boolean;
 };
 
 export type AuthProofGenerationOptions = {
