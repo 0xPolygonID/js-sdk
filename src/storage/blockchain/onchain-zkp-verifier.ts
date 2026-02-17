@@ -25,6 +25,7 @@ import {
   AuthV3PubSignals,
   CircuitId,
   getCircuitIdsWithSubVersions,
+  getUnmarshallerForCircuitId,
   IStateInfoPubSignals,
   StatesInfo
 } from '../../circuits';
@@ -114,26 +115,6 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     CircuitId.AtomicQueryV3OnChain,
     CircuitId.AtomicQueryV3OnChainStable
   ];
-
-  private static readonly _supportedCircuitsPubSignalsMap: Record<
-    OnChainZKPVerifierCircuitId,
-    {
-      ctor: new (opts?: {
-        mtLevel?: number;
-        mtLevelClaim?: number;
-        mtLevelOnChain?: number;
-      }) => IStateInfoPubSignals;
-      opts?: { mtLevel?: number; mtLevelClaim?: number; mtLevelOnChain?: number };
-    }
-  > = {
-    [CircuitId.AtomicQueryMTPV2OnChain]: { ctor: AtomicQueryMTPV2OnChainPubSignals },
-    [CircuitId.AtomicQuerySigV2OnChain]: { ctor: AtomicQuerySigV2OnChainPubSignals },
-    [CircuitId.AtomicQueryV3OnChain]: { ctor: AtomicQueryV3OnChainPubSignals },
-    [CircuitId.AtomicQueryV3OnChainStable]: { ctor: AtomicQueryV3OnChainPubSignals },
-    [CircuitId.AuthV2]: { ctor: AuthV2PubSignals },
-    [CircuitId.AuthV3]: { ctor: AuthV3PubSignals },
-    [CircuitId.AuthV3_8_32]: { ctor: AuthV3PubSignals, opts: { mtLevel: 8, mtLevelClaim: 32 } }
-  };
 
   /**
    *
@@ -373,7 +354,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     let encodedAuthProof = '';
 
     switch (authProof.authMethod) {
-      case AuthMethod.AUTHV2: {
+      case AuthMethod.AUTHV2:
+      case AuthMethod.AUTHV3:
+      case AuthMethod.AUTHV3_8_32: {
         const preparedZkpProof = prepareZkpProof((authProof as AuthProofZKP).zkp.proof);
         encodedAuthProof = packZkpProof(
           (authProof as AuthProofZKP).zkp.pub_signals,
@@ -388,7 +371,7 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
         break;
       }
       default:
-        throw new Error('auth proof must use method AuthV2 or ethIdentity');
+        throw new Error('auth proof must use method authV2, authV3, authV3-8-32 or ethIdentity');
     }
 
     // Process all the responses
@@ -410,7 +393,9 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
       pub_signals: zkProof.pub_signals
     }));
 
-    if (authProof.authMethod == AuthMethod.AUTHV2) {
+    if (
+      [AuthMethod.AUTHV2, AuthMethod.AUTHV3, AuthMethod.AUTHV3_8_32].includes(authProof.authMethod)
+    ) {
       allZkProofs.push({
         circuitId: (authProof as AuthProofZKP).zkp.circuitId as OnChainZKPVerifierCircuitId,
         pub_signals: (authProof as AuthProofZKP).zkp.pub_signals
@@ -665,15 +650,24 @@ export class OnChainZKPVerifier implements IOnChainZKPVerifier {
     onChainCircuitId: OnChainZKPVerifierCircuitId,
     inputs: string[]
   ): StatesInfo {
-    const PubSignals = this._supportedCircuitsPubSignalsMap[onChainCircuitId].ctor;
-    if (!PubSignals) {
+    const unmarshallerForCircuitId = getUnmarshallerForCircuitId(onChainCircuitId);
+
+    if (!unmarshallerForCircuitId || !unmarshallerForCircuitId.unmarshaller) {
       throw new Error(`Circuit ${onChainCircuitId} not supported by OnChainZKPVerifier`);
     }
-    const atomicQueryPubSignals = new PubSignals(
-      this._supportedCircuitsPubSignalsMap[onChainCircuitId].opts
-    );
+
+    const PubSignals = unmarshallerForCircuitId.unmarshaller;
+    const queryPubSignals = new PubSignals(unmarshallerForCircuitId.opts);
     const encodedInputs = byteEncoder.encode(JSON.stringify(inputs));
-    return atomicQueryPubSignals.pubSignalsUnmarshal(encodedInputs).getStatesInfo();
+
+    const pubSignalUnmarshalled = queryPubSignals.pubSignalsUnmarshal(encodedInputs);
+    if ((<IStateInfoPubSignals>pubSignalUnmarshalled).getStatesInfo === undefined) {
+      throw new Error(
+        `Public signals unmarshaller for circuit ${onChainCircuitId} does not support getStatesInfo method`
+      );
+    }
+
+    return (<IStateInfoPubSignals>pubSignalUnmarshalled).getStatesInfo();
   }
 
   private static async resolveDidDocumentEip712MessageAndSignature(
