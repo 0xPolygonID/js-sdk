@@ -149,6 +149,7 @@ export interface ICredentialProposalHandler {
 
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
 export type ProposalRequestHandlerOptions = BasicHandlerOptions & {
+  /** When true, bypasses wallet credential search and always creates a new proposal */
   forceCredentialReissue?: boolean;
 };
 
@@ -293,7 +294,7 @@ export class CredentialProposalHandler
         }
       }
 
-      // credential not found in the wallet, prepare proposal protocol message
+      // credential not found in the wallet or credential reissue is forced, prepare proposal protocol message
       const proposal = await this._params.proposalResolverFn(cred.context, cred.type, {
         msg: proposalRequest
       });
