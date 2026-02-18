@@ -148,7 +148,9 @@ export interface ICredentialProposalHandler {
 }
 
 /** @beta ProposalRequestHandlerOptions represents proposal-request handler options */
-export type ProposalRequestHandlerOptions = BasicHandlerOptions;
+export type ProposalRequestHandlerOptions = BasicHandlerOptions & {
+  forceCredentialReissue?: boolean;
+};
 
 /** @beta ProposalHandlerOptions represents proposal handler options */
 export type ProposalHandlerOptions = BasicHandlerOptions & {
@@ -246,47 +248,49 @@ export class CredentialProposalHandler
       // check if there is credentials in the wallet
       let credsFromWallet: W3CCredential[] = [];
 
-      try {
-        credsFromWallet = await this._identityWallet.credentialWallet.findByQuery({
-          credentialSubject: {
-            id: {
-              $eq: proposalRequest.from
-            }
-          },
-          type: cred.type,
-          context: cred.context,
-          allowedIssuers: [proposalRequest.to]
-        });
-      } catch (e) {
-        if ((e as Error).message !== 'no credential satisfied query') {
-          throw e;
-        }
-      }
-
-      if (credsFromWallet.length) {
-        const guid = uuid.v4();
-        if (!credOfferMessage) {
-          credOfferMessage = {
-            id: guid,
-            typ: this._params.packerParams.mediaType,
-            type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE,
-            thid: proposalRequest.thid ?? guid,
-            body: {
-              url: this._params.agentUrl,
-              credentials: []
+      if (!ctx?.forceCredentialReissue) {
+        try {
+          credsFromWallet = await this._identityWallet.credentialWallet.findByQuery({
+            credentialSubject: {
+              id: {
+                $eq: proposalRequest.from
+              }
             },
-            from: proposalRequest.to,
-            to: proposalRequest.from
-          };
+            type: cred.type,
+            context: cred.context,
+            allowedIssuers: [proposalRequest.to]
+          });
+        } catch (e) {
+          if ((e as Error).message !== 'no credential satisfied query') {
+            throw e;
+          }
         }
 
-        credOfferMessage.body.credentials.push(
-          ...credsFromWallet.map<CredentialOffer>((c) => ({
-            id: c.id,
-            description: ''
-          }))
-        );
-        continue;
+        if (credsFromWallet.length) {
+          const guid = uuid.v4();
+          if (!credOfferMessage) {
+            credOfferMessage = {
+              id: guid,
+              typ: this._params.packerParams.mediaType,
+              type: PROTOCOL_MESSAGE_TYPE.CREDENTIAL_OFFER_MESSAGE_TYPE,
+              thid: proposalRequest.thid ?? guid,
+              body: {
+                url: this._params.agentUrl,
+                credentials: []
+              },
+              from: proposalRequest.to,
+              to: proposalRequest.from
+            };
+          }
+
+          credOfferMessage.body.credentials.push(
+            ...credsFromWallet.map<CredentialOffer>((c) => ({
+              id: c.id,
+              description: ''
+            }))
+          );
+          continue;
+        }
       }
 
       // credential not found in the wallet, prepare proposal protocol message
