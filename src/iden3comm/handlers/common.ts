@@ -174,9 +174,10 @@ export const processZeroKnowledgeProofRequests = async (
       const expectedErrors = [
         VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE,
         VerifiableConstants.ERRORS.ID_WALLET_NO_CREDENTIAL_SATISFIED_QUERY,
-        VerifiableConstants.ERRORS.CREDENTIAL_WALLET_ALL_CREDENTIALS_ARE_REVOKED
+        VerifiableConstants.ERRORS.CREDENTIAL_WALLET_ALL_CREDENTIALS_ARE_REVOKED,
+        VerifiableConstants.ERRORS.PROOF_SERVICE_CREDENTIAL_IS_EXPIRED
       ];
-      // handle only errors in case credential is not found and it is optional proof request - otherwise throw
+      // handle only expected errors for optional proof requests when credential is not found, revoked, or expired - otherwise throw
       if (
         error instanceof Error &&
         (expectedErrors.includes(error.message) ||
