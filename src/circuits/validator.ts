@@ -1,3 +1,9 @@
+import { AtomicQueryMTPV2OnChainPubSignals } from './atomic-query-mtp-v2-on-chain';
+import { AtomicQuerySigV2OnChainPubSignals } from './atomic-query-sig-v2-on-chain';
+import { AtomicQueryV3OnChainPubSignals } from './atomic-query-v3-on-chain';
+import { AuthV2PubSignals } from './auth-v2';
+import { AuthV3PubSignals } from './auth-v3';
+import { IUnmarshallerPubSignals } from './common';
 import { Operators, QueryOperators } from './comparer';
 import { CircuitId } from './models';
 
@@ -43,20 +49,42 @@ export type CircuitSubversion = {
 export type CircuitValidatorItem = {
   validation: { maxQueriesCount: number; supportedOperations: Operators[] };
   subVersions?: CircuitSubversion[];
+  unmarshaller?: new (opts?: {
+    mtLevel?: number;
+    mtLevelClaim?: number;
+    mtLevelOnChain?: number;
+  }) => IUnmarshallerPubSignals;
+  mtLevel?: number;
+  mtLevelClaim?: number;
+  mtLevelOnChain?: number;
 };
 
 export const circuitValidator: {
   [k in CircuitId]: CircuitValidatorItem;
 } = {
   [CircuitId.AtomicQueryMTPV2]: credentialAtomicQueryV2Validation,
-  [CircuitId.AtomicQueryMTPV2OnChain]: credentialAtomicQueryV2OnChainValidation,
+  [CircuitId.AtomicQueryMTPV2OnChain]: {
+    ...credentialAtomicQueryV2OnChainValidation,
+    unmarshaller: AtomicQueryMTPV2OnChainPubSignals
+  },
   [CircuitId.AtomicQuerySigV2]: credentialAtomicQueryV2Validation,
-  [CircuitId.AtomicQuerySigV2OnChain]: credentialAtomicQueryV2OnChainValidation,
+  [CircuitId.AtomicQuerySigV2OnChain]: {
+    ...credentialAtomicQueryV2OnChainValidation,
+    unmarshaller: AtomicQuerySigV2OnChainPubSignals
+  },
   [CircuitId.AtomicQueryV3]: credentialAtomicQueryV3Validation,
-  [CircuitId.AtomicQueryV3OnChain]: credentialAtomicQueryV3Validation,
-  [CircuitId.AuthV2]: noQueriesValidation,
-  [CircuitId.AuthV3]: noQueriesValidation,
-  [CircuitId.AuthV3_8_32]: noQueriesValidation,
+  [CircuitId.AtomicQueryV3OnChain]: {
+    ...credentialAtomicQueryV3Validation,
+    unmarshaller: AtomicQueryV3OnChainPubSignals
+  },
+  [CircuitId.AuthV2]: { ...noQueriesValidation, unmarshaller: AuthV2PubSignals },
+  [CircuitId.AuthV3]: { ...noQueriesValidation, unmarshaller: AuthV3PubSignals },
+  [CircuitId.AuthV3_8_32]: {
+    ...noQueriesValidation,
+    unmarshaller: AuthV3PubSignals,
+    mtLevel: 8,
+    mtLevelClaim: 32
+  },
   [CircuitId.StateTransition]: noQueriesValidation,
   [CircuitId.LinkedMultiQuery10]: {
     validation: { maxQueriesCount: 10, supportedOperations: allOperations }
@@ -81,7 +109,8 @@ export const circuitValidator: {
         mtLevelOnChain: 32,
         targetCircuitId: (CircuitId.AtomicQueryV3OnChainStable + '-16-16-64-16-32') as CircuitId
       }
-    ]
+    ],
+    unmarshaller: AtomicQueryV3OnChainPubSignals
   },
   [CircuitId.LinkedMultiQueryStable]: {
     validation: { maxQueriesCount: 10, supportedOperations: allOperations },
@@ -137,4 +166,57 @@ export const getGroupedCircuitIdsWithSubVersions = (filterCircuitId: CircuitId):
   }
 
   return [filterCircuitId];
+};
+
+export const getUnmarshallerForCircuitId = (
+  circuitIdToFind: CircuitId
+):
+  | {
+      unmarshaller: new (opts?: {
+        mtLevel?: number;
+        mtLevelClaim?: number;
+        mtLevelOnChain?: number;
+      }) => IUnmarshallerPubSignals;
+      opts?: { mtLevel?: number; mtLevelClaim?: number; mtLevelOnChain?: number };
+    }
+  | undefined => {
+  for (const key of Object.keys(circuitValidator)) {
+    const circuitId = key as CircuitId;
+
+    if (circuitId === circuitIdToFind && circuitValidator[circuitId].unmarshaller) {
+      return {
+        unmarshaller: circuitValidator[circuitId].unmarshaller,
+        opts:
+          circuitValidator[circuitId].mtLevel ||
+          circuitValidator[circuitId].mtLevelClaim ||
+          circuitValidator[circuitId].mtLevelOnChain
+            ? {
+                mtLevel: circuitValidator[circuitId].mtLevel,
+                mtLevelClaim: circuitValidator[circuitId].mtLevelClaim,
+                mtLevelOnChain: circuitValidator[circuitId].mtLevelOnChain
+              }
+            : undefined
+      };
+    }
+
+    const subVersions = circuitValidator[circuitId]?.subVersions ?? [];
+    if (subVersions.length > 0) {
+      const subVersion = subVersions.find(
+        (subversion) => subversion.targetCircuitId === circuitIdToFind
+      );
+      if (subVersion && circuitValidator[circuitId].unmarshaller) {
+        return {
+          unmarshaller: circuitValidator[circuitId].unmarshaller,
+          opts:
+            subVersion.mtLevel || subVersion.mtLevelClaim || subVersion.mtLevelOnChain
+              ? {
+                  mtLevel: subVersion.mtLevel,
+                  mtLevelClaim: subVersion.mtLevelClaim,
+                  mtLevelOnChain: subVersion.mtLevelOnChain
+                }
+              : undefined
+        };
+      }
+    }
+  }
 };
