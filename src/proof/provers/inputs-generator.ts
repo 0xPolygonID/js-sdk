@@ -40,6 +40,7 @@ import {
 } from '../../credentials';
 import { isEthereumIdentity, getChallengeFromEthAddress } from '../../utils';
 import { Proof } from '@iden3/js-merkletree';
+import { isAddress } from 'ethers';
 
 export type DIDProfileMetadata = {
   authProfileNonce: number | string;
@@ -622,11 +623,13 @@ export class InputGenerator {
 
     const sender = proofReq.params?.sender;
 
-    if (sender && isEthIdentity) {
+    if (isEthIdentity && sender) {
       throw new Error('sender parameter is not supported for ethereum identities');
     }
 
-    const challenge = sender ? getChallengeFromEthAddress(sender) : BigInt(params.challenge ?? 0);
+    const challenge = isAddress(sender)
+      ? getChallengeFromEthAddress(sender)
+      : BigInt(params.challenge ?? 0);
 
     circuitInputs.challenge = challenge;
 

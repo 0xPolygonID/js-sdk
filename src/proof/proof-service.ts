@@ -6,9 +6,7 @@ import {
   getDateFromUnixTimestamp
 } from '@iden3/js-iden3-core';
 import {
-  AuthV2Inputs,
   AuthV2PubSignals,
-  AuthV3Inputs,
   AuthV3PubSignals,
   CircuitId,
   Operators,
@@ -30,7 +28,6 @@ import {
   QueryMetadata,
   parseCredentialSubject,
   parseQueryMetadata,
-  toGISTProof,
   transformQueryValueToBigInts
 } from './common';
 import { IZKProver, NativeProver } from './provers/prover';
