@@ -49,7 +49,8 @@ import {
   DEFAULT_CACHE_MAX_SIZE,
   RootInfo,
   InMemoryProofStorage,
-  byteDecoder
+  byteDecoder,
+  getChallengeFromEthAddress
 } from '../../src';
 import { ProvingMethodAlg, Token, proving } from '@iden3/js-jwz';
 import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
@@ -1083,6 +1084,75 @@ describe('auth', () => {
     expect(tokenStr).to.be.a('string');
     const token = await Token.parse(tokenStr);
     expect(token).to.be.a('object');
+  });
+
+  it('auth flow with credentialAtomicQueryV3OnChain and sender challenge', async () => {
+    const sender = '0x0E7263bE4DEAC0bbC02F86B3eBF0fd28aA41b211';
+    const expectedChallenge = getChallengeFromEthAddress(sender);
+
+    const employeeCredRequest: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCEmployee-v101.json',
+      type: 'KYCEmployee',
+      credentialSubject: {
+        id: userDID.string(),
+        ZKPexperiance: true,
+        hireDate: '2023-12-11',
+        position: 'boss',
+        salary: 200,
+        documentType: 1
+      },
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, employeeCredRequest, merklizeOpts);
+    await credWallet.save(issuerCred);
+
+    const proofReq: ZeroKnowledgeProofRequest = {
+      id: 1772533362,
+      circuitId: CircuitId.AtomicQueryV3OnChain,
+      optional: false,
+      query: {
+        allowedIssuers: ['*'],
+        context:
+          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+        credentialSubject: {
+          ZKPexperiance: {}
+        },
+        type: 'KYCEmployee'
+      },
+      params: {
+        sender
+      }
+    };
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'https://httpbin.org/anything',
+      reason: 'for testing purposes',
+      scope: [proofReq]
+    };
+
+    const authReq: AuthorizationRequestMessage = {
+      id: uuid.v4(),
+      typ: MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: uuid.v4(),
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+
+    expect(authRes.authResponse.body.scope).to.have.lengthOf(1);
+    const zkpResponse = authRes.authResponse.body.scope[0];
+    expect(zkpResponse.circuitId).to.contain('credentialAtomicQueryV3OnChain');
+
+    // challenge is at index 8 of public signals
+    const challengeIndex = 8;
+    expect(zkpResponse.pub_signals[challengeIndex]).to.equal(expectedChallenge.toString());
   });
 
   it('auth response: TestVerifyWithAtomicMTPProof', async () => {

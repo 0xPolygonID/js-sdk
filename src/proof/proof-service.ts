@@ -1,5 +1,6 @@
 import {
   BytesHelper,
+  Claim,
   DID,
   MerklizedRootPosition,
   getDateFromUnixTimestamp
@@ -580,31 +581,7 @@ export class ProofService implements IProofService {
       throw new Error('CircuitId is not supported');
     }
 
-    const { nonce: authProfileNonce, genesisDID } =
-      await this._identityWallet.getGenesisDIDMetadata(did);
-
-    const challenge = BytesHelper.bytesToInt(hash.reverse());
-
-    const authPrepared = await this._inputsGenerator.prepareAuthBJJCredential(genesisDID);
-
-    const signature = await this._identityWallet.signChallenge(challenge, authPrepared.credential);
-    const id = DID.idFromDID(genesisDID);
-    const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
-
-    const gistProof = toGISTProof(stateProof);
-
-    const authInputs = new AuthV2Inputs();
-
-    authInputs.genesisID = id;
-    authInputs.profileNonce = BigInt(authProfileNonce);
-    authInputs.authClaim = authPrepared.coreClaim;
-    authInputs.authClaimIncMtp = authPrepared.incProof.proof;
-    authInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
-    authInputs.treeState = authPrepared.incProof.treeState;
-    authInputs.signature = signature;
-    authInputs.challenge = challenge;
-    authInputs.gistProof = gistProof;
-    return authInputs.inputsMarshal();
+    return this.generateAuthInputsCommon(hash, did, circuitId);
   }
 
   /** {@inheritdoc IProofService.generateAuthInputs} */
@@ -617,35 +594,32 @@ export class ProofService implements IProofService {
       throw new Error('CircuitId is not supported');
     }
 
-    const { nonce: authProfileNonce, genesisDID } =
-      await this._identityWallet.getGenesisDIDMetadata(did);
+    return this.generateAuthInputsCommon(hash, did, circuitId);
+  }
 
+  private async generateAuthInputsCommon(
+    hash: Uint8Array,
+    did: DID,
+    circuitId: CircuitId
+  ): Promise<Uint8Array> {
     const challenge = BytesHelper.bytesToInt(hash.reverse());
 
-    const authPrepared = await this._inputsGenerator.prepareAuthBJJCredential(genesisDID);
+    const inputsCxt = await this._inputsGenerator.generateInputs({
+      proofReq: {
+        circuitId
+      } as ZeroKnowledgeProofRequest,
+      identifier: did,
+      params: {
+        challenge
+      } as ProofInputsParams,
+      circuitQueries: [],
+      preparedCredential: {
+        credential: new W3CCredential(),
+        credentialCoreClaim: new Claim()
+      }
+    });
 
-    const signature = await this._identityWallet.signChallenge(challenge, authPrepared.credential);
-    const id = DID.idFromDID(genesisDID);
-    const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
-
-    const gistProof = toGISTProof(stateProof);
-
-    const authInputs = new AuthV3Inputs(); // works for both v3 and v2
-    if (circuitId === CircuitId.AuthV3_8_32) {
-      authInputs.mtLevel = 8;
-      authInputs.mtLevelOnChain = 32;
-    }
-
-    authInputs.genesisID = id;
-    authInputs.profileNonce = BigInt(authProfileNonce);
-    authInputs.authClaim = authPrepared.coreClaim;
-    authInputs.authClaimIncMtp = authPrepared.incProof.proof;
-    authInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
-    authInputs.treeState = authPrepared.incProof.treeState;
-    authInputs.signature = signature;
-    authInputs.challenge = challenge;
-    authInputs.gistProof = gistProof;
-    return authInputs.inputsMarshal();
+    return inputsCxt.inputs;
   }
 
   /** {@inheritdoc IProofService.generateAuthV2Proof} */

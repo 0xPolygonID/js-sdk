@@ -13,6 +13,7 @@ import {
   AtomicQuerySigV2OnChainInputs,
   AtomicQueryV3Inputs,
   AtomicQueryV3OnChainInputs,
+  AuthV3Inputs,
   CircuitClaim,
   CircuitId,
   CircuitSubversion,
@@ -37,7 +38,7 @@ import {
   ICredentialWallet,
   getUserDIDFromCredential
 } from '../../credentials';
-import { isEthereumIdentity } from '../../utils';
+import { isEthereumIdentity, getChallengeFromEthAddress } from '../../utils';
 import { Proof } from '@iden3/js-merkletree';
 
 export type DIDProfileMetadata = {
@@ -84,7 +85,10 @@ export class InputGenerator {
 
   async generateInputs(ctx: InputContext): Promise<GenerateInputsResult> {
     const { circuitId } = ctx.proofReq;
-    const fnName = `${circuitId.replace(/-beta\.1/g, '').replace(/-/g, '_')}PrepareInputs`;
+    const fnName = `${circuitId
+      .replace(/-beta\.1/g, '')
+      .replace(/-/g, '_')
+      .replace(/authV[\w-]+/g, 'auth')}PrepareInputs`;
 
     const queriesLength = ctx.circuitQueries.length;
 
@@ -233,6 +237,48 @@ export class InputGenerator {
     return {
       inputs: circuitInputs.inputsMarshal(),
       metadata: { targetCircuitId: proofReq.circuitId }
+    };
+  };
+
+  private authPrepareInputs = async ({
+    identifier,
+    proofReq,
+    params
+  }: InputContext): Promise<GenerateInputsResult> => {
+    const { nonce: authProfileNonce, genesisDID } =
+      await this._identityWallet.getGenesisDIDMetadata(identifier);
+
+    if (!params.challenge) {
+      throw new Error('challenge must be provided for auth circuit');
+    }
+
+    const challenge = params.challenge;
+
+    const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
+
+    const signature = await this._identityWallet.signChallenge(challenge, authPrepared.credential);
+    const id = DID.idFromDID(genesisDID);
+    const stateProof = await this._stateStorage.getGISTProof(id.bigInt());
+
+    const gistProof = toGISTProof(stateProof);
+
+    const authInputs = new AuthV3Inputs(); // works for both v3 and v2
+    if (proofReq.circuitId === CircuitId.AuthV3_8_32) {
+      authInputs.mtLevel = 8;
+      authInputs.mtLevelOnChain = 32;
+    }
+
+    authInputs.genesisID = id;
+    authInputs.profileNonce = BigInt(authProfileNonce);
+    authInputs.authClaim = authPrepared.coreClaim;
+    authInputs.authClaimIncMtp = authPrepared.incProof.proof;
+    authInputs.authClaimNonRevMtp = authPrepared.nonRevProof.proof;
+    authInputs.treeState = authPrepared.incProof.treeState;
+    authInputs.signature = signature;
+    authInputs.challenge = challenge;
+    authInputs.gistProof = gistProof;
+    return {
+      inputs: authInputs.inputsMarshal()
     };
   };
 
@@ -574,7 +620,15 @@ export class InputGenerator {
     const isEthIdentity = isEthereumIdentity(identifier);
     circuitInputs.isBJJAuthEnabled = isEthIdentity ? 0 : 1;
 
-    circuitInputs.challenge = BigInt(params.challenge ?? 0);
+    const sender = proofReq.params?.sender;
+
+    if (sender && isEthIdentity) {
+      throw new Error('sender parameter is not supported for ethereum identities');
+    }
+
+    const challenge = sender ? getChallengeFromEthAddress(sender) : BigInt(params.challenge ?? 0);
+
+    circuitInputs.challenge = challenge;
 
     circuitInputs.gistProof = gistProof;
     // auth inputs

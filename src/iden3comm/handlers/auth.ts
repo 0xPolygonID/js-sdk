@@ -212,14 +212,7 @@ export class AuthHandler
   extends AbstractMessageHandler
   implements IAuthHandler, IProtocolMessageHandler
 {
-  private readonly _supportedCircuits = [
-    CircuitId.AtomicQueryV3,
-    CircuitId.AtomicQuerySigV2,
-    CircuitId.AtomicQueryMTPV2,
-    CircuitId.AtomicQueryV3Stable,
-    CircuitId.LinkedMultiQuery10,
-    CircuitId.LinkedMultiQueryStable
-  ];
+  private readonly _supportedCircuits = Object.values(CircuitId) as CircuitId[];
   /**
    * Creates an instance of AuthHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope

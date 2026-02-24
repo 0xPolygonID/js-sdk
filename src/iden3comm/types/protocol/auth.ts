@@ -50,6 +50,7 @@ export type ZeroKnowledgeProofRequest = {
   query: ZeroKnowledgeProofQuery;
   params?: {
     nullifierSessionId?: string | number;
+    sender?: string;
   };
 };
 
