@@ -47,10 +47,11 @@ export type ZeroKnowledgeProofRequest = {
   id: number | string;
   circuitId: CircuitId;
   optional?: boolean;
-  query: ZeroKnowledgeProofQuery;
+  query?: ZeroKnowledgeProofQuery;
   params?: {
     nullifierSessionId?: string | number;
     sender?: string;
+    challenge?: string;
   };
 };
 

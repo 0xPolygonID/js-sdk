@@ -40,7 +40,6 @@ import {
 } from '../../credentials';
 import { isEthereumIdentity, getChallengeFromEthAddress } from '../../utils';
 import { Proof } from '@iden3/js-merkletree';
-import { isAddress } from 'ethers';
 
 export type DIDProfileMetadata = {
   authProfileNonce: number | string;
@@ -249,11 +248,13 @@ export class InputGenerator {
     const { nonce: authProfileNonce, genesisDID } =
       await this._identityWallet.getGenesisDIDMetadata(identifier);
 
-    if (!params.challenge) {
+    let challenge = params.challenge ?? proofReq.params?.challenge;
+
+    if (!challenge) {
       throw new Error('challenge must be provided for auth circuit');
     }
 
-    const challenge = params.challenge;
+    challenge = BigInt(challenge);
 
     const authPrepared = await this.prepareAuthBJJCredential(genesisDID);
 
@@ -466,8 +467,15 @@ export class InputGenerator {
     const circuitClaimData = await this.newCircuitClaimData(preparedCredential);
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
+
+    const proofReqQuery = proofReq.query;
+
+    if (!proofReqQuery) {
+      throw new Error('proof request query is required for v3 circuits');
+    }
+
     let proofType: ProofType;
-    switch (proofReq.query.proofType) {
+    switch (proofReqQuery.proofType) {
       case ProofType.BJJSignature:
         proofType = ProofType.BJJSignature;
         break;
@@ -548,7 +556,12 @@ export class InputGenerator {
 
     circuitClaimData.nonRevProof = toClaimNonRevStatus(preparedCredential.revStatus);
     let proofType: ProofType;
-    switch (proofReq.query.proofType) {
+    const proofReqQuery = proofReq.query;
+
+    if (!proofReqQuery) {
+      throw new Error('proof request query is required for v3 onchain circuits');
+    }
+    switch (proofReqQuery.proofType) {
       case ProofType.BJJSignature:
         proofType = ProofType.BJJSignature;
         break;
@@ -624,12 +637,12 @@ export class InputGenerator {
     const sender = proofReq.params?.sender;
 
     if (isEthIdentity && sender) {
-      throw new Error('sender parameter is not supported for ethereum identities');
+      throw new Error(
+        `the combination of "sender" and an Ethereum-based identity is not supported; when using an Ethereum identity as the prover, provide the challenge directly instead of a sender address''sender parameter is not supported for ethereum identities`
+      );
     }
 
-    const challenge = isAddress(sender)
-      ? getChallengeFromEthAddress(sender)
-      : BigInt(params.challenge ?? 0);
+    const challenge = sender ? getChallengeFromEthAddress(sender) : BigInt(params.challenge ?? 0);
 
     circuitInputs.challenge = challenge;
 

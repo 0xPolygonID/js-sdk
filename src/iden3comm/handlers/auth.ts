@@ -377,7 +377,7 @@ export class AuthHandler
     const groupIdToLinkIdMap = new Map<number, { linkID: string; requestId: number | string }[]>();
     // group requests by query group id
     for (const proofRequest of requestScope) {
-      const groupId = proofRequest.query.groupId as number;
+      const groupId = proofRequest.query?.groupId as number;
 
       const proofResp = responseScope.find(
         (resp) => resp.id.toString() === proofRequest.id.toString()
@@ -472,22 +472,31 @@ export class AuthHandler
     const groupIdValidationMap: { [k: string]: ZeroKnowledgeProofRequest[] } = {};
     const requestScope = request.body.scope || [];
     for (const proofRequest of requestScope) {
-      const groupId = proofRequest.query.groupId as number;
+      const proofQuery = proofRequest.query;
+      if (!proofQuery) {
+        continue;
+      }
+      const groupId = proofQuery.groupId as number;
       if (groupId) {
         const existingRequests = groupIdValidationMap[groupId] ?? [];
 
         //validate that all requests in the group have the same schema, issuer and circuit
         for (const existingRequest of existingRequests) {
-          if (existingRequest.query.type !== proofRequest.query.type) {
+          const existingProofQuery = existingRequest.query;
+          if (!existingProofQuery) {
+            continue;
+          }
+
+          if (existingProofQuery.type !== proofQuery?.type) {
             throw new Error(`all requests in the group should have the same type`);
           }
 
-          if (existingRequest.query.context !== proofRequest.query.context) {
+          if (existingProofQuery.context !== proofQuery?.context) {
             throw new Error(`all requests in the group should have the same context`);
           }
 
-          const allowedIssuers = proofRequest.query.allowedIssuers as string[];
-          const existingRequestAllowedIssuers = existingRequest.query.allowedIssuers as string[];
+          const allowedIssuers = proofQuery?.allowedIssuers as string[];
+          const existingRequestAllowedIssuers = existingProofQuery.allowedIssuers as string[];
           if (
             !(
               allowedIssuers.includes('*') ||

@@ -1086,7 +1086,7 @@ describe('auth', () => {
     expect(token).to.be.a('object');
   });
 
-  it('auth flow with credentialAtomicQueryV3OnChain and sender challenge', async () => {
+  it('auth flow with credentialAtomicQueryV3OnChain/auth proof and sender challenge', async () => {
     const sender = '0x0E7263bE4DEAC0bbC02F86B3eBF0fd28aA41b211';
     const expectedChallenge = getChallengeFromEthAddress(sender);
 
@@ -1110,28 +1110,40 @@ describe('auth', () => {
     const issuerCred = await idWallet.issueCredential(issuerDID, employeeCredRequest, merklizeOpts);
     await credWallet.save(issuerCred);
 
-    const proofReq: ZeroKnowledgeProofRequest = {
-      id: 1772533362,
-      circuitId: CircuitId.AtomicQueryV3OnChain,
-      optional: false,
-      query: {
-        allowedIssuers: ['*'],
-        context:
-          'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
-        credentialSubject: {
-          ZKPexperiance: {}
+    const expectedAuthChallenge =
+      '1234567890123456789012345678901234567890123456789012345678901234';
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.AtomicQueryV3OnChainStable,
+        optional: false,
+        query: {
+          allowedIssuers: ['*'],
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            ZKPexperiance: {}
+          },
+          type: 'KYCEmployee'
         },
-        type: 'KYCEmployee'
+        params: {
+          sender
+        }
       },
-      params: {
-        sender
-      }
-    };
+      {
+        id: 2,
+        circuitId: CircuitId.AuthV3_8_32,
+        params: {
+          challenge: expectedAuthChallenge
+        }
+      } as ZeroKnowledgeProofRequest
+    ];
 
     const authReqBody: AuthorizationRequestMessageBody = {
       callbackUrl: 'https://httpbin.org/anything',
       reason: 'for testing purposes',
-      scope: [proofReq]
+      scope: [...proofReqs]
     };
 
     const authReq: AuthorizationRequestMessage = {
@@ -1146,13 +1158,15 @@ describe('auth', () => {
     const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
     const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
 
-    expect(authRes.authResponse.body.scope).to.have.lengthOf(1);
-    const zkpResponse = authRes.authResponse.body.scope[0];
-    expect(zkpResponse.circuitId).to.contain('credentialAtomicQueryV3OnChain');
+    expect(authRes.authResponse.body.scope).to.have.lengthOf(2);
+    const [onChainProofResp, authProofResp] = authRes.authResponse.body.scope;
+    expect(onChainProofResp.circuitId).to.contain(CircuitId.AtomicQueryV3OnChainStable);
 
-    // challenge is at index 8 of public signals
-    const challengeIndex = 8;
-    expect(zkpResponse.pub_signals[challengeIndex]).to.equal(expectedChallenge.toString());
+    expect(onChainProofResp.pub_signals[8]).to.equal(expectedChallenge.toString());
+
+    expect(authProofResp.pub_signals[1]).to.equal(expectedAuthChallenge.toString());
+
+    expect(authProofResp.circuitId).to.equal(CircuitId.AuthV3_8_32);
   });
 
   it('auth response: TestVerifyWithAtomicMTPProof', async () => {

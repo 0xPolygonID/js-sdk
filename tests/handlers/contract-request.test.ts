@@ -1916,6 +1916,8 @@ describe('contract-request', () => {
       '0'
     );
 
+    const allowedIssuers = proofReqs[0].query?.allowedIssuers ?? [];
+
     const queryToSet = {
       requestId: proofReqs[0].id,
       schema: schemaHash,
@@ -1925,9 +1927,7 @@ describe('contract-request', () => {
       slotIndex: metadataAsInQueryBuilder.slotIndex,
       queryHash: queryHashV3,
       circuitIds: [proofReqs[0].circuitId],
-      allowedIssuers: proofReqs[0].query.allowedIssuers.includes('*')
-        ? []
-        : proofReqs[0].query.allowedIssuers,
+      allowedIssuers: allowedIssuers.includes('*') ? [] : allowedIssuers,
       skipClaimRevocationCheck: false,
       verifierID: verifierId.bigInt(),
       nullifierSessionID: 0,
