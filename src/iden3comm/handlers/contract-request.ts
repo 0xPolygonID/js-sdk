@@ -65,7 +65,6 @@ export type ContractMessageHandlerOptions = BasicHandlerOptions & {
   senderDid: DID;
   ethSigner: Signer;
   challenge?: bigint;
-  authMethod?: AuthMethod;
 };
 
 /**
