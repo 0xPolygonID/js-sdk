@@ -293,19 +293,18 @@ export class ProofService implements IProofService {
 
     const query = proofReq.query;
     if (!query) {
-      return this._generateProof({
-        proofReq,
-        identifier,
-        preparedCredential: {} as PreparedCredential,
-        genesisDid,
-        circuitQueries: [],
-        inputParams: {
-          ...opts,
-          authProfileNonce,
-          credentialSubjectProfileNonce: 0,
-          linkNonce: 0n
-        }
+      if (!isAuthCircuit(proofReq.circuitId as CircuitId)) {
+        throw new Error(`for non-auth circuits query must be provided`);
+      }
+      const authRes = await this.generateAuthProof(proofReq.circuitId as CircuitId, identifier, {
+        challenge: proofReq.params?.challenge ? BigInt(proofReq.params.challenge) : undefined
       });
+      return {
+        id: proofReq.id,
+        circuitId: proofReq.circuitId,
+        pub_signals: authRes.pub_signals,
+        proof: authRes.proof
+      };
     }
 
     let credentialWithRevStatus: {
