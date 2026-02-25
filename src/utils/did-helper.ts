@@ -1,8 +1,8 @@
 import { Hex } from '@iden3/js-crypto';
-import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-core';
+import { Id, buildDIDType, genesisFromEthAddress, DID, BytesHelper } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import { DIDResolutionResult, VerificationMethod, DIDResolutionMetadata } from 'did-resolver';
-import { keccak256 } from 'ethers';
+import { isAddress, keccak256 } from 'ethers';
 import { hexToBytes } from './encoding';
 
 /**
@@ -24,6 +24,17 @@ export function isGenesisState(did: DID, state: bigint | string): boolean {
     state = Hash.fromHex(state).bigInt();
   }
   const id = DID.idFromDID(did);
+  return getIsGenesisStateById(id, state);
+}
+
+/**
+ * Checks if state is genesis state by id
+ *
+ * @param {Id} id - id
+ * @param {bigint} state  - hash as bigint
+ * @returns boolean
+ */
+export function getIsGenesisStateById(id: Id, state: bigint): boolean {
   const { method, blockchain, networkId } = DID.decodePartsFromId(id);
   const type = buildDIDType(method, blockchain, networkId);
   const idFromState = Id.idGenesisFromIdenState(type, state);
@@ -143,6 +154,12 @@ export const resolveDidDocument = async (
   }
 };
 
+const _buildDIDFromEthAddress = (didType: Uint8Array, ethAddress: Uint8Array): DID => {
+  const genesis = genesisFromEthAddress(ethAddress);
+  const identifier = new Id(didType, genesis);
+  return DID.parseFromId(identifier);
+};
+
 export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): DID => {
   // Use Keccak-256 hash function to get public key hash
   const hashOfPublicKey = keccak256(hexToBytes(pubKeyEth));
@@ -151,7 +168,17 @@ export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): D
   // Ethereum Address is '0x' concatenated with last 20 bytes
   // of the public key hash
   const ethAddr = ethAddressBuffer.slice(-20);
-  const genesis = genesisFromEthAddress(ethAddr);
-  const identifier = new Id(didType, genesis);
-  return DID.parseFromId(identifier);
+  return _buildDIDFromEthAddress(didType, ethAddr);
+};
+
+export const buildDIDFromEthAddress = (didType: Uint8Array, ethAddress: string): DID => {
+  return _buildDIDFromEthAddress(didType, hexToBytes(ethAddress));
+};
+
+export const getChallengeFromEthAddress = (address: string): bigint => {
+  if (isAddress(address)) {
+    return BytesHelper.bytesToInt(hexToBytes(address));
+  }
+
+  throw new Error(`Invalid Ethereum address: ${address}`);
 };

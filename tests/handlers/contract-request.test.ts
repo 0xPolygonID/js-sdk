@@ -1,8 +1,9 @@
 /* eslint-disable no-console */
-import { Identity, Profile } from '../../src/storage/entities/identity';
-import { IdentityStorage } from '../../src/storage/shared/identity-storage';
-import { PlainPacker } from '../../src/iden3comm/packers/plain';
 import {
+  Identity,
+  Profile,
+  IdentityStorage,
+  PlainPacker,
   CredentialStorage,
   FSCircuitStorage,
   IdentityWallet,
@@ -10,31 +11,30 @@ import {
   EthStateStorage,
   OnChainZKPVerifier,
   defaultEthConnectionConfig,
-  hexToBytes,
   FunctionSignatures,
   KMS,
-  buildVerifierId
-} from '../../src';
-import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
-import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import {
+  buildVerifierId,
+  getChallengeFromEthAddress,
+  IDataStorage,
+  IStateStorage,
+  IOnChainZKPVerifier,
+  InMemoryDataSource,
+  InMemoryMerkleTreeStorage,
+  CredentialRequest,
+  CredentialWallet,
   calculateQueryHashV3,
   IProofService,
   parseQueryMetadata,
-  ProofService
-} from '../../src/proof';
-import { CircuitId, Operators } from '../../src/circuits';
-import {
+  ProofService,
+  CircuitId,
+  Operators,
   CredentialStatusType,
   ProofType,
   VerifiableConstants,
-  W3CCredential
-} from '../../src/verifiable';
-import { RootInfo, StateProof } from '../../src/storage/entities/state';
-import path from 'path';
-import { CircuitData } from '../../src/storage/entities/circuitData';
-import {
+  W3CCredential,
+  RootInfo,
+  StateProof,
+  CircuitData,
   AuthDataPrepareFunc,
   AuthProof,
   ContractInvokeHandlerOptions,
@@ -56,15 +56,18 @@ import {
   ZeroKnowledgeInvokeResponse,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse,
-  ZKPPacker
-} from '../../src/iden3comm';
+  ZKPPacker,
+  AbstractMessageHandler,
+  CredentialStatusResolverRegistry,
+  RHSResolver
+} from '../../src';
+
+import path from 'path';
 import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { Blockchain, BytesHelper, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { describe, expect, it, beforeEach } from 'vitest';
-import { CredentialStatusResolverRegistry } from '../../src/credentials';
-import { RHSResolver } from '../../src/credentials';
 import { Contract, ethers, JsonRpcProvider, Signer } from 'ethers';
 import {
   createIdentity,
@@ -73,10 +76,9 @@ import {
   RPC_URL,
   SEED_USER
 } from '../helpers';
-import { AbstractMessageHandler } from '../../src/iden3comm/handlers/message-handler';
 import { schemaLoaderForTests } from '../mocks/schema';
 import { DIDResolutionResult } from 'did-resolver';
-import { getDocumentLoader } from '@iden3/js-jsonld-merklization';
+import { getDocumentLoader, Options } from '@iden3/js-jsonld-merklization';
 import zkpVerifierABI from '../../src/storage/blockchain/abi/ZkpVerifier.json';
 
 describe('contract-request', () => {
@@ -95,7 +97,7 @@ describe('contract-request', () => {
   const seedPhraseIssuer: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseedseed');
   const seedPhrase: Uint8Array = byteEncoder.encode('seedseedseedseedseedseedseeduser');
 
-  let merklizeOpts;
+  let merklizeOpts: Options;
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);
@@ -272,7 +274,7 @@ describe('contract-request', () => {
     );
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
     contractRequestHandler = new ContractRequestHandler(packageMgr, proofService, mockZKPVerifier);
@@ -325,7 +327,7 @@ describe('contract-request', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQueryV3OnChain,
+      circuitId: CircuitId.AtomicQueryV3OnChainStable,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -374,7 +376,12 @@ describe('contract-request', () => {
       options
     );
 
-    expect((ciResponse as Map<string, ZeroKnowledgeProofResponse>).has('txhash1')).to.be.true;
+    const mockHashKey = 'txhash1';
+
+    expect(ciResponse.has(mockHashKey)).to.be.true;
+    expect(ciResponse.get(mockHashKey)?.circuitId).to.equal(
+      'credentialAtomicQueryV3OnChain-16-16-64-16-32'
+    );
   });
 
   it('contract universal verifier v2 request flow', async () => {
@@ -424,7 +431,7 @@ describe('contract-request', () => {
 
     const proofReq: ZeroKnowledgeProofRequest = {
       id: 1,
-      circuitId: CircuitId.AtomicQueryV3OnChain,
+      circuitId: CircuitId.AtomicQueryV3OnChainStable,
       optional: false,
       query: {
         allowedIssuers: ['*'],
@@ -464,7 +471,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
     const options: ContractMessageHandlerOptions = {
       ethSigner,
       challenge,
@@ -517,7 +524,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
     const options: ContractMessageHandlerOptions = {
       ethSigner,
       challenge,
@@ -619,7 +626,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
     const options: ContractMessageHandlerOptions = {
       ethSigner,
       challenge,
@@ -765,7 +772,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -862,7 +869,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractInvokeHandlerOptions = {
       ethSigner,
@@ -916,7 +923,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1036,7 +1043,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractInvokeHandlerOptions = {
       ethSigner,
@@ -1068,25 +1075,25 @@ describe('contract-request', () => {
     };
 
     const networkConfigs = {
-      amoy: (contractAddress) => ({
+      amoy: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: '<>',
         contractAddress,
         chainId: 80002
       }),
-      privadoMain: (contractAddress) => ({
+      privadoMain: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: '<>',
         contractAddress,
         chainId: 21000
       }),
-      privadoTest: (contractAddress) => ({
+      privadoTest: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-testnet.privado.id',
         contractAddress,
         chainId: 21001
       }),
-      lineaSepolia: (contractAddress) => ({
+      lineaSepolia: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: '<>',
         contractAddress,
@@ -1129,7 +1136,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1214,7 +1221,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractMessageHandlerOptions = {
       ethSigner,
@@ -1288,7 +1295,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1401,7 +1408,7 @@ describe('contract-request', () => {
     console.log(JSON.stringify(ciRequest));
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractInvokeHandlerOptions = {
       ethSigner,
@@ -1433,19 +1440,19 @@ describe('contract-request', () => {
     };
 
     const networkConfigs = {
-      amoy: (contractAddress) => ({
+      amoy: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: '<>',
         contractAddress,
         chainId: 80002
       }),
-      privadoMain: (contractAddress) => ({
+      privadoMain: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-mainnet.privado.id',
         contractAddress,
         chainId: 21000
       }),
-      privadoTest: (contractAddress) => ({
+      privadoTest: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-testnet.privado.id',
         contractAddress,
@@ -1487,7 +1494,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1591,7 +1598,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractMessageHandlerOptions = {
       ethSigner,
@@ -1618,19 +1625,19 @@ describe('contract-request', () => {
     };
 
     const networkConfigs = {
-      amoy: (contractAddress) => ({
+      amoy: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: '<>',
         contractAddress,
         chainId: 80002
       }),
-      privadoMain: (contractAddress) => ({
+      privadoMain: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-mainnet.privado.id',
         contractAddress,
         chainId: 21000
       }),
-      privadoTest: (contractAddress) => ({
+      privadoTest: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-testnet.privado.id',
         contractAddress,
@@ -1672,7 +1679,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1724,7 +1731,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractMessageHandlerOptions = {
       ethSigner,
@@ -1753,19 +1760,19 @@ describe('contract-request', () => {
     };
 
     const networkConfigs = {
-      amoy: (contractAddress) => ({
+      amoy: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: rpcUrl,
         contractAddress,
         chainId: 80002
       }),
-      privadoMain: (contractAddress) => ({
+      privadoMain: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-mainnet.privado.id',
         contractAddress,
         chainId: 21000
       }),
-      privadoTest: (contractAddress) => ({
+      privadoTest: (contractAddress: string) => ({
         ...defaultEthConnectionConfig,
         url: 'https://rpc-testnet.privado.id',
         contractAddress,
@@ -1805,7 +1812,7 @@ describe('contract-request', () => {
     });
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
 
@@ -1909,6 +1916,8 @@ describe('contract-request', () => {
       '0'
     );
 
+    const allowedIssuers = proofReqs[0].query?.allowedIssuers ?? [];
+
     const queryToSet = {
       requestId: proofReqs[0].id,
       schema: schemaHash,
@@ -1918,9 +1927,7 @@ describe('contract-request', () => {
       slotIndex: metadataAsInQueryBuilder.slotIndex,
       queryHash: queryHashV3,
       circuitIds: [proofReqs[0].circuitId],
-      allowedIssuers: proofReqs[0].query.allowedIssuers.includes('*')
-        ? []
-        : proofReqs[0].query.allowedIssuers,
+      allowedIssuers: allowedIssuers.includes('*') ? [] : allowedIssuers,
       skipClaimRevocationCheck: false,
       verifierID: verifierId.bigInt(),
       nullifierSessionID: 0,
@@ -2016,7 +2023,7 @@ describe('contract-request', () => {
 
     await tx.wait();
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractMessageHandlerOptions = {
       ethSigner,

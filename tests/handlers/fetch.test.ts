@@ -18,7 +18,8 @@ import {
   FSCircuitStorage,
   ProofService,
   CircuitId,
-  MessageHandler
+  MessageHandler,
+  PlainPacker
 } from '../../src';
 
 import {
@@ -37,7 +38,7 @@ import { OnchainIssuer } from '../../src/storage/blockchain/onchain-issuer';
 import { defaultEthConnectionConfig } from '../../src';
 
 import * as uuid from 'uuid';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import nock from 'nock';
 
@@ -138,7 +139,7 @@ describe('fetch', () => {
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
     fetchHandler = new FetchHandler(packageMgr, {
@@ -329,5 +330,28 @@ describe('fetch', () => {
     );
     const response = await fetchHandler.handleOnchainOffer(bytes);
     expect(response).to.not.be.undefined;
+  });
+
+  it('issuance message handle generic', async () => {
+    const msg: CredentialIssuanceMessage = JSON.parse(issuanceResponseMock);
+    msg.body.credential = W3CCredential.fromJSON(msg.body.credential); // that how it can be in the client.
+    const response = await fetchHandler.handle(msg, {
+      mediaType: PROTOCOL_CONSTANTS.MediaType.PlainMessage
+    });
+    expect(response).to.be.null;
+
+    const cred = credWallet.findById(msg.body.credential.id);
+    expect(cred).to.not.be.undefined;
+  });
+
+  it('issuance message handleIssuance method', async () => {
+    const msg = issuanceResponseMock;
+
+    const bts = await new PlainPacker().pack(byteEncoder.encode(msg));
+    const response = await fetchHandler.handleIssuanceResponseMessage(bts);
+    expect(response).to.be.empty;
+
+    const cred = credWallet.findById('urn:uuid:9691b9f6-76f6-11f0-a048-0a58a9feac02');
+    expect(cred).to.not.be.undefined;
   });
 });

@@ -24,7 +24,9 @@ import {
   CredentialStatusPublisherRegistry,
   Iden3OnchainSmtCredentialStatusPublisher,
   SDK_EVENTS,
-  MessageBus
+  MessageBus,
+  EthStateStorageOptions,
+  createInMemoryCache
 } from '../../../src';
 
 import {
@@ -199,12 +201,42 @@ describe('onchain revocation checks', () => {
       dirname: path.join(__dirname, '../../proofs/testdata')
     });
 
-    const ethStorage = new EthStateStorage({
-      ...defaultEthConnectionConfig,
-      contractAddress: STATE_CONTRACT,
-      chainId: 80002,
-      url: RPC_URL
-    });
+    const ethStateStorageConfig: EthStateStorageOptions = {
+      latestStateCacheOptions: {
+        cache: createInMemoryCache({
+          maxSize: 1000,
+          ttl: 60 * 1000
+        })
+      },
+      stateCacheOptions: {
+        cache: createInMemoryCache({
+          maxSize: 1000,
+          ttl: 60 * 1000
+        })
+      },
+      rootCacheOptions: {
+        cache: createInMemoryCache({
+          maxSize: 1000,
+          ttl: 60 * 1000
+        })
+      },
+      gistProofCacheOptions: {
+        cache: createInMemoryCache({
+          maxSize: 1000,
+          ttl: 60 * 1000
+        })
+      }
+    };
+
+    const ethStorage = new EthStateStorage(
+      {
+        ...defaultEthConnectionConfig,
+        contractAddress: STATE_CONTRACT,
+        chainId: 80002,
+        url: RPC_URL
+      },
+      ethStateStorageConfig
+    );
 
     dataStorage = {
       credential: new CredentialStorage(new InMemoryDataSource<W3CCredential>()),
@@ -216,14 +248,19 @@ describe('onchain revocation checks', () => {
       states: ethStorage
     };
 
-    onchainResolver = new OnChainResolver([
+    onchainResolver = new OnChainResolver(
+      [
+        {
+          ...defaultEthConnectionConfig,
+          url: RPC_URL,
+          contractAddress: STATE_CONTRACT,
+          chainId: 80002
+        }
+      ],
       {
-        ...defaultEthConnectionConfig,
-        url: RPC_URL,
-        contractAddress: STATE_CONTRACT,
-        chainId: 80002
+        stateStorageOptions: ethStateStorageConfig
       }
-    ]);
+    );
 
     const resolvers = new CredentialStatusResolverRegistry();
     resolvers.register(CredentialStatusType.Iden3OnchainSparseMerkleTreeProof2023, onchainResolver);

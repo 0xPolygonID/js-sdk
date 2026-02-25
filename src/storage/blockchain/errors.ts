@@ -9,7 +9,7 @@ function isErrorWithArgs(error: unknown): error is ErrorWithArgs {
     typeof error === 'object' &&
     error !== null &&
     'errorArgs' in error &&
-    Array.isArray((error as any).errorArgs)
+    Array.isArray((error as ErrorWithArgs).errorArgs)
   );
 }
 

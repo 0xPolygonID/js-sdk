@@ -4,14 +4,15 @@ import { IStateStorage, UserStateTransitionInfo } from '../interfaces/state';
 import { Contract, JsonRpcProvider, Signer, TransactionRequest } from 'ethers';
 import { StateInfo } from '../entities/state';
 import { StateTransitionPubSignals } from '../../circuits';
-import { byteEncoder } from '../../utils';
+import { byteEncoder, getIsGenesisStateById } from '../../utils';
 import abi from './abi/State.json';
 import { DID, getChainId, Id } from '@iden3/js-iden3-core';
 import { ITransactionService, TransactionService } from '../../blockchain';
 import { prepareZkpProof } from './common';
 import { ICache, createInMemoryCache } from '../memory';
 import { PROTOCOL_CONSTANTS } from '../../iden3comm';
-import { DEFAULT_CACHE_MAX_SIZE } from '../../verifiable';
+import { DEFAULT_CACHE_MAX_SIZE, VerifiableConstants } from '../../verifiable';
+import { isIdentityDoesNotExistError, isStateDoesNotExistError } from './errors';
 
 /**
  * Configuration options for caching behavior
@@ -98,6 +99,15 @@ const defaultEthConnectionConfig: EthConnectionConfig = {
   rpcResponseTimeout: 5000,
   waitReceiptCycleTime: 30000,
   waitBlockCycleTime: 3000
+};
+
+const defaultStateInfo: Partial<StateInfo> = {
+  state: 0n,
+  replacedByState: 0n,
+  createdAtTimestamp: 0n,
+  replacedAtTimestamp: 0n,
+  createdAtBlock: 0n,
+  replacedAtBlock: 0n
 };
 
 /**
@@ -199,15 +209,34 @@ export class EthStateStorage implements IStateStorage {
   async getLatestStateById(id: bigint): Promise<StateInfo> {
     const cacheKey = this.getLatestStateCacheKey(id);
     if (!this._disableCache) {
-      // Check cache first
       const cachedResult = await this._latestStateResolveCache?.get(cacheKey);
       if (cachedResult) {
+        // If cached result indicates non-existence, throw error
+        if (cachedResult.state === 0n && cachedResult.createdAtTimestamp === 0n) {
+          throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST_CUSTOM_ERROR);
+        }
         return cachedResult;
       }
     }
 
     const { stateContract } = this.getStateContractAndProviderForId(id);
-    const rawData = await stateContract.getStateInfoById(id);
+    let rawData: string[] = [];
+    try {
+      rawData = await stateContract.getStateInfoById(id);
+    } catch (e) {
+      if (isIdentityDoesNotExistError(e) && !this._disableCache) {
+        // Cache a placeholder to avoid repeated calls for non-existing identities
+        await this._latestStateResolveCache?.set(
+          cacheKey,
+          {
+            id,
+            ...defaultStateInfo
+          },
+          this._latestStateCacheOptions.ttl
+        );
+      }
+      throw e;
+    }
     const stateInfo: StateInfo = {
       id: BigInt(rawData[0]),
       state: BigInt(rawData[1]),
@@ -239,22 +268,45 @@ export class EthStateStorage implements IStateStorage {
     }
 
     const { stateContract } = this.getStateContractAndProviderForId(id);
-    const rawData = await stateContract.getStateInfoByIdAndState(id, state);
-    const stateInfo: StateInfo = {
-      id: BigInt(rawData[0]),
-      state: BigInt(rawData[1]),
-      replacedByState: BigInt(rawData[2]),
-      createdAtTimestamp: BigInt(rawData[3]),
-      replacedAtTimestamp: BigInt(rawData[4]),
-      createdAtBlock: BigInt(rawData[5]),
-      replacedAtBlock: BigInt(rawData[6])
-    };
+
+    let stateInfo: StateInfo;
+
+    try {
+      const rawData = await stateContract.getStateInfoByIdAndState(id, state);
+      stateInfo = {
+        id: BigInt(rawData[0]),
+        state: BigInt(rawData[1]),
+        replacedByState: BigInt(rawData[2]),
+        createdAtTimestamp: BigInt(rawData[3]),
+        replacedAtTimestamp: BigInt(rawData[4]),
+        createdAtBlock: BigInt(rawData[5]),
+        replacedAtBlock: BigInt(rawData[6])
+      };
+    } catch (e) {
+      if (!isStateDoesNotExistError(e)) {
+        throw e;
+      }
+      const isGenesis = getIsGenesisStateById(Id.fromBigInt(id), state);
+
+      if (!isGenesis) {
+        throw new Error(
+          `State ${state} for identity ${id} is not genesis and not registered in the smart contract`
+        );
+      }
+
+      stateInfo = {
+        id,
+        ...defaultStateInfo,
+        state
+      };
+    }
 
     const ttl =
       stateInfo.replacedAtTimestamp === 0n
         ? this._stateCacheOptions.notReplacedTtl
         : this._stateCacheOptions.replacedTtl;
     !this._disableCache && (await this._stateResolveCache?.set(cacheKey, stateInfo, ttl));
+
     return stateInfo;
   }
 
@@ -301,6 +353,7 @@ export class EthStateStorage implements IStateStorage {
     };
 
     const { txnHash } = await this._transactionService.sendTransactionRequest(signer, request);
+    await this._latestStateResolveCache?.delete(this.getLatestStateCacheKey(userId.bigInt()));
 
     return txnHash;
   }
@@ -343,7 +396,7 @@ export class EthStateStorage implements IStateStorage {
     };
 
     const { txnHash } = await this._transactionService.sendTransactionRequest(signer, request);
-
+    await this._latestStateResolveCache?.delete(this.getLatestStateCacheKey(userId.bigInt()));
     return txnHash;
   }
 
@@ -386,7 +439,9 @@ export class EthStateStorage implements IStateStorage {
 
   /** {@inheritdoc IStateStorage.getGISTRootInfo} */
   async getGISTRootInfo(root: bigint, id: bigint): Promise<RootInfo> {
-    const cacheKey = this.getRootCacheKey(root);
+    const idTyped = Id.fromBigInt(id as bigint);
+    const chainId = getChainId(DID.blockchainFromId(idTyped), DID.networkIdFromId(idTyped));
+    const cacheKey = this.getRootCacheKey(chainId, root);
     if (!this._disableCache) {
       // Check cache first
       const cachedResult = await this._rootResolveCache?.get(cacheKey);
@@ -454,18 +509,18 @@ export class EthStateStorage implements IStateStorage {
   }
 
   private getGistProofCacheKey(id: bigint): string {
-    return `gist-${id.toString()}`;
+    return `gist:${id.toString()}`;
   }
 
   private getLatestStateCacheKey(id: bigint): string {
-    return `latest-${id.toString()}`;
+    return `latest-state:${id.toString()}`;
   }
 
   private getStateCacheKey(id: bigint, state: bigint): string {
-    return `${id.toString()}-${state.toString()}`;
+    return `state:${id.toString()}-${state.toString()}`;
   }
 
-  private getRootCacheKey(root: bigint): string {
-    return root.toString();
+  private getRootCacheKey(chainId: number, root: bigint): string {
+    return `root:${chainId.toString()}-${root.toString()}`;
   }
 }

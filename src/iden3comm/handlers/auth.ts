@@ -8,24 +8,34 @@ import {
   AuthorizationResponseMessage,
   BasicMessage,
   IPackageManager,
-  JWSPackerParams,
   ZeroKnowledgeProofRequest,
-  JSONObject
+  JSONObject,
+  Attachment
 } from '../types';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
-import { proving } from '@iden3/js-jwz';
+import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
 import { ProofQuery } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
-import { processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
-import { CircuitId } from '../../circuits';
+import {
+  HandlerPackerParams,
+  initDefaultPackerOptions,
+  processZeroKnowledgeProofRequests,
+  verifyExpiresTime
+} from './common';
+import { CircuitId, getGroupedCircuitIdsWithSubVersions } from '../../circuits';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
-  IProtocolMessageHandler
+  IProtocolMessageHandler,
+  defaultProvingMethodAlg
 } from './message-handler';
-import { parseAcceptProfile } from '../utils';
+import {
+  acceptHasProvingMethodAlg,
+  buildAcceptFromProvingMethodAlg,
+  parseAcceptProfile
+} from '../utils';
 
 /**
  * Options to pass to createAuthorizationRequest function
@@ -35,6 +45,7 @@ export type AuthorizationRequestCreateOptions = {
   accept?: string[];
   scope?: ZeroKnowledgeProofRequest[];
   expires_time?: Date;
+  attachments?: Attachment[];
 };
 
 /**
@@ -84,7 +95,8 @@ export function createAuthorizationRequestWithMessage(
       scope: opts?.scope ?? []
     },
     created_time: getUnixTimestamp(new Date()),
-    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined
+    expires_time: opts?.expires_time ? getUnixTimestamp(opts.expires_time) : undefined,
+    attachments: opts?.attachments
   };
   return request;
 }
@@ -161,6 +173,8 @@ export interface IAuthHandler {
 type AuthReqOptions = {
   senderDid: DID;
   mediaType?: MediaType;
+  bypassProofsCache?: boolean;
+  allowExpiredCredentials?: boolean;
 };
 
 type AuthRespOptions = {
@@ -169,7 +183,7 @@ type AuthRespOptions = {
   acceptedProofGenerationDelay?: number;
 };
 
-export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
+export type AuthMessageHandlerOptions = BasicHandlerOptions & (AuthReqOptions | AuthRespOptions);
 /**
  *
  * Options to pass to auth handler
@@ -179,7 +193,10 @@ export type AuthMessageHandlerOptions = AuthReqOptions | AuthRespOptions;
  */
 export type AuthHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
-  packerOptions?: JWSPackerParams;
+  packerOptions?: HandlerPackerParams;
+  preferredAuthProvingMethod?: ProvingMethodAlg;
+  bypassProofsCache?: boolean;
+  allowExpiredCredentials?: boolean;
 };
 
 /**
@@ -195,12 +212,7 @@ export class AuthHandler
   extends AbstractMessageHandler
   implements IAuthHandler, IProtocolMessageHandler
 {
-  private readonly _supportedCircuits = [
-    CircuitId.AtomicQueryV3,
-    CircuitId.AtomicQuerySigV2,
-    CircuitId.AtomicQueryMTPV2,
-    CircuitId.LinkedMultiQuery10
-  ];
+  private readonly _supportedCircuits = Object.values(CircuitId) as CircuitId[];
   /**
    * Creates an instance of AuthHandler.
    * @param {IPackageManager} _packerMgr - package manager to unpack message envelope
@@ -260,11 +272,7 @@ export class AuthHandler
     }
 
     const responseType = PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE;
-    const mediaType = this.getSupportedMediaTypeByProfile(
-      ctx,
-      responseType,
-      authRequest.body.accept
-    );
+    const mediaType = this.getSupportedMediaTypeByProfile(ctx, authRequest.body.accept);
     const from = DID.parse(authRequest.from);
 
     const responseScope = await processZeroKnowledgeProofRequests(
@@ -272,7 +280,12 @@ export class AuthHandler
       authRequest?.body.scope,
       from,
       this._proofService,
-      { mediaType, supportedCircuits: this._supportedCircuits }
+      {
+        mediaType,
+        supportedCircuits: this._supportedCircuits,
+        bypassProofsCache: ctx.bypassProofsCache,
+        allowExpiredCredentials: ctx.allowExpiredCredentials
+      }
     );
 
     return {
@@ -284,6 +297,7 @@ export class AuthHandler
         message: authRequest?.body?.message,
         scope: responseScope
       },
+      created_time: getUnixTimestamp(new Date()),
       from: to.string(),
       to: authRequest.from
     };
@@ -311,29 +325,24 @@ export class AuthHandler
       };
     }
 
-    if (opts.mediaType === MediaType.SignedMessage && !opts.packerOptions) {
-      throw new Error(`jws packer options are required for ${MediaType.SignedMessage}`);
-    }
-
     const authResponse = await this.handleAuthRequest(authRequest, {
       senderDid: did,
-      mediaType: opts.mediaType
+      mediaType: opts.mediaType,
+      bypassProofsCache: opts.bypassProofsCache,
+      allowExpiredCredentials: opts.allowExpiredCredentials
     });
 
     const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
 
-    const packerOpts =
-      opts.mediaType === MediaType.SignedMessage
-        ? opts.packerOptions
-        : {
-            provingMethodAlg: proving.provingMethodGroth16AuthV2Instance.methodAlg
-          };
-
+    const packerOpts = initDefaultPackerOptions(opts.mediaType, opts.packerOptions, {
+      provingMethodAlg: this.getDefaultProvingMethodAlg(
+        opts.preferredAuthProvingMethod,
+        authRequest.body.accept
+      ),
+      senderDID: did
+    });
     const token = byteDecoder.decode(
-      await this._packerMgr.pack(opts.mediaType, msgBytes, {
-        senderDID: did,
-        ...packerOpts
-      })
+      await this._packerMgr.pack(opts.mediaType, msgBytes, packerOpts)
     );
 
     return { authRequest, authResponse, token };
@@ -365,22 +374,30 @@ export class AuthHandler
       throw new Error(`proof response doesn't contain from field`);
     }
 
-    const groupIdToLinkIdMap = new Map<number, { linkID: number; requestId: number | string }[]>();
+    const groupIdToLinkIdMap = new Map<number, { linkID: string; requestId: number | string }[]>();
     // group requests by query group id
     for (const proofRequest of requestScope) {
-      const groupId = proofRequest.query.groupId as number;
+      const groupId = proofRequest.query?.groupId as number;
 
       const proofResp = responseScope.find(
         (resp) => resp.id.toString() === proofRequest.id.toString()
       );
       if (!proofResp) {
+        if (proofRequest.optional) {
+          continue;
+        }
         throw new Error(`proof is not given for requestId ${proofRequest.id}`);
       }
 
-      const circuitId = proofResp.circuitId;
-      if (circuitId !== proofRequest.circuitId) {
+      const allCircuitsSubversions = getGroupedCircuitIdsWithSubVersions(
+        proofRequest.circuitId as CircuitId
+      );
+
+      if (!allCircuitsSubversions.includes(proofResp.circuitId as CircuitId)) {
         throw new Error(
-          `proof is not given for requested circuit expected: ${proofRequest.circuitId}, given ${circuitId}`
+          `proof is not given for requested circuit expected: ${allCircuitsSubversions.join(
+            ', '
+          )}, given ${proofResp.circuitId} `
         );
       }
 
@@ -408,7 +425,7 @@ export class AuthHandler
       if (linkID && groupId) {
         groupIdToLinkIdMap.set(groupId, [
           ...(groupIdToLinkIdMap.get(groupId) ?? []),
-          { linkID: linkID, requestId: proofResp.id }
+          { linkID: linkID.toString(), requestId: proofResp.id }
         ]);
       }
     }
@@ -455,22 +472,31 @@ export class AuthHandler
     const groupIdValidationMap: { [k: string]: ZeroKnowledgeProofRequest[] } = {};
     const requestScope = request.body.scope || [];
     for (const proofRequest of requestScope) {
-      const groupId = proofRequest.query.groupId as number;
+      const proofQuery = proofRequest.query;
+      if (!proofQuery) {
+        continue;
+      }
+      const groupId = proofQuery.groupId as number;
       if (groupId) {
         const existingRequests = groupIdValidationMap[groupId] ?? [];
 
         //validate that all requests in the group have the same schema, issuer and circuit
         for (const existingRequest of existingRequests) {
-          if (existingRequest.query.type !== proofRequest.query.type) {
+          const existingProofQuery = existingRequest.query;
+          if (!existingProofQuery) {
+            continue;
+          }
+
+          if (existingProofQuery.type !== proofQuery?.type) {
             throw new Error(`all requests in the group should have the same type`);
           }
 
-          if (existingRequest.query.context !== proofRequest.query.context) {
+          if (existingProofQuery.context !== proofQuery?.context) {
             throw new Error(`all requests in the group should have the same context`);
           }
 
-          const allowedIssuers = proofRequest.query.allowedIssuers as string[];
-          const existingRequestAllowedIssuers = existingRequest.query.allowedIssuers as string[];
+          const allowedIssuers = proofQuery?.allowedIssuers as string[];
+          const existingRequestAllowedIssuers = existingProofQuery.allowedIssuers as string[];
           if (
             !(
               allowedIssuers.includes('*') ||
@@ -487,7 +513,6 @@ export class AuthHandler
 
   private getSupportedMediaTypeByProfile(
     ctx: AuthReqOptions,
-    responseType: string,
     profile?: string[] | undefined
   ): MediaType {
     let mediaType: MediaType;
@@ -513,5 +538,41 @@ export class AuthHandler
       mediaType = ctx.mediaType;
     }
     return mediaType;
+  }
+
+  private getDefaultProvingMethodAlg(
+    preferredAuthProvingMethod?: ProvingMethodAlg,
+    accept?: string[]
+  ): ProvingMethodAlg {
+    // if no accept is given, return default
+    if (!accept?.length) {
+      return defaultProvingMethodAlg;
+    }
+
+    const preferredOrder = [
+      proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg,
+      proving.provingMethodGroth16AuthV3Instance.methodAlg
+    ];
+    if (preferredAuthProvingMethod) {
+      const idx = preferredOrder.indexOf(preferredAuthProvingMethod);
+      if (idx !== -1) {
+        preferredOrder.splice(idx, 1);
+      }
+      preferredOrder.unshift(preferredAuthProvingMethod);
+    }
+
+    for (const methodAlg of preferredOrder) {
+      if (
+        this._packerMgr.isProfileSupported(
+          MediaType.ZKPMessage,
+          buildAcceptFromProvingMethodAlg(methodAlg)
+        ) &&
+        acceptHasProvingMethodAlg(accept, methodAlg)
+      ) {
+        return methodAlg;
+      }
+    }
+
+    return defaultProvingMethodAlg;
   }
 }

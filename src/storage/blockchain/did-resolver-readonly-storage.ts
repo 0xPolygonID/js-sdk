@@ -5,6 +5,7 @@ import { RootInfo, StateInfo, StateProof } from '../entities';
 import { IStateStorage } from '../interfaces';
 import { DID, Id } from '@iden3/js-iden3-core';
 import { JsonRpcProvider } from 'ethers';
+import { VerifiableConstants } from '../../verifiable';
 
 export class DidResolverStateReadonlyStorage implements IStateStorage {
   constructor(private readonly resolverUrl: string) {}
@@ -74,7 +75,15 @@ export class DidResolverStateReadonlyStorage implements IStateStorage {
       this.resolverUrl,
       opts
     );
-    const { info } = this.getIden3StateInfo2023(didDocument);
+    const { info, published } = this.getIden3StateInfo2023(didDocument);
+    if (!info && !published) {
+      throw new Error(VerifiableConstants.ERRORS.STATE_DOES_NOT_EXIST);
+    }
+    if (!info) {
+      throw new Error('State info not found');
+    }
+    info.id = id; // info id from resolver is DID
+    info.state = opts?.state?.bigInt(); // state in hex from resolver
     return { ...info };
   }
 

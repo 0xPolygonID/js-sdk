@@ -66,6 +66,22 @@ export class BaseConfig {
   getMTLevelOnChain(): number {
     return this.mtLevelOnChain ? this.mtLevelOnChain : defaultMTLevelsOnChain;
   }
+
+  setMTLevel(mtLevel: number): void {
+    this.mtLevel = mtLevel;
+  }
+
+  setMTLevelOnChain(mtLevelOnChain: number): void {
+    this.mtLevelOnChain = mtLevelOnChain;
+  }
+
+  setMTLevelClaim(mtLevelClaim: number): void {
+    this.mtLevelClaim = mtLevelClaim;
+  }
+
+  setMaxValueArraySize(maxValueArraySize: number): void {
+    this.maxValueArraySize = maxValueArraySize;
+  }
 }
 
 /**
@@ -249,13 +265,29 @@ export type StatesInfo = {
  * state pub signals
  *
  * @public
- * @interface   IStatePubSignals
+ * @interface   IStateInfoPubSignals
  */
-export interface IStateInfoPubSignals {
+export interface IStateInfoPubSignals extends IUnmarshallerPubSignals {
   /**
    * return object with state params
    *
    * @returns {OnChainStateInfo}
    */
   getStatesInfo(): StatesInfo;
+}
+
+/**
+ * pub signals unmarshaller
+ *
+ * @public
+ * @interface   IUnmarshallerPubSignals
+ */
+export interface IUnmarshallerPubSignals {
+  /**
+   * unmarshal pub signals to IUnmarshallerPubSignals
+   *
+   * @param {Uint8Array} data
+   * @returns IUnmarshallerPubSignals
+   */
+  pubSignalsUnmarshal(data: Uint8Array): IUnmarshallerPubSignals;
 }

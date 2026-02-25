@@ -31,6 +31,15 @@ export class BjjProvider implements IKeyProvider {
     this.keyType = keyType;
     this.keyStore = keyStore;
   }
+
+  /**
+   * get private key store
+   *
+   * @returns private key store
+   */
+  async getPkStore(): Promise<AbstractPrivateKeyStore> {
+    return this.keyStore;
+  }
   /**
    * get all keys
    * @returns list of keys
@@ -65,6 +74,11 @@ export class BjjProvider implements IKeyProvider {
     await this.keyStore.importKey({ alias: kmsId.id, key: privateKey.hex() });
 
     return kmsId;
+  }
+
+  async newPrivateKey(): Promise<KmsKeyId> {
+    const seed = globalThis.crypto.getRandomValues(new Uint8Array(32));
+    return this.newPrivateKeyFromSeed(seed);
   }
 
   /**

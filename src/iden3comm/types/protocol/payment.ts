@@ -6,6 +6,7 @@ import {
   SupportedPaymentProofType
 } from '../../../verifiable';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
+import { CredentialSchemaInfo } from './common';
 
 /** @beta PaymentRequestMessage is struct the represents payment-request message */
 export type PaymentRequestMessage = BasicMessage & {
@@ -23,16 +24,15 @@ export type PaymentRequestMessageBody = {
 
 /** @beta PaymentRequestInfo is struct the represents payment info for payment-request */
 export type PaymentRequestInfo = {
-  credentials: {
-    type: string;
-    context: string;
-  }[];
+  credentials: CredentialSchemaInfo[];
   data:
     | Iden3PaymentRequestCryptoV1
     | (
         | Iden3PaymentRequestCryptoV1
         | Iden3PaymentRailsRequestV1
         | Iden3PaymentRailsERC20RequestV1
+        | Iden3PaymentRailsSolanaRequestV1
+        | Iden3PaymentRailsSolanaSPLRequestV1
       )[];
   description?: string;
 };
@@ -49,6 +49,7 @@ export type Iden3PaymentRequestCryptoV1 = {
   expiration?: string;
 };
 
+/** @beta Iden3PaymentRailsRequestV1 is struct the represents EVM native payment rails request */
 export type Iden3PaymentRailsRequestV1 = {
   type: PaymentRequestDataType.Iden3PaymentRailsRequestV1;
   '@context': string | (string | object)[];
@@ -60,12 +61,32 @@ export type Iden3PaymentRailsRequestV1 = {
   proof: EthereumEip712Signature2021 | EthereumEip712Signature2021[];
 };
 
+/** @beta Iden3PaymentRailsERC20RequestV1 is struct the represents EVM ERC 20 payment rails request */
 export type Iden3PaymentRailsERC20RequestV1 = Omit<Required<Iden3PaymentRailsRequestV1>, 'type'> & {
   tokenAddress: string;
   features?: PaymentFeatures[];
   type: PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
 };
 
+/** @beta Iden3PaymentRailsSolanaRequestV1 is struct the represents Solana native payment rails request */
+export type Iden3PaymentRailsSolanaRequestV1 = Omit<
+  Required<Iden3PaymentRailsRequestV1>,
+  'type' | 'proof'
+> & {
+  type: PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1;
+  proof: Iden3SolanaEd25519SignatureV1 | Iden3SolanaEd25519SignatureV1[];
+};
+
+/** @beta Iden3PaymentRailsSolanaSPLRequestV1 is struct the represents Solana SPL payment rails request */
+export type Iden3PaymentRailsSolanaSPLRequestV1 = Omit<
+  Required<Iden3PaymentRailsERC20RequestV1>,
+  'type' | 'proof'
+> & {
+  type: PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1;
+  proof: Iden3SolanaEd25519SignatureV1 | Iden3SolanaEd25519SignatureV1[];
+};
+
+/** @beta EthereumEip712Signature2021 is struct the represents EIP-712 signature for Ethereum */
 export type EthereumEip712Signature2021 = {
   type: SupportedPaymentProofType.EthereumEip712Signature2021;
   proofPurpose: string;
@@ -81,6 +102,20 @@ export type EthereumEip712Signature2021 = {
       chainId: string;
       verifyingContract: string;
     };
+  };
+};
+
+/** @beta Iden3SolanaEd25519SignatureV1 is struct the represents Ed25519 signature for Solana Payment Instruction */
+export type Iden3SolanaEd25519SignatureV1 = {
+  type: SupportedPaymentProofType.SolanaEd25519Signature2025;
+  proofPurpose: string;
+  proofValue: string;
+  created: string;
+  verificationMethod: string;
+  domain: {
+    version: 'SolanaEd25519NativeV1' | 'SolanaEd25519SPLV1';
+    chainId: string;
+    verifyingContract: string;
   };
 };
 
@@ -130,19 +165,47 @@ export type Iden3PaymentRailsERC20V1 = {
   };
 };
 
+/** @beta Iden3PaymentRailsSolanaV1 is struct the represents payment info for Iden3PaymentRailsSolanaV1 */
+export type Iden3PaymentRailsSolanaV1 = {
+  nonce: string;
+  type: 'Iden3PaymentRailsSolanaV1';
+  '@context': string | (string | object)[];
+  paymentData: {
+    txId: string;
+    chainId: string;
+  };
+};
+
+/** @beta Iden3PaymentRailsSolanaSPLV1 is struct the represents payment info for Iden3PaymentRailsSolanaSPLV1 */
+export type Iden3PaymentRailsSolanaSPLV1 = {
+  nonce: string;
+  type: 'Iden3PaymentRailsSolanaSPLV1';
+  '@context': string | (string | object)[];
+  paymentData: {
+    txId: string;
+    chainId: string;
+    tokenAddress: string;
+  };
+};
+
 /** @beta MultiChainPaymentConfig is struct that represents payments contracts information for different chains */
 export type MultiChainPaymentConfig = {
   chainId: string;
   paymentRails: string;
   recipient: string;
-  options: {
-    id: string;
-    type:
-      | PaymentRequestDataType.Iden3PaymentRailsRequestV1
-      | PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1;
-    contractAddress?: string;
-    features?: PaymentFeatures[];
-  }[];
+  options: MultiChainPaymentConfigOption[];
+};
+
+/** @beta MultiChainPaymentConfigOption is struct that represents payment options for different chains */
+export type MultiChainPaymentConfigOption = {
+  id: string;
+  type:
+    | PaymentRequestDataType.Iden3PaymentRailsRequestV1
+    | PaymentRequestDataType.Iden3PaymentRailsERC20RequestV1
+    | PaymentRequestDataType.Iden3PaymentRailsSolanaRequestV1
+    | PaymentRequestDataType.Iden3PaymentRailsSolanaSPLRequestV1;
+  contractAddress?: string;
+  features?: PaymentFeatures[];
 };
 
 /**
@@ -152,7 +215,9 @@ export type MultiChainPaymentConfig = {
 export type PaymentRequestTypeUnion =
   | Iden3PaymentRequestCryptoV1
   | Iden3PaymentRailsRequestV1
-  | Iden3PaymentRailsERC20RequestV1;
+  | Iden3PaymentRailsERC20RequestV1
+  | Iden3PaymentRailsSolanaRequestV1
+  | Iden3PaymentRailsSolanaSPLRequestV1;
 
 /**
  * @beta
@@ -161,4 +226,6 @@ export type PaymentRequestTypeUnion =
 export type PaymentTypeUnion =
   | Iden3PaymentCryptoV1
   | Iden3PaymentRailsV1
-  | Iden3PaymentRailsERC20V1;
+  | Iden3PaymentRailsERC20V1
+  | Iden3PaymentRailsSolanaV1
+  | Iden3PaymentRailsSolanaSPLV1;

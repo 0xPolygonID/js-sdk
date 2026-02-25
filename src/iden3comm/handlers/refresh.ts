@@ -1,20 +1,15 @@
 import { MediaType } from '../constants';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
-import {
-  CredentialIssuanceMessage,
-  CredentialRefreshMessage,
-  IPackageManager,
-  ZKPPackerParams
-} from '../types';
+import { CredentialIssuanceMessage, CredentialRefreshMessage, IPackageManager } from '../types';
 
 import { RefreshServiceType, W3CCredential } from '../../verifiable';
 import { byteEncoder } from '../../utils';
-import { proving, ProvingMethodAlg } from '@iden3/js-jwz';
 import { DID } from '@iden3/js-iden3-core';
 import { ICredentialWallet } from '../../credentials';
-import { CircuitId } from '../../circuits';
 import * as uuid from 'uuid';
+import { defaultProvingMethodAlg } from './message-handler';
+import { HandlerPackerParams } from './common';
 
 /**
  * RefreshHandlerOptions contains options for RefreshHandler
@@ -35,6 +30,8 @@ export interface RefreshHandlerOptions {
  */
 export interface RefreshOptions {
   reason?: string;
+  packerOptions?: HandlerPackerParams;
+  mediaType?: MediaType;
 }
 
 /**
@@ -88,12 +85,10 @@ export class RefreshHandler implements IRefreshHandler {
 
     const senderDID = DID.parse(otherIdentifier);
 
-    const zkpParams: ZKPPackerParams = {
+    const mediaType = opts?.mediaType || MediaType.ZKPMessage;
+    const packerOptions = opts?.packerOptions ?? {
       senderDID,
-      provingMethodAlg: new ProvingMethodAlg(
-        proving.provingMethodGroth16AuthV2Instance.methodAlg.alg,
-        CircuitId.AuthV2
-      )
+      provingMethodAlg: defaultProvingMethodAlg
     };
 
     const refreshMsg: CredentialRefreshMessage = {
@@ -110,17 +105,13 @@ export class RefreshHandler implements IRefreshHandler {
     };
 
     const msgBytes = byteEncoder.encode(JSON.stringify(refreshMsg));
-    const jwzToken = await this._options.packageManager.pack(
-      MediaType.ZKPMessage,
-      msgBytes,
-      zkpParams
-    );
+    const token = await this._options.packageManager.pack(mediaType, msgBytes, packerOptions);
     const resp = await fetch(credential.refreshService.id, {
       method: 'post',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: jwzToken
+      body: token.buffer as ArrayBuffer
     });
 
     if (resp.status !== 200) {

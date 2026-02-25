@@ -1,4 +1,4 @@
-import { KmsKeyId, KmsKeyType } from './store';
+import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from './store';
 
 /**
  * KeyProvider is responsible for signing and creation of the keys
@@ -51,6 +51,14 @@ export interface IKeyProvider {
   newPrivateKeyFromSeed(seed: Uint8Array): Promise<KmsKeyId>;
 
   /**
+   * creates new key pair from given public key
+   *
+   * @param {JsonWebKey} privateKey - private key
+   * @returns `Promise<KmsKeyId>`
+   */
+  newPrivateKey(): Promise<KmsKeyId>;
+
+  /**
    * Verifies a message signature using the provided key ID.
    *
    * @param message - The message bytes to verify.
@@ -59,6 +67,13 @@ export interface IKeyProvider {
    * @returns A promise that resolves to a boolean indicating whether the signature is valid.
    */
   verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean>;
+
+  /**
+   * get private key store
+   *
+   * @returns private key store
+   */
+  getPkStore(): Promise<AbstractPrivateKeyStore>;
 }
 /**
  * Key management system class contains different key providers.
@@ -96,6 +111,14 @@ export class KMS {
       throw new Error(`keyProvider not found for: ${keyType}`);
     }
     return keyProvider.newPrivateKeyFromSeed(bytes);
+  }
+
+  async createKey(keyType: KmsKeyType): Promise<KmsKeyId> {
+    const keyProvider = this._registry.get(keyType);
+    if (!keyProvider) {
+      throw new Error(`keyProvider not found for: ${keyType}`);
+    }
+    return keyProvider.newPrivateKey();
   }
 
   /**
@@ -169,5 +192,15 @@ export class KMS {
     }
 
     return keyProvider.list();
+  }
+
+  /**
+   * get key provider by key type
+   *
+   * @param keyType - Key type
+   * @returns key provider
+   */
+  getKeyProvider(keyType: KmsKeyType): IKeyProvider | undefined {
+    return this._registry.get(keyType);
   }
 }

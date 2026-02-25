@@ -45,7 +45,7 @@ describe('proposal-request handler', () => {
   let credWallet: ICredentialWallet;
   let proposalRequestHandler: ICredentialProposalHandler;
   const agentUrl = 'http://localhost:8001/api/v1/agent';
-  let userDID, issuerDID: DID;
+  let userDID: DID, issuerDID: DID;
   const packageManager: IPackageManager = new PackageManager();
   packageManager.registerPackers([new PlainPacker()]);
 
@@ -88,7 +88,7 @@ describe('proposal-request handler', () => {
     const proofService = new ProofService(idWallet, credWallet, circuitStorage, MOCK_STATE_STORAGE);
     packageMgr = await getPackageMgr(
       await circuitStorage.loadCircuitData(CircuitId.AuthV2),
-      proofService.generateAuthV2Inputs.bind(proofService),
+      proofService.generateAuthInputs.bind(proofService),
       proofService.verifyState.bind(proofService)
     );
     proposalRequestHandler = new CredentialProposalHandler(packageMgr, idWallet, {

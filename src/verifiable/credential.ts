@@ -414,6 +414,30 @@ export class W3CCredential {
     }
   }
 
+  /**
+   * Verify credential proofs
+   *
+   * @returns {*}  {(boolean)}
+   */
+  async verifyProofs(resolverURL: string, opts?: W3CProofVerificationOptions): Promise<boolean> {
+    const proofsValidPromises = [];
+    if (Array.isArray(this.proof)) {
+      for (const proof of this.proof) {
+        proofsValidPromises.push(this.verifyProof(proof['type'] as ProofType, resolverURL, opts));
+      }
+    } else {
+      proofsValidPromises.push(
+        this.verifyProof(
+          (this.proof as unknown as { type: ProofType })['type'] as ProofType,
+          resolverURL,
+          opts
+        )
+      );
+    }
+    const proofsValid = await Promise.all(proofsValidPromises);
+    return proofsValid.every((v) => v);
+  }
+
   private async verifyCoreClaimMatch(coreClaim: Claim, merklizeOpts?: Options) {
     let merklizedRootPosition = '';
 

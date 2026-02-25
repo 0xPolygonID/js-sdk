@@ -1,3 +1,4 @@
+import { Options } from '@iden3/js-jsonld-merklization';
 /* eslint-disable no-console */
 import {
   CredentialStorage,
@@ -37,7 +38,7 @@ describe.sequential('sig onchain proofs', () => {
   let dataStorage: IDataStorage;
   let proofService: ProofService;
   const rhsUrl = process.env.RHS_URL as string;
-  let merklizeOpts;
+  let merklizeOpts: Options;
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {
       throw new Error(VerifiableConstants.ERRORS.IDENTITY_DOES_NOT_EXIST);

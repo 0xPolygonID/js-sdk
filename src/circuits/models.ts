@@ -91,8 +91,12 @@ export class Query {
  * @enum {number}
  */
 export enum CircuitId {
-  // Auth is a type that must be used for authV2.circom
+  // AuthV2 is a type that must be used for authV2.circom
   AuthV2 = 'authV2',
+  // AuthV3 is a type that must be used for authV3.circom
+  AuthV3 = 'authV3',
+  // AuthV3_8_32 is a type that must be used for authV3-8-32.circom
+  AuthV3_8_32 = 'authV3-8-32',
   // StateTransition is a type that must be used for stateTransition.circom
   StateTransition = 'stateTransition',
   // AtomicQueryMTPV2 is a type for credentialAtomicQueryMTPV2.circom
@@ -113,11 +117,13 @@ export enum CircuitId {
    */
   // AtomicQueryV3OnChainCircuitID is a type for credentialAtomicQueryV3OnChain.circom
   AtomicQueryV3OnChain = 'credentialAtomicQueryV3OnChain-beta.1',
-  /**
-   * @beta
-   */
-  // LinkedMultiQuery is a type for linkedMultiQuery.circom
-  LinkedMultiQuery10 = 'linkedMultiQuery10-beta.1'
+  LinkedMultiQuery10 = 'linkedMultiQuery10-beta.1',
+
+  AtomicQueryV3Stable = 'credentialAtomicQueryV3',
+
+  AtomicQueryV3OnChainStable = 'credentialAtomicQueryV3OnChain',
+
+  LinkedMultiQueryStable = 'linkedMultiQuery'
 }
 
 /**

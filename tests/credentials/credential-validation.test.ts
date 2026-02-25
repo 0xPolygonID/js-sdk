@@ -21,7 +21,7 @@ import {
   StateInfo,
   StateProof
 } from '../../src';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import nock from 'nock';
 import { JsonRpcProvider } from 'ethers';
@@ -30,7 +30,9 @@ import { schemaLoaderForTests } from '../mocks/schema';
 
 const mockStateStorage: IStateStorage = {
   getLatestStateById: async (id: bigint) => {
-    const stateInfo: StateInfo = {};
+    const stateInfo: StateInfo = {
+      id
+    };
     if (
       id === BigInt('29305636064099160210536948077705157048478988844998217946273455478812643842')
     ) {
