@@ -26,6 +26,7 @@ import {
 import {
   PreparedCredential,
   QueryMetadata,
+  isAuthCircuit,
   parseCredentialSubject,
   parseQueryMetadata,
   transformQueryValueToBigInts
@@ -292,19 +293,18 @@ export class ProofService implements IProofService {
 
     const query = proofReq.query;
     if (!query) {
-      return this._generateProof({
-        proofReq,
-        identifier,
-        preparedCredential: {} as PreparedCredential,
-        genesisDid,
-        circuitQueries: [],
-        inputParams: {
-          ...opts,
-          authProfileNonce,
-          credentialSubjectProfileNonce: 0,
-          linkNonce: 0n
-        }
+      if (!isAuthCircuit(proofReq.circuitId as CircuitId)) {
+        throw new Error(`for non-auth circuits query must be provided`);
+      }
+      const authRes = await this.generateAuthProof(proofReq.circuitId as CircuitId, identifier, {
+        challenge: proofReq.params?.challenge ? BigInt(proofReq.params.challenge) : undefined
       });
+      return {
+        id: proofReq.id,
+        circuitId: proofReq.circuitId,
+        pub_signals: authRes.pub_signals,
+        proof: authRes.proof
+      };
     }
 
     let credentialWithRevStatus: {
@@ -494,11 +494,7 @@ export class ProofService implements IProofService {
     identifier: DID,
     opts?: AuthProofGenerationOptions
   ): Promise<ZeroKnowledgeProofAuthResponse> {
-    if (
-      circuitId !== CircuitId.AuthV2 &&
-      circuitId !== CircuitId.AuthV3 &&
-      circuitId !== CircuitId.AuthV3_8_32
-    ) {
+    if (!isAuthCircuit(circuitId)) {
       throw new Error('CircuitId is not supported');
     }
     if (!opts) {

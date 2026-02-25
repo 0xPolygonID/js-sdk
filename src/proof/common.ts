@@ -1,6 +1,7 @@
 import { NodeAux, Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 import {
   buildTreeState,
+  CircuitId,
   ClaimNonRevStatus,
   GISTProof,
   isValidOperation,
@@ -270,4 +271,8 @@ const transformExistsValue = (value: unknown): bigint[] => {
     return [BigInt(value)];
   }
   throw new Error('exists operator value must be true or false');
+};
+
+export const isAuthCircuit = (circuitId: CircuitId): boolean => {
+  return [CircuitId.AuthV2, CircuitId.AuthV3, CircuitId.AuthV3_8_32].includes(circuitId);
 };
