@@ -219,7 +219,6 @@ export const processProofAuth = async (
     acceptProfile?: AcceptProfile;
     senderAddress: string;
     zkpResponses: ZeroKnowledgeProofResponse[];
-    authMethod?: AuthMethod;
   }
 ): Promise<{ authProof: AuthProof }> => {
   if (!opts.acceptProfile) {
@@ -227,14 +226,14 @@ export const processProofAuth = async (
   }
 
   switch (opts.acceptProfile.env) {
+    case MediaType.PlainMessage: // if it's plain message, we assume it's embedded auth, so we don't need to generate any proof, just return auth method
+      return {
+        authProof: {
+          authMethod: AuthMethod.EMBEDDED_AUTH
+        }
+      };
     case MediaType.ZKPMessage:
-      if (opts.authMethod && opts.authMethod === AuthMethod.EMBEDDED_AUTH) {
-        return {
-          authProof: {
-            authMethod: AuthMethod.EMBEDDED_AUTH
-          }
-        };
-      }
+
       if (!opts.acceptProfile.circuits) {
         throw new Error('Circuit not specified in accept profile');
       }

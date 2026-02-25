@@ -138,7 +138,7 @@ export class ContractRequestHandler
       throw new Error('Invalid message type for contract invoke request');
     }
 
-    const { senderDid: did, ethSigner, challenge, authMethod } = ctx;
+    const { senderDid: did, ethSigner, challenge } = ctx;
     if (!ctx.ethSigner) {
       throw new Error("Can't sign transaction. Provide Signer in options.");
     }
@@ -218,8 +218,7 @@ export class ContractRequestHandler
           supportedCircuits: this._supportedCircuits,
           acceptProfile,
           senderAddress: await ethSigner.getAddress(),
-          zkpResponses: zkpResponses,
-          authMethod
+          zkpResponses: zkpResponses
         });
 
         // we return txHash because responsesMap could be empty if there are no queries in scope

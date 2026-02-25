@@ -59,15 +59,18 @@ export type AuthProofEthIdentity = {
 export type AuthProofZKP = {
   zkp: ZeroKnowledgeProofAuthResponse;
 };
+export type AuthProofEmbedded = {
+   // in case of embedded auth, there is no additional data in auth proof
+   // this type is used for type safety and clarity
+}
+
+
+export type AuthProofBase = {
+  authMethod: AuthMethod;
+};
 
 /** AuthProofResponse represents structure of zkp response */
-export type AuthProof =
-  | {
-      authMethod: AuthMethod;
-    }
-  | ({
-      authMethod: AuthMethod;
-    } & (AuthProofEthIdentity | AuthProofZKP));
+export type AuthProof = AuthProofBase & (AuthProofEthIdentity | AuthProofZKP | AuthProofEmbedded);
 
 export type CrossChainProof = {
   globalStateProofs: GlobalStateUpdate[];
