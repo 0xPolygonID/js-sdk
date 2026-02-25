@@ -16,7 +16,7 @@ import {
 import { mergeObjects } from '../../utils';
 import { RevocationStatus, VerifiableConstants, W3CCredential } from '../../verifiable';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
-import { IProofService, isAuthCircuit } from '../../proof';
+import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
 import { ethers, Signer } from 'ethers';
