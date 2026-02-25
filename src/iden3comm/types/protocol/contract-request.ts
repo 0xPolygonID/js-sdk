@@ -53,17 +53,25 @@ export type ContractInvokeTransactionData = {
   txHash?: string;
 };
 
+export type AuthProofEmbedded = {
+  // in case of embedded auth, there is no additional data in auth proof
+  // this type is used for type safety and clarity
+};
+
 export type AuthProofEthIdentity = {
   userDid: DID;
 };
+
 export type AuthProofZKP = {
   zkp: ZeroKnowledgeProofAuthResponse;
 };
 
-/** AuthProofResponse represents structure of zkp response */
-export type AuthProof = {
+export type AuthProofBase = {
   authMethod: AuthMethod;
-} & (AuthProofEthIdentity | AuthProofZKP);
+};
+
+/** AuthProofResponse represents structure of zkp response */
+export type AuthProof = AuthProofBase & (AuthProofEthIdentity | AuthProofZKP | AuthProofEmbedded);
 
 export type CrossChainProof = {
   globalStateProofs: GlobalStateUpdate[];
@@ -74,5 +82,6 @@ export enum AuthMethod {
   AUTHV2 = 'authV2',
   AUTHV3 = 'authV3',
   AUTHV3_8_32 = 'authV3-8-32',
-  ETH_IDENTITY = 'ethIdentity'
+  ETH_IDENTITY = 'ethIdentity',
+  EMBEDDED_AUTH = 'embeddedAuth'
 }
