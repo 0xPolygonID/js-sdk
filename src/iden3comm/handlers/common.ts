@@ -233,7 +233,6 @@ export const processProofAuth = async (
         }
       };
     case MediaType.ZKPMessage:
-
       if (!opts.acceptProfile.circuits) {
         throw new Error('Circuit not specified in accept profile');
       }

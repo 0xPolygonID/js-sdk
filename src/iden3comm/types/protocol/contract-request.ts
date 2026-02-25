@@ -60,10 +60,9 @@ export type AuthProofZKP = {
   zkp: ZeroKnowledgeProofAuthResponse;
 };
 export type AuthProofEmbedded = {
-   // in case of embedded auth, there is no additional data in auth proof
-   // this type is used for type safety and clarity
-}
-
+  // in case of embedded auth, there is no additional data in auth proof
+  // this type is used for type safety and clarity
+};
 
 export type AuthProofBase = {
   authMethod: AuthMethod;
