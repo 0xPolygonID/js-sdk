@@ -1,8 +1,8 @@
 import { Hex } from '@iden3/js-crypto';
-import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-core';
+import { Id, buildDIDType, genesisFromEthAddress, DID, BytesHelper } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import { DIDResolutionResult, VerificationMethod, DIDResolutionMetadata } from 'did-resolver';
-import { keccak256 } from 'ethers';
+import { isAddress, keccak256 } from 'ethers';
 import { hexToBytes } from './encoding';
 
 /**
@@ -173,4 +173,12 @@ export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): D
 
 export const buildDIDFromEthAddress = (didType: Uint8Array, ethAddress: string): DID => {
   return _buildDIDFromEthAddress(didType, hexToBytes(ethAddress));
+};
+
+export const getChallengeFromEthAddress = (address: string): bigint => {
+  if (isAddress(address)) {
+    return BytesHelper.bytesToInt(hexToBytes(address));
+  }
+
+  throw new Error(`Invalid Ethereum address: ${address}`);
 };

@@ -45,7 +45,7 @@ export const createZkpRequestCacheKey = (
     ...r,
     query: {
       ...r.query,
-      allowedIssuers: [...r.query.allowedIssuers].sort()
+      allowedIssuers: [...(r.query?.allowedIssuers ?? [])].sort()
     }
   };
   const canonical = canonicalizeData(payload);

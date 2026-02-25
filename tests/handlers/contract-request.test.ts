@@ -1,8 +1,9 @@
 /* eslint-disable no-console */
-import { Identity, Profile } from '../../src/storage/entities/identity';
-import { IdentityStorage } from '../../src/storage/shared/identity-storage';
-import { PlainPacker } from '../../src/iden3comm/packers/plain';
 import {
+  Identity,
+  Profile,
+  IdentityStorage,
+  PlainPacker,
   CredentialStorage,
   FSCircuitStorage,
   IdentityWallet,
@@ -10,31 +11,30 @@ import {
   EthStateStorage,
   OnChainZKPVerifier,
   defaultEthConnectionConfig,
-  hexToBytes,
   FunctionSignatures,
   KMS,
-  buildVerifierId
-} from '../../src';
-import { IDataStorage, IStateStorage, IOnChainZKPVerifier } from '../../src/storage/interfaces';
-import { InMemoryDataSource, InMemoryMerkleTreeStorage } from '../../src/storage/memory';
-import { CredentialRequest, CredentialWallet } from '../../src/credentials';
-import {
+  buildVerifierId,
+  getChallengeFromEthAddress,
+  IDataStorage,
+  IStateStorage,
+  IOnChainZKPVerifier,
+  InMemoryDataSource,
+  InMemoryMerkleTreeStorage,
+  CredentialRequest,
+  CredentialWallet,
   calculateQueryHashV3,
   IProofService,
   parseQueryMetadata,
-  ProofService
-} from '../../src/proof';
-import { CircuitId, Operators } from '../../src/circuits';
-import {
+  ProofService,
+  CircuitId,
+  Operators,
   CredentialStatusType,
   ProofType,
   VerifiableConstants,
-  W3CCredential
-} from '../../src/verifiable';
-import { RootInfo, StateProof } from '../../src/storage/entities/state';
-import path from 'path';
-import { CircuitData } from '../../src/storage/entities/circuitData';
-import {
+  W3CCredential,
+  RootInfo,
+  StateProof,
+  CircuitData,
   AuthDataPrepareFunc,
   AuthProof,
   ContractInvokeHandlerOptions,
@@ -56,15 +56,18 @@ import {
   ZeroKnowledgeInvokeResponse,
   ZeroKnowledgeProofRequest,
   ZeroKnowledgeProofResponse,
-  ZKPPacker
-} from '../../src/iden3comm';
+  ZKPPacker,
+  AbstractMessageHandler,
+  CredentialStatusResolverRegistry,
+  RHSResolver
+} from '../../src';
+
+import path from 'path';
 import { proving } from '@iden3/js-jwz';
 import * as uuid from 'uuid';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { Blockchain, BytesHelper, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { describe, expect, it, beforeEach } from 'vitest';
-import { CredentialStatusResolverRegistry } from '../../src/credentials';
-import { RHSResolver } from '../../src/credentials';
 import { Contract, ethers, JsonRpcProvider, Signer } from 'ethers';
 import {
   createIdentity,
@@ -73,7 +76,6 @@ import {
   RPC_URL,
   SEED_USER
 } from '../helpers';
-import { AbstractMessageHandler } from '../../src/iden3comm/handlers/message-handler';
 import { schemaLoaderForTests } from '../mocks/schema';
 import { DIDResolutionResult } from 'did-resolver';
 import { getDocumentLoader, Options } from '@iden3/js-jsonld-merklization';
@@ -469,7 +471,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
     const options: ContractMessageHandlerOptions = {
       ethSigner,
       challenge,
@@ -522,7 +524,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
     const options: ContractMessageHandlerOptions = {
       ethSigner,
       challenge,
@@ -624,7 +626,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
     const options: ContractMessageHandlerOptions = {
       ethSigner,
       challenge,
@@ -867,7 +869,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractInvokeHandlerOptions = {
       ethSigner,
@@ -1041,7 +1043,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractInvokeHandlerOptions = {
       ethSigner,
@@ -1219,7 +1221,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractMessageHandlerOptions = {
       ethSigner,
@@ -1406,7 +1408,7 @@ describe('contract-request', () => {
     console.log(JSON.stringify(ciRequest));
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractInvokeHandlerOptions = {
       ethSigner,
@@ -1596,7 +1598,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractMessageHandlerOptions = {
       ethSigner,
@@ -1729,7 +1731,7 @@ describe('contract-request', () => {
 
     const ethSigner = new ethers.Wallet(walletKey);
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractMessageHandlerOptions = {
       ethSigner,
@@ -1914,6 +1916,8 @@ describe('contract-request', () => {
       '0'
     );
 
+    const allowedIssuers = proofReqs[0].query?.allowedIssuers ?? [];
+
     const queryToSet = {
       requestId: proofReqs[0].id,
       schema: schemaHash,
@@ -1923,9 +1927,7 @@ describe('contract-request', () => {
       slotIndex: metadataAsInQueryBuilder.slotIndex,
       queryHash: queryHashV3,
       circuitIds: [proofReqs[0].circuitId],
-      allowedIssuers: proofReqs[0].query.allowedIssuers.includes('*')
-        ? []
-        : proofReqs[0].query.allowedIssuers,
+      allowedIssuers: allowedIssuers.includes('*') ? [] : allowedIssuers,
       skipClaimRevocationCheck: false,
       verifierID: verifierId.bigInt(),
       nullifierSessionID: 0,
@@ -2021,7 +2023,7 @@ describe('contract-request', () => {
 
     await tx.wait();
 
-    const challenge = BytesHelper.bytesToInt(hexToBytes(ethSigner.address));
+    const challenge = getChallengeFromEthAddress(ethSigner.address);
 
     const options: ContractMessageHandlerOptions = {
       ethSigner,

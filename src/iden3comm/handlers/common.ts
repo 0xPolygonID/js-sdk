@@ -45,7 +45,11 @@ const getGroupedQueries = (
   requestScope: ZeroKnowledgeProofRequest[]
 ): Map<number, { query: ZeroKnowledgeProofQuery; linkNonce: number }> =>
   requestScope.reduce((acc, proofReq) => {
-    const groupId = proofReq.query.groupId as number | undefined;
+    const query = proofReq.query;
+    if (!query) {
+      return acc;
+    }
+    const groupId = query.groupId as number | undefined;
     if (!groupId) {
       return acc;
     }
@@ -55,20 +59,20 @@ const getGroupedQueries = (
       const seed = getRandomBytes(12);
       const dataView = new DataView(seed.buffer);
       const linkNonce = dataView.getUint32(0);
-      acc.set(groupId, { query: proofReq.query, linkNonce });
+      acc.set(groupId, { query, linkNonce });
       return acc;
     }
 
     const credentialSubject = mergeObjects(
       existedData.query.credentialSubject as JsonDocumentObject,
-      proofReq.query.credentialSubject as JsonDocumentObject
+      query.credentialSubject as JsonDocumentObject
     );
 
     acc.set(groupId, {
       ...existedData,
       query: {
         skipClaimRevocationCheck:
-          existedData.query.skipClaimRevocationCheck || proofReq.query.skipClaimRevocationCheck,
+          existedData.query.skipClaimRevocationCheck || query.skipClaimRevocationCheck,
         ...existedData.query,
         credentialSubject
       }
@@ -129,12 +133,12 @@ export const processZeroKnowledgeProofRequests = async (
       }
 
       const query = proofReq.query;
-      const groupId = query.groupId as number | undefined;
+      const groupId = query?.groupId as number | undefined;
       const combinedQueryData = combinedQueries.get(groupId as number);
 
       if (groupId) {
         if (!combinedQueryData) {
-          throw new Error(`Invalid group id ${query.groupId}`);
+          throw new Error(`Invalid group id ${query?.groupId}`);
         }
         const combinedQuery = combinedQueryData.query;
 
@@ -163,7 +167,7 @@ export const processZeroKnowledgeProofRequests = async (
       zkpRes = await proofService.generateProof(proofReq, to, {
         verifierDid: from,
         challenge: opts.challenge,
-        skipRevocation: Boolean(query.skipClaimRevocationCheck),
+        skipRevocation: Boolean(query?.skipClaimRevocationCheck),
         credential: credWithRevStatus?.cred,
         credentialRevocationStatus: credWithRevStatus?.revStatus,
         linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined,
