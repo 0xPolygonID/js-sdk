@@ -16,7 +16,7 @@ import {
 import { mergeObjects } from '../../utils';
 import { RevocationStatus, VerifiableConstants, W3CCredential } from '../../verifiable';
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
-import { IProofService } from '../../proof';
+import { IProofService, isAuthCircuit } from '../../proof';
 import { CircuitId } from '../../circuits';
 import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
 import { ethers, Signer } from 'ethers';
@@ -164,16 +164,28 @@ export const processZeroKnowledgeProofRequests = async (
       }
 
       const credWithRevStatus = groupedCredentialsCache.get(groupId as number);
-      zkpRes = await proofService.generateProof(proofReq, to, {
-        verifierDid: from,
-        challenge: opts.challenge,
-        skipRevocation: Boolean(query?.skipClaimRevocationCheck),
-        credential: credWithRevStatus?.cred,
-        credentialRevocationStatus: credWithRevStatus?.revStatus,
-        linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined,
-        bypassCache: opts.bypassProofsCache,
-        allowExpiredCredentials: opts.allowExpiredCredentials
-      });
+      if (isAuthCircuit(proofReq.circuitId as CircuitId)) {
+        const authRes = await proofService.generateAuthProof(proofReq.circuitId as CircuitId, to, {
+          challenge: proofReq.params?.challenge ? BigInt(proofReq.params.challenge) : undefined
+        });
+        zkpRes = {
+          id: proofReq.id,
+          circuitId: proofReq.circuitId,
+          pub_signals: authRes.pub_signals,
+          proof: authRes.proof
+        };
+      } else {
+        zkpRes = await proofService.generateProof(proofReq, to, {
+          verifierDid: from,
+          challenge: opts.challenge,
+          skipRevocation: Boolean(query?.skipClaimRevocationCheck),
+          credential: credWithRevStatus?.cred,
+          credentialRevocationStatus: credWithRevStatus?.revStatus,
+          linkNonce: combinedQueryData?.linkNonce ? BigInt(combinedQueryData.linkNonce) : undefined,
+          bypassCache: opts.bypassProofsCache,
+          allowExpiredCredentials: opts.allowExpiredCredentials
+        });
+      }
     } catch (error: unknown) {
       const expectedErrors = [
         VerifiableConstants.ERRORS.PROOF_SERVICE_NO_CREDENTIAL_FOR_IDENTITY_OR_PROFILE,

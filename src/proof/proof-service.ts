@@ -26,6 +26,7 @@ import {
 import {
   PreparedCredential,
   QueryMetadata,
+  isAuthCircuit,
   parseCredentialSubject,
   parseQueryMetadata,
   transformQueryValueToBigInts
@@ -494,11 +495,7 @@ export class ProofService implements IProofService {
     identifier: DID,
     opts?: AuthProofGenerationOptions
   ): Promise<ZeroKnowledgeProofAuthResponse> {
-    if (
-      circuitId !== CircuitId.AuthV2 &&
-      circuitId !== CircuitId.AuthV3 &&
-      circuitId !== CircuitId.AuthV3_8_32
-    ) {
+    if (!isAuthCircuit(circuitId)) {
       throw new Error('CircuitId is not supported');
     }
     if (!opts) {
