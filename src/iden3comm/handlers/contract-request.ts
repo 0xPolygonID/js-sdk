@@ -9,7 +9,6 @@ import {
   ZeroKnowledgeProofResponse
 } from '../types';
 import {
-  AuthMethod,
   ContractInvokeRequest,
   ContractInvokeResponse
 } from '../types/protocol/contract-request';
