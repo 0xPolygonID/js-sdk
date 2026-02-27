@@ -1,8 +1,7 @@
 import { CircuitId } from '../../circuits/models';
 import { IProofService } from '../../proof/proof-service';
-import { defaultAcceptProfile, PROTOCOL_MESSAGE_TYPE, ProtocolVersion } from '../constants';
+import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 import {
-  AcceptProfile,
   BasicMessage,
   IPackageManager,
   ZeroKnowledgeInvokeResponse,
@@ -12,13 +11,17 @@ import { ContractInvokeRequest, ContractInvokeResponse } from '../types/protocol
 import { DID, ChainIds, getUnixTimestamp, BytesHelper } from '@iden3/js-iden3-core';
 import { FunctionSignatures, IOnChainZKPVerifier } from '../../storage';
 import { Signer } from 'ethers';
-import { processProofAuth, processZeroKnowledgeProofRequests, verifyExpiresTime } from './common';
+import {
+  getFirstSupportedProfile,
+  processProofAuth,
+  processZeroKnowledgeProofRequests,
+  verifyExpiresTime
+} from './common';
 import {
   AbstractMessageHandler,
   BasicHandlerOptions,
   IProtocolMessageHandler
 } from './message-handler';
-import { parseAcceptProfile } from '../utils';
 import { hexToBytes } from '../../utils';
 
 /**
@@ -202,8 +205,9 @@ export class ContractRequestHandler
         }
 
         // Get first supported accept profile and pass it to processProofAuth
-        const acceptProfile = this.getFirstSupportedProfile(
+        const acceptProfile = getFirstSupportedProfile(
           PROTOCOL_MESSAGE_TYPE.CONTRACT_INVOKE_REQUEST_MESSAGE_TYPE,
+          this._packerMgr,
           message.body.accept
         );
 
@@ -232,33 +236,6 @@ export class ContractRequestHandler
           `Not supported method id. Only '${FunctionSignatures.SubmitZKPResponseV1}, ${FunctionSignatures.SubmitZKPResponseV2} and ${FunctionSignatures.SubmitResponse} are supported.'`
         );
     }
-  }
-
-  private getFirstSupportedProfile(
-    responseType: string,
-    profile?: string[] | undefined
-  ): AcceptProfile {
-    if (profile?.length) {
-      for (const acceptProfileString of profile) {
-        // 1. check protocol version
-        const acceptProfile = parseAcceptProfile(acceptProfileString);
-        const responseTypeVersion = Number(responseType.split('/').at(-2));
-        if (
-          acceptProfile.protocolVersion !== ProtocolVersion.V1 ||
-          (acceptProfile.protocolVersion === ProtocolVersion.V1 &&
-            (responseTypeVersion < 1 || responseTypeVersion >= 2))
-        ) {
-          continue;
-        }
-        // 2. check packer support
-        if (this._packerMgr.isProfileSupported(acceptProfile.env, acceptProfileString)) {
-          return acceptProfile;
-        }
-      }
-    }
-
-    // if we don't have supported profiles, we use default
-    return defaultAcceptProfile;
   }
 
   /**
