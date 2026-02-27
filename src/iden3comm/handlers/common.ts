@@ -4,6 +4,7 @@ import {
   AuthMethod,
   AuthProof,
   BasicMessage,
+  IPackageManager,
   JsonDocumentObject,
   JWSPackerParams,
   PackerParams,
@@ -18,12 +19,18 @@ import { RevocationStatus, VerifiableConstants, W3CCredential } from '../../veri
 import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { IProofService } from '../../proof';
 import { CircuitId } from '../../circuits';
-import { AcceptJwsAlgorithms, defaultAcceptProfile, MediaType } from '../constants';
+import {
+  AcceptJwsAlgorithms,
+  defaultAcceptProfile,
+  MediaType,
+  ProtocolVersion
+} from '../constants';
 import { ethers, Signer } from 'ethers';
 import { packZkpProof, prepareZkpProof } from '../../storage/blockchain/common';
 import { ProvingMethodAlg } from '@iden3/js-jwz';
 import { defaultProvingMethodAlg } from './message-handler';
 import { JWEPackerParams } from '../packers';
+import { parseAcceptProfile } from '../utils';
 
 /**
  * Union type for handler packer parameters.
@@ -398,4 +405,41 @@ export const initDefaultPackerOptions = (
     return zkpPackerParams;
   }
   throw new Error(`unsupported media type ${mediaType}`);
+};
+
+/**
+ * Selects the first supported profile from the provided list of profiles based on the response type and packer manager capabilities.
+ *
+ * @param responseType
+ * @param packerMgr
+ * @param profile
+ * @returns AcceptProfile
+ */
+
+export const getFirstSupportedProfile = (
+  responseType: string,
+  packerMgr: IPackageManager,
+  profile?: string[] | undefined
+): AcceptProfile => {
+  if (profile?.length) {
+    for (const acceptProfileString of profile) {
+      // 1. check protocol version
+      const acceptProfile = parseAcceptProfile(acceptProfileString);
+      const responseTypeVersion = Number(responseType.split('/').at(-2));
+      if (
+        acceptProfile.protocolVersion !== ProtocolVersion.V1 ||
+        (acceptProfile.protocolVersion === ProtocolVersion.V1 &&
+          (responseTypeVersion < 1 || responseTypeVersion >= 2))
+      ) {
+        continue;
+      }
+      // 2. check packer support
+      if (packerMgr.isProfileSupported(acceptProfile.env, acceptProfileString)) {
+        return acceptProfile;
+      }
+    }
+  }
+
+  // if we don't have supported profiles, we use default
+  return defaultAcceptProfile;
 };
