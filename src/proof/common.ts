@@ -146,11 +146,14 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
   return queries;
 };
 
+export type ParseOptions = Options & {
+  legacyNoopOperator?: boolean;
+};
 export const parseQueryMetadata = async (
   propertyQuery: PropertyQuery,
   ldContextJSON: string,
   credentialType: string,
-  options: Options
+  options: ParseOptions
 ): Promise<QueryMetadata> => {
   const query: QueryMetadata = {
     ...propertyQuery,
@@ -192,6 +195,9 @@ export const parseQueryMetadata = async (
       credentialType,
       byteEncoder.encode(ldContextJSON)
     );
+  } else if (!options.legacyNoopOperator && query.operator === Operators.NOOP) {
+    query.claimPathKey = BigInt(0);
+    query.path = new Path(); // path is not needed for noop operator, but we need to initialize it to avoid errors in the circuits
   } else {
     try {
       const path = await buildFieldPath(
@@ -242,7 +248,7 @@ export const parseQueriesMetadata = async (
   credentialType: string,
   ldContextJSON: string,
   credentialSubject: JsonDocumentObject,
-  options: Options
+  options: ParseOptions
 ): Promise<QueryMetadata[]> => {
   const queriesMetadata = parseCredentialSubject(credentialSubject);
   return Promise.all(

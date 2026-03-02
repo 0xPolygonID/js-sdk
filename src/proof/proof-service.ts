@@ -396,7 +396,13 @@ export class ProofService implements IProofService {
         propertyMetadata,
         byteDecoder.decode(ldContext),
         credentialType,
-        this._ldOptions
+        {
+          ...this._ldOptions,
+          legacyNoopOperator: [
+            CircuitId.AtomicQuerySigV2OnChain,
+            CircuitId.AtomicQueryMTPV2OnChain
+          ].includes(proofReq.circuitId)
+        }
       );
 
       queriesMetadata.push(queryMetadata);
@@ -566,7 +572,11 @@ export class ProofService implements IProofService {
     query.operator = queryMetadata.operator;
     query.values = queryMetadata.values;
 
-    if (queryMetadata.merklizedSchema && merklizedCredential) {
+    if (
+      queryMetadata.merklizedSchema &&
+      merklizedCredential &&
+      queryMetadata.claimPathKey !== BigInt(0)
+    ) {
       const { proof, value: mtValue } = await merklizedCredential.proof(queryMetadata.path);
       query.valueProof = new ValueProof();
       query.valueProof.mtp = proof;
