@@ -268,7 +268,7 @@ export class CredentialProposalHandler
         }
 
         credsFromWallet = credsFromWallet.filter(
-          (c) => c.expirationDate && new Date(c.expirationDate) > new Date()
+          (c) => !c.expirationDate || new Date(c.expirationDate) > new Date()
         );
 
         if (credsFromWallet.length) {
