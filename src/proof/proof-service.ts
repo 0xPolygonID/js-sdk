@@ -80,7 +80,7 @@ export type VerificationResultMetadata = {
 export type ProofServiceOptions = Options & {
   prover?: IZKProver;
   proofsCacheStorage?: IProofStorage;
-  proverOptions?: ProverOptions;
+  defaultProverOptions?: ProverOptions;
 };
 
 export interface ProofVerifyOpts {
@@ -235,7 +235,7 @@ export class ProofService implements IProofService {
     private readonly _stateStorage: IStateStorage,
     opts?: ProofServiceOptions
   ) {
-    this._prover = opts?.prover ?? new NativeProver(_circuitStorage, opts?.proverOptions);
+    this._prover = opts?.prover ?? new NativeProver(_circuitStorage, opts?.defaultProverOptions);
     this._ldOptions = { ...opts, documentLoader: opts?.documentLoader ?? cacheLoader(opts) };
     this._inputsGenerator = new InputGenerator(_identityWallet, _credentialWallet, _stateStorage);
     this._pubSignalsVerifier = new PubSignalsVerifier(
