@@ -2128,7 +2128,12 @@ describe('auth', () => {
     credWallet = new CredentialWallet(dataStorage, resolvers);
     idWallet = new IdentityWallet(kms, dataStorage, credWallet);
 
-    proofService = new ProofService(idWallet, credWallet, circuitStorage, eth, merklizeOpts);
+    proofService = new ProofService(idWallet, credWallet, circuitStorage, eth, {
+      ...merklizeOpts,
+      proverOptions: {
+        maxParallelProofs: 1
+      }
+    });
     const { did: issuerDID } = await createIdentity(idWallet, {
       seed: getRandomBytes(32)
     });
