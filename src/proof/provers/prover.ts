@@ -95,10 +95,10 @@ export class NativeProver implements IZKProver {
    * @returns `Promise<ZKProof>`
    */
   async generate(inputs: Uint8Array, circuitId: CircuitId): Promise<ZKProof> {
+    const circuitData = await this._circuitStorage.loadCircuitData(circuitId, {
+      mode: CircuitLoadMode.Proving
+    });
     return this.withConcurrencyLimit(async () => {
-      const circuitData = await this._circuitStorage.loadCircuitData(circuitId, {
-        mode: CircuitLoadMode.Proving
-      });
       if (!circuitData.wasm) {
         throw new Error(`wasm file doesn't exist for circuit ${circuitId}`);
       }
