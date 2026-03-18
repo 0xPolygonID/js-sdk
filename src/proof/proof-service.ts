@@ -438,7 +438,8 @@ export class ProofService implements IProofService {
         authProfileNonce,
         credentialSubjectProfileNonce,
         linkNonce: groupId ? opts.linkNonce : 0n
-      }
+      },
+      bypassCache: opts?.bypassCache
     });
   }
 
@@ -450,7 +451,8 @@ export class ProofService implements IProofService {
     preparedCredential,
     genesisDid,
     inputParams,
-    circuitQueries
+    circuitQueries,
+    bypassCache
   }: {
     proofReq: ZeroKnowledgeProofRequest;
     vp?: VerifiablePresentation;
@@ -460,6 +462,7 @@ export class ProofService implements IProofService {
     genesisDid: DID;
     inputParams: ProofInputsParams;
     circuitQueries: Query[];
+    bypassCache?: boolean;
   }): Promise<ZeroKnowledgeProofResponse> {
     const { inputs, metadata } = await this.generateInputs(
       preparedCredential,
@@ -482,7 +485,11 @@ export class ProofService implements IProofService {
         pub_signals
       };
       if (this._proofsCacheStorage && credId) {
-        await this._proofsCacheStorage.storeProof(identifier, credId, proofReq, zkpRes);
+        if (!bypassCache) {
+          await this._proofsCacheStorage.storeProof(identifier, credId, proofReq, zkpRes);
+        } else if (this._proofsCacheStorage.removeProof) {
+          await this._proofsCacheStorage.removeProof(identifier, credId, proofReq);
+        }
       }
       return zkpRes;
     } catch (e) {
