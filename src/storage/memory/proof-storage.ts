@@ -32,4 +32,14 @@ export class InMemoryProofStorage implements IProofStorage {
       response
     );
   }
+
+  removeProof(
+    profileDID: DID,
+    credentialId: string,
+    request: ZeroKnowledgeProofRequest
+  ): Promise<void> {
+    return this._cache.delete(
+      createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, request, credentialId)
+    );
+  }
 }

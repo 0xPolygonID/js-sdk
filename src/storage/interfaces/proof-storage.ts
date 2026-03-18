@@ -37,4 +37,17 @@ export interface IProofStorage {
     request: ZeroKnowledgeProofRequest,
     response: ZeroKnowledgeProofResponse
   ): Promise<void>;
+
+  /**
+   * removes proof from storage
+   * @param profileDID - profile DID
+   * @param credentialId - credential id
+   * @param request - ZeroKnowledgeProofRequest
+   * @returns `Promise<void>`
+   */
+  removeProof?(
+    profileDID: DID,
+    credentialId: string,
+    request: ZeroKnowledgeProofRequest
+  ): Promise<void>;
 }
