@@ -1,8 +1,8 @@
 import { IKeyProvider } from '../kms';
 import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 import * as providerHelpers from '../provider-helpers';
-import { ed25519 } from '@noble/curves/ed25519';
-import { bytesToHex } from '../../utils';
+import { ed25519 } from '@noble/curves/ed25519.js';
+import { bytesToHex, hexToBytes } from '../../utils';
 
 /**
  * Provider for Ed25519 keys
@@ -80,7 +80,7 @@ export class Ed25519Provider implements IKeyProvider {
    */
   async publicKey(keyId: KmsKeyId): Promise<string> {
     const privateKeyHex = await this.privateKey(keyId);
-    const publicKey = ed25519.getPublicKey(privateKeyHex);
+    const publicKey = ed25519.getPublicKey(hexToBytes(privateKeyHex));
     return bytesToHex(publicKey);
   }
 
@@ -93,7 +93,7 @@ export class Ed25519Provider implements IKeyProvider {
    */
   async sign(keyId: KmsKeyId, digest: Uint8Array): Promise<Uint8Array> {
     const privateKeyHex = await this.privateKey(keyId);
-    return ed25519.sign(digest, privateKeyHex);
+    return ed25519.sign(digest, hexToBytes(privateKeyHex));
   }
 
   /**
@@ -105,7 +105,7 @@ export class Ed25519Provider implements IKeyProvider {
    */
   async verify(digest: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
     const publicKeyHex = await this.publicKey(keyId);
-    return ed25519.verify(signatureHex, digest, publicKeyHex);
+    return ed25519.verify(hexToBytes(signatureHex), digest, hexToBytes(publicKeyHex));
   }
 
   /**

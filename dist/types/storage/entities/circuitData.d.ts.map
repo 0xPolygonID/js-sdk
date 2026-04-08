@@ -1,0 +1,1 @@
+{"version":3,"file":"circuitData.d.ts","sourceRoot":"","sources":["../../../../src/storage/entities/circuitData.ts"],"names":[],"mappings":"AAAA,iFAAiF;AACjF,MAAM,MAAM,WAAW,GAAG;IACxB,SAAS,EAAE,MAAM,CAAC;IAClB,IAAI,EAAE,UAAU,GAAG,IAAI,CAAC;IACxB,eAAe,EAAE,UAAU,GAAG,IAAI,CAAC;IACnC,UAAU,EAAE,UAAU,GAAG,IAAI,CAAC;CAC/B,CAAC"}

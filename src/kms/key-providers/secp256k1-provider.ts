@@ -2,7 +2,7 @@ import { IKeyProvider } from '../kms';
 import { AbstractPrivateKeyStore, KmsKeyId, KmsKeyType } from '../store';
 import * as providerHelpers from '../provider-helpers';
 import { base64UrlToBytes, bytesToHex } from '../../utils';
-import { secp256k1 } from '@noble/curves/secp256k1';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { sha256 } from '@iden3/js-crypto';
 import { ES256KSigner, hexToBytes } from 'did-jwt';
 
@@ -82,7 +82,7 @@ export class Sec256k1Provider implements IKeyProvider {
    */
   async publicKey(keyId: KmsKeyId): Promise<string> {
     const privateKeyHex = await this.privateKey(keyId);
-    const publicKey = secp256k1.getPublicKey(privateKeyHex, false); // 04 + x + y (uncompressed key)
+    const publicKey = secp256k1.getPublicKey(hexToBytes(privateKeyHex), false); // 04 + x + y (uncompressed key)
     return bytesToHex(publicKey);
   }
 
@@ -130,7 +130,7 @@ export class Sec256k1Provider implements IKeyProvider {
    */
   async verify(message: Uint8Array, signatureHex: string, keyId: KmsKeyId): Promise<boolean> {
     const publicKeyHex = await this.publicKey(keyId);
-    return secp256k1.verify(signatureHex, sha256(message), publicKeyHex);
+    return secp256k1.verify(hexToBytes(signatureHex), sha256(message), hexToBytes(publicKeyHex));
   }
 
   private async privateKey(keyId: KmsKeyId): Promise<string> {

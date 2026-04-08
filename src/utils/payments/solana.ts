@@ -5,13 +5,13 @@ import {
   Iden3SolanaEd25519SignatureV1,
   MultiChainPaymentConfigOption
 } from '../../iden3comm';
-import { ed25519 } from '@noble/curves/ed25519';
+import { ed25519 } from '@noble/curves/ed25519.js';
 import {
   PaymentRequestDataType,
   SOLANA_CHAIN_REF,
   SupportedPaymentProofType
 } from '../../verifiable';
-import { byteEncoder, bytesToHex } from '../encoding';
+import { byteEncoder, bytesToHex, hexToBytes } from '../encoding';
 import { getUnixTimestamp } from '@iden3/js-iden3-core';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { Resolvable } from 'did-resolver';
@@ -356,5 +356,9 @@ export const verifyIden3SolanaPaymentRequest = async (
     throw new Error('No Ed25519VerificationKey2020 found in DID document');
   }
 
-  return ed25519.verify(proof.proofValue, serialized, new PublicKey(publicKeyMultibase).toBytes());
+  return ed25519.verify(
+    hexToBytes(proof.proofValue),
+    serialized,
+    new PublicKey(publicKeyMultibase).toBytes()
+  );
 };

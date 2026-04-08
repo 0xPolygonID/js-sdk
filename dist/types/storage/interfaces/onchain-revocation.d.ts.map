@@ -1,0 +1,1 @@
+{"version":3,"file":"onchain-revocation.d.ts","sourceRoot":"","sources":["../../../../src/storage/interfaces/onchain-revocation.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,gBAAgB,EAAE,MAAM,kBAAkB,CAAC;AACpD;;;;;GAKG;AACH,MAAM,WAAW,uBAAuB;IACtC;;;;;;;OAOG;IACH,+BAA+B,CAC7B,QAAQ,EAAE,MAAM,EAChB,KAAK,EAAE,MAAM,EACb,KAAK,EAAE,MAAM,GACZ,OAAO,CAAC,gBAAgB,CAAC,CAAC;CAC9B"}

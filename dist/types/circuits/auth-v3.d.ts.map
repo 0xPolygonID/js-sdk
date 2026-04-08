@@ -1,0 +1,1 @@
+{"version":3,"file":"auth-v3.d.ts","sourceRoot":"","sources":["../../../src/circuits/auth-v3.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAE,gBAAgB,EAAE,MAAM,WAAW,CAAC;AAE3D;;;;;;;GAOG;AACH,qBAAa,YAAa,SAAQ,YAAY;gBAChC,IAAI,CAAC,EAAE;QAAE,OAAO,CAAC,EAAE,MAAM,CAAC;QAAC,cAAc,CAAC,EAAE,MAAM,CAAA;KAAE;CASjE;AAED;;;;;GAKG;AACH,qBAAa,gBAAiB,SAAQ,gBAAgB;CAAG"}

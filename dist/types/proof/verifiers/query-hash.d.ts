@@ -1,0 +1,4 @@
+import { SchemaHash } from '@iden3/js-iden3-core';
+export declare function calculateQueryHashV2(values: bigint[], schema: SchemaHash, slotIndex: string | number, operator: string | number, claimPathKey: string | number, claimPathNotExists: string | number): bigint;
+export declare function calculateQueryHashV3(values: bigint[], schema: SchemaHash, slotIndex: string | number, operator: string | number, claimPathKey: string | number, valueArraySize: string | number, merklized: string | number, isRevocationChecked: string | number, verifierID: string | number, nullifierSessionID: string | number): bigint;
+//# sourceMappingURL=query-hash.d.ts.map

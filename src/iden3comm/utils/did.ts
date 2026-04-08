@@ -1,17 +1,9 @@
 import { SUPPORTED_PUBLIC_KEY_TYPES } from '../constants';
 import { DIDDocument, JsonWebKey, VerificationMethod } from 'did-resolver';
-import { secp256k1 as sec } from '@noble/curves/secp256k1';
-
 import { KmsKeyType } from '../../kms';
-import {
-  base58ToBytes,
-  base64UrlToBytes,
-  bytesToBase64url,
-  bytesToHex,
-  hexToBytes
-} from '../../utils';
+import { base58ToBytes, base64UrlToBytes, bytesToBase64url, hexToBytes } from '../../utils';
 import { PROTOCOL_CONSTANTS } from '..';
-import { p384 } from '@noble/curves/p384';
+import { p384 } from '@noble/curves/nist.js';
 import { BytesHelper } from '@iden3/js-iden3-core';
 
 const DIDAuthenticationSection = 'authentication';
@@ -62,17 +54,14 @@ export const extractPublicKeyBytes = (
     vm.publicKeyJwk.x &&
     vm.publicKeyJwk.y
   ) {
-    const [xHex, yHex] = [
-      base64UrlToBytes(vm.publicKeyJwk.x),
-      base64UrlToBytes(vm.publicKeyJwk.y)
-    ].map(bytesToHex);
-    const x = xHex.includes('0x') ? BigInt(xHex) : BigInt(`0x${xHex}`);
-    const y = yHex.includes('0x') ? BigInt(yHex) : BigInt(`0x${yHex}`);
+    const xBytes = base64UrlToBytes(vm.publicKeyJwk.x);
+    const yBytes = base64UrlToBytes(vm.publicKeyJwk.y);
+    const x32 = new Uint8Array(32);
+    const y32 = new Uint8Array(32);
+    x32.set(xBytes, 32 - xBytes.length);
+    y32.set(yBytes, 32 - yBytes.length);
     return {
-      publicKeyBytes: sec.ProjectivePoint.fromAffine({
-        x,
-        y
-      }).toRawBytes(false),
+      publicKeyBytes: new Uint8Array([0x04, ...x32, ...y32]),
       kmsKeyType: KmsKeyType.Secp256k1
     };
   }

@@ -20,14 +20,6 @@ const config = {
   external: baseExternal
 };
 
-
-// For browser ESM build, we need to bundle some dependencies that are problematic as externals  
-const browserESMExternal = [
-  ...Object.keys(packageJson.peerDependencies).filter((key) => key.startsWith('@iden3/')),
-  'snarkjs',
-  'ffjavascript'
-];
-
 export default defineConfig([
   {
     ...config,
