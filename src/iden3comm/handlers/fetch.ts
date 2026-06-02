@@ -461,8 +461,11 @@ export class FetchHandler
       throw new Error('credential is missing in issuance response message');
     }
 
-    if (!(issuanceMsg.body.credential instanceof W3CCredential) && typeof issuanceMsg.body.credential === 'object') {
-       issuanceMsg.body.credential = W3CCredential.fromJSON(issuanceMsg.body.credential);
+    if (
+      !(issuanceMsg.body.credential instanceof W3CCredential) &&
+      typeof issuanceMsg.body.credential === 'object'
+    ) {
+      issuanceMsg.body.credential = W3CCredential.fromJSON(issuanceMsg.body.credential);
     } else if (!(issuanceMsg.body.credential instanceof W3CCredential)) {
       throw new Error('credential object is not properly unmarshaled');
     }
