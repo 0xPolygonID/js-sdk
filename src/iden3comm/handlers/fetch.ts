@@ -461,10 +461,15 @@ export class FetchHandler
       throw new Error('credential is missing in issuance response message');
     }
 
-    if (!(issuanceMsg.body.credential instanceof W3CCredential)) {
-      throw new Error('credential object is not properly unmarshaled');
+    let credential = issuanceMsg.body.credential;
+
+    if (!(credential instanceof W3CCredential)) {
+      if (typeof credential !== 'object' || credential === null) {
+        throw new Error('credential object is not properly unmarshaled');
+      }
+      credential = W3CCredential.fromJSON(credential);
     }
-    await this.opts.credentialWallet.save(issuanceMsg.body.credential);
+    await this.opts.credentialWallet.save(credential);
 
     return null;
   }
@@ -484,9 +489,6 @@ export class FetchHandler
     if (!opts?.allowExpiredMessages) {
       verifyExpiresTime(issuanceMsg);
     }
-    // unpack returns body.credential as JSON object, we need to assign type to it.
-    // TODO: add unmarshaler for messages
-    issuanceMsg.body.credential = W3CCredential.fromJSON(issuanceMsg.body.credential);
     await this.handleIssuanceResponseMsg(issuanceMsg);
     return Uint8Array.from([]);
   }
