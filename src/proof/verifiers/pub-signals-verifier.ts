@@ -249,13 +249,14 @@ export class PubSignalsVerifier {
       throw new Error(`can't load schema for request query`);
     }
 
-    const queriesMetadata = await parseQueriesMetadata(
-      query.type,
+    const queriesMetadata = await parseProofQueryMetadata(
+      query.type || '',
       JSON.stringify(context),
-      query.credentialSubject as JsonDocumentObject,
+      query,
       {
         documentLoader: loader
-      }
+      },
+      verifiablePresentation
     );
 
     if (!circuitId) {
