@@ -26,6 +26,7 @@ import { RHSResolver } from '../../src/credentials';
 import { JsonRpcProvider } from 'ethers';
 import { RPC_URL } from '../helpers';
 import { schemaLoaderForTests } from '../mocks/schema';
+import { Options } from '@iden3/js-jsonld-merklization';
 
 describe.sequential('sig proofs', () => {
   let idWallet: IdentityWallet;
@@ -39,7 +40,7 @@ describe.sequential('sig proofs', () => {
   let userDID: DID;
   let issuerDID: DID;
   let circuitStorage: ICircuitStorage;
-  let merklizeOpts;
+  let merklizeOpts: Options;
 
   const mockStateStorage: IStateStorage = {
     getLatestStateById: async () => {

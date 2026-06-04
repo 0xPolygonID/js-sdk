@@ -29,9 +29,7 @@ import {
   flattenToQueryShape,
   parseQueryMetadata,
   parseZKPQuery,
-  toGISTProof,
   isAuthCircuit,
-  parseCredentialSubject,
   transformQueryValueToBigInts
 } from './common';
 import { IZKProver, NativeProver } from './provers/prover';
@@ -371,9 +369,7 @@ export class ProofService implements IProofService {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
-    const propertiesMetadata = parseCredentialSubject(
-      query.credentialSubject as JsonDocumentObject
-    );
+    const propertiesMetadata = parseZKPQuery(query);
     if (!propertiesMetadata.length) {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
     }

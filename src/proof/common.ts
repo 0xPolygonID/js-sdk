@@ -16,8 +16,7 @@ import {
   getSerializationAttrFromContext,
   getFieldSlotIndex,
   VerifiableConstants,
-  ProofQuery,
-  CredentialStatusType
+  ProofQuery
 } from '../verifiable';
 import { Merklizer, Options, Path } from '@iden3/js-jsonld-merklization';
 import { byteEncoder } from '../utils';
@@ -270,9 +269,11 @@ export const parseQueryMetadata = async (
       break;
     case '':
       break;
-    default:
+    case 'expirationDate':
+    case 'issuanceDate':
       ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
       credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
+      break;
   }
   const query: QueryMetadata = {
     ...propertyQuery,

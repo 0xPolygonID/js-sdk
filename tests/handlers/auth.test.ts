@@ -52,13 +52,7 @@ import {
   byteDecoder,
   getChallengeFromEthAddress
 } from '../../src';
-import {
-  Blockchain,
-  DID,
-  DidMethod,
-  NetworkId,
-  getDateFromUnixTimestamp
-} from '@iden3/js-iden3-core';
+import { Blockchain, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
 import { ProvingMethodAlg, Token, proving } from '@iden3/js-jwz';
 import { describe, expect, it, beforeEach } from 'vitest';
 import { ethers } from 'ethers';
