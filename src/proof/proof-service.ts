@@ -398,6 +398,9 @@ export class ProofService implements IProofService {
       let credentialType = query['type'] as string;
       // todo: check if we can move this to the parseQueryMetadata function
       if (propertyMetadata.fieldName.startsWith('credentialStatus.')) {
+        if (!preparedCredential.credential.credentialStatus) {
+          throw new Error('credential does not have credentialStatus but query requires it');
+        }
         credentialType = preparedCredential.credential.credentialStatus.type;
       }
       const queryMetadata = await parseQueryMetadata(

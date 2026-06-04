@@ -257,15 +257,16 @@ export const parseQueryMetadata = async (
   credentialType: string,
   options: ParseOptions
 ): Promise<QueryMetadata> => {
-  const replacedFieldName = propertyQuery.fieldName;
-  const [fieldParentObj] = propertyQuery.fieldName.split('.');
+  const originalFieldName = propertyQuery.fieldName;
+  const [fieldParentObj] = originalFieldName.split('.');
+  let strippedFieldName = originalFieldName;
   switch (fieldParentObj) {
     case 'credentialStatus':
-      propertyQuery.fieldName = propertyQuery.fieldName.replace('credentialStatus.', '');
+      strippedFieldName = originalFieldName.replace('credentialStatus.', '');
       ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT;
       break;
     case 'credentialSubject':
-      propertyQuery.fieldName = propertyQuery.fieldName.replace('credentialSubject.', '');
+      strippedFieldName = originalFieldName.replace('credentialSubject.', '');
       break;
     case '':
       break;
@@ -277,6 +278,7 @@ export const parseQueryMetadata = async (
   }
   const query: QueryMetadata = {
     ...propertyQuery,
+    fieldName: strippedFieldName,
     slotIndex: 0,
     merklizedSchema: false,
     datatype: '',
@@ -285,14 +287,14 @@ export const parseQueryMetadata = async (
     path: new Path()
   };
 
-  if (!propertyQuery.fieldName && propertyQuery.operator !== Operators.NOOP) {
+  if (!strippedFieldName && propertyQuery.operator !== Operators.NOOP) {
     throw new Error('query must have a field name if operator is not $noop');
   }
 
-  if (propertyQuery.fieldName) {
+  if (strippedFieldName) {
     query.datatype = await Path.newTypeFromContext(
       ldContextJSON,
-      `${credentialType}.${propertyQuery.fieldName}`,
+      `${credentialType}.${strippedFieldName}`,
       options
     );
   }
@@ -311,7 +313,7 @@ export const parseQueryMetadata = async (
 
   if (!query.merklizedSchema) {
     query.slotIndex = await getFieldSlotIndex(
-      propertyQuery.fieldName,
+      strippedFieldName,
       credentialType,
       byteEncoder.encode(ldContextJSON)
     );
@@ -320,12 +322,7 @@ export const parseQueryMetadata = async (
     query.path = new Path(); // path is not needed for noop operator, but we need to initialize it to avoid errors in the circuits
   } else {
     try {
-      const path = await buildFieldPath(
-        ldContextJSON,
-        credentialType,
-        propertyQuery.fieldName,
-        options
-      );
+      const path = await buildFieldPath(ldContextJSON, credentialType, strippedFieldName, options);
       query.claimPathKey = await path.mtEntry();
       query.path = path;
     } catch (e) {
@@ -361,7 +358,7 @@ export const parseQueryMetadata = async (
     }
     query.values = values;
   }
-  query.fieldName = replacedFieldName;
+  query.fieldName = originalFieldName;
   return query;
 };
 
