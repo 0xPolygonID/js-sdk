@@ -102,6 +102,8 @@ export type VerifiablePresentation = {
       type?: string;
       revocationNonce?: number;
     };
+    expirationDate?: string;
+    issuanceDate?: string;
   };
 };
 

@@ -297,39 +297,18 @@ export const StandardJSONCredentialsQueryFilter = (query: ProofQuery): FilterQue
         return acc.concat(
           new FilterQuery('credentialSchema.id', comparatorOptions.$eq, queryValue)
         );
-      case 'credentialSubject': {
-        const reqFilters = Object.keys(queryValue).reduce((acc: FilterQuery[], fieldKey) => {
-          const fieldParams = queryValue[fieldKey];
-          if (typeof fieldParams === 'object' && Object.keys(fieldParams).length === 0) {
-            return acc.concat([
-              new FilterQuery(`credentialSubject.${fieldKey}`, comparatorOptions.$noop, null)
-            ]);
-          }
-          const res = Object.keys(fieldParams).map((comparator) => {
-            const value = fieldParams[comparator];
-            const path = `credentialSubject.${fieldKey}`;
-            return new FilterQuery(
-              path,
-              comparatorOptions[comparator as keyof typeof comparatorOptions],
-              value
-            );
-          });
-          return acc.concat(res);
-        }, []);
-
-        return acc.concat(reqFilters);
-      }
+      case 'credentialSubject':
       case 'credentialStatus': {
         const reqFilters = Object.keys(queryValue).reduce((acc: FilterQuery[], fieldKey) => {
           const fieldParams = queryValue[fieldKey];
           if (typeof fieldParams === 'object' && Object.keys(fieldParams).length === 0) {
             return acc.concat([
-              new FilterQuery(`credentialStatus.${fieldKey}`, comparatorOptions.$noop, null)
+              new FilterQuery(`${queryKey}.${fieldKey}`, comparatorOptions.$noop, null)
             ]);
           }
           const res = Object.keys(fieldParams).map((comparator) => {
             const value = fieldParams[comparator];
-            const path = `credentialStatus.${fieldKey}`;
+            const path = `${queryKey}.${fieldKey}`;
             return new FilterQuery(
               path,
               comparatorOptions[comparator as keyof typeof comparatorOptions],

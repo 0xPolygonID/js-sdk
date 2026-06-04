@@ -45,7 +45,8 @@ import {
   PROTOCOL_CONSTANTS,
   VerifiablePresentation,
   JsonDocumentObject,
-  ZeroKnowledgeProofAuthResponse
+  ZeroKnowledgeProofAuthResponse,
+  ZeroKnowledgeProofQuery
 } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
 import { ICircuitStorage, IProofStorage, IStateStorage } from '../storage';
@@ -369,7 +370,11 @@ export class ProofService implements IProofService {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
-    const propertiesMetadata = parseZKPQuery(query);
+    const processedQuery = this.preprocessZeroKnowledgeProofRequest(
+      query,
+      preparedCredential.credential
+    );
+    const propertiesMetadata = parseZKPQuery(processedQuery);
     if (!propertiesMetadata.length) {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
     }
@@ -390,10 +395,7 @@ export class ProofService implements IProofService {
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];
     for (const propertyMetadata of propertiesMetadata) {
-      if (!proofReq.query) {
-        throw new Error(`query must be provided`);
-      }
-      let credentialType = proofReq.query['type'] as string;
+      let credentialType = query['type'] as string;
       // todo: check if we can move this to the parseQueryMetadata function
       if (propertyMetadata.fieldName.startsWith('credentialStatus.')) {
         credentialType = preparedCredential.credential.credentialStatus.type;
@@ -626,22 +628,26 @@ export class ProofService implements IProofService {
     return byteEncoder.encode(JSON.stringify(ldSchema));
   }
 
-  // for full object SD
+  // for full object SD — expands empty {} to all credential fields
   private preprocessZeroKnowledgeProofRequest(
-    request: ZeroKnowledgeProofRequest,
+    query: ZeroKnowledgeProofQuery,
     cred: W3CCredential
-  ): ZeroKnowledgeProofRequest {
-    if (!request.query || !request.query.credentialSubject) {
-      return request;
-    }
-    const { credentialStatus, credentialSubject } = request.query;
+  ): ZeroKnowledgeProofQuery {
+    const { credentialStatus, credentialSubject } = query;
+    const queryPatch: Partial<ZeroKnowledgeProofQuery> = {};
+
     if (credentialSubject && Object.keys(credentialSubject).length === 0) {
-      request.query.credentialSubject = flattenToQueryShape(cred.credentialSubject);
+      queryPatch.credentialSubject = flattenToQueryShape(cred.credentialSubject);
     }
     if (credentialStatus && Object.keys(credentialStatus).length === 0 && cred.credentialStatus) {
-      request.query.credentialStatus = flattenToQueryShape(cred.credentialStatus);
+      queryPatch.credentialStatus = flattenToQueryShape(cred.credentialStatus);
     }
-    return request;
+
+    if (!Object.keys(queryPatch).length) {
+      return query;
+    }
+
+    return { ...query, ...queryPatch };
   }
 
   /** {@inheritdoc IProofService.generateAuthV2Inputs} */
