@@ -1,9 +1,13 @@
 import { DID } from '@iden3/js-iden3-core';
 import { Token, ProvingMethodAlg } from '@iden3/js-jwz';
-import { ZKPPackerParams } from '../../src/iden3comm/types';
-import { AuthV2PubSignals } from '../../src/circuits';
-import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../src/iden3comm/constants';
-import { byteDecoder, byteEncoder } from '../../src';
+
+import {
+  byteDecoder,
+  byteEncoder,
+  ZKPPackerParams,
+  PROTOCOL_CONSTANTS,
+  AuthV2PubSignals
+} from '../../src';
 import { describe, expect, it } from 'vitest';
 import { initZKPPacker } from './mock/proving';
 describe('zkp packer tests', () => {
@@ -39,14 +43,16 @@ describe('zkp packer tests', () => {
     );
     const iden3msg = await p.unpack(msgZKP);
 
-    expect(PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE).to.deep.equal(iden3msg.type);
+    expect(
+      PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE
+    ).to.deep.equal(iden3msg.type);
   });
 
   it('test getSupportedProfiles', async () => {
     const p = await initZKPPacker();
     const [accept] = p.getSupportedProfiles();
     expect(accept).to.be.eq(
-      `iden3comm/v1;env=${MediaType.ZKPMessage};alg=groth16;circuitIds=authV2`
+      `iden3comm/v1;env=${PROTOCOL_CONSTANTS.MediaType.ZKPMessage};alg=groth16;circuitIds=authV2`
     );
   });
 });

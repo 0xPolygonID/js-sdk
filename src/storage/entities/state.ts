@@ -6,7 +6,7 @@ import { ProofJSON } from '@iden3/js-merkletree';
  * @interface   StateInfo
  */
 export interface StateInfo {
-  id?: bigint;
+  id: bigint;
   state?: bigint;
   replacedByState?: bigint;
   createdAtTimestamp?: bigint;

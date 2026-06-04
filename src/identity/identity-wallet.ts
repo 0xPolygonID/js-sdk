@@ -59,7 +59,7 @@ import {
 } from '../credentials/status/credential-status-publisher';
 import { InputGenerator, IZKProver } from '../proof';
 import { ITransactionService, TransactionService } from '../blockchain';
-import { DIDDocument } from '../iden3comm';
+import { DIDDocument, JsonDocumentObject } from '../iden3comm';
 import {
   DIDDocumentBuilder,
   JWK2020_CONTEXT_V1,
@@ -87,6 +87,7 @@ export type CreateProfileOptions = {
   tags?: string[];
   didDocument?: DIDDocument;
   encryptionKeyOps?: EncryptionKeyOps;
+  metadata?: JsonDocumentObject;
 };
 
 /**
@@ -859,6 +860,7 @@ export class IdentityWallet implements IIdentityWallet {
     const profileDID = generateProfileDID(did, nonce);
     const isArray = Array.isArray(tagsOrOptions);
     const tags = isArray ? tagsOrOptions : tagsOrOptions?.tags;
+    const metadata = !isArray ? tagsOrOptions?.metadata : undefined;
 
     const { didDocument, encryptionKeyOps } = (isArray ? {} : tagsOrOptions ?? {}) as {
       didDocument?: DIDDocument;
@@ -913,7 +915,8 @@ export class IdentityWallet implements IIdentityWallet {
       genesisIdentifier: did.string(),
       verifier,
       tags,
-      did_doc
+      did_doc,
+      metadata
     });
 
     return profileDID;

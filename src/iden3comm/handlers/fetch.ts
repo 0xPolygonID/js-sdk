@@ -1,4 +1,4 @@
-import { MediaType } from '../constants';
+import { MEDIA_TYPE_TO_CONTENT_TYPE, MediaType } from '../constants';
 import { PROTOCOL_MESSAGE_TYPE } from '../constants';
 
 import {
@@ -40,9 +40,6 @@ import { Options } from '@iden3/js-jsonld-merklization';
 export type FetchHandlerOptions = BasicHandlerOptions & {
   mediaType: MediaType;
   packerOptions?: HandlerPackerParams;
-  headers?: {
-    [key: string]: string;
-  };
 };
 
 /**
@@ -248,7 +245,7 @@ export class FetchHandler
         const resp = await fetch(offerMessage.body.url, {
           method: 'post',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': MEDIA_TYPE_TO_CONTENT_TYPE[ctx.mediaType],
             ...ctx.headers
           },
           body: token
@@ -464,10 +461,15 @@ export class FetchHandler
       throw new Error('credential is missing in issuance response message');
     }
 
-    if (!(issuanceMsg.body.credential instanceof W3CCredential)) {
-      throw new Error('credential object is not properly unmarshaled');
+    let credential = issuanceMsg.body.credential;
+
+    if (!(credential instanceof W3CCredential)) {
+      if (typeof credential !== 'object' || credential === null) {
+        throw new Error('credential object is not properly unmarshaled');
+      }
+      credential = W3CCredential.fromJSON(credential);
     }
-    await this.opts.credentialWallet.save(issuanceMsg.body.credential);
+    await this.opts.credentialWallet.save(credential);
 
     return null;
   }
@@ -487,9 +489,6 @@ export class FetchHandler
     if (!opts?.allowExpiredMessages) {
       verifyExpiresTime(issuanceMsg);
     }
-    // unpack returns body.credential as JSON object, we need to assign type to it.
-    // TODO: add unmarshaler for messages
-    issuanceMsg.body.credential = W3CCredential.fromJSON(issuanceMsg.body.credential);
     await this.handleIssuanceResponseMsg(issuanceMsg);
     return Uint8Array.from([]);
   }

@@ -1,8 +1,8 @@
 import { Hex } from '@iden3/js-crypto';
-import { Id, buildDIDType, genesisFromEthAddress, DID } from '@iden3/js-iden3-core';
+import { Id, buildDIDType, genesisFromEthAddress, DID, BytesHelper } from '@iden3/js-iden3-core';
 import { Hash } from '@iden3/js-merkletree';
 import { DIDResolutionResult, VerificationMethod, DIDResolutionMetadata } from 'did-resolver';
-import { keccak256 } from 'ethers';
+import { isAddress, keccak256 } from 'ethers';
 import { hexToBytes } from './encoding';
 
 /**
@@ -24,6 +24,17 @@ export function isGenesisState(did: DID, state: bigint | string): boolean {
     state = Hash.fromHex(state).bigInt();
   }
   const id = DID.idFromDID(did);
+  return getIsGenesisStateById(id, state);
+}
+
+/**
+ * Checks if state is genesis state by id
+ *
+ * @param {Id} id - id
+ * @param {bigint} state  - hash as bigint
+ * @returns boolean
+ */
+export function getIsGenesisStateById(id: Id, state: bigint): boolean {
   const { method, blockchain, networkId } = DID.decodePartsFromId(id);
   const type = buildDIDType(method, blockchain, networkId);
   const idFromState = Id.idGenesisFromIdenState(type, state);
@@ -162,4 +173,12 @@ export const buildDIDFromEthPubKey = (didType: Uint8Array, pubKeyEth: string): D
 
 export const buildDIDFromEthAddress = (didType: Uint8Array, ethAddress: string): DID => {
   return _buildDIDFromEthAddress(didType, hexToBytes(ethAddress));
+};
+
+export const getChallengeFromEthAddress = (address: string): bigint => {
+  if (isAddress(address)) {
+    return BytesHelper.bytesToInt(hexToBytes(address));
+  }
+
+  throw new Error(`Invalid Ethereum address: ${address}`);
 };

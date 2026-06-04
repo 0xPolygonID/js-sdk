@@ -18,15 +18,19 @@ export async function getPermitSignature(
   tokenAddress: string,
   spender: string,
   value: bigint,
-  deadline: number
+  deadline: number,
+  chainId: bigint
 ) {
   const erc20PermitContract = new Contract(tokenAddress, permitAbi, signer);
   const nonce = await erc20PermitContract.nonces(await signer.getAddress());
-  const domainData = await erc20PermitContract.eip712Domain();
+  const [name, version] = await Promise.all([
+    erc20PermitContract.name(),
+    erc20PermitContract.version?.().catch(() => '1') ?? Promise.resolve('1')
+  ]);
   const domain = {
-    name: domainData[1],
-    version: domainData[2],
-    chainId: domainData[3],
+    name,
+    version,
+    chainId,
     verifyingContract: tokenAddress
   };
 

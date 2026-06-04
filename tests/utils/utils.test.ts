@@ -2,10 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDIDFromEthAddress,
   buildDIDFromEthPubKey,
+  CACHE_KEY_VERSION,
+  CircuitId,
+  createZkpRequestCacheKey,
   JsonDocumentObject,
-  mergeObjects
+  mergeObjects,
+  ProofType,
+  ZeroKnowledgeProofRequest
 } from '../../src';
-import { Blockchain, buildDIDType, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import { Blockchain, buildDIDType, DID, DidMethod, NetworkId } from '@iden3/js-iden3-core';
+import * as uuid from 'uuid';
 
 describe('merge credential subjects to create query', () => {
   it('should merge two valid JsonDocumentObjects correctly', () => {
@@ -178,5 +184,101 @@ describe('build did from ethereum address', () => {
     expect(did.string()).to.equal(
       'did:iden3:polygon:amoy:x6x5sor7zpycB7z7Q9348dXJxZ9s5b9AgmPeSccZz'
     );
+  });
+});
+
+describe('createZkpRequestCacheKey', () => {
+  const profileDID = DID.parse('did:iden3:polygon:amoy:x6x5sor7zpycB7z7Q9348dXJxZ9s5b9AgmPeSccZz');
+  const credId = uuid.v4();
+  it('produces the same key for same request with different property order', () => {
+    const r1: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQueryV3,
+      optional: false,
+      query: {
+        context: 'https://example.com/ctx',
+        type: 'EmailCredential',
+        proofType: ProofType.BJJSignature,
+        skipClaimRevocationCheck: false,
+        allowedIssuers: ['did:issuer:1', 'did:issuer:2'],
+        credentialSubject: {
+          email: {}
+        }
+      },
+      params: {
+        nullifierSessionId: 'session-1'
+      }
+    };
+
+    const r2: ZeroKnowledgeProofRequest = {
+      params: {
+        nullifierSessionId: 'session-1'
+      },
+      query: {
+        credentialSubject: {
+          email: {}
+        },
+        allowedIssuers: ['did:issuer:2', 'did:issuer:1'],
+        skipClaimRevocationCheck: false,
+        proofType: ProofType.BJJSignature,
+        type: 'EmailCredential',
+        context: 'https://example.com/ctx'
+      },
+      optional: false,
+      circuitId: CircuitId.AtomicQueryV3,
+      id: 1
+    };
+
+    const key1 = createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, r1, credId);
+    const key2 = createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, r2, credId);
+
+    expect(key1).to.equal(key2);
+  });
+
+  it('produces different key for different request', () => {
+    const r1: ZeroKnowledgeProofRequest = {
+      id: 1,
+      circuitId: CircuitId.AtomicQueryV3,
+      optional: false,
+      query: {
+        context: 'https://example.com/ctx',
+        type: 'EmailCredential',
+        proofType: ProofType.BJJSignature,
+        skipClaimRevocationCheck: false,
+        allowedIssuers: ['did:issuer:1', 'did:issuer:2'],
+        credentialSubject: {
+          email: {}
+        }
+      },
+      params: {
+        nullifierSessionId: 'session-1'
+      }
+    };
+
+    const r2: ZeroKnowledgeProofRequest = {
+      params: {
+        nullifierSessionId: 'session-1'
+      },
+      query: {
+        credentialSubject: {
+          email: {
+            $eq: 'me@me.com'
+          }
+        },
+        allowedIssuers: ['did:issuer:1', 'did:issuer:2'],
+        skipClaimRevocationCheck: false,
+        proofType: ProofType.BJJSignature,
+        type: 'EmailCredential',
+        context: 'https://example.com/ctx'
+      },
+      optional: false,
+      circuitId: CircuitId.AtomicQueryV3,
+      id: 1
+    };
+
+    const key1 = createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, r1, credId);
+    const key2 = createZkpRequestCacheKey(CACHE_KEY_VERSION.V1, profileDID, r2, credId);
+
+    expect(key1).not.to.equal(key2);
   });
 });

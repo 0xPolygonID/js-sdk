@@ -1,5 +1,5 @@
 import { Hash } from '@iden3/js-merkletree';
-import { DIDDocument } from '../../iden3comm';
+import { DIDDocument, JsonDocumentObject } from '../../iden3comm';
 
 /** Identity structure that can be used for identity storage */
 export type Identity = {
@@ -17,4 +17,5 @@ export type Profile = {
   verifier: string;
   tags?: string[]; // format of the tags can be defined by client of sdk
   did_doc?: DIDDocument;
+  metadata?: JsonDocumentObject; // metadata
 };

@@ -28,6 +28,16 @@ export interface ClaimWithSigAndMTPProof {
  * @extends {BaseConfig}
  */
 export class AtomicQueryV3Inputs extends BaseConfig {
+  constructor(opts?: { mtLevel?: number; mtLevelClaim?: number }) {
+    super();
+    if (!opts) {
+      return;
+    }
+    const { mtLevel, mtLevelClaim } = opts;
+    mtLevel && this.setMTLevel(mtLevel);
+    mtLevelClaim && this.setMTLevelClaim(mtLevelClaim);
+  }
+
   requestID!: bigint;
   id!: Id;
   profileNonce!: bigint;
@@ -311,6 +321,16 @@ interface AtomicQueryV3CircuitInputs {
  * AtomicQueryV3PubSignals public inputs
  */
 export class AtomicQueryV3PubSignals extends BaseConfig {
+  constructor(opts?: { mtLevel?: number; mtLevelClaim?: number }) {
+    super();
+    if (!opts) {
+      return;
+    }
+    const { mtLevel, mtLevelClaim } = opts;
+    mtLevel && this.setMTLevel(mtLevel);
+    mtLevelClaim && this.setMTLevelClaim(mtLevelClaim);
+  }
+
   requestID!: bigint;
   userID!: Id;
   issuerID!: Id;
@@ -361,12 +381,12 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     // in ValueArraySize
     const fieldLength = 19;
 
-    const sVals: string[] = JSON.parse(byteDecoder.decode(data));
+    const pubSignals = JSON.parse(byteDecoder.decode(data));
 
-    if (sVals.length !== fieldLength + this.getValueArrSize()) {
+    if (pubSignals.length !== fieldLength + this.getValueArrSize()) {
       throw new Error(
         `invalid number of Output values expected ${fieldLength + this.getValueArrSize()} got ${
-          sVals.length
+          pubSignals.length
         }`
       );
     }
@@ -374,87 +394,88 @@ export class AtomicQueryV3PubSignals extends BaseConfig {
     let fieldIdx = 0;
 
     // -- merklized
-    this.merklized = parseInt(sVals[fieldIdx]);
+    this.merklized = parseInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     //  - userID
-    this.userID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
+    this.userID = Id.fromBigInt(BigInt(pubSignals[fieldIdx]));
     fieldIdx++;
 
     // - issuerState
-    this.issuerState = Hash.fromString(sVals[fieldIdx]);
+    this.issuerState = Hash.fromString(pubSignals[fieldIdx]);
     fieldIdx++;
 
     // - linkID
-    this.linkID = BigInt(sVals[fieldIdx]);
+    this.linkID = BigInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     // - nullifier
-    this.nullifier = BigInt(sVals[fieldIdx]);
+    this.nullifier = BigInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     // - operatorOutput
-    this.operatorOutput = BigInt(sVals[fieldIdx]);
+    this.operatorOutput = BigInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     // - proofType
-    this.proofType = parseInt(sVals[fieldIdx]);
+    this.proofType = parseInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     // - requestID
-    this.requestID = BigInt(sVals[fieldIdx]);
+    this.requestID = BigInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     // - issuerID
-    this.issuerID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
+    this.issuerID = Id.fromBigInt(BigInt(pubSignals[fieldIdx]));
     fieldIdx++;
 
     // - isRevocationChecked
-    this.isRevocationChecked = parseInt(sVals[fieldIdx]);
+    this.isRevocationChecked = parseInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     // - issuerClaimNonRevState
-    this.issuerClaimNonRevState = Hash.fromString(sVals[fieldIdx]);
+    this.issuerClaimNonRevState = Hash.fromString(pubSignals[fieldIdx]);
     fieldIdx++;
 
     //  - timestamp
-    this.timestamp = parseInt(sVals[fieldIdx]);
+    this.timestamp = parseInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     //  - claimSchema
-    this.claimSchema = SchemaHash.newSchemaHashFromInt(BigInt(sVals[fieldIdx]));
+    this.claimSchema = SchemaHash.newSchemaHashFromInt(BigInt(pubSignals[fieldIdx]));
     fieldIdx++;
 
     // - ClaimPathKey
-    this.claimPathKey = BigInt(sVals[fieldIdx]);
+    this.claimPathKey = BigInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     // - slotIndex
-    this.slotIndex = parseInt(sVals[fieldIdx]);
+    this.slotIndex = parseInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     // - operator
-    this.operator = parseInt(sVals[fieldIdx]);
+    this.operator = parseInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     //  - values
     for (let index = 0; index < this.getValueArrSize(); index++) {
-      this.value.push(BigInt(sVals[fieldIdx]));
+      this.value.push(BigInt(pubSignals[fieldIdx]));
       fieldIdx++;
     }
 
     // - valueArraySize
-    this.valueArraySize = parseInt(sVals[fieldIdx]);
+    this.valueArraySize = parseInt(pubSignals[fieldIdx]);
     fieldIdx++;
 
     // - verifierID
-    if (sVals[fieldIdx] !== '0') {
-      this.verifierID = Id.fromBigInt(BigInt(sVals[fieldIdx]));
+    if (pubSignals[fieldIdx] !== '0') {
+      this.verifierID = Id.fromBigInt(BigInt(pubSignals[fieldIdx]));
     }
     fieldIdx++;
 
     // - nullifierSessionID
-    this.nullifierSessionID = BigInt(sVals[fieldIdx]);
+    this.nullifierSessionID = BigInt(pubSignals[fieldIdx]);
+    fieldIdx++;
 
     return this;
   }

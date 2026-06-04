@@ -11,3 +11,4 @@ export * from './auth-v2';
 export * from './state-transition';
 export * from './linked-multi-query';
 export * from './auth-v3';
+export * from './validator';

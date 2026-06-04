@@ -9,18 +9,11 @@
 import { JsonDocumentObject } from '../iden3comm';
 
 export function mergeObjects(
-  credSubject: JsonDocumentObject,
-  otherCredSubject: JsonDocumentObject
+  credSubject: JsonDocumentObject | undefined = {},
+  otherCredSubject: JsonDocumentObject | undefined = {}
 ) {
-  if (!credSubject && otherCredSubject) {
-    return otherCredSubject;
-  }
-  if (!otherCredSubject && credSubject) {
-    return credSubject;
-  }
-  if (!credSubject && !otherCredSubject) {
-    return {};
-  }
+  credSubject = credSubject ?? {};
+  otherCredSubject = otherCredSubject ?? {};
   let result = {} as JsonDocumentObject;
   const credSubjectKeys = Object.keys(credSubject);
 

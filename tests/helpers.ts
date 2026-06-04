@@ -37,7 +37,10 @@ import {
   AnonCryptPacker,
   JoseService,
   RsaOAEPKeyProvider,
-  DefaultKMSKeyResolver
+  DefaultKMSKeyResolver,
+  DefaultZKPPacker,
+  ICircuitStorage,
+  IProofService
 } from '../src';
 import { proving } from '@iden3/js-jwz';
 import { JsonRpcProvider } from 'ethers';
@@ -344,6 +347,15 @@ export const getPackageMgrV3 = async (
   const plainPacker = new PlainPacker();
   mgr.registerPackers([packer, plainPacker]);
 
+  return mgr;
+};
+
+export const getPackageManagerWithDefaultZKPPacker = (
+  circuitStorage: ICircuitStorage,
+  proofService: IProofService
+) => {
+  const mgr: IPackageManager = new PackageManager();
+  mgr.registerPackers([new DefaultZKPPacker(circuitStorage, proofService), new PlainPacker()]);
   return mgr;
 };
 

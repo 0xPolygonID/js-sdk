@@ -5,3 +5,4 @@ export * from './onchain-issuer';
 export * from './did-resolver-readonly-storage';
 export * from './erc20-helper';
 export * from './errors';
+export * from './common';

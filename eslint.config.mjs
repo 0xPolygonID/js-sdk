@@ -34,6 +34,7 @@ export default [
           cspell: {
             ...cspell.cspellConfig,
             ignoreWords: [
+              'Unmarshalled',
               'unmarshal',
               'JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw',
               'gdwj',

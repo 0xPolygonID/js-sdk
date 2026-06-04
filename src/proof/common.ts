@@ -1,6 +1,7 @@
 import { NodeAux, Hash, Proof, ZERO_HASH } from '@iden3/js-merkletree';
 import {
   buildTreeState,
+  CircuitId,
   ClaimNonRevStatus,
   GISTProof,
   isValidOperation,
@@ -248,11 +249,14 @@ export const parseCredentialSubject = (credentialSubject?: JsonDocumentObject): 
   return parseJsonDocumentObject(credentialSubject);
 };
 
+export type ParseOptions = Options & {
+  legacyNoopOperator?: boolean;
+};
 export const parseQueryMetadata = async (
   propertyQuery: PropertyQuery,
   ldContextJSON: string,
   credentialType: string,
-  options: Options
+  options: ParseOptions
 ): Promise<QueryMetadata> => {
   const replacedFieldName = propertyQuery.fieldName;
   const [fieldParentObj] = propertyQuery.fieldName.split('.');
@@ -310,6 +314,9 @@ export const parseQueryMetadata = async (
       credentialType,
       byteEncoder.encode(ldContextJSON)
     );
+  } else if (!options.legacyNoopOperator && query.operator === Operators.NOOP) {
+    query.claimPathKey = BigInt(0);
+    query.path = new Path(); // path is not needed for noop operator, but we need to initialize it to avoid errors in the circuits
   } else {
     try {
       const path = await buildFieldPath(
@@ -403,7 +410,7 @@ export const parseQueriesMetadata = async (
   credentialType: string,
   ldContextJSON: string,
   credentialSubject: JsonDocumentObject,
-  options: Options
+  options: ParseOptions
 ): Promise<QueryMetadata[]> => {
   const queriesMetadata = parseDocumentToPropertyQueries('credentialSubject', credentialSubject);
   return Promise.all(
@@ -432,4 +439,8 @@ const transformExistsValue = (value: unknown): bigint[] => {
     return [BigInt(value)];
   }
   throw new Error('exists operator value must be true or false');
+};
+
+export const isAuthCircuit = (circuitId: CircuitId): boolean => {
+  return [CircuitId.AuthV2, CircuitId.AuthV3, CircuitId.AuthV3_8_32].includes(circuitId);
 };
