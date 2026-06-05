@@ -1,4 +1,4 @@
-import { ProvingMethodAlg } from '@iden3/js-jwz';
+import { proving, ProvingMethodAlg } from '@iden3/js-jwz';
 import {
   MediaType,
   ProtocolVersion,
@@ -7,7 +7,8 @@ import {
   AcceptJwsAlgorithms,
   AcceptJweKEKAlgorithms
 } from '../constants';
-import { AcceptProfile } from '../types';
+import { AcceptProfile, IPackageManager } from '../types';
+import { defaultProvingMethodAlg } from '../handlers/message-handler';
 
 function isProtocolVersion(value: string): boolean {
   return Object.values(ProtocolVersion).includes(value as ProtocolVersion);
@@ -164,4 +165,41 @@ export const parseAcceptProfile = (profile: string): AcceptProfile => {
     circuits,
     alg
   };
+};
+
+export const getDefaultZKProvingMethodAlg = (
+  packerMgr: IPackageManager,
+  preferredAuthProvingMethod?: ProvingMethodAlg,
+  accept?: string[]
+): ProvingMethodAlg => {
+  // if no accept is given, return default
+  if (!accept?.length) {
+    return defaultProvingMethodAlg;
+  }
+
+  const preferredOrder = [
+    proving.provingMethodGroth16AuthV3_8_32Instance.methodAlg,
+    proving.provingMethodGroth16AuthV3Instance.methodAlg
+  ];
+  if (preferredAuthProvingMethod) {
+    const idx = preferredOrder.indexOf(preferredAuthProvingMethod);
+    if (idx !== -1) {
+      preferredOrder.splice(idx, 1);
+    }
+    preferredOrder.unshift(preferredAuthProvingMethod);
+  }
+
+  for (const methodAlg of preferredOrder) {
+    if (
+      packerMgr.isProfileSupported(
+        MediaType.ZKPMessage,
+        buildAcceptFromProvingMethodAlg(methodAlg)
+      ) &&
+      acceptHasProvingMethodAlg(accept, methodAlg)
+    ) {
+      return methodAlg;
+    }
+  }
+
+  return defaultProvingMethodAlg;
 };
