@@ -369,25 +369,27 @@ export const parseProofQueryMetadata = async (
   options: Options,
   vp?: VerifiablePresentation
 ): Promise<QueryMetadata[]> => {
-  const propertyQuery = parseDocumentToPropertyQueries(
-    'credentialSubject',
-    query.credentialSubject,
-    vp
-  );
+  const propertyQuery: PropertyQuery[] = [];
+
+  if (query.credentialSubject !== undefined) {
+    propertyQuery.push(
+      ...parseDocumentToPropertyQueries('credentialSubject', query.credentialSubject, vp)
+    );
+  }
   if (query.expirationDate) {
     propertyQuery.push(...parseJsonDocumentObject({ expirationDate: query.expirationDate }));
   }
   if (query.issuanceDate) {
     propertyQuery.push(...parseJsonDocumentObject({ issuanceDate: query.issuanceDate }));
   }
-
-  if (query.credentialStatus) {
-    const credSubject = parseDocumentToPropertyQueries(
-      'credentialStatus',
-      query.credentialStatus,
-      vp
+  if (query.credentialStatus !== undefined) {
+    propertyQuery.push(
+      ...parseDocumentToPropertyQueries('credentialStatus', query.credentialStatus, vp)
     );
-    propertyQuery.push(...credSubject);
+  }
+
+  if (propertyQuery.length === 0) {
+    propertyQuery.push({ operator: QueryOperators.$noop, fieldName: '' });
   }
 
   return Promise.all(
