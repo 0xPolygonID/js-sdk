@@ -8,7 +8,11 @@ import {
   AcceptJweKEKAlgorithms
 } from '../constants';
 import { AcceptProfile, IPackageManager } from '../types';
-import { defaultProvingMethodAlg } from '../handlers/message-handler';
+
+/**
+ * Default proving method algorithm for ZKP messages
+ */
+export const defaultProvingMethodAlg = proving.provingMethodGroth16AuthV2Instance.methodAlg;
 
 function isProtocolVersion(value: string): boolean {
   return Object.values(ProtocolVersion).includes(value as ProtocolVersion);
