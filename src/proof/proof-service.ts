@@ -425,12 +425,15 @@ export class ProofService implements IProofService {
     }
 
     const sdQueries = queriesMetadata.filter((q) => q.operator === Operators.SD);
-    const vp = createVerifiablePresentation(
-      context,
-      credentialType,
-      preparedCredential.credential,
-      sdQueries
-    );
+    let vp: VerifiablePresentation | undefined;
+    if (sdQueries.length) {
+      vp = createVerifiablePresentation(
+        context,
+        credentialType,
+        preparedCredential.credential,
+        sdQueries
+      );
+    }
 
     return this._generateProof({
       proofReq,

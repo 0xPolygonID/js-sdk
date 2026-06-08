@@ -196,7 +196,7 @@ describe.sequential('sig onchain proofs', () => {
       skipRevocation: false
     });
 
-    expect(vp).not.to.be.undefined;
+    expect(vp).to.be.undefined;
 
     if (circuitId === CircuitId.AtomicQueryV3OnChain) {
       expect(pub_signals[2]).to.be.equal(

@@ -190,7 +190,7 @@ describe.sequential('sig proofs', () => {
     const { proof, vp } = await proofService.generateProof(proofReq, userDID);
 
     expect(proof).not.to.be.undefined;
-    expect(vp).not.to.be.undefined;
+    expect(vp).to.be.undefined;
   };
 
   it('sigv3-non-merklized', async () => {
@@ -253,7 +253,7 @@ describe.sequential('sig proofs', () => {
       skipRevocation: false
     });
 
-    expect(vp).not.to.be.undefined;
+    expect(vp).to.be.undefined;
     expect(proof).not.to.be.undefined;
   };
 
@@ -305,7 +305,7 @@ describe.sequential('sig proofs', () => {
       skipRevocation: true
     });
     expect(proof).not.to.be.undefined;
-    expect(vp).not.to.be.undefined;
+    expect(vp).to.be.undefined;
   });
 
   it('sigv2-ipfs-string-eq', async () => {
@@ -362,7 +362,7 @@ describe.sequential('sig proofs', () => {
       userDID
     );
     expect(proof).not.to.be.undefined;
-    expect(vp).not.to.be.undefined;
+    expect(vp).to.be.undefined;
 
     const isValid = await proofService.verifyProof(
       {
@@ -601,7 +601,7 @@ describe.sequential('sig proofs', () => {
       userDID
     );
     expect(proof).not.to.be.undefined;
-    expect(vp).not.to.be.undefined;
+    expect(vp).to.be.undefined;
 
     const isValid = await proofService.verifyProof(
       {
@@ -672,7 +672,7 @@ describe.sequential('sig proofs', () => {
       userDID
     );
     expect(proof).not.to.be.undefined;
-    expect(vp).not.to.be.undefined;
+    expect(vp).to.be.undefined;
 
     const isValid = await proofService.verifyProof(
       {
