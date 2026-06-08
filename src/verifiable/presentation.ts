@@ -84,20 +84,18 @@ export const createVerifiablePresentation = (
     }
   };
 
-  let w3cResult: JsonDocumentObject = {};
+  const w3cResult: JsonDocumentObject = {};
   for (const query of queries) {
     const parts = query.fieldName.split('.');
-    const current: JsonDocumentObject = parts.reduceRight(
-      (acc: JsonDocumentObject, part: string) => {
-        if (w3cResult[part]) {
-          return { [part]: { ...(w3cResult[part] as JsonDocumentObject), ...acc } };
-        }
-        return { [part]: acc };
-      },
-      findValue(query.fieldName, credential) as JsonDocumentObject
-    );
-
-    w3cResult = { ...w3cResult, ...current };
+    const leaf = parts.pop() as string;
+    let node = w3cResult;
+    for (const part of parts) {
+      if (typeof node[part] !== 'object' || node[part] === null) {
+        node[part] = {};
+      }
+      node = node[part] as JsonDocumentObject;
+    }
+    node[leaf] = findValue(query.fieldName, credential);
   }
 
   if (w3cResult.credentialStatus) {
