@@ -115,18 +115,6 @@ export type QueryMetadata = PropertyQuery & {
   merklizedSchema: boolean;
 };
 
-// Fields in credentialStatus that are named-node IRI references. They cannot be ZKP-queried
-// because the merklizer stores them as top-level named nodes, causing circuit path conflicts.
-// They are always included in the VP skeleton when present.
-const CREDENTIAL_STATUS_ALWAYS_DISCLOSED = new Set(['statusIssuer']);
-
-const filterCredentialStatusQueryable = (
-  input: Record<string, JsonDocumentObject | undefined>
-): Record<string, JsonDocumentObject | undefined> =>
-  Object.fromEntries(
-    Object.entries(input).filter(([key]) => !CREDENTIAL_STATUS_ALWAYS_DISCLOSED.has(key))
-  );
-
 export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] => {
   const propertiesMetadata: PropertyQuery[] = [];
   if (query.credentialSubject) {
@@ -148,11 +136,11 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
     propertiesMetadata.push(...issuanceDate);
   }
   if (query.credentialStatus) {
-    const queryable = filterCredentialStatusQueryable(
-      query.credentialStatus as Record<string, JsonDocumentObject | undefined>
-    );
-    if (Object.keys(queryable).length > 0) {
-      const flattenedObject = flattenNestedObject(queryable, 'credentialStatus');
+    if (Object.keys(query.credentialStatus).length > 0) {
+      const flattenedObject = flattenNestedObject(
+        query.credentialStatus as Record<string, JsonDocumentObject | undefined>,
+        'credentialStatus'
+      );
       propertiesMetadata.push(...parseJsonDocumentObject(flattenedObject));
     }
   }
@@ -197,11 +185,10 @@ export const parseDocumentToPropertyQueries = (
     queries.push(...parseJsonDocumentObject(flattened));
     return queries;
   }
-  const input =
-    documentName === 'credentialStatus'
-      ? filterCredentialStatusQueryable(document as Record<string, JsonDocumentObject | undefined>)
-      : (document as Record<string, JsonDocumentObject | undefined>);
-  const flattenedObject = flattenNestedObject(input, documentName);
+  const flattenedObject = flattenNestedObject(
+    document as Record<string, JsonDocumentObject | undefined>,
+    documentName
+  );
   return parseJsonDocumentObject(flattenedObject);
 };
 
