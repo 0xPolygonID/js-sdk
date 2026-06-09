@@ -402,6 +402,13 @@ export class ProofService implements IProofService {
           throw new Error('credential does not have credentialStatus but query requires it');
         }
         propertyCredentialType = preparedCredential.credential.credentialStatus.type;
+
+        if (propertyMetadata.fieldName.startsWith('credentialStatus.statusIssuer')) {
+          if (!preparedCredential.credential.credentialStatus.statusIssuer) {
+            throw new Error('credentialStatus does not have statusIssuer but query requires it');
+          }
+          propertyCredentialType = preparedCredential.credential.credentialStatus.statusIssuer.type;
+        }
       }
       const queryMetadata = await parseQueryMetadata(
         propertyMetadata,
