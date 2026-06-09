@@ -3,7 +3,7 @@ import { CredentialStatusResolver, CredentialStatusResolveOptions } from './reso
 import { RevocationStatusRequestMessage } from '../../iden3comm/types';
 import { MediaType, PROTOCOL_MESSAGE_TYPE } from '../../iden3comm/constants';
 import * as uuid from 'uuid';
-import { toRevocationStatus } from './sparse-merkle-tree';
+import { IssuerResolver, toRevocationStatus } from './sparse-merkle-tree';
 
 /**
  * AgentResolver is a class that allows to interact with the issuer's agent to get revocation status.
@@ -12,6 +12,8 @@ import { toRevocationStatus } from './sparse-merkle-tree';
  * @class AgentResolver
  */
 export class AgentResolver implements CredentialStatusResolver {
+  private readonly _issuerResolver = new IssuerResolver();
+
   /**
    * resolve is a method to resolve a credential status from an agent.
    *
@@ -38,15 +40,28 @@ export class AgentResolver implements CredentialStatusResolver {
     const from = credentialStatusResolveOptions.userDID.string();
     const to = credentialStatusResolveOptions.issuerDID.string();
     const msg = buildRevocationMessageRequest(from, to, credentialStatus.revocationNonce);
-    const response = await fetch(credentialStatus.id, {
-      method: 'POST',
-      body: JSON.stringify(msg),
-      headers: {
-        'Content-Type': 'application/json'
+    try {
+      const response = await fetch(credentialStatus.id, {
+        method: 'POST',
+        body: JSON.stringify(msg),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      const agentResponse = await response.json();
+      return toRevocationStatus(agentResponse.body);
+    } catch (e: unknown) {
+      if (credentialStatus.statusIssuer?.type) {
+        try {
+          return await this._issuerResolver.resolve(credentialStatus.statusIssuer);
+        } catch (fallbackErr) {
+          throw new Error(
+            `can't fetch revocation status from backup endpoint: ${(fallbackErr as Error)?.message}`
+          );
+        }
       }
-    });
-    const agentResponse = await response.json();
-    return toRevocationStatus(agentResponse.body);
+      throw new Error(`can't fetch revocation status: ${(e as Error)?.message}`);
+    }
   }
 }
 
