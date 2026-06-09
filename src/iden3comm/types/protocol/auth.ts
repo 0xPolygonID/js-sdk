@@ -1,7 +1,7 @@
 import { ZKProof } from '@iden3/js-jwz';
 import { BasicMessage, JsonDocumentObject } from '../packer';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
-import { ProofType } from '../../../verifiable';
+import { CredentialStatusType, ProofType } from '../../../verifiable';
 import { CircuitId } from '../../../circuits';
 import {
   DIDDocument as DidResolverDidDocument,
@@ -101,6 +101,7 @@ export type VerifiablePresentation = {
       id?: string;
       type?: string;
       revocationNonce?: number;
+      statusIssuer?: { id: string; type: CredentialStatusType; revocationNonce?: number };
     };
     expirationDate?: string;
     issuanceDate?: string;

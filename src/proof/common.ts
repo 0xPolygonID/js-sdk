@@ -115,6 +115,18 @@ export type QueryMetadata = PropertyQuery & {
   merklizedSchema: boolean;
 };
 
+// Fields in credentialStatus that are named-node IRI references. They cannot be ZKP-queried
+// because the merklizer stores them as top-level named nodes, causing circuit path conflicts.
+// They are always included in the VP skeleton when present.
+const CREDENTIAL_STATUS_ALWAYS_DISCLOSED = new Set(['statusIssuer']);
+
+const filterCredentialStatusQueryable = (
+  input: Record<string, JsonDocumentObject | undefined>
+): Record<string, JsonDocumentObject | undefined> =>
+  Object.fromEntries(
+    Object.entries(input).filter(([key]) => !CREDENTIAL_STATUS_ALWAYS_DISCLOSED.has(key))
+  );
+
 export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] => {
   const propertiesMetadata: PropertyQuery[] = [];
   if (query.credentialSubject) {
@@ -133,11 +145,13 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
     propertiesMetadata.push(...issuanceDate);
   }
   if (query.credentialStatus) {
-    const flattenedObject = flattenNestedObject(
-      query.credentialStatus as Record<string, JsonDocumentObject | undefined>,
-      'credentialStatus'
+    const queryable = filterCredentialStatusQueryable(
+      query.credentialStatus as Record<string, JsonDocumentObject | undefined>
     );
-    propertiesMetadata.push(...parseJsonDocumentObject(flattenedObject));
+    if (Object.keys(queryable).length > 0) {
+      const flattenedObject = flattenNestedObject(queryable, 'credentialStatus');
+      propertiesMetadata.push(...parseJsonDocumentObject(flattenedObject));
+    }
   }
   if (propertiesMetadata.length === 0) {
     return [{ operator: QueryOperators.$noop, fieldName: '' }];
@@ -180,15 +194,16 @@ export const parseDocumentToPropertyQueries = (
     queries.push(...parseJsonDocumentObject(flattened));
     return queries;
   }
-  const flattenedObject = flattenNestedObject(
-    document as Record<string, JsonDocumentObject | undefined>,
-    documentName
-  );
+  const input =
+    documentName === 'credentialStatus'
+      ? filterCredentialStatusQueryable(document as Record<string, JsonDocumentObject | undefined>)
+      : (document as Record<string, JsonDocumentObject | undefined>);
+  const flattenedObject = flattenNestedObject(input, documentName);
   return parseJsonDocumentObject(flattenedObject);
 };
 
 export const flattenToQueryShape = (
-  obj: Record<string, any>,
+  obj: Record<string, unknown>,
   parentKey = ''
 ): JsonDocumentObject => {
   const result: JsonDocumentObject = {};
@@ -197,11 +212,14 @@ export const flattenToQueryShape = (
       continue;
     }
     const fullKey = parentKey ? `${parentKey}.${key}` : key;
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      Object.assign(result, flattenToQueryShape(value, fullKey));
-    } else {
+    const isRecord = typeof value === 'object' && value !== null && !Array.isArray(value);
+    const isNamedNode = isRecord && typeof (value as Record<string, unknown>).id === 'string';
+    if (isRecord && !isNamedNode) {
+      Object.assign(result, flattenToQueryShape(value as Record<string, unknown>, fullKey));
+    } else if (!isNamedNode) {
       result[fullKey] = {};
     }
+    // named-node IRI references are always disclosed via VP skeleton, skip here
   }
   return result;
 };
