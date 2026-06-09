@@ -134,7 +134,10 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
       query.credentialSubject as Record<string, JsonDocumentObject | undefined>,
       'credentialSubject'
     );
-    propertiesMetadata.push(...parseJsonDocumentObject(credSubjFlattened));
+    // an empty flattened object means there is nothing to disclose (e.g. subject is id/type only)
+    if (Object.keys(credSubjFlattened).length) {
+      propertiesMetadata.push(...parseJsonDocumentObject(credSubjFlattened));
+    }
   }
   if (query.expirationDate) {
     const expirationDate = parseJsonDocumentObject({ expirationDate: query.expirationDate });
@@ -188,7 +191,7 @@ export const parseDocumentToPropertyQueries = (
     }
     const queries: PropertyQuery[] = [];
     const flattened = flattenToQueryShape(
-      (vp.verifiableCredential as Record<string, any>)[documentName],
+      (vp.verifiableCredential as Record<string, unknown>)[documentName] as Record<string, unknown>,
       documentName
     );
     queries.push(...parseJsonDocumentObject(flattened));
@@ -247,7 +250,7 @@ export const parseJsonDocumentObject = (document?: JsonDocumentObject): Property
     }
 
     for (const [operatorName, operatorValue] of fieldReqEntries) {
-      if (!QueryOperators[operatorName as keyof typeof QueryOperators]) {
+      if (!(operatorName in QueryOperators)) {
         throw new Error(`operator is not supported by lib`);
       }
       const operator = QueryOperators[operatorName as keyof typeof QueryOperators];
@@ -414,10 +417,16 @@ export const parseProofQueryMetadata = async (
     propertyQuery.map((p) => {
       let credType = credentialType;
       if (p.fieldName.startsWith('credentialStatus.')) {
-        if (!vp?.verifiableCredential?.credentialStatus?.type) {
-          throw new Error('credentialStatus.type is required for w3cV1 queries');
+        const statusType = vp?.verifiableCredential?.credentialStatus?.type;
+        if (!statusType) {
+          // the merklization path of credentialStatus fields (e.g. revocationNonce) is
+          // status-type-specific, so the verifier needs the type from a verifiablePresentation
+          throw new Error(
+            'credentialStatus.type is required to verify a credentialStatus query: ' +
+              'include it via a verifiablePresentation (selective disclosure)'
+          );
         }
-        credType = vp?.verifiableCredential?.credentialStatus?.type;
+        credType = statusType;
       }
       return parseQueryMetadata(p, ldContextJSON, credType, options);
     })

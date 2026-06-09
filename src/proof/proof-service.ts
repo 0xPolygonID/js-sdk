@@ -395,18 +395,18 @@ export class ProofService implements IProofService {
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];
     for (const propertyMetadata of propertiesMetadata) {
-      let credentialType = query['type'] as string;
+      let propertyCredentialType = credentialType;
       // todo: check if we can move this to the parseQueryMetadata function
       if (propertyMetadata.fieldName.startsWith('credentialStatus.')) {
         if (!preparedCredential.credential.credentialStatus) {
           throw new Error('credential does not have credentialStatus but query requires it');
         }
-        credentialType = preparedCredential.credential.credentialStatus.type;
+        propertyCredentialType = preparedCredential.credential.credentialStatus.type;
       }
       const queryMetadata = await parseQueryMetadata(
         propertyMetadata,
         byteDecoder.decode(ldContext),
-        credentialType,
+        propertyCredentialType,
         {
           ...this._ldOptions,
           legacyNoopOperator: [
@@ -646,7 +646,9 @@ export class ProofService implements IProofService {
       queryPatch.credentialSubject = flattenToQueryShape(cred.credentialSubject);
     }
     if (credentialStatus && Object.keys(credentialStatus).length === 0 && cred.credentialStatus) {
-      queryPatch.credentialStatus = flattenToQueryShape(cred.credentialStatus);
+      queryPatch.credentialStatus = flattenToQueryShape(
+        cred.credentialStatus as unknown as Record<string, unknown>
+      );
     }
 
     if (!Object.keys(queryPatch).length) {
