@@ -202,14 +202,11 @@ export const flattenToQueryShape = (
       continue;
     }
     const fullKey = parentKey ? `${parentKey}.${key}` : key;
-    const isRecord = typeof value === 'object' && value !== null && !Array.isArray(value);
-    const isNamedNode = isRecord && typeof (value as Record<string, unknown>).id === 'string';
-    if (isRecord && !isNamedNode) {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       Object.assign(result, flattenToQueryShape(value as Record<string, unknown>, fullKey));
-    } else if (!isNamedNode) {
+    } else {
       result[fullKey] = {};
     }
-    // named-node IRI references are always disclosed via VP skeleton, skip here
   }
   return result;
 };
@@ -272,6 +269,9 @@ export const parseQueryMetadata = async (
     case 'credentialStatus':
       strippedFieldName = originalFieldName.replace('credentialStatus.', '');
       ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT;
+      if (strippedFieldName.startsWith('statusIssuer.')) {
+        strippedFieldName = strippedFieldName.replace('statusIssuer.', '');
+      }
       break;
     case 'credentialSubject':
       strippedFieldName = originalFieldName.replace('credentialSubject.', '');
