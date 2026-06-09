@@ -26,9 +26,10 @@ import {
 import {
   PreparedCredential,
   QueryMetadata,
-  isAuthCircuit,
-  parseCredentialSubject,
+  flattenToQueryShape,
   parseQueryMetadata,
+  parseZKPQuery,
+  isAuthCircuit,
   transformQueryValueToBigInts
 } from './common';
 import { IZKProver, NativeProver } from './provers/prover';
@@ -44,7 +45,8 @@ import {
   PROTOCOL_CONSTANTS,
   VerifiablePresentation,
   JsonDocumentObject,
-  ZeroKnowledgeProofAuthResponse
+  ZeroKnowledgeProofAuthResponse,
+  ZeroKnowledgeProofQuery
 } from '../iden3comm';
 import { cacheLoader } from '../schema-processor';
 import { ICircuitStorage, IProofStorage, IStateStorage } from '../storage';
@@ -368,9 +370,11 @@ export class ProofService implements IProofService {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_PROFILE_GENESIS_DID_MISMATCH);
     }
 
-    const propertiesMetadata = parseCredentialSubject(
-      query.credentialSubject as JsonDocumentObject
+    const processedQuery = this.preprocessZeroKnowledgeProofRequest(
+      query,
+      preparedCredential.credential
     );
+    const propertiesMetadata = parseZKPQuery(processedQuery);
     if (!propertiesMetadata.length) {
       throw new Error(VerifiableConstants.ERRORS.PROOF_SERVICE_NO_QUERIES_IN_ZKP_REQUEST);
     }
@@ -390,12 +394,19 @@ export class ProofService implements IProofService {
     const credentialType = query['type'] as string;
     const queriesMetadata: QueryMetadata[] = [];
     const circuitQueries: Query[] = [];
-
     for (const propertyMetadata of propertiesMetadata) {
+      let propertyCredentialType = credentialType;
+      // todo: check if we can move this to the parseQueryMetadata function
+      if (propertyMetadata.fieldName.startsWith('credentialStatus.')) {
+        if (!preparedCredential.credential.credentialStatus) {
+          throw new Error('credential does not have credentialStatus but query requires it');
+        }
+        propertyCredentialType = preparedCredential.credential.credentialStatus.type;
+      }
       const queryMetadata = await parseQueryMetadata(
         propertyMetadata,
         byteDecoder.decode(ldContext),
-        credentialType,
+        propertyCredentialType,
         {
           ...this._ldOptions,
           legacyNoopOperator: [
@@ -404,7 +415,6 @@ export class ProofService implements IProofService {
           ].includes(proofReq.circuitId)
         }
       );
-
       queriesMetadata.push(queryMetadata);
       const circuitQuery = await this.toCircuitsQuery(
         preparedCredential.credential,
@@ -598,8 +608,9 @@ export class ProofService implements IProofService {
     }
 
     if (queryMetadata.operator === Operators.SD) {
+      let v;
       const [first, ...rest] = queryMetadata.fieldName.split('.');
-      let v = credential.credentialSubject[first];
+      v = credential[first as keyof W3CCredential];
       for (const part of rest) {
         v = (v as JsonDocumentObject)[part];
       }
@@ -621,6 +632,30 @@ export class ProofService implements IProofService {
       throw new Error(`can't load ld context from url ${context}`);
     }
     return byteEncoder.encode(JSON.stringify(ldSchema));
+  }
+
+  // for full object SD — expands empty {} to all credential fields
+  private preprocessZeroKnowledgeProofRequest(
+    query: ZeroKnowledgeProofQuery,
+    cred: W3CCredential
+  ): ZeroKnowledgeProofQuery {
+    const { credentialStatus, credentialSubject } = query;
+    const queryPatch: Partial<ZeroKnowledgeProofQuery> = {};
+
+    if (credentialSubject && Object.keys(credentialSubject).length === 0) {
+      queryPatch.credentialSubject = flattenToQueryShape(cred.credentialSubject);
+    }
+    if (credentialStatus && Object.keys(credentialStatus).length === 0 && cred.credentialStatus) {
+      queryPatch.credentialStatus = flattenToQueryShape(
+        cred.credentialStatus as unknown as Record<string, unknown>
+      );
+    }
+
+    if (!Object.keys(queryPatch).length) {
+      return query;
+    }
+
+    return { ...query, ...queryPatch };
   }
 
   /** {@inheritdoc IProofService.generateAuthV2Inputs} */
