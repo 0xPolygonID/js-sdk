@@ -16,6 +16,8 @@ import {
   CredentialStatusType,
   AuthorizationRequestMessage,
   AuthorizationRequestMessageBody,
+  AuthorizationRequestMessageV2,
+  AuthorizationResponseMessageV2,
   IPackageManager,
   ZeroKnowledgeProofRequest,
   RHSResolver,
@@ -528,6 +530,194 @@ describe('auth', () => {
     const circuits = response.body.scope.map((c) => c.circuitId);
     expect(circuits).toContain('credentialAtomicQueryV3-16-16-64');
     expect(circuits).toContain('linkedMultiQuery3');
+  });
+
+  it('auth flow v2 response: vp array with grouped and non-grouped credentials', async () => {
+    const profileDID = await idWallet.createProfile(userDID, 777, issuerDID.string());
+
+    const claimReq: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/kyc-nonmerklized.json',
+      type: 'KYCAgeCredential',
+      credentialSubject: {
+        id: userDID.string(),
+        birthday: 19960424,
+        documentType: 99
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const issuerCred = await idWallet.issueCredential(issuerDID, claimReq, merklizeOpts);
+
+    const employeeCredRequest: CredentialRequest = {
+      credentialSchema:
+        'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json/KYCEmployee-v101.json',
+      type: 'KYCEmployee',
+      credentialSubject: {
+        id: profileDID.string(),
+        ZKPexperiance: true,
+        hireDate: '2023-12-11',
+        position: 'boss',
+        salary: 200,
+        documentType: 1
+      },
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(
+      issuerDID,
+      employeeCredRequest,
+      merklizeOpts
+    );
+
+    await credWallet.saveAll([employeeCred, issuerCred]);
+
+    const res = await idWallet.addCredentialsToMerkleTree([employeeCred], issuerDID);
+    await idWallet.publishStateToRHS(issuerDID, RHS_URL);
+
+    const ethSigner = new ethers.Wallet(WALLET_KEY, dataStorage.states.getRpcProvider());
+    const txId = await proofService.transitState(
+      issuerDID,
+      res.oldTreeState,
+      true,
+      dataStorage.states,
+      ethSigner
+    );
+    const credsWithIden3MTPProof = await idWallet.generateIden3SparseMerkleTreeProof(
+      issuerDID,
+      res.credentials,
+      txId
+    );
+    await credWallet.saveAll(credsWithIden3MTPProof);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.AtomicQueryV3Stable,
+        optional: false,
+        query: {
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCAgeCredential',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-nonmerklized.jsonld',
+          credentialSubject: {
+            documentType: { $eq: 99 }
+          }
+        }
+      },
+      {
+        id: 2,
+        circuitId: CircuitId.LinkedMultiQueryStable,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.Iden3SparseMerkleTreeProof,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            documentType: {},
+            position: {}
+          }
+        }
+      },
+      {
+        id: 3,
+        circuitId: CircuitId.AtomicQueryV3Stable,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'KYCEmployee',
+          context:
+            'https://raw.githubusercontent.com/iden3/claim-schema-vocab/main/schemas/json-ld/kyc-v101.json-ld',
+          credentialSubject: {
+            hireDate: {}
+          }
+        },
+        params: {
+          nullifierSessionId: '12345'
+        }
+      }
+    ];
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessageV2 = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE_V2,
+      thid: id,
+      body: {
+        callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+        reason: 'reason',
+        message: 'message',
+        scope: proofReqs
+      },
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    const authRes = await (authHandler as AuthHandler).handleAuthorizationRequestV2(
+      userDID,
+      msgBytes
+    );
+
+    expect(authRes.token).to.be.a('string');
+
+    const response: AuthorizationResponseMessageV2 = authRes.authResponse;
+    expect(response.type).to.equal(
+      PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE_V2
+    );
+
+    const vp = response.body.vp;
+    expect(vp).to.have.lengthOf(2);
+
+    // non-grouped credential: KYCAgeCredential — ZKP-only, no SD fields
+    const ageVP = vp.find((v) =>
+      (v.verifiableCredential.type as string[]).includes('KYCAgeCredential')
+    );
+    expect(ageVP).to.exist;
+    expect(ageVP?.proofs).to.have.lengthOf(1);
+    expect(ageVP?.proofs[0].requestId).to.equal(1);
+    expect(ageVP?.proofs[0].circuitId).to.equal('credentialAtomicQueryV3-16-16-64');
+    // ZKP-only — credentialSubject has only 'type', no disclosed field values
+    expect(Object.keys(ageVP?.verifiableCredential.credentialSubject ?? {})).to.deep.equal([
+      'type'
+    ]);
+
+    // grouped credential: KYCEmployee — two proofs, all SD fields merged
+    const employeeVP = vp.find((v) =>
+      (v.verifiableCredential.type as string[]).includes('KYCEmployee')
+    );
+    expect(employeeVP).to.exist;
+    expect(employeeVP?.proofs).to.have.lengthOf(2);
+    const employeeRequestIds = employeeVP?.proofs.map((p) => p.requestId) ?? [];
+    expect(employeeRequestIds).to.include(2);
+    expect(employeeRequestIds).to.include(3);
+    const circuitIds = employeeVP?.proofs.map((p) => p.circuitId) ?? [];
+    expect(circuitIds).to.include('linkedMultiQuery3');
+    expect(circuitIds).to.include('credentialAtomicQueryV3-16-16-64');
+
+    const cs = employeeVP?.verifiableCredential.credentialSubject ?? {};
+    expect(cs).to.have.property('documentType');
+    expect(cs).to.have.property('position');
+    expect(cs).to.have.property('hireDate');
+
+    // verify the response passes handler validation
+    const { response: verified } = await (authHandler as AuthHandler).handleAuthorizationResponseV2(
+      authRes.authResponse,
+      authReq
+    );
+    expect(verified).to.be.a('object');
+    expect(verified.body.vp).to.have.lengthOf(2);
   });
 
   it('auth flow identity (profile) with circuits V3 and caching', async () => {

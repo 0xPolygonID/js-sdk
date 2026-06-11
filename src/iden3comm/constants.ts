@@ -10,6 +10,10 @@ export const PROTOCOL_MESSAGE_TYPE = Object.freeze({
   AUTHORIZATION_REQUEST_MESSAGE_TYPE: `${IDEN3_PROTOCOL}authorization/1.0/request` as const,
   // AuthorizationResponseMessageType defines auth response type of the communication protocol
   AUTHORIZATION_RESPONSE_MESSAGE_TYPE: `${IDEN3_PROTOCOL}authorization/1.0/response` as const,
+  // AuthorizationRequestMessageTypeV2 defines auth request type for v2 of the communication protocol
+  AUTHORIZATION_REQUEST_MESSAGE_TYPE_V2: `${IDEN3_PROTOCOL}authorization/2.0/request` as const,
+  // AuthorizationResponseMessageTypeV2 defines auth response type for v2 of the communication protocol
+  AUTHORIZATION_RESPONSE_MESSAGE_TYPE_V2: `${IDEN3_PROTOCOL}authorization/2.0/response` as const,
   // CredentialIssuanceRequestMessageType accepts request for credential creation
   CREDENTIAL_ISSUANCE_REQUEST_MESSAGE_TYPE:
     `${IDEN3_PROTOCOL}credentials/1.0/issuance-request` as const,

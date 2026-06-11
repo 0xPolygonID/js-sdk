@@ -6,9 +6,16 @@ import {
   StateVerificationOpts,
   AuthorizationRequestMessage,
   AuthorizationResponseMessage,
+  AuthorizationRequestMessageV2,
+  AuthorizationResponseMessageV2,
+  VerifiablePresentationV2,
+  ZKProofEntry,
+  VerifiablePresentation,
+  ZeroKnowledgeProofResponse,
   BasicMessage,
   IPackageManager,
   ZeroKnowledgeProofRequest,
+  JsonDocumentObject,
   JSONObject,
   Attachment
 } from '../types';
@@ -16,7 +23,7 @@ import { DID, getUnixTimestamp } from '@iden3/js-iden3-core';
 import { ProvingMethodAlg, proving } from '@iden3/js-jwz';
 
 import * as uuid from 'uuid';
-import { ProofQuery } from '../../verifiable';
+import { ProofQuery, VerifiableConstants } from '../../verifiable';
 import { byteDecoder, byteEncoder } from '../../utils';
 import {
   HandlerPackerParams,
@@ -179,6 +186,12 @@ type AuthReqOptions = {
 
 type AuthRespOptions = {
   request: AuthorizationRequestMessage;
+  acceptedStateTransitionDelay?: number;
+  acceptedProofGenerationDelay?: number;
+};
+
+type AuthRespOptionsV2 = {
+  request: AuthorizationRequestMessageV2;
   acceptedStateTransitionDelay?: number;
   acceptedProofGenerationDelay?: number;
 };
@@ -468,7 +481,319 @@ export class AuthHandler
     return { request, response: authResp };
   }
 
-  private verifyAuthRequest(request: AuthorizationRequestMessage) {
+  private buildVerifiablePresentationsV2(
+    requestScope: ZeroKnowledgeProofRequest[],
+    responses: ZeroKnowledgeProofResponse[]
+  ): VerifiablePresentationV2[] {
+    const responseById = new Map<string, ZeroKnowledgeProofResponse>(
+      responses.map((r) => [r.id.toString(), r])
+    );
+
+    // Preserve insertion order: first occurrence of each key determines position
+    const groupKeys: string[] = [];
+    const groups = new Map<string, ZeroKnowledgeProofRequest[]>();
+    for (const req of requestScope) {
+      const groupId = req.query?.groupId;
+      const key = groupId ? `group:${groupId}` : `single:${req.id}`;
+      if (!groups.has(key)) {
+        groupKeys.push(key);
+        groups.set(key, []);
+      }
+      groups.get(key)?.push(req);
+    }
+
+    const W3C_BASE = VerifiableConstants.JSONLD_SCHEMA.W3C_CREDENTIAL_2018;
+    const vps: VerifiablePresentationV2[] = [];
+
+    for (const key of groupKeys) {
+      const groupRequests = groups.get(key) ?? [];
+      const firstReq = groupRequests[0];
+      if (!firstReq.query) continue;
+
+      const context = firstReq.query.context as string;
+      const credentialType = firstReq.query.type as string;
+
+      // Merge SD fields from all proofs in the group into one credentialSubject
+      let mergedCredentialSubject: JsonDocumentObject = { type: credentialType };
+      for (const req of groupRequests) {
+        const resp = responseById.get(req.id.toString());
+        if (resp?.vp) {
+          mergedCredentialSubject = {
+            ...mergedCredentialSubject,
+            ...resp.vp.verifiableCredential.credentialSubject
+          };
+        }
+      }
+
+      const proofs: ZKProofEntry[] = groupRequests.reduce<ZKProofEntry[]>((acc, req) => {
+        const resp = responseById.get(req.id.toString());
+        if (!resp) return acc;
+        acc.push({
+          requestId: req.id,
+          circuitId: resp.circuitId,
+          proof: resp.proof,
+          pub_signals: resp.pub_signals
+        });
+        return acc;
+      }, []);
+
+      vps.push({
+        '@context': [W3C_BASE, context],
+        type: ['VerifiablePresentation'],
+        verifiableCredential: {
+          '@context': [W3C_BASE, context],
+          type: ['VerifiableCredential', credentialType],
+          credentialSubject: mergedCredentialSubject
+        },
+        proofs
+      });
+    }
+
+    return vps;
+  }
+
+  private reconstructPerProofVP(
+    req: ZeroKnowledgeProofRequest,
+    parentVP: VerifiablePresentationV2
+  ): VerifiablePresentation | undefined {
+    const credSubject = req.query?.credentialSubject as Record<string, unknown> | undefined;
+    if (!credSubject) return undefined;
+
+    const sdFields = Object.entries(credSubject)
+      .filter(([, v]) => typeof v === 'object' && Object.keys(v as object).length === 0)
+      .map(([k]) => k);
+
+    if (!sdFields.length) return undefined;
+
+    const merged = parentVP.verifiableCredential.credentialSubject;
+    const filtered: JsonDocumentObject = { type: merged['type'] as string };
+    for (const field of sdFields) {
+      if (field in merged) filtered[field] = merged[field];
+    }
+
+    return {
+      '@context': parentVP['@context'],
+      type: Array.isArray(parentVP.type) ? parentVP.type[0] : parentVP.type,
+      verifiableCredential: {
+        '@context': parentVP.verifiableCredential['@context'],
+        type: parentVP.verifiableCredential.type,
+        credentialSubject: filtered
+      }
+    };
+  }
+
+  private async handleAuthRequestV2(
+    authRequest: AuthorizationRequestMessageV2,
+    ctx: AuthReqOptions
+  ): Promise<AuthorizationResponseMessageV2> {
+    if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE_V2) {
+      throw new Error('Invalid message type for v2 authorization request');
+    }
+
+    const to = authRequest.to ? DID.parse(authRequest.to) : ctx.senderDid;
+    const guid = uuid.v4();
+
+    if (!authRequest.from) {
+      throw new Error('auth request should contain from field');
+    }
+
+    const mediaType = this.getSupportedMediaTypeByProfile(ctx, authRequest.body.accept);
+    const from = DID.parse(authRequest.from);
+
+    const scopeResponses = await processZeroKnowledgeProofRequests(
+      to,
+      authRequest.body.scope,
+      from,
+      this._proofService,
+      {
+        mediaType,
+        supportedCircuits: this._supportedCircuits,
+        bypassProofsCache: ctx.bypassProofsCache,
+        allowExpiredCredentials: ctx.allowExpiredCredentials
+      }
+    );
+
+    const vp = this.buildVerifiablePresentationsV2(authRequest.body.scope ?? [], scopeResponses);
+
+    return {
+      id: guid,
+      typ: mediaType,
+      type: PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE_V2,
+      thid: authRequest.thid ?? guid,
+      body: {
+        message: authRequest.body.message,
+        vp
+      },
+      created_time: getUnixTimestamp(new Date()),
+      from: to.string(),
+      to: authRequest.from
+    };
+  }
+
+  async handleAuthorizationRequestV2(
+    did: DID,
+    request: Uint8Array,
+    opts?: AuthHandlerOptions
+  ): Promise<{
+    token: string;
+    authRequest: AuthorizationRequestMessageV2;
+    authResponse: AuthorizationResponseMessageV2;
+  }> {
+    const { unpackedMessage } = await this._packerMgr.unpack(request);
+    const authRequest = unpackedMessage as unknown as AuthorizationRequestMessageV2;
+
+    if (authRequest.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE_V2) {
+      throw new Error('Invalid message type for v2 authorization request');
+    }
+
+    authRequest.body.scope = authRequest.body.scope ?? [];
+
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(authRequest);
+    }
+    if (!opts) {
+      opts = { mediaType: MediaType.ZKPMessage };
+    }
+
+    const authResponse = await this.handleAuthRequestV2(authRequest, {
+      senderDid: did,
+      mediaType: opts.mediaType,
+      bypassProofsCache: opts.bypassProofsCache,
+      allowExpiredCredentials: opts.allowExpiredCredentials
+    });
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authResponse));
+    const packerOpts = initDefaultPackerOptions(opts.mediaType, opts.packerOptions, {
+      provingMethodAlg: this.getDefaultProvingMethodAlg(
+        opts.preferredAuthProvingMethod,
+        authRequest.body.accept
+      ),
+      senderDID: did
+    });
+    const token = byteDecoder.decode(
+      await this._packerMgr.pack(opts.mediaType, msgBytes, packerOpts)
+    );
+
+    return { authRequest, authResponse, token };
+  }
+
+  private async handleAuthResponseV2(
+    response: AuthorizationResponseMessageV2,
+    ctx: AuthRespOptionsV2
+  ): Promise<AuthorizationResponseMessageV2> {
+    const request = ctx.request;
+
+    if (response.type !== PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE_V2) {
+      throw new Error('Invalid message type for v2 authorization response');
+    }
+    if ((request.body.message ?? '') !== (response.body.message ?? '')) {
+      throw new Error('message for signing from request is not presented in response');
+    }
+    if (request.from !== response.to) {
+      throw new Error(
+        `sender of the request is not a target of response - expected ${request.from}, given ${response.to}`
+      );
+    }
+
+    this.verifyAuthRequest(request);
+
+    // Build lookup: requestId → { proofEntry, parentVP }
+    const proofByRequestId = new Map<
+      string,
+      { entry: ZKProofEntry; parentVP: VerifiablePresentationV2 }
+    >();
+    for (const vp of response.body.vp) {
+      for (const entry of vp.proofs) {
+        proofByRequestId.set(entry.requestId.toString(), { entry, parentVP: vp });
+      }
+    }
+
+    const groupIdToLinkIdMap = new Map<number, { linkID: string; requestId: number | string }[]>();
+
+    for (const proofRequest of request.body.scope ?? []) {
+      const found = proofByRequestId.get(proofRequest.id.toString());
+      if (!found) {
+        if (proofRequest.optional) continue;
+        throw new Error(`proof is not given for requestId ${proofRequest.id}`);
+      }
+
+      const { entry, parentVP } = found;
+      const allCircuitsSubversions = getGroupedCircuitIdsWithSubVersions(
+        proofRequest.circuitId as CircuitId
+      );
+      if (!allCircuitsSubversions.includes(entry.circuitId as CircuitId)) {
+        throw new Error(
+          `proof is not given for requested circuit expected: ${allCircuitsSubversions.join(
+            ', '
+          )}, given ${entry.circuitId}`
+        );
+      }
+
+      const reconstructedResp: ZeroKnowledgeProofResponse = {
+        id: proofRequest.id,
+        circuitId: entry.circuitId,
+        proof: entry.proof,
+        pub_signals: entry.pub_signals,
+        vp: this.reconstructPerProofVP(proofRequest, parentVP)
+      };
+
+      const params: JSONObject = proofRequest.params ?? {};
+      params.verifierDid = DID.parse(request.from);
+
+      const opts = [ctx.acceptedProofGenerationDelay, ctx.acceptedStateTransitionDelay].some(
+        (d) => d !== undefined
+      )
+        ? {
+            acceptedProofGenerationDelay: ctx.acceptedProofGenerationDelay,
+            acceptedStateTransitionDelay: ctx.acceptedStateTransitionDelay
+          }
+        : undefined;
+
+      const { linkID } = await this._proofService.verifyZKPResponse(reconstructedResp, {
+        query: proofRequest.query as unknown as ProofQuery,
+        sender: response.from,
+        params,
+        opts
+      });
+
+      const groupId = proofRequest.query?.groupId as number;
+      if (linkID && groupId) {
+        groupIdToLinkIdMap.set(groupId, [
+          ...(groupIdToLinkIdMap.get(groupId) ?? []),
+          { linkID: linkID.toString(), requestId: proofRequest.id }
+        ]);
+      }
+    }
+
+    for (const [groupId, metas] of groupIdToLinkIdMap.entries()) {
+      if (metas.some((meta) => meta.linkID !== metas[0].linkID)) {
+        throw new Error(`Link id validation failed for group ${groupId}: ${JSON.stringify(metas)}`);
+      }
+    }
+
+    return response;
+  }
+
+  async handleAuthorizationResponseV2(
+    response: AuthorizationResponseMessageV2,
+    request: AuthorizationRequestMessageV2,
+    opts?: AuthResponseHandlerOptions
+  ): Promise<{
+    request: AuthorizationRequestMessageV2;
+    response: AuthorizationResponseMessageV2;
+  }> {
+    if (!opts?.allowExpiredMessages) {
+      verifyExpiresTime(response);
+    }
+    const verified = await this.handleAuthResponseV2(response, {
+      request,
+      acceptedStateTransitionDelay: opts?.acceptedStateTransitionDelay,
+      acceptedProofGenerationDelay: opts?.acceptedProofGenerationDelay
+    });
+    return { request, response: verified };
+  }
+
+  private verifyAuthRequest(request: { body: { scope?: ZeroKnowledgeProofRequest[] } }) {
     const groupIdValidationMap: { [k: string]: ZeroKnowledgeProofRequest[] } = {};
     const requestScope = request.body.scope || [];
     for (const proofRequest of requestScope) {

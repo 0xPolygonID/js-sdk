@@ -1,7 +1,7 @@
 import { ZKProof } from '@iden3/js-jwz';
 import { BasicMessage, JsonDocumentObject } from '../packer';
 import { PROTOCOL_MESSAGE_TYPE } from '../../constants';
-import { ProofType } from '../../../verifiable';
+import { CredentialStatusType, ProofType } from '../../../verifiable';
 import { CircuitId } from '../../../circuits';
 import {
   DIDDocument as DidResolverDidDocument,
@@ -91,6 +91,58 @@ export type VerifiablePresentation = {
     type: string | string[];
     credentialSubject: JsonDocumentObject;
   };
+};
+
+/** ZKProofEntry represents a ZK proof linked to a specific request id, used inside VerifiablePresentationV2 */
+export type ZKProofEntry = {
+  requestId: number | string;
+  circuitId: string;
+} & ZKProof;
+
+/** VerifiableCredentialV2 represents the disclosed credential inside a v2 VP */
+export type VerifiableCredentialV2 = {
+  '@context': string | string[];
+  type: string | string[];
+  credentialSubject: JsonDocumentObject;
+  credentialStatus?: {
+    id?: string;
+    type?: CredentialStatusType;
+    revocationNonce?: number;
+    statusIssuer?: { id: string; type: CredentialStatusType; revocationNonce?: number };
+  };
+  expirationDate?: string;
+  issuanceDate?: string;
+};
+
+/** VerifiablePresentationV2 groups one credential's disclosure with all its ZK proofs */
+export type VerifiablePresentationV2 = {
+  '@context': string | (string | object)[];
+  type: string | string[];
+  verifiableCredential: VerifiableCredentialV2;
+  crossChainProof?: CrossChainProof;
+  proofs: ZKProofEntry[];
+};
+
+/** AuthorizationMessageResponseBodyV2 replaces scope with a vp array */
+export type AuthorizationMessageResponseBodyV2 = {
+  did_doc?: DIDDocument;
+  message?: string;
+  vp: VerifiablePresentationV2[];
+};
+
+/** AuthorizationResponseMessageV2 uses vp array instead of scope */
+export type AuthorizationResponseMessageV2 = BasicMessage & {
+  body: AuthorizationMessageResponseBodyV2;
+  from: string;
+  to: string;
+  type: typeof PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_RESPONSE_MESSAGE_TYPE_V2;
+};
+
+/** AuthorizationRequestMessageV2 uses same body as v1 but signals v2 response format */
+export type AuthorizationRequestMessageV2 = BasicMessage & {
+  body: AuthorizationRequestMessageBody;
+  from: string;
+  type: typeof PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE_V2;
 };
 
 /** DIDDocument represents structure of DID Document */
