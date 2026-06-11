@@ -505,6 +505,25 @@ export class W3CCredential {
     }
     await validateDIDDocumentAuth(proof.issuerData.id, resolverURL, proof.issuerData.state.value);
 
+    const issuerState = proof.issuerData.state;
+    const wantState = poseidon.hash([
+      issuerState.claimsTreeRoot.bigInt(),
+      issuerState.revocationTreeRoot.bigInt(),
+      issuerState.rootOfRoots.bigInt()
+    ]);
+    if (wantState !== issuerState.value.bigInt()) {
+      throw new Error(
+        'signature proof: issuer state value does not match its claims/revocation/roots tree roots'
+      );
+    }
+    const { hi: hiAuth, hv: hvAuth } = authClaim.hiHv();
+    const authClaimRootFromProof = await rootFromProof(proof.issuerData.mtp, hiAuth, hvAuth);
+    if (!authClaimRootFromProof.equals(issuerState.claimsTreeRoot)) {
+      throw new Error(
+        'signature proof: issuer auth claim is not included in the issuer claims tree root'
+      );
+    }
+
     const credStatusType = proof.issuerData.credentialStatus.type;
     const credStatusResolver = await credStatusResolverRegistry.get(credStatusType);
     if (!credStatusResolver) {
