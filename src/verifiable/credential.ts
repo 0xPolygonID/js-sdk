@@ -567,6 +567,19 @@ export class W3CCredential {
     resolverURL: string
   ): Promise<boolean> {
     await validateDIDDocumentAuth(proof.issuerData.id, resolverURL, proof.issuerData.state.value);
+
+    const issuerState = proof.issuerData.state;
+    const wantState = poseidon.hash([
+      issuerState.claimsTreeRoot.bigInt(),
+      issuerState.revocationTreeRoot.bigInt(),
+      issuerState.rootOfRoots.bigInt()
+    ]);
+    if (wantState !== issuerState.value.bigInt()) {
+      throw new Error(
+        'verifyIden3SparseMerkleTreeProof: issuer state value does not match its claims/revocation/roots tree roots'
+      );
+    }
+
     // root from proof == issuerData.state.claimsTreeRoot
     const { hi, hv } = coreClaim.hiHv();
     const rootFromProofValue = await rootFromProof(proof.mtp, hi, hv);
