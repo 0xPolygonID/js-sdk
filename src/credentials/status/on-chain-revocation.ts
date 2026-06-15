@@ -8,6 +8,7 @@ import { EthStateStorage, EthStateStorageOptions } from '../../storage/blockchai
 import { IStateStorage, IOnchainRevocationStore } from '../../storage';
 import { Hash } from '@iden3/js-merkletree';
 import { isIdentityDoesNotExistError } from '../../storage/blockchain/errors';
+import { IssuerResolver } from './sparse-merkle-tree';
 
 /*
  * Options for OnChainResolver
@@ -29,14 +30,11 @@ export type OnChainResolverOptions = {
  */
 export class OnChainResolver implements CredentialStatusResolver {
   private readonly _stateStorage: IStateStorage;
-  /**
-   *
-   * Creates an instance of OnChainIssuer.
-   * @public
-   * @param {Array<EthConnectionConfig>} _configs - list of ethereum network connections
-   */
+  private readonly _issuerResolver: IssuerResolver;
+
   constructor(private readonly _configs: EthConnectionConfig[], _opts?: OnChainResolverOptions) {
     this._stateStorage = new EthStateStorage(_configs, _opts?.stateStorageOptions);
+    this._issuerResolver = new IssuerResolver();
   }
 
   /**
@@ -54,7 +52,23 @@ export class OnChainResolver implements CredentialStatusResolver {
     if (!credentialStatusResolveOptions?.issuerDID) {
       throw new Error('IssuerDID is not set in options');
     }
-    return this.getRevocationOnChain(credentialStatus, credentialStatusResolveOptions.issuerDID);
+    try {
+      return await this.getRevocationOnChain(
+        credentialStatus,
+        credentialStatusResolveOptions.issuerDID
+      );
+    } catch (e: unknown) {
+      if (credentialStatus.statusIssuer?.type) {
+        try {
+          return await this._issuerResolver.resolve(credentialStatus.statusIssuer);
+        } catch (fallbackErr) {
+          throw new Error(
+            `can't fetch revocation status from backup endpoint: ${(fallbackErr as Error)?.message}`
+          );
+        }
+      }
+      throw e;
+    }
   }
 
   /**

@@ -115,7 +115,10 @@ export class W3CCredential {
     const credentialStatus: CredentialStatus = {
       id: request.revocationOpts.id,
       type: request.revocationOpts.type,
-      revocationNonce: request.revocationOpts.nonce
+      revocationNonce: request.revocationOpts.nonce,
+      ...(request.revocationOpts.statusIssuer && {
+        statusIssuer: request.revocationOpts.statusIssuer
+      })
     };
 
     switch (request.revocationOpts.type) {

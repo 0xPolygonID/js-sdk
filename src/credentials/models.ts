@@ -81,6 +81,7 @@ export interface CredentialRequest {
    *     nonce?: number;
    *     type: CredentialStatusType;
    *     issuerState?: string;
+   *     statusIssuer?: { id: string; type: CredentialStatusType; revocationNonce?: number };
    *   }}
    * @memberof CredentialRequest
    */
@@ -89,5 +90,6 @@ export interface CredentialRequest {
     nonce?: number;
     type: CredentialStatusType;
     issuerState?: string;
+    statusIssuer?: { id: string; type: CredentialStatusType; revocationNonce?: number };
   };
 }

@@ -3493,4 +3493,98 @@ describe('auth', () => {
       TEST_VERIFICATION_OPTS
     );
   });
+
+  it('w3c field request: statusIssuer', async () => {
+    const profileDID = await idWallet.createProfile(userDID, 777, issuerDID.string());
+
+    const statusIssuer = {
+      id: 'https://rhs-staging.polygonid.me/node?state=abc123',
+      type: CredentialStatusType.SparseMerkleTreeProof,
+      revocationNonce: 28375979
+    };
+    const basicPersonCredRequest: CredentialRequest = {
+      credentialSchema: 'ipfs://QmTojMfyzxehCJVw7aUrdWuxdF68R7oLYooGHCUr9wwsef',
+      type: 'BasicPerson',
+      credentialSubject: {
+        id: profileDID.string(),
+        fullName: 'John Doe',
+        firstName: 'John',
+        familyName: 'Doe',
+        dateOfBirth: 838531598,
+        governmentIdentifier: 'RRRRR',
+        governmentIdentifierType: 'passport',
+        placeOfBirth: {
+          countryCode: 'UA-ua'
+        }
+      },
+      expiration: 2793526400,
+      revocationOpts: {
+        type: CredentialStatusType.Iden3ReverseSparseMerkleTreeProof,
+        id: RHS_URL,
+        nonce: 2837597946,
+        statusIssuer
+      }
+    };
+    const employeeCred = await idWallet.issueCredential(
+      issuerDID,
+      basicPersonCredRequest,
+      merklizeOpts
+    );
+
+    await credWallet.saveAll([employeeCred]);
+
+    const proofReqs: ZeroKnowledgeProofRequest[] = [
+      {
+        id: 1,
+        circuitId: CircuitId.LinkedMultiQuery10,
+        optional: false,
+        query: {
+          groupId: 1,
+          proofType: ProofType.BJJSignature,
+          allowedIssuers: ['*'],
+          type: 'BasicPerson',
+          context: 'ipfs://QmZbsTnRwtCmbdg3r9o7Txid37LmvPcvmzVi1Abvqu1WKL',
+          credentialStatus: {}
+        }
+      }
+    ];
+
+    const authReqBody: AuthorizationRequestMessageBody = {
+      callbackUrl: 'http://localhost:8080/callback?id=1234442-123123-123123',
+      reason: 'reason',
+      message: 'message',
+      scope: proofReqs
+    };
+
+    const id = uuid.v4();
+    const authReq: AuthorizationRequestMessage = {
+      id,
+      typ: PROTOCOL_CONSTANTS.MediaType.PlainMessage,
+      type: PROTOCOL_CONSTANTS.PROTOCOL_MESSAGE_TYPE.AUTHORIZATION_REQUEST_MESSAGE_TYPE,
+      thid: id,
+      body: authReqBody,
+      from: issuerDID.string()
+    };
+
+    const msgBytes = byteEncoder.encode(JSON.stringify(authReq));
+    const authRes = await authHandler.handleAuthorizationRequest(userDID, msgBytes);
+    const tokenStr = authRes.token;
+    expect(tokenStr).to.be.a('string');
+    const token = await Token.parse(tokenStr);
+    expect(token).to.be.a('object');
+
+    const vpCredentialStatus =
+      authRes.authResponse.body.scope[0].vp?.verifiableCredential.credentialStatus;
+    expect(vpCredentialStatus?.revocationNonce).to.equal(
+      basicPersonCredRequest.revocationOpts.nonce
+    );
+    expect(vpCredentialStatus?.type).to.equal(basicPersonCredRequest.revocationOpts.type);
+
+    expect(vpCredentialStatus?.statusIssuer).toMatchObject(statusIssuer);
+    await authHandler.handleAuthorizationResponse(
+      authRes.authResponse,
+      authReq,
+      TEST_VERIFICATION_OPTS
+    );
+  });
 });
