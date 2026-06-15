@@ -119,7 +119,11 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
   const propertiesMetadata: PropertyQuery[] = [];
   if (query.credentialSubject) {
     const credSubjFlattened = flattenNestedObject(
-      query.credentialSubject as Record<string, JsonDocumentObject | undefined>,
+      Object.fromEntries(
+        Object.entries(
+          query.credentialSubject as Record<string, JsonDocumentObject | undefined>
+        ).filter(([key]) => key !== 'type')
+      ),
       'credentialSubject'
     );
     // an empty flattened object means there is nothing to disclose (e.g. subject is id/type only)
@@ -136,10 +140,14 @@ export const parseZKPQuery = (query: ZeroKnowledgeProofQuery): PropertyQuery[] =
     propertiesMetadata.push(...issuanceDate);
   }
   if (query.credentialStatus) {
-    const flattenedObject = flattenNestedObject(
-      query.credentialStatus as Record<string, JsonDocumentObject | undefined>,
-      'credentialStatus'
-    );
+    const flattenedObject: Record<string, JsonDocumentObject> = {};
+    for (const [key, value] of Object.entries(
+      query.credentialStatus as Record<string, JsonDocumentObject | undefined>
+    )) {
+      if (value === undefined || key === 'type' || key.startsWith('statusIssuer')) continue;
+      // const flatKey = key === 'id' ? 'credentialStatus' : `credentialStatus.${key}`;
+      flattenedObject[`credentialStatus.${key}`] = value;
+    }
     if (Object.keys(flattenedObject).length) {
       propertiesMetadata.push(...parseJsonDocumentObject(flattenedObject));
     }
@@ -198,9 +206,9 @@ export const flattenToQueryShape = (
 ): JsonDocumentObject => {
   const result: JsonDocumentObject = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (key === 'id' || key === 'type') {
-      continue;
-    }
+    // if (key === 'type' || key === 'id') {
+    //   continue;
+    // }
     const fullKey = parentKey ? `${parentKey}.${key}` : key;
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       Object.assign(result, flattenToQueryShape(value as Record<string, unknown>, fullKey));
@@ -267,6 +275,11 @@ export const parseQueryMetadata = async (
   let strippedFieldName = originalFieldName;
   switch (fieldParentObj) {
     case 'credentialStatus':
+      // if (originalFieldName === 'credentialStatus') {
+      //   ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.W3C_VC_DOCUMENT_2018;
+      //   credentialType = VerifiableConstants.CREDENTIAL_TYPE.W3C_VERIFIABLE_CREDENTIAL;
+      //   break;
+      // }
       strippedFieldName = originalFieldName.replace('credentialStatus.', '');
       ldContextJSON = VerifiableConstants.JSONLD_SCHEMA.IDEN3_PROOFS_DEFINITION_DOCUMENT;
       if (strippedFieldName.startsWith('statusIssuer.')) {
@@ -331,6 +344,9 @@ export const parseQueryMetadata = async (
   } else {
     try {
       const path = await buildFieldPath(ldContextJSON, credentialType, strippedFieldName, options);
+      if (path.parts[path.parts.length - 1] === '@id') {
+        path.parts.pop();
+      }
       query.claimPathKey = await path.mtEntry();
       query.path = path;
     } catch (e) {
@@ -381,7 +397,9 @@ export const parseProofQueryMetadata = async (
 
   if (query.credentialSubject !== undefined) {
     propertyQuery.push(
-      ...parseDocumentToPropertyQueries('credentialSubject', query.credentialSubject, vp)
+      ...parseDocumentToPropertyQueries('credentialSubject', query.credentialSubject, vp).filter(
+        (q) => q.fieldName !== 'credentialSubject.type'
+      )
     );
   }
   if (query.expirationDate) {
@@ -391,9 +409,17 @@ export const parseProofQueryMetadata = async (
     propertyQuery.push(...parseJsonDocumentObject({ issuanceDate: query.issuanceDate }));
   }
   if (query.credentialStatus !== undefined) {
-    propertyQuery.push(
-      ...parseDocumentToPropertyQueries('credentialStatus', query.credentialStatus, vp)
+    const parsedCredentialStatusQueries = parseDocumentToPropertyQueries(
+      'credentialStatus',
+      query.credentialStatus,
+      vp
+    ).filter(
+      (q) =>
+        !q.fieldName.startsWith('credentialStatus.statusIssuer') &&
+        q.fieldName !== 'credentialStatus.type'
     );
+
+    propertyQuery.push(...parsedCredentialStatusQueries);
   }
 
   if (propertyQuery.length === 0) {

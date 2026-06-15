@@ -79,10 +79,7 @@ export const createVerifiablePresentation = (
       },
       credentialStatus: {
         id: credential.credentialStatus?.id,
-        type: credential.credentialStatus?.type,
-        ...(credential.credentialStatus?.statusIssuer && {
-          statusIssuer: credential.credentialStatus.statusIssuer
-        })
+        type: credential.credentialStatus?.type
       }
     }
   };

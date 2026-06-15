@@ -101,7 +101,6 @@ export type VerifiablePresentation = {
       id?: string;
       type?: string;
       revocationNonce?: number;
-      statusIssuer?: { id: string; type: CredentialStatusType; revocationNonce?: number };
     };
     expirationDate?: string;
     issuanceDate?: string;
