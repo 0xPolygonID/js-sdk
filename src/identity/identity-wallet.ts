@@ -1586,11 +1586,14 @@ export class IdentityWallet implements IIdentityWallet {
     prover?: IZKProver // it will be needed in case of non ethereum identities
   ): Promise<W3CCredential> {
     opts.seed = opts.seed ?? getRandomBytes(32);
+    // nonce 0 is only safe for the first auth key: a BJJ identity's genesis auth claim already
+    // uses it, and a shared nonce would make revoking one key revoke the other as well
+    const isFirstAuthKey =
+      isOldStateGenesis &&
+      (await this._credentialWallet.getAllAuthBJJCredentials(did)).length === 0;
     opts.revocationOpts.nonce =
       opts.revocationOpts.nonce ??
-      (isOldStateGenesis
-        ? 0
-        : opts.revocationOpts.nonce ?? new DataView(getRandomBytes(12).buffer).getUint32(0));
+      (isFirstAuthKey ? 0 : new DataView(getRandomBytes(12).buffer).getUint32(0));
 
     const credential = await this.getAuthBJJCredential(did, oldTreeState, {
       nonce: opts.revocationOpts.nonce,
