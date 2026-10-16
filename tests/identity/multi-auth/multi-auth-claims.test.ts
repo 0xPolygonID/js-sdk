@@ -1,7 +1,7 @@
 /**
  * Identity with multiple auth claims.
  *
- * An identity holds several AuthBJJ claims in its claims tree. The genesis key belongs to the
+ * An identity (BJJ- or Ethereum-based) holds several AuthBJJ claims in its claims tree. The first key belongs to the
  * owner; a delegate generates a key on their own device and the owner adds only its public key
  * to the identity. The delegate can then produce authV3 proofs / JWZ tokens whose sender is the
  * identity's DID (e.g. an officer acting as an organization). Revoking the delegate's auth claim
@@ -13,13 +13,16 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import { DID } from '@iden3/js-iden3-core';
 import { PublicKey, getRandomBytes } from '@iden3/js-crypto';
 import { KmsKeyType, W3CCredential } from '../../../src';
-import { Device, MultiAuthEnv, SMT_REVOCATION, createMultiAuthEnv } from './env';
+import { Device, IdentityType, MultiAuthEnv, SMT_REVOCATION, createMultiAuthEnv } from './env';
 
-describe('identity with multiple auth claims', () => {
+describe.each<{ name: string; type: IdentityType }>([
+  { name: 'BJJ-based', type: 'bjj' },
+  { name: 'Ethereum-based', type: 'eth' }
+])('$name identity with multiple auth claims', ({ type }) => {
   let env: MultiAuthEnv;
 
   let verifier: Device;
-  let owner: Device; // holds the genesis auth key
+  let owner: Device; // created the identity, holds its first auth key
   let delegate: Device; // holds an extra auth key of the same identity on another device
 
   let verifierDID: DID;
@@ -33,7 +36,7 @@ describe('identity with multiple auth claims', () => {
     verifierDID = await env.createDID(verifier);
 
     owner = await env.newDevice({ sharedTrees: true });
-    did = await env.createDID(owner);
+    did = await env.createDID(owner, type);
     env.revocation.registerIssuer(did, owner.idWallet);
 
     // the delegate creates a key on their device; only the public key reaches the owner, which

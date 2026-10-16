@@ -18,6 +18,15 @@ import {
 
 const nowSec = () => BigInt(Math.floor(Date.now() / 1000));
 
+const isEthereumBasedId = (id: Id): boolean => {
+  try {
+    Id.ethAddressFromId(id);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 /**
  * In-memory replacement of the State smart contract for offline tests.
  *
@@ -81,11 +90,14 @@ export class InMemoryStateStorage implements IStateStorage {
     if (!info) {
       throw new Error('state transition info is required');
     }
+    // method 1: the contract authorizes an Ethereum-based identity by msg.sender == address
+    // in the id (the signer is not checked here), so its genesis state is not derived from the id
     return this.transit(
       info.userId.bigInt(),
       info.oldUserState.bigInt(),
       info.newUserState.bigInt(),
-      info.isOldStateGenesis
+      info.isOldStateGenesis,
+      isEthereumBasedId
     );
   }
 
@@ -132,7 +144,8 @@ export class InMemoryStateStorage implements IStateStorage {
     id: bigint,
     oldState: bigint,
     newState: bigint,
-    isOldStateGenesis: boolean
+    isOldStateGenesis: boolean,
+    isGenesis: (id: Id, state: bigint) => boolean = getIsGenesisStateById
   ): Promise<string> {
     const history = this._states.get(id) ?? [];
     const latest = history[history.length - 1];
@@ -140,7 +153,7 @@ export class InMemoryStateStorage implements IStateStorage {
       if (latest) {
         throw new Error('old state is genesis but identity already exists');
       }
-      if (!getIsGenesisStateById(Id.fromBigInt(id), oldState)) {
+      if (!isGenesis(Id.fromBigInt(id), oldState)) {
         throw new Error('old state is not the genesis state of the identity');
       }
     } else if (latest?.state !== oldState) {

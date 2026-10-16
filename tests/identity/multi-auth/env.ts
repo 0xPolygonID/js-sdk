@@ -116,6 +116,8 @@ export type Device = {
   authHandler: AuthHandler;
 };
 
+export type IdentityType = 'bjj' | 'eth';
+
 export type MultiAuthEnv = Awaited<ReturnType<typeof createMultiAuthEnv>>;
 
 export const createMultiAuthEnv = async (opts?: { documentLoader?: DocumentLoader }) => {
@@ -202,14 +204,22 @@ export const createMultiAuthEnv = async (opts?: { documentLoader?: DocumentLoade
     return { kms, storage, credWallet, idWallet, proofService, packageMgr, authHandler };
   };
 
-  const createDID = async (device: Device) => {
-    const { did } = await device.idWallet.createIdentity({
+  /**
+   * BJJ-based identity (genesis state from the auth claim) or Ethereum-based identity (DID from
+   * a secp256k1 key; the first BJJ auth claim is added and published on creation).
+   */
+  const createDID = async (device: Device, type: IdentityType = 'bjj') => {
+    const opts = {
       method: DidMethod.Iden3,
       blockchain: Blockchain.Polygon,
       networkId: NetworkId.Amoy,
       seed: getRandomBytes(32),
       revocationOpts: SMT_REVOCATION
-    });
+    };
+    const { did } =
+      type === 'eth'
+        ? await device.idWallet.createEthereumBasedIdentity({ ...opts, ethSigner })
+        : await device.idWallet.createIdentity(opts);
     return did;
   };
 
